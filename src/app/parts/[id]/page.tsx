@@ -52,6 +52,7 @@ export default async function PartDetailPage({
     attachmentsRes,
     suppliersRes,
     currenciesRes,
+    templatesUsageRes,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -171,6 +172,11 @@ export default async function PartDetailPage({
       .eq("is_active", true)
       .order("name", { ascending: true }),
     supabase.from("currencies").select("code, name_en").order("code"),
+    supabase
+      .from("bike_template_parts")
+      .select("template_id, bike_templates!inner(is_current)")
+      .eq("part_id", id)
+      .eq("bike_templates.is_current", true),
   ]);
 
   if (partRes.error) {
@@ -206,6 +212,9 @@ export default async function PartDetailPage({
     lastPurchaseQty,
     part.reorder_point != null ? Number(part.reorder_point) : null,
   );
+
+  // ------- Where used: count of CURRENT template versions consuming this part
+  const templateUsageCount = templatesUsageRes.data?.length ?? 0;
 
   // ------- Offerings -------
   const offeringRows = (offeringsRes.data ?? []).map((row) => ({
@@ -373,6 +382,7 @@ export default async function PartDetailPage({
         }
         notes={part.notes}
         attributes={(part.attributes as Record<string, unknown>) ?? {}}
+        templateUsageCount={templateUsageCount}
       />
 
       <OfferingsSection

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Boxes, ClipboardList } from "lucide-react";
+import { Bike, Boxes, ClipboardList } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createClient();
-  const [partsCount, openPosCount] = await Promise.all([
+  const [partsCount, openPosCount, bikeModelsCount] = await Promise.all([
     supabase
       .from("parts")
       .select("id", { count: "exact", head: true })
@@ -14,6 +14,10 @@ export default async function Home() {
       .from("purchase_orders")
       .select("id", { count: "exact", head: true })
       .in("status", ["draft", "placed", "partially_received"]),
+    supabase
+      .from("bike_models")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null),
   ]);
 
   const cards = [
@@ -33,6 +37,17 @@ export default async function Home() {
       stat:
         openPosCount.count != null
           ? `${openPosCount.count} open ${openPosCount.count === 1 ? "PO" : "POs"}`
+          : null,
+    },
+    {
+      href: "/bike-models",
+      icon: Bike,
+      title: "Bike catalog",
+      description:
+        "Bike models, variants, and templates — the recipes that drive the build workbench.",
+      stat:
+        bikeModelsCount.count != null
+          ? `${bikeModelsCount.count} active model${bikeModelsCount.count === 1 ? "" : "s"}`
           : null,
     },
   ];

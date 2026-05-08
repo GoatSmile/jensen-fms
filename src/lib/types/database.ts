@@ -261,6 +261,7 @@ export type Database = {
           deleted_at: string | null
           description_da: string | null
           description_en: string | null
+          frame_number_code: string | null
           headline_currency: string | null
           headline_retail_price: number | null
           id: string
@@ -277,6 +278,7 @@ export type Database = {
           deleted_at?: string | null
           description_da?: string | null
           description_en?: string | null
+          frame_number_code?: string | null
           headline_currency?: string | null
           headline_retail_price?: number | null
           id?: string
@@ -293,6 +295,7 @@ export type Database = {
           deleted_at?: string | null
           description_da?: string | null
           description_en?: string | null
+          frame_number_code?: string | null
           headline_currency?: string | null
           headline_retail_price?: number | null
           id?: string

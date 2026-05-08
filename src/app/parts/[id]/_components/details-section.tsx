@@ -13,6 +13,8 @@ type Props = {
   reorderQuantity: number | null;
   notes: string | null;
   attributes: Record<string, unknown>;
+  /** Count of CURRENT bike templates that include this part. */
+  templateUsageCount?: number;
 };
 
 export function DetailsSection({
@@ -26,6 +28,7 @@ export function DetailsSection({
   reorderQuantity,
   notes,
   attributes,
+  templateUsageCount,
 }: Props) {
   const attributeEntries = Object.entries(attributes ?? {});
 
@@ -72,6 +75,16 @@ export function DetailsSection({
           )}
         </Field>
         <Field label="Notes">{notes ? notes : <Muted>—</Muted>}</Field>
+        <Field label="Used in templates">
+          {templateUsageCount != null && templateUsageCount > 0 ? (
+            <span className="tabular-nums">
+              {templateUsageCount} current version
+              {templateUsageCount === 1 ? "" : "s"}
+            </span>
+          ) : (
+            <Muted>None</Muted>
+          )}
+        </Field>
       </dl>
       {attributeEntries.length > 0 ? (
         <div className="mt-4 border-t pt-3">
