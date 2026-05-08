@@ -1,24 +1,30 @@
 import Link from "next/link";
-import { Bike, Boxes, ClipboardList } from "lucide-react";
+import { Bike, BookOpen, Boxes, ClipboardList } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createClient();
-  const [partsCount, openPosCount, bikeModelsCount] = await Promise.all([
-    supabase
-      .from("parts")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    supabase
-      .from("purchase_orders")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["draft", "placed", "partially_received"]),
-    supabase
-      .from("bike_models")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-  ]);
+  const [partsCount, openPosCount, bikeModelsCount, bikesCount] =
+    await Promise.all([
+      supabase
+        .from("parts")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null),
+      supabase
+        .from("purchase_orders")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["draft", "placed", "partially_received"]),
+      supabase
+        .from("bike_models")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null),
+      supabase
+        .from("bikes")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .not("status", "in", "(retired,lost_or_stolen)"),
+    ]);
 
   const cards = [
     {
@@ -41,13 +47,24 @@ export default async function Home() {
     },
     {
       href: "/bike-models",
-      icon: Bike,
+      icon: BookOpen,
       title: "Bike catalog",
       description:
         "Bike models, variants, and templates — the recipes that drive the build workbench.",
       stat:
         bikeModelsCount.count != null
           ? `${bikeModelsCount.count} active model${bikeModelsCount.count === 1 ? "" : "s"}`
+          : null,
+    },
+    {
+      href: "/bikes",
+      icon: Bike,
+      title: "Bikes",
+      description:
+        "Every physical bike — frame numbers, identifiers, parts installed, and lifecycle state log.",
+      stat:
+        bikesCount.count != null
+          ? `${bikesCount.count} active bike${bikesCount.count === 1 ? "" : "s"}`
           : null,
     },
   ];

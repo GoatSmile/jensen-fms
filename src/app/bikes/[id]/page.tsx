@@ -1,0 +1,287 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { createClient } from "@/lib/supabase/server";
+import type { BikeStatus } from "@/lib/bikes/status";
+
+import { BikeHeader } from "./_components/bike-header";
+import {
+  IdentifiersSection,
+  type IdentifierRow,
+} from "./_components/identifiers-section";
+import type { IdentifierTypeOption } from "./_components/identifier-dialog";
+import {
+  PartsInstalledSection,
+  type InstalledPartRow,
+} from "./_components/parts-installed-section";
+import { Section } from "./_components/section";
+import {
+  StateLogSection,
+  type StateLogRow,
+} from "./_components/state-log-section";
+
+export default async function BikeDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const [bikeRes, identifiersRes, partsRes, stateLogRes, identifierTypesRes] =
+    await Promise.all([
+      supabase
+        .from("bikes")
+        .select(
+          `
+            id, frame_number, status, notes, deleted_at, bike_type_id,
+            bike_type:bike_types(id, name_en),
+            bike_model:bike_models(id, name_en),
+            bike_model_variant:bike_model_variants(id, sku, name_en),
+            template:bike_templates(id, name_en, version)
+          `,
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("bike_identifiers")
+        .select(
+          `
+            id, identifier_value, is_active, created_at, deactivated_at,
+            identifier_type:bike_identifier_types(id, name_en)
+          `,
+        )
+        .eq("bike_id", id)
+        .order("is_active", { ascending: false })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("bike_parts")
+        .select(
+          `
+            id, quantity, installed_at, removed_at, notes,
+            parts:parts(id, internal_sku, name_en)
+          `,
+        )
+        .eq("bike_id", id)
+        .order("installed_at", { ascending: true }),
+      supabase
+        .from("bike_state_log")
+        .select("id, from_status, to_status, occurred_at, reason")
+        .eq("bike_id", id)
+        .order("occurred_at", { ascending: false }),
+      supabase
+        .from("bike_identifier_types")
+        .select("id, slug, name_en, format_regex, is_active")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+    ]);
+
+  if (bikeRes.error) {
+    throw new Error(`Failed to load bike: ${bikeRes.error.message}`);
+  }
+  if (!bikeRes.data) notFound();
+
+  const b = bikeRes.data;
+
+  // Required identifiers for this bike type — used to compute "X of Y registered".
+  const requiredRes = await supabase
+    .from("bike_type_required_identifiers")
+    .select("bike_identifier_type_id, is_required")
+    .eq("bike_type_id", b.bike_type_id);
+
+  const requiredTypes = new Map<string, boolean>();
+  for (const row of requiredRes.data ?? []) {
+    if (row.is_required) requiredTypes.set(row.bike_identifier_type_id, true);
+  }
+
+  // Active identifier rows by type id, used both to compute completion and to
+  // tell the dialog which types are already registered.
+  const activeIdentifierTypeIds = new Set(
+    (identifiersRes.data ?? [])
+      .filter((r) => r.is_active)
+      .map((r) => r.identifier_type?.id)
+      .filter((x): x is string => x != null),
+  );
+
+  const identifierRows: IdentifierRow[] = (identifiersRes.data ?? []).map(
+    (r) => ({
+      id: r.id,
+      typeId: r.identifier_type?.id ?? "",
+      typeName: r.identifier_type?.name_en ?? "—",
+      isRequired:
+        r.identifier_type?.id != null
+          ? requiredTypes.has(r.identifier_type.id)
+          : false,
+      value: r.identifier_value,
+      isActive: r.is_active,
+      createdAt: r.created_at,
+      deactivatedAt: r.deactivated_at,
+    }),
+  );
+
+  const identifierTypeOptions: IdentifierTypeOption[] = (
+    identifierTypesRes.data ?? []
+  ).map((t) => ({
+    id: t.id,
+    slug: t.slug,
+    name_en: t.name_en,
+    format_regex: t.format_regex,
+    is_required: requiredTypes.has(t.id),
+    alreadyRegistered: activeIdentifierTypeIds.has(t.id),
+  }));
+
+  const requiredCount = requiredTypes.size;
+  const requiredRegisteredCount = Array.from(requiredTypes.keys()).filter((id) =>
+    activeIdentifierTypeIds.has(id),
+  ).length;
+
+  const partRows: InstalledPartRow[] = (partsRes.data ?? []).map((r) => ({
+    id: r.id,
+    partId: r.parts?.id ?? "",
+    partSku: r.parts?.internal_sku ?? "—",
+    partName: r.parts?.name_en ?? "—",
+    quantity: Number(r.quantity),
+    installedAt: r.installed_at,
+    removedAt: r.removed_at,
+    notes: r.notes,
+  }));
+
+  const stateRows: StateLogRow[] = (stateLogRes.data ?? []).map((r) => ({
+    id: r.id,
+    fromStatus: r.from_status,
+    toStatus: r.to_status,
+    occurredAt: r.occurred_at,
+    reason: r.reason,
+  }));
+
+  return (
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/bikes">Bikes</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{b.frame_number}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <BikeHeader
+        bikeId={b.id}
+        frameNumber={b.frame_number}
+        status={b.status as BikeStatus}
+        bikeTypeName={b.bike_type?.name_en ?? null}
+        modelName={b.bike_model?.name_en ?? null}
+        variantName={b.bike_model_variant?.name_en ?? null}
+        isDeleted={b.deleted_at != null}
+      />
+
+      <Section
+        title="Identification"
+        description="Catalog references — all optional. The frame number on the header is the primary identifier."
+      >
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          <Field label="Bike type">
+            {b.bike_type?.name_en ?? <Muted>—</Muted>}
+          </Field>
+          <Field label="Model">
+            {b.bike_model ? (
+              <Link
+                href={`/bike-models/${b.bike_model.id}`}
+                className="hover:underline"
+              >
+                {b.bike_model.name_en}
+              </Link>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Variant">
+            {b.bike_model_variant ? (
+              <span>
+                {b.bike_model_variant.name_en}{" "}
+                <span className="text-muted-foreground font-mono text-xs">
+                  ({b.bike_model_variant.sku})
+                </span>
+              </span>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Built against template">
+            {b.template ? (
+              <Link
+                href={`/bike-templates/${b.template.id}`}
+                className="hover:underline"
+              >
+                {b.template.name_en}{" "}
+                <span className="text-muted-foreground text-xs">
+                  v{b.template.version}
+                </span>
+              </Link>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Owner">
+            <Muted>Customer assignment ships in Phase 3.</Muted>
+          </Field>
+          <Field label="Notes">
+            {b.notes ? b.notes : <Muted>—</Muted>}
+          </Field>
+        </dl>
+      </Section>
+
+      <IdentifiersSection
+        bikeId={b.id}
+        rows={identifierRows}
+        identifierTypes={identifierTypeOptions}
+        requiredCount={requiredCount}
+        requiredRegisteredCount={requiredRegisteredCount}
+      />
+
+      <PartsInstalledSection rows={partRows} />
+
+      <StateLogSection rows={stateRows} />
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+        {label}
+      </dt>
+      <dd className="text-sm">{children}</dd>
+    </div>
+  );
+}
+
+function Muted({ children }: { children: React.ReactNode }) {
+  return <span className="text-muted-foreground">{children}</span>;
+}

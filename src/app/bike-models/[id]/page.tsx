@@ -77,9 +77,13 @@ export default async function BikeModelDetailPage({
       supabase.from("bike_template_parts").select("template_id"),
       supabase
         .from("bikes")
-        .select("id", { count: "exact", head: true })
+        .select(
+          "id, frame_number, status, bike_model_variant:bike_model_variants(name_en)",
+        )
         .eq("bike_model_id", id)
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .order("frame_number", { ascending: true })
+        .limit(20),
     ]);
 
   if (modelRes.error) {
@@ -116,7 +120,8 @@ export default async function BikeModelDetailPage({
     part_count: templatePartCounts.get(t.id) ?? 0,
   }));
   const currentTemplateCount = templateRows.filter((t) => t.is_current).length;
-  const bikeCount = bikeCountRes.count ?? 0;
+  const bikeRows = bikeCountRes.data ?? [];
+  const bikeCount = bikeRows.length;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -214,12 +219,43 @@ export default async function BikeModelDetailPage({
       <Section
         title="Bikes"
         description="Physical bikes ever built against this model."
+        action={
+          bikeCount > 0 ? (
+            <Link
+              href={`/bikes?model=${m.id}`}
+              className="text-sm hover:underline"
+            >
+              View all in /bikes →
+            </Link>
+          ) : undefined
+        }
       >
-        <EmptyRow>
-          {bikeCount === 0
-            ? "No bikes built against this model yet."
-            : `${bikeCount} bike${bikeCount === 1 ? "" : "s"} on file. The bikes list ships in phase 2B.`}
-        </EmptyRow>
+        {bikeCount === 0 ? (
+          <EmptyRow>No bikes built against this model yet.</EmptyRow>
+        ) : (
+          <ul className="divide-y rounded-md border">
+            {bikeRows.map((b) => (
+              <li key={b.id}>
+                <Link
+                  href={`/bikes/${b.id}`}
+                  className="hover:bg-muted/50 flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs">{b.frame_number}</span>
+                    {b.bike_model_variant?.name_en ? (
+                      <span className="text-muted-foreground text-xs">
+                        {b.bike_model_variant.name_en}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {b.status}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
     </div>
   );
