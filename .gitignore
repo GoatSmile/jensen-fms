@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# claude code — personal settings and agent worktrees stay local
+.claude/settings.local.json
+.claude/worktrees/
+
 # vercel
 .vercel
 

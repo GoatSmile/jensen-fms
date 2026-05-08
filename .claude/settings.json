@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npx tsc --noEmit)",
+      "mcp__55452a54-1704-4522-92ec-4ca188724da0__execute_sql",
+      "mcp__55452a54-1704-4522-92ec-4ca188724da0__list_tables",
+      "mcp__55452a54-1704-4522-92ec-4ca188724da0__list_projects",
+      "mcp__55452a54-1704-4522-92ec-4ca188724da0__generate_typescript_types"
+    ]
+  }
+}
