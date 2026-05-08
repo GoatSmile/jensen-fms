@@ -21,6 +21,7 @@ import { PhotosSection } from "./_components/photos-section";
 import type { PhotoRow } from "./_components/photo-thumb";
 import { PricingHistorySection } from "./_components/pricing-history-section";
 import { PurchaseHistorySection } from "./_components/purchase-history-section";
+import { WhereUsedSection } from "./_components/where-used-section";
 import { StatStrip } from "./_components/stat-strip";
 import { StockSection } from "./_components/stock-section";
 
@@ -53,6 +54,8 @@ export default async function PartDetailPage({
     suppliersRes,
     currenciesRes,
     templatesUsageRes,
+    moUsageRes,
+    bikePartsUsageRes,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -174,9 +177,40 @@ export default async function PartDetailPage({
     supabase.from("currencies").select("code, name_en").order("code"),
     supabase
       .from("bike_template_parts")
-      .select("template_id, bike_templates!inner(is_current)")
+      .select(
+        `
+          template_id, quantity,
+          bike_templates!inner(
+            id, name_en, version, is_current,
+            bike_model:bike_models(id, name_en),
+            bike_model_variant:bike_model_variants(name_en)
+          )
+        `,
+      )
       .eq("part_id", id)
       .eq("bike_templates.is_current", true),
+    supabase
+      .from("manufacturing_order_parts")
+      .select(
+        `
+          quantity_per_bike,
+          manufacturing_orders!inner(
+            id, mo_number, status, target_quantity, completed_quantity
+          )
+        `,
+      )
+      .eq("part_id", id)
+      .in("manufacturing_orders.status", [
+        "planned",
+        "released",
+        "in_progress",
+        "on_hold",
+      ]),
+    supabase
+      .from("bike_parts")
+      .select("bike_id, removed_at")
+      .eq("part_id", id)
+      .is("removed_at", null),
   ]);
 
   if (partRes.error) {
@@ -215,6 +249,43 @@ export default async function PartDetailPage({
 
   // ------- Where used: count of CURRENT template versions consuming this part
   const templateUsageCount = templatesUsageRes.data?.length ?? 0;
+
+  // Detailed where-used: templates, open MOs, currently-installed bike count.
+  const templateUsageRows = (templatesUsageRes.data ?? [])
+    .map((r) => ({
+      templateId: r.bike_templates?.id ?? "",
+      templateName: r.bike_templates?.name_en ?? "—",
+      templateVersion: r.bike_templates?.version ?? 0,
+      modelId: r.bike_templates?.bike_model?.id ?? null,
+      modelName: r.bike_templates?.bike_model?.name_en ?? null,
+      variantName: r.bike_templates?.bike_model_variant?.name_en ?? null,
+      qtyPerBike: Number(r.quantity),
+    }))
+    .filter((t) => t.templateId !== "");
+
+  const moUsageRows = (moUsageRes.data ?? [])
+    .map((r) => {
+      const mo = r.manufacturing_orders;
+      const target = Number(mo?.target_quantity ?? 0);
+      const completed = Number(mo?.completed_quantity ?? 0);
+      return {
+        moId: mo?.id ?? "",
+        moNumber: mo?.mo_number ?? "—",
+        status: (mo?.status ?? "planned") as
+          | "planned"
+          | "released"
+          | "in_progress"
+          | "on_hold",
+        qtyPerBike: Number(r.quantity_per_bike),
+        outstandingBikes: Math.max(0, target - completed),
+      };
+    })
+    .filter((m) => m.moId !== "");
+
+  const installedBikeIds = new Set(
+    (bikePartsUsageRes.data ?? []).map((r) => r.bike_id),
+  );
+  const installedBikeCount = installedBikeIds.size;
 
   // ------- Offerings -------
   const offeringRows = (offeringsRes.data ?? []).map((row) => ({
@@ -409,6 +480,13 @@ export default async function PartDetailPage({
       <PurchaseHistorySection rows={purchaseRows} />
 
       <PricingHistorySection rows={pricingRows} />
+
+      <WhereUsedSection
+        partId={part.id}
+        templates={templateUsageRows}
+        mos={moUsageRows}
+        installedBikeCount={installedBikeCount}
+      />
     </div>
   );
 }

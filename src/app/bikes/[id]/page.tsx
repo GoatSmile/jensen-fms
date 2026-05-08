@@ -43,7 +43,7 @@ export default async function BikeDetailPage({
         .select(
           `
             id, frame_number, status, notes, deleted_at, bike_type_id,
-            manufacturing_order_id,
+            manufacturing_order_id, build_cost_dkk,
             bike_type:bike_types(id, name_en),
             bike_model:bike_models(id, name_en),
             bike_model_variant:bike_model_variants(id, sku, name_en),
@@ -257,6 +257,19 @@ export default async function BikeDetailPage({
           </Field>
           <Field label="Owner">
             <Muted>Customer assignment ships in Phase 3.</Muted>
+          </Field>
+          <Field label="Build cost">
+            {b.build_cost_dkk != null ? (
+              <span className="tabular-nums">
+                {new Intl.NumberFormat("da-DK", {
+                  style: "currency",
+                  currency: "DKK",
+                  maximumFractionDigits: 2,
+                }).format(Number(b.build_cost_dkk))}
+              </span>
+            ) : (
+              <Muted>—</Muted>
+            )}
           </Field>
           <Field label="Notes">
             {b.notes ? b.notes : <Muted>—</Muted>}

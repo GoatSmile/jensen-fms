@@ -79,7 +79,7 @@ export default async function ManufacturingOrderDetailPage({
       .from("bikes")
       .select(
         `
-          id, frame_number, status, manufacturing_order_id,
+          id, frame_number, status, manufacturing_order_id, build_cost_dkk,
           bike_identifiers(id, is_active)
         `,
       )
@@ -141,6 +141,19 @@ export default async function ManufacturingOrderDetailPage({
       b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
     requiredIdentifierCount: requiredIdCount,
   }));
+
+  // Build cost stats: sum across all bikes that have build_cost_dkk stamped.
+  const builtBikesWithCost = (bikesRes.data ?? []).filter(
+    (b) => b.build_cost_dkk != null,
+  );
+  const totalBuildCost = builtBikesWithCost.reduce(
+    (sum, b) => sum + Number(b.build_cost_dkk ?? 0),
+    0,
+  );
+  const avgBuildCost =
+    builtBikesWithCost.length > 0
+      ? totalBuildCost / builtBikesWithCost.length
+      : null;
 
   const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
     id: p.id,
@@ -204,6 +217,30 @@ export default async function ManufacturingOrderDetailPage({
         <Stat label="Completed" value={String(mo.completed_quantity)} />
         <Stat label="Outstanding" value={String(outstandingBikes)} />
         <Stat label="Parts in recipe" value={String(moPartRows.length)} />
+        <Stat
+          label="Build cost so far"
+          value={
+            totalBuildCost > 0
+              ? new Intl.NumberFormat("da-DK", {
+                  style: "currency",
+                  currency: "DKK",
+                  maximumFractionDigits: 0,
+                }).format(totalBuildCost)
+              : "—"
+          }
+        />
+        <Stat
+          label="Avg cost per bike"
+          value={
+            avgBuildCost != null
+              ? new Intl.NumberFormat("da-DK", {
+                  style: "currency",
+                  currency: "DKK",
+                  maximumFractionDigits: 0,
+                }).format(avgBuildCost)
+              : "—"
+          }
+        />
       </div>
 
       <Section title="Plan" description="Planned and actual dates and notes.">

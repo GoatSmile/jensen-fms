@@ -97,11 +97,26 @@ export async function markBikeBuilt(
   // Skip parts already on this bike (idempotent retry).
   const { data: existingBikeParts } = await supabase
     .from("bike_parts")
-    .select("part_id")
+    .select("part_id, quantity, inventory_movement_id")
     .eq("bike_id", bikeId);
   const alreadyInstalled = new Set(
     (existingBikeParts ?? []).map((r) => r.part_id),
   );
+
+  // Track build cost as we go. Includes any parts that were already on the
+  // bike from a partial earlier run, so a re-run produces the right total.
+  let runningBuildCostDkk = 0;
+  for (const bp of existingBikeParts ?? []) {
+    if (bp.inventory_movement_id == null) continue;
+    const { data: mov } = await supabase
+      .from("inventory_movements")
+      .select("unit_cost_dkk")
+      .eq("id", bp.inventory_movement_id)
+      .maybeSingle();
+    if (mov?.unit_cost_dkk != null) {
+      runningBuildCostDkk += Number(mov.unit_cost_dkk) * Number(bp.quantity);
+    }
+  }
 
   for (const mop of moParts ?? []) {
     if (alreadyInstalled.has(mop.part_id)) continue;
@@ -143,13 +158,19 @@ export async function markBikeBuilt(
         error: `Could not link part ${mop.part_id} to bike: ${bpErr.message}. Re-run to retry.`,
       };
     }
+
+    if (lastCostDkk != null) {
+      runningBuildCostDkk += lastCostDkk * qty;
+    }
   }
 
-  // Advance bike status. The state-log + MO-completion triggers fire here.
+  // Advance bike status AND stamp build_cost_dkk. The state-log +
+  // MO-completion triggers fire on this UPDATE.
   const { error: statusErr } = await supabase
     .from("bikes")
     .update({
       status: "in_stock",
+      build_cost_dkk: runningBuildCostDkk > 0 ? runningBuildCostDkk : null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", bikeId);

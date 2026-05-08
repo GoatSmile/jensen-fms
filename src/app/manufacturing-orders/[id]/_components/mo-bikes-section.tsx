@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, CheckSquare } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,10 @@ import {
   type BikeStatus,
 } from "@/lib/bikes/status";
 
+import { bulkMarkBikesBuilt } from "../_actions/bulk-mark-built";
 import { markBikeBuilt } from "../_actions/mark-bike-built";
 import { AddBikeDialog } from "./add-bike-dialog";
+import { BulkAddDialog } from "./bulk-add-dialog";
 import { Section } from "./section";
 
 export type MOBikeRow = {
@@ -50,27 +52,70 @@ export function MOBikesSection({
   suggestedFrameNumber,
   closed,
 }: Props) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [bulkPending, startBulk] = useTransition();
   const slotsRemaining = targetQuantity - rows.length;
   const canAdd = !closed && slotsRemaining > 0;
+  const unbuiltCount = rows.filter(
+    (r) =>
+      r.status === "planning" || r.status === "building",
+  ).length;
+  const canBulkBuild = !closed && unbuiltCount >= 2;
+
+  function runBulkBuild() {
+    setError(null);
+    startBulk(async () => {
+      const r = await bulkMarkBikesBuilt(moId);
+      if (!r.ok) {
+        setError(r.error);
+      } else {
+        router.refresh();
+      }
+    });
+  }
 
   return (
     <Section
       title="Bikes"
       description={`${completedQuantity} built · ${targetQuantity} target · ${slotsRemaining} slot${slotsRemaining === 1 ? "" : "s"} remaining`}
       action={
-        <AddBikeDialog
-          moId={moId}
-          suggestedFrameNumber={suggestedFrameNumber}
-          disabled={!canAdd}
-          disabledReason={
-            closed
-              ? "MO is closed."
-              : slotsRemaining <= 0
-                ? "All target slots are filled. Increase target_quantity to add more."
-                : undefined
-          }
-        />
+        <div className="flex gap-2">
+          {canBulkBuild ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runBulkBuild}
+              disabled={bulkPending}
+            >
+              <CheckSquare aria-hidden /> Mark {unbuiltCount} built
+            </Button>
+          ) : null}
+          <BulkAddDialog
+            moId={moId}
+            slotsRemaining={slotsRemaining}
+            disabled={!canAdd}
+            disabledReason={
+              closed
+                ? "MO is closed."
+                : slotsRemaining <= 0
+                  ? "All target slots are filled."
+                  : undefined
+            }
+          />
+          <AddBikeDialog
+            moId={moId}
+            suggestedFrameNumber={suggestedFrameNumber}
+            disabled={!canAdd}
+            disabledReason={
+              closed
+                ? "MO is closed."
+                : slotsRemaining <= 0
+                  ? "All target slots are filled. Increase target_quantity to add more."
+                  : undefined
+            }
+          />
+        </div>
       }
     >
       {error ? (

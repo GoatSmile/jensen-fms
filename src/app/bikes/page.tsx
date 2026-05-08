@@ -31,6 +31,7 @@ type SearchParams = {
   q?: string;
   status?: string;
   type?: string;
+  "has-part"?: string;
 };
 
 const STATUS_OPTIONS: BikeStatus[] = [
@@ -55,8 +56,35 @@ export default async function BikesPage({
     ? (sp.status as BikeStatus)
     : null;
   const typeFilter = sp.type && sp.type !== "all" ? sp.type : null;
+  const hasPartId = sp["has-part"] && sp["has-part"] !== "all" ? sp["has-part"] : null;
 
   const supabase = await createClient();
+
+  // If filtering by a part, pre-collect bike_ids that have that part installed
+  // and not removed. PostgREST can't filter outer rows by an embedded column,
+  // so we resolve to a list of ids and pass that to the main query.
+  let bikeIdsForPart: string[] | null = null;
+  let hasPartName: string | null = null;
+  if (hasPartId) {
+    const [{ data: bp }, { data: partRow }] = await Promise.all([
+      supabase
+        .from("bike_parts")
+        .select("bike_id")
+        .eq("part_id", hasPartId)
+        .is("removed_at", null),
+      supabase
+        .from("parts")
+        .select("internal_sku, name_en")
+        .eq("id", hasPartId)
+        .maybeSingle(),
+    ]);
+    bikeIdsForPart = Array.from(new Set((bp ?? []).map((r) => r.bike_id)));
+    // bikes.id is uuid, so PostgREST `id.in.(...)` rejects a non-uuid sentinel.
+    // The zero-uuid is guaranteed not to match a real row.
+    if (bikeIdsForPart.length === 0)
+      bikeIdsForPart = ["00000000-0000-0000-0000-000000000000"];
+    hasPartName = partRow ? `${partRow.name_en} (${partRow.internal_sku})` : null;
+  }
 
   let bikesQuery = supabase
     .from("bikes")
@@ -78,6 +106,7 @@ export default async function BikesPage({
 
   if (statusFilter) bikesQuery = bikesQuery.eq("status", statusFilter);
   if (typeFilter) bikesQuery = bikesQuery.eq("bike_type_id", typeFilter);
+  if (bikeIdsForPart) bikesQuery = bikesQuery.in("id", bikeIdsForPart);
   if (q) {
     bikesQuery = bikesQuery.ilike("frame_number", `%${q}%`);
   }
@@ -105,6 +134,7 @@ export default async function BikesPage({
     if (t) filterDescriptors.push(t.name_en.toLowerCase());
   }
   if (q) filterDescriptors.push(`matching "${q}"`);
+  if (hasPartName) filterDescriptors.push(`with ${hasPartName} installed`);
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
