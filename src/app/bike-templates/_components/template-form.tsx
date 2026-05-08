@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { appendField } from "@/lib/forms";
 
 import {
   createTemplate,
@@ -94,11 +95,11 @@ export function TemplateForm({
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    fd.append("bike_model_id", values.bike_model_id);
-    fd.append("bike_model_variant_id", values.bike_model_variant_id);
-    fd.append("name_en", values.name_en);
-    fd.append("name_da", values.name_da);
-    fd.append("notes", values.notes);
+    appendField(fd, "bike_model_id", values.bike_model_id);
+    appendField(fd, "bike_model_variant_id", values.bike_model_variant_id);
+    appendField(fd, "name_en", values.name_en);
+    appendField(fd, "name_da", values.name_da);
+    appendField(fd, "notes", values.notes);
     return fd;
   }
 

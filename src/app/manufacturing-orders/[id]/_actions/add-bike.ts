@@ -2,17 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type AddBikeResult =
   | { ok: true; bikeId: string }
   | { ok: false; error: string; field?: string };
-
-function nullable(v: FormDataEntryValue | null): string | null {
-  if (typeof v !== "string") return null;
-  const t = v.trim();
-  return t === "" ? null : t;
-}
 
 /**
  * Create a bike attached to a manufacturing order. The bike inherits the MO's

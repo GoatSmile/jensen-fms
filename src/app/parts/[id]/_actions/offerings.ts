@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type OfferingResult =
@@ -21,12 +22,6 @@ type ParsedOffering = {
   is_preferred: boolean;
   notes: string | null;
 };
-
-function nullable(v: FormDataEntryValue | null): string | null {
-  if (typeof v !== "string") return null;
-  const trimmed = v.trim();
-  return trimmed === "" ? null : trimmed;
-}
 
 function parseFields(
   formData: FormData,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SavePartResult =
@@ -25,13 +26,6 @@ type ParsedFields = {
   notes: string | null;
   attributes: Record<string, string>;
 };
-
-/** Trim the value, return null when empty. */
-function nullable(v: FormDataEntryValue | null): string | null {
-  if (typeof v !== "string") return null;
-  const trimmed = v.trim();
-  return trimmed === "" ? null : trimmed;
-}
 
 function parseAttributes(formData: FormData): Record<string, string> {
   // Attributes ride along as paired keys: attr_key[N] / attr_value[N], where N

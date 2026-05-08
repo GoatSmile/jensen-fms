@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveBikeModelResult =
@@ -22,11 +23,6 @@ type ParsedFields = {
   frame_number_code: string | null;
 };
 
-function nullable(v: FormDataEntryValue | null): string | null {
-  if (typeof v !== "string") return null;
-  const t = v.trim();
-  return t === "" ? null : t;
-}
 
 function parseFields(
   formData: FormData,

@@ -3,17 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveMOResult =
   | { ok: true; moId: string }
   | { ok: false; error: string; field?: string };
-
-function nullable(v: FormDataEntryValue | null): string | null {
-  if (typeof v !== "string") return null;
-  const t = v.trim();
-  return t === "" ? null : t;
-}
 
 /**
  * Create a manufacturing order from a bike template. Steps:
