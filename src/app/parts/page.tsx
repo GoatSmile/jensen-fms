@@ -11,13 +11,24 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
-import { getStockStatus, type StockStatus } from "@/lib/parts/stock";
+import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
+import type { StockStatus } from "@/lib/parts/stock";
 
 import { PartsFilters } from "./_components/parts-filters";
 import { PartsTable, type PartRow } from "./_components/parts-table";
 import { PartsPagination } from "./_components/pagination";
+import type { SortColumn } from "./_components/sortable-header";
 
 const PAGE_SIZE = 25;
+
+const SORTABLE_COLUMNS: ReadonlyArray<SortColumn> = [
+  "internal_sku",
+  "name_en",
+  "category_name",
+  "primary_supplier_name",
+  "stock_on_hand",
+  "last_cost_dkk",
+];
 
 type SearchParams = {
   q?: string;
@@ -25,13 +36,9 @@ type SearchParams = {
   supplier?: string;
   stock?: string;
   page?: string;
+  sort?: string;
 };
 
-/**
- * Escape a value for safe inclusion inside a PostgREST `or()` filter.
- * Commas, parentheses, and double-quotes break the comma-separated grammar;
- * the recommended escape is to wrap such values in double quotes.
- */
 function escapeOrValue(raw: string): string {
   if (/[,()"]/.test(raw)) {
     return `"${raw.replace(/"/g, '\\"')}"`;
@@ -48,6 +55,20 @@ function parsePage(value: string | undefined): number {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
+function parseSort(value: string | undefined): {
+  column: SortColumn;
+  ascending: boolean;
+} {
+  // Default: SKU ascending — matches the prior behaviour.
+  if (!value) return { column: "internal_sku", ascending: true };
+  const [colRaw, dirRaw] = value.split(":");
+  const column = (SORTABLE_COLUMNS as readonly string[]).includes(colRaw)
+    ? (colRaw as SortColumn)
+    : "internal_sku";
+  const ascending = dirRaw !== "desc";
+  return { column, ascending };
+}
+
 export default async function PartsPage({
   searchParams,
 }: {
@@ -59,12 +80,12 @@ export default async function PartsPage({
   const supplierId = sp.supplier && sp.supplier !== "all" ? sp.supplier : null;
   const stockFilter = parseStockFilter(sp.stock);
   const page = parsePage(sp.page);
+  const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
 
   const supabase = await createClient();
 
-  // 1. If the user typed a search term, find the part_ids whose supplier_sku
-  //    (jpNumber etc.) matches. PostgREST `or()` can't traverse to an embedded
-  //    resource, so we collect ids first and union them into the parts OR.
+  // Pre-step 1: search match against supplier_sku — PostgREST `or()` can't
+  // traverse to part_supplier_offerings, so we union by id.
   let supplierSkuMatchedIds: string[] = [];
   if (q) {
     const { data } = await supabase
@@ -76,128 +97,123 @@ export default async function PartsPage({
     );
   }
 
-  // 2. Fetch dropdown options + the parts themselves in parallel.
-  const partsQueryBuilder = () => {
-    // We embed offerings + the views (v_current_stock, v_part_last_cost). The
-    // views relate to parts via shared `part_id`, which PostgREST auto-detects.
-    // For the supplier filter we use a `!inner` join so parts without that
-    // supplier are excluded; otherwise a left join keeps the row visible.
-    const offeringsRel = supplierId
-      ? "offerings:part_supplier_offerings!inner(is_preferred,supplier_id,suppliers(id,name))"
-      : "offerings:part_supplier_offerings(is_preferred,supplier_id,suppliers(id,name))";
+  // Pre-step 2: supplier filter — same constraint. Collect part_ids that
+  // have an offering for the chosen supplier and filter the view by id.in().
+  let supplierFilteredIds: string[] | null = null;
+  if (supplierId) {
+    const { data } = await supabase
+      .from("part_supplier_offerings")
+      .select("part_id")
+      .eq("supplier_id", supplierId);
+    supplierFilteredIds = Array.from(
+      new Set((data ?? []).map((row) => row.part_id)),
+    );
+    // Empty supplier match short-circuits to zero results.
+    if (supplierFilteredIds.length === 0) supplierFilteredIds = ["__none__"];
+  }
 
-    let query = supabase
-      .from("parts")
-      .select(
-        `
-          id,
-          internal_sku,
-          name_en,
-          name_da,
-          category:part_categories(id,name_en),
-          ${offeringsRel},
-          stock:v_current_stock(quantity_on_hand),
-          last_cost:v_part_last_cost(last_cost_dkk,last_purchase_quantity)
-        `,
-      )
-      .is("deleted_at", null)
-      .order("internal_sku", { ascending: true });
+  // Categories are needed to expand a parent-category filter into its
+  // descendants. Cheap query (~dozens of rows), so a separate await is fine.
+  const categoriesRes = await supabase
+    .from("part_categories")
+    .select("id, name_en, parent_id")
+    .is("deleted_at", null)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("name_en", { ascending: true });
 
-    if (q) {
-      const escaped = escapeOrValue(`%${q}%`);
-      const orClauses = [
-        `name_en.ilike.${escaped}`,
-        `name_da.ilike.${escaped}`,
-        `description_en.ilike.${escaped}`,
-        `description_da.ilike.${escaped}`,
-        `internal_sku.ilike.${escaped}`,
-      ];
-      if (supplierSkuMatchedIds.length > 0) {
-        orClauses.push(`id.in.(${supplierSkuMatchedIds.join(",")})`);
-      }
-      query = query.or(orClauses.join(","));
+  const categoryRows: FlatCategory[] = categoriesRes.data ?? [];
+  const categoryFilterIds = categoryId
+    ? descendantIds(categoryRows, categoryId)
+    : null;
+
+  // The dashboard view does the heavy lifting: stock aggregation, last-cost
+  // join, status computation, supplier count, primary supplier name. Filters,
+  // sort, and pagination are all DB-side.
+  const offset = (page - 1) * PAGE_SIZE;
+
+  let viewQuery = supabase
+    .from("v_parts_dashboard")
+    .select("*", { count: "exact" })
+    .is("deleted_at", null);
+
+  if (categoryFilterIds) viewQuery = viewQuery.in("category_id", categoryFilterIds);
+  if (stockFilter !== "all") viewQuery = viewQuery.eq("stock_status", stockFilter);
+  if (supplierFilteredIds) {
+    viewQuery = viewQuery.in("id", supplierFilteredIds);
+  }
+  if (q) {
+    const escaped = escapeOrValue(`%${q}%`);
+    const orClauses = [
+      `name_en.ilike.${escaped}`,
+      `name_da.ilike.${escaped}`,
+      `description_en.ilike.${escaped}`,
+      `description_da.ilike.${escaped}`,
+      `internal_sku.ilike.${escaped}`,
+    ];
+    if (supplierSkuMatchedIds.length > 0) {
+      orClauses.push(`id.in.(${supplierSkuMatchedIds.join(",")})`);
     }
+    viewQuery = viewQuery.or(orClauses.join(","));
+  }
 
-    if (categoryId) {
-      query = query.eq("category_id", categoryId);
-    }
+  viewQuery = viewQuery
+    .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
+    .order("internal_sku", { ascending: true })
+    .range(offset, offset + PAGE_SIZE - 1);
 
-    if (supplierId) {
-      // `offerings` is the embedded alias; PostgREST lets us filter the
-      // foreign-table column with the same path.
-      query = query.eq("offerings.supplier_id", supplierId);
-    }
-
-    return query;
-  };
-
-  const [categoriesRes, suppliersRes, partsRes] = await Promise.all([
-    supabase
-      .from("part_categories")
-      .select("id,name_en")
-      .is("deleted_at", null)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .order("name_en", { ascending: true }),
+  const [suppliersRes, viewRes] = await Promise.all([
     supabase
       .from("suppliers")
       .select("id,name")
       .is("deleted_at", null)
       .eq("is_active", true)
       .order("name", { ascending: true }),
-    partsQueryBuilder(),
+    viewQuery,
   ]);
 
-  if (partsRes.error) {
-    throw new Error(`Failed to load parts: ${partsRes.error.message}`);
+  if (viewRes.error) {
+    throw new Error(`Failed to load parts: ${viewRes.error.message}`);
   }
 
-  // 3. Aggregate stock per part (the view is per-location), pick a primary
-  //    supplier offering, derive stock status, then apply the stock filter
-  //    and paginate in-memory.
-  //
-  //    NOTE: this approach loads all matching rows into the server before
-  //    paginating. With 28 parts today this is free; once the catalogue
-  //    grows past a few thousand rows we'll want to push stock-status
-  //    filtering and pagination down to SQL (an extended view or RPC).
-  const allRows: PartRow[] = (partsRes.data ?? []).map((part) => {
-    const stockOnHand = (part.stock ?? []).reduce(
-      (sum, row) => sum + Number(row.quantity_on_hand ?? 0),
-      0,
-    );
-    const lastCostRow = part.last_cost?.[0] ?? null;
-    const lastCost = lastCostRow ? Number(lastCostRow.last_cost_dkk) : null;
-    const lastPurchaseQty = lastCostRow
-      ? Number(lastCostRow.last_purchase_quantity)
-      : null;
-
-    const offerings = part.offerings ?? [];
-    const primaryOffering =
-      offerings.find((o) => o.is_preferred) ?? offerings[0] ?? null;
-
-    return {
-      id: part.id,
-      internalSku: part.internal_sku,
-      name: part.name_en,
-      categoryName: part.category?.name_en ?? null,
-      supplierName: primaryOffering?.suppliers?.name ?? null,
-      supplierCount: offerings.length,
-      stockOnHand,
-      lastCostDkk: Number.isFinite(lastCost) ? lastCost : null,
-      stockStatus: getStockStatus(stockOnHand, lastPurchaseQty),
-    };
-  });
-
-  const filteredRows =
-    stockFilter === "all"
-      ? allRows
-      : allRows.filter((row) => row.stockStatus === stockFilter);
-
-  const totalCount = filteredRows.length;
+  const totalCount = viewRes.count ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
-  const pageStart = (safePage - 1) * PAGE_SIZE;
-  const pageRows = filteredRows.slice(pageStart, pageStart + PAGE_SIZE);
+
+  // Hero photos for the visible page only — same pattern as before.
+  // The view's columns are nullable in the generated types (PostgreSQL views
+  // can't carry NOT NULL forward), so we filter out the null-id case
+  // defensively even though the underlying parts.id is never null.
+  const visibleIds = (viewRes.data ?? [])
+    .map((r) => r.id)
+    .filter((id): id is string => id != null);
+  const heroByPartId = new Map<string, string>();
+  if (visibleIds.length > 0) {
+    const { data: heroAttachments } = await supabase
+      .from("attachments")
+      .select("entity_id, file_url")
+      .eq("entity_type", "part")
+      .eq("purpose", "hero")
+      .is("deleted_at", null)
+      .in("entity_id", visibleIds);
+    for (const row of heroAttachments ?? []) {
+      heroByPartId.set(row.entity_id, row.file_url);
+    }
+  }
+
+  const pageRows: PartRow[] = (viewRes.data ?? []).map((row) => ({
+    id: row.id!,
+    internalSku: row.internal_sku!,
+    name: row.name_en!,
+    categoryName: row.category_name,
+    supplierName: row.primary_supplier_name,
+    supplierCount: row.supplier_count ?? 0,
+    stockOnHand: Number(row.stock_on_hand ?? 0),
+    lastCostDkk:
+      row.last_cost_dkk != null ? Number(row.last_cost_dkk) : null,
+    stockStatus: (row.stock_status ?? "ok") as StockStatus,
+    heroUrl: heroByPartId.get(row.id!) ?? null,
+  }));
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -250,6 +266,7 @@ export default async function PartsPage({
         pageCount={pageCount}
         totalCount={totalCount}
         pageSize={PAGE_SIZE}
+        searchParams={sp as Record<string, string | string[] | undefined>}
       />
     </div>
   );

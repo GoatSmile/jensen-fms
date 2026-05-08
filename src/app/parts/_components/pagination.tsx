@@ -7,29 +7,22 @@ type Props = {
   pageCount: number;
   totalCount: number;
   pageSize: number;
-  /**
-   * If provided, used to construct prev/next links. Defaults to "/parts" — the
-   * only place this component is used today, but kept overrideable so we don't
-   * have to fork the component when we add the same pattern elsewhere.
-   */
+  /** Current URL searchParams — used so prev/next preserve filters/sort. */
+  searchParams: Record<string, string | string[] | undefined>;
+  /** Defaults to /parts. */
   basePath?: string;
 };
 
 /**
- * Server component pagination. We can't read the current URL search-params
- * here (Next.js doesn't pass them through), so we re-stamp prev/next as plain
- * `?page=N` links. The PartsFilters client component preserves the rest of
- * the query string when filters change, and clicking page links is rare
- * enough that a cleaner URL is the right tradeoff.
- *
- * If we later need to preserve filters across page clicks, lift this into a
- * client component or thread `searchParams` through from the page.
+ * Server component pagination. The page passes `searchParams` through so
+ * prev/next links carry every active filter and the sort param along.
  */
 export function PartsPagination({
   page,
   pageCount,
   totalCount,
   pageSize,
+  searchParams,
   basePath = "/parts",
 }: Props) {
   if (totalCount === 0) return null;
@@ -38,6 +31,21 @@ export function PartsPagination({
   const end = Math.min(page * pageSize, totalCount);
   const hasPrev = page > 1;
   const hasNext = page < pageCount;
+
+  function buildHref(targetPage: number): string {
+    const next = new URLSearchParams();
+    for (const [k, v] of Object.entries(searchParams)) {
+      if (v == null) continue;
+      if (k === "page") continue;
+      if (Array.isArray(v)) {
+        for (const item of v) next.append(k, item);
+      } else {
+        next.set(k, v);
+      }
+    }
+    next.set("page", String(targetPage));
+    return `${basePath}?${next.toString()}`;
+  }
 
   return (
     <div className="flex items-center justify-between text-sm">
@@ -49,14 +57,14 @@ export function PartsPagination({
       <div className="flex gap-2">
         <Button variant="outline" size="sm" disabled={!hasPrev} asChild={hasPrev}>
           {hasPrev ? (
-            <Link href={`${basePath}?page=${page - 1}`}>Previous</Link>
+            <Link href={buildHref(page - 1)}>Previous</Link>
           ) : (
             <span>Previous</span>
           )}
         </Button>
         <Button variant="outline" size="sm" disabled={!hasNext} asChild={hasNext}>
           {hasNext ? (
-            <Link href={`${basePath}?page=${page + 1}`}>Next</Link>
+            <Link href={buildHref(page + 1)}>Next</Link>
           ) : (
             <span>Next</span>
           )}

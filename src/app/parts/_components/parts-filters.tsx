@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  flattenCategoryTree,
+  type FlatCategory,
+} from "@/lib/parts/categories";
+
+import { CategoryPicker } from "./category-picker";
 
 type Option = { id: string; name_en?: string | null; name?: string | null };
 
 type Props = {
-  categories: Array<{ id: string; name_en: string | null }>;
+  categories: FlatCategory[];
   suppliers: Array<{ id: string; name: string }>;
 };
 
@@ -43,6 +49,11 @@ export function PartsFilters({ categories, suppliers }: Props) {
   const currentCategory = searchParams.get("category") ?? "all";
   const currentSupplier = searchParams.get("supplier") ?? "all";
   const currentStock = searchParams.get("stock") ?? "all";
+
+  const categoryNodes = useMemo(
+    () => flattenCategoryTree(categories),
+    [categories],
+  );
 
   // Local state for the search input so keystrokes don't wait on the round-trip.
   const [qDraft, setQDraft] = useState(currentQ);
@@ -95,16 +106,16 @@ export function PartsFilters({ categories, suppliers }: Props) {
         />
       </div>
 
-      <FilterSelect
-        label="Category"
-        id="parts-category"
-        value={currentCategory}
-        onChange={(value) => pushParams({ category: value, page: null })}
-        options={[
-          { value: "all", label: "All categories" },
-          ...categories.map((c) => ({ value: c.id, label: c.name_en ?? "—" })),
-        ]}
-      />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="parts-category">Category</Label>
+        <CategoryPicker
+          id="parts-category"
+          options={categoryNodes}
+          value={currentCategory}
+          onChange={(value) => pushParams({ category: value, page: null })}
+          allOption={{ value: "all", label: "All categories" }}
+        />
+      </div>
 
       <FilterSelect
         label="Supplier"

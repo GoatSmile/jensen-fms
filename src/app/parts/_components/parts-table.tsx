@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ImageIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,6 +18,8 @@ import {
   type StockStatus,
 } from "@/lib/parts/stock";
 
+import { SortableHeader } from "./sortable-header";
+
 export type PartRow = {
   id: string;
   internalSku: string;
@@ -27,6 +30,7 @@ export type PartRow = {
   stockOnHand: number;
   lastCostDkk: number | null;
   stockStatus: StockStatus;
+  heroUrl: string | null;
 };
 
 export function PartsTable({ rows }: { rows: PartRow[] }) {
@@ -43,12 +47,30 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[140px]">SKU</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Supplier</TableHead>
-            <TableHead className="text-right">Stock</TableHead>
-            <TableHead className="text-right">Last cost</TableHead>
+            <TableHead className="w-[44px]" />
+            <SortableHeader
+              column="internal_sku"
+              label="SKU"
+              className="w-[140px]"
+            />
+            <SortableHeader column="name_en" label="Name" />
+            <SortableHeader column="category_name" label="Category" />
+            <SortableHeader
+              column="primary_supplier_name"
+              label="Supplier"
+            />
+            <SortableHeader
+              column="stock_on_hand"
+              label="Stock"
+              align="right"
+              className="text-right"
+            />
+            <SortableHeader
+              column="last_cost_dkk"
+              label="Last cost"
+              align="right"
+              className="text-right"
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -57,6 +79,27 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               key={row.id}
               className="hover:bg-muted/50 cursor-pointer"
             >
+              <TableCell className="p-0">
+                <Link
+                  href={`/parts/${row.id}`}
+                  className="flex items-center justify-center px-2 py-1.5"
+                  aria-hidden
+                  tabIndex={-1}
+                >
+                  {row.heroUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- See photo-thumb.tsx
+                    <img
+                      src={row.heroUrl}
+                      alt=""
+                      className="size-8 rounded border object-cover"
+                    />
+                  ) : (
+                    <span className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded border border-dashed">
+                      <ImageIcon aria-hidden className="size-3.5" />
+                    </span>
+                  )}
+                </Link>
+              </TableCell>
               <TableCell className="p-0">
                 <Link href={`/parts/${row.id}`} className="block px-4 py-2.5 font-mono text-xs">
                   {row.internalSku}

@@ -1,0 +1,124 @@
+import { formatMoney } from "@/lib/parts/format";
+
+import { Section } from "./section";
+
+type Props = {
+  descriptionEn: string | null;
+  descriptionDa: string | null;
+  unitOfMeasure: string;
+  weightGrams: number | null;
+  defaultRetailPrice: number | null;
+  defaultRetailCurrency: string | null;
+  reorderPoint: number | null;
+  reorderQuantity: number | null;
+  notes: string | null;
+  attributes: Record<string, unknown>;
+};
+
+export function DetailsSection({
+  descriptionEn,
+  descriptionDa,
+  unitOfMeasure,
+  weightGrams,
+  defaultRetailPrice,
+  defaultRetailCurrency,
+  reorderPoint,
+  reorderQuantity,
+  notes,
+  attributes,
+}: Props) {
+  const attributeEntries = Object.entries(attributes ?? {});
+
+  return (
+    <Section title="Details">
+      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+        <Field label="Description (English)">
+          {descriptionEn ?? <Muted>—</Muted>}
+        </Field>
+        <Field label="Beskrivelse (Dansk)">
+          {descriptionDa ?? <Muted>—</Muted>}
+        </Field>
+        <Field label="Unit of measure">
+          <span className="font-mono text-xs">{unitOfMeasure}</span>
+        </Field>
+        <Field label="Weight">
+          {weightGrams != null ? (
+            <span className="tabular-nums">{weightGrams} g</span>
+          ) : (
+            <Muted>—</Muted>
+          )}
+        </Field>
+        <Field label="Default retail price">
+          {defaultRetailPrice != null ? (
+            <span className="tabular-nums">
+              {formatMoney(defaultRetailPrice, defaultRetailCurrency ?? "DKK")}
+            </span>
+          ) : (
+            <Muted>—</Muted>
+          )}
+        </Field>
+        <Field label="Reorder point">
+          {reorderPoint != null ? (
+            <span className="tabular-nums">{reorderPoint}</span>
+          ) : (
+            <Muted>—</Muted>
+          )}
+        </Field>
+        <Field label="Reorder quantity">
+          {reorderQuantity != null ? (
+            <span className="tabular-nums">{reorderQuantity}</span>
+          ) : (
+            <Muted>—</Muted>
+          )}
+        </Field>
+        <Field label="Notes">{notes ? notes : <Muted>—</Muted>}</Field>
+      </dl>
+      {attributeEntries.length > 0 ? (
+        <div className="mt-4 border-t pt-3">
+          <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+            Attributes
+          </h3>
+          <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {attributeEntries.map(([key, value]) => (
+              <Field key={key} label={key}>
+                <span className="font-mono text-xs break-all">
+                  {formatAttributeValue(value)}
+                </span>
+              </Field>
+            ))}
+          </dl>
+        </div>
+      ) : null}
+    </Section>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+        {label}
+      </dt>
+      <dd className="text-sm">{children}</dd>
+    </div>
+  );
+}
+
+function Muted({ children }: { children: React.ReactNode }) {
+  return <span className="text-muted-foreground">{children}</span>;
+}
+
+function formatAttributeValue(value: unknown): string {
+  if (value == null) return "—";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}

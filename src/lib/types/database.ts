@@ -376,6 +376,13 @@ export type Database = {
             referencedRelation: "parts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "bike_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bike_state_log: {
@@ -450,6 +457,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bike_template_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -1042,6 +1056,13 @@ export type Database = {
             referencedRelation: "parts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_movements_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
         ]
       }
       invoice_lines: {
@@ -1123,6 +1144,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -1350,10 +1378,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "manufacturing_order_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "manufacturing_order_parts_substituted_part_id_fkey"
             columns: ["substituted_part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manufacturing_order_parts_substituted_part_id_fkey"
+            columns: ["substituted_part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
         ]
@@ -1556,6 +1598,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -1966,6 +2015,13 @@ export type Database = {
             referencedRelation: "parts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "part_retail_prices_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
         ]
       }
       part_supplier_offerings: {
@@ -2027,6 +2083,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "part_supplier_offerings_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "part_supplier_offerings_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -2050,6 +2113,8 @@ export type Database = {
           name_da: string | null
           name_en: string
           notes: string | null
+          reorder_point: number | null
+          reorder_quantity: number | null
           unit_of_measure: string
           updated_at: string
           weight_grams: number | null
@@ -2068,6 +2133,8 @@ export type Database = {
           name_da?: string | null
           name_en: string
           notes?: string | null
+          reorder_point?: number | null
+          reorder_quantity?: number | null
           unit_of_measure?: string
           updated_at?: string
           weight_grams?: number | null
@@ -2086,6 +2153,8 @@ export type Database = {
           name_da?: string | null
           name_en?: string
           notes?: string | null
+          reorder_point?: number | null
+          reorder_quantity?: number | null
           unit_of_measure?: string
           updated_at?: string
           weight_grams?: number | null
@@ -2166,6 +2235,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -2319,6 +2395,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -2815,6 +2898,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_order_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_order_parts_work_order_id_fkey"
             columns: ["work_order_id"]
             isOneToOne: false
@@ -2945,6 +3035,13 @@ export type Database = {
             referencedRelation: "parts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_movements_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
         ]
       }
       v_invoice_lines_localized: {
@@ -2994,6 +3091,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -3055,6 +3159,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "offer_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "offer_lines_vat_code_fkey"
             columns: ["vat_code"]
             isOneToOne: false
@@ -3085,6 +3196,44 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_parts_dashboard: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          deleted_at: string | null
+          description_da: string | null
+          description_en: string | null
+          id: string | null
+          internal_sku: string | null
+          last_cost_dkk: number | null
+          last_order_date: string | null
+          last_purchase_quantity: number | null
+          name_da: string | null
+          name_en: string | null
+          primary_supplier_name: string | null
+          reorder_point: number | null
+          reorder_quantity: number | null
+          stock_on_hand: number | null
+          stock_status: string | null
+          supplier_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "part_categories"
             referencedColumns: ["id"]
           },
         ]
@@ -3129,6 +3278,13 @@ export type Database = {
             columns: ["part_id"]
             isOneToOne: false
             referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_lines_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
           {
@@ -3458,4 +3614,3 @@ export const Constants = {
     },
   },
 } as const
-

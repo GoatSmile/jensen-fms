@@ -37,6 +37,9 @@ yarn-error.log*
 .claude/settings.local.json
 .claude/worktrees/
 
+# local scratch — loose images, drafts, ad-hoc files
+/misc/
+
 # vercel
 .vercel
 

@@ -1,12 +1,15 @@
 /**
  * Stock + cost helpers for the Parts feature.
  *
- * Stock thresholds (per spec):
+ * Stock thresholds:
  *   - 0          → "out"  (red / destructive)
- *   - ≤ 20% of last purchase qty → "low" (amber / warning)
- *   - else       → "ok"   (green / success)
+ *   - When `reorderPoint` is set (preferred):
+ *       on-hand ≤ reorderPoint → "low"
+ *   - When `reorderPoint` is null:
+ *       Fall back to the heuristic — on-hand ≤ 20% of last purchase qty → "low"
+ *   - Else        → "ok"  (green / success)
  *
- * If we have no last-purchase reference qty, we can only detect "out" vs "ok".
+ * Mirrors the CASE expression in `v_parts_dashboard` (migration 07).
  */
 
 export type StockStatus = "ok" | "low" | "out";
@@ -14,8 +17,12 @@ export type StockStatus = "ok" | "low" | "out";
 export function getStockStatus(
   quantityOnHand: number,
   lastPurchaseQuantity: number | null | undefined,
+  reorderPoint?: number | null,
 ): StockStatus {
   if (quantityOnHand <= 0) return "out";
+  if (reorderPoint != null) {
+    return quantityOnHand <= reorderPoint ? "low" : "ok";
+  }
   if (
     lastPurchaseQuantity != null &&
     lastPurchaseQuantity > 0 &&
