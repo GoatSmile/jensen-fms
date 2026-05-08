@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { Bike, BookOpen, Boxes, ClipboardList } from "lucide-react";
+import {
+  Bike,
+  BookOpen,
+  Boxes,
+  ClipboardList,
+  Hammer,
+} from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 
 export default async function Home() {
   const supabase = await createClient();
-  const [partsCount, openPosCount, bikeModelsCount, bikesCount] =
+  const [partsCount, openPosCount, bikeModelsCount, bikesCount, openMOsCount] =
     await Promise.all([
       supabase
         .from("parts")
@@ -24,6 +31,10 @@ export default async function Home() {
         .select("id", { count: "exact", head: true })
         .is("deleted_at", null)
         .not("status", "in", "(retired,lost_or_stolen)"),
+      supabase
+        .from("manufacturing_orders")
+        .select("id", { count: "exact", head: true })
+        .in("status", OPEN_MO_STATUSES),
     ]);
 
   const cards = [
@@ -65,6 +76,17 @@ export default async function Home() {
       stat:
         bikesCount.count != null
           ? `${bikesCount.count} active bike${bikesCount.count === 1 ? "" : "s"}`
+          : null,
+    },
+    {
+      href: "/manufacturing-orders",
+      icon: Hammer,
+      title: "Manufacturing orders",
+      description:
+        "Production runs against a template. Tracks parts vs stock, attaches bikes, consumes inventory on completion.",
+      stat:
+        openMOsCount.count != null
+          ? `${openMOsCount.count} open MO${openMOsCount.count === 1 ? "" : "s"}`
           : null,
     },
   ];

@@ -43,10 +43,12 @@ export default async function BikeDetailPage({
         .select(
           `
             id, frame_number, status, notes, deleted_at, bike_type_id,
+            manufacturing_order_id,
             bike_type:bike_types(id, name_en),
             bike_model:bike_models(id, name_en),
             bike_model_variant:bike_model_variants(id, sku, name_en),
-            template:bike_templates(id, name_en, version)
+            template:bike_templates(id, name_en, version),
+            manufacturing_order:manufacturing_orders(id, mo_number, status)
           `,
         )
         .eq("id", id)
@@ -236,6 +238,18 @@ export default async function BikeDetailPage({
                 <span className="text-muted-foreground text-xs">
                   v{b.template.version}
                 </span>
+              </Link>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Manufacturing order">
+            {b.manufacturing_order ? (
+              <Link
+                href={`/manufacturing-orders/${b.manufacturing_order.id}`}
+                className="font-mono text-xs hover:underline"
+              >
+                {b.manufacturing_order.mo_number}
               </Link>
             ) : (
               <Muted>—</Muted>

@@ -1,0 +1,245 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader as UiDialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  MO_STATUS_VARIANT,
+  moStatusLabel,
+  moTransitionRequiresReason,
+  validNextMOStatuses,
+  type MOStatus,
+} from "@/lib/mo/status";
+
+import { transitionMO } from "../_actions/transition-mo";
+
+type PendingTransition = { to: MOStatus } | null;
+
+type Props = {
+  moId: string;
+  moNumber: string;
+  status: MOStatus;
+  modelName: string | null;
+  variantName: string | null;
+  templateName: string | null;
+  templateVersion: number | null;
+  bikeTypeName: string | null;
+};
+
+export function MOHeader({
+  moId,
+  moNumber,
+  status,
+  modelName,
+  variantName,
+  templateName,
+  templateVersion,
+  bikeTypeName,
+}: Props) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const [transitionDialog, setTransitionDialog] = useState<PendingTransition>(null);
+
+  const nextStatuses = validNextMOStatuses(status);
+
+  function startTransition(to: MOStatus) {
+    if (moTransitionRequiresReason(to)) {
+      setTransitionDialog({ to });
+    } else {
+      runTransition(to, null);
+    }
+  }
+
+  function runTransition(to: MOStatus, reason: string | null) {
+    setError(null);
+    start(async () => {
+      const r = await transitionMO(moId, to, reason);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setTransitionDialog(null);
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {error ? (
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground font-mono text-xs">
+              {moNumber}
+            </span>
+            <Badge variant={MO_STATUS_VARIANT[status] ?? "outline"}>
+              {moStatusLabel(status)}
+            </Badge>
+            {bikeTypeName ? (
+              <Badge variant="outline" className="font-normal">
+                {bikeTypeName}
+              </Badge>
+            ) : null}
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {modelName ?? "Manufacturing order"}
+            {variantName ? (
+              <span className="text-muted-foreground ml-2 text-base">
+                · {variantName}
+              </span>
+            ) : null}
+          </h1>
+          {templateName ? (
+            <p className="text-muted-foreground text-sm">
+              Built against {templateName}
+              {templateVersion != null ? ` v${templateVersion}` : ""}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex gap-2">
+          {nextStatuses.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={pending}>
+                  Move to <ChevronDown aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {nextStatuses.map((to, i) => {
+                  const isTerminal = moTransitionRequiresReason(to);
+                  return (
+                    <div key={to}>
+                      {i > 0 && isTerminal ? <DropdownMenuSeparator /> : null}
+                      <DropdownMenuItem
+                        variant={isTerminal ? "destructive" : "default"}
+                        disabled={pending}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          startTransition(to);
+                        }}
+                      >
+                        {moStatusLabel(to)}
+                      </DropdownMenuItem>
+                    </div>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
+      </div>
+
+      <CancelReasonDialog
+        pending={transitionDialog}
+        isPending={pending}
+        onCancel={() => setTransitionDialog(null)}
+        onSubmit={(reason) =>
+          transitionDialog && runTransition(transitionDialog.to, reason)
+        }
+      />
+    </div>
+  );
+}
+
+function CancelReasonDialog({
+  pending,
+  isPending,
+  onCancel,
+  onSubmit,
+}: {
+  pending: PendingTransition;
+  isPending: boolean;
+  onCancel: () => void;
+  onSubmit: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+  return (
+    <Dialog
+      open={pending != null}
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel();
+          setReason("");
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(reason);
+          }}
+          className="flex flex-col gap-4"
+        >
+          <UiDialogHeader>
+            <DialogTitle>
+              {pending ? `Cancel MO?` : "Confirm"}
+            </DialogTitle>
+            <DialogDescription>
+              The MO will be cancelled and the reason will be appended to its
+              notes for the audit trail. Bikes already attached to this MO are
+              not changed.
+            </DialogDescription>
+          </UiDialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="mo-cancel-reason">Reason</Label>
+            <Textarea
+              id="mo-cancel-reason"
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. Customer cancelled the order before any bikes were built."
+              autoFocus
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onCancel();
+                setReason("");
+              }}
+              disabled={isPending}
+            >
+              Keep open
+            </Button>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={isPending || reason.trim() === ""}
+            >
+              {isPending ? "Cancelling…" : "Cancel MO"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
