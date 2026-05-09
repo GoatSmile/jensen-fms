@@ -19,6 +19,19 @@ export type UploadImageResult =
  *
  * Storage object path: <partId>/<random>.webp — partition by part to make
  * future per-part cleanup straightforward.
+ *
+ * Order: row-first, file-second.
+ *   1. Generate the storage path UUID locally (deterministic publicUrl).
+ *   2. INSERT the attachments row pointing at the path the file WILL live at.
+ *   3. Upload the file. If upload fails, hard-delete the row.
+ *
+ * The L2 walkthrough caught a silent orphan from the previous "upload-first"
+ * order: when the row-insert step failed silently, the rollback `remove()`
+ * sometimes failed too, leaving a file in the bucket with no row pointing to
+ * it. Inverting the order means the worst case is a row pointing at a
+ * not-yet-uploaded path (which renders a broken thumb the user can act on),
+ * not an invisible bandwidth-wasting orphan. The user-facing failure is louder
+ * but properly recoverable.
  */
 export async function uploadPartImage(
   formData: FormData,
@@ -54,20 +67,12 @@ export async function uploadPartImage(
   const purpose = (existingCount ?? 0) === 0 ? "hero" : "gallery";
 
   const objectPath = `${partId}/${crypto.randomUUID()}.webp`;
-  const { error: uploadErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(objectPath, file, {
-      contentType: "image/webp",
-      upsert: false,
-    });
-  if (uploadErr) {
-    return { ok: false, error: `Upload failed: ${uploadErr.message}` };
-  }
-
   const {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
 
+  // Step 1: insert the attachments row pointing at the path the file will
+  // live at. If this fails, nothing else has happened yet — clean exit.
   const { data: inserted, error: insertErr } = await supabase
     .from("attachments")
     .insert({
@@ -82,11 +87,31 @@ export async function uploadPartImage(
     .select("id")
     .single();
   if (insertErr || !inserted) {
-    // Best-effort rollback so we don't leave an orphan blob in the bucket.
-    await supabase.storage.from(BUCKET).remove([objectPath]);
     return {
       ok: false,
       error: `Could not save attachment: ${insertErr?.message ?? "unknown error"}`,
+    };
+  }
+
+  // Step 2: upload the bytes. If this fails, hard-delete the row we just
+  // created so we don't leave a row pointing at a missing file.
+  const { error: uploadErr } = await supabase.storage
+    .from(BUCKET)
+    .upload(objectPath, file, {
+      contentType: "image/webp",
+      upsert: false,
+    });
+  if (uploadErr) {
+    const { error: cleanupErr } = await supabase
+      .from("attachments")
+      .delete()
+      .eq("id", inserted.id);
+    const detail = cleanupErr
+      ? ` (and the placeholder row could not be cleaned up: ${cleanupErr.message} — attachment id ${inserted.id})`
+      : "";
+    return {
+      ok: false,
+      error: `Upload failed: ${uploadErr.message}.${detail}`,
     };
   }
 

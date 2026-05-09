@@ -87,3 +87,75 @@ export async function transitionMO(
   revalidatePath(`/manufacturing-orders/${moId}`);
   return { ok: true };
 }
+
+/**
+ * Auto-advance an MO based on its build progress. Called from markBikeBuilt
+ * and bulkMarkBikesBuilt after the build trigger has updated completed_qty.
+ *
+ *   planned | released   AND  completed_quantity > 0      → in_progress
+ *   in_progress           AND  completed_quantity ≥ target → completed
+ *
+ * Bypasses the user-facing transition matrix (which forbids planned →
+ * in_progress directly). The matrix is for the "Move to" dropdown — system-
+ * level auto-advancement is a separate path with its own rules. Stamps
+ * actual_start_date / actual_completion_date the first time each event fires.
+ *
+ * Idempotent: re-running on an already-advanced MO is a cheap no-op because
+ * the status check guards the update.
+ */
+export async function autoAdvanceMOAfterBuild(moId: string): Promise<void> {
+  if (!moId) return;
+  const supabase = await createClient();
+  const { data: mo } = await supabase
+    .from("manufacturing_orders")
+    .select(
+      "status, target_quantity, completed_quantity, actual_start_date, actual_completion_date",
+    )
+    .eq("id", moId)
+    .maybeSingle();
+  if (!mo) return;
+
+  const status = mo.status as MOStatus;
+  const completed = mo.completed_quantity;
+  const target = mo.target_quantity;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let nextStatus: MOStatus | null = null;
+  if ((status === "planned" || status === "released") && completed > 0) {
+    nextStatus = "in_progress";
+  }
+  // Re-check after the planned→in_progress flip in the same pass.
+  const effective: MOStatus = nextStatus ?? status;
+  if (effective === "in_progress" && completed >= target) {
+    nextStatus = "completed";
+  }
+
+  if (nextStatus == null) return;
+
+  const updates: {
+    status: MOStatus;
+    actual_start_date?: string;
+    actual_completion_date?: string;
+    updated_at: string;
+  } = {
+    status: nextStatus,
+    updated_at: new Date().toISOString(),
+  };
+  if (
+    (nextStatus === "in_progress" || nextStatus === "completed") &&
+    !mo.actual_start_date
+  ) {
+    updates.actual_start_date = today;
+  }
+  if (nextStatus === "completed" && !mo.actual_completion_date) {
+    updates.actual_completion_date = today;
+  }
+
+  await supabase
+    .from("manufacturing_orders")
+    .update(updates)
+    .eq("id", moId);
+
+  revalidatePath("/manufacturing-orders");
+  revalidatePath(`/manufacturing-orders/${moId}`);
+}

@@ -48,6 +48,9 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - Display DKK as `1.234,56 kr.` (Danish locale).
 - Plan-then-build: before writing code, list files you intend to create/modify
   and wait for confirmation.
+- Time estimates are quoted as `~X human-dev-min (Y min wait)` — X is the
+  human-developer-equivalent for cross-comparison with design-review numbers,
+  Y is the user's actual wall-clock waiting time while I work.
 
 ## Known caveats / "good enough for now" decisions
 - **Parts list pagination + stock filter** are applied in-memory in

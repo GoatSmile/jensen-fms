@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { autoAdvanceMOAfterBuild } from "./transition-mo";
+
 export type MarkBuiltResult = { ok: true } | { ok: false; error: string };
 
 /**
@@ -177,6 +179,12 @@ export async function markBikeBuilt(
   if (statusErr) {
     return { ok: false, error: `Could not advance status: ${statusErr.message}` };
   }
+
+  // The MO-completion trigger has just incremented completed_quantity. Auto-
+  // advance the MO status: planned/released → in_progress on first build,
+  // in_progress → completed when target reached. Idempotent and bypasses the
+  // user-facing transition matrix (matrix is for the Move-to dropdown).
+  await autoAdvanceMOAfterBuild(moId);
 
   revalidatePath("/bikes");
   revalidatePath(`/bikes/${bikeId}`);
