@@ -23,7 +23,7 @@ export default async function NewBikeTemplatePage() {
   const [typesRes, currenciesRes] = await Promise.all([
     supabase
       .from("bike_types")
-      .select("id, name_en")
+      .select("id, slug, name_en")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
@@ -33,7 +33,13 @@ export default async function NewBikeTemplatePage() {
       .order("code", { ascending: true }),
   ]);
 
-  const bikeTypes: BikeTypeOption[] = typesRes.data ?? [];
+  const typeRows = typesRes.data ?? [];
+  const bikeTypes: BikeTypeOption[] = typeRows.map(({ id, name_en }) => ({
+    id,
+    name_en,
+  }));
+  const defaultBikeTypeId =
+    typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];
 
   return (
@@ -65,7 +71,7 @@ export default async function NewBikeTemplatePage() {
       </div>
       <TemplateForm
         mode="create"
-        initial={EMPTY_TEMPLATE_SHELL}
+        initial={{ ...EMPTY_TEMPLATE_SHELL, bike_type_id: defaultBikeTypeId }}
         bikeTypes={bikeTypes}
         currencies={currencies}
       />

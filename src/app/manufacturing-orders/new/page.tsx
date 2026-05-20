@@ -44,7 +44,7 @@ export default async function NewManufacturingOrderPage({
       .order("name_en", { ascending: true }),
     supabase
       .from("bike_types")
-      .select("id, name_en")
+      .select("id, slug, name_en")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -68,7 +68,13 @@ export default async function NewManufacturingOrderPage({
     bike_type_id: t.bike_type_id,
     bike_type_name: t.bike_type?.name_en ?? null,
   }));
-  const bikeTypes: BikeTypeOption[] = bikeTypesRes.data ?? [];
+  const typeRows = bikeTypesRes.data ?? [];
+  const bikeTypes: BikeTypeOption[] = typeRows.map(({ id, name_en }) => ({
+    id,
+    name_en,
+  }));
+  const defaultBikeTypeId =
+    typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const colors: ColorOption[] = colorsRes.data ?? [];
 
   return (
@@ -102,7 +108,11 @@ export default async function NewManufacturingOrderPage({
         </p>
       </div>
       <MOForm
-        initial={{ ...EMPTY_MO_FORM, bike_template_id: sp.template ?? "" }}
+        initial={{
+          ...EMPTY_MO_FORM,
+          bike_template_id: sp.template ?? "",
+          bike_type_id: defaultBikeTypeId,
+        }}
         templates={templates}
         bikeTypes={bikeTypes}
         colors={colors}

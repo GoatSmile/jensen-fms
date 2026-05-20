@@ -23,7 +23,7 @@ export default async function NewBikePage() {
   const [bikeTypesRes, templatesRes, colorsRes] = await Promise.all([
     supabase
       .from("bike_types")
-      .select("id, name_en")
+      .select("id, slug, name_en")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -40,7 +40,13 @@ export default async function NewBikePage() {
       .order("sort_order", { ascending: true }),
   ]);
 
-  const bikeTypes: BikeTypeOption[] = bikeTypesRes.data ?? [];
+  const typeRows = bikeTypesRes.data ?? [];
+  const bikeTypes: BikeTypeOption[] = typeRows.map(({ id, name_en }) => ({
+    id,
+    name_en,
+  }));
+  const defaultBikeTypeId =
+    typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const templates: TemplateOption[] = templatesRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
 
@@ -73,7 +79,7 @@ export default async function NewBikePage() {
         </p>
       </div>
       <BikeForm
-        initial={EMPTY_BIKE_FORM}
+        initial={{ ...EMPTY_BIKE_FORM, bike_type_id: defaultBikeTypeId }}
         bikeTypes={bikeTypes}
         templates={templates}
         colors={colors}
