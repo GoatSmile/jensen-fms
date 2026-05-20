@@ -30,6 +30,11 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - Money is always `(amount NUMERIC(15,4), currency CHAR(3))`. No naked numbers.
 - FX rate is frozen at the moment of purchase in
   `purchase_order_lines.fx_rate_to_dkk`. Cost basis preserved across rate changes.
+- `purchase_order_lines.landed_cost_dkk_per_unit` is a Postgres
+  `GENERATED ALWAYS AS (unit_price * fx_rate_to_dkk * transport_factor) STORED`
+  column — **never write it from app code** (the DB rejects direct writes).
+  Recompute previews in the UI for live feedback, then read the stored
+  value back after insert/update.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).

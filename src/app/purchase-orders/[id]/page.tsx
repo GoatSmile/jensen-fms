@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,12 +11,17 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/parts/format";
-import {
-  PO_STATUS_VARIANT,
-  poStatusLabel,
-  type PurchaseOrderStatus,
-} from "@/lib/po/status";
+import type { PurchaseOrderStatus } from "@/lib/po/status";
 
+import { POHeader } from "./_components/po-header";
+import {
+  LinesSection,
+  type POLineRow,
+} from "./_components/lines-section";
+import type {
+  CurrencyChoice,
+  PartChoice,
+} from "./_components/line-dialog";
 import {
   ReceiveForm,
   type LineRow,
@@ -32,7 +36,14 @@ export default async function PurchaseOrderDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [poRes, linesRes, locationsRes] = await Promise.all([
+  const [
+    poRes,
+    linesRes,
+    locationsRes,
+    partsCatalogRes,
+    currenciesRes,
+    fxRatesRes,
+  ] = await Promise.all([
     supabase
       .from("purchase_orders")
       .select(
@@ -49,7 +60,7 @@ export default async function PurchaseOrderDetailPage({
       .select(
         `
           id, quantity, received_quantity, unit_price, currency,
-          fx_rate_to_dkk, transport_factor, landed_cost_dkk_per_unit,
+          fx_rate_to_dkk, transport_factor, landed_cost_dkk_per_unit, notes,
           parts(id, internal_sku, name_en)
         `,
       )
@@ -60,6 +71,22 @@ export default async function PurchaseOrderDetailPage({
       .select("id, code, name_en")
       .eq("is_active", true)
       .order("code", { ascending: true }),
+    supabase
+      .from("parts")
+      .select("id, internal_sku, name_en")
+      .is("deleted_at", null)
+      .order("internal_sku", { ascending: true }),
+    supabase
+      .from("currencies")
+      .select("code, name_en")
+      .order("code", { ascending: true }),
+    // Pull every from_currency → DKK rate; we collapse to the latest per
+    // currency in JS rather than relying on a window function.
+    supabase
+      .from("fx_rates")
+      .select("from_currency, to_currency, rate, rate_date")
+      .eq("to_currency", "DKK")
+      .order("rate_date", { ascending: false }),
   ]);
 
   if (poRes.error) {
@@ -71,8 +98,26 @@ export default async function PurchaseOrderDetailPage({
   }
 
   const po = poRes.data;
+  const status = po.status as PurchaseOrderStatus;
 
-  const lineRows: LineRow[] = (linesRes.data ?? []).map((l) => ({
+  // POLineRow for the new lines section (with full FX/transport columns).
+  const poLineRows: POLineRow[] = (linesRes.data ?? []).map((l) => ({
+    id: l.id,
+    partId: l.parts?.id ?? "",
+    partSku: l.parts?.internal_sku ?? "—",
+    partName: l.parts?.name_en ?? "—",
+    quantity: Number(l.quantity),
+    unitPrice: Number(l.unit_price),
+    currency: l.currency,
+    fxRateToDkk: Number(l.fx_rate_to_dkk),
+    transportFactor: Number(l.transport_factor),
+    landedDkkPerUnit: Number(l.landed_cost_dkk_per_unit ?? 0),
+    receivedQuantity: Number(l.received_quantity),
+    notes: l.notes,
+  }));
+
+  // The receive form only needs the slim shape.
+  const receiveLineRows: LineRow[] = (linesRes.data ?? []).map((l) => ({
     id: l.id,
     partId: l.parts?.id ?? "",
     partSku: l.parts?.internal_sku ?? "—",
@@ -88,8 +133,33 @@ export default async function PurchaseOrderDetailPage({
     (l) => ({ id: l.id, code: l.code, name: l.name_en }),
   );
 
-  const totalOrdered = lineRows.reduce((s, l) => s + l.quantity, 0);
-  const totalReceived = lineRows.reduce((s, l) => s + l.receivedQuantity, 0);
+  // Latest fx_rates row per from_currency. Rows are already sorted desc by
+  // rate_date, so the first occurrence we see is the freshest.
+  const fxRatesByCurrency: Record<string, number> = {};
+  for (const r of fxRatesRes.data ?? []) {
+    if (r.from_currency in fxRatesByCurrency) continue;
+    fxRatesByCurrency[r.from_currency] = Number(r.rate);
+  }
+
+  const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
+    id: p.id,
+    internal_sku: p.internal_sku,
+    name_en: p.name_en,
+  }));
+
+  const currencies: CurrencyChoice[] = currenciesRes.data ?? [];
+
+  const totalOrdered = poLineRows.reduce((s, l) => s + l.quantity, 0);
+  const totalReceived = poLineRows.reduce(
+    (s, l) => s + l.receivedQuantity,
+    0,
+  );
+
+  // The receive form should only render when the PO is mid-flight. Drafts
+  // can't be received against (no order placed yet); cancelled/received
+  // POs are terminal.
+  const showReceiveForm =
+    status === "placed" || status === "partially_received";
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -113,63 +183,62 @@ export default async function PurchaseOrderDetailPage({
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-mono text-xs">
-                {po.po_number}
-              </span>
-              <Badge
-                variant={
-                  PO_STATUS_VARIANT[po.status as PurchaseOrderStatus] ??
-                  "outline"
-                }
-              >
-                {poStatusLabel(po.status)}
-              </Badge>
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {po.suppliers?.name ?? "—"}
-            </h1>
-          </div>
-        </div>
-
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-          <Stat label="Ordered">{formatDate(po.order_date)}</Stat>
-          <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
-          <Stat label="Received">{formatDate(po.received_date)}</Stat>
-          <Stat label="Total">
-            <span className="tabular-nums">
-              {formatMoney(
-                po.total_amount != null ? Number(po.total_amount) : null,
-                po.total_currency,
-              )}
-            </span>
-          </Stat>
-          <Stat label="Lines">{lineRows.length}</Stat>
-          <Stat label="Units ordered" className="tabular-nums">
-            {totalOrdered}
-          </Stat>
-          <Stat label="Units received" className="tabular-nums">
-            {totalReceived}
-          </Stat>
-          <Stat label="Outstanding" className="tabular-nums">
-            {totalOrdered - totalReceived}
-          </Stat>
-        </dl>
-
-        {po.notes ? (
-          <p className="text-muted-foreground text-sm">{po.notes}</p>
-        ) : null}
-      </header>
-
-      <ReceiveForm
+      <POHeader
         poId={po.id}
-        poStatus={po.status}
-        lines={lineRows}
-        locations={locationOptions}
+        poNumber={po.po_number}
+        status={status}
+        supplierName={po.suppliers?.name ?? null}
+        supplierId={po.suppliers?.id ?? null}
       />
+
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+        <Stat label="Ordered">{formatDate(po.order_date)}</Stat>
+        <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
+        <Stat label="Received">{formatDate(po.received_date)}</Stat>
+        <Stat label="Total">
+          <span className="tabular-nums">
+            {formatMoney(
+              po.total_amount != null ? Number(po.total_amount) : null,
+              po.total_currency,
+            )}
+          </span>
+        </Stat>
+        <Stat label="Lines">{poLineRows.length}</Stat>
+        <Stat label="Units ordered" className="tabular-nums">
+          {totalOrdered}
+        </Stat>
+        <Stat label="Units received" className="tabular-nums">
+          {totalReceived}
+        </Stat>
+        <Stat label="Outstanding" className="tabular-nums">
+          {totalOrdered - totalReceived}
+        </Stat>
+      </dl>
+
+      {po.notes ? (
+        <p className="text-muted-foreground whitespace-pre-wrap text-sm">
+          {po.notes}
+        </p>
+      ) : null}
+
+      <LinesSection
+        poId={po.id}
+        status={status}
+        totalCurrency={po.total_currency}
+        rows={poLineRows}
+        partsCatalog={partsCatalog}
+        currencies={currencies}
+        fxRatesByCurrency={fxRatesByCurrency}
+      />
+
+      {showReceiveForm ? (
+        <ReceiveForm
+          poId={po.id}
+          poStatus={po.status}
+          lines={receiveLineRows}
+          locations={locationOptions}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -68,13 +69,20 @@ export default async function PurchaseOrdersPage() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Purchase orders
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {rows.length} {rows.length === 1 ? "order" : "orders"}
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Purchase orders
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {rows.length} {rows.length === 1 ? "order" : "orders"}
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/purchase-orders/new">
+              <Plus aria-hidden /> New PO
+            </Link>
+          </Button>
         </div>
       </header>
 
@@ -83,6 +91,7 @@ export default async function PurchaseOrdersPage() {
           icon={ClipboardList}
           title="No purchase orders yet"
           description="Create a purchase order to track incoming shipments and receive stock against catalog parts."
+          action={{ label: "New PO", href: "/purchase-orders/new" }}
         />
       ) : (
         <div className="overflow-hidden rounded-md border">

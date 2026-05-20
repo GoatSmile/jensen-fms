@@ -35,6 +35,50 @@ export function poStatusLabel(s: string | null | undefined): string {
 }
 
 /**
+ * Statuses considered "open" — i.e. still in play in the workshop. A PO that's
+ * draft, placed, or partially received hasn't reached a terminal state.
+ */
+export const OPEN_PO_STATUSES: PurchaseOrderStatus[] = [
+  "draft",
+  "placed",
+  "partially_received",
+];
+
+/**
+ * Allowed transitions for the user-facing "Move to" dropdown.
+ *
+ *   draft               → placed | cancelled
+ *   placed              → cancelled         (receive flow handles partial/full)
+ *   partially_received  → cancelled
+ *   received            → (terminal)
+ *   cancelled           → (terminal)
+ *
+ * The receive-form is the only path that advances a PO into
+ * `partially_received` or `received`; this dropdown deliberately doesn't
+ * expose those targets to avoid a divergent code path.
+ */
+const PO_TRANSITIONS: Record<PurchaseOrderStatus, PurchaseOrderStatus[]> = {
+  draft: ["placed", "cancelled"],
+  placed: ["cancelled"],
+  partially_received: ["cancelled"],
+  received: [],
+  cancelled: [],
+};
+
+export function validNextPOStatuses(
+  current: PurchaseOrderStatus,
+): PurchaseOrderStatus[] {
+  return PO_TRANSITIONS[current] ?? [];
+}
+
+/** Cancellation always wants a reason in the audit trail. */
+export function poTransitionRequiresReason(
+  to: PurchaseOrderStatus,
+): boolean {
+  return to === "cancelled";
+}
+
+/**
  * Decide the new status from line totals. We only ever advance status here:
  * a fully-received PO won't roll back to partial because of a clerical fix.
  * Cancelled is sticky.

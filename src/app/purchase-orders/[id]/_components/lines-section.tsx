@@ -1,0 +1,340 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatFactor, formatFxRate, formatMoney } from "@/lib/parts/format";
+import { formatPrice } from "@/lib/format";
+import { formatQuantity } from "@/lib/parts/stock";
+import type { PurchaseOrderStatus } from "@/lib/po/status";
+
+import { deleteLine } from "../_actions/manage-lines";
+import {
+  LineDialog,
+  type CurrencyChoice,
+  type LineDialogInitial,
+  type PartChoice,
+} from "./line-dialog";
+
+export type POLineRow = {
+  id: string;
+  partId: string;
+  partSku: string;
+  partName: string;
+  quantity: number;
+  unitPrice: number;
+  currency: string;
+  fxRateToDkk: number;
+  transportFactor: number;
+  landedDkkPerUnit: number;
+  receivedQuantity: number;
+  notes: string | null;
+};
+
+type Props = {
+  poId: string;
+  status: PurchaseOrderStatus;
+  totalCurrency: string | null;
+  rows: POLineRow[];
+  partsCatalog: PartChoice[];
+  currencies: CurrencyChoice[];
+  fxRatesByCurrency: Record<string, number>;
+};
+
+type DialogState =
+  | { kind: "closed" }
+  | { kind: "add" }
+  | { kind: "edit"; initial: LineDialogInitial };
+
+export function LinesSection({
+  poId,
+  status,
+  totalCurrency,
+  rows,
+  partsCatalog,
+  currencies,
+  fxRatesByCurrency,
+}: Props) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeleting, startDelete] = useTransition();
+
+  const isDraft = status === "draft";
+
+  // Disable parts already on the PO in the add-mode picker so the user can't
+  // create a duplicate. Edit mode passes its own excludeIds (excluding itself).
+  const onPoPartIds = new Set(rows.map((r) => r.partId));
+
+  function runDelete(lineId: string) {
+    setError(null);
+    startDelete(async () => {
+      const r = await deleteLine(lineId);
+      if (!r.ok) {
+        setError(r.error);
+        setPendingDeleteId(null);
+        return;
+      }
+      setPendingDeleteId(null);
+      router.refresh();
+    });
+  }
+
+  const description = isDraft
+    ? "Editable while draft. Once you move the PO to placed, lines lock and only the receive flow can change them."
+    : status === "cancelled"
+      ? "This PO is cancelled — lines are read-only."
+      : status === "received"
+        ? "This PO is fully received — lines are read-only."
+        : "Lines are locked. Use the receive flow below to log incoming stock.";
+
+  return (
+    <section className="rounded-md border">
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-sm font-semibold">Lines</h2>
+          <p className="text-muted-foreground text-xs">{description}</p>
+        </div>
+        {isDraft ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDialog({ kind: "add" })}
+          >
+            <Plus aria-hidden /> Add line
+          </Button>
+        ) : null}
+      </header>
+
+      <div className="p-4">
+        {error ? (
+          <p className="text-destructive mb-3 text-sm" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        {rows.length === 0 ? (
+          <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+            {isDraft
+              ? "No lines yet — add the first one to get started."
+              : "No lines on this PO."}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Part</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Unit price</TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    FX rate
+                  </TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    Transport
+                  </TableHead>
+                  <TableHead className="text-right">Landed DKK/unit</TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    Received
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">Notes</TableHead>
+                  {isDraft ? <TableHead className="w-[40px]" /> : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => {
+                  const foreignCurrency =
+                    totalCurrency && row.currency !== totalCurrency;
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <Link
+                          href={`/parts/${row.partId}`}
+                          className="font-medium hover:underline"
+                        >
+                          {row.partName}
+                        </Link>
+                        <div className="text-muted-foreground font-mono text-xs">
+                          {row.partSku}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatQuantity(row.quantity)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <div>
+                          {formatMoney(row.unitPrice, row.currency, {
+                            maximumFractionDigits: 4,
+                          })}
+                        </div>
+                        {foreignCurrency ? (
+                          <div className="text-muted-foreground text-[10px]">
+                            in {row.currency}
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                        {formatFxRate(row.fxRateToDkk)}
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                        {formatFactor(row.transportFactor)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {formatPrice(row.landedDkkPerUnit, "DKK")}
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                        {formatQuantity(row.receivedQuantity)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden max-w-[180px] truncate text-xs md:table-cell">
+                        {row.notes ?? "—"}
+                      </TableCell>
+                      {isDraft ? (
+                        <TableCell className="text-right">
+                          <RowActions
+                            row={row}
+                            onEdit={() =>
+                              setDialog({
+                                kind: "edit",
+                                initial: rowToInitial(row),
+                              })
+                            }
+                            confirming={pendingDeleteId === row.id}
+                            pending={
+                              isDeleting && pendingDeleteId === row.id
+                            }
+                            onAskDelete={() => setPendingDeleteId(row.id)}
+                            onConfirmDelete={() => runDelete(row.id)}
+                          />
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {dialog.kind !== "closed" ? (
+        <LineDialog
+          key={
+            dialog.kind === "add"
+              ? "line-add"
+              : `line-edit-${dialog.initial.lineId}`
+          }
+          open
+          onOpenChange={(next) => {
+            if (!next) setDialog({ kind: "closed" });
+          }}
+          mode={
+            dialog.kind === "add"
+              ? { kind: "add", poId }
+              : { kind: "edit", initial: dialog.initial }
+          }
+          parts={partsCatalog}
+          currencies={currencies}
+          fxRatesByCurrency={fxRatesByCurrency}
+          excludePartIds={
+            dialog.kind === "add"
+              ? onPoPartIds
+              : // Edit mode: exclude every other line's part so the user can't
+                // collide with a sibling row. The current row's part is locked
+                // anyway (the dialog disables the picker), but we keep the
+                // set tidy.
+                new Set(
+                  rows
+                    .filter((r) => r.id !== dialog.initial.lineId)
+                    .map((r) => r.partId),
+                )
+          }
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function rowToInitial(row: POLineRow): LineDialogInitial {
+  return {
+    lineId: row.id,
+    partId: row.partId,
+    partLabel: `${row.partName} · ${row.partSku}`,
+    quantity: row.quantity,
+    unitPrice: row.unitPrice,
+    currency: row.currency,
+    fxRateToDkk: row.fxRateToDkk,
+    transportFactor: row.transportFactor,
+    notes: row.notes,
+  };
+}
+
+function RowActions({
+  row,
+  onEdit,
+  confirming,
+  pending,
+  onAskDelete,
+  onConfirmDelete,
+}: {
+  row: POLineRow;
+  onEdit: () => void;
+  confirming: boolean;
+  pending: boolean;
+  onAskDelete: () => void;
+  onConfirmDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          aria-label={`Actions for ${row.partSku}`}
+          disabled={pending}
+        >
+          <MoreVertical aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            onEdit();
+          }}
+        >
+          <Pencil aria-hidden /> Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={pending}
+          onSelect={(e) => {
+            e.preventDefault();
+            if (confirming) onConfirmDelete();
+            else onAskDelete();
+          }}
+        >
+          <Trash2 aria-hidden />{" "}
+          {confirming ? "Click again to confirm" : "Remove"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
