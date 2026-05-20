@@ -181,9 +181,8 @@ export default async function PartDetailPage({
         `
           template_id, quantity,
           bike_templates!inner(
-            id, name_en, version, is_current,
-            bike_model:bike_models(id, name_en),
-            bike_model_variant:bike_model_variants(name_en)
+            id, name_en, family, frame_size, version, is_current,
+            bike_type:bike_types(id, name_en)
           )
         `,
       )
@@ -256,9 +255,9 @@ export default async function PartDetailPage({
       templateId: r.bike_templates?.id ?? "",
       templateName: r.bike_templates?.name_en ?? "—",
       templateVersion: r.bike_templates?.version ?? 0,
-      modelId: r.bike_templates?.bike_model?.id ?? null,
-      modelName: r.bike_templates?.bike_model?.name_en ?? null,
-      variantName: r.bike_templates?.bike_model_variant?.name_en ?? null,
+      family: r.bike_templates?.family ?? null,
+      frameSize: r.bike_templates?.frame_size ?? "",
+      bikeTypeName: r.bike_templates?.bike_type?.name_en ?? null,
       qtyPerBike: Number(r.quantity),
     }))
     .filter((t) => t.templateId !== "");

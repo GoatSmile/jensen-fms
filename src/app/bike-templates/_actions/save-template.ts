@@ -11,44 +11,57 @@ export type SaveTemplateResult =
   | { ok: false; error: string; field?: string };
 
 type ParsedShell = {
-  bike_model_id: string;
-  bike_model_variant_id: string | null;
   bike_type_id: string;
+  family: string | null;
+  frame_size: string;
   name_en: string;
   name_da: string | null;
+  default_retail_price: number | null;
+  default_retail_currency: string | null;
   notes: string | null;
 };
 
-async function parseAndResolveShell(
+function parsePrice(
+  raw: string | null,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (!raw) return { ok: true, value: null };
+  const normalized = raw.replace(",", ".");
+  const n = Number(normalized);
+  if (!Number.isFinite(n) || n < 0) {
+    return { ok: false, error: "Price must be a non-negative number." };
+  }
+  return { ok: true, value: n };
+}
+
+function parseShell(
   formData: FormData,
-): Promise<ParsedShell | { error: string; field?: string }> {
-  const bike_model_id = nullable(formData.get("bike_model_id"));
-  const variantRaw = nullable(formData.get("bike_model_variant_id"));
+): ParsedShell | { error: string; field?: string } {
+  const bike_type_id = nullable(formData.get("bike_type_id"));
+  const frame_size = nullable(formData.get("frame_size"));
   const name_en = nullable(formData.get("name_en"));
 
-  if (!bike_model_id)
-    return { error: "Bike model is required.", field: "bike_model_id" };
+  if (!bike_type_id)
+    return { error: "Bike type is required.", field: "bike_type_id" };
+  if (!frame_size)
+    return { error: "Frame size is required.", field: "frame_size" };
   if (!name_en)
     return { error: "Template name (English) is required.", field: "name_en" };
 
-  // bike_type_id is derived from the model — we look it up so the caller doesn't
-  // have to keep model + type in sync in the form.
-  const supabase = await createClient();
-  const { data: model, error: modelErr } = await supabase
-    .from("bike_models")
-    .select("id, bike_type_id")
-    .eq("id", bike_model_id)
-    .maybeSingle();
-  if (modelErr) return { error: `Could not load model: ${modelErr.message}` };
-  if (!model) return { error: "Bike model not found.", field: "bike_model_id" };
+  const priceParsed = parsePrice(nullable(formData.get("default_retail_price")));
+  if (!priceParsed.ok)
+    return { error: priceParsed.error, field: "default_retail_price" };
 
   return {
-    bike_model_id: model.id,
-    bike_model_variant_id:
-      variantRaw && variantRaw !== "all" ? variantRaw : null,
-    bike_type_id: model.bike_type_id,
+    bike_type_id,
+    family: nullable(formData.get("family")),
+    frame_size,
     name_en,
     name_da: nullable(formData.get("name_da")),
+    default_retail_price: priceParsed.value,
+    default_retail_currency:
+      priceParsed.value == null
+        ? null
+        : nullable(formData.get("default_retail_currency")) ?? "DKK",
     notes: nullable(formData.get("notes")),
   };
 }
@@ -56,7 +69,7 @@ async function parseAndResolveShell(
 export async function createTemplate(
   formData: FormData,
 ): Promise<SaveTemplateResult> {
-  const parsed = await parseAndResolveShell(formData);
+  const parsed = parseShell(formData);
   if ("error" in parsed)
     return { ok: false, error: parsed.error, field: parsed.field };
 
@@ -64,11 +77,13 @@ export async function createTemplate(
   const { data, error } = await supabase
     .from("bike_templates")
     .insert({
-      bike_model_id: parsed.bike_model_id,
-      bike_model_variant_id: parsed.bike_model_variant_id,
       bike_type_id: parsed.bike_type_id,
+      family: parsed.family,
+      frame_size: parsed.frame_size,
       name_en: parsed.name_en,
       name_da: parsed.name_da,
+      default_retail_price: parsed.default_retail_price,
+      default_retail_currency: parsed.default_retail_currency,
       notes: parsed.notes,
       version: 1,
       is_current: true,
@@ -82,7 +97,6 @@ export async function createTemplate(
     };
   }
   revalidatePath("/bike-templates");
-  revalidatePath(`/bike-models/${parsed.bike_model_id}`);
   redirect(`/bike-templates/${data.id}`);
 }
 
@@ -91,31 +105,45 @@ export async function updateTemplate(
   formData: FormData,
 ): Promise<SaveTemplateResult> {
   if (!templateId) return { ok: false, error: "Missing template id." };
-  // Edit-shell only mutates name + notes; model/variant/type are baked in at
-  // creation. To re-target a template, save it as a new version on a different
-  // model — that's the right semantic, not an edit.
+  // Edit-shell mutates everything except bike_type_id (kept stable to preserve
+  // history). Frame size CAN change on edit — if you really need a different
+  // size, you almost always want a new template instead, but we don't enforce.
+  const frame_size = nullable(formData.get("frame_size"));
   const name_en = nullable(formData.get("name_en"));
-  if (!name_en)
-    return { ok: false, error: "Template name (English) is required.", field: "name_en" };
-
-  const supabase = await createClient();
-  const { data: existing, error: lookupErr } = await supabase
-    .from("bike_templates")
-    .select("bike_model_id")
-    .eq("id", templateId)
-    .maybeSingle();
-  if (lookupErr || !existing) {
+  if (!frame_size)
     return {
       ok: false,
-      error: `Could not load template: ${lookupErr?.message ?? "not found"}`,
+      error: "Frame size is required.",
+      field: "frame_size",
     };
-  }
+  if (!name_en)
+    return {
+      ok: false,
+      error: "Template name (English) is required.",
+      field: "name_en",
+    };
 
+  const priceParsed = parsePrice(nullable(formData.get("default_retail_price")));
+  if (!priceParsed.ok)
+    return {
+      ok: false,
+      error: priceParsed.error,
+      field: "default_retail_price",
+    };
+
+  const supabase = await createClient();
   const { error } = await supabase
     .from("bike_templates")
     .update({
+      family: nullable(formData.get("family")),
+      frame_size,
       name_en,
       name_da: nullable(formData.get("name_da")),
+      default_retail_price: priceParsed.value,
+      default_retail_currency:
+        priceParsed.value == null
+          ? null
+          : nullable(formData.get("default_retail_currency")) ?? "DKK",
       notes: nullable(formData.get("notes")),
     })
     .eq("id", templateId);
@@ -123,6 +151,5 @@ export async function updateTemplate(
 
   revalidatePath("/bike-templates");
   revalidatePath(`/bike-templates/${templateId}`);
-  revalidatePath(`/bike-models/${existing.bike_model_id}`);
   redirect(`/bike-templates/${templateId}`);
 }

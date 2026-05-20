@@ -45,9 +45,8 @@ export default async function BikeDetailPage({
             id, frame_number, status, notes, deleted_at, bike_type_id,
             manufacturing_order_id, build_cost_dkk,
             bike_type:bike_types(id, name_en),
-            bike_model:bike_models(id, name_en),
-            bike_model_variant:bike_model_variants(id, sku, name_en),
-            template:bike_templates(id, name_en, version),
+            template:bike_templates(id, name_en, family, frame_size, version),
+            color:colors(id, slug, name_en, hex),
             manufacturing_order:manufacturing_orders(id, mo_number, status)
           `,
         )
@@ -164,6 +163,12 @@ export default async function BikeDetailPage({
     reason: r.reason,
   }));
 
+  const templateLabel = b.template
+    ? [b.template.family, b.template.frame_size, b.template.name_en]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <Breadcrumb>
@@ -191,8 +196,9 @@ export default async function BikeDetailPage({
         frameNumber={b.frame_number}
         status={b.status as BikeStatus}
         bikeTypeName={b.bike_type?.name_en ?? null}
-        modelName={b.bike_model?.name_en ?? null}
-        variantName={b.bike_model_variant?.name_en ?? null}
+        templateLabel={templateLabel}
+        colorName={b.color?.name_en ?? null}
+        colorHex={b.color?.hex ?? null}
         isDeleted={b.deleted_at != null}
       />
 
@@ -204,41 +210,33 @@ export default async function BikeDetailPage({
           <Field label="Bike type">
             {b.bike_type?.name_en ?? <Muted>—</Muted>}
           </Field>
-          <Field label="Model">
-            {b.bike_model ? (
-              <Link
-                href={`/bike-models/${b.bike_model.id}`}
-                className="hover:underline"
-              >
-                {b.bike_model.name_en}
-              </Link>
-            ) : (
-              <Muted>—</Muted>
-            )}
-          </Field>
-          <Field label="Variant">
-            {b.bike_model_variant ? (
-              <span>
-                {b.bike_model_variant.name_en}{" "}
-                <span className="text-muted-foreground font-mono text-xs">
-                  ({b.bike_model_variant.sku})
-                </span>
-              </span>
-            ) : (
-              <Muted>—</Muted>
-            )}
-          </Field>
-          <Field label="Built against template">
+          <Field label="Template">
             {b.template ? (
               <Link
                 href={`/bike-templates/${b.template.id}`}
                 className="hover:underline"
               >
-                {b.template.name_en}{" "}
+                {templateLabel}{" "}
                 <span className="text-muted-foreground text-xs">
                   v{b.template.version}
                 </span>
               </Link>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Colour">
+            {b.color ? (
+              <span className="inline-flex items-center gap-2">
+                {b.color.hex ? (
+                  <span
+                    aria-hidden
+                    className="border-border inline-block size-3 rounded-full border"
+                    style={{ backgroundColor: b.color.hex }}
+                  />
+                ) : null}
+                {b.color.name_en}
+              </span>
             ) : (
               <Muted>—</Muted>
             )}

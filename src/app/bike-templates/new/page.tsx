@@ -13,46 +13,28 @@ import { createClient } from "@/lib/supabase/server";
 import {
   EMPTY_TEMPLATE_SHELL,
   TemplateForm,
-  type ModelOption,
-  type VariantOption,
+  type BikeTypeOption,
+  type CurrencyOption,
 } from "../_components/template-form";
 
-type SearchParams = {
-  model?: string;
-};
-
-export default async function NewBikeTemplatePage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const sp = await searchParams;
+export default async function NewBikeTemplatePage() {
   const supabase = await createClient();
 
-  const [modelsRes, variantsRes] = await Promise.all([
+  const [typesRes, currenciesRes] = await Promise.all([
     supabase
-      .from("bike_models")
-      .select("id, name_en, bike_type:bike_types(name_en)")
-      .is("deleted_at", null)
+      .from("bike_types")
+      .select("id, name_en")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase
-      .from("bike_model_variants")
-      .select("id, bike_model_id, sku, name_en, is_active")
-      .eq("is_active", true)
-      .order("sku", { ascending: true }),
+      .from("currencies")
+      .select("code, symbol")
+      .order("code", { ascending: true }),
   ]);
 
-  const models: ModelOption[] = (modelsRes.data ?? []).map((m) => ({
-    id: m.id,
-    name_en: m.name_en,
-    bike_type_name: m.bike_type?.name_en ?? null,
-  }));
-  const variants: VariantOption[] = variantsRes.data ?? [];
-
-  const initial = {
-    ...EMPTY_TEMPLATE_SHELL,
-    bike_model_id: sp.model ?? "",
-  };
+  const bikeTypes: BikeTypeOption[] = typesRes.data ?? [];
+  const currencies: CurrencyOption[] = currenciesRes.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
@@ -83,9 +65,9 @@ export default async function NewBikeTemplatePage({
       </div>
       <TemplateForm
         mode="create"
-        initial={initial}
-        models={models}
-        variants={variants}
+        initial={EMPTY_TEMPLATE_SHELL}
+        bikeTypes={bikeTypes}
+        currencies={currencies}
       />
     </div>
   );

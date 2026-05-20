@@ -1,7 +1,3 @@
-/**
- * Shared section shell for the bike-model detail page. Mirrors the helper used
- * on the part detail page so the visual rhythm stays consistent across the FMS.
- */
 type Props = {
   title: string;
   description?: string;

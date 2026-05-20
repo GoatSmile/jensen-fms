@@ -24,6 +24,23 @@ import {
   type VersionRow,
 } from "./_components/version-history-section";
 
+function formatPrice(
+  amount: number | null,
+  currency: string | null,
+): string {
+  if (amount == null || !currency) return "—";
+  if (currency === "DKK") {
+    return `${new Intl.NumberFormat("da-DK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)} kr.`;
+  }
+  return `${new Intl.NumberFormat("en", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)} ${currency}`;
+}
+
 export default async function BikeTemplateDetailPage({
   params,
 }: {
@@ -37,9 +54,8 @@ export default async function BikeTemplateDetailPage({
     .select(
       `
         id, name_en, name_da, notes, version, is_current, created_at,
-        bike_model_id, bike_model_variant_id, bike_type_id,
-        bike_model:bike_models(id, name_en, deleted_at),
-        bike_model_variant:bike_model_variants(id, sku, name_en),
+        bike_type_id, family, frame_size,
+        default_retail_price, default_retail_currency,
         bike_type:bike_types(id, name_en)
       `,
     )
@@ -54,39 +70,39 @@ export default async function BikeTemplateDetailPage({
   const t = tplRes.data;
 
   // Fetch parts in this template, the catalog of pickable parts, and the full
-  // version chain. Parallel.
-  const [
-    recipeRes,
-    catalogRes,
-    chainRes,
-    chainPartCountsRes,
-  ] = await Promise.all([
-    supabase
-      .from("bike_template_parts")
-      .select(
-        `
+  // version chain. Version chain is templates with the same family + frame_size
+  // (or just same name_en if family is unset).
+  const chainFilters = t.family
+    ? supabase
+        .from("bike_templates")
+        .select("id, version, is_current, created_at")
+        .eq("family", t.family)
+        .eq("frame_size", t.frame_size)
+    : supabase
+        .from("bike_templates")
+        .select("id, version, is_current, created_at")
+        .is("family", null)
+        .eq("name_en", t.name_en);
+
+  const [recipeRes, catalogRes, chainRes, chainPartCountsRes] =
+    await Promise.all([
+      supabase
+        .from("bike_template_parts")
+        .select(
+          `
           id, quantity, is_optional, notes,
           parts:parts(id, internal_sku, name_en)
         `,
-      )
-      .eq("template_id", id),
-    supabase
-      .from("parts")
-      .select("id, internal_sku, name_en, category:part_categories(name_en)")
-      .is("deleted_at", null)
-      .order("internal_sku", { ascending: true }),
-    supabase
-      .from("bike_templates")
-      .select("id, version, is_current, created_at")
-      .eq("bike_model_id", t.bike_model_id)
-      .filter(
-        "bike_model_variant_id",
-        t.bike_model_variant_id == null ? "is" : "eq",
-        t.bike_model_variant_id == null ? null : t.bike_model_variant_id,
-      )
-      .order("version", { ascending: false }),
-    supabase.from("bike_template_parts").select("template_id"),
-  ]);
+        )
+        .eq("template_id", id),
+      supabase
+        .from("parts")
+        .select("id, internal_sku, name_en, category:part_categories(name_en)")
+        .is("deleted_at", null)
+        .order("internal_sku", { ascending: true }),
+      chainFilters.order("version", { ascending: false }),
+      supabase.from("bike_template_parts").select("template_id"),
+    ]);
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
     .map((row) => ({
@@ -157,22 +173,15 @@ export default async function BikeTemplateDetailPage({
             <Badge variant="outline" className="font-normal">
               {t.bike_type?.name_en ?? "—"}
             </Badge>
-            <span className="text-muted-foreground text-xs">
-              <Link
-                href={`/bike-models/${t.bike_model?.id}`}
-                className="hover:text-foreground hover:underline"
-              >
-                {t.bike_model?.name_en ?? "—"}
-              </Link>
-              {t.bike_model_variant ? (
-                <>
-                  {" · "}
-                  {t.bike_model_variant.name_en}
-                </>
-              ) : (
-                <> · any variant</>
-              )}
-            </span>
+            {t.family ? (
+              <span className="text-muted-foreground text-xs">
+                {t.family} · {t.frame_size}
+              </span>
+            ) : (
+              <span className="text-muted-foreground text-xs">
+                {t.frame_size}
+              </span>
+            )}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.name_en}</h1>
           {t.name_da && t.name_da !== t.name_en ? (
@@ -181,6 +190,13 @@ export default async function BikeTemplateDetailPage({
           <p className="text-muted-foreground text-xs">
             v{t.version}
             {t.is_current ? " · current" : ""}
+            {" · "}
+            {formatPrice(
+              t.default_retail_price == null
+                ? null
+                : Number(t.default_retail_price),
+              t.default_retail_currency,
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -193,7 +209,7 @@ export default async function BikeTemplateDetailPage({
       </div>
 
       {t.notes ? (
-        <p className="text-muted-foreground rounded-md border bg-muted/30 p-3 text-sm">
+        <p className="text-muted-foreground bg-muted/30 rounded-md border p-3 text-sm">
           {t.notes}
         </p>
       ) : null}

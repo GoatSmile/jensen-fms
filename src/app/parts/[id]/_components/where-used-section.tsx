@@ -21,9 +21,9 @@ export type TemplateUsageRow = {
   templateId: string;
   templateName: string;
   templateVersion: number;
-  modelId: string | null;
-  modelName: string | null;
-  variantName: string | null;
+  family: string | null;
+  frameSize: string;
+  bikeTypeName: string | null;
   qtyPerBike: number;
 };
 
@@ -70,7 +70,7 @@ export function WhereUsedSection({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Template</TableHead>
-                      <TableHead>Model · variant</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead className="text-right">Qty / bike</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -82,24 +82,16 @@ export function WhereUsedSection({
                             href={`/bike-templates/${t.templateId}`}
                             className="font-medium hover:underline"
                           >
-                            {t.templateName}
+                            {[t.family, t.frameSize, t.templateName]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </Link>
                           <span className="text-muted-foreground ml-1.5 text-xs">
                             v{t.templateVersion}
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs">
-                          {t.modelName ? (
-                            <Link
-                              href={`/bike-models/${t.modelId}`}
-                              className="hover:underline"
-                            >
-                              {t.modelName}
-                            </Link>
-                          ) : (
-                            "—"
-                          )}
-                          {t.variantName ? ` · ${t.variantName}` : ""}
+                          {t.bikeTypeName ?? "—"}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {t.qtyPerBike}

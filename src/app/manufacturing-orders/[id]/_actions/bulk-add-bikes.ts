@@ -11,8 +11,9 @@ export type BulkAddResult =
 
 /**
  * Add up to N bikes to an MO at once. Each bike gets a sequentially-suggested
- * frame number based on the model's frame_number_code; we pre-compute the
- * full sequence so we don't race ourselves between iterations.
+ * frame number based on the bike_type's slug (uppercased — e.g. "hsb" → "HSB");
+ * we pre-compute the full sequence so we don't race ourselves between
+ * iterations.
  *
  * Sequential inserts (not a bulk insert) so the existing addBikeToMO-style
  * logic (state-log trigger, identifier registration, slot-cap check) all
@@ -44,7 +45,7 @@ export async function bulkAddBikesToMO(
   const { data: mo, error: moErr } = await supabase
     .from("manufacturing_orders")
     .select(
-      "id, bike_type_id, bike_model_id, bike_model_variant_id, bike_template_id, target_quantity, status",
+      "id, bike_type_id, bike_template_id, color_id, target_quantity, status",
     )
     .eq("id", moId)
     .maybeSingle();
@@ -78,17 +79,17 @@ export async function bulkAddBikesToMO(
   }
   const toCreate = Math.min(count, slotsLeft);
 
-  // Look up model frame_number_code + every existing frame number for that
-  // model so the suggestion helper can find the right sequence.
-  const { data: modelRow } = await supabase
-    .from("bike_models")
-    .select("frame_number_code")
-    .eq("id", mo.bike_model_id)
+  // Use the bike_type slug as the frame-number prefix and pull every existing
+  // frame number on bikes belonging to this MO so we don't collide.
+  const { data: bikeTypeRow } = await supabase
+    .from("bike_types")
+    .select("slug")
+    .eq("id", mo.bike_type_id)
     .maybeSingle();
   const { data: existingFrames } = await supabase
     .from("bikes")
     .select("frame_number")
-    .eq("bike_model_id", mo.bike_model_id);
+    .eq("manufacturing_order_id", moId);
 
   const existing = (existingFrames ?? []).map((b) => b.frame_number);
   const year = new Date().getFullYear();
@@ -98,7 +99,7 @@ export async function bulkAddBikesToMO(
   for (let i = 0; i < toCreate; i++) {
     const next = nextFrameNumberSuggestion({
       year,
-      code: modelRow?.frame_number_code ?? null,
+      code: bikeTypeRow?.slug ?? null,
       existing: [...existing, ...planned],
     });
     planned.push(next);
@@ -118,9 +119,8 @@ export async function bulkAddBikesToMO(
       .from("bikes")
       .insert({
         bike_type_id: mo.bike_type_id,
-        bike_model_id: mo.bike_model_id,
-        bike_model_variant_id: mo.bike_model_variant_id,
         template_id: mo.bike_template_id,
+        color_id: mo.color_id,
         manufacturing_order_id: moId,
         frame_number: frameNumber,
         status: "planning",

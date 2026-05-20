@@ -5,37 +5,54 @@ import {
   Boxes,
   ClipboardList,
   Hammer,
+  Paintbrush,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 
+const OPEN_PAINT_STATUSES = [
+  "planned",
+  "sent_to_painter",
+  "at_painter",
+] as const;
+
 export default async function Home() {
   const supabase = await createClient();
-  const [partsCount, openPosCount, bikeModelsCount, bikesCount, openMOsCount] =
-    await Promise.all([
-      supabase
-        .from("parts")
-        .select("id", { count: "exact", head: true })
-        .is("deleted_at", null),
-      supabase
-        .from("purchase_orders")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["draft", "placed", "partially_received"]),
-      supabase
-        .from("bike_models")
-        .select("id", { count: "exact", head: true })
-        .is("deleted_at", null),
-      supabase
-        .from("bikes")
-        .select("id", { count: "exact", head: true })
-        .is("deleted_at", null)
-        .not("status", "in", "(retired,lost_or_stolen)"),
-      supabase
-        .from("manufacturing_orders")
-        .select("id", { count: "exact", head: true })
-        .in("status", OPEN_MO_STATUSES),
-    ]);
+  const [
+    partsCount,
+    openPosCount,
+    templatesCount,
+    bikesCount,
+    openMOsCount,
+    openPaintCount,
+  ] = await Promise.all([
+    supabase
+      .from("parts")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null),
+    supabase
+      .from("purchase_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["draft", "placed", "partially_received"]),
+    supabase
+      .from("bike_templates")
+      .select("id", { count: "exact", head: true })
+      .eq("is_current", true),
+    supabase
+      .from("bikes")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .not("status", "in", "(retired,lost_or_stolen)"),
+    supabase
+      .from("manufacturing_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_MO_STATUSES),
+    supabase
+      .from("paint_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_PAINT_STATUSES),
+  ]);
 
   const cards = [
     {
@@ -57,14 +74,14 @@ export default async function Home() {
           : null,
     },
     {
-      href: "/bike-models",
+      href: "/bike-templates",
       icon: BookOpen,
-      title: "Bike catalog",
+      title: "Bike templates",
       description:
-        "Bike models, variants, and templates — the recipes that drive the build workbench.",
+        "Product catalog. Each template has a fixed frame size; color is picked at order and build time.",
       stat:
-        bikeModelsCount.count != null
-          ? `${bikeModelsCount.count} active model${bikeModelsCount.count === 1 ? "" : "s"}`
+        templatesCount.count != null
+          ? `${templatesCount.count} current template${templatesCount.count === 1 ? "" : "s"}`
           : null,
     },
     {
@@ -83,10 +100,21 @@ export default async function Home() {
       icon: Hammer,
       title: "Manufacturing orders",
       description:
-        "Production runs against a template. Tracks parts vs stock, attaches bikes, consumes inventory on completion.",
+        "Production runs against a template (or one-off). Picks color, tracks parts vs stock, consumes inventory on completion.",
       stat:
         openMOsCount.count != null
           ? `${openMOsCount.count} open MO${openMOsCount.count === 1 ? "" : "s"}`
+          : null,
+    },
+    {
+      href: "/paint-orders",
+      icon: Paintbrush,
+      title: "Paint orders",
+      description:
+        "Batches of bikes sent out to be painted. Tracks status, color, and supplier cost.",
+      stat:
+        openPaintCount.count != null
+          ? `${openPaintCount.count} open paint order${openPaintCount.count === 1 ? "" : "s"}`
           : null,
     },
   ];

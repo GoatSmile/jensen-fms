@@ -59,19 +59,6 @@ export async function saveTemplateParts(
 
   const supabase = await createClient();
 
-  // Look up the template's model so we can revalidate its detail page too.
-  const { data: tpl, error: lookupErr } = await supabase
-    .from("bike_templates")
-    .select("bike_model_id")
-    .eq("id", input.templateId)
-    .maybeSingle();
-  if (lookupErr || !tpl) {
-    return {
-      ok: false,
-      error: `Could not load template: ${lookupErr?.message ?? "not found"}`,
-    };
-  }
-
   const { error: delErr } = await supabase
     .from("bike_template_parts")
     .delete()
@@ -101,6 +88,6 @@ export async function saveTemplateParts(
   }
 
   revalidatePath(`/bike-templates/${input.templateId}`);
-  revalidatePath(`/bike-models/${tpl.bike_model_id}`);
+  revalidatePath("/bike-templates");
   return { ok: true };
 }

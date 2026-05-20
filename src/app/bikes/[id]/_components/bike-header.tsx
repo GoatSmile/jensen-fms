@@ -44,8 +44,9 @@ type Props = {
   frameNumber: string;
   status: BikeStatus;
   bikeTypeName: string | null;
-  modelName: string | null;
-  variantName: string | null;
+  templateLabel: string | null;
+  colorName: string | null;
+  colorHex: string | null;
   isDeleted: boolean;
 };
 
@@ -56,8 +57,9 @@ export function BikeHeader({
   frameNumber,
   status,
   bikeTypeName,
-  modelName,
-  variantName,
+  templateLabel,
+  colorName,
+  colorHex,
   isDeleted,
 }: Props) {
   const router = useRouter();
@@ -143,10 +145,19 @@ export function BikeHeader({
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {modelName ?? "Bike"}
+            {templateLabel ?? "Bike"}
           </h1>
-          {variantName ? (
-            <p className="text-muted-foreground text-sm">{variantName}</p>
+          {colorName ? (
+            <p className="text-muted-foreground inline-flex items-center gap-2 text-sm">
+              {colorHex ? (
+                <span
+                  aria-hidden
+                  className="border-border inline-block size-3 rounded-full border"
+                  style={{ backgroundColor: colorHex }}
+                />
+              ) : null}
+              {colorName}
+            </p>
           ) : null}
         </div>
         <div className="flex gap-2">

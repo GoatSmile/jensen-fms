@@ -13,39 +13,36 @@ import { createClient } from "@/lib/supabase/server";
 import {
   BikeForm,
   EMPTY_BIKE_FORM,
-  type ModelOption,
+  type BikeTypeOption,
+  type ColorOption,
   type TemplateOption,
-  type VariantOption,
 } from "../_components/bike-form";
 
 export default async function NewBikePage() {
   const supabase = await createClient();
-  const [bikeTypesRes, modelsRes, variantsRes, templatesRes] = await Promise.all([
+  const [bikeTypesRes, templatesRes, colorsRes] = await Promise.all([
     supabase
       .from("bike_types")
       .select("id, name_en")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
-      .from("bike_models")
-      .select("id, name_en, bike_type_id")
-      .is("deleted_at", null)
-      .order("name_en", { ascending: true }),
-    supabase
-      .from("bike_model_variants")
-      .select("id, bike_model_id, sku, name_en")
-      .eq("is_active", true)
-      .order("sku", { ascending: true }),
-    supabase
       .from("bike_templates")
-      .select("id, bike_model_id, bike_model_variant_id, name_en, version")
+      .select("id, name_en, family, frame_size, version, bike_type_id")
       .eq("is_current", true)
+      .order("family", { ascending: true, nullsFirst: false })
+      .order("frame_size", { ascending: true })
       .order("name_en", { ascending: true }),
+    supabase
+      .from("colors")
+      .select("id, slug, name_da, name_en")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
-  const models: ModelOption[] = modelsRes.data ?? [];
-  const variants: VariantOption[] = variantsRes.data ?? [];
+  const bikeTypes: BikeTypeOption[] = bikeTypesRes.data ?? [];
   const templates: TemplateOption[] = templatesRes.data ?? [];
+  const colors: ColorOption[] = colorsRes.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
@@ -72,15 +69,14 @@ export default async function NewBikePage() {
         <h1 className="text-2xl font-semibold tracking-tight">New bike</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           For one-off builds, demos, or refurb candidates. Production bikes
-          will come through the manufacturing-order flow (Phase 2C).
+          come through the manufacturing-order flow.
         </p>
       </div>
       <BikeForm
         initial={EMPTY_BIKE_FORM}
-        bikeTypes={bikeTypesRes.data ?? []}
-        models={models}
-        variants={variants}
+        bikeTypes={bikeTypes}
         templates={templates}
+        colors={colors}
       />
     </div>
   );

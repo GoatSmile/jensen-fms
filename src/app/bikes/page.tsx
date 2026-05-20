@@ -96,8 +96,8 @@ export default async function BikesPage({
         notes,
         deleted_at,
         bike_type:bike_types(id, name_en),
-        bike_model:bike_models(id, name_en),
-        bike_model_variant:bike_model_variants(id, name_en, sku)
+        template:bike_templates(id, name_en, family, frame_size, version),
+        color:colors(id, name_en, hex)
       `,
       { count: "exact" },
     )
@@ -233,7 +233,7 @@ export default async function BikesPage({
         <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
           {filterDescriptors.length > 0
             ? "No bikes match these filters."
-            : "No bikes yet. Add a manual bike, or wait for the manufacturing-order build flow in Phase 2C."}
+            : "No bikes yet. Add a manual bike, or create one through a manufacturing order."}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border">
@@ -242,8 +242,8 @@ export default async function BikesPage({
               <TableRow>
                 <TableHead className="w-[200px]">Frame number</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Variant</TableHead>
+                <TableHead>Template</TableHead>
+                <TableHead>Colour</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -267,12 +267,38 @@ export default async function BikesPage({
                   </TableCell>
                   <TableCell className="p-0">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
-                      {b.bike_model?.name_en ?? "—"}
+                      {b.template ? (
+                        <>
+                          <div className="font-medium">
+                            {[b.template.family, b.template.frame_size, b.template.name_en]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            v{b.template.version}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
-                    <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5">
-                      {b.bike_model_variant?.name_en ?? "—"}
+                  <TableCell className="p-0">
+                    <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
+                      {b.color ? (
+                        <span className="inline-flex items-center gap-2">
+                          {b.color.hex ? (
+                            <span
+                              aria-hidden
+                              className="border-border inline-block size-3 rounded-full border"
+                              style={{ backgroundColor: b.color.hex }}
+                            />
+                          ) : null}
+                          {b.color.name_en}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </Link>
                   </TableCell>
                   <TableCell className="p-0">

@@ -14,21 +14,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { appendField } from "@/lib/forms";
 
 import { createManufacturingOrder } from "../_actions/save-mo";
+
+export type BikeTypeOption = { id: string; name_en: string };
 
 export type TemplateOption = {
   id: string;
   name_en: string;
-  bike_model_name: string | null;
-  bike_model_variant_name: string | null;
-  bike_type_name: string | null;
+  family: string | null;
+  frame_size: string;
   version: number;
   is_current: boolean;
+  bike_type_id: string;
+  bike_type_name: string | null;
 };
 
+export type ColorOption = {
+  id: string;
+  slug: string;
+  name_da: string;
+  name_en: string;
+};
+
+/**
+ * The form supports two paths:
+ *   1. Template-driven: pick a template; type comes from the template, BOM
+ *      gets seeded from bike_template_parts.
+ *   2. One-off: pick the literal "(One-off — no template)" entry, then pick
+ *      a bike type by hand. No BOM is seeded; user adds parts on the detail
+ *      page.
+ *
+ * Color is required when a template is picked (one MO = one template ×
+ * one color × N bikes). For one-offs, color is optional.
+ */
 export type MOFormValues = {
-  bike_template_id: string;
+  bike_template_id: string; // "" or "__none__" for one-off
+  bike_type_id: string; // only used when bike_template_id is "__none__"
+  color_id: string;
   target_quantity: string;
   planned_start_date: string;
   planned_completion_date: string;
@@ -37,29 +61,37 @@ export type MOFormValues = {
 
 export const EMPTY_MO_FORM: MOFormValues = {
   bike_template_id: "",
+  bike_type_id: "",
+  color_id: "",
   target_quantity: "1",
   planned_start_date: "",
   planned_completion_date: "",
   notes: "",
 };
 
+export const ONE_OFF_VALUE = "__none__";
+
 type Props = {
   initial: MOFormValues;
   templates: TemplateOption[];
+  bikeTypes: BikeTypeOption[];
+  colors: ColorOption[];
 };
 
-export function MOForm({ initial, templates }: Props) {
+export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<MOFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Only current versions are valid for MO creation.
   const eligible = useMemo(
     () => templates.filter((t) => t.is_current),
     [templates],
   );
+  const isOneOff = values.bike_template_id === ONE_OFF_VALUE;
+  const hasTemplate =
+    values.bike_template_id !== "" && values.bike_template_id !== ONE_OFF_VALUE;
 
   function update<K extends keyof MOFormValues>(key: K, value: MOFormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -71,7 +103,15 @@ export function MOForm({ initial, templates }: Props) {
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    for (const [k, v] of Object.entries(values)) fd.append(k, v as string);
+    // Map the sentinel "__none__" to empty so the action treats it as null.
+    const tplValue = isOneOff ? "" : values.bike_template_id;
+    appendField(fd, "bike_template_id", tplValue);
+    appendField(fd, "bike_type_id", values.bike_type_id);
+    appendField(fd, "color_id", values.color_id);
+    appendField(fd, "target_quantity", values.target_quantity);
+    appendField(fd, "planned_start_date", values.planned_start_date);
+    appendField(fd, "planned_completion_date", values.planned_completion_date);
+    appendField(fd, "notes", values.notes);
     return fd;
   }
 
@@ -96,7 +136,7 @@ export function MOForm({ initial, templates }: Props) {
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
         title="Recipe"
-        description="The template's parts list will be copied as the starting point. You can substitute, add, or remove parts after creation."
+        description="Pick a template to seed the parts list, or choose one-off to build the parts list by hand on the next screen."
       >
         <Field
           label="Template"
@@ -109,9 +149,12 @@ export function MOForm({ initial, templates }: Props) {
             onValueChange={(v) => update("bike_template_id", v)}
           >
             <SelectTrigger id="mo-template">
-              <SelectValue placeholder="Pick a current template…" />
+              <SelectValue placeholder="Pick a template or one-off…" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={ONE_OFF_VALUE}>
+                (One-off — no template)
+              </SelectItem>
               {eligible.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
                   No current templates yet. Create one in Bike templates first.
@@ -119,13 +162,71 @@ export function MOForm({ initial, templates }: Props) {
               ) : (
                 eligible.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name_en}{" "}
+                    {[t.family, t.frame_size, t.name_en]
+                      .filter(Boolean)
+                      .join(" · ")}
                     <span className="text-muted-foreground ml-1.5 text-xs">
-                      v{t.version} · {t.bike_model_name ?? "—"}
-                      {t.bike_model_variant_name
-                        ? ` · ${t.bike_model_variant_name}`
-                        : ""}
+                      v{t.version}
+                      {t.bike_type_name ? ` · ${t.bike_type_name}` : ""}
                     </span>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        {isOneOff ? (
+          <Field
+            label="Bike type"
+            htmlFor="mo-bike-type"
+            required
+            error={errorField === "bike_type_id" ? error : null}
+          >
+            <Select
+              value={values.bike_type_id}
+              onValueChange={(v) => update("bike_type_id", v)}
+            >
+              <SelectTrigger id="mo-bike-type">
+                <SelectValue placeholder="Pick a bike type…" />
+              </SelectTrigger>
+              <SelectContent>
+                {bikeTypes.map((bt) => (
+                  <SelectItem key={bt.id} value={bt.id}>
+                    {bt.name_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        ) : null}
+
+        <Field
+          label={`Colour${hasTemplate ? "" : " (optional)"}`}
+          htmlFor="mo-color"
+          required={hasTemplate}
+          error={errorField === "color_id" ? error : null}
+        >
+          <Select
+            value={values.color_id}
+            onValueChange={(v) => update("color_id", v)}
+          >
+            <SelectTrigger id="mo-color">
+              <SelectValue
+                placeholder={
+                  hasTemplate ? "Pick a colour…" : "Unpainted / not decided yet"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {colors.length === 0 ? (
+                <div className="text-muted-foreground p-2 text-xs">
+                  No active colours.
+                </div>
+              ) : (
+                colors.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name_en}
                   </SelectItem>
                 ))
               )}

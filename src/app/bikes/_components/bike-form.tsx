@@ -14,43 +14,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { appendField } from "@/lib/forms";
 
 import { createBike } from "../_actions/save-bike";
 
 export type BikeTypeOption = { id: string; name_en: string };
-export type ModelOption = {
-  id: string;
-  name_en: string;
-  bike_type_id: string;
-};
-export type VariantOption = {
-  id: string;
-  bike_model_id: string;
-  sku: string;
-  name_en: string;
-};
+
 export type TemplateOption = {
   id: string;
-  bike_model_id: string;
-  bike_model_variant_id: string | null;
   name_en: string;
+  family: string | null;
+  frame_size: string;
   version: number;
+  bike_type_id: string;
+};
+
+export type ColorOption = {
+  id: string;
+  slug: string;
+  name_da: string;
+  name_en: string;
 };
 
 export type BikeFormValues = {
   bike_type_id: string;
-  bike_model_id: string;
-  bike_model_variant_id: string;
   template_id: string;
+  color_id: string;
   frame_number: string;
   notes: string;
 };
 
 export const EMPTY_BIKE_FORM: BikeFormValues = {
   bike_type_id: "",
-  bike_model_id: "",
-  bike_model_variant_id: "",
   template_id: "",
+  color_id: "",
   frame_number: "",
   notes: "",
 };
@@ -58,52 +55,26 @@ export const EMPTY_BIKE_FORM: BikeFormValues = {
 type Props = {
   initial: BikeFormValues;
   bikeTypes: BikeTypeOption[];
-  models: ModelOption[];
-  variants: VariantOption[];
   templates: TemplateOption[];
+  colors: ColorOption[];
 };
 
-export function BikeForm({
-  initial,
-  bikeTypes,
-  models,
-  variants,
-  templates,
-}: Props) {
+export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<BikeFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const modelsForType = useMemo(
+  // Templates are filtered by the picked bike_type. If no type is picked yet,
+  // show everything so the user can preview the catalog.
+  const templatesForType = useMemo(
     () =>
       values.bike_type_id
-        ? models.filter((m) => m.bike_type_id === values.bike_type_id)
-        : models,
-    [models, values.bike_type_id],
+        ? templates.filter((t) => t.bike_type_id === values.bike_type_id)
+        : templates,
+    [templates, values.bike_type_id],
   );
-  const variantsForModel = useMemo(
-    () =>
-      values.bike_model_id
-        ? variants.filter((v) => v.bike_model_id === values.bike_model_id)
-        : [],
-    [variants, values.bike_model_id],
-  );
-  const templatesForVariantOrModel = useMemo(() => {
-    if (!values.bike_model_id) return [];
-    return templates.filter((t) => {
-      if (t.bike_model_id !== values.bike_model_id) return false;
-      // If a variant is chosen, prefer templates pinned to that variant or any.
-      if (values.bike_model_variant_id) {
-        return (
-          t.bike_model_variant_id === values.bike_model_variant_id ||
-          t.bike_model_variant_id == null
-        );
-      }
-      return true;
-    });
-  }, [templates, values.bike_model_id, values.bike_model_variant_id]);
 
   function update<K extends keyof BikeFormValues>(
     key: K,
@@ -111,18 +82,8 @@ export function BikeForm({
   ) {
     setValues((prev) => {
       const next = { ...prev, [key]: value };
-      // Reset dependent selections when an upstream picker changes
+      // Changing bike type invalidates the previously picked template.
       if (key === "bike_type_id" && value !== prev.bike_type_id) {
-        next.bike_model_id = "";
-        next.bike_model_variant_id = "";
-        next.template_id = "";
-      } else if (key === "bike_model_id" && value !== prev.bike_model_id) {
-        next.bike_model_variant_id = "";
-        next.template_id = "";
-      } else if (
-        key === "bike_model_variant_id" &&
-        value !== prev.bike_model_variant_id
-      ) {
         next.template_id = "";
       }
       return next;
@@ -135,12 +96,11 @@ export function BikeForm({
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    fd.append("bike_type_id", values.bike_type_id);
-    fd.append("bike_model_id", values.bike_model_id);
-    fd.append("bike_model_variant_id", values.bike_model_variant_id);
-    fd.append("template_id", values.template_id);
-    fd.append("frame_number", values.frame_number);
-    fd.append("notes", values.notes);
+    appendField(fd, "bike_type_id", values.bike_type_id);
+    appendField(fd, "template_id", values.template_id);
+    appendField(fd, "color_id", values.color_id);
+    appendField(fd, "frame_number", values.frame_number);
+    appendField(fd, "notes", values.notes);
     return fd;
   }
 
@@ -165,7 +125,7 @@ export function BikeForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
         title="What kind of bike"
-        description="The type drives which identifiers will be required. Model, variant, and template are optional — useful when the bike was built against a known recipe, omit for one-offs."
+        description="The type drives which identifiers will be required. Pick a template if this bike was built against a known recipe; leave blank for one-offs."
       >
         <Field
           label="Bike type"
@@ -189,90 +149,52 @@ export function BikeForm({
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Model (optional)" htmlFor="bike-model">
-          <Select
-            value={values.bike_model_id}
-            onValueChange={(v) => update("bike_model_id", v)}
-            disabled={!values.bike_type_id}
-          >
-            <SelectTrigger id="bike-model">
-              <SelectValue
-                placeholder={
-                  values.bike_type_id ? "Pick a model…" : "Pick a type first"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {modelsForType.length === 0 ? (
-                <div className="text-muted-foreground p-2 text-xs">
-                  No active models for this type.
-                </div>
-              ) : (
-                modelsForType.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name_en}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field label="Variant (optional)" htmlFor="bike-variant">
-          <Select
-            value={values.bike_model_variant_id}
-            onValueChange={(v) => update("bike_model_variant_id", v)}
-            disabled={!values.bike_model_id}
-          >
-            <SelectTrigger id="bike-variant">
-              <SelectValue
-                placeholder={
-                  values.bike_model_id ? "Pick a variant…" : "Pick a model first"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {variantsForModel.length === 0 ? (
-                <div className="text-muted-foreground p-2 text-xs">
-                  No active variants for this model.
-                </div>
-              ) : (
-                variantsForModel.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name_en}
-                    <span className="text-muted-foreground ml-1.5 font-mono text-xs">
-                      ({v.sku})
-                    </span>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </Field>
         <Field label="Template (optional)" htmlFor="bike-template">
           <Select
             value={values.template_id}
             onValueChange={(v) => update("template_id", v)}
-            disabled={!values.bike_model_id}
           >
             <SelectTrigger id="bike-template">
-              <SelectValue
-                placeholder={
-                  values.bike_model_id ? "Pick a template…" : "Pick a model first"
-                }
-              />
+              <SelectValue placeholder="Pick a template…" />
             </SelectTrigger>
             <SelectContent>
-              {templatesForVariantOrModel.length === 0 ? (
+              {templatesForType.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No current templates for this combination.
+                  No current templates
+                  {values.bike_type_id ? " for this type." : "."}
                 </div>
               ) : (
-                templatesForVariantOrModel.map((t) => (
+                templatesForType.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
-                    {t.name_en}{" "}
+                    {[t.family, t.frame_size, t.name_en]
+                      .filter(Boolean)
+                      .join(" · ")}
                     <span className="text-muted-foreground ml-1.5 text-xs">
                       v{t.version}
                     </span>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Colour (optional)" htmlFor="bike-color">
+          <Select
+            value={values.color_id}
+            onValueChange={(v) => update("color_id", v)}
+          >
+            <SelectTrigger id="bike-color">
+              <SelectValue placeholder="Unpainted / not decided yet" />
+            </SelectTrigger>
+            <SelectContent>
+              {colors.length === 0 ? (
+                <div className="text-muted-foreground p-2 text-xs">
+                  No active colours.
+                </div>
+              ) : (
+                colors.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name_en}
                   </SelectItem>
                 ))
               )}

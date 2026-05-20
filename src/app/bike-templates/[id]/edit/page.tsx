@@ -13,9 +13,9 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   TemplateForm,
-  type ModelOption,
+  type BikeTypeOption,
+  type CurrencyOption,
   type TemplateShellValues,
-  type VariantOption,
 } from "../../_components/template-form";
 
 export default async function EditBikeTemplatePage({
@@ -26,28 +26,28 @@ export default async function EditBikeTemplatePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [tplRes, modelsRes, variantsRes] = await Promise.all([
+  const [tplRes, typesRes, currenciesRes] = await Promise.all([
     supabase
       .from("bike_templates")
       .select(
         `
           id, name_en, name_da, notes, version, is_current,
-          bike_model_id, bike_model_variant_id, bike_type_id,
-          bike_model:bike_models(id, name_en),
-          bike_model_variant:bike_model_variants(id, sku, name_en)
+          bike_type_id, family, frame_size,
+          default_retail_price, default_retail_currency
         `,
       )
       .eq("id", id)
       .maybeSingle(),
     supabase
-      .from("bike_models")
-      .select("id, name_en, bike_type:bike_types(name_en)")
-      .is("deleted_at", null)
+      .from("bike_types")
+      .select("id, name_en")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase
-      .from("bike_model_variants")
-      .select("id, bike_model_id, sku, name_en, is_active")
-      .order("sku", { ascending: true }),
+      .from("currencies")
+      .select("code, symbol")
+      .order("code", { ascending: true }),
   ]);
 
   if (tplRes.error) {
@@ -57,18 +57,18 @@ export default async function EditBikeTemplatePage({
 
   const t = tplRes.data;
   const initial: TemplateShellValues = {
-    bike_model_id: t.bike_model_id,
-    bike_model_variant_id: t.bike_model_variant_id ?? "all",
+    bike_type_id: t.bike_type_id,
+    family: t.family ?? "",
+    frame_size: t.frame_size,
     name_en: t.name_en,
     name_da: t.name_da ?? "",
+    default_retail_price:
+      t.default_retail_price == null ? "" : String(t.default_retail_price),
+    default_retail_currency: t.default_retail_currency ?? "DKK",
     notes: t.notes ?? "",
   };
-  const models: ModelOption[] = (modelsRes.data ?? []).map((m) => ({
-    id: m.id,
-    name_en: m.name_en,
-    bike_type_name: m.bike_type?.name_en ?? null,
-  }));
-  const variants: VariantOption[] = variantsRes.data ?? [];
+  const bikeTypes: BikeTypeOption[] = typesRes.data ?? [];
+  const currencies: CurrencyOption[] = currenciesRes.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-6">
@@ -110,8 +110,8 @@ export default async function EditBikeTemplatePage({
         mode="edit"
         templateId={t.id}
         initial={initial}
-        models={models}
-        variants={variants}
+        bikeTypes={bikeTypes}
+        currencies={currencies}
       />
     </div>
   );

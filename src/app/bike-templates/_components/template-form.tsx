@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -21,32 +21,35 @@ import {
   updateTemplate,
 } from "../_actions/save-template";
 
-export type ModelOption = {
+export type BikeTypeOption = {
   id: string;
   name_en: string;
-  bike_type_name: string | null;
 };
-export type VariantOption = {
-  id: string;
-  bike_model_id: string;
-  sku: string;
-  name_en: string;
-  is_active: boolean;
+
+export type CurrencyOption = {
+  code: string;
+  symbol: string | null;
 };
 
 export type TemplateShellValues = {
-  bike_model_id: string;
-  bike_model_variant_id: string;
+  bike_type_id: string;
+  family: string;
+  frame_size: string;
   name_en: string;
   name_da: string;
+  default_retail_price: string;
+  default_retail_currency: string;
   notes: string;
 };
 
 export const EMPTY_TEMPLATE_SHELL: TemplateShellValues = {
-  bike_model_id: "",
-  bike_model_variant_id: "all",
+  bike_type_id: "",
+  family: "",
+  frame_size: "",
   name_en: "",
   name_da: "",
+  default_retail_price: "",
+  default_retail_currency: "DKK",
   notes: "",
 };
 
@@ -54,16 +57,16 @@ type Props = {
   mode: "create" | "edit";
   templateId?: string;
   initial: TemplateShellValues;
-  models: ModelOption[];
-  variants: VariantOption[];
+  bikeTypes: BikeTypeOption[];
+  currencies: CurrencyOption[];
 };
 
 export function TemplateForm({
   mode,
   templateId,
   initial,
-  models,
-  variants,
+  bikeTypes,
+  currencies,
 }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<TemplateShellValues>(initial);
@@ -71,22 +74,11 @@ export function TemplateForm({
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const variantsForModel = useMemo(
-    () => variants.filter((v) => v.bike_model_id === values.bike_model_id),
-    [variants, values.bike_model_id],
-  );
-
   function update<K extends keyof TemplateShellValues>(
     key: K,
     value: TemplateShellValues[K],
   ) {
-    setValues((prev) => {
-      // If model changes, reset the variant — old variant doesn't belong to new model
-      if (key === "bike_model_id" && value !== prev.bike_model_id) {
-        return { ...prev, bike_model_id: value as string, bike_model_variant_id: "all" };
-      }
-      return { ...prev, [key]: value };
-    });
+    setValues((prev) => ({ ...prev, [key]: value }));
     if (errorField === key) {
       setError(null);
       setErrorField(null);
@@ -95,10 +87,13 @@ export function TemplateForm({
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    appendField(fd, "bike_model_id", values.bike_model_id);
-    appendField(fd, "bike_model_variant_id", values.bike_model_variant_id);
+    appendField(fd, "bike_type_id", values.bike_type_id);
+    appendField(fd, "family", values.family);
+    appendField(fd, "frame_size", values.frame_size);
     appendField(fd, "name_en", values.name_en);
     appendField(fd, "name_da", values.name_da);
+    appendField(fd, "default_retail_price", values.default_retail_price);
+    appendField(fd, "default_retail_currency", values.default_retail_currency);
     appendField(fd, "notes", values.notes);
     return fd;
   }
@@ -120,7 +115,8 @@ export function TemplateForm({
   }
 
   function onCancel() {
-    if (mode === "edit" && templateId) router.push(`/bike-templates/${templateId}`);
+    if (mode === "edit" && templateId)
+      router.push(`/bike-templates/${templateId}`);
     else router.push("/bike-templates");
   }
 
@@ -132,79 +128,70 @@ export function TemplateForm({
         title="What this template is for"
         description={
           isEdit
-            ? "Model and variant are locked to preserve history. To re-target, save as a new version on a different model."
-            : "Pick the model this recipe is for. A variant is optional — leave blank if the recipe applies to every variant of the model."
+            ? "Bike type is locked to preserve history. To re-target, create a new template."
+            : "Pick the bike type. Frame size lives on the template — small and large of the same bike are two separate templates."
         }
       >
         <Field
-          label="Bike model"
-          htmlFor="tpl-model"
+          label="Bike type"
+          htmlFor="tpl-bike-type"
           required
-          error={errorField === "bike_model_id" ? error : null}
+          error={errorField === "bike_type_id" ? error : null}
         >
           {isEdit ? (
             <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
-              {models.find((m) => m.id === values.bike_model_id)?.name_en ?? "—"}
+              {bikeTypes.find((t) => t.id === values.bike_type_id)?.name_en ??
+                "—"}
             </p>
           ) : (
             <Select
-              value={values.bike_model_id}
-              onValueChange={(v) => update("bike_model_id", v)}
+              value={values.bike_type_id}
+              onValueChange={(v) => update("bike_type_id", v)}
             >
-              <SelectTrigger id="tpl-model">
-                <SelectValue placeholder="Pick a model…" />
+              <SelectTrigger id="tpl-bike-type">
+                <SelectValue placeholder="Pick a type…" />
               </SelectTrigger>
               <SelectContent>
-                {models.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name_en}
-                    {m.bike_type_name ? (
-                      <span className="text-muted-foreground ml-1.5 text-xs">
-                        ({m.bike_type_name})
-                      </span>
-                    ) : null}
+                {bikeTypes.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name_en}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
         </Field>
-        <Field label="Variant (optional)" htmlFor="tpl-variant">
-          {isEdit ? (
-            <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
-              {values.bike_model_variant_id === "all"
-                ? "Any variant"
-                : variants.find((v) => v.id === values.bike_model_variant_id)
-                    ?.name_en ?? "—"}
-            </p>
-          ) : (
-            <Select
-              value={values.bike_model_variant_id}
-              onValueChange={(v) => update("bike_model_variant_id", v)}
-              disabled={!values.bike_model_id}
-            >
-              <SelectTrigger id="tpl-variant">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Any variant</SelectItem>
-                {variantsForModel.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name_en}
-                    <span className="text-muted-foreground ml-1.5 font-mono text-xs">
-                      ({v.sku})
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+        <Field
+          label="Family"
+          htmlFor="tpl-family"
+          error={errorField === "family" ? error : null}
+        >
+          <Input
+            id="tpl-family"
+            value={values.family}
+            onChange={(e) => update("family", e.target.value)}
+            placeholder="e.g. Norma — groups sizes together in the UI."
+          />
+        </Field>
+        <Field
+          label="Frame size"
+          htmlFor="tpl-frame-size"
+          required
+          error={errorField === "frame_size" ? error : null}
+        >
+          <Input
+            id="tpl-frame-size"
+            value={values.frame_size}
+            onChange={(e) => update("frame_size", e.target.value)}
+            placeholder="e.g. 48cm, 53cm, S, L"
+            required
+          />
         </Field>
       </FormSection>
 
       <FormSection
         title="Identification"
-        description="The template name is mostly internal but cheap to translate."
+        description="The template name shows in the catalog and on customer documents."
       >
         <Field
           label="Name (English)"
@@ -216,7 +203,7 @@ export function TemplateForm({
             id="tpl-name-en"
             value={values.name_en}
             onChange={(e) => update("name_en", e.target.value)}
-            placeholder="e.g. Hospital Service Bike — standard recipe"
+            placeholder="e.g. Norma 48cm — hospital build"
             required
             autoFocus={mode === "create"}
           />
@@ -229,13 +216,61 @@ export function TemplateForm({
             placeholder="Optional"
           />
         </Field>
+      </FormSection>
+
+      <FormSection
+        title="Default retail price"
+        description="The starting price for this template — can be overridden per quote line."
+      >
+        <div className="grid grid-cols-3 gap-3">
+          <Field
+            label="Price"
+            htmlFor="tpl-price"
+            error={errorField === "default_retail_price" ? error : null}
+          >
+            <Input
+              id="tpl-price"
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              value={values.default_retail_price}
+              onChange={(e) =>
+                update("default_retail_price", e.target.value)
+              }
+              placeholder="0,00"
+            />
+          </Field>
+          <Field label="Currency" htmlFor="tpl-currency">
+            <Select
+              value={values.default_retail_currency}
+              onValueChange={(v) => update("default_retail_currency", v)}
+            >
+              <SelectTrigger id="tpl-currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Notes"
+        description="Internal notes about this template — not shown to customers."
+      >
         <Field label="Notes" htmlFor="tpl-notes">
           <Textarea
             id="tpl-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Internal notes about this template — not shown to customers."
           />
         </Field>
       </FormSection>

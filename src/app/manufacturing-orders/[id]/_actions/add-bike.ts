@@ -11,8 +11,8 @@ export type AddBikeResult =
 
 /**
  * Create a bike attached to a manufacturing order. The bike inherits the MO's
- * model/variant/template/type. Status starts at 'planning'; the user advances
- * it through 'building' to 'in_stock' as the build progresses.
+ * type, template (if any), and color. Status starts at 'planning'; the user
+ * advances it through 'building' to 'in_stock' as the build progresses.
  *
  * The frame number is registered as a bike_identifier so the global UNIQUE
  * constraint catches collisions across all bikes.
@@ -34,7 +34,7 @@ export async function addBikeToMO(
   const { data: mo, error: moErr } = await supabase
     .from("manufacturing_orders")
     .select(
-      "id, bike_type_id, bike_model_id, bike_model_variant_id, bike_template_id, target_quantity, completed_quantity, status",
+      "id, bike_type_id, bike_template_id, color_id, target_quantity, completed_quantity, status",
     )
     .eq("id", moId)
     .maybeSingle();
@@ -67,9 +67,8 @@ export async function addBikeToMO(
     .from("bikes")
     .insert({
       bike_type_id: mo.bike_type_id,
-      bike_model_id: mo.bike_model_id,
-      bike_model_variant_id: mo.bike_model_variant_id,
       template_id: mo.bike_template_id,
+      color_id: mo.color_id,
       manufacturing_order_id: moId,
       frame_number,
       status: "planning",

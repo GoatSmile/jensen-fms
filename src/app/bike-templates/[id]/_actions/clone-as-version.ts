@@ -14,11 +14,10 @@ export type CloneResult =
  * the current parts list as the starting point, demote the previous version's
  * is_current flag.
  *
- * The given `parts` argument is the in-progress list from the editor —
- * if the user changed the recipe before clicking "Save as new version", those
- * changes land on the new version, leaving the old version untouched. If the
- * user just clicked "Save as new version" without changes, the parts list is
- * a faithful copy.
+ * The version chain is templates with the same (family, frame_size) pair,
+ * or — when family is NULL — same (name_en, frame_size). That's loose enough
+ * to handle templates without a family label, while still keeping size-based
+ * variants (e.g. Norma S vs Norma L) as separate chains.
  */
 export async function cloneAsNewVersion(
   templateId: string,
@@ -36,7 +35,8 @@ export async function cloneAsNewVersion(
   const { data: src, error: srcErr } = await supabase
     .from("bike_templates")
     .select(
-      "id, bike_model_id, bike_model_variant_id, bike_type_id, name_en, name_da, version, notes",
+      `id, bike_type_id, family, frame_size, name_en, name_da, version,
+       notes, default_retail_price, default_retail_currency`,
     )
     .eq("id", templateId)
     .maybeSingle();
@@ -48,20 +48,23 @@ export async function cloneAsNewVersion(
   }
 
   // Find the highest version in this template chain.
-  const { data: maxRow, error: maxErr } = await supabase
+  const maxQuery = supabase
     .from("bike_templates")
     .select("version")
-    .eq("bike_model_id", src.bike_model_id)
-    .filter(
-      "bike_model_variant_id",
-      src.bike_model_variant_id == null ? "is" : "eq",
-      src.bike_model_variant_id == null ? null : src.bike_model_variant_id,
-    )
+    .eq("frame_size", src.frame_size);
+  const maxQueryScoped = src.family
+    ? maxQuery.eq("family", src.family)
+    : maxQuery.is("family", null).eq("name_en", src.name_en);
+
+  const { data: maxRow, error: maxErr } = await maxQueryScoped
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (maxErr) {
-    return { ok: false, error: `Could not look up versions: ${maxErr.message}` };
+    return {
+      ok: false,
+      error: `Could not look up versions: ${maxErr.message}`,
+    };
   }
   const nextVersion = (maxRow?.version ?? src.version) + 1;
 
@@ -69,12 +72,14 @@ export async function cloneAsNewVersion(
   const { data: created, error: insErr } = await supabase
     .from("bike_templates")
     .insert({
-      bike_model_id: src.bike_model_id,
-      bike_model_variant_id: src.bike_model_variant_id,
       bike_type_id: src.bike_type_id,
+      family: src.family,
+      frame_size: src.frame_size,
       name_en: src.name_en,
       name_da: src.name_da,
       notes: src.notes,
+      default_retail_price: src.default_retail_price,
+      default_retail_currency: src.default_retail_currency,
       version: nextVersion,
       is_current: true,
     })
@@ -88,16 +93,16 @@ export async function cloneAsNewVersion(
   }
 
   // Demote previous current version(s) in this chain.
-  const { error: demoteErr } = await supabase
+  const demoteQuery = supabase
     .from("bike_templates")
     .update({ is_current: false })
-    .eq("bike_model_id", src.bike_model_id)
-    .filter(
-      "bike_model_variant_id",
-      src.bike_model_variant_id == null ? "is" : "eq",
-      src.bike_model_variant_id == null ? null : src.bike_model_variant_id,
-    )
+    .eq("frame_size", src.frame_size)
     .neq("id", created.id);
+  const demoteScoped = src.family
+    ? demoteQuery.eq("family", src.family)
+    : demoteQuery.is("family", null).eq("name_en", src.name_en);
+
+  const { error: demoteErr } = await demoteScoped;
   if (demoteErr) {
     return {
       ok: false,
@@ -129,6 +134,5 @@ export async function cloneAsNewVersion(
   revalidatePath("/bike-templates");
   revalidatePath(`/bike-templates/${templateId}`);
   revalidatePath(`/bike-templates/${created.id}`);
-  revalidatePath(`/bike-models/${src.bike_model_id}`);
   redirect(`/bike-templates/${created.id}`);
 }

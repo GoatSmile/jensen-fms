@@ -25,6 +25,23 @@ type SearchParams = {
   current?: string;
 };
 
+function formatPrice(
+  amount: number | null,
+  currency: string | null,
+): string {
+  if (amount == null || !currency) return "—";
+  if (currency === "DKK") {
+    return `${new Intl.NumberFormat("da-DK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)} kr.`;
+  }
+  return `${new Intl.NumberFormat("en", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)} ${currency}`;
+}
+
 export default async function BikeTemplatesPage({
   searchParams,
 }: {
@@ -41,15 +58,19 @@ export default async function BikeTemplatesPage({
         id,
         name_en,
         name_da,
+        family,
+        frame_size,
         version,
         is_current,
+        default_retail_price,
+        default_retail_currency,
         created_at,
-        bike_model:bike_models(id, name_en, deleted_at),
-        bike_model_variant:bike_model_variants(id, sku, name_en),
         bike_type:bike_types(id, name_en)
       `,
     )
-    .order("created_at", { ascending: false });
+    .order("family", { ascending: true, nullsFirst: false })
+    .order("frame_size", { ascending: true })
+    .order("version", { ascending: false });
 
   if (!showAllVersions) {
     q = q.eq("is_current", true);
@@ -95,7 +116,9 @@ export default async function BikeTemplatesPage({
             </h1>
             <p className="text-muted-foreground text-sm">
               {rows.length}{" "}
-              {showAllVersions ? "templates (all versions)" : "current templates"}
+              {showAllVersions
+                ? "templates (all versions)"
+                : "current templates"}
               {" · "}
               <Link
                 href={
@@ -119,8 +142,8 @@ export default async function BikeTemplatesPage({
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No templates yet. Create a bike model first, then add a template
-          recipe to it.
+          No templates yet. Templates are the product catalog — each template
+          is one bike with a fixed frame size; color is picked at order time.
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border">
@@ -128,9 +151,10 @@ export default async function BikeTemplatesPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Template</TableHead>
+                <TableHead>Family</TableHead>
+                <TableHead>Size</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Variant</TableHead>
+                <TableHead className="text-right">Retail</TableHead>
                 <TableHead className="text-right">Version</TableHead>
                 <TableHead className="text-right">Parts</TableHead>
               </TableRow>
@@ -154,6 +178,22 @@ export default async function BikeTemplatesPage({
                       ) : null}
                     </Link>
                   </TableCell>
+                  <TableCell className="p-0 text-sm">
+                    <Link
+                      href={`/bike-templates/${t.id}`}
+                      className="block px-4 py-2.5"
+                    >
+                      {t.family ?? "—"}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0 text-sm tabular-nums">
+                    <Link
+                      href={`/bike-templates/${t.id}`}
+                      className="block px-4 py-2.5"
+                    >
+                      {t.frame_size}
+                    </Link>
+                  </TableCell>
                   <TableCell className="p-0">
                     <Link
                       href={`/bike-templates/${t.id}`}
@@ -164,20 +204,17 @@ export default async function BikeTemplatesPage({
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0">
-                    <Link
-                      href={`/bike-templates/${t.id}`}
-                      className="block px-4 py-2.5 text-sm"
-                    >
-                      {t.bike_model?.name_en ?? "—"}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
+                  <TableCell className="p-0 text-right text-sm tabular-nums">
                     <Link
                       href={`/bike-templates/${t.id}`}
                       className="block px-4 py-2.5"
                     >
-                      {t.bike_model_variant?.name_en ?? "Any"}
+                      {formatPrice(
+                        t.default_retail_price == null
+                          ? null
+                          : Number(t.default_retail_price),
+                        t.default_retail_currency,
+                      )}
                     </Link>
                   </TableCell>
                   <TableCell className="p-0 text-right tabular-nums">

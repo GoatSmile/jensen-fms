@@ -12,9 +12,8 @@ export type SaveBikeResult =
 
 type ParsedFields = {
   bike_type_id: string;
-  bike_model_id: string | null;
-  bike_model_variant_id: string | null;
   template_id: string | null;
+  color_id: string | null;
   frame_number: string;
   notes: string | null;
 };
@@ -31,9 +30,8 @@ function parseFields(
 
   return {
     bike_type_id,
-    bike_model_id: nullable(formData.get("bike_model_id")),
-    bike_model_variant_id: nullable(formData.get("bike_model_variant_id")),
     template_id: nullable(formData.get("template_id")),
+    color_id: nullable(formData.get("color_id")),
     frame_number,
     notes: nullable(formData.get("notes")),
   };
@@ -54,11 +52,11 @@ function explainBikeError(err: { code?: string; message: string }): {
 
 /**
  * Manual bike creation (one-offs, demos, refurb candidates). The MO build
- * flow in Phase 2C will create bikes directly from a manufacturing order
- * and won't go through this path.
+ * flow creates bikes directly from a manufacturing order and won't go through
+ * this path.
  *
- * The bike starts in `planning` state. The 5 lifecycle identifiers (frame,
- * lock, etc.) are registered as separate actions in 2B.2.
+ * The bike starts in `planning` state. The lifecycle identifiers (frame, lock,
+ * etc.) are registered as separate actions after creation.
  */
 export async function createBike(
   formData: FormData,
@@ -74,9 +72,8 @@ export async function createBike(
     .from("bikes")
     .insert({
       bike_type_id: parsed.bike_type_id,
-      bike_model_id: parsed.bike_model_id,
-      bike_model_variant_id: parsed.bike_model_variant_id,
       template_id: parsed.template_id,
+      color_id: parsed.color_id,
       frame_number: parsed.frame_number,
       status: "planning",
       notes: parsed.notes,

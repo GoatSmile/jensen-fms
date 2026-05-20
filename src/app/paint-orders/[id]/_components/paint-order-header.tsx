@@ -24,59 +24,54 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  MO_STATUS_VARIANT,
-  moStatusLabel,
-  moTransitionRequiresReason,
-  validNextMOStatuses,
-  type MOStatus,
-} from "@/lib/mo/status";
+  PAINT_ORDER_STATUS_VARIANT,
+  paintOrderStatusLabel,
+  paintOrderTransitionRequiresReason,
+  validNextPaintOrderStatuses,
+  type PaintOrderStatus,
+} from "@/lib/paint/status";
 
-import { transitionMO } from "../_actions/transition-mo";
+import { transitionPaintOrderStatus } from "../_actions/transition-status";
 
-type PendingTransition = { to: MOStatus } | null;
+type PendingTransition = { to: PaintOrderStatus } | null;
 
 type Props = {
-  moId: string;
-  moNumber: string;
-  status: MOStatus;
-  templateLabel: string | null;
-  templateId: string | null;
-  templateVersion: number | null;
-  bikeTypeName: string | null;
+  paintOrderId: string;
+  paintOrderNumber: string;
+  status: PaintOrderStatus;
+  supplierName: string | null;
   colorName: string | null;
   colorHex: string | null;
 };
 
-export function MOHeader({
-  moId,
-  moNumber,
+export function PaintOrderHeader({
+  paintOrderId,
+  paintOrderNumber,
   status,
-  templateLabel,
-  templateId,
-  templateVersion,
-  bikeTypeName,
+  supplierName,
   colorName,
   colorHex,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const [transitionDialog, setTransitionDialog] = useState<PendingTransition>(null);
+  const [transitionDialog, setTransitionDialog] =
+    useState<PendingTransition>(null);
 
-  const nextStatuses = validNextMOStatuses(status);
+  const nextStatuses = validNextPaintOrderStatuses(status);
 
-  function startTransition(to: MOStatus) {
-    if (moTransitionRequiresReason(to)) {
+  function startTransition(to: PaintOrderStatus) {
+    if (paintOrderTransitionRequiresReason(to)) {
       setTransitionDialog({ to });
     } else {
       runTransition(to, null);
     }
   }
 
-  function runTransition(to: MOStatus, reason: string | null) {
+  function runTransition(to: PaintOrderStatus, reason: string | null) {
     setError(null);
     start(async () => {
-      const r = await transitionMO(moId, to, reason);
+      const r = await transitionPaintOrderStatus(paintOrderId, to, reason);
       if (!r.ok) {
         setError(r.error);
         return;
@@ -97,47 +92,27 @@ export function MOHeader({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground font-mono text-xs">
-              {moNumber}
+              {paintOrderNumber}
             </span>
-            <Badge variant={MO_STATUS_VARIANT[status] ?? "outline"}>
-              {moStatusLabel(status)}
+            <Badge variant={PAINT_ORDER_STATUS_VARIANT[status] ?? "outline"}>
+              {paintOrderStatusLabel(status)}
             </Badge>
-            {bikeTypeName ? (
-              <Badge variant="outline" className="font-normal">
-                {bikeTypeName}
-              </Badge>
-            ) : null}
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {templateLabel ?? (
-              <span className="italic">One-off manufacturing order</span>
-            )}
+            {supplierName ?? "Paint order"}
           </h1>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-            {templateLabel && templateId ? (
-              <span>
-                Built against{" "}
-                <a
-                  href={`/bike-templates/${templateId}`}
-                  className="hover:text-foreground underline-offset-4 hover:underline"
-                >
-                  template{templateVersion != null ? ` v${templateVersion}` : ""}
-                </a>
-              </span>
-            ) : null}
-            {colorName ? (
-              <span className="inline-flex items-center gap-2">
-                {colorHex ? (
-                  <span
-                    aria-hidden
-                    className="border-border inline-block size-3 rounded-full border"
-                    style={{ backgroundColor: colorHex }}
-                  />
-                ) : null}
-                {colorName}
-              </span>
-            ) : null}
-          </div>
+          {colorName ? (
+            <p className="text-muted-foreground inline-flex items-center gap-2 text-sm">
+              {colorHex ? (
+                <span
+                  aria-hidden
+                  className="border-border inline-block size-3 rounded-full border"
+                  style={{ backgroundColor: colorHex }}
+                />
+              ) : null}
+              {colorName}
+            </p>
+          ) : null}
         </div>
         <div className="flex gap-2">
           {nextStatuses.length > 0 ? (
@@ -149,7 +124,7 @@ export function MOHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {nextStatuses.map((to, i) => {
-                  const isTerminal = moTransitionRequiresReason(to);
+                  const isTerminal = paintOrderTransitionRequiresReason(to);
                   return (
                     <div key={to}>
                       {i > 0 && isTerminal ? <DropdownMenuSeparator /> : null}
@@ -161,7 +136,7 @@ export function MOHeader({
                           startTransition(to);
                         }}
                       >
-                        {moStatusLabel(to)}
+                        {paintOrderStatusLabel(to)}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -215,23 +190,21 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>
-              {pending ? `Cancel MO?` : "Confirm"}
-            </DialogTitle>
+            <DialogTitle>Cancel paint order?</DialogTitle>
             <DialogDescription>
-              The MO will be cancelled and the reason will be appended to its
-              notes for the audit trail. Bikes already attached to this MO are
+              The order will be cancelled and the reason will be appended to
+              its notes for the audit trail. Bikes attached to this order are
               not changed.
             </DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="mo-cancel-reason">Reason</Label>
+            <Label htmlFor="paint-cancel-reason">Reason</Label>
             <Textarea
-              id="mo-cancel-reason"
+              id="paint-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer cancelled the order before any bikes were built."
+              placeholder="e.g. Painter shut down for the holiday — re-batched next week."
               autoFocus
               required
             />
@@ -253,7 +226,7 @@ function CancelReasonDialog({
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel MO"}
+              {isPending ? "Cancelling…" : "Cancel paint order"}
             </Button>
           </DialogFooter>
         </form>

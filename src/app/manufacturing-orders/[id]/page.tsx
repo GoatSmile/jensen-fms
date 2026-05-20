@@ -40,11 +40,10 @@ export default async function ManufacturingOrderDetailPage({
         planned_start_date, planned_completion_date,
         actual_start_date, actual_completion_date,
         notes, created_at,
-        bike_model_id, bike_model_variant_id, bike_template_id, bike_type_id,
-        bike_model:bike_models(id, name_en, frame_number_code),
-        bike_model_variant:bike_model_variants(id, name_en, sku),
-        bike_type:bike_types(id, name_en),
-        bike_template:bike_templates(id, name_en, version, is_current)
+        bike_template_id, bike_type_id, color_id,
+        bike_type:bike_types(id, name_en, slug),
+        bike_template:bike_templates(id, name_en, family, frame_size, version, is_current),
+        color:colors(id, slug, name_en, hex)
       `,
     )
     .eq("id", id)
@@ -165,19 +164,28 @@ export default async function ManufacturingOrderDetailPage({
   // Compute outstanding bikes for the parts stock-check (target − attached).
   const outstandingBikes = Math.max(0, mo.target_quantity - moBikeRows.length);
 
-  // Frame-number suggestion for the next bike.
-  const existingFrameNumbers = (
-    await supabase
-      .from("bikes")
-      .select("frame_number")
-      .eq("bike_model_id", mo.bike_model_id)
-  ).data?.map((b) => b.frame_number) ?? [];
+  // Frame-number suggestion for the next bike. With models gone, we derive
+  // the prefix from the bike_type's slug (uppercased, e.g. "hsb" → "HSB").
+  // Existing frame numbers come from bikes attached to this MO so the
+  // sequence stays per-batch.
+  const existingFrameNumbers =
+    bikesRes.data?.map((b) => b.frame_number) ?? [];
 
   const suggestedFrameNumber = nextFrameNumberSuggestion({
     year: new Date().getFullYear(),
-    code: mo.bike_model?.frame_number_code ?? null,
+    code: mo.bike_type?.slug ?? null,
     existing: existingFrameNumbers,
   });
+
+  const templateLabel = mo.bike_template
+    ? [
+        mo.bike_template.family,
+        mo.bike_template.frame_size,
+        mo.bike_template.name_en,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
@@ -205,11 +213,12 @@ export default async function ManufacturingOrderDetailPage({
         moId={mo.id}
         moNumber={mo.mo_number}
         status={mo.status as MOStatus}
-        modelName={mo.bike_model?.name_en ?? null}
-        variantName={mo.bike_model_variant?.name_en ?? null}
-        templateName={mo.bike_template?.name_en ?? null}
+        templateLabel={templateLabel}
+        templateId={mo.bike_template?.id ?? null}
         templateVersion={mo.bike_template?.version ?? null}
         bikeTypeName={mo.bike_type?.name_en ?? null}
+        colorName={mo.color?.name_en ?? null}
+        colorHex={mo.color?.hex ?? null}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

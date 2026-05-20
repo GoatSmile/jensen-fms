@@ -89,7 +89,7 @@ export function AddBikeDialog({
           <DialogHeader>
             <DialogTitle>Add bike to this MO</DialogTitle>
             <DialogDescription>
-              The bike inherits the MO&rsquo;s model, variant, and template.
+              The bike inherits the MO&rsquo;s type, template, and colour.
               Other identifiers (lock, battery, charger, &hellip;) get registered
               after the bike is created.
             </DialogDescription>
@@ -106,8 +106,7 @@ export function AddBikeDialog({
               autoFocus
             />
             <p className="text-muted-foreground text-xs">
-              Suggestion based on the model&rsquo;s frame-number code &mdash;
-              override freely.
+              Suggestion based on the bike type &mdash; override freely.
             </p>
             {errorField === "frame_number" && error ? (
               <p className="text-destructive text-xs" role="alert">
