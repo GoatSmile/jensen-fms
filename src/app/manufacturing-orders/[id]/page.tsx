@@ -204,7 +204,7 @@ export default async function ManufacturingOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{mo.mo_number}</BreadcrumbPage>
+            <BreadcrumbPage className="font-mono">{mo.mo_number}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

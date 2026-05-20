@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import {
   STOCK_BADGE_LABEL,
   STOCK_BADGE_VARIANT,
@@ -19,6 +20,20 @@ import {
 } from "@/lib/parts/stock";
 
 import { SortableHeader } from "./sortable-header";
+
+/** Map a stock status to a per-row left-edge accent so low/out parts pop
+ *  while scanning. The class targets the row's first cell so the colour
+ *  appears as a 2px stripe down the leftmost column. */
+function attentionBorder(status: StockStatus): string {
+  switch (status) {
+    case "out":
+      return "shadow-[inset_3px_0_0_var(--destructive)]";
+    case "low":
+      return "shadow-[inset_3px_0_0_var(--color-chart-2)]";
+    default:
+      return "";
+  }
+}
 
 export type PartRow = {
   id: string;
@@ -82,7 +97,10 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
           {rows.map((row) => (
             <TableRow
               key={row.id}
-              className="hover:bg-muted/50 cursor-pointer"
+              className={cn(
+                "hover:bg-muted/50 cursor-pointer",
+                attentionBorder(row.stockStatus),
+              )}
             >
               <TableCell className="p-0">
                 <Link

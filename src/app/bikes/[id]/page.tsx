@@ -187,7 +187,7 @@ export default async function BikeDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{b.frame_number}</BreadcrumbPage>
+            <BreadcrumbPage className="font-mono">{b.frame_number}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

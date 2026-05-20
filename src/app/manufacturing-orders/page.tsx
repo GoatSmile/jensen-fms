@@ -25,9 +25,28 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import {
   MO_STATUS_VARIANT,
+  OPEN_MO_STATUSES,
   moStatusLabel,
   type MOStatus,
 } from "@/lib/mo/status";
+import { cn } from "@/lib/utils";
+
+/** Inset 3px left stripe; cn-friendly. */
+const OVERDUE_BORDER = "shadow-[inset_3px_0_0_var(--destructive)]";
+
+function todayISODate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isMOOverdue(
+  status: string,
+  plannedCompletionDate: string | null,
+  today: string,
+): boolean {
+  if (!plannedCompletionDate) return false;
+  if (!OPEN_MO_STATUSES.includes(status as MOStatus)) return false;
+  return plannedCompletionDate < today;
+}
 
 export default async function ManufacturingOrdersPage() {
   const supabase = await createClient();
@@ -49,6 +68,7 @@ export default async function ManufacturingOrdersPage() {
   }
 
   const rows = data ?? [];
+  const today = todayISODate();
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -119,10 +139,18 @@ export default async function ManufacturingOrdersPage() {
                       .filter(Boolean)
                       .join(" · ")
                   : null;
+                const overdue = isMOOverdue(
+                  mo.status,
+                  mo.planned_completion_date,
+                  today,
+                );
                 return (
                   <TableRow
                     key={mo.id}
-                    className="hover:bg-muted/50 cursor-pointer"
+                    className={cn(
+                      "hover:bg-muted/50 cursor-pointer",
+                      overdue && OVERDUE_BORDER,
+                    )}
                   >
                     <TableCell className="p-0 font-mono text-xs">
                       <Link

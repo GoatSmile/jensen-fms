@@ -108,7 +108,7 @@ export default async function PurchaseOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{po.po_number}</BreadcrumbPage>
+            <BreadcrumbPage className="font-mono">{po.po_number}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

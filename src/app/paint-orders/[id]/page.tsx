@@ -148,7 +148,7 @@ export default async function PaintOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{order.paint_order_number}</BreadcrumbPage>
+            <BreadcrumbPage className="font-mono">{order.paint_order_number}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
