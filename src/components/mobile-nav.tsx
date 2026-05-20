@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -81,9 +82,13 @@ export function MobileNav() {
             <DialogPrimitive.Title className="sr-only">
               Navigation
             </DialogPrimitive.Title>
-            <div className="flex h-14 items-center justify-between border-b px-4">
-              <Link href="/" className="font-semibold tracking-tight">
-                Jensen FMS
+            <div className="flex h-20 items-center justify-between border-b px-4">
+              <Link
+                href="/"
+                aria-label="Jensen FMS — Dashboard"
+                className="flex items-center"
+              >
+                <Logo heightClass="h-12" />
               </Link>
               <DialogPrimitive.Close asChild>
                 <Button
@@ -109,7 +114,7 @@ export function MobileNav() {
                       className={cn(
                         "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
                         active
-                          ? "bg-foreground/10 text-foreground font-medium"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                           : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
                       )}
                     >
@@ -123,10 +128,14 @@ export function MobileNav() {
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
-      <Link href="/" className="text-sm font-semibold tracking-tight">
-        Jensen FMS
+      <Link
+        href="/"
+        aria-label="Jensen FMS — Dashboard"
+        className="flex items-center"
+      >
+        <Logo heightClass="h-7" />
       </Link>
-      {/* Right side spacer matches the hamburger size so the wordmark sits centred-ish. */}
+      {/* Right side spacer matches the hamburger size so the logo sits centred-ish. */}
       <div className="size-8" aria-hidden />
     </header>
   );

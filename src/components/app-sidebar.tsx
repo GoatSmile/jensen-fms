@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -37,9 +38,13 @@ export function AppSidebar() {
   const pathname = usePathname();
   return (
     <aside className="bg-muted/30 sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r md:flex">
-      <div className="flex h-14 items-center border-b px-4">
-        <Link href="/" className="font-semibold tracking-tight">
-          Jensen FMS
+      <div className="flex h-20 items-center justify-center border-b px-4">
+        <Link
+          href="/"
+          aria-label="Jensen FMS — Dashboard"
+          className="flex items-center"
+        >
+          <Logo heightClass="h-12" />
         </Link>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
@@ -55,7 +60,7 @@ export function AppSidebar() {
               className={cn(
                 "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                 active
-                  ? "bg-foreground/10 text-foreground font-medium"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                   : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
               )}
             >
