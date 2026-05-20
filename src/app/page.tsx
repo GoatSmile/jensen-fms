@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   Bike,
   Boxes,
+  Building2,
   CalendarClock,
   Hammer,
   Paintbrush,
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
     bikesCount,
     openMOsCount,
     openPaintCount,
+    customersCount,
     lowStockRes,
     overdueMOsRes,
     paintAgingRes,
@@ -80,6 +82,11 @@ export default async function DashboardPage() {
       .from("paint_orders")
       .select("id", { count: "exact", head: true })
       .in("status", OPEN_PAINT_STATUSES),
+    supabase
+      .from("organizations")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .is("deleted_at", null),
     // Top short parts. v_parts_dashboard already classifies stock_status.
     supabase
       .from("v_parts_dashboard")
@@ -142,7 +149,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* KPI strip */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         <StatCard
           label="Parts in catalog"
           value={partsCount.count ?? 0}
@@ -154,6 +161,12 @@ export default async function DashboardPage() {
           value={bikesCount.count ?? 0}
           icon={Bike}
           href="/bikes"
+        />
+        <StatCard
+          label="Customers"
+          value={customersCount.count ?? 0}
+          icon={Building2}
+          href="/organizations"
         />
         <StatCard
           label="Open manufacturing orders"
