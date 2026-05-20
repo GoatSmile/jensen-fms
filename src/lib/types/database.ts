@@ -188,141 +188,6 @@ export type Database = {
           },
         ]
       }
-      bike_model_variants: {
-        Row: {
-          bike_model_id: string
-          color_da: string | null
-          color_en: string | null
-          configuration: Json
-          created_at: string
-          frame_size: string | null
-          id: string
-          is_active: boolean
-          name_da: string | null
-          name_en: string
-          retail_currency: string | null
-          retail_price: number | null
-          sku: string
-          updated_at: string
-        }
-        Insert: {
-          bike_model_id: string
-          color_da?: string | null
-          color_en?: string | null
-          configuration?: Json
-          created_at?: string
-          frame_size?: string | null
-          id?: string
-          is_active?: boolean
-          name_da?: string | null
-          name_en: string
-          retail_currency?: string | null
-          retail_price?: number | null
-          sku: string
-          updated_at?: string
-        }
-        Update: {
-          bike_model_id?: string
-          color_da?: string | null
-          color_en?: string | null
-          configuration?: Json
-          created_at?: string
-          frame_size?: string | null
-          id?: string
-          is_active?: boolean
-          name_da?: string | null
-          name_en?: string
-          retail_currency?: string | null
-          retail_price?: number | null
-          sku?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bike_model_variants_bike_model_id_fkey"
-            columns: ["bike_model_id"]
-            isOneToOne: false
-            referencedRelation: "bike_models"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bike_model_variants_retail_currency_fkey"
-            columns: ["retail_currency"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-        ]
-      }
-      bike_models: {
-        Row: {
-          bike_type_id: string
-          created_at: string
-          deleted_at: string | null
-          description_da: string | null
-          description_en: string | null
-          frame_number_code: string | null
-          headline_currency: string | null
-          headline_retail_price: number | null
-          id: string
-          is_active: boolean
-          manufacturer: string | null
-          model_year: number | null
-          name_da: string | null
-          name_en: string
-          updated_at: string
-        }
-        Insert: {
-          bike_type_id: string
-          created_at?: string
-          deleted_at?: string | null
-          description_da?: string | null
-          description_en?: string | null
-          frame_number_code?: string | null
-          headline_currency?: string | null
-          headline_retail_price?: number | null
-          id?: string
-          is_active?: boolean
-          manufacturer?: string | null
-          model_year?: number | null
-          name_da?: string | null
-          name_en: string
-          updated_at?: string
-        }
-        Update: {
-          bike_type_id?: string
-          created_at?: string
-          deleted_at?: string | null
-          description_da?: string | null
-          description_en?: string | null
-          frame_number_code?: string | null
-          headline_currency?: string | null
-          headline_retail_price?: number | null
-          id?: string
-          is_active?: boolean
-          manufacturer?: string | null
-          model_year?: number | null
-          name_da?: string | null
-          name_en?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bike_models_bike_type_id_fkey"
-            columns: ["bike_type_id"]
-            isOneToOne: false
-            referencedRelation: "bike_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bike_models_headline_currency_fkey"
-            columns: ["headline_currency"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-        ]
-      }
       bike_parts: {
         Row: {
           bike_id: string
@@ -480,11 +345,13 @@ export type Database = {
       }
       bike_templates: {
         Row: {
-          bike_model_id: string
-          bike_model_variant_id: string | null
           bike_type_id: string
           created_at: string
           created_by: string | null
+          default_retail_currency: string | null
+          default_retail_price: number | null
+          family: string | null
+          frame_size: string
           id: string
           is_current: boolean
           name_da: string | null
@@ -493,11 +360,13 @@ export type Database = {
           version: number
         }
         Insert: {
-          bike_model_id: string
-          bike_model_variant_id?: string | null
           bike_type_id: string
           created_at?: string
           created_by?: string | null
+          default_retail_currency?: string | null
+          default_retail_price?: number | null
+          family?: string | null
+          frame_size: string
           id?: string
           is_current?: boolean
           name_da?: string | null
@@ -506,11 +375,13 @@ export type Database = {
           version?: number
         }
         Update: {
-          bike_model_id?: string
-          bike_model_variant_id?: string | null
           bike_type_id?: string
           created_at?: string
           created_by?: string | null
+          default_retail_currency?: string | null
+          default_retail_price?: number | null
+          family?: string | null
+          frame_size?: string
           id?: string
           is_current?: boolean
           name_da?: string | null
@@ -520,25 +391,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "bike_templates_bike_model_id_fkey"
-            columns: ["bike_model_id"]
-            isOneToOne: false
-            referencedRelation: "bike_models"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bike_templates_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bike_templates_bike_type_id_fkey"
             columns: ["bike_type_id"]
             isOneToOne: false
             referencedRelation: "bike_types"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bike_templates_default_retail_currency_fkey"
+            columns: ["default_retail_currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -617,10 +481,9 @@ export type Database = {
       bikes: {
         Row: {
           assigned_at: string | null
-          bike_model_id: string | null
-          bike_model_variant_id: string | null
           bike_type_id: string
           build_cost_dkk: number | null
+          color_id: string | null
           created_at: string
           current_location_id: string | null
           current_location_text: string | null
@@ -639,10 +502,9 @@ export type Database = {
         }
         Insert: {
           assigned_at?: string | null
-          bike_model_id?: string | null
-          bike_model_variant_id?: string | null
           bike_type_id: string
           build_cost_dkk?: number | null
+          color_id?: string | null
           created_at?: string
           current_location_id?: string | null
           current_location_text?: string | null
@@ -661,10 +523,9 @@ export type Database = {
         }
         Update: {
           assigned_at?: string | null
-          bike_model_id?: string | null
-          bike_model_variant_id?: string | null
           bike_type_id?: string
           build_cost_dkk?: number | null
+          color_id?: string | null
           created_at?: string
           current_location_id?: string | null
           current_location_text?: string | null
@@ -683,24 +544,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "bikes_bike_model_id_fkey"
-            columns: ["bike_model_id"]
-            isOneToOne: false
-            referencedRelation: "bike_models"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bikes_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bikes_bike_type_id_fkey"
             columns: ["bike_type_id"]
             isOneToOne: false
             referencedRelation: "bike_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikes_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -746,6 +600,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      colors: {
+        Row: {
+          created_at: string
+          hex: string | null
+          id: string
+          is_active: boolean
+          name_da: string
+          name_en: string
+          ral_code: string | null
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hex?: string | null
+          id?: string
+          is_active?: boolean
+          name_da: string
+          name_en: string
+          ral_code?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hex?: string | null
+          id?: string
+          is_active?: boolean
+          name_da?: string
+          name_en?: string
+          ral_code?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       contacts: {
         Row: {
@@ -1070,8 +963,8 @@ export type Database = {
       }
       invoice_lines: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           id: string
@@ -1087,8 +980,8 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -1104,8 +997,8 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -1122,17 +1015,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "invoice_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "invoice_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -1408,10 +1301,9 @@ export type Database = {
           actual_completion_date: string | null
           actual_start_date: string | null
           assigned_to_user_id: string | null
-          bike_model_id: string
-          bike_model_variant_id: string | null
-          bike_template_id: string
+          bike_template_id: string | null
           bike_type_id: string
+          color_id: string | null
           completed_quantity: number
           created_at: string
           created_by: string | null
@@ -1430,10 +1322,9 @@ export type Database = {
           actual_completion_date?: string | null
           actual_start_date?: string | null
           assigned_to_user_id?: string | null
-          bike_model_id: string
-          bike_model_variant_id?: string | null
-          bike_template_id: string
+          bike_template_id?: string | null
           bike_type_id: string
+          color_id?: string | null
           completed_quantity?: number
           created_at?: string
           created_by?: string | null
@@ -1452,10 +1343,9 @@ export type Database = {
           actual_completion_date?: string | null
           actual_start_date?: string | null
           assigned_to_user_id?: string | null
-          bike_model_id?: string
-          bike_model_variant_id?: string | null
-          bike_template_id?: string
+          bike_template_id?: string | null
           bike_type_id?: string
+          color_id?: string | null
           completed_quantity?: number
           created_at?: string
           created_by?: string | null
@@ -1472,20 +1362,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "manufacturing_orders_bike_model_id_fkey"
-            columns: ["bike_model_id"]
-            isOneToOne: false
-            referencedRelation: "bike_models"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "manufacturing_orders_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "manufacturing_orders_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
@@ -1497,6 +1373,13 @@ export type Database = {
             columns: ["bike_type_id"]
             isOneToOne: false
             referencedRelation: "bike_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manufacturing_orders_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -1524,8 +1407,8 @@ export type Database = {
       }
       offer_lines: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           id: string
@@ -1541,8 +1424,8 @@ export type Database = {
           vat_rate: number | null
         }
         Insert: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -1558,8 +1441,8 @@ export type Database = {
           vat_rate?: number | null
         }
         Update: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -1576,17 +1459,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "offer_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "offer_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -1915,6 +1798,135 @@ export type Database = {
             columns: ["default_vat_code"]
             isOneToOne: false
             referencedRelation: "vat_codes"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      paint_order_bikes: {
+        Row: {
+          added_at: string
+          bike_id: string
+          notes: string | null
+          paint_order_id: string
+        }
+        Insert: {
+          added_at?: string
+          bike_id: string
+          notes?: string | null
+          paint_order_id: string
+        }
+        Update: {
+          added_at?: string
+          bike_id?: string
+          notes?: string | null
+          paint_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paint_order_bikes_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_order_bikes_paint_order_id_fkey"
+            columns: ["paint_order_id"]
+            isOneToOne: false
+            referencedRelation: "paint_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paint_orders: {
+        Row: {
+          color_id: string
+          created_at: string
+          created_by: string | null
+          expected_return_at: string | null
+          id: string
+          notes: string | null
+          paint_order_number: string
+          paint_part_id: string | null
+          planned_send_date: string | null
+          received_at: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["paint_order_status"]
+          supplier_id: string
+          unit_cost: number | null
+          unit_cost_currency: string | null
+          updated_at: string
+        }
+        Insert: {
+          color_id: string
+          created_at?: string
+          created_by?: string | null
+          expected_return_at?: string | null
+          id?: string
+          notes?: string | null
+          paint_order_number: string
+          paint_part_id?: string | null
+          planned_send_date?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["paint_order_status"]
+          supplier_id: string
+          unit_cost?: number | null
+          unit_cost_currency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color_id?: string
+          created_at?: string
+          created_by?: string | null
+          expected_return_at?: string | null
+          id?: string
+          notes?: string | null
+          paint_order_number?: string
+          paint_part_id?: string | null
+          planned_send_date?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["paint_order_status"]
+          supplier_id?: string
+          unit_cost?: number | null
+          unit_cost_currency?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paint_orders_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_orders_paint_part_id_fkey"
+            columns: ["paint_part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_orders_paint_part_id_fkey"
+            columns: ["paint_part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_orders_unit_cost_currency_fkey"
+            columns: ["unit_cost_currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
             referencedColumns: ["code"]
           },
         ]
@@ -2328,8 +2340,8 @@ export type Database = {
       }
       sales_order_lines: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           id: string
@@ -2345,8 +2357,8 @@ export type Database = {
           vat_rate: number | null
         }
         Insert: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -2362,8 +2374,8 @@ export type Database = {
           vat_rate?: number | null
         }
         Update: {
-          bike_model_variant_id?: string | null
           bike_template_id?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           id?: string
@@ -2380,17 +2392,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sales_order_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sales_order_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3049,8 +3061,8 @@ export type Database = {
       }
       v_invoice_lines_localized: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           document_language: string | null
@@ -3069,17 +3081,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "invoice_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "invoice_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3114,8 +3126,8 @@ export type Database = {
       }
       v_offer_lines_localized: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           document_language: string | null
@@ -3134,17 +3146,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "offer_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "offer_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3243,8 +3255,8 @@ export type Database = {
       }
       v_sales_order_lines_localized: {
         Row: {
-          bike_model_variant_id: string | null
           bike_template_id: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           document_language: string | null
@@ -3263,17 +3275,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sales_order_lines_bike_model_variant_id_fkey"
-            columns: ["bike_model_variant_id"]
-            isOneToOne: false
-            referencedRelation: "bike_model_variants"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sales_order_lines_bike_template_id_fkey"
             columns: ["bike_template_id"]
             isOneToOne: false
             referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_lines_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3315,7 +3327,6 @@ export type Database = {
           p_override_en: string
           p_part_id: string
           p_template_id: string
-          p_variant_id: string
         }
         Returns: string
       }
@@ -3364,6 +3375,12 @@ export type Database = {
         | "rejected"
         | "expired"
         | "converted"
+      paint_order_status:
+        | "planned"
+        | "sent_to_painter"
+        | "at_painter"
+        | "received_back"
+        | "cancelled"
       purchase_order_status:
         | "draft"
         | "placed"
@@ -3571,6 +3588,13 @@ export const Constants = {
         "rejected",
         "expired",
         "converted",
+      ],
+      paint_order_status: [
+        "planned",
+        "sent_to_painter",
+        "at_painter",
+        "received_back",
+        "cancelled",
       ],
       purchase_order_status: [
         "draft",

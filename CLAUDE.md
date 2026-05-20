@@ -35,6 +35,27 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - `part_categories` is hierarchical (parent_id self-reference).
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR, RFID, AirTag.
 - `audit_log` table exists; apply triggers per-table as needed.
+- **Product entity = `bike_templates`** (no more `bike_models` / `bike_model_variants`,
+  collapsed in migration 09). Size and color split:
+  - **Frame size** is baked into the template — `Norma S` and `Norma L` are two
+    separate templates. `bike_templates.family` groups them (e.g. "Norma").
+  - **Color** is picked at order time (per `sales_order_line.color_id`) and at
+    build time (per `manufacturing_orders.color_id`). FK to controlled-vocab
+    `colors` table; never free-text. Seeded: white, red, black.
+  - Templates remain versioned (`version` + `is_current`); the as-built BOM is
+    snapshotted into `manufacturing_order_parts.origin` so editing a template
+    doesn't rewrite history.
+- **Two build paths**:
+  - From a template — MO references `bike_template_id`, BOM expands from
+    `bike_template_parts` into `manufacturing_order_parts`.
+  - One-off / by-parts — MO has `bike_template_id = NULL`, parts list is
+    assembled by hand. Both paths consume inventory the same way.
+- **Paint is a separate workflow**, not a BOM line. `paint_orders` is a batch
+  header (one supplier visit covers N bikes via `paint_order_bikes`), with
+  status `planned → sent_to_painter → at_painter → received_back`. Default
+  supplier is Metacoat A/S. The `Lakering` catalog SKUs (`JP-lak*`) stay in
+  `parts` as service SKUs that paint orders reference for costing — they
+  never accumulate inventory_movements.
 
 ## Conventions
 - Server-render initial page, client components for interactive state.
