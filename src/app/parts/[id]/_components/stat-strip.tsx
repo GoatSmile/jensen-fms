@@ -27,7 +27,7 @@ export function StatStrip({
     lastCostDkk != null ? lastCostDkk * stockOnHand : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat label="Stock on hand">
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums">

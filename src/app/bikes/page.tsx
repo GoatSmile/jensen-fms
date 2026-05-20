@@ -139,7 +139,7 @@ export default async function BikesPage({
   if (hasPartName) filterDescriptors.push(`with ${hasPartName} installed`);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -154,7 +154,7 @@ export default async function BikesPage({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Bikes</h1>
             <p className="text-muted-foreground text-sm">
@@ -253,10 +253,12 @@ export default async function BikesPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Frame number</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Template</TableHead>
-                <TableHead>Colour</TableHead>
+                <TableHead className="w-[160px] sm:w-[200px]">
+                  Frame number
+                </TableHead>
+                <TableHead className="hidden md:table-cell">Type</TableHead>
+                <TableHead className="hidden md:table-cell">Template</TableHead>
+                <TableHead className="hidden lg:table-cell">Colour</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -271,14 +273,14 @@ export default async function BikesPage({
                       {b.frame_number}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0">
+                  <TableCell className="hidden p-0 md:table-cell">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5">
                       <Badge variant="outline" className="font-normal">
                         {b.bike_type?.name_en ?? "—"}
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0">
+                  <TableCell className="hidden p-0 md:table-cell">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
                       {b.template ? (
                         <>
@@ -296,7 +298,7 @@ export default async function BikesPage({
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0">
+                  <TableCell className="hidden p-0 lg:table-cell">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
                       {b.color ? (
                         <ColorChip hex={b.color.hex} label={b.color.name_en} />

@@ -97,7 +97,7 @@ export default async function BikeTemplatesPage({
   if (groups.has(UNGROUPED_KEY)) orderedGroupKeys.push(UNGROUPED_KEY);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -112,7 +112,7 @@ export default async function BikeTemplatesPage({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Bike templates
@@ -169,10 +169,16 @@ export default async function BikeTemplatesPage({
                       <TableRow>
                         <TableHead>Template</TableHead>
                         <TableHead>Size</TableHead>
-                        <TableHead>Type</TableHead>
+                        <TableHead className="hidden sm:table-cell">
+                          Type
+                        </TableHead>
                         <TableHead className="text-right">Retail</TableHead>
-                        <TableHead className="text-right">Version</TableHead>
-                        <TableHead className="text-right">Parts</TableHead>
+                        <TableHead className="hidden text-right md:table-cell">
+                          Version
+                        </TableHead>
+                        <TableHead className="hidden text-right md:table-cell">
+                          Parts
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -202,7 +208,7 @@ export default async function BikeTemplatesPage({
                               {t.frame_size}
                             </Link>
                           </TableCell>
-                          <TableCell className="p-0">
+                          <TableCell className="hidden p-0 sm:table-cell">
                             <Link
                               href={`/bike-templates/${t.id}`}
                               className="block px-4 py-2.5"
@@ -225,7 +231,7 @@ export default async function BikeTemplatesPage({
                               )}
                             </Link>
                           </TableCell>
-                          <TableCell className="p-0 text-right tabular-nums">
+                          <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                             <Link
                               href={`/bike-templates/${t.id}`}
                               className="block px-4 py-2.5"
@@ -238,7 +244,7 @@ export default async function BikeTemplatesPage({
                               ) : null}
                             </Link>
                           </TableCell>
-                          <TableCell className="p-0 text-right tabular-nums">
+                          <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                             <Link
                               href={`/bike-templates/${t.id}`}
                               className="block px-4 py-2.5"

@@ -53,7 +53,7 @@ export default async function PurchaseOrdersPage() {
   const rows = data ?? [];
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -89,12 +89,14 @@ export default async function PurchaseOrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">PO</TableHead>
-                <TableHead>Supplier</TableHead>
+                <TableHead className="w-[160px] sm:w-[200px]">PO</TableHead>
+                <TableHead className="hidden md:table-cell">Supplier</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Ordered</TableHead>
-                <TableHead>Expected</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="hidden md:table-cell">Ordered</TableHead>
+                <TableHead className="hidden lg:table-cell">Expected</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Total
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -111,7 +113,7 @@ export default async function PurchaseOrdersPage() {
                       {po.po_number}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0">
+                  <TableCell className="hidden p-0 md:table-cell">
                     <Link
                       href={`/purchase-orders/${po.id}`}
                       className="block px-4 py-2.5"
@@ -134,7 +136,7 @@ export default async function PurchaseOrdersPage() {
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
                     <Link
                       href={`/purchase-orders/${po.id}`}
                       className="block px-4 py-2.5"
@@ -142,7 +144,7 @@ export default async function PurchaseOrdersPage() {
                       {formatDate(po.order_date)}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">
                     <Link
                       href={`/purchase-orders/${po.id}`}
                       className="block px-4 py-2.5"
@@ -150,7 +152,7 @@ export default async function PurchaseOrdersPage() {
                       {formatDate(po.expected_date)}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0 text-right tabular-nums">
+                  <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                     <Link
                       href={`/purchase-orders/${po.id}`}
                       className="block px-4 py-2.5"

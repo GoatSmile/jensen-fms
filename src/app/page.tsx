@@ -132,7 +132,7 @@ export default async function DashboardPage() {
   const paintAging = paintAgingRes.data ?? [];
 
   return (
-    <div className="flex flex-1 flex-col gap-8 p-6 sm:p-10">
+    <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-10">
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm">

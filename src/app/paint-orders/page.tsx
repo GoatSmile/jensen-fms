@@ -90,7 +90,7 @@ export default async function PaintOrdersPage({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -105,7 +105,7 @@ export default async function PaintOrdersPage({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Paint orders
@@ -178,14 +178,18 @@ export default async function PaintOrdersPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[160px]">Number</TableHead>
+                <TableHead className="w-[140px] sm:w-[160px]">Number</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Colour</TableHead>
-                <TableHead className="text-right">Bikes</TableHead>
-                <TableHead>Sent</TableHead>
-                <TableHead>Returned</TableHead>
-                <TableHead className="text-right">Unit cost</TableHead>
+                <TableHead className="hidden md:table-cell">Supplier</TableHead>
+                <TableHead className="hidden md:table-cell">Colour</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Bikes
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">Sent</TableHead>
+                <TableHead className="hidden lg:table-cell">Returned</TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  Unit cost
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -215,7 +219,7 @@ export default async function PaintOrdersPage({
                       </Badge>
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0 text-sm">
+                  <TableCell className="hidden p-0 text-sm md:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
@@ -223,7 +227,7 @@ export default async function PaintOrdersPage({
                       {r.supplier?.name ?? "—"}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0 text-sm">
+                  <TableCell className="hidden p-0 text-sm md:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
@@ -235,7 +239,7 @@ export default async function PaintOrdersPage({
                       )}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0 text-right tabular-nums">
+                  <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
@@ -243,7 +247,7 @@ export default async function PaintOrdersPage({
                       {bikeCountByOrder.get(r.id) ?? 0}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
@@ -251,7 +255,7 @@ export default async function PaintOrdersPage({
                       {formatDate(r.sent_at)}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground p-0 text-xs">
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
@@ -259,7 +263,7 @@ export default async function PaintOrdersPage({
                       {formatDate(r.received_at)}
                     </Link>
                   </TableCell>
-                  <TableCell className="p-0 text-right text-sm tabular-nums">
+                  <TableCell className="hidden p-0 text-right text-sm tabular-nums lg:table-cell">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"

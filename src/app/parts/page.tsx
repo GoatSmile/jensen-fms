@@ -217,7 +217,7 @@ export default async function PartsPage({
   }));
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -232,7 +232,7 @@ export default async function PartsPage({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Parts</h1>
             <p className="text-muted-foreground text-sm">

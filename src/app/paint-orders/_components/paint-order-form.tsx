@@ -211,7 +211,7 @@ export function PaintOrderForm({
         title="Cost and schedule"
         description="Cost is per bike charged by the painter. Schedule fields are advisory; actual sent / received timestamps are stamped on status transitions."
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field
             label="Unit cost (per bike)"
             htmlFor="paint-cost"

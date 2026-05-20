@@ -54,10 +54,15 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               className="w-[140px]"
             />
             <SortableHeader column="name_en" label="Name" />
-            <SortableHeader column="category_name" label="Category" />
+            <SortableHeader
+              column="category_name"
+              label="Category"
+              className="hidden md:table-cell"
+            />
             <SortableHeader
               column="primary_supplier_name"
               label="Supplier"
+              className="hidden lg:table-cell"
             />
             <SortableHeader
               column="stock_on_hand"
@@ -69,7 +74,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               column="last_cost_dkk"
               label="Last cost"
               align="right"
-              className="text-right"
+              className="hidden text-right md:table-cell"
             />
           </TableRow>
         </TableHeader>
@@ -110,12 +115,12 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                   {row.name}
                 </Link>
               </TableCell>
-              <TableCell className="p-0">
+              <TableCell className="hidden p-0 md:table-cell">
                 <Link href={`/parts/${row.id}`} className="text-muted-foreground block px-4 py-2.5">
                   {row.categoryName ?? "—"}
                 </Link>
               </TableCell>
-              <TableCell className="p-0">
+              <TableCell className="hidden p-0 lg:table-cell">
                 <Link href={`/parts/${row.id}`} className="block px-4 py-2.5">
                   {row.supplierName ? (
                     <span>
@@ -142,7 +147,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                   </Badge>
                 </Link>
               </TableCell>
-              <TableCell className="p-0 text-right">
+              <TableCell className="hidden p-0 text-right md:table-cell">
                 <Link
                   href={`/parts/${row.id}`}
                   className="block px-4 py-2.5 tabular-nums"

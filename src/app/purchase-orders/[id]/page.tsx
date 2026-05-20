@@ -92,7 +92,7 @@ export default async function PurchaseOrderDetailPage({
   const totalReceived = lineRows.reduce((s, l) => s + l.receivedQuantity, 0);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -135,7 +135,7 @@ export default async function PurchaseOrderDetailPage({
           </div>
         </div>
 
-        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
           <Stat label="Ordered">{formatDate(po.order_date)}</Stat>
           <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
           <Stat label="Received">{formatDate(po.received_date)}</Stat>

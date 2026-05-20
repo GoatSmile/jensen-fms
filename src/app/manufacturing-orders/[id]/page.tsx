@@ -188,7 +188,7 @@ export default async function ManufacturingOrderDetailPage({
     : null;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -221,7 +221,7 @@ export default async function ManufacturingOrderDetailPage({
         colorHex={mo.color?.hex ?? null}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Target" value={String(mo.target_quantity)} />
         <Stat label="Completed" value={String(mo.completed_quantity)} />
         <Stat label="Outstanding" value={String(outstandingBikes)} />

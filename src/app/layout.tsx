@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 
 import "./globals.css";
 
@@ -33,7 +34,10 @@ export default function RootLayout({
       <body className="bg-background text-foreground min-h-full">
         <div className="flex min-h-screen">
           <AppSidebar />
-          <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <MobileNav />
+            <main className="flex flex-1 flex-col">{children}</main>
+          </div>
         </div>
       </body>
     </html>

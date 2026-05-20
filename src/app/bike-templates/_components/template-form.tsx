@@ -222,7 +222,7 @@ export function TemplateForm({
         title="Default retail price"
         description="The starting price for this template — can be overridden per quote line."
       >
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field
             label="Price"
             htmlFor="tpl-price"

@@ -51,7 +51,7 @@ export default async function ManufacturingOrdersPage() {
   const rows = data ?? [];
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>
@@ -66,7 +66,7 @@ export default async function ManufacturingOrdersPage() {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
               Manufacturing orders
@@ -95,13 +95,17 @@ export default async function ManufacturingOrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">MO number</TableHead>
-                <TableHead>Template</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Colour</TableHead>
-                <TableHead className="text-right">Target / done</TableHead>
+                <TableHead className="w-[140px] sm:w-[180px]">
+                  MO number
+                </TableHead>
+                <TableHead className="hidden md:table-cell">Template</TableHead>
+                <TableHead className="hidden lg:table-cell">Type</TableHead>
+                <TableHead className="hidden lg:table-cell">Colour</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Target / done
+                </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Planned</TableHead>
+                <TableHead className="hidden md:table-cell">Planned</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,7 +132,7 @@ export default async function ManufacturingOrdersPage() {
                         {mo.mo_number}
                       </Link>
                     </TableCell>
-                    <TableCell className="p-0">
+                    <TableCell className="hidden p-0 md:table-cell">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
@@ -147,7 +151,7 @@ export default async function ManufacturingOrdersPage() {
                         )}
                       </Link>
                     </TableCell>
-                    <TableCell className="p-0">
+                    <TableCell className="hidden p-0 lg:table-cell">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
@@ -157,7 +161,7 @@ export default async function ManufacturingOrdersPage() {
                         </Badge>
                       </Link>
                     </TableCell>
-                    <TableCell className="p-0 text-sm">
+                    <TableCell className="hidden p-0 text-sm lg:table-cell">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
@@ -172,7 +176,7 @@ export default async function ManufacturingOrdersPage() {
                         )}
                       </Link>
                     </TableCell>
-                    <TableCell className="p-0 text-right tabular-nums">
+                    <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
@@ -199,7 +203,7 @@ export default async function ManufacturingOrdersPage() {
                         </Badge>
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground p-0 text-xs">
+                    <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
