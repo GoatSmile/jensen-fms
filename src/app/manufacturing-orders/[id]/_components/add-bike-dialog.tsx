@@ -89,9 +89,9 @@ export function AddBikeDialog({
           <DialogHeader>
             <DialogTitle>Add bike to this MO</DialogTitle>
             <DialogDescription>
-              The bike inherits the MO&rsquo;s type, template, and colour.
-              Other identifiers (lock, battery, charger, &hellip;) get registered
-              after the bike is created.
+              The bike inherits the MO&rsquo;s type, plus its template and
+              colour when set. Other identifiers (lock, battery, charger,
+              &hellip;) get registered after the bike is created.
             </DialogDescription>
           </DialogHeader>
 

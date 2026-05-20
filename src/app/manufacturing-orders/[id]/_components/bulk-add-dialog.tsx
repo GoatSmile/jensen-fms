@@ -106,7 +106,7 @@ export function BulkAddDialog({
             />
             <p className="text-muted-foreground text-xs">
               Up to {Math.min(slotsRemaining, 100)} per run. Frame numbers are
-              suggested using the model&rsquo;s code; you can edit individual
+              suggested from the bike type&rsquo;s slug; you can edit individual
               ones afterward.
             </p>
           </div>
