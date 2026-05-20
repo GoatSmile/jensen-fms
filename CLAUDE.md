@@ -58,6 +58,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
   never accumulate inventory_movements.
 
 ## Conventions
+- **Git workflow: commit on `main` and push to `origin` every time.** No PRs,
+  no feature branches, no waiting to push — once a change is committed it goes
+  straight to GitHub so the remote always reflects local. Solo-dev shop;
+  speed beats process here.
 - Server-render initial page, client components for interactive state.
 - URL search-params drive list filters (so filtered views are shareable links).
 - shadcn/ui components by default; build custom only when shadcn lacks it.
