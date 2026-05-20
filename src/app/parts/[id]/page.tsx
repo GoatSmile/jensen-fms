@@ -10,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { lookupDkkRate } from "@/lib/format";
 import { getStockStatus } from "@/lib/parts/stock";
 
 import type { LocationOption } from "./_components/adjust-stock-dialog";
@@ -56,6 +57,7 @@ export default async function PartDetailPage({
     templatesUsageRes,
     moUsageRes,
     bikePartsUsageRes,
+    fxRatesRes,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -210,6 +212,11 @@ export default async function PartDetailPage({
       .select("bike_id, removed_at")
       .eq("part_id", id)
       .is("removed_at", null),
+    supabase
+      .from("fx_rates")
+      .select("from_currency, rate, rate_date")
+      .eq("to_currency", "DKK")
+      .order("rate_date", { ascending: false }),
   ]);
 
   if (partRes.error) {
@@ -286,6 +293,15 @@ export default async function PartDetailPage({
   );
   const installedBikeCount = installedBikeIds.size;
 
+  // ------- FX rates (latest per from_currency, → DKK) -------
+  // Used to render foreign-currency offerings with a DKK ≈ tail.
+  const fxToDkk = new Map<string, number>();
+  for (const row of fxRatesRes.data ?? []) {
+    if (!fxToDkk.has(row.from_currency)) {
+      fxToDkk.set(row.from_currency, Number(row.rate));
+    }
+  }
+
   // ------- Offerings -------
   const offeringRows = (offeringsRes.data ?? []).map((row) => ({
     id: row.id,
@@ -297,6 +313,7 @@ export default async function PartDetailPage({
         ? Number(row.default_purchase_price)
         : null,
     defaultPurchaseCurrency: row.default_purchase_currency,
+    fxRateToDkk: lookupDkkRate(fxToDkk, row.default_purchase_currency),
     minimumOrderQuantity:
       row.minimum_order_quantity != null
         ? Number(row.minimum_order_quantity)

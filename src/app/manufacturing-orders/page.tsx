@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Hammer, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ColorChip } from "@/components/color-swatch";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import {
@@ -82,10 +84,12 @@ export default async function ManufacturingOrdersPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No manufacturing orders yet. Create a template first, then start an
-          MO against it — or go one-off and build the BOM by hand.
-        </div>
+        <EmptyState
+          icon={Hammer}
+          title="No manufacturing orders yet"
+          description="Start a production run against a template — or go one-off and build the BOM by hand."
+          action={{ label: "Create MO", href: "/manufacturing-orders/new" }}
+        />
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
@@ -159,16 +163,10 @@ export default async function ManufacturingOrdersPage() {
                         className="block px-4 py-2.5"
                       >
                         {mo.color ? (
-                          <span className="inline-flex items-center gap-2">
-                            {mo.color.hex ? (
-                              <span
-                                aria-hidden
-                                className="border-border inline-block size-3 rounded-full border"
-                                style={{ backgroundColor: mo.color.hex }}
-                              />
-                            ) : null}
-                            {mo.color.name_en}
-                          </span>
+                          <ColorChip
+                            hex={mo.color.hex}
+                            label={mo.color.name_en}
+                          />
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}

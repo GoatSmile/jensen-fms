@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Upload } from "lucide-react";
+import { Boxes, Plus, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
@@ -259,15 +260,27 @@ export default async function PartsPage({
         suppliers={suppliersRes.data ?? []}
       />
 
-      <PartsTable rows={pageRows} />
+      {totalCount === 0 && !q && !categoryId && !supplierId && stockFilter === "all" ? (
+        <EmptyState
+          icon={Boxes}
+          title="No parts yet"
+          description="Add parts to the catalog or import from a supplier order."
+          action={{ label: "Add part", href: "/parts/new" }}
+          secondaryAction={{ label: "Import CSV", href: "/parts/import" }}
+        />
+      ) : (
+        <>
+          <PartsTable rows={pageRows} />
 
-      <PartsPagination
-        page={safePage}
-        pageCount={pageCount}
-        totalCount={totalCount}
-        pageSize={PAGE_SIZE}
-        searchParams={sp as Record<string, string | string[] | undefined>}
-      />
+          <PartsPagination
+            page={safePage}
+            pageCount={pageCount}
+            totalCount={totalCount}
+            pageSize={PAGE_SIZE}
+            searchParams={sp as Record<string, string | string[] | undefined>}
+          />
+        </>
+      )}
     </div>
   );
 }

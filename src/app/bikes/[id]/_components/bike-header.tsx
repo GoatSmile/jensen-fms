@@ -11,6 +11,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ColorChip } from "@/components/color-swatch";
 import {
   Dialog,
   DialogContent,
@@ -148,15 +149,8 @@ export function BikeHeader({
             {templateLabel ?? "Bike"}
           </h1>
           {colorName ? (
-            <p className="text-muted-foreground inline-flex items-center gap-2 text-sm">
-              {colorHex ? (
-                <span
-                  aria-hidden
-                  className="border-border inline-block size-3 rounded-full border"
-                  style={{ backgroundColor: colorHex }}
-                />
-              ) : null}
-              {colorName}
+            <p className="text-muted-foreground text-sm">
+              <ColorChip hex={colorHex} label={colorName} />
             </p>
           ) : null}
         </div>

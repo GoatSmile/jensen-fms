@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ColorSwatch } from "@/components/color-swatch";
 import { appendField } from "@/lib/forms";
 
 import { createPaintOrder } from "../_actions/save-paint-order";
@@ -166,6 +167,7 @@ export function PaintOrderForm({
             <SelectContent>
               {colors.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
+                  <ColorSwatch hex={c.hex} label={c.name_en} />
                   {c.name_en}
                 </SelectItem>
               ))}

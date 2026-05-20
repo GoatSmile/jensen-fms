@@ -35,7 +35,7 @@ export default async function NewBikePage() {
       .order("name_en", { ascending: true }),
     supabase
       .from("colors")
-      .select("id, slug, name_da, name_en")
+      .select("id, slug, name_da, name_en, hex")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);

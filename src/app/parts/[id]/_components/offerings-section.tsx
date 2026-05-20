@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatMoney } from "@/lib/parts/format";
+import { formatPriceWithDkk } from "@/lib/format";
 
 import {
   deleteOffering,
@@ -42,6 +43,8 @@ export type OfferingRow = {
   supplierSku: string | null;
   defaultPurchasePrice: number | null;
   defaultPurchaseCurrency: string | null;
+  /** Frozen-FX rate to DKK for the offering's currency. Null if unknown. */
+  fxRateToDkk: number | null;
   minimumOrderQuantity: number | null;
   leadTimeDays: number | null;
   isPreferred: boolean;
@@ -236,9 +239,18 @@ function OfferingTableRow({
         {row.supplierSku ?? <span className="text-muted-foreground">—</span>}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatMoney(row.defaultPurchasePrice, row.defaultPurchaseCurrency, {
-          maximumFractionDigits: 4,
-        })}
+        {row.defaultPurchaseCurrency &&
+        row.defaultPurchaseCurrency.toUpperCase() !== "DKK"
+          ? formatPriceWithDkk(
+              row.defaultPurchasePrice,
+              row.defaultPurchaseCurrency,
+              row.fxRateToDkk,
+            )
+          : formatMoney(
+              row.defaultPurchasePrice,
+              row.defaultPurchaseCurrency,
+              { maximumFractionDigits: 4 },
+            )}
       </TableCell>
       <TableCell className="text-right tabular-nums">
         {row.minimumOrderQuantity ?? (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Bike, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ColorChip } from "@/components/color-swatch";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import {
   BIKE_STATUS_VARIANT,
@@ -230,11 +232,22 @@ export default async function BikesPage({
       </form>
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          {filterDescriptors.length > 0
-            ? "No bikes match these filters."
-            : "No bikes yet. Add a manual bike, or create one through a manufacturing order."}
-        </div>
+        filterDescriptors.length > 0 ? (
+          <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+            No bikes match these filters.
+          </div>
+        ) : (
+          <EmptyState
+            icon={Bike}
+            title="No bikes yet"
+            description="Add a manual bike, or create one through a manufacturing order."
+            action={{ label: "Add bike", href: "/bikes/new" }}
+            secondaryAction={{
+              label: "Start a manufacturing order",
+              href: "/manufacturing-orders/new",
+            }}
+          />
+        )
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
@@ -286,16 +299,7 @@ export default async function BikesPage({
                   <TableCell className="p-0">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
                       {b.color ? (
-                        <span className="inline-flex items-center gap-2">
-                          {b.color.hex ? (
-                            <span
-                              aria-hidden
-                              className="border-border inline-block size-3 rounded-full border"
-                              style={{ backgroundColor: b.color.hex }}
-                            />
-                          ) : null}
-                          {b.color.name_en}
-                        </span>
+                        <ColorChip hex={b.color.hex} label={b.color.name_en} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

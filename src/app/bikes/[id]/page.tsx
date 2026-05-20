@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { ColorChip } from "@/components/color-swatch";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 
@@ -227,16 +228,7 @@ export default async function BikeDetailPage({
           </Field>
           <Field label="Colour">
             {b.color ? (
-              <span className="inline-flex items-center gap-2">
-                {b.color.hex ? (
-                  <span
-                    aria-hidden
-                    className="border-border inline-block size-3 rounded-full border"
-                    style={{ backgroundColor: b.color.hex }}
-                  />
-                ) : null}
-                {b.color.name_en}
-              </span>
+              <ColorChip hex={b.color.hex} label={b.color.name_en} />
             ) : (
               <Muted>—</Muted>
             )}

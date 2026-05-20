@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ColorChip } from "@/components/color-swatch";
 import {
   Dialog,
   DialogContent,
@@ -126,16 +127,7 @@ export function MOHeader({
               </span>
             ) : null}
             {colorName ? (
-              <span className="inline-flex items-center gap-2">
-                {colorHex ? (
-                  <span
-                    aria-hidden
-                    className="border-border inline-block size-3 rounded-full border"
-                    style={{ backgroundColor: colorHex }}
-                  />
-                ) : null}
-                {colorName}
-              </span>
+              <ColorChip hex={colorHex} label={colorName} />
             ) : null}
           </div>
         </div>

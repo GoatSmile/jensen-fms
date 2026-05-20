@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/parts/format";
 import {
@@ -77,9 +79,11 @@ export default async function PurchaseOrdersPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No purchase orders yet.
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          title="No purchase orders yet"
+          description="Create a purchase order to track incoming shipments and receive stock against catalog parts."
+        />
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>

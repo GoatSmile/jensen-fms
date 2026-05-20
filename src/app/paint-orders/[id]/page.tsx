@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { ColorChip } from "@/components/color-swatch";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -171,16 +172,7 @@ export default async function PaintOrderDetailPage({
           </Field>
           <Field label="Colour">
             {order.color ? (
-              <span className="inline-flex items-center gap-2">
-                {order.color.hex ? (
-                  <span
-                    aria-hidden
-                    className="border-border inline-block size-3 rounded-full border"
-                    style={{ backgroundColor: order.color.hex }}
-                  />
-                ) : null}
-                {order.color.name_en}
-              </span>
+              <ColorChip hex={order.color.hex} label={order.color.name_en} />
             ) : (
               <Muted>—</Muted>
             )}

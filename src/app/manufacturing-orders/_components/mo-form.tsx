@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ColorSwatch } from "@/components/color-swatch";
 import { appendField } from "@/lib/forms";
 
 import { createManufacturingOrder } from "../_actions/save-mo";
@@ -36,6 +37,7 @@ export type ColorOption = {
   slug: string;
   name_da: string;
   name_en: string;
+  hex: string | null;
 };
 
 /**
@@ -226,6 +228,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               ) : (
                 colors.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
+                    <ColorSwatch hex={c.hex} label={c.name_en} />
                     {c.name_en}
                   </SelectItem>
                 ))

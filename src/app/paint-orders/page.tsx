@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Paintbrush, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ColorChip } from "@/components/color-swatch";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -159,9 +161,18 @@ export default async function PaintOrdersPage({
       </form>
 
       {(rows ?? []).length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No paint orders yet. Start one to batch up bikes that need painting.
-        </div>
+        statusFilter ? (
+          <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+            No paint orders match this status filter.
+          </div>
+        ) : (
+          <EmptyState
+            icon={Paintbrush}
+            title="No paint orders yet"
+            description="Paint orders are batches of bikes sent to a supplier for paint."
+            action={{ label: "Create paint order", href: "/paint-orders/new" }}
+          />
+        )
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
@@ -218,16 +229,7 @@ export default async function PaintOrdersPage({
                       className="block px-4 py-2.5"
                     >
                       {r.color ? (
-                        <span className="inline-flex items-center gap-2">
-                          {r.color.hex ? (
-                            <span
-                              aria-hidden
-                              className="border-border inline-block size-3 rounded-full border"
-                              style={{ backgroundColor: r.color.hex }}
-                            />
-                          ) : null}
-                          {r.color.name_en}
-                        </span>
+                        <ColorChip hex={r.color.hex} label={r.color.name_en} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
