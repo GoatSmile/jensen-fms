@@ -285,6 +285,7 @@ export default async function ManufacturingOrderDetailPage({
         rows={moPartRows}
         outstandingBikes={outstandingBikes}
         partsCatalog={partsCatalog}
+        hasTemplate={mo.bike_template?.id != null}
         readOnly={closed}
       />
 

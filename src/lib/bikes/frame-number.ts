@@ -1,8 +1,12 @@
 /**
- * Frame-number suggestion. Pattern: `JP-{year}-{model.frame_number_code}-{seq}`,
- * with a 3-digit zero-padded sequence. Suggestion only — the user can override
- * the value before submit, and `bike_identifier_types.frame_number` does not
- * have a `format_regex` so anything goes.
+ * Frame-number suggestion. Pattern: `JP-{year}-{code}-{seq}`, with a 3-digit
+ * zero-padded sequence. `code` is currently sourced from `bike_types.slug`
+ * (upper-cased) — the per-model frame code that used to live on `bike_models`
+ * went away with the template-only refactor in migration 09.
+ *
+ * Suggestion only — the user can override the value before submit, and
+ * `bike_identifier_types.frame_number` does not have a `format_regex` so
+ * anything goes.
  *
  * Sequence is computed by counting bikes whose frame_number starts with the
  * `JP-{year}-{code}-` prefix and adding 1. Cheap query and good enough for

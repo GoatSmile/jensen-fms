@@ -47,6 +47,8 @@ type Props = {
   rows: MOPartRow[];
   outstandingBikes: number;
   partsCatalog: PartChoice[];
+  /** True when the MO is template-driven; false for one-off builds. */
+  hasTemplate: boolean;
   /** Hide write actions when the MO is completed/cancelled. */
   readOnly: boolean;
 };
@@ -61,6 +63,7 @@ export function MOPartsSection({
   rows,
   outstandingBikes,
   partsCatalog,
+  hasTemplate,
   readOnly,
 }: Props) {
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +74,11 @@ export function MOPartsSection({
   return (
     <Section
       title="Parts recipe"
-      description="The qty per bike comes from the template (or your edits). On-hand is summed across all locations; shortfall is highlighted."
+      description={
+        hasTemplate
+          ? "The qty per bike comes from the template (or your edits). On-hand is summed across all locations; shortfall is highlighted."
+          : "One-off build — assemble the parts list by hand. On-hand is summed across all locations; shortfall is highlighted."
+      }
       action={
         readOnly ? null : (
           <Button

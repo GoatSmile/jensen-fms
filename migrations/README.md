@@ -80,9 +80,14 @@ See `CHANGES.md` for the complete list.
 7. **Customers (bilingual where customer-facing)** — `customer_groups`,
    `organizations`, `organization_tax_identifiers`, `organization_units`,
    `contacts`
-8. **Bikes (bilingual on models, variants, templates)** — `bike_models`,
-   `bike_model_variants`, `bike_templates`, `bike_template_parts`,
-   `bikes`, `bike_parts`, `bike_identifiers`, `bike_state_log`
+8. **Bikes (bilingual on templates and colors)** — `bike_templates`,
+   `bike_template_parts`, `colors`, `bikes`, `bike_parts`,
+   `bike_identifiers`, `bike_state_log`, `paint_orders`,
+   `paint_order_bikes`. *(Migration 09 collapsed the `bike_models` →
+   `bike_model_variants` → `bike_templates` trio down to `bike_templates`
+   as the single product entity; frame size is on the template, colour is
+   a controlled-vocab reference picked at order and build time.
+   Migration 10 added the paint-order workflow.)*
 9. **Commercial (with language column)** — `offers` / `offer_lines`,
    `sales_orders` / `sales_order_lines`, `invoices` / `invoice_lines`,
    `service_agreements` (bilingual)
