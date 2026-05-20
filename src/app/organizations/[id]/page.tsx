@@ -13,6 +13,11 @@ import { createClient } from "@/lib/supabase/server";
 
 import { AssignedBikesSection } from "../_components/assigned-bikes-section";
 import { OrganizationHeader } from "../_components/organization-header";
+import {
+  ContactsSection,
+  type ContactRow,
+} from "./_components/contacts-section";
+import { UnitsSection, type UnitRow } from "./_components/units-section";
 
 function dlRow(label: string, value: React.ReactNode) {
   return (
@@ -36,22 +41,54 @@ export default async function OrganizationDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const orgRes = await supabase
-    .from("organizations")
-    .select(
-      `
-        id, legal_name, display_name_en, display_name_da,
-        cvr_number, ean_number, vat_number,
-        address_line1, address_line2, zip_code, city, state_province,
-        country_code, phone, email, website,
-        billing_currency, payment_terms_days, default_vat_code,
-        preferred_language, notes,
-        deleted_at, is_active, created_at,
-        segment:customer_segments(id, name_en)
-      `,
-    )
-    .eq("id", id)
-    .maybeSingle();
+  // Parallel fetch: org, contacts, sub-units, and the per-unit bike counts.
+  // Bike counts feed the Units section so the user can see at a glance how
+  // many bikes still point at each sub-unit before archiving it.
+  const [orgRes, contactsRes, unitsRes, unitBikeCountsRes] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select(
+        `
+          id, legal_name, display_name_en, display_name_da,
+          cvr_number, ean_number, vat_number,
+          address_line1, address_line2, zip_code, city, state_province,
+          country_code, phone, email, website,
+          billing_currency, payment_terms_days, default_vat_code,
+          preferred_language, notes,
+          deleted_at, is_active, created_at,
+          segment:customer_segments(id, name_en)
+        `,
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("contacts")
+      .select(
+        `
+          id, first_name, last_name, role, email, phone,
+          preferred_language, is_primary, notes
+        `,
+      )
+      .eq("organization_id", id)
+      .is("deleted_at", null)
+      // Primary first, then alphabetical by surname/first name so the list
+      // reads predictably even without explicit user sorting.
+      .order("is_primary", { ascending: false })
+      .order("last_name", { ascending: true, nullsFirst: false })
+      .order("first_name", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("organization_units")
+      .select("id, name, code, address, notes")
+      .eq("organization_id", id)
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
+    supabase
+      .from("bikes")
+      .select("owner_unit_id")
+      .eq("owner_organization_id", id)
+      .is("deleted_at", null)
+      .not("owner_unit_id", "is", null),
+  ]);
 
   if (orgRes.error) {
     throw new Error(`Failed to load customer: ${orgRes.error.message}`);
@@ -59,6 +96,51 @@ export default async function OrganizationDetailPage({
   if (!orgRes.data) notFound();
 
   const o = orgRes.data;
+
+  if (contactsRes.error) {
+    throw new Error(`Failed to load contacts: ${contactsRes.error.message}`);
+  }
+  if (unitsRes.error) {
+    throw new Error(`Failed to load sub-units: ${unitsRes.error.message}`);
+  }
+  if (unitBikeCountsRes.error) {
+    throw new Error(
+      `Failed to load sub-unit bike counts: ${unitBikeCountsRes.error.message}`,
+    );
+  }
+
+  const contactRows: ContactRow[] = (contactsRes.data ?? []).map((c) => ({
+    id: c.id,
+    first_name: c.first_name,
+    last_name: c.last_name,
+    role: c.role,
+    email: c.email,
+    phone: c.phone,
+    preferred_language: c.preferred_language,
+    is_primary: c.is_primary,
+    notes: c.notes,
+  }));
+
+  // Aggregate the per-unit bike counts in JS. PostgREST doesn't expose
+  // GROUP BY directly without an RPC, and the row count here is bounded by
+  // the bikes belonging to a single org so this is cheap.
+  const unitBikeCounts = new Map<string, number>();
+  for (const row of unitBikeCountsRes.data ?? []) {
+    if (!row.owner_unit_id) continue;
+    unitBikeCounts.set(
+      row.owner_unit_id,
+      (unitBikeCounts.get(row.owner_unit_id) ?? 0) + 1,
+    );
+  }
+
+  const unitRows: UnitRow[] = (unitsRes.data ?? []).map((u) => ({
+    id: u.id,
+    name: u.name,
+    code: u.code,
+    address: u.address,
+    notes: u.notes,
+    bikeCount: unitBikeCounts.get(u.id) ?? 0,
+  }));
   const subtitleCandidate =
     o.display_name_da && o.display_name_da !== o.legal_name
       ? o.display_name_da
@@ -218,6 +300,8 @@ export default async function OrganizationDetailPage({
         </div>
       </div>
 
+      <UnitsSection organizationId={o.id} rows={unitRows} />
+      <ContactsSection organizationId={o.id} rows={contactRows} />
       <AssignedBikesSection organizationId={o.id} />
     </div>
   );

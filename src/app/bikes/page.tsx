@@ -99,7 +99,10 @@ export default async function BikesPage({
         deleted_at,
         bike_type:bike_types(id, name_en),
         template:bike_templates(id, name_en, family, frame_size, version),
-        color:colors(id, name_en, hex)
+        color:colors(id, name_en, hex),
+        owner_organization:organizations!owner_organization_id(
+          id, legal_name, display_name_en, display_name_da
+        )
       `,
       { count: "exact" },
     )
@@ -260,6 +263,7 @@ export default async function BikesPage({
                 <TableHead className="hidden md:table-cell">Template</TableHead>
                 <TableHead className="hidden lg:table-cell">Colour</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Owner</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -318,6 +322,25 @@ export default async function BikesPage({
                         {bikeStatusLabel(b.status)}
                       </Badge>
                     </Link>
+                  </TableCell>
+                  <TableCell className="hidden p-0 lg:table-cell">
+                    {b.owner_organization ? (
+                      <Link
+                        href={`/organizations/${b.owner_organization.id}`}
+                        className="block px-4 py-2.5 text-sm hover:underline"
+                      >
+                        {b.owner_organization.display_name_da ??
+                          b.owner_organization.display_name_en ??
+                          b.owner_organization.legal_name}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/bikes/${b.id}`}
+                        className="text-muted-foreground block px-4 py-2.5 text-sm"
+                      >
+                        —
+                      </Link>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
