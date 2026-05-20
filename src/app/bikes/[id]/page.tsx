@@ -13,6 +13,11 @@ import { ColorChip } from "@/components/color-swatch";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 
+import {
+  AssignCustomerDialog,
+  type OrganizationOption,
+  type OrgUnitOption,
+} from "./_components/assign-customer-dialog";
 import { BikeHeader } from "./_components/bike-header";
 import {
   IdentifiersSection,
@@ -29,6 +34,15 @@ import {
   type StateLogRow,
 } from "./_components/state-log-section";
 
+function formatDateDa(iso: string | null): string {
+  if (!iso) return "—";
+  return new Intl.DateTimeFormat("da-DK", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
 export default async function BikeDetailPage({
   params,
 }: {
@@ -37,18 +51,31 @@ export default async function BikeDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [bikeRes, identifiersRes, partsRes, stateLogRes, identifierTypesRes] =
-    await Promise.all([
+  const [
+    bikeRes,
+    identifiersRes,
+    partsRes,
+    stateLogRes,
+    identifierTypesRes,
+    orgsRes,
+    unitsRes,
+  ] = await Promise.all([
       supabase
         .from("bikes")
         .select(
           `
             id, frame_number, status, notes, deleted_at, bike_type_id,
             manufacturing_order_id, build_cost_dkk,
+            owner_organization_id, owner_unit_id, assigned_at,
             bike_type:bike_types(id, name_en),
             template:bike_templates(id, name_en, family, frame_size, version),
             color:colors(id, slug, name_en, hex),
-            manufacturing_order:manufacturing_orders(id, mo_number, status)
+            manufacturing_order:manufacturing_orders(id, mo_number, status),
+            owner_organization:organizations!owner_organization_id(
+              id, legal_name, display_name_en, display_name_da,
+              segment:customer_segments(name_en)
+            ),
+            owner_unit:organization_units!owner_unit_id(id, name)
           `,
         )
         .eq("id", id)
@@ -84,6 +111,23 @@ export default async function BikeDetailPage({
         .select("id, slug, name_en, format_regex, is_active")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
+      // Active customers for the assign dialog — loaded eagerly so the dialog
+      // opens instantly. At 50+ customers this becomes a search-as-you-type
+      // problem; fine to defer until then.
+      supabase
+        .from("organizations")
+        .select(
+          `id, legal_name, display_name_en, display_name_da,
+           segment:customer_segments(name_en)`,
+        )
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("legal_name", { ascending: true }),
+      supabase
+        .from("organization_units")
+        .select("id, organization_id, name")
+        .is("deleted_at", null)
+        .order("name", { ascending: true }),
     ]);
 
   if (bikeRes.error) {
@@ -170,6 +214,34 @@ export default async function BikeDetailPage({
         .join(" · ")
     : null;
 
+  const ownerOrgDisplay =
+    b.owner_organization?.display_name_da ??
+    b.owner_organization?.display_name_en ??
+    b.owner_organization?.legal_name ??
+    null;
+
+  const organizations: OrganizationOption[] = (orgsRes.data ?? []).map((o) => ({
+    id: o.id,
+    legal_name: o.legal_name,
+    display_name: o.display_name_da ?? o.display_name_en ?? null,
+    segment_name: o.segment?.name_en ?? null,
+  }));
+  const organizationUnits: OrgUnitOption[] = (unitsRes.data ?? []).map((u) => ({
+    id: u.id,
+    organization_id: u.organization_id,
+    name: u.name,
+  }));
+
+  const assignBlocked =
+    b.deleted_at != null ||
+    (b.status !== "in_stock" && b.status !== "assigned");
+  const assignBlockedReason =
+    b.deleted_at != null
+      ? "Bike is archived."
+      : assignBlocked
+        ? `Move the bike to "in stock" before assigning.`
+        : undefined;
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
@@ -201,6 +273,25 @@ export default async function BikeDetailPage({
         colorName={b.color?.name_en ?? null}
         colorHex={b.color?.hex ?? null}
         isDeleted={b.deleted_at != null}
+        assignAction={
+          <AssignCustomerDialog
+            bikeId={b.id}
+            disabled={assignBlocked}
+            disabledReason={assignBlockedReason}
+            currentOwner={
+              b.owner_organization
+                ? {
+                    organizationId: b.owner_organization.id,
+                    organizationName: ownerOrgDisplay ?? "Customer",
+                    unitId: b.owner_unit?.id ?? null,
+                    unitName: b.owner_unit?.name ?? null,
+                  }
+                : null
+            }
+            organizations={organizations}
+            organizationUnits={organizationUnits}
+          />
+        }
       />
 
       <Section
@@ -246,7 +337,28 @@ export default async function BikeDetailPage({
             )}
           </Field>
           <Field label="Owner">
-            <Muted>Customer assignment ships in Phase 3.</Muted>
+            {b.owner_organization ? (
+              <div className="flex flex-col gap-0.5">
+                <Link
+                  href={`/organizations/${b.owner_organization.id}`}
+                  className="hover:underline"
+                >
+                  {ownerOrgDisplay}
+                </Link>
+                {b.owner_unit ? (
+                  <span className="text-muted-foreground text-xs">
+                    Unit: {b.owner_unit.name}
+                  </span>
+                ) : null}
+                {b.assigned_at ? (
+                  <span className="text-muted-foreground text-xs">
+                    Since {formatDateDa(b.assigned_at)}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <Muted>Not assigned to a customer.</Muted>
+            )}
           </Field>
           <Field label="Build cost">
             {b.build_cost_dkk != null ? (

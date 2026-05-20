@@ -49,6 +49,12 @@ type Props = {
   colorName: string | null;
   colorHex: string | null;
   isDeleted: boolean;
+  /**
+   * Slot for the "Assign to customer" action. Lives on the page (server
+   * component) because it loads the orgs + units list; injected here so
+   * the header keeps its existing layout responsibility.
+   */
+  assignAction?: React.ReactNode;
 };
 
 type PendingTransition = { to: BikeStatus } | null;
@@ -62,6 +68,7 @@ export function BikeHeader({
   colorName,
   colorHex,
   isDeleted,
+  assignAction,
 }: Props) {
   const router = useRouter();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -154,7 +161,8 @@ export function BikeHeader({
             </p>
           ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {!isDeleted && assignAction ? assignAction : null}
           {!isDeleted && nextStatuses.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
