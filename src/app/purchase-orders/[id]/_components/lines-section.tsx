@@ -138,13 +138,17 @@ export function LinesSection({
               : "No lines on this PO."}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Part</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Unit price</TableHead>
+                  {/* Unit price is just a step on the way to landed DKK.
+                      Hide on phones; show on sm+. */}
+                  <TableHead className="hidden text-right sm:table-cell">
+                    Unit price
+                  </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
                     FX rate
                   </TableHead>
@@ -165,21 +169,21 @@ export function LinesSection({
                     totalCurrency && row.currency !== totalCurrency;
                   return (
                     <TableRow key={row.id}>
-                      <TableCell>
+                      <TableCell className="min-w-0 whitespace-normal">
                         <Link
                           href={`/parts/${row.partId}`}
-                          className="font-medium hover:underline"
+                          className="font-medium break-words hover:underline"
                         >
                           {row.partName}
                         </Link>
-                        <div className="text-muted-foreground font-mono text-xs">
+                        <div className="text-muted-foreground font-mono text-xs break-all">
                           {row.partSku}
                         </div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatQuantity(row.quantity)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="hidden text-right tabular-nums sm:table-cell">
                         <div>
                           {formatMoney(row.unitPrice, row.currency, {
                             maximumFractionDigits: 4,

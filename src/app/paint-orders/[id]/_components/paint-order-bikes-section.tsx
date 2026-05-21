@@ -86,14 +86,14 @@ export function PaintOrderBikesSection({
           No bikes attached yet.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Frame number</TableHead>
-                <TableHead>Template</TableHead>
+                <TableHead className="hidden sm:table-cell">Template</TableHead>
                 <TableHead>Bike status</TableHead>
-                <TableHead>Notes</TableHead>
+                <TableHead className="hidden md:table-cell">Notes</TableHead>
                 <TableHead className="w-[80px]" />
               </TableRow>
             </TableHeader>
@@ -147,7 +147,7 @@ function BikeRow({
           {row.frameNumber}
         </Link>
       </TableCell>
-      <TableCell className="text-sm">
+      <TableCell className="hidden text-sm sm:table-cell">
         {row.templateLabel ?? (
           <span className="text-muted-foreground">—</span>
         )}
@@ -157,7 +157,7 @@ function BikeRow({
           {bikeStatusLabel(row.status)}
         </Badge>
       </TableCell>
-      <TableCell className="text-muted-foreground text-xs">
+      <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
         {row.notes ?? "—"}
       </TableCell>
       <TableCell className="text-right">

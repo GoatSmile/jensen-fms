@@ -127,17 +127,23 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
       {rows.length === 0 ? (
         <EmptyRow>No suppliers offer this part yet.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40px]" />
+                <TableHead className="w-[32px]" />
                 <TableHead>Supplier</TableHead>
-                <TableHead>Supplier SKU</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  Supplier SKU
+                </TableHead>
                 <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">MOQ</TableHead>
-                <TableHead className="text-right">Lead time</TableHead>
-                <TableHead>Notes</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  MOQ
+                </TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Lead time
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">Notes</TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -234,8 +240,10 @@ function OfferingTableRow({
           />
         ) : null}
       </TableCell>
-      <TableCell className="font-medium">{row.supplierName}</TableCell>
-      <TableCell className="font-mono text-xs">
+      <TableCell className="min-w-0 font-medium whitespace-normal break-words">
+        {row.supplierName}
+      </TableCell>
+      <TableCell className="hidden font-mono text-xs sm:table-cell">
         {row.supplierSku ?? <span className="text-muted-foreground">—</span>}
       </TableCell>
       <TableCell className="text-right tabular-nums">
@@ -252,19 +260,19 @@ function OfferingTableRow({
               { maximumFractionDigits: 4 },
             )}
       </TableCell>
-      <TableCell className="text-right tabular-nums">
+      <TableCell className="hidden text-right tabular-nums md:table-cell">
         {row.minimumOrderQuantity ?? (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell className="text-right tabular-nums">
+      <TableCell className="hidden text-right tabular-nums md:table-cell">
         {row.leadTimeDays != null ? (
           `${row.leadTimeDays} d`
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground max-w-[280px] truncate text-xs">
+      <TableCell className="text-muted-foreground hidden max-w-[280px] truncate text-xs lg:table-cell">
         {row.notes ?? (
           <Badge variant="ghost" className="px-1 py-0 font-normal">
             —

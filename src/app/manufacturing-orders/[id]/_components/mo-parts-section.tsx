@@ -102,21 +102,25 @@ export function MOPartsSection({
           No parts on this MO yet.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Part</TableHead>
-                <TableHead className="text-right">Qty / bike</TableHead>
-                <TableHead className="text-right">
+                <TableHead className="hidden text-right sm:table-cell">
+                  Qty / bike
+                </TableHead>
+                <TableHead className="hidden text-right md:table-cell">
                   Total needed
                   <span className="text-muted-foreground ml-1 text-[10px]">
                     (× {outstandingBikes} outstanding)
                   </span>
                 </TableHead>
-                <TableHead className="text-right">On hand</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
+                  On hand
+                </TableHead>
                 <TableHead className="text-right">Shortfall</TableHead>
-                <TableHead>Origin</TableHead>
+                <TableHead className="hidden md:table-cell">Origin</TableHead>
                 {readOnly ? null : <TableHead className="w-[40px]" />}
               </TableRow>
             </TableHeader>
@@ -126,14 +130,14 @@ export function MOPartsSection({
                 const shortfall = Math.max(0, totalNeeded - row.onHand);
                 return (
                   <TableRow key={row.id}>
-                    <TableCell>
+                    <TableCell className="min-w-0 whitespace-normal">
                       <Link
                         href={`/parts/${row.partId}`}
-                        className="font-medium hover:underline"
+                        className="font-medium break-words hover:underline"
                       >
                         {row.partName}
                       </Link>
-                      <div className="text-muted-foreground font-mono text-xs">
+                      <div className="text-muted-foreground font-mono text-xs break-all">
                         {row.partSku}
                       </div>
                       {row.substitutedFromPartName ? (
@@ -142,13 +146,13 @@ export function MOPartsSection({
                         </div>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
                       {formatQuantity(row.quantityPerBike)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums md:table-cell">
                       {formatQuantity(totalNeeded)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
                       {formatQuantity(row.onHand)}
                     </TableCell>
                     <TableCell
@@ -160,7 +164,7 @@ export function MOPartsSection({
                     >
                       {shortfall > 0 ? formatQuantity(shortfall) : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <OriginBadge origin={row.origin} />
                     </TableCell>
                     {readOnly ? null : (

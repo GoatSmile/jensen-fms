@@ -48,23 +48,27 @@ export function StockSection({
       {rows.length === 0 ? (
         <EmptyRow>No stock recorded at any location yet.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Location</TableHead>
                 <TableHead className="text-right">On hand</TableHead>
-                <TableHead>Last movement</TableHead>
-                <TableHead className="w-[120px] text-right" />
+                <TableHead className="hidden sm:table-cell">
+                  Last movement
+                </TableHead>
+                <TableHead className="w-[90px] text-right sm:w-[120px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.locationId}>
-                  <TableCell>
+                  <TableCell className="min-w-0 whitespace-normal">
                     <div className="flex flex-col">
-                      <span className="font-medium">{row.locationName}</span>
-                      <span className="text-muted-foreground font-mono text-xs">
+                      <span className="font-medium break-words">
+                        {row.locationName}
+                      </span>
+                      <span className="text-muted-foreground font-mono text-xs break-all">
                         {row.locationCode}
                       </span>
                     </div>
@@ -72,7 +76,7 @@ export function StockSection({
                   <TableCell className="text-right tabular-nums font-medium">
                     {formatQuantity(row.quantityOnHand)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
                     {formatDateTime(row.lastMovementAt)}
                   </TableCell>
                   <TableCell className="text-right">

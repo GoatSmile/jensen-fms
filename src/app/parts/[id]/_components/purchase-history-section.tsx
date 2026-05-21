@@ -41,17 +41,27 @@ export function PurchaseHistorySection({ rows }: { rows: PurchaseLineRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>No purchases recorded for this part yet.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>PO</TableHead>
-                <TableHead className="w-[110px]">Order date</TableHead>
+                <TableHead className="hidden w-[110px] sm:table-cell">
+                  Order date
+                </TableHead>
                 <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Received</TableHead>
-                <TableHead className="text-right">Unit price</TableHead>
-                <TableHead className="text-right">FX → DKK</TableHead>
-                <TableHead className="text-right">Transport ×</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Received
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  Unit price
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  FX → DKK
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  Transport ×
+                </TableHead>
                 <TableHead className="text-right">Landed DKK / unit</TableHead>
               </TableRow>
             </TableHeader>
@@ -70,14 +80,14 @@ export function PurchaseHistorySection({ rows }: { rows: PurchaseLineRow[] }) {
                         {row.poNumber}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
+                    <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
                       {formatDate(row.orderDate)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatQuantity(row.quantity)}
                     </TableCell>
                     <TableCell
-                      className={`text-right tabular-nums ${
+                      className={`hidden text-right tabular-nums md:table-cell ${
                         partialReceipt
                           ? "text-amber-700 dark:text-amber-300"
                           : ""
@@ -85,15 +95,15 @@ export function PurchaseHistorySection({ rows }: { rows: PurchaseLineRow[] }) {
                     >
                       {formatQuantity(row.receivedQuantity)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
                       {formatMoney(row.unitPrice, row.currency, {
                         maximumFractionDigits: 4,
                       })}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
                       {formatFxRate(row.fxRateToDkk)}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
                       {formatFactor(row.transportFactor)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-medium">
