@@ -209,28 +209,32 @@ export function PartsRecipeSection({
             No parts in the recipe yet. Add one to get started.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Part</TableHead>
-                  <TableHead className="w-[120px] text-right">Qty / bike</TableHead>
-                  <TableHead className="w-[110px]">Optional</TableHead>
-                  <TableHead>Notes</TableHead>
-                  {canEdit ? <TableHead className="w-[60px]" /> : null}
+                  <TableHead className="w-[100px] text-right sm:w-[120px]">
+                    Qty / bike
+                  </TableHead>
+                  <TableHead className="hidden w-[110px] sm:table-cell">
+                    Optional
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">Notes</TableHead>
+                  {canEdit ? <TableHead className="w-[40px] sm:w-[60px]" /> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.map((row, i) => (
                   <TableRow key={`${row.partId}-${i}`}>
-                    <TableCell>
+                    <TableCell className="min-w-0 whitespace-normal">
                       <Link
                         href={`/parts/${row.partId}`}
-                        className="font-medium hover:underline"
+                        className="font-medium break-words hover:underline"
                       >
                         {row.partName}
                       </Link>
-                      <div className="text-muted-foreground font-mono text-xs">
+                      <div className="text-muted-foreground font-mono text-xs break-all">
                         {row.partSku}
                       </div>
                     </TableCell>
@@ -242,14 +246,14 @@ export function PartsRecipeSection({
                           onChange={(e) =>
                             updateRow(i, { quantity: e.target.value })
                           }
-                          className="ml-auto h-8 w-[90px] text-right"
+                          className="ml-auto h-8 w-[72px] text-right sm:w-[90px]"
                           aria-label={`Quantity for ${row.partSku}`}
                         />
                       ) : (
                         <span className="tabular-nums">{row.quantity}</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <label className="flex cursor-pointer items-center gap-2 text-xs">
                         <input
                           type="checkbox"
@@ -263,7 +267,7 @@ export function PartsRecipeSection({
                         {row.isOptional ? "Optional" : "Required"}
                       </label>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {canEdit ? (
                         <Input
                           value={row.notes}

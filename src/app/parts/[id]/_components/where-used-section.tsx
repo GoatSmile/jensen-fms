@@ -65,22 +65,22 @@ export function WhereUsedSection({
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
                 Current templates
               </h3>
-              <div className="overflow-hidden rounded-md border">
+              <div className="overflow-x-auto rounded-md border md:overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Template</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead className="hidden sm:table-cell">Type</TableHead>
                       <TableHead className="text-right">Qty / bike</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {templates.map((t) => (
                       <TableRow key={t.templateId}>
-                        <TableCell>
+                        <TableCell className="min-w-0 whitespace-normal">
                           <Link
                             href={`/bike-templates/${t.templateId}`}
-                            className="font-medium hover:underline"
+                            className="font-medium break-words hover:underline"
                           >
                             {[t.family, t.frameSize, t.templateName]
                               .filter(Boolean)
@@ -90,7 +90,7 @@ export function WhereUsedSection({
                             v{t.templateVersion}
                           </span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
+                        <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
                           {t.bikeTypeName ?? "—"}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
@@ -109,14 +109,16 @@ export function WhereUsedSection({
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
                 Open manufacturing orders
               </h3>
-              <div className="overflow-hidden rounded-md border">
+              <div className="overflow-x-auto rounded-md border md:overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>MO number</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Qty / bike</TableHead>
-                      <TableHead className="text-right">
+                      <TableHead className="hidden text-right md:table-cell">
+                        Qty / bike
+                      </TableHead>
+                      <TableHead className="hidden text-right md:table-cell">
                         Outstanding bikes
                       </TableHead>
                       <TableHead className="text-right">
@@ -140,10 +142,10 @@ export function WhereUsedSection({
                             {moStatusLabel(mo.status)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="hidden text-right tabular-nums md:table-cell">
                           {mo.qtyPerBike}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="hidden text-right tabular-nums md:table-cell">
                           {mo.outstandingBikes}
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-medium">

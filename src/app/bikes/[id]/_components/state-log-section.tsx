@@ -35,13 +35,13 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>No state changes recorded yet.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[180px]">When</TableHead>
+                <TableHead className="w-[140px] sm:w-[180px]">When</TableHead>
                 <TableHead>Transition</TableHead>
-                <TableHead>Reason</TableHead>
+                <TableHead className="hidden sm:table-cell">Reason</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -51,7 +51,7 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                     {formatDateTime(row.occurredAt)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       {row.fromStatus ? (
                         <Badge
                           variant={
@@ -77,7 +77,7 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                       </Badge>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[320px] truncate text-xs">
+                  <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs sm:table-cell">
                     {row.reason ?? "—"}
                   </TableCell>
                 </TableRow>

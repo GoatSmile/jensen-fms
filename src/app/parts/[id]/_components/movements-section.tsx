@@ -51,16 +51,20 @@ export function MovementsSection({ rows }: { rows: MovementRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>No inventory movements yet.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[160px]">When</TableHead>
+                <TableHead className="w-[140px] sm:w-[160px]">When</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead className="hidden sm:table-cell">Location</TableHead>
                 <TableHead className="text-right">Δ qty</TableHead>
-                <TableHead className="text-right">Unit cost (DKK)</TableHead>
-                <TableHead>Reason / source</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Unit cost (DKK)
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  Reason / source
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -78,7 +82,7 @@ export function MovementsSection({ rows }: { rows: MovementRow[] }) {
                       {movementTypeLabel(row.movementType)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="hidden font-mono text-xs sm:table-cell">
                     {row.locationCode}
                   </TableCell>
                   <TableCell
@@ -92,10 +96,10 @@ export function MovementsSection({ rows }: { rows: MovementRow[] }) {
                   >
                     {formatSignedQuantity(row.quantityDelta)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="hidden text-right tabular-nums md:table-cell">
                     {formatDkk(row.unitCostDkk)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[320px] truncate text-xs">
+                  <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs lg:table-cell">
                     {row.reason ??
                       (row.sourceEntityType
                         ? `(via ${row.sourceEntityType})`

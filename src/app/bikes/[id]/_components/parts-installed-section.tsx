@@ -33,34 +33,34 @@ export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>No parts on file. The build flow populates this.</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Part</TableHead>
                 <TableHead className="text-right">Qty</TableHead>
-                <TableHead>Installed</TableHead>
-                <TableHead>Notes</TableHead>
+                <TableHead className="hidden sm:table-cell">Installed</TableHead>
+                <TableHead className="hidden md:table-cell">Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((r) => (
                 <TableRow key={r.id} className={r.removedAt ? "opacity-60" : ""}>
-                  <TableCell>
+                  <TableCell className="min-w-0 whitespace-normal">
                     <Link
                       href={`/parts/${r.partId}`}
-                      className="font-medium hover:underline"
+                      className="font-medium break-words hover:underline"
                     >
                       {r.partName}
                     </Link>
-                    <div className="text-muted-foreground font-mono text-xs">
+                    <div className="text-muted-foreground font-mono text-xs break-all">
                       {r.partSku}
                     </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {r.quantity}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
                     {formatDateTime(r.installedAt)}
                     {r.removedAt ? (
                       <span className="ml-2">
@@ -68,7 +68,7 @@ export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
                       </span>
                     ) : null}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
                     {r.notes ?? "—"}
                   </TableCell>
                 </TableRow>

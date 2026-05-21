@@ -171,17 +171,27 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Part</TableHead>
-                  <TableHead className="text-right">Ordered</TableHead>
-                  <TableHead className="text-right">Already received</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">
+                    Ordered
+                  </TableHead>
+                  <TableHead className="hidden text-right md:table-cell">
+                    Already received
+                  </TableHead>
                   <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead className="text-right">Unit price</TableHead>
-                  <TableHead className="text-right">Landed DKK / unit</TableHead>
-                  <TableHead className="w-[180px]">Receive now</TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    Unit price
+                  </TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    Landed DKK / unit
+                  </TableHead>
+                  <TableHead className="w-[140px] sm:w-[180px]">
+                    Receive now
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,23 +199,23 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
                   const outstanding = line.quantity - line.receivedQuantity;
                   return (
                     <TableRow key={line.id}>
-                      <TableCell>
+                      <TableCell className="min-w-0 whitespace-normal">
                         <div className="flex flex-col">
                           <Link
                             href={`/parts/${line.partId}`}
-                            className="font-medium hover:underline"
+                            className="font-medium break-words hover:underline"
                           >
                             {line.partName}
                           </Link>
-                          <span className="text-muted-foreground font-mono text-xs">
+                          <span className="text-muted-foreground font-mono text-xs break-all">
                             {line.partSku}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="hidden text-right tabular-nums md:table-cell">
                         {formatQuantity(line.quantity)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="hidden text-right tabular-nums md:table-cell">
                         {formatQuantity(line.receivedQuantity)}
                       </TableCell>
                       <TableCell
@@ -217,12 +227,12 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
                       >
                         {formatQuantity(outstanding)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
                         {formatMoney(line.unitPrice, line.currency, {
                           maximumFractionDigits: 4,
                         })}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
                         {formatDkk(line.landedDkkPerUnit)}
                       </TableCell>
                       <TableCell>
