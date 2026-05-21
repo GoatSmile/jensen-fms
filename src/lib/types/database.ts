@@ -2191,6 +2191,45 @@ export type Database = {
           },
         ]
       }
+      public_report_attempts: {
+        Row: {
+          bike_id: string
+          created_at: string
+          id: string
+          ip: unknown
+          ticket_id: string | null
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          id?: string
+          ip: unknown
+          ticket_id?: string | null
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          id?: string
+          ip?: unknown
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_report_attempts_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_report_attempts_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_lines: {
         Row: {
           created_at: string

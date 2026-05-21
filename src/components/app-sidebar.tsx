@@ -40,6 +40,11 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  // Hide all workshop chrome on public-scan routes — those pages are
+  // customer-facing and need a clean shell.
+  if (pathname.startsWith("/b/") || pathname.startsWith("/report/")) {
+    return null;
+  }
   return (
     <aside className="bg-muted/30 sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r md:flex">
       <div className="flex h-20 items-center justify-center border-b px-4">

@@ -60,6 +60,12 @@ export function MobileNav() {
     setOpen(false);
   }, [pathname]);
 
+  // Hide on public-scan routes — those pages are customer-facing and
+  // shouldn't expose the workshop nav.
+  if (pathname.startsWith("/b/") || pathname.startsWith("/report/")) {
+    return null;
+  }
+
   return (
     <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between border-b px-3 md:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
