@@ -20,6 +20,11 @@ import {
 } from "@/lib/maintenance/ticket-status";
 
 import { TicketHeader } from "../_components/ticket-header";
+import {
+  WorkOrdersForTicketSection,
+  type WORowForTicket,
+} from "./_components/work-orders-for-ticket-section";
+import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
 
 const LANGUAGE_LABEL: Record<string, string> = {
   da: "Dansk",
@@ -61,6 +66,37 @@ export default async function TicketDetailPage({
     throw new Error(`Failed to load ticket: ${error.message}`);
   }
   if (!ticket) notFound();
+
+  // Pull WOs linked to this ticket, plus their parts totals. The totals view
+  // doesn't exist yet, so we sum work_order_parts in-memory — at typical
+  // volumes per ticket (one or two WOs), this is fine.
+  const { data: woData } = await supabase
+    .from("work_orders")
+    .select(
+      `
+        id, wo_number, status, is_billable, started_at, completed_at,
+        work_order_parts(quantity, unit_price)
+      `,
+    )
+    .eq("ticket_id", ticket.id)
+    .order("created_at", { ascending: true });
+
+  const workOrderRows: WORowForTicket[] = (woData ?? []).map((w) => {
+    const partsTotal = (w.work_order_parts ?? []).reduce(
+      (sum, p) =>
+        sum + (p.unit_price != null ? Number(p.unit_price) * Number(p.quantity) : 0),
+      0,
+    );
+    return {
+      id: w.id,
+      wo_number: w.wo_number,
+      status: w.status as WorkOrderStatus,
+      is_billable: w.is_billable,
+      started_at: w.started_at,
+      completed_at: w.completed_at,
+      parts_total_dkk: partsTotal,
+    };
+  });
 
   const bike = ticket.bike;
   const owner = bike?.owner_organization ?? null;
@@ -153,14 +189,11 @@ export default async function TicketDetailPage({
             )}
           </Section>
 
-          <Section
-            title="Work orders"
-            description="Coming soon — ticket → work order conversion is the next push."
-          >
-            <p className="text-muted-foreground text-sm">
-              M3b — once work orders ship, they&apos;ll show here.
-            </p>
-          </Section>
+          <WorkOrdersForTicketSection
+            ticketId={ticket.id}
+            ticketStatus={ticket.status as TicketStatus}
+            rows={workOrderRows}
+          />
         </div>
 
         <div className="flex flex-col gap-6">

@@ -1,0 +1,260 @@
+"use client";
+
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { appendField } from "@/lib/forms";
+import { formatMoney } from "@/lib/parts/format";
+
+import { addPartToWO } from "../_actions/manage-wo-parts";
+
+export type PartChoice = {
+  id: string;
+  internal_sku: string;
+  name_en: string;
+  category_name: string | null;
+};
+
+type Props = {
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+  woId: string;
+  parts: PartChoice[];
+  /** Already-on-WO part ids to disable in the picker. */
+  excludeIds: Set<string>;
+  /** Last cost per part (from v_part_last_cost), used to prefill unit_price. */
+  lastCostByPartId: Map<string, number>;
+};
+
+export function WOPartDialog({
+  open,
+  onOpenChange,
+  woId,
+  parts,
+  excludeIds,
+  lastCostByPartId,
+}: Props) {
+  const router = useRouter();
+  const [filter, setFilter] = useState("");
+  const [partId, setPartId] = useState<string>("");
+  const [qty, setQty] = useState("1");
+  const [unitPrice, setUnitPrice] = useState("");
+  // Tracks whether the user has hand-edited unit_price; if so, picking a
+  // different part should NOT clobber their override.
+  const [unitPriceTouched, setUnitPriceTouched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, start] = useTransition();
+
+  const filtered = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return parts;
+    return parts.filter((p) =>
+      [p.internal_sku, p.name_en, p.category_name ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [parts, filter]);
+
+  // Auto-prefill the unit price from last-cost when the part picker changes.
+  useEffect(() => {
+    if (!partId || unitPriceTouched) return;
+    const last = lastCostByPartId.get(partId);
+    setUnitPrice(last != null ? String(last) : "");
+  }, [partId, lastCostByPartId, unitPriceTouched]);
+
+  function reset() {
+    setFilter("");
+    setPartId("");
+    setQty("1");
+    setUnitPrice("");
+    setUnitPriceTouched(false);
+    setError(null);
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) reset();
+    onOpenChange(next);
+  }
+
+  const qtyN = Number(qty);
+  const unitPriceN = unitPrice.trim() === "" ? null : Number(unitPrice);
+  const previewTotal =
+    Number.isFinite(qtyN) && qtyN > 0 && unitPriceN != null && Number.isFinite(unitPriceN)
+      ? qtyN * unitPriceN
+      : null;
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    if (!partId) {
+      setError("Pick a part.");
+      return;
+    }
+    if (!Number.isFinite(qtyN) || qtyN <= 0) {
+      setError("Quantity must be a positive number.");
+      return;
+    }
+    if (unitPrice.trim() !== "" && (!Number.isFinite(unitPriceN!) || unitPriceN! < 0)) {
+      setError("Unit price must be a non-negative number.");
+      return;
+    }
+    start(async () => {
+      const fd = new FormData();
+      appendField(fd, "part_id", partId);
+      appendField(fd, "quantity", String(qtyN));
+      if (unitPrice.trim() !== "") {
+        appendField(fd, "unit_price", String(unitPriceN));
+      }
+      const r = await addPartToWO(woId, fd);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      handleOpenChange(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-xl">
+        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>Add part to work order</DialogTitle>
+            <DialogDescription>
+              The part is consumed from inventory immediately — a negative
+              movement is written and the work-order row links to it.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter parts by SKU, name, category…"
+          />
+
+          <div className="max-h-60 overflow-y-auto rounded-md border">
+            {filtered.length === 0 ? (
+              <p className="text-muted-foreground p-3 text-center text-sm">
+                No parts match.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {filtered.map((p) => {
+                  const disabled = excludeIds.has(p.id);
+                  const isPicked = partId === p.id;
+                  const last = lastCostByPartId.get(p.id);
+                  return (
+                    <li key={p.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPartId(p.id);
+                          setUnitPriceTouched(false);
+                        }}
+                        disabled={disabled}
+                        className={`hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
+                          isPicked ? "bg-muted" : ""
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{p.name_en}</span>
+                          <span className="text-muted-foreground font-mono text-xs">
+                            {p.internal_sku}
+                            {p.category_name ? (
+                              <span className="ml-2">· {p.category_name}</span>
+                            ) : null}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          {disabled ? (
+                            <span className="text-muted-foreground text-xs">
+                              already on WO
+                            </span>
+                          ) : last != null ? (
+                            <span className="text-muted-foreground text-xs tabular-nums">
+                              last {formatMoney(last, "DKK")}
+                            </span>
+                          ) : null}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wo-part-qty">Quantity</Label>
+              <Input
+                id="wo-part-qty"
+                inputMode="decimal"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wo-part-unit-price">Unit price (DKK)</Label>
+              <Input
+                id="wo-part-unit-price"
+                inputMode="decimal"
+                value={unitPrice}
+                onChange={(e) => {
+                  setUnitPrice(e.target.value);
+                  setUnitPriceTouched(true);
+                }}
+                placeholder="Prefilled from last cost"
+              />
+            </div>
+          </div>
+
+          {previewTotal != null ? (
+            <p className="text-muted-foreground text-xs">
+              Cost preview: {qtyN} × {formatMoney(unitPriceN!, "DKK")} ={" "}
+              <span className="text-foreground font-medium">
+                {formatMoney(previewTotal, "DKK")}
+              </span>
+            </p>
+          ) : null}
+
+          {error ? (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending || !partId || qty.trim() === ""}
+            >
+              {isPending ? "Adding…" : "Add part"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

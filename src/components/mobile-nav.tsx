@@ -107,10 +107,15 @@ export function MobileNav() {
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
+                // The Maintenance entry links to tickets but also owns work
+                // orders. Highlight it for both sub-routes.
+                const isMaintenanceItem = item.href === "/maintenance/tickets";
                 const active = item.exact
                   ? pathname === item.href
                   : pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`);
+                    pathname.startsWith(`${item.href}/`) ||
+                    (isMaintenanceItem &&
+                      pathname.startsWith("/maintenance/work-orders"));
                 return (
                   <DialogPrimitive.Close asChild key={item.href}>
                     <Link

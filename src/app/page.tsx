@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
+import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
 import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,6 +64,7 @@ export default async function DashboardPage() {
     openPaintCount,
     customersCount,
     openTicketsCount,
+    openWOsCount,
     lowStockRes,
     overdueMOsRes,
     paintAgingRes,
@@ -94,6 +96,10 @@ export default async function DashboardPage() {
       .from("maintenance_tickets")
       .select("id", { count: "exact", head: true })
       .in("status", OPEN_TICKET_STATUSES),
+    supabase
+      .from("work_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_WO_STATUSES),
     // Top short parts. v_parts_dashboard already classifies stock_status.
     supabase
       .from("v_parts_dashboard")
@@ -155,8 +161,9 @@ export default async function DashboardPage() {
         </p>
       </header>
 
-      {/* KPI strip */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* KPI strip — bumped to xl:grid-cols-7 to fit "Open work orders"
+          alongside the existing six cards on wide screens. */}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
         <StatCard
           label="Parts in catalog"
           value={partsCount.count ?? 0}
@@ -180,6 +187,12 @@ export default async function DashboardPage() {
           value={openTicketsCount.count ?? 0}
           icon={Wrench}
           href="/maintenance/tickets"
+        />
+        <StatCard
+          label="Open work orders"
+          value={openWOsCount.count ?? 0}
+          icon={Wrench}
+          href="/maintenance/work-orders"
         />
         <StatCard
           label="Open manufacturing orders"

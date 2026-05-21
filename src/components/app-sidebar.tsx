@@ -54,9 +54,15 @@ export function AppSidebar() {
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+          // The Maintenance entry links to tickets but also owns work orders.
+          // Highlight it for both sub-routes so the nav state reads correctly.
+          const isMaintenanceItem = item.href === "/maintenance/tickets";
           const active = item.exact
             ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            : pathname === item.href ||
+              pathname.startsWith(`${item.href}/`) ||
+              (isMaintenanceItem &&
+                pathname.startsWith("/maintenance/work-orders"));
           return (
             <Link
               key={item.href}
