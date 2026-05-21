@@ -7,7 +7,14 @@ import { nullableString as nullable } from "@/lib/forms";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type SubmitReportResult =
-  | { ok: true; ticketNumber: string; ticketId: string }
+  | {
+      ok: true;
+      ticketNumber: string;
+      ticketId: string;
+      /** Set when the ticket saved but the photo upload failed. The ticket
+       *  is still committed; the reporter can email the photo as a follow-up. */
+      photoWarning?: string;
+    }
   | { ok: false; error: string };
 
 const RATE_LIMIT_PER_HOUR = 5;
@@ -148,49 +155,62 @@ export async function submitPublicTicketReport(
     .from("public_report_attempts")
     .insert({ ip, bike_id: bikeId, ticket_id: ticket.id });
 
-  // Optional photo. Already resized client-side to ~1600px WebP.
+  // Optional photo. Already resized client-side to ~1600px WebP. We always
+  // commit the ticket; photo failures degrade gracefully — return success
+  // with a photoWarning so the reporter can email the photo instead.
+  let photoWarning: string | undefined;
   const file = formData.get("photo");
   if (file instanceof File && file.size > 0) {
     if (file.size > 5 * 1024 * 1024) {
-      // We've already created the ticket; better to keep it and skip the
-      // attachment than fail the whole flow. The user can email the
-      // photo if needed.
-      return {
-        ok: true,
-        ticketNumber: ticket.ticket_number,
-        ticketId: ticket.id,
-      };
-    }
-    const objectPath = `${bikeId}/ticket/${ticket.id}/${crypto.randomUUID()}.webp`;
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
+      photoWarning =
+        "Photo was too large to attach (over 5 MB). Try a smaller one or email us directly.";
+    } else {
+      const objectPath = `${bikeId}/ticket/${ticket.id}/${crypto.randomUUID()}.webp`;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
 
-    // Insert the attachments row first (row-then-file pattern, same as
-    // parts photos — see src/app/parts/[id]/_actions/upload-image.ts).
-    const { data: att, error: attErr } = await supabase
-      .from("attachments")
-      .insert({
-        entity_type: "maintenance_ticket",
-        entity_id: ticket.id,
-        file_url: publicUrl,
-        file_name: file.name || objectPath,
-        file_size_bytes: file.size,
-        mime_type: file.type || "image/webp",
-        purpose: "gallery",
-      })
-      .select("id")
-      .single();
-    if (!attErr && att) {
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(objectPath, file, {
-          contentType: "image/webp",
-          upsert: false,
-        });
-      if (upErr) {
-        // Clean up the placeholder row.
-        await supabase.from("attachments").delete().eq("id", att.id);
+      // Insert the attachments row first (row-then-file pattern, same as
+      // parts photos — see src/app/parts/[id]/_actions/upload-image.ts).
+      const { data: att, error: attErr } = await supabase
+        .from("attachments")
+        .insert({
+          entity_type: "maintenance_ticket",
+          entity_id: ticket.id,
+          file_url: publicUrl,
+          file_name: file.name || objectPath,
+          file_size_bytes: file.size,
+          mime_type: file.type || "image/webp",
+          purpose: "gallery",
+        })
+        .select("id")
+        .single();
+      if (attErr || !att) {
+        // Log so the failure shows up in Vercel server logs rather than
+        // disappearing silently.
+        console.error(
+          "[submitPublicTicketReport] attachment row insert failed",
+          { ticketId: ticket.id, error: attErr },
+        );
+        photoWarning =
+          "Couldn't attach the photo (server error). The report itself is saved — please email the photo as a follow-up.";
+      } else {
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(objectPath, file, {
+            contentType: "image/webp",
+            upsert: false,
+          });
+        if (upErr) {
+          console.error(
+            "[submitPublicTicketReport] storage upload failed",
+            { ticketId: ticket.id, attachmentId: att.id, error: upErr },
+          );
+          // Clean up the placeholder row.
+          await supabase.from("attachments").delete().eq("id", att.id);
+          photoWarning =
+            "Couldn't upload the photo (server error). The report itself is saved — please email the photo as a follow-up.";
+        }
       }
     }
   }
@@ -202,5 +222,6 @@ export async function submitPublicTicketReport(
     ok: true,
     ticketNumber: ticket.ticket_number,
     ticketId: ticket.id,
+    ...(photoWarning ? { photoWarning } : {}),
   };
 }

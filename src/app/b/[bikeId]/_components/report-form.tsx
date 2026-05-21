@@ -22,7 +22,11 @@ type Props = {
 type Phase =
   | { kind: "idle" }
   | { kind: "submitting" }
-  | { kind: "submitted"; ticketNumber: string }
+  | {
+      kind: "submitted";
+      ticketNumber: string;
+      photoWarning?: string;
+    }
   | { kind: "error"; message: string };
 
 /**
@@ -90,7 +94,11 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
         setPhase({ kind: "error", message: result.error });
         return;
       }
-      setPhase({ kind: "submitted", ticketNumber: result.ticketNumber });
+      setPhase({
+        kind: "submitted",
+        ticketNumber: result.ticketNumber,
+        photoWarning: result.photoWarning,
+      });
     });
   }
 
@@ -107,6 +115,11 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
           Jensen Production will follow up on bike{" "}
           <span className="font-mono">{frameNumber}</span>.
         </p>
+        {phase.photoWarning ? (
+          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+            {phase.photoWarning}
+          </p>
+        ) : null}
       </div>
     );
   }

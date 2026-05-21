@@ -70,16 +70,35 @@ export default async function TicketDetailPage({
   // Pull WOs linked to this ticket, plus their parts totals. The totals view
   // doesn't exist yet, so we sum work_order_parts in-memory — at typical
   // volumes per ticket (one or two WOs), this is fine.
-  const { data: woData } = await supabase
-    .from("work_orders")
-    .select(
-      `
-        id, wo_number, status, is_billable, started_at, completed_at,
-        work_order_parts(quantity, unit_price)
-      `,
-    )
-    .eq("ticket_id", ticket.id)
-    .order("created_at", { ascending: true });
+  const [{ data: woData }, { data: attachmentData }] = await Promise.all([
+    supabase
+      .from("work_orders")
+      .select(
+        `
+          id, wo_number, status, is_billable, started_at, completed_at,
+          work_order_parts(quantity, unit_price)
+        `,
+      )
+      .eq("ticket_id", ticket.id)
+      .order("created_at", { ascending: true }),
+    // Photos / files attached to the ticket — most commonly a photo the
+    // customer uploaded from the public /b/<id> report form.
+    supabase
+      .from("attachments")
+      .select("id, file_url, file_name, mime_type, created_at")
+      .eq("entity_type", "maintenance_ticket")
+      .eq("entity_id", ticket.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const attachments = (attachmentData ?? []).map((a) => ({
+    id: a.id,
+    fileUrl: a.file_url,
+    fileName: a.file_name,
+    mimeType: a.mime_type,
+    isImage: (a.mime_type ?? "").startsWith("image/"),
+  }));
 
   const workOrderRows: WORowForTicket[] = (woData ?? []).map((w) => {
     const partsTotal = (w.work_order_parts ?? []).reduce(
@@ -173,6 +192,44 @@ export default async function TicketDetailPage({
               </p>
             ) : null}
           </Section>
+
+          {attachments.length > 0 ? (
+            <Section
+              title="Photos & attachments"
+              description={
+                ticket.source === "app"
+                  ? "Uploaded by the reporter from the bike sticker form."
+                  : "Files attached to this ticket."
+              }
+            >
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                {attachments.map((att) => (
+                  <li key={att.id}>
+                    <a
+                      href={att.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:border-foreground/40 block overflow-hidden rounded-md border"
+                      title={att.fileName ?? "Open file"}
+                    >
+                      {att.isImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- Public Supabase storage URL; Next/Image not configured for that domain.
+                        <img
+                          src={att.fileUrl}
+                          alt={att.fileName ?? "Ticket attachment"}
+                          className="aspect-square w-full object-cover"
+                        />
+                      ) : (
+                        <div className="bg-muted text-muted-foreground flex aspect-square w-full items-center justify-center p-3 text-center text-xs break-all">
+                          {att.fileName ?? "File"}
+                        </div>
+                      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          ) : null}
 
           <Section
             title="Notes"
