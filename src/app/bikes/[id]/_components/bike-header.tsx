@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import {
   ArchiveRestore,
   ChevronDown,
   MoreHorizontal,
+  QrCode,
   Trash2,
 } from "lucide-react";
 
@@ -204,6 +206,11 @@ export function BikeHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/qr/${bikeId}`}>
+                  <QrCode aria-hidden /> QR sticker
+                </Link>
+              </DropdownMenuItem>
               {isDeleted ? (
                 <DropdownMenuItem
                   disabled={pending}
