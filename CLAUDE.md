@@ -67,6 +67,15 @@ cross-cutting. Original SQL files live in `/migrations/`.
   no feature branches, no waiting to push — once a change is committed it goes
   straight to GitHub so the remote always reflects local. Solo-dev shop;
   speed beats process here.
+- **Pre-commit hygiene (TODO — not enforced yet, but the lesson is on file):**
+  `tsc --noEmit` + `next build` are necessary but not sufficient. They miss
+  RSC boundary violations and other runtime-only failures. When a CI pipeline
+  exists it should also (a) curl every route on a running dev server and
+  assert 200 + no "Runtime Error" / "TypeError" in the HTML, and (b) run a
+  Vitest suite over the server actions. Until then, manually smoke-test
+  new routes via Claude Preview before declaring a phase done. Lesson came
+  from the Phase 1.1 PO `/new` route shipping with a server-component
+  calling a `"use client"` function (commit fa1dbed).
 - Server-render initial page, client components for interactive state.
 - URL search-params drive list filters (so filtered views are shareable links).
 - shadcn/ui components by default; build custom only when shadcn lacks it.
