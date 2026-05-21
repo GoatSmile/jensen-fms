@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, Plus, Upload } from "lucide-react";
+import { Boxes, Plus, Printer, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -241,6 +241,20 @@ export default async function PartsPage({
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link
+                href={`/parts/print${
+                  q || stockFilter !== "all"
+                    ? `?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(stockFilter !== "all" ? { stock: stockFilter } : {}),
+                      }).toString()}`
+                    : ""
+                }`}
+              >
+                <Printer aria-hidden /> Print
+              </Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link href="/parts/import">
                 <Upload aria-hidden /> Import CSV

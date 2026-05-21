@@ -28,6 +28,8 @@ import {
   PartsInstalledSection,
   type InstalledPartRow,
 } from "./_components/parts-installed-section";
+import type { PhotoRow } from "./_components/photo-thumb";
+import { PhotosSection } from "./_components/photos-section";
 import { Section } from "./_components/section";
 import {
   StateLogSection,
@@ -59,6 +61,7 @@ export default async function BikeDetailPage({
     identifierTypesRes,
     orgsRes,
     unitsRes,
+    attachmentsRes,
   ] = await Promise.all([
       supabase
         .from("bikes")
@@ -128,6 +131,13 @@ export default async function BikeDetailPage({
         .select("id, organization_id, name")
         .is("deleted_at", null)
         .order("name", { ascending: true }),
+      supabase
+        .from("attachments")
+        .select("id, file_url, file_name, purpose, created_at")
+        .eq("entity_type", "bike")
+        .eq("entity_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
     ]);
 
   if (bikeRes.error) {
@@ -219,6 +229,19 @@ export default async function BikeDetailPage({
     b.owner_organization?.display_name_en ??
     b.owner_organization?.legal_name ??
     null;
+
+  // Photos: hero first, then gallery (most recent first via the order on the query).
+  const photoRows: PhotoRow[] = (attachmentsRes.data ?? [])
+    .map((row) => ({
+      id: row.id,
+      fileUrl: row.file_url,
+      fileName: row.file_name,
+      purpose: row.purpose ?? "gallery",
+    }))
+    .sort((a, b) => {
+      if (a.purpose === b.purpose) return 0;
+      return a.purpose === "hero" ? -1 : 1;
+    });
 
   const organizations: OrganizationOption[] = (orgsRes.data ?? []).map((o) => ({
     id: o.id,
@@ -378,6 +401,8 @@ export default async function BikeDetailPage({
           </Field>
         </dl>
       </Section>
+
+      <PhotosSection bikeId={b.id} photos={photoRows} />
 
       <IdentifiersSection
         bikeId={b.id}

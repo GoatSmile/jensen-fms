@@ -145,4 +145,45 @@
   html {
     @apply font-sans;
   }
+
+  /* Print rules — hide app chrome so /…/print routes (and anything else the
+     user prints) produce a clean page. Any element can opt out with the
+     `print-hidden` utility; anything that should only render on paper uses
+     `print-only`. */
+  @media print {
+    /* Strip the sidebar + mobile top bar from the document flow. They live
+       in the root layout, so otherwise every print includes them. */
+    aside,
+    header.md\:hidden,
+    .print-hidden {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+      color: black !important;
+      font-size: 11pt;
+    }
+    a {
+      color: inherit !important;
+      text-decoration: none !important;
+    }
+    /* Tables: force a slim, paper-friendly look. */
+    table {
+      page-break-inside: auto;
+    }
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    thead {
+      display: table-header-group;
+    }
+    .print-only {
+      display: revert !important;
+    }
+  }
+  /* Default — print-only elements are invisible on screen. */
+  .print-only {
+    display: none;
+  }
 }
