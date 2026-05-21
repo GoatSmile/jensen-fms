@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
+import { RegisterSW } from "@/components/register-sw";
 import { ScanFab } from "@/components/scan-fab";
 
 import "./globals.css";
@@ -72,6 +73,7 @@ export default function RootLayout({
           </div>
         </div>
         <ScanFab />
+        <RegisterSW />
       </body>
     </html>
   );
