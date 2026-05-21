@@ -69,7 +69,13 @@ export default function RootLayout({
           <AppSidebar />
           <div className="flex min-w-0 flex-1 flex-col">
             <MobileNav />
-            <main className="flex flex-1 flex-col">{children}</main>
+            {/* pb-20 on small screens reserves space below scrollable
+                content so the floating Scan FAB never overlaps a card,
+                table row, or button at the page footer. md+ uses no
+                extra padding since the sidebar lives there instead. */}
+            <main className="flex flex-1 flex-col pb-20 md:pb-0">
+              {children}
+            </main>
           </div>
         </div>
         <ScanFab />

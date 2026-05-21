@@ -95,8 +95,8 @@ export function IdentifiersSection({
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead>Value</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Registered</TableHead>
+                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                <TableHead className="hidden md:table-cell">Registered</TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -152,14 +152,14 @@ function IdentifierTableRow({
         ) : null}
       </TableCell>
       <TableCell className="font-mono text-xs">{row.value}</TableCell>
-      <TableCell>
+      <TableCell className="hidden sm:table-cell">
         {row.isActive ? (
           <Badge variant="success">Active</Badge>
         ) : (
           <Badge variant="outline">Replaced</Badge>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground text-xs">
+      <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
         {formatDateTime(row.createdAt)}
         {!row.isActive && row.deactivatedAt ? (
           <span className="ml-2">

@@ -58,15 +58,19 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-md border">
+    // overflow-x-auto on mobile lets the user swipe sideways when a row
+    // doesn't quite fit (long SKUs are stubborn mono strings); md+ has
+    // room and we hide-overflow for the rounded corners.
+    <div className="overflow-x-auto rounded-md border md:overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[44px]" />
+            {/* Thumb hidden on tiny phones to give Stock room to render. */}
+            <TableHead className="hidden w-[44px] sm:table-cell" />
             <SortableHeader
               column="internal_sku"
               label="SKU"
-              className="w-[140px]"
+              className="w-[110px] sm:w-[140px]"
             />
             <SortableHeader column="name_en" label="Name" />
             <SortableHeader
@@ -102,7 +106,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                 attentionBorder(row.stockStatus),
               )}
             >
-              <TableCell className="p-0">
+              <TableCell className="hidden p-0 sm:table-cell">
                 <Link
                   href={`/parts/${row.id}`}
                   className="flex items-center justify-center px-2 py-1.5"
@@ -128,8 +132,11 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                   {row.internalSku}
                 </Link>
               </TableCell>
-              <TableCell className="p-0">
-                <Link href={`/parts/${row.id}`} className="block px-4 py-2.5 font-medium">
+              <TableCell className="min-w-0 p-0 whitespace-normal">
+                <Link
+                  href={`/parts/${row.id}`}
+                  className="block px-4 py-2.5 font-medium break-words"
+                >
                   {row.name}
                 </Link>
               </TableCell>
@@ -157,11 +164,19 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               <TableCell className="p-0 text-right">
                 <Link
                   href={`/parts/${row.id}`}
-                  className="flex items-center justify-end gap-2 px-4 py-2.5 tabular-nums"
+                  className="flex items-center justify-end gap-1.5 px-2 py-2.5 tabular-nums sm:gap-2 sm:px-4"
                 >
                   <span>{formatQuantity(row.stockOnHand)}</span>
+                  {/* "In stock" is too long for a tight phone column;
+                      shorten to "In" below sm. Badge colour still
+                      carries the meaning. */}
                   <Badge variant={STOCK_BADGE_VARIANT[row.stockStatus]}>
-                    {STOCK_BADGE_LABEL[row.stockStatus]}
+                    <span className="sm:hidden">
+                      {row.stockStatus === "ok" ? "In" : row.stockStatus === "low" ? "Low" : "Out"}
+                    </span>
+                    <span className="hidden sm:inline">
+                      {STOCK_BADGE_LABEL[row.stockStatus]}
+                    </span>
                   </Badge>
                 </Link>
               </TableCell>
