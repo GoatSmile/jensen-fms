@@ -61,6 +61,20 @@ cross-cutting. Original SQL files live in `/migrations/`.
   supplier is Metacoat A/S. The `Lakering` catalog SKUs (`JP-lak*`) stay in
   `parts` as service SKUs that paint orders reference for costing — they
   never accumulate inventory_movements.
+- **Bike-to-customer assignment is intentionally overloaded** — no separate
+  "slated_for" column. `bikes.owner_organization_id` is set in two
+  conceptually distinct moments:
+  - **Slating** during `planning` / `building` — earmark for a known
+    customer so the build floor sees who it's for. Status stays put.
+  - **Delivery** from `in_stock` — physical handover. Status transitions
+    `in_stock → assigned`, which fires `trg_bikes_state_log`.
+  - **Reassignment** from `assigned` / `in_service` — owner change in
+    place (org merger, internal transfer). Status unchanged.
+  `assignBikeToCustomer()` blocks only terminal statuses (`retired`,
+  `lost_or_stolen`) and archived bikes; the dialog copy flexes between
+  "Slate" and "Assign" based on current status. If this overloading ever
+  bites (e.g. need to distinguish "intended" vs "delivered" customer for
+  billing), promote to a separate `slated_organization_id` column.
 
 ## Conventions
 - **Git workflow: commit on `main` and push to `origin` every time.** No PRs,

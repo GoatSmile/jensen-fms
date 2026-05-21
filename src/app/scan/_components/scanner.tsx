@@ -88,6 +88,17 @@ export function Scanner() {
       try {
         const u = new URL(value, window.location.origin);
         if (u.origin === window.location.origin) {
+          // Stickers encode the public /b/<id> page (for customers). The
+          // in-app scanner is only used by staff, so rewrite to the workshop
+          // view /bikes/<id> instead of making them tap through the public
+          // landing.
+          const stickerMatch = u.pathname.match(
+            /^\/b\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+          );
+          if (stickerMatch) {
+            router.push(`/bikes/${stickerMatch[1]}`);
+            return;
+          }
           router.push(u.pathname + u.search);
           return;
         }
@@ -182,6 +193,15 @@ function ManualEntry() {
     try {
       const u = new URL(v, window.location.origin);
       if (u.origin === window.location.origin) {
+        // Same rewrite as the camera path: /b/<id> stickers are for
+        // customers; staff want the workshop view.
+        const stickerMatch = u.pathname.match(
+          /^\/b\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+        );
+        if (stickerMatch) {
+          router.push(`/bikes/${stickerMatch[1]}`);
+          return;
+        }
         router.push(u.pathname + u.search);
         return;
       }

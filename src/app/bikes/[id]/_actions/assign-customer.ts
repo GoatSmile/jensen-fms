@@ -7,15 +7,22 @@ import { createClient } from "@/lib/supabase/server";
 export type AssignResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Assign a bike to a customer organization (with an optional sub-unit). If the
- * bike is currently in_stock, advance status to 'assigned' in the same
- * transaction-ish flow so the state-log trigger captures the move. The status
- * UPDATE is what fires the bike_state_log trigger; we don't write to that
- * table directly.
+ * Assign a bike to a customer organization (with an optional sub-unit).
  *
- * If the bike is already 'assigned' (e.g. customer transfer / correction),
- * we keep status as-is, update the owner pointers, and refresh assigned_at
- * so the "current assignment" timestamp is meaningful.
+ * The same dialog handles two related-but-distinct intents:
+ *
+ *  1. **Slating during build** (status: planning, building) — earmark this
+ *     bike for a known customer so the technician on the floor sees who it's
+ *     for. Status stays in its build phase; no transition fires.
+ *  2. **Assigning at delivery** (status: in_stock) — the bike is ready and
+ *     this is the customer handover. Status advances to `assigned` so the
+ *     bike_state_log trigger captures the transition.
+ *  3. **Reassigning or transferring** (status: assigned, in_service) — the
+ *     customer changed (rare; org merger, internal transfer). Status stays
+ *     put, owner pointers refresh, assigned_at restamps so the "current
+ *     assignment" timestamp is meaningful.
+ *
+ * Terminal statuses (retired, lost_or_stolen) and archived bikes block.
  *
  * Use unassignBike() for the reverse (handed back, returned to stock).
  */
@@ -42,13 +49,14 @@ export async function assignBikeToCustomer(
     };
   }
 
-  // Lifecycle gate: only sensible from in_stock or already-assigned. Retired /
-  // lost-or-stolen / pre-build statuses block the move.
-  const validFromStatuses = new Set(["in_stock", "assigned"]);
-  if (!validFromStatuses.has(bike.status)) {
+  // Lifecycle gate: terminal/retired statuses block; everything else is
+  // either slating (planning/building) or assignment proper (in_stock,
+  // assigned, in_service).
+  const blockedStatuses = new Set(["retired", "lost_or_stolen"]);
+  if (blockedStatuses.has(bike.status)) {
     return {
       ok: false,
-      error: `Cannot assign a bike whose status is "${bike.status}". Move it to "in stock" first.`,
+      error: `Cannot assign a "${bike.status}" bike — it's out of the active fleet.`,
     };
   }
 

@@ -136,7 +136,7 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
                 <TableHead className="hidden sm:table-cell">
                   Supplier SKU
                 </TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Supplier price</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
                   MOQ
                 </TableHead>

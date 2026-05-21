@@ -45,7 +45,7 @@ export type OrgUnitOption = {
 
 type Props = {
   bikeId: string;
-  /** Disabled when the bike can't accept assignment (retired, building, …) */
+  /** Disabled when the bike is terminal (retired / lost / archived). */
   disabled?: boolean;
   disabledReason?: string;
   /** Current assignment, if any — used to label the trigger button. */
@@ -58,6 +58,13 @@ type Props = {
   organizations: OrganizationOption[];
   /** Every active org-unit; we filter client-side on the picked org. */
   organizationUnits: OrgUnitOption[];
+  /**
+   * Current bike status — drives whether this dialog acts as "slating" (during
+   * build) or "assigning at delivery" (in_stock → assigned). Status is the
+   * source of truth for physical state; setting a customer never changes it
+   * except in_stock → assigned, which has always been the delivery moment.
+   */
+  bikeStatus: string;
 };
 
 export function AssignCustomerDialog({
@@ -67,7 +74,12 @@ export function AssignCustomerDialog({
   currentOwner,
   organizations,
   organizationUnits,
+  bikeStatus,
 }: Props) {
+  // Build statuses use the dialog to "slate" a customer; in_stock + later
+  // statuses do the real assignment. The copy flexes so the user can tell
+  // which one they're doing.
+  const isSlating = bikeStatus === "planning" || bikeStatus === "building";
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState(currentOwner?.organizationId ?? "");
@@ -133,7 +145,11 @@ export function AssignCustomerDialog({
     });
   }
 
-  const triggerLabel = currentOwner ? "Change customer" : "Assign to customer";
+  const triggerLabel = currentOwner
+    ? "Change customer"
+    : isSlating
+      ? "Slate for customer"
+      : "Assign to customer";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -150,13 +166,28 @@ export function AssignCustomerDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>
-              {currentOwner ? "Change customer" : "Assign to customer"}
+              {currentOwner
+                ? "Change customer"
+                : isSlating
+                  ? "Slate for customer"
+                  : "Assign to customer"}
             </DialogTitle>
             <DialogDescription>
-              The bike moves to <em>assigned</em> status and its{" "}
-              <span className="font-mono text-xs">assigned_at</span> stamp is
-              refreshed. Use &ldquo;Unassign&rdquo; if the bike is being
-              returned to stock.
+              {isSlating ? (
+                <>
+                  Earmark this bike for a customer so the build team knows who
+                  it&rsquo;s for. The bike stays in{" "}
+                  <em>{bikeStatus}</em> — status only flips to{" "}
+                  <em>assigned</em> at delivery (when it&rsquo;s in stock).
+                </>
+              ) : (
+                <>
+                  The bike moves to <em>assigned</em> status and its{" "}
+                  <span className="font-mono text-xs">assigned_at</span> stamp
+                  is refreshed. Use &ldquo;Unassign&rdquo; if the bike is being
+                  returned to stock.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -253,7 +284,9 @@ export function AssignCustomerDialog({
                 ? "Saving…"
                 : currentOwner && orgId === currentOwner.organizationId
                   ? "Update unit"
-                  : "Assign"}
+                  : isSlating
+                    ? "Slate"
+                    : "Assign"}
             </Button>
           </DialogFooter>
         </form>

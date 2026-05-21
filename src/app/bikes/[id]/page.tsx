@@ -255,14 +255,18 @@ export default async function BikeDetailPage({
     name: u.name,
   }));
 
+  // Only terminal statuses block the customer picker. Building/planning bikes
+  // can be slated for a known customer so the tech sees who it's for; in_stock
+  // assigns at delivery; in_service / assigned reassign in place.
   const assignBlocked =
     b.deleted_at != null ||
-    (b.status !== "in_stock" && b.status !== "assigned");
+    b.status === "retired" ||
+    b.status === "lost_or_stolen";
   const assignBlockedReason =
     b.deleted_at != null
       ? "Bike is archived."
       : assignBlocked
-        ? `Move the bike to "in stock" before assigning.`
+        ? `A "${b.status}" bike is out of the active fleet.`
         : undefined;
 
   return (
@@ -301,6 +305,7 @@ export default async function BikeDetailPage({
             bikeId={b.id}
             disabled={assignBlocked}
             disabledReason={assignBlockedReason}
+            bikeStatus={b.status}
             currentOwner={
               b.owner_organization
                 ? {

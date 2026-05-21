@@ -91,7 +91,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
             />
             <SortableHeader
               column="last_cost_dkk"
-              label="Last cost"
+              label="Last paid (DKK)"
               align="right"
               className="hidden text-right md:table-cell"
             />

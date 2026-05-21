@@ -33,6 +33,9 @@ export type MOBikeRow = {
   status: BikeStatus;
   identifierCount: number;
   requiredIdentifierCount: number;
+  /** Customer this bike is slated/assigned to. Null until someone earmarks it. */
+  ownerName: string | null;
+  ownerUnitName: string | null;
 };
 
 type Props = {
@@ -129,14 +132,19 @@ export function MOBikesSection({
           No bikes yet. Add the first one to start the build.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Frame number</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Identifiers</TableHead>
-                <TableHead className="w-[120px] text-right" />
+                <TableHead className="hidden md:table-cell">
+                  Slated for
+                </TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
+                  Identifiers
+                </TableHead>
+                <TableHead className="w-[100px] text-right sm:w-[120px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -201,7 +209,22 @@ function BikeRow({
           {bikeStatusLabel(row.status)}
         </Badge>
       </TableCell>
-      <TableCell className="text-right tabular-nums text-xs">
+      <TableCell className="hidden text-xs md:table-cell">
+        {row.ownerName ? (
+          <span>
+            {row.ownerName}
+            {row.ownerUnitName ? (
+              <span className="text-muted-foreground">
+                {" · "}
+                {row.ownerUnitName}
+              </span>
+            ) : null}
+          </span>
+        ) : (
+          <span className="text-muted-foreground italic">—</span>
+        )}
+      </TableCell>
+      <TableCell className="hidden text-right tabular-nums text-xs sm:table-cell">
         <span
           className={
             row.requiredIdentifierCount > 0 &&

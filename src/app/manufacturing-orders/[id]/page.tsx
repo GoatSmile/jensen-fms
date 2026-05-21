@@ -79,6 +79,10 @@ export default async function ManufacturingOrderDetailPage({
       .select(
         `
           id, frame_number, status, manufacturing_order_id, build_cost_dkk,
+          owner_organization:organizations!owner_organization_id(
+            id, legal_name, display_name_en, display_name_da
+          ),
+          owner_unit:organization_units!owner_unit_id(id, name),
           bike_identifiers(id, is_active)
         `,
       )
@@ -132,14 +136,23 @@ export default async function ManufacturingOrderDetailPage({
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
 
   const requiredIdCount = bikeTypeRequiredRes.data?.length ?? 0;
-  const moBikeRows: MOBikeRow[] = (bikesRes.data ?? []).map((b) => ({
-    id: b.id,
-    frameNumber: b.frame_number,
-    status: b.status as BikeStatus,
-    identifierCount:
-      b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
-    requiredIdentifierCount: requiredIdCount,
-  }));
+  const moBikeRows: MOBikeRow[] = (bikesRes.data ?? []).map((b) => {
+    const ownerName =
+      b.owner_organization?.display_name_da ??
+      b.owner_organization?.display_name_en ??
+      b.owner_organization?.legal_name ??
+      null;
+    return {
+      id: b.id,
+      frameNumber: b.frame_number,
+      status: b.status as BikeStatus,
+      identifierCount:
+        b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
+      requiredIdentifierCount: requiredIdCount,
+      ownerName,
+      ownerUnitName: b.owner_unit?.name ?? null,
+    };
+  });
 
   // Build cost stats: sum across all bikes that have build_cost_dkk stamped.
   const builtBikesWithCost = (bikesRes.data ?? []).filter(
