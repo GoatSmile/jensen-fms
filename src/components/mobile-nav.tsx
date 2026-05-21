@@ -14,6 +14,7 @@ import {
   Home,
   Menu,
   Paintbrush,
+  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
   { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
   { href: "/bikes", label: "Bikes", icon: Bike },
+  { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
   { href: "/organizations", label: "Customers", icon: Building2 },
   { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
   { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },

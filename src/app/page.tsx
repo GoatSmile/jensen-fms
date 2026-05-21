@@ -8,6 +8,7 @@ import {
   Hammer,
   Paintbrush,
   TrendingUp,
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -16,6 +17,7 @@ import {
 } from "@/components/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
+import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
 import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -60,6 +62,7 @@ export default async function DashboardPage() {
     openMOsCount,
     openPaintCount,
     customersCount,
+    openTicketsCount,
     lowStockRes,
     overdueMOsRes,
     paintAgingRes,
@@ -87,6 +90,10 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
       .is("deleted_at", null),
+    supabase
+      .from("maintenance_tickets")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_TICKET_STATUSES),
     // Top short parts. v_parts_dashboard already classifies stock_status.
     supabase
       .from("v_parts_dashboard")
@@ -149,7 +156,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* KPI strip */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           label="Parts in catalog"
           value={partsCount.count ?? 0}
@@ -167,6 +174,12 @@ export default async function DashboardPage() {
           value={customersCount.count ?? 0}
           icon={Building2}
           href="/organizations"
+        />
+        <StatCard
+          label="Open tickets"
+          value={openTicketsCount.count ?? 0}
+          icon={Wrench}
+          href="/maintenance/tickets"
         />
         <StatCard
           label="Open manufacturing orders"
