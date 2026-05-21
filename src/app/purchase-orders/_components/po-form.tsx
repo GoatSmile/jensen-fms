@@ -37,19 +37,8 @@ export type POFormValues = {
   notes: string;
 };
 
-/**
- * Create-mode default: today's date and DKK. Callers can override individual
- * fields (e.g. preselecting a supplier from a URL param).
- */
-export function emptyPOForm(): POFormValues {
-  return {
-    supplier_id: "",
-    order_date: new Date().toISOString().slice(0, 10),
-    expected_date: "",
-    total_currency: "DKK",
-    notes: "",
-  };
-}
+// `emptyPOForm` lives in /new/page.tsx — it's a factory and Next.js can't
+// import a function from a "use client" file into a Server Component.
 
 type Props = {
   /** "create" submits to createPO + redirects; "edit" submits to updatePO. */

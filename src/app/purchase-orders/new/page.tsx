@@ -11,11 +11,26 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  emptyPOForm,
   POForm,
   type CurrencyOption,
+  type POFormValues,
   type SupplierOption,
 } from "../_components/po-form";
+
+/**
+ * Inline default instead of importing a factory from po-form.tsx — that
+ * file is a "use client" boundary and Next.js refuses to call functions
+ * exported from it from a server component (types are still fine).
+ */
+function emptyPOForm(): POFormValues {
+  return {
+    supplier_id: "",
+    order_date: new Date().toISOString().slice(0, 10),
+    expected_date: "",
+    total_currency: "DKK",
+    notes: "",
+  };
+}
 
 export default async function NewPurchaseOrderPage() {
   const supabase = await createClient();
