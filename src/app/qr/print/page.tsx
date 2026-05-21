@@ -123,7 +123,8 @@ export default async function QRPrintPage({
                 className="flex flex-col items-center gap-1 break-inside-avoid rounded-md border bg-white p-3 print:border print:border-black/20"
               >
                 <div
-                  className="w-full max-w-[160px]"
+                  // Same intrinsic-SVG-size fix as /qr/[bikeId]/page.tsx.
+                  className="w-full max-w-[160px] [&>svg]:h-auto [&>svg]:w-full"
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
                 <p className="font-mono text-[10px] sm:text-xs">

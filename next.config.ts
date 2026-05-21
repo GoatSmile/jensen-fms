@@ -16,7 +16,10 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Empty turbopack config silences Next.js 16's "you have a webpack
+  // config but no turbopack config" warning — Serwist injects a webpack
+  // config that we only need for production builds; dev runs Turbopack.
+  turbopack: {},
 };
 
 export default withSerwist(nextConfig);

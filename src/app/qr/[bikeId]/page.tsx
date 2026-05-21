@@ -110,7 +110,10 @@ export default async function BikeQRPage({
 
       <section className="flex flex-col items-center gap-4 rounded-lg border bg-white p-6 print:border-0 print:p-0">
         <div
-          className="size-64 sm:size-80"
+          // The inner <svg> from the qrcode package carries its own intrinsic
+          // width/height; force it to scale to the wrapper instead so it
+          // doesn't overflow into the labels below.
+          className="size-64 sm:size-80 [&>svg]:h-full [&>svg]:w-full"
           // The QR is just SVG; we trust our own output.
           dangerouslySetInnerHTML={{ __html: svg }}
         />
