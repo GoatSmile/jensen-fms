@@ -20,7 +20,7 @@ import { PartsTable, type PartRow } from "./_components/parts-table";
 import { PartsPagination } from "./_components/pagination";
 import type { SortColumn } from "./_components/sortable-header";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 40;
 
 const SORTABLE_COLUMNS: ReadonlyArray<SortColumn> = [
   "internal_sku",
