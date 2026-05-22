@@ -77,6 +77,26 @@ cross-cutting. Original SQL files live in `/migrations/`.
     `bike_template_parts` into `manufacturing_order_parts`.
   - One-off / by-parts — MO has `bike_template_id = NULL`, parts list is
     assembled by hand. Both paths consume inventory the same way.
+- **Per-bike parts are the source of truth at build time.** `bike_parts`
+  (one row per bike per part, with `inventory_movement_id`) records what
+  was actually consumed for a specific bike. The MO recipe
+  (`manufacturing_order_parts`) is just the default that gets copied to
+  `bike_parts` when the build starts. Implications:
+  - The **per-bike build workbench** at
+    `/manufacturing-orders/<mo>/bikes/<bike>/build` lets a tech edit the
+    bike's parts before clicking *Finish build* — swap a saddle, add a
+    one-off accessory, change a quantity. The workbench writes to
+    `bike_parts`, not to the MO recipe.
+  - The bulk **"Mark X built"** shortcut on the MO bikes section still
+    works for the common case (every bike == recipe). It calls
+    `markBikeBuilt`, which now: (1) lazily copies the recipe into
+    `bike_parts` if empty, then (2) calls `finishBikeBuild` which consumes
+    from inventory per `bike_parts` row, stamps `bike.build_cost_dkk`,
+    and transitions to `in_stock`. Same final code path either way —
+    consistent ledger entries, accurate per-bike cost basis.
+  - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are
+    frozen (qty / removal disallowed); pre-consumption rows are
+    editable.
 - **Paint is a separate workflow**, not a BOM line. `paint_orders` is a batch
   header (one supplier visit covers N bikes via `paint_order_bikes`), with
   status `planned → sent_to_painter → at_painter → received_back`. Default

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CheckCircle2, CheckSquare } from "lucide-react";
+import { CheckSquare, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import {
 } from "@/lib/bikes/status";
 
 import { bulkMarkBikesBuilt } from "../_actions/bulk-mark-built";
-import { markBikeBuilt } from "../_actions/mark-bike-built";
 import { AddBikeDialog } from "./add-bike-dialog";
 import { BulkAddDialog } from "./bulk-add-dialog";
 import { Section } from "./section";
@@ -169,31 +168,18 @@ function BikeRow({
   moId,
   row,
   closed,
-  onError,
 }: {
   moId: string;
   row: MOBikeRow;
   closed: boolean;
   onError: (msg: string | null) => void;
 }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-
   const isBuilt =
     row.status === "in_stock" ||
     row.status === "assigned" ||
     row.status === "in_service";
   const isTerminal =
     row.status === "retired" || row.status === "lost_or_stolen";
-
-  function runMarkBuilt() {
-    onError(null);
-    start(async () => {
-      const r = await markBikeBuilt(moId, row.id);
-      if (!r.ok) onError(r.error);
-      else router.refresh();
-    });
-  }
 
   return (
     <TableRow>
@@ -241,13 +227,12 @@ function BikeRow({
       </TableCell>
       <TableCell className="text-right">
         {!closed && !isBuilt && !isTerminal ? (
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={runMarkBuilt}
-            disabled={pending}
-          >
-            <CheckCircle2 aria-hidden /> Mark built
+          <Button size="xs" variant="outline" asChild>
+            <Link
+              href={`/manufacturing-orders/${moId}/bikes/${row.id}/build`}
+            >
+              <Wrench aria-hidden /> Build
+            </Link>
           </Button>
         ) : (
           <Link

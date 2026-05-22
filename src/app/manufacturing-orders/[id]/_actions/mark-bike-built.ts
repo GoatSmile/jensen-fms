@@ -1,195 +1,35 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-
-import { createClient } from "@/lib/supabase/server";
-
-import { autoAdvanceMOAfterBuild } from "./transition-mo";
+import { copyMoRecipeToBike } from "../bikes/[bikeId]/build/_actions/manage-bike-parts";
+import { finishBikeBuild } from "../bikes/[bikeId]/build/_actions/finish-build";
 
 export type MarkBuiltResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Mark a bike as built: consume parts from inventory, record bike_parts rows,
- * advance bike status to 'in_stock'. The bike-status trigger logs the state
- * change AND increments the MO's completed_quantity automatically.
+ * Mark a bike as built — the "no-customisation, recipe is good enough"
+ * shortcut for the common case. Two steps:
  *
- * Sequencing:
- *   1. Read MO parts list + per-part landed cost (for inventory valuation)
- *   2. Look up the default inventory location (single-location for v1; will
- *      be configurable when multi-location lands)
- *   3. For each MO part:
- *        a. Insert inventory_movements (consumed_build, negative qty)
- *        b. Insert bike_parts row pointing at the movement
- *   4. Update bike.status to 'in_stock' (triggers fire)
+ *   1. copyMoRecipeToBike — idempotent populate of bike_parts from the
+ *      MO recipe (skips if any rows already exist on the bike).
+ *   2. finishBikeBuild — consume from inventory per bike_parts row,
+ *      stamp build_cost_dkk, transition status → in_stock. Idempotent.
  *
- * Not transactional. If we fail mid-loop the bike stays in 'building' and the
- * action can be re-run; we skip parts already in bike_parts to make it
- * idempotent enough.
+ * Per-bike rows live in `bike_parts` (the source of truth for what each
+ * individual bike was built with). If a tech wants to deviate from the
+ * recipe for a specific bike, they open the workbench at
+ * /manufacturing-orders/<mo>/bikes/<bike>/build and edit the rows
+ * before clicking finish — same final code path either way.
  */
 export async function markBikeBuilt(
   moId: string,
   bikeId: string,
 ): Promise<MarkBuiltResult> {
-  if (!moId || !bikeId) {
-    return { ok: false, error: "Missing MO id or bike id." };
+  const seedResult = await copyMoRecipeToBike(moId, bikeId);
+  if (!seedResult.ok) return seedResult;
+
+  const finishResult = await finishBikeBuild(moId, bikeId);
+  if (!finishResult.ok) {
+    return { ok: false, error: finishResult.error };
   }
-
-  const supabase = await createClient();
-
-  // Validate bike state.
-  const { data: bike, error: bikeErr } = await supabase
-    .from("bikes")
-    .select("id, status, manufacturing_order_id")
-    .eq("id", bikeId)
-    .maybeSingle();
-  if (bikeErr || !bike) {
-    return { ok: false, error: `Could not load bike: ${bikeErr?.message ?? "not found"}` };
-  }
-  if (bike.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That bike does not belong to this MO." };
-  }
-  if (bike.status === "in_stock" || bike.status === "assigned" || bike.status === "in_service") {
-    return { ok: false, error: "Bike is already marked built." };
-  }
-  if (bike.status === "retired" || bike.status === "lost_or_stolen") {
-    return { ok: false, error: "Cannot mark a retired or lost/stolen bike as built." };
-  }
-
-  // Pull MO parts; landed-cost lookup is a separate query because the
-  // generated types don't model v_part_last_cost as a typed embed.
-  const { data: moParts, error: mopErr } = await supabase
-    .from("manufacturing_order_parts")
-    .select("id, part_id, quantity_per_bike")
-    .eq("manufacturing_order_id", moId);
-  if (mopErr) {
-    return { ok: false, error: `Could not load MO parts: ${mopErr.message}` };
-  }
-
-  const partIds = (moParts ?? []).map((p) => p.part_id);
-  const lastCostByPart = new Map<string, number>();
-  if (partIds.length > 0) {
-    const { data: costs } = await supabase
-      .from("v_part_last_cost")
-      .select("part_id, last_cost_dkk")
-      .in("part_id", partIds);
-    for (const row of costs ?? []) {
-      if (row.part_id != null && row.last_cost_dkk != null) {
-        lastCostByPart.set(row.part_id, Number(row.last_cost_dkk));
-      }
-    }
-  }
-
-  // Default inventory location — first active. Multi-location support is
-  // already in adjust-stock-dialog and the receive flow; build pulls from a
-  // single location for v1.
-  const { data: location, error: locErr } = await supabase
-    .from("inventory_locations")
-    .select("id")
-    .eq("is_active", true)
-    .order("code", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (locErr || !location) {
-    return {
-      ok: false,
-      error: `No active inventory location to consume from: ${locErr?.message ?? "none configured"}`,
-    };
-  }
-
-  // Skip parts already on this bike (idempotent retry).
-  const { data: existingBikeParts } = await supabase
-    .from("bike_parts")
-    .select("part_id, quantity, inventory_movement_id")
-    .eq("bike_id", bikeId);
-  const alreadyInstalled = new Set(
-    (existingBikeParts ?? []).map((r) => r.part_id),
-  );
-
-  // Track build cost as we go. Includes any parts that were already on the
-  // bike from a partial earlier run, so a re-run produces the right total.
-  let runningBuildCostDkk = 0;
-  for (const bp of existingBikeParts ?? []) {
-    if (bp.inventory_movement_id == null) continue;
-    const { data: mov } = await supabase
-      .from("inventory_movements")
-      .select("unit_cost_dkk")
-      .eq("id", bp.inventory_movement_id)
-      .maybeSingle();
-    if (mov?.unit_cost_dkk != null) {
-      runningBuildCostDkk += Number(mov.unit_cost_dkk) * Number(bp.quantity);
-    }
-  }
-
-  for (const mop of moParts ?? []) {
-    if (alreadyInstalled.has(mop.part_id)) continue;
-    const qty = Number(mop.quantity_per_bike);
-    if (!Number.isFinite(qty) || qty <= 0) continue;
-
-    const lastCostDkk = lastCostByPart.get(mop.part_id) ?? null;
-
-    const { data: movement, error: movErr } = await supabase
-      .from("inventory_movements")
-      .insert({
-        part_id: mop.part_id,
-        location_id: location.id,
-        movement_type: "consumed_build",
-        quantity_delta: -qty,
-        unit_cost_dkk: lastCostDkk,
-        source_entity_type: "manufacturing_order_part",
-        source_entity_id: mop.id,
-        reason: `Build of bike ${bikeId}`,
-      })
-      .select("id")
-      .single();
-    if (movErr || !movement) {
-      return {
-        ok: false,
-        error: `Could not write inventory movement for part ${mop.part_id}: ${movErr?.message ?? "unknown error"}. Re-run to retry; already-consumed parts will be skipped.`,
-      };
-    }
-
-    const { error: bpErr } = await supabase.from("bike_parts").insert({
-      bike_id: bikeId,
-      part_id: mop.part_id,
-      quantity: qty,
-      inventory_movement_id: movement.id,
-    });
-    if (bpErr) {
-      return {
-        ok: false,
-        error: `Could not link part ${mop.part_id} to bike: ${bpErr.message}. Re-run to retry.`,
-      };
-    }
-
-    if (lastCostDkk != null) {
-      runningBuildCostDkk += lastCostDkk * qty;
-    }
-  }
-
-  // Advance bike status AND stamp build_cost_dkk. The state-log +
-  // MO-completion triggers fire on this UPDATE.
-  const { error: statusErr } = await supabase
-    .from("bikes")
-    .update({
-      status: "in_stock",
-      build_cost_dkk: runningBuildCostDkk > 0 ? runningBuildCostDkk : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", bikeId);
-  if (statusErr) {
-    return { ok: false, error: `Could not advance status: ${statusErr.message}` };
-  }
-
-  // The MO-completion trigger has just incremented completed_quantity. Auto-
-  // advance the MO status: planned/released → in_progress on first build,
-  // in_progress → completed when target reached. Idempotent and bypasses the
-  // user-facing transition matrix (matrix is for the Move-to dropdown).
-  await autoAdvanceMOAfterBuild(moId);
-
-  revalidatePath("/bikes");
-  revalidatePath(`/bikes/${bikeId}`);
-  revalidatePath("/manufacturing-orders");
-  revalidatePath(`/manufacturing-orders/${moId}`);
-  revalidatePath("/parts");
   return { ok: true };
 }
