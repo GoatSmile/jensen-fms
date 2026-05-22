@@ -250,6 +250,18 @@ export function PartsRecipeSection({
             {totalUnitsPerBike} unit{totalUnitsPerBike === 1 ? "" : "s"} per bike
           </p>
         </div>
+        {canEdit ? (
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={onSave}
+              disabled={isPending || !dirty}
+            >
+              {isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        ) : null}
       </header>
 
       <div className="p-4">

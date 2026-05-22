@@ -210,8 +210,10 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
           error={errorField === "color_id" ? error : null}
         >
           <Select
-            value={values.color_id}
-            onValueChange={(v) => update("color_id", v)}
+            value={values.color_id === "" ? "__none__" : values.color_id}
+            onValueChange={(v) =>
+              update("color_id", v === "__none__" ? "" : v)
+            }
           >
             <SelectTrigger id="mo-color">
               <SelectValue
@@ -221,6 +223,15 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               />
             </SelectTrigger>
             <SelectContent>
+              {/* Template-driven MOs require a colour (paint orders need one);
+                  one-off MOs allow unpainted. */}
+              {!hasTemplate ? (
+                <SelectItem value="__none__">
+                  <span className="text-muted-foreground italic">
+                    Unpainted (no colour)
+                  </span>
+                </SelectItem>
+              ) : null}
               {colors.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
                   No active colours.

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, Percent, Tag } from "lucide-react";
+import { Coins, Palette, Percent, Tag } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -23,7 +23,7 @@ import { formatPct } from "@/lib/parts/format";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
-  const [hsRes, settingsRes, fxRes] = await Promise.all([
+  const [hsRes, settingsRes, fxRes, colorsRes] = await Promise.all([
     supabase
       .from("hs_codes")
       .select("id", { count: "exact", head: true })
@@ -39,6 +39,10 @@ export default async function AdminLandingPage() {
       .order("rate_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("colors")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -46,6 +50,7 @@ export default async function AdminLandingPage() {
     settingsRes.data?.default_transport_pct ?? 0.10,
   );
   const lastFxRefresh = fxRes.data?.rate_date as string | undefined;
+  const activeColorCount = colorsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -89,6 +94,13 @@ export default async function AdminLandingPage() {
               ? `Latest: ${lastFxRefresh}`
               : "No rates on file yet"
           }
+        />
+        <Tile
+          href="/admin/colors"
+          icon={Palette}
+          title="Colours"
+          description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
+          stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
         />
         <Tile
           href="/admin/settings"

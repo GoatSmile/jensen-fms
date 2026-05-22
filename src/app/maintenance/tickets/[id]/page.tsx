@@ -179,19 +179,33 @@ export default async function TicketDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <Section
-            title="Description"
-            description="What the reporter told us."
-          >
-            <pre className="text-foreground whitespace-pre-wrap font-sans text-sm">
-              {ticket.description}
-            </pre>
-            {languageLabel ? (
-              <p className="text-muted-foreground mt-3 text-xs">
-                Reported in {languageLabel}.
-              </p>
-            ) : null}
-          </Section>
+          {/*
+           * Description card only when the header isn't already showing
+           * the whole thing. Short reports ("the bike is too distracting")
+           * fit fully in the header — repeating them below as a Description
+           * section reads as duplication. Long descriptions, or anything
+           * with paragraph breaks, get the body card.
+           */}
+          {ticket.description.trim().length > 60 ||
+          ticket.description.includes("\n") ? (
+            <Section
+              title="Description"
+              description="What the reporter told us."
+            >
+              <pre className="text-foreground whitespace-pre-wrap font-sans text-sm">
+                {ticket.description}
+              </pre>
+              {languageLabel ? (
+                <p className="text-muted-foreground mt-3 text-xs">
+                  Reported in {languageLabel}.
+                </p>
+              ) : null}
+            </Section>
+          ) : languageLabel ? (
+            <p className="text-muted-foreground text-xs">
+              Reported in {languageLabel}.
+            </p>
+          ) : null}
 
           {attachments.length > 0 ? (
             <Section

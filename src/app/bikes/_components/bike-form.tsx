@@ -182,13 +182,20 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
         </Field>
         <Field label="Colour (optional)" htmlFor="bike-color">
           <Select
-            value={values.color_id}
-            onValueChange={(v) => update("color_id", v)}
+            value={values.color_id === "" ? "__none__" : values.color_id}
+            onValueChange={(v) =>
+              update("color_id", v === "__none__" ? "" : v)
+            }
           >
             <SelectTrigger id="bike-color">
               <SelectValue placeholder="Unpainted / not decided yet" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__">
+                <span className="text-muted-foreground italic">
+                  Unpainted (no colour)
+                </span>
+              </SelectItem>
               {colors.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
                   No active colours.
