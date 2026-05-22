@@ -1,0 +1,382 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { Hammer, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatPrice } from "@/lib/format";
+import { formatQuantity } from "@/lib/parts/stock";
+
+import { deleteSOLine } from "../../_actions/manage-so-lines";
+import { spawnMOFromSOLine } from "../../_actions/spawn-mo";
+import {
+  LineDialog,
+  type ColorChoice,
+  type LineDialogInitial,
+  type PartChoice,
+  type TemplateChoice,
+  type VatCodeChoice,
+} from "./line-dialog";
+
+export type SOLineRow = {
+  id: string;
+  lineNumber: number;
+  kind: "part" | "template";
+  partId: string | null;
+  partSku: string | null;
+  partName: string | null;
+  bikeTemplateId: string | null;
+  templateLabel: string | null;
+  colorId: string | null;
+  colorName: string | null;
+  quantity: number;
+  unitPrice: number;
+  vatCode: string | null;
+  vatRate: number;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+  descriptionEn: string | null;
+  descriptionDa: string | null;
+  /** Active MOs (not cancelled) spawned from this line. Drives the
+   *  "spawn MO" CTA visibility. */
+  linkedMoCount: number;
+};
+
+type Props = {
+  soId: string;
+  currency: string;
+  defaultVatCode: string | null;
+  editable: boolean;
+  /** When true, "Spawn MO" is shown on template lines that don't already
+   *  have an active MO. Allowed in draft/confirmed/in_production. */
+  canSpawn: boolean;
+  rows: SOLineRow[];
+  parts: PartChoice[];
+  templates: TemplateChoice[];
+  vatCodes: VatCodeChoice[];
+  colors: ColorChoice[];
+};
+
+type DialogState =
+  | { kind: "closed" }
+  | { kind: "add" }
+  | { kind: "edit"; initial: LineDialogInitial };
+
+export function LinesSection({
+  soId,
+  currency,
+  defaultVatCode,
+  editable,
+  canSpawn,
+  rows,
+  parts,
+  templates,
+  vatCodes,
+  colors,
+}: Props) {
+  const router = useRouter();
+  const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <section className="rounded-md border">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-sm font-semibold">Lines</h2>
+          <p className="text-muted-foreground text-xs">
+            {editable
+              ? "Editable while draft. Lines lock when the SO is confirmed."
+              : "Lines are locked — the SO is past draft."}
+          </p>
+        </div>
+        {editable ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDialog({ kind: "add" })}
+          >
+            <Plus aria-hidden /> Add line
+          </Button>
+        ) : null}
+      </header>
+
+      {error ? (
+        <p className="text-destructive border-b px-4 py-2 text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {rows.length === 0 ? (
+        <p className="text-muted-foreground p-4 text-sm italic">
+          {editable
+            ? "No lines yet — add the first one to get started."
+            : "No lines on this SO."}
+        </p>
+      ) : (
+        <div className="overflow-x-auto md:overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[36px]">#</TableHead>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  Unit price
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  VAT
+                </TableHead>
+                <TableHead className="text-right">Line total</TableHead>
+                <TableHead className="w-[40px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <SOLineTableRow
+                  key={row.id}
+                  soId={soId}
+                  row={row}
+                  currency={currency}
+                  editable={editable}
+                  canSpawn={canSpawn}
+                  onEdit={() =>
+                    setDialog({
+                      kind: "edit",
+                      initial: {
+                        lineId: row.id,
+                        kind: row.kind,
+                        partId: row.partId,
+                        bikeTemplateId: row.bikeTemplateId,
+                        quantity: row.quantity,
+                        unitPrice: row.unitPrice,
+                        vatCode: row.vatCode,
+                        colorId: row.colorId,
+                        descriptionEn: row.descriptionEn,
+                        descriptionDa: row.descriptionDa,
+                      },
+                    })
+                  }
+                  onError={setError}
+                  onAfterAction={() => router.refresh()}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {dialog.kind !== "closed" ? (
+        <LineDialog
+          key={
+            dialog.kind === "add"
+              ? "add"
+              : `edit-${dialog.initial.lineId}`
+          }
+          open
+          onOpenChange={(next) => {
+            if (!next) setDialog({ kind: "closed" });
+          }}
+          mode={
+            dialog.kind === "add"
+              ? {
+                  kind: "add",
+                  soId,
+                  defaultVatCode,
+                  soCurrency: currency,
+                }
+              : {
+                  kind: "edit",
+                  initial: dialog.initial,
+                  defaultVatCode,
+                  soCurrency: currency,
+                }
+          }
+          parts={parts}
+          templates={templates}
+          vatCodes={vatCodes}
+          colors={colors}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function SOLineTableRow({
+  soId,
+  row,
+  currency,
+  editable,
+  canSpawn,
+  onEdit,
+  onError,
+  onAfterAction,
+}: {
+  soId: string;
+  row: SOLineRow;
+  currency: string;
+  editable: boolean;
+  canSpawn: boolean;
+  onEdit: () => void;
+  onError: (msg: string | null) => void;
+  onAfterAction: () => void;
+}) {
+  const [pending, start] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  function runDelete() {
+    onError(null);
+    start(async () => {
+      const r = await deleteSOLine(row.id);
+      if (!r.ok) {
+        onError(r.error);
+        setConfirmDelete(false);
+        return;
+      }
+      onAfterAction();
+    });
+  }
+
+  function runSpawn() {
+    onError(null);
+    start(async () => {
+      const r = await spawnMOFromSOLine(soId, row.id);
+      if (r && !r.ok) onError(r.error);
+      // ok path redirects, no need to refresh here
+    });
+  }
+
+  const canSpawnHere =
+    canSpawn && row.kind === "template" && row.linkedMoCount === 0;
+
+  return (
+    <TableRow>
+      <TableCell className="text-muted-foreground tabular-nums text-xs">
+        {row.lineNumber}
+      </TableCell>
+      <TableCell className="min-w-0 whitespace-normal">
+        {row.kind === "template" ? (
+          <>
+            <Link
+              href={`/bike-templates/${row.bikeTemplateId}`}
+              className="font-medium break-words hover:underline"
+            >
+              {row.templateLabel ?? "—"}
+            </Link>
+            <div className="text-muted-foreground text-[10px]">
+              Bike template{row.colorName ? ` · ${row.colorName}` : ""}
+            </div>
+          </>
+        ) : (
+          <>
+            <Link
+              href={`/parts/${row.partId}`}
+              className="font-medium break-words hover:underline"
+            >
+              {row.partName ?? "—"}
+            </Link>
+            <div className="text-muted-foreground font-mono text-[10px] break-all">
+              {row.partSku}
+            </div>
+          </>
+        )}
+        {row.linkedMoCount > 0 ? (
+          <Badge variant="secondary" className="mt-1 text-[10px]">
+            {row.linkedMoCount} MO{row.linkedMoCount === 1 ? "" : "s"}
+          </Badge>
+        ) : null}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        {formatQuantity(row.quantity)}
+      </TableCell>
+      <TableCell className="hidden text-right tabular-nums md:table-cell">
+        {formatPrice(row.unitPrice, currency)}
+      </TableCell>
+      <TableCell className="hidden text-right tabular-nums lg:table-cell">
+        {row.vatCode ? (
+          <>
+            <div className="font-mono text-xs">{row.vatCode}</div>
+            <div className="text-muted-foreground text-[10px]">
+              {row.vatRate}%
+            </div>
+          </>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell className="text-right tabular-nums font-medium">
+        {formatPrice(row.total, currency)}
+      </TableCell>
+      <TableCell className="text-right">
+        {editable || canSpawnHere ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                aria-label="Line actions"
+                disabled={pending}
+              >
+                <MoreVertical aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canSpawnHere ? (
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    runSpawn();
+                  }}
+                  disabled={pending}
+                >
+                  <Hammer aria-hidden /> Spawn MO
+                </DropdownMenuItem>
+              ) : null}
+              {editable ? (
+                <>
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      onEdit();
+                    }}
+                  >
+                    <Pencil aria-hidden /> Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    disabled={pending}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      if (confirmDelete) runDelete();
+                      else setConfirmDelete(true);
+                    }}
+                  >
+                    <Trash2 aria-hidden />{" "}
+                    {confirmDelete ? "Click again to confirm" : "Delete"}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </TableCell>
+    </TableRow>
+  );
+}

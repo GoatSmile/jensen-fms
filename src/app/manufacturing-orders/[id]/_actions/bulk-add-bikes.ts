@@ -45,7 +45,10 @@ export async function bulkAddBikesToMO(
   const { data: mo, error: moErr } = await supabase
     .from("manufacturing_orders")
     .select(
-      "id, bike_type_id, bike_template_id, color_id, target_quantity, status",
+      `id, bike_type_id, bike_template_id, color_id, target_quantity, status,
+       sales_order:sales_orders!sales_order_id(
+         id, status, organization_id, organization_unit_id
+       )`,
     )
     .eq("id", moId)
     .maybeSingle();
@@ -113,6 +116,18 @@ export async function bulkAddBikesToMO(
     .eq("slug", "frame_number")
     .maybeSingle();
 
+  // Slate via SO (same gate as add-bike). Computed once outside the loop.
+  const slate =
+    mo.sales_order &&
+    mo.sales_order.status !== "draft" &&
+    mo.sales_order.status !== "cancelled"
+      ? {
+          owner_organization_id: mo.sales_order.organization_id,
+          owner_unit_id: mo.sales_order.organization_unit_id ?? null,
+          assigned_at: new Date().toISOString(),
+        }
+      : {};
+
   let created = 0;
   for (const frameNumber of planned) {
     const { data: bike, error: bikeErr } = await supabase
@@ -124,6 +139,7 @@ export async function bulkAddBikesToMO(
         manufacturing_order_id: moId,
         frame_number: frameNumber,
         status: "planning",
+        ...slate,
       })
       .select("id")
       .single();

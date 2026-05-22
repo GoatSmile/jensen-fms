@@ -34,7 +34,11 @@ export async function addBikeToMO(
   const { data: mo, error: moErr } = await supabase
     .from("manufacturing_orders")
     .select(
-      "id, bike_type_id, bike_template_id, color_id, target_quantity, completed_quantity, status",
+      `id, bike_type_id, bike_template_id, color_id, target_quantity,
+       completed_quantity, status, sales_order_id,
+       sales_order:sales_orders!sales_order_id(
+         id, status, organization_id, organization_unit_id
+       )`,
     )
     .eq("id", moId)
     .maybeSingle();
@@ -63,6 +67,20 @@ export async function addBikeToMO(
     };
   }
 
+  // If this MO is tied to a confirmed (or further-along) SO, the new bike
+  // inherits the SO's customer as a slate. Draft SOs don't slate — they're
+  // not commitments yet. Same gate the transitionSO confirm step uses.
+  const slate =
+    mo.sales_order &&
+    mo.sales_order.status !== "draft" &&
+    mo.sales_order.status !== "cancelled"
+      ? {
+          owner_organization_id: mo.sales_order.organization_id,
+          owner_unit_id: mo.sales_order.organization_unit_id ?? null,
+          assigned_at: new Date().toISOString(),
+        }
+      : {};
+
   const { data: bike, error: bikeErr } = await supabase
     .from("bikes")
     .insert({
@@ -73,6 +91,7 @@ export async function addBikeToMO(
       frame_number,
       status: "planning",
       notes,
+      ...slate,
     })
     .select("id")
     .single();

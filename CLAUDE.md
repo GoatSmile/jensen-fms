@@ -117,6 +117,20 @@ cross-cutting. Original SQL files live in `/migrations/`.
   "Slate" and "Assign" based on current status. If this overloading ever
   bites (e.g. need to distinguish "intended" vs "delivered" customer for
   billing), promote to a separate `slated_organization_id` column.
+- **Sales orders drive slating + delivery automatically.** When an SO
+  transitions `draft → confirmed`, every unbuilt bike on linked MOs gets
+  slated to the SO's customer (owner_organization_id, owner_unit_id set;
+  status stays in build phase). When the SO transitions to `delivered`,
+  any of those bikes that are currently `in_stock` flip to `assigned` in
+  one bulk write — slating became delivery. Cancelling an SO unslates any
+  still-unbuilt bikes; built ones stay slated and the workshop unpacks
+  the orphan by hand.
+  - New bikes added to an MO whose SO is past-draft inherit the slate at
+    create time (both `addBikeToMO` and `bulkAddBikesToMO` look up the
+    SO's customer).
+  - SO line spawn-MO action lives at `src/app/sales-orders/_actions/
+    spawn-mo.ts`. v1 is one MO per template line; the schema allows N-MOs-
+    per-line, so a future "split into two batches" lives in its own action.
 
 ## Conventions
 - **Git workflow: commit on `main` and push to `origin` every time.** No PRs,
