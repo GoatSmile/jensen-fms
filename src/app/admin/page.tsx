@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, Palette, Percent, Tag } from "lucide-react";
+import { Coins, Palette, Percent, Tag, Users } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -23,7 +23,7 @@ import { formatPct } from "@/lib/parts/format";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
-  const [hsRes, settingsRes, fxRes, colorsRes] = await Promise.all([
+  const [hsRes, settingsRes, fxRes, colorsRes, segmentsRes] = await Promise.all([
     supabase
       .from("hs_codes")
       .select("id", { count: "exact", head: true })
@@ -43,6 +43,10 @@ export default async function AdminLandingPage() {
       .from("colors")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    supabase
+      .from("customer_segments")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -51,6 +55,7 @@ export default async function AdminLandingPage() {
   );
   const lastFxRefresh = fxRes.data?.rate_date as string | undefined;
   const activeColorCount = colorsRes.count ?? 0;
+  const activeSegmentCount = segmentsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -101,6 +106,13 @@ export default async function AdminLandingPage() {
           title="Colours"
           description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
           stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
+        />
+        <Tile
+          href="/admin/customer-segments"
+          icon={Users}
+          title="Customer segments"
+          description="Hotel / hospital / municipality / FM / B2B / B2C. Used to classify organisations and report on the customer mix."
+          stat={`${activeSegmentCount} active segment${activeSegmentCount === 1 ? "" : "s"}`}
         />
         <Tile
           href="/admin/settings"

@@ -22,11 +22,16 @@ export default async function NewPartPage() {
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
-    supabase.from("currencies").select("code, name_en").order("code"),
+    supabase
+      .from("currencies")
+      .select("code, name_en")
+      .order("sort_order", { ascending: true })
+      .order("code", { ascending: true }),
     supabase
       .from("hs_codes")
       .select("id, code, description, tariff_pct")
       .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
   ]);
 

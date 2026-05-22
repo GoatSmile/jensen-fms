@@ -30,6 +30,7 @@ export default async function NewBikeTemplatePage() {
     supabase
       .from("currencies")
       .select("code, symbol")
+      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
   ]);
 

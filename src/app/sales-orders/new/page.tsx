@@ -40,7 +40,11 @@ export default async function NewSOPage() {
       .select("id, organization_id, first_name, last_name, role")
       .is("deleted_at", null)
       .order("last_name", { ascending: true }),
-    supabase.from("currencies").select("code").order("code"),
+    supabase
+      .from("currencies")
+      .select("code")
+      .order("sort_order", { ascending: true })
+      .order("code", { ascending: true }),
   ]);
 
   const organizations: OrgOption[] = (orgsRes.data ?? []).map((o) => ({

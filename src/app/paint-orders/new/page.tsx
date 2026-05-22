@@ -43,6 +43,7 @@ export default async function NewPaintOrderPage() {
       supabase
         .from("currencies")
         .select("code")
+        .order("sort_order", { ascending: true })
         .order("code", { ascending: true }),
       supabase
         .from("part_categories")

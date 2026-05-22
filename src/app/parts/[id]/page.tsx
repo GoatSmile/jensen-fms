@@ -178,7 +178,11 @@ export default async function PartDetailPage({
       .is("deleted_at", null)
       .eq("is_active", true)
       .order("name", { ascending: true }),
-    supabase.from("currencies").select("code, name_en").order("code"),
+    supabase
+      .from("currencies")
+      .select("code, name_en")
+      .order("sort_order", { ascending: true })
+      .order("code", { ascending: true }),
     supabase
       .from("bike_template_parts")
       .select(

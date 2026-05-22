@@ -45,6 +45,7 @@ export default async function EditPurchaseOrderPage({
       supabase
         .from("currencies")
         .select("code, name_en")
+        .order("sort_order", { ascending: true })
         .order("code", { ascending: true }),
       supabase
         .from("purchase_order_lines")

@@ -51,11 +51,13 @@ export default async function EditOrganizationPage({
     supabase
       .from("currencies")
       .select("code")
+      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
     supabase
       .from("vat_codes")
       .select("code, name_en")
       .eq("is_active", true)
+      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
   ]);
 

@@ -83,6 +83,7 @@ export default async function PurchaseOrderDetailPage({
     supabase
       .from("currencies")
       .select("code, name_en")
+      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
     // Pull every from_currency → DKK rate; we collapse to the latest per
     // currency in JS rather than relying on a window function.
