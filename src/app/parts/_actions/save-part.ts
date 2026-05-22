@@ -17,6 +17,7 @@ type ParsedFields = {
   description_en: string | null;
   description_da: string | null;
   category_id: string;
+  hs_code_id: string | null;
   unit_of_measure: string;
   default_retail_price: number | null;
   default_retail_currency: string | null;
@@ -116,6 +117,10 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     reorder_quantity = n;
   }
 
+  // hs_code_id is optional; the picker emits "" for "unclassified".
+  const hsRaw = nullable(formData.get("hs_code_id"));
+  const hs_code_id = hsRaw && hsRaw !== "" ? hsRaw : null;
+
   return {
     internal_sku,
     name_en,
@@ -123,6 +128,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     description_en: nullable(formData.get("description_en")),
     description_da: nullable(formData.get("description_da")),
     category_id,
+    hs_code_id,
     unit_of_measure,
     default_retail_price,
     default_retail_currency,
@@ -165,6 +171,7 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
       description_en: parsed.description_en,
       description_da: parsed.description_da,
       category_id: parsed.category_id,
+      hs_code_id: parsed.hs_code_id,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
       default_retail_currency: parsed.default_retail_currency,
@@ -205,6 +212,7 @@ export async function updatePart(
       description_en: parsed.description_en,
       description_da: parsed.description_da,
       category_id: parsed.category_id,
+      hs_code_id: parsed.hs_code_id,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
       default_retail_currency: parsed.default_retail_currency,

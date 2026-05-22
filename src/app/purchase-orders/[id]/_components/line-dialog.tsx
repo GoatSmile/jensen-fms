@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
+import { formatPct } from "@/lib/parts/format";
 
 import { addLine, updateLine } from "../_actions/manage-lines";
 
@@ -31,6 +32,9 @@ export type PartChoice = {
   id: string;
   internal_sku: string;
   name_en: string;
+  /** Snapshotted onto the PO line at insert; preview here for transparency. */
+  hsCode: string | null;
+  tariffPct: number;
 };
 
 export type CurrencyChoice = {
@@ -46,7 +50,10 @@ export type LineDialogInitial = {
   unitPrice: number;
   currency: string;
   fxRateToDkk: number;
-  transportFactor: number;
+  /** Decimal 0.10 = 10 %. */
+  transportPct: number;
+  /** Decimal — snapshotted from the part's HS code at the time the line was added. */
+  tariffPct: number;
   notes: string | null;
 };
 
@@ -64,6 +71,8 @@ type Props = {
   fxRatesByCurrency: Record<string, number>;
   /** Part ids already on the PO (other rows), disabled in the picker. */
   excludePartIds: Set<string>;
+  /** Default transport % for new lines, sourced from app_settings (0.10 = 10 %). */
+  defaultTransportPct: number;
 };
 
 /**
@@ -84,6 +93,7 @@ export function LineDialog({
   currencies,
   fxRatesByCurrency,
   excludePartIds,
+  defaultTransportPct,
 }: Props) {
   const router = useRouter();
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
@@ -100,7 +110,9 @@ export function LineDialog({
         ? "1"
         : String(fxRatesByCurrency[initialCurrency] ?? "");
   const initialTransport =
-    mode.kind === "edit" ? String(mode.initial.transportFactor) : "1";
+    mode.kind === "edit"
+      ? String(mode.initial.transportPct)
+      : String(defaultTransportPct);
   const initialNotes =
     mode.kind === "edit" ? mode.initial.notes ?? "" : "";
 
@@ -114,6 +126,22 @@ export function LineDialog({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
+
+  // Look up the selected part's tariff snapshot for the preview. Edit mode
+  // shows the snapshotted value from when the line was first added; add mode
+  // shows the live value from the part's current HS code.
+  const selectedPart = useMemo(
+    () => parts.find((p) => p.id === partId) ?? null,
+    [parts, partId],
+  );
+  const previewTariffPct =
+    mode.kind === "edit"
+      ? mode.initial.tariffPct
+      : (selectedPart?.tariffPct ?? 0);
+  const previewHsCode =
+    mode.kind === "edit"
+      ? null
+      : (selectedPart?.hsCode ?? null);
 
   // Edit mode locks the part to keep the row identity stable in the UI.
   const partLocked = mode.kind === "edit";
@@ -141,16 +169,33 @@ export function LineDialog({
     );
   }, [parts, filter]);
 
-  const landedPerUnit = useMemo(() => {
+  // Live preview of the additive landed-cost breakdown. Keeping each piece
+  // separate so the dialog can show the user "base + transport + import tax".
+  const breakdown = useMemo(() => {
     const u = Number(String(unitPrice).replace(",", "."));
     const fx = Number(String(fxRate).replace(",", "."));
-    const t = Number(String(transport).replace(",", "."));
-    if (!Number.isFinite(u) || !Number.isFinite(fx) || !Number.isFinite(t)) {
+    const tp = Number(String(transport).replace(",", "."));
+    const tt = previewTariffPct;
+    if (
+      !Number.isFinite(u) ||
+      !Number.isFinite(fx) ||
+      !Number.isFinite(tp) ||
+      !Number.isFinite(tt)
+    ) {
       return null;
     }
-    if (u < 0 || fx <= 0 || t <= 0) return null;
-    return Math.round(u * fx * t * 10000) / 10000;
-  }, [unitPrice, fxRate, transport]);
+    if (u < 0 || fx <= 0 || tp < 0 || tt < 0) return null;
+    const base = u * fx;
+    const transportDkk = base * tp;
+    const importTaxDkk = base * tt;
+    const landed = base + transportDkk + importTaxDkk;
+    return {
+      base: Math.round(base * 10000) / 10000,
+      transportDkk: Math.round(transportDkk * 10000) / 10000,
+      importTaxDkk: Math.round(importTaxDkk * 10000) / 10000,
+      landed: Math.round(landed * 10000) / 10000,
+    };
+  }, [unitPrice, fxRate, transport, previewTariffPct]);
 
   const lineTotalNative = useMemo(() => {
     const u = Number(String(unitPrice).replace(",", "."));
@@ -172,8 +217,10 @@ export function LineDialog({
     appendField(fd, "fx_rate_to_dkk", fxRate.trim().replace(",", "."));
     appendField(
       fd,
-      "transport_factor",
-      transport.trim() === "" ? "1" : transport.trim().replace(",", "."),
+      "transport_pct",
+      transport.trim() === ""
+        ? String(defaultTransportPct)
+        : transport.trim().replace(",", "."),
     );
     appendField(fd, "notes", notes);
     return fd;
@@ -213,8 +260,10 @@ export function LineDialog({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              Landed DKK/unit is computed from unit price × FX rate × transport
-              factor.
+              Landed DKK/unit = unit price × FX rate × (1 + transport % +
+              import duty %). Both percentages are frozen onto this line at
+              insert; later admin edits don&apos;t retroactively change cost
+              basis.
             </DialogDescription>
           </DialogHeader>
 
@@ -342,17 +391,18 @@ export function LineDialog({
               ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-transport">Transport factor</Label>
+              <Label htmlFor="line-transport">Transport % (decimal)</Label>
               <Input
                 id="line-transport"
                 inputMode="decimal"
                 value={transport}
                 onChange={(e) => setTransport(e.target.value)}
-                placeholder="1.0"
+                placeholder={String(defaultTransportPct)}
               />
               <p className="text-muted-foreground text-xs">
-                Multiplier for freight + duties. Leave at 1 if freight is
-                billed separately.
+                Freight markup as a decimal — e.g.{" "}
+                <span className="font-mono">0.10</span> for 10 %. Default from
+                /admin/settings.
               </p>
             </div>
           </div>
@@ -368,18 +418,45 @@ export function LineDialog({
             />
           </div>
 
-          {/* Live preview */}
-          <div className="bg-muted/30 flex flex-wrap justify-between gap-3 rounded-md border px-3 py-2 text-xs">
-            <div>
-              <span className="text-muted-foreground">Line total: </span>
+          {/* Live preview of the additive landed-cost breakdown. */}
+          <div className="bg-muted/30 flex flex-col gap-1.5 rounded-md border px-3 py-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Line total ({currency})</span>
               <span className="font-medium tabular-nums">
                 {formatPrice(lineTotalNative, currency)}
               </span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Landed DKK/unit: </span>
-              <span className="font-medium tabular-nums">
-                {formatPrice(landedPerUnit, "DKK")}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Base DKK/unit</span>
+              <span className="tabular-nums">
+                {formatPrice(breakdown?.base ?? null, "DKK")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">+ Transport</span>
+              <span className="tabular-nums">
+                {formatPrice(breakdown?.transportDkk ?? null, "DKK")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                + Import tax{" "}
+                {previewHsCode ? (
+                  <span className="font-mono">({previewHsCode}, {formatPct(previewTariffPct)})</span>
+                ) : previewTariffPct > 0 ? (
+                  <span>({formatPct(previewTariffPct)})</span>
+                ) : (
+                  <span className="italic">no HS code</span>
+                )}
+              </span>
+              <span className="tabular-nums">
+                {formatPrice(breakdown?.importTaxDkk ?? null, "DKK")}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-1.5">
+              <span className="text-muted-foreground">Landed DKK/unit</span>
+              <span className="font-semibold tabular-nums">
+                {formatPrice(breakdown?.landed ?? null, "DKK")}
               </span>
             </div>
           </div>

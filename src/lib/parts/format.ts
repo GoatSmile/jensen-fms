@@ -93,6 +93,22 @@ export function formatFactor(factor: number | null | undefined): string {
 }
 
 /**
+ * Format a decimal as a percentage (0.10 → "10,0 %"). Used for the new
+ * transport_pct and tariff_pct breakdown on PO lines and parts purchase
+ * history. Returns "—" for nullish / NaN inputs.
+ */
+const pctFormatter = new Intl.NumberFormat("da-DK", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+});
+
+export function formatPct(pct: number | null | undefined): string {
+  if (pct == null || Number.isNaN(pct)) return "—";
+  return pctFormatter.format(pct);
+}
+
+/**
  * Human-friendly label for the inventory_movement_type enum.
  * Kept as a flat lookup so unknown values (future enum additions) fall through
  * to the raw value rather than blowing up.

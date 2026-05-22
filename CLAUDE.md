@@ -30,11 +30,33 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - Money is always `(amount NUMERIC(15,4), currency CHAR(3))`. No naked numbers.
 - FX rate is frozen at the moment of purchase in
   `purchase_order_lines.fx_rate_to_dkk`. Cost basis preserved across rate changes.
-- `purchase_order_lines.landed_cost_dkk_per_unit` is a Postgres
-  `GENERATED ALWAYS AS (unit_price * fx_rate_to_dkk * transport_factor) STORED`
+- **Landed cost is additive**, broken out so the UI can show the user where
+  each øre comes from. Formula:
+  ```
+  base_dkk        = unit_price × fx_rate_to_dkk
+  transport_dkk   = base_dkk × transport_pct       (default 10 %, settable in /admin/settings)
+  import_tax_dkk  = base_dkk × tariff_pct          (from the part's HS code, snapshotted at insert)
+  landed_dkk      = base_dkk + transport_dkk + import_tax_dkk
+                  = unit_price × fx_rate_to_dkk × (1 + transport_pct + tariff_pct)
+  ```
+  `purchase_order_lines.landed_cost_dkk_per_unit` is a Postgres
+  `GENERATED ALWAYS AS (unit_price * fx_rate_to_dkk * (1 + transport_pct + tariff_pct)) STORED`
   column — **never write it from app code** (the DB rejects direct writes).
   Recompute previews in the UI for live feedback, then read the stored
   value back after insert/update.
+
+  **Frozen at purchase.** Both `transport_pct` and `tariff_pct` are snapshotted
+  onto the PO line at insert — same rule as `fx_rate_to_dkk`. Editing the part's
+  HS code later or changing the admin default does NOT retroactively shift cost
+  basis on historical lines.
+- **HS / TARIC codes** live in `hs_codes` (code unique, description,
+  `tariff_pct` decimal). `parts.hs_code_id` is optional — unclassified parts
+  snapshot `tariff_pct = 0` and skip the import-tax bucket. Admin manages the
+  list at `/admin/hs-codes`. Archiving (`is_active = false`) hides a code
+  from new-part pickers but leaves historical snapshots alone.
+- **App-wide defaults** live in a singleton `app_settings` row (id = 1). Today
+  it just holds `default_transport_pct` (0.10 = 10 %), pre-filled into new PO
+  line dialogs. Edited at `/admin/settings`.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).

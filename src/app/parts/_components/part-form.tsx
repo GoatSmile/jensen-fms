@@ -25,6 +25,12 @@ import { CategoryPicker } from "./category-picker";
 
 export type CategoryOption = FlatCategory;
 export type CurrencyOption = { code: string; name_en: string };
+export type HsCodeOption = {
+  id: string;
+  code: string;
+  description: string;
+  tariffPct: number;
+};
 
 export type PartFormValues = {
   internal_sku: string;
@@ -33,6 +39,8 @@ export type PartFormValues = {
   description_en: string;
   description_da: string;
   category_id: string;
+  /** "" when unclassified. */
+  hs_code_id: string;
   unit_of_measure: string;
   default_retail_price: string;
   default_retail_currency: string;
@@ -43,6 +51,9 @@ export type PartFormValues = {
   attributes: Array<{ key: string; value: string }>;
 };
 
+/** Sentinel value the HS picker uses for "none" — Select needs a non-empty value. */
+const NO_HS_CODE = "__none__";
+
 export const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
   name_en: "",
@@ -50,6 +61,7 @@ export const EMPTY_PART_FORM: PartFormValues = {
   description_en: "",
   description_da: "",
   category_id: "",
+  hs_code_id: "",
   unit_of_measure: "pcs",
   default_retail_price: "",
   default_retail_currency: "DKK",
@@ -66,9 +78,17 @@ type Props = {
   initial: PartFormValues;
   categories: CategoryOption[];
   currencies: CurrencyOption[];
+  hsCodes: HsCodeOption[];
 };
 
-export function PartForm({ mode, partId, initial, categories, currencies }: Props) {
+export function PartForm({
+  mode,
+  partId,
+  initial,
+  categories,
+  currencies,
+  hsCodes,
+}: Props) {
   const router = useRouter();
   const [values, setValues] = useState<PartFormValues>(initial);
   const categoryNodes = useMemo(
@@ -113,6 +133,7 @@ export function PartForm({ mode, partId, initial, categories, currencies }: Prop
     fd.append("description_en", values.description_en);
     fd.append("description_da", values.description_da);
     fd.append("category_id", values.category_id);
+    fd.append("hs_code_id", values.hs_code_id);
     fd.append("unit_of_measure", values.unit_of_measure);
     fd.append("default_retail_price", values.default_retail_price);
     fd.append("default_retail_currency", values.default_retail_currency);
@@ -208,6 +229,37 @@ export function PartForm({ mode, partId, initial, categories, currencies }: Prop
             value={values.category_id}
             onChange={(v) => update("category_id", v)}
           />
+        </Field>
+        <Field
+          label="HS / TARIC code"
+          htmlFor="hs_code_id"
+          error={errorField === "hs_code_id" ? error : null}
+        >
+          <Select
+            value={values.hs_code_id === "" ? NO_HS_CODE : values.hs_code_id}
+            onValueChange={(v) =>
+              update("hs_code_id", v === NO_HS_CODE ? "" : v)
+            }
+          >
+            <SelectTrigger id="hs_code_id">
+              <SelectValue placeholder="Unclassified" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_HS_CODE}>
+                <span className="text-muted-foreground italic">
+                  Unclassified — no import duty applied
+                </span>
+              </SelectItem>
+              {hsCodes.map((hs) => (
+                <SelectItem key={hs.id} value={hs.id}>
+                  <span className="font-mono">{hs.code}</span>
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    {hs.description} · {(hs.tariffPct * 100).toFixed(2)}%
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
       </FormSection>
 

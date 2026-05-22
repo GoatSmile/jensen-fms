@@ -17,7 +17,8 @@ type ParsedLineFields = {
   unit_price: number;
   currency: string;
   fx_rate_to_dkk: number;
-  transport_factor: number;
+  /** 0.10 = 10 %. Snapshotted onto the PO line. */
+  transport_pct: number;
   notes: string | null;
 };
 
@@ -68,12 +69,20 @@ function parseLineFields(
   );
   if (!fx.ok) return { ok: false, error: fx.error };
 
-  const transportRaw = nullable(formData.get("transport_factor"));
-  let transport_factor = 1;
+  // Form sends the transport markup as a percentage (decimal). Default
+  // matches the post-refactor schema default of 0.10 (10 %).
+  const transportRaw = nullable(formData.get("transport_pct"));
+  let transport_pct = 0.10;
   if (transportRaw) {
-    const t = parseNumeric(transportRaw, "Transport factor");
+    const t = parseNumeric(transportRaw, "Transport %", { allowZero: true });
     if (!t.ok) return { ok: false, error: t.error };
-    transport_factor = t.value;
+    if (t.value > 1) {
+      return {
+        ok: false,
+        error: "Transport % must be a decimal (0.10 = 10 %).",
+      };
+    }
+    transport_pct = t.value;
   }
 
   return {
@@ -84,10 +93,32 @@ function parseLineFields(
       unit_price: unit.value,
       currency,
       fx_rate_to_dkk: fx.value,
-      transport_factor,
+      transport_pct,
       notes: nullable(formData.get("notes")),
     },
   };
+}
+
+/**
+ * Look up the EU import duty for a part at the moment its line is added to a
+ * PO. The lookup is denormalised onto the PO line (tariff_pct) so the cost
+ * basis stays frozen — same rule as fx_rate_to_dkk.
+ *
+ * Returns 0 when the part has no HS classification or its HS code is
+ * inactive. The admin can assign one later; new PO lines will pick it up.
+ */
+async function resolveTariffPctForPart(
+  supabase: SupabaseServer,
+  partId: string,
+): Promise<number> {
+  const { data: part } = await supabase
+    .from("parts")
+    .select("hs_code:hs_codes!hs_code_id(tariff_pct, is_active)")
+    .eq("id", partId)
+    .maybeSingle();
+  const hs = part?.hs_code;
+  if (!hs || !hs.is_active) return 0;
+  return Number(hs.tariff_pct ?? 0);
 }
 
 /**
@@ -168,8 +199,10 @@ async function assertDraft(
  *
  * `landed_cost_dkk_per_unit` is a `GENERATED ALWAYS AS STORED` column in
  * Postgres — we do NOT write it. The DB computes it from `unit_price *
- * fx_rate_to_dkk * transport_factor` on every insert/update. The UI previews
- * the same arithmetic so the user sees the landed cost as they type.
+ * fx_rate_to_dkk * (1 + transport_pct + tariff_pct)` on every insert/update.
+ * The UI previews the same arithmetic so the user sees the landed cost as
+ * they type. tariff_pct is snapshotted from the selected part's HS code so
+ * the cost basis stays frozen even if Dennis later reclassifies the part.
  *
  * Schema has no UNIQUE(po, part) so we defensively check for a duplicate part
  * before inserting — much friendlier than letting a future constraint blow up
@@ -210,6 +243,8 @@ export async function addLine(
     };
   }
 
+  const tariff_pct = await resolveTariffPctForPart(supabase, v.part_id);
+
   const { error: insErr } = await supabase
     .from("purchase_order_lines")
     .insert({
@@ -219,7 +254,8 @@ export async function addLine(
       unit_price: v.unit_price,
       currency: v.currency,
       fx_rate_to_dkk: v.fx_rate_to_dkk,
-      transport_factor: v.transport_factor,
+      transport_pct: v.transport_pct,
+      tariff_pct,
       notes: v.notes,
     });
   if (insErr) {
@@ -293,6 +329,8 @@ export async function updateLine(
     };
   }
 
+  const tariff_pct = await resolveTariffPctForPart(supabase, v.part_id);
+
   const { error: updErr } = await supabase
     .from("purchase_order_lines")
     .update({
@@ -301,7 +339,8 @@ export async function updateLine(
       unit_price: v.unit_price,
       currency: v.currency,
       fx_rate_to_dkk: v.fx_rate_to_dkk,
-      transport_factor: v.transport_factor,
+      transport_pct: v.transport_pct,
+      tariff_pct,
       notes: v.notes,
       updated_at: new Date().toISOString(),
     })

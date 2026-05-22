@@ -78,7 +78,8 @@ export default async function PartDetailPage({
           notes,
           attributes,
           deleted_at,
-          category:part_categories(id, name_en)
+          category:part_categories(id, name_en),
+          hs_code:hs_codes!hs_code_id(id, code, description, tariff_pct, is_active)
         `,
       )
       .eq("id", id)
@@ -145,7 +146,8 @@ export default async function PartDetailPage({
           unit_price,
           currency,
           fx_rate_to_dkk,
-          transport_factor,
+          transport_pct,
+          tariff_pct,
           landed_cost_dkk_per_unit,
           purchase_orders(id, po_number, order_date)
         `,
@@ -349,7 +351,8 @@ export default async function PartDetailPage({
       unitPrice: Number(row.unit_price),
       currency: row.currency,
       fxRateToDkk: Number(row.fx_rate_to_dkk),
-      transportFactor: Number(row.transport_factor),
+      transportPct: Number(row.transport_pct),
+      tariffPct: Number(row.tariff_pct ?? 0),
       landedCostDkkPerUnit: Number(row.landed_cost_dkk_per_unit ?? 0),
     }))
     .sort((a, b) => (a.orderDate < b.orderDate ? 1 : -1))
@@ -493,7 +496,13 @@ export default async function PartDetailPage({
 
       <MovementsSection rows={movementRows} />
 
-      <PurchaseHistorySection rows={purchaseRows} />
+      <PurchaseHistorySection
+        rows={purchaseRows}
+        internalSku={part.internal_sku}
+        hsCode={
+          part.hs_code && part.hs_code.is_active ? part.hs_code.code : null
+        }
+      />
 
       <PricingHistorySection rows={pricingRows} />
 

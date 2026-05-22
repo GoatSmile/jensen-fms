@@ -43,6 +43,7 @@ export default async function PurchaseOrderDetailPage({
     partsCatalogRes,
     currenciesRes,
     fxRatesRes,
+    settingsRes,
   ] = await Promise.all([
     supabase
       .from("purchase_orders")
@@ -60,7 +61,7 @@ export default async function PurchaseOrderDetailPage({
       .select(
         `
           id, quantity, received_quantity, unit_price, currency,
-          fx_rate_to_dkk, transport_factor, landed_cost_dkk_per_unit, notes,
+          fx_rate_to_dkk, transport_pct, tariff_pct, landed_cost_dkk_per_unit, notes,
           parts(id, internal_sku, name_en)
         `,
       )
@@ -73,7 +74,10 @@ export default async function PurchaseOrderDetailPage({
       .order("code", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en")
+      .select(
+        `id, internal_sku, name_en,
+         hs_code:hs_codes!hs_code_id(code, tariff_pct, is_active)`,
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
     supabase
@@ -87,6 +91,11 @@ export default async function PurchaseOrderDetailPage({
       .select("from_currency, to_currency, rate, rate_date")
       .eq("to_currency", "DKK")
       .order("rate_date", { ascending: false }),
+    supabase
+      .from("app_settings")
+      .select("default_transport_pct")
+      .eq("id", 1)
+      .maybeSingle(),
   ]);
 
   if (poRes.error) {
@@ -100,7 +109,7 @@ export default async function PurchaseOrderDetailPage({
   const po = poRes.data;
   const status = po.status as PurchaseOrderStatus;
 
-  // POLineRow for the new lines section (with full FX/transport columns).
+  // POLineRow for the new lines section (with full FX/transport/tariff cols).
   const poLineRows: POLineRow[] = (linesRes.data ?? []).map((l) => ({
     id: l.id,
     partId: l.parts?.id ?? "",
@@ -110,7 +119,8 @@ export default async function PurchaseOrderDetailPage({
     unitPrice: Number(l.unit_price),
     currency: l.currency,
     fxRateToDkk: Number(l.fx_rate_to_dkk),
-    transportFactor: Number(l.transport_factor),
+    transportPct: Number(l.transport_pct),
+    tariffPct: Number(l.tariff_pct ?? 0),
     landedDkkPerUnit: Number(l.landed_cost_dkk_per_unit ?? 0),
     receivedQuantity: Number(l.received_quantity),
     notes: l.notes,
@@ -141,13 +151,23 @@ export default async function PurchaseOrderDetailPage({
     fxRatesByCurrency[r.from_currency] = Number(r.rate);
   }
 
-  const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
-    id: p.id,
-    internal_sku: p.internal_sku,
-    name_en: p.name_en,
-  }));
+  const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => {
+    const hs = p.hs_code;
+    const active = hs?.is_active ?? false;
+    return {
+      id: p.id,
+      internal_sku: p.internal_sku,
+      name_en: p.name_en,
+      hsCode: active ? (hs?.code ?? null) : null,
+      tariffPct: active ? Number(hs?.tariff_pct ?? 0) : 0,
+    };
+  });
 
   const currencies: CurrencyChoice[] = currenciesRes.data ?? [];
+
+  const defaultTransportPct = Number(
+    settingsRes.data?.default_transport_pct ?? 0.10,
+  );
 
   const totalOrdered = poLineRows.reduce((s, l) => s + l.quantity, 0);
   const totalReceived = poLineRows.reduce(
@@ -229,6 +249,7 @@ export default async function PurchaseOrderDetailPage({
         partsCatalog={partsCatalog}
         currencies={currencies}
         fxRatesByCurrency={fxRatesByCurrency}
+        defaultTransportPct={defaultTransportPct}
       />
 
       {showReceiveForm ? (

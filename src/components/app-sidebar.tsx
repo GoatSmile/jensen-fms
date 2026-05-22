@@ -11,6 +11,7 @@ import {
   Hammer,
   Home,
   Paintbrush,
+  Settings,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/organizations", label: "Customers", icon: Building2 },
   { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
   { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
+  { href: "/admin", label: "Admin", icon: Settings },
 ];
 
 export function AppSidebar() {

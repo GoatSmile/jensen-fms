@@ -24,11 +24,11 @@ export default async function EditPartPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [partRes, categoriesRes, currenciesRes] = await Promise.all([
+  const [partRes, categoriesRes, currenciesRes, hsCodesRes] = await Promise.all([
     supabase
       .from("parts")
       .select(
-        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
+        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -40,6 +40,11 @@ export default async function EditPartPage({
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase.from("currencies").select("code, name_en").order("code"),
+    supabase
+      .from("hs_codes")
+      .select("id, code, description, tariff_pct, is_active")
+      .order("is_active", { ascending: false })
+      .order("code", { ascending: true }),
   ]);
 
   if (partRes.error) {
@@ -49,6 +54,16 @@ export default async function EditPartPage({
 
   const part = partRes.data;
 
+  // Include archived HS codes in the dropdown so editing a part that's
+  // currently classified under one shows the value (even if pickers in other
+  // contexts hide it). Active codes come first via the order() above.
+  const hsCodes = (hsCodesRes.data ?? []).map((h) => ({
+    id: h.id,
+    code: h.code + (h.is_active ? "" : " (archived)"),
+    description: h.description,
+    tariffPct: Number(h.tariff_pct),
+  }));
+
   const initial: PartFormValues = {
     internal_sku: part.internal_sku,
     name_en: part.name_en,
@@ -56,6 +71,7 @@ export default async function EditPartPage({
     description_en: part.description_en ?? "",
     description_da: part.description_da ?? "",
     category_id: part.category_id,
+    hs_code_id: part.hs_code_id ?? "",
     unit_of_measure: part.unit_of_measure,
     default_retail_price:
       part.default_retail_price != null ? String(part.default_retail_price) : "",
@@ -117,6 +133,7 @@ export default async function EditPartPage({
         initial={initial}
         categories={categoriesRes.data ?? []}
         currencies={currenciesRes.data ?? []}
+        hsCodes={hsCodes}
       />
     </div>
   );

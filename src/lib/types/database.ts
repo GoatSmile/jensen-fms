@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          default_transport_pct: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          default_transport_pct?: number
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          default_transport_pct?: number
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attachments: {
         Row: {
           created_at: string
@@ -863,6 +881,39 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      hs_codes: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          tariff_pct: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          tariff_pct: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          tariff_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       inventory_locations: {
         Row: {
@@ -2123,6 +2174,7 @@ export type Database = {
           deleted_at: string | null
           description_da: string | null
           description_en: string | null
+          hs_code_id: string | null
           id: string
           internal_sku: string
           name_da: string | null
@@ -2143,6 +2195,7 @@ export type Database = {
           deleted_at?: string | null
           description_da?: string | null
           description_en?: string | null
+          hs_code_id?: string | null
           id?: string
           internal_sku: string
           name_da?: string | null
@@ -2163,6 +2216,7 @@ export type Database = {
           deleted_at?: string | null
           description_da?: string | null
           description_en?: string | null
+          hs_code_id?: string | null
           id?: string
           internal_sku?: string
           name_da?: string | null
@@ -2188,6 +2242,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "parts_hs_code_id_fkey"
+            columns: ["hs_code_id"]
+            isOneToOne: false
+            referencedRelation: "hs_codes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2242,7 +2303,8 @@ export type Database = {
           purchase_order_id: string
           quantity: number
           received_quantity: number
-          transport_factor: number
+          tariff_pct: number
+          transport_pct: number
           unit_price: number
           updated_at: string
         }
@@ -2257,7 +2319,8 @@ export type Database = {
           purchase_order_id: string
           quantity: number
           received_quantity?: number
-          transport_factor?: number
+          tariff_pct?: number
+          transport_pct?: number
           unit_price: number
           updated_at?: string
         }
@@ -2272,7 +2335,8 @@ export type Database = {
           purchase_order_id?: string
           quantity?: number
           received_quantity?: number
-          transport_factor?: number
+          tariff_pct?: number
+          transport_pct?: number
           unit_price?: number
           updated_at?: string
         }
@@ -2304,13 +2368,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_order_lines_purchase_order_id_fkey"
-            columns: ["purchase_order_id"]
-            isOneToOne: false
-            referencedRelation: "v_part_last_cost"
-            referencedColumns: ["last_purchase_order_id"]
           },
         ]
       }
@@ -3232,19 +3289,10 @@ export type Database = {
         Row: {
           last_cost_dkk: number | null
           last_order_date: string | null
-          last_purchase_currency: string | null
-          last_purchase_order_id: string | null
           last_purchase_quantity: number | null
           part_id: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "purchase_order_lines_currency_fkey"
-            columns: ["last_purchase_currency"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
           {
             foreignKeyName: "purchase_order_lines_part_id_fkey"
             columns: ["part_id"]

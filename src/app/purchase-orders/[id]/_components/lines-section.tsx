@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatFactor, formatFxRate, formatMoney } from "@/lib/parts/format";
+import { formatFxRate, formatMoney, formatPct } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
@@ -42,7 +42,10 @@ export type POLineRow = {
   unitPrice: number;
   currency: string;
   fxRateToDkk: number;
-  transportFactor: number;
+  /** Decimal 0.10 = 10 %. */
+  transportPct: number;
+  /** Decimal — import duty snapshotted from the part's HS code. */
+  tariffPct: number;
   landedDkkPerUnit: number;
   receivedQuantity: number;
   notes: string | null;
@@ -56,6 +59,7 @@ type Props = {
   partsCatalog: PartChoice[];
   currencies: CurrencyChoice[];
   fxRatesByCurrency: Record<string, number>;
+  defaultTransportPct: number;
 };
 
 type DialogState =
@@ -71,6 +75,7 @@ export function LinesSection({
   partsCatalog,
   currencies,
   fxRatesByCurrency,
+  defaultTransportPct,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -199,7 +204,12 @@ export function LinesSection({
                         {formatFxRate(row.fxRateToDkk)}
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatFactor(row.transportFactor)}
+                        {formatPct(row.transportPct)}
+                        {row.tariffPct > 0 ? (
+                          <div className="text-muted-foreground text-[10px]">
+                            + {formatPct(row.tariffPct)} tariff
+                          </div>
+                        ) : null}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatPrice(row.landedDkkPerUnit, "DKK")}
@@ -257,6 +267,7 @@ export function LinesSection({
           parts={partsCatalog}
           currencies={currencies}
           fxRatesByCurrency={fxRatesByCurrency}
+          defaultTransportPct={defaultTransportPct}
           excludePartIds={
             dialog.kind === "add"
               ? onPoPartIds
@@ -285,7 +296,8 @@ function rowToInitial(row: POLineRow): LineDialogInitial {
     unitPrice: row.unitPrice,
     currency: row.currency,
     fxRateToDkk: row.fxRateToDkk,
-    transportFactor: row.transportFactor,
+    transportPct: row.transportPct,
+    tariffPct: row.tariffPct,
     notes: row.notes,
   };
 }

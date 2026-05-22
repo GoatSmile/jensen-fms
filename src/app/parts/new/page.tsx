@@ -14,7 +14,7 @@ import { EMPTY_PART_FORM, PartForm } from "../_components/part-form";
 
 export default async function NewPartPage() {
   const supabase = await createClient();
-  const [categoriesRes, currenciesRes] = await Promise.all([
+  const [categoriesRes, currenciesRes, hsCodesRes] = await Promise.all([
     supabase
       .from("part_categories")
       .select("id, name_en, parent_id")
@@ -23,7 +23,19 @@ export default async function NewPartPage() {
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase.from("currencies").select("code, name_en").order("code"),
+    supabase
+      .from("hs_codes")
+      .select("id, code, description, tariff_pct")
+      .eq("is_active", true)
+      .order("code", { ascending: true }),
   ]);
+
+  const hsCodes = (hsCodesRes.data ?? []).map((h) => ({
+    id: h.id,
+    code: h.code,
+    description: h.description,
+    tariffPct: Number(h.tariff_pct),
+  }));
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -59,6 +71,7 @@ export default async function NewPartPage() {
         initial={EMPTY_PART_FORM}
         categories={categoriesRes.data ?? []}
         currencies={currenciesRes.data ?? []}
+        hsCodes={hsCodes}
       />
     </div>
   );
