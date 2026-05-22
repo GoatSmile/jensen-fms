@@ -93,11 +93,12 @@ export default async function SODetailPage({
         .select("id, internal_sku, name_en")
         .is("deleted_at", null)
         .order("internal_sku", { ascending: true }),
+      // bike_templates uses is_current as the soft-archive flag (no
+      // deleted_at column on this table — that's a parts/orgs convention).
       supabase
         .from("bike_templates")
         .select("id, name_en, family, frame_size, is_current")
         .eq("is_current", true)
-        .is("deleted_at", null)
         .order("family", { ascending: true })
         .order("frame_size", { ascending: true }),
       supabase
