@@ -44,8 +44,12 @@ export function HsCodeDialog({ open, onOpenChange, mode }: Props) {
 
   const [code, setCode] = useState(initial?.code ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  // Form holds the percent the user types (e.g. "5" for 5 %); we convert
+  // to the decimal the DB stores (0.05) on submit.
   const [tariff, setTariff] = useState(
-    initial != null ? String(initial.tariffPct) : "",
+    initial != null
+      ? String(Math.round(initial.tariffPct * 10000) / 100)
+      : "",
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
@@ -53,10 +57,14 @@ export function HsCodeDialog({ open, onOpenChange, mode }: Props) {
   const [pending, start] = useTransition();
 
   function buildFormData(): FormData {
+    const pct = Number(tariff.trim().replace(",", "."));
+    const decimal = Number.isFinite(pct) ? pct / 100 : NaN;
     const fd = new FormData();
     appendField(fd, "code", code.trim());
     appendField(fd, "description", description.trim());
-    appendField(fd, "tariff_pct", tariff.trim());
+    // Action expects the DB-side decimal; emit "" when invalid so the
+    // server-side validator surfaces a friendly error.
+    appendField(fd, "tariff_pct", Number.isFinite(decimal) ? String(decimal) : "");
     appendField(fd, "notes", notes);
     if (isActive) fd.set("is_active", "on");
     return fd;
@@ -65,6 +73,11 @@ export function HsCodeDialog({ open, onOpenChange, mode }: Props) {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const pct = Number(tariff.trim().replace(",", "."));
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      setError("Tariff must be a number between 0 and 100.");
+      return;
+    }
     const fd = buildFormData();
     start(async () => {
       const r =
@@ -119,18 +132,22 @@ export function HsCodeDialog({ open, onOpenChange, mode }: Props) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="hs-tariff">Tariff (decimal)</Label>
-            <Input
-              id="hs-tariff"
-              inputMode="decimal"
-              value={tariff}
-              onChange={(e) => setTariff(e.target.value)}
-              placeholder="0.05"
-              required
-            />
+            <Label htmlFor="hs-tariff">Tariff %</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="hs-tariff"
+                inputMode="decimal"
+                value={tariff}
+                onChange={(e) => setTariff(e.target.value)}
+                placeholder="5"
+                required
+              />
+              <span className="text-muted-foreground text-sm">%</span>
+            </div>
             <p className="text-muted-foreground text-xs">
-              Enter as a decimal — <span className="font-mono">0.10</span> for
-              10 %.
+              EU import duty as a percent — e.g.{" "}
+              <span className="font-mono">5</span> for 5 %,{" "}
+              <span className="font-mono">10.2</span> for 10.2 %.
             </p>
           </div>
 

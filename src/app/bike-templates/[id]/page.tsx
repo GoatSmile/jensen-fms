@@ -16,9 +16,10 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   PartsRecipeSection,
+  type CategoryOption,
+  type PartInCategory,
   type RecipeRow,
 } from "./_components/parts-recipe-section";
-import type { PartOption } from "./_components/part-picker-dialog";
 import {
   VersionHistorySection,
   type VersionRow,
@@ -84,31 +85,51 @@ export default async function BikeTemplateDetailPage({
         .is("family", null)
         .eq("name_en", t.name_en);
 
-  const [recipeRes, catalogRes, chainRes, chainPartCountsRes] =
-    await Promise.all([
-      supabase
-        .from("bike_template_parts")
-        .select(
-          `
-          id, quantity, is_optional, notes,
-          parts:parts(id, internal_sku, name_en)
-        `,
+  const [
+    recipeRes,
+    categoriesRes,
+    catalogRes,
+    chainRes,
+    chainPartCountsRes,
+  ] = await Promise.all([
+    supabase
+      .from("bike_template_parts")
+      .select(
+        `
+        id, quantity, is_optional, notes,
+        parts:parts(
+          id, internal_sku, name_en,
+          category:part_categories(id, name_en, name_da)
         )
-        .eq("template_id", id),
-      supabase
-        .from("parts")
-        .select("id, internal_sku, name_en, category:part_categories(name_en)")
-        .is("deleted_at", null)
-        .order("internal_sku", { ascending: true }),
-      chainFilters.order("version", { ascending: false }),
-      supabase.from("bike_template_parts").select("template_id"),
-    ]);
+      `,
+      )
+      .eq("template_id", id),
+    // All 57 active categories — these drive the LEFT column of the new
+    // category-driven picker. Sort by sort_order so the list mirrors the
+    // FleetManager Pro spec Dennis pointed at.
+    supabase
+      .from("part_categories")
+      .select("id, name_en, name_da, sort_order")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("name_en", { ascending: true }),
+    supabase
+      .from("parts")
+      .select("id, internal_sku, name_en, category_id")
+      .is("deleted_at", null)
+      .order("internal_sku", { ascending: true }),
+    chainFilters.order("version", { ascending: false }),
+    supabase.from("bike_template_parts").select("template_id"),
+  ]);
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
     .map((row) => ({
       partId: row.parts?.id ?? "",
       partSku: row.parts?.internal_sku ?? "—",
       partName: row.parts?.name_en ?? "—",
+      categoryId: row.parts?.category?.id ?? null,
+      categoryName: row.parts?.category?.name_da ?? row.parts?.category?.name_en ?? null,
       quantity: String(Number(row.quantity)),
       isOptional: row.is_optional,
       notes: row.notes ?? "",
@@ -116,11 +137,18 @@ export default async function BikeTemplateDetailPage({
     .filter((r) => r.partId !== "")
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
 
-  const partOptions: PartOption[] = (catalogRes.data ?? []).map((p) => ({
+  const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({
+    id: c.id,
+    name_en: c.name_en,
+    name_da: c.name_da,
+    sortOrder: c.sort_order,
+  }));
+
+  const parts: PartInCategory[] = (catalogRes.data ?? []).map((p) => ({
     id: p.id,
     internal_sku: p.internal_sku,
     name_en: p.name_en,
-    category_name: p.category?.name_en ?? null,
+    category_id: p.category_id ?? null,
   }));
 
   const chainCounts = new Map<string, number>();
@@ -218,7 +246,8 @@ export default async function BikeTemplateDetailPage({
         templateId={t.id}
         isCurrent={t.is_current}
         initialRows={initialRows}
-        parts={partOptions}
+        categories={categories}
+        parts={parts}
       />
 
       <VersionHistorySection rows={versionRows} thisTemplateId={t.id} />

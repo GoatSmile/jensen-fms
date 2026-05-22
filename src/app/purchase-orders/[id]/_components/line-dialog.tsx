@@ -109,10 +109,12 @@ export function LineDialog({
       : initialCurrency === "DKK"
         ? "1"
         : String(fxRatesByCurrency[initialCurrency] ?? "");
+  // Form holds the percent (e.g. "10.2") but the action expects the DB-side
+  // decimal (0.102). Conversion happens in buildFormData() below.
   const initialTransport =
     mode.kind === "edit"
-      ? String(mode.initial.transportPct)
-      : String(defaultTransportPct);
+      ? String(Math.round(mode.initial.transportPct * 10000) / 100)
+      : String(Math.round(defaultTransportPct * 10000) / 100);
   const initialNotes =
     mode.kind === "edit" ? mode.initial.notes ?? "" : "";
 
@@ -171,20 +173,23 @@ export function LineDialog({
 
   // Live preview of the additive landed-cost breakdown. Keeping each piece
   // separate so the dialog can show the user "base + transport + import tax".
+  // The transport input holds the percent (e.g. "10.2"); divide by 100 for
+  // arithmetic. The tariff snapshot is already a decimal.
   const breakdown = useMemo(() => {
     const u = Number(String(unitPrice).replace(",", "."));
     const fx = Number(String(fxRate).replace(",", "."));
-    const tp = Number(String(transport).replace(",", "."));
+    const tpPercent = Number(String(transport).replace(",", "."));
     const tt = previewTariffPct;
     if (
       !Number.isFinite(u) ||
       !Number.isFinite(fx) ||
-      !Number.isFinite(tp) ||
+      !Number.isFinite(tpPercent) ||
       !Number.isFinite(tt)
     ) {
       return null;
     }
-    if (u < 0 || fx <= 0 || tp < 0 || tt < 0) return null;
+    if (u < 0 || fx <= 0 || tpPercent < 0 || tt < 0) return null;
+    const tp = tpPercent / 100;
     const base = u * fx;
     const transportDkk = base * tp;
     const importTaxDkk = base * tt;
@@ -215,13 +220,15 @@ export function LineDialog({
     appendField(fd, "unit_price", unitPrice.trim().replace(",", "."));
     appendField(fd, "currency", currency);
     appendField(fd, "fx_rate_to_dkk", fxRate.trim().replace(",", "."));
-    appendField(
-      fd,
-      "transport_pct",
+    // UI holds a percent ("10.2"); action expects the DB-side decimal.
+    const transportPercent =
       transport.trim() === ""
-        ? String(defaultTransportPct)
-        : transport.trim().replace(",", "."),
-    );
+        ? defaultTransportPct * 100
+        : Number(transport.trim().replace(",", "."));
+    const transportDecimal = Number.isFinite(transportPercent)
+      ? transportPercent / 100
+      : defaultTransportPct;
+    appendField(fd, "transport_pct", String(transportDecimal));
     appendField(fd, "notes", notes);
     return fd;
   }
@@ -391,18 +398,23 @@ export function LineDialog({
               ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-transport">Transport % (decimal)</Label>
-              <Input
-                id="line-transport"
-                inputMode="decimal"
-                value={transport}
-                onChange={(e) => setTransport(e.target.value)}
-                placeholder={String(defaultTransportPct)}
-              />
+              <Label htmlFor="line-transport">Transport %</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="line-transport"
+                  inputMode="decimal"
+                  value={transport}
+                  onChange={(e) => setTransport(e.target.value)}
+                  placeholder={String(
+                    Math.round(defaultTransportPct * 10000) / 100,
+                  )}
+                />
+                <span className="text-muted-foreground text-sm">%</span>
+              </div>
               <p className="text-muted-foreground text-xs">
-                Freight markup as a decimal — e.g.{" "}
-                <span className="font-mono">0.10</span> for 10 %. Default from
-                /admin/settings.
+                Freight markup as a percent — e.g.{" "}
+                <span className="font-mono">10</span> for 10 %. Default from{" "}
+                <code>/admin/settings</code>.
               </p>
             </div>
           </div>
