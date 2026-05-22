@@ -117,6 +117,32 @@ cross-cutting. Original SQL files live in `/migrations/`.
   "Slate" and "Assign" based on current status. If this overloading ever
   bites (e.g. need to distinguish "intended" vs "delivered" customer for
   billing), promote to a separate `slated_organization_id` column.
+- **Soft-archive convention is non-uniform** — three genuinely different
+  concepts share the "hide from pickers" surface:
+  - **`deleted_at` (soft delete)** — `parts`, `bikes`, `contacts`,
+    `organizations`, `organization_units`, `suppliers`, `attachments`,
+    `part_categories`. The thing existed and is gone; audit trail kept.
+    Query with `.is("deleted_at", null)` to hide.
+  - **`is_active` (controlled-vocab archive)** — `colors`, `vat_codes`,
+    `hs_codes`, `bike_types`, `bike_identifier_types`, `bike_identifiers`,
+    `customer_groups`, `customer_segments`, `inventory_locations`,
+    `tax_identifier_types`. The value is still valid for historical
+    records but shouldn't show in pickers for new entries. Query with
+    `.eq("is_active", true)`.
+  - **`is_current` (versioned)** — **only** `bike_templates`. Many
+    versions; one is current. Past versions stay queryable so old MOs
+    keep their recipe. Query with `.eq("is_current", true)`.
+  - Some tables (`organizations`, `suppliers`, `part_categories`) carry
+    BOTH `deleted_at` and `is_active` — "archived" vs "deleted" are
+    distinct lifecycles there. Pickers read `is_active = true`; the
+    archive UI sets both together.
+  - **Transactional tables** (POs, MOs, SOs, invoices, work orders,
+    inventory_movements, etc.) have **no** soft-archive flag — they use
+    a status enum (`draft`, `cancelled`, `completed`, …) instead.
+  - **Reflex check before writing a query**: if you're about to add
+    `.is("deleted_at", null)` to a table that doesn't have that column,
+    Supabase silently returns zero rows — bit us once on the SO line
+    dialog's bike-templates picker (commit 98cef10).
 - **Sales orders drive slating + delivery automatically.** When an SO
   transitions `draft → confirmed`, every unbuilt bike on linked MOs gets
   slated to the SO's customer (owner_organization_id, owner_unit_id set;
