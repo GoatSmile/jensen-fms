@@ -18,6 +18,21 @@ export function RegisterSW() {
     if (process.env.NODE_ENV !== "production") return;
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
+    // Skip registration on the public customer sticker landing. Customers
+    // arriving via QR see /b/<id> exactly once, don't benefit from an
+    // offline shell, and were hitting the iOS Safari first-nav bug. If a
+    // SW was registered on an earlier visit (e.g. they followed a staff
+    // link first), unregister it here so it doesn't keep intercepting
+    // their navigations.
+    if (window.location.pathname.startsWith("/b/")) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .catch(() => {
+          /* not fatal */
+        });
+      return;
+    }
     navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => {
       // Surface registration failures in the console; don't throw —
       // the app still works without the SW, just no offline shell.

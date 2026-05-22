@@ -28,7 +28,13 @@ const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
-  navigationPreload: true,
+  // navigationPreload was true; iOS Safari 16+ has a partial implementation
+  // that races the document fetch with the preload, throwing the native
+  // "This page couldn't load" error on first scan. Reload works because by
+  // then the SW is fully active and warm. The preload saves a few hundred
+  // ms on Chrome desktop and is broken on the device we care about, so
+  // turn it off.
+  navigationPreload: false,
   runtimeCaching: defaultCache,
 });
 

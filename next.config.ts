@@ -10,7 +10,13 @@ import withSerwistInit from "@serwist/next";
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  cacheOnNavigation: true,
+  // cacheOnNavigation was true; combined with iOS Safari's flaky
+  // navigation-preload handling, it intercepted the very first /b/<id>
+  // document load before the SW was warm and returned an error response.
+  // Leaving HTML navigations to the network (and only caching JS/CSS/font
+  // shell + RSC payloads via defaultCache) trades a little offline
+  // resilience for first-scan reliability.
+  cacheOnNavigation: false,
   reloadOnOnline: true,
   disable: process.env.NODE_ENV === "development",
 });

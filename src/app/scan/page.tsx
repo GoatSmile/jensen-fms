@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+import { InstallHint } from "./_components/install-hint";
 import { Scanner } from "./_components/scanner";
 
 /**
@@ -27,6 +28,7 @@ export default function ScanPage() {
         Point the back camera at any Jensen bike sticker. The page will
         navigate as soon as the code is recognised.
       </p>
+      <InstallHint />
     </div>
   );
 }
