@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Percent, Tag } from "lucide-react";
+import { Coins, Percent, Tag } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -23,7 +23,7 @@ import { formatPct } from "@/lib/parts/format";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
-  const [hsRes, settingsRes] = await Promise.all([
+  const [hsRes, settingsRes, fxRes] = await Promise.all([
     supabase
       .from("hs_codes")
       .select("id", { count: "exact", head: true })
@@ -33,12 +33,19 @@ export default async function AdminLandingPage() {
       .select("default_transport_pct")
       .eq("id", 1)
       .maybeSingle(),
+    supabase
+      .from("fx_rates")
+      .select("rate_date")
+      .order("rate_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
   const defaultTransportPct = Number(
     settingsRes.data?.default_transport_pct ?? 0.10,
   );
+  const lastFxRefresh = fxRes.data?.rate_date as string | undefined;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -71,6 +78,17 @@ export default async function AdminLandingPage() {
           title="HS / TARIC codes"
           description="Classify parts so EU import duty rolls into the landed cost."
           stat={`${activeHsCount} active code${activeHsCount === 1 ? "" : "s"}`}
+        />
+        <Tile
+          href="/admin/fx-rates"
+          icon={Coins}
+          title="FX rates"
+          description="Currency-to-DKK conversion rates from ECB via Frankfurter."
+          stat={
+            lastFxRefresh
+              ? `Latest: ${lastFxRefresh}`
+              : "No rates on file yet"
+          }
         />
         <Tile
           href="/admin/settings"

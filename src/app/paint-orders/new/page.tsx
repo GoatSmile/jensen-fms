@@ -24,8 +24,9 @@ const METACOAT_NAME = "Metacoat A/S";
 export default async function NewPaintOrderPage() {
   const supabase = await createClient();
 
-  // Paint parts: filter to parts whose category.name_da is "Lakering". We do a
-  // separate lookup for the category id so we can use a clean .eq() on parts.
+  // Paint parts: filter to parts whose category is "Painting Service" (was
+  // "Lakering" in the old Danish-first taxonomy). We lookup the category id
+  // separately so we can use a clean .eq() on parts.
   const [suppliersRes, colorsRes, currenciesRes, lakeringCategoryRes] =
     await Promise.all([
       supabase
@@ -46,7 +47,7 @@ export default async function NewPaintOrderPage() {
       supabase
         .from("part_categories")
         .select("id")
-        .eq("name_da", "Lakering")
+        .eq("name_en", "Painting Service")
         .maybeSingle(),
     ]);
 

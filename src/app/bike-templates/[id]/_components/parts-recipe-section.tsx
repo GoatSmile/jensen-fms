@@ -175,7 +175,7 @@ export function PartsRecipeSection({
         partSku: part.internal_sku,
         partName: part.name_en,
         categoryId: category.id,
-        categoryName: category.name_da ?? category.name_en,
+        categoryName: category.name_en,
         quantity: "1",
         isOptional: false,
         notes: "",
@@ -275,7 +275,7 @@ export function PartsRecipeSection({
           {/* LEFT: Categories */}
           <div className="flex flex-col gap-1.5">
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-              Reservedele pr. kategori
+              Parts by category
             </div>
             {populated.map((category, index) => (
               <CategoryPickerRow
@@ -316,7 +316,7 @@ export function PartsRecipeSection({
                   <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
                     {empty.map((c, i) => (
                       <li key={c.id} className="py-0.5">
-                        {populated.length + i + 1}. {(c.name_da ?? c.name_en).toUpperCase()}
+                        {populated.length + i + 1}. {c.name_en}
                       </li>
                     ))}
                   </ul>
@@ -328,11 +328,11 @@ export function PartsRecipeSection({
           {/* RIGHT: Recipe */}
           <div className="flex flex-col gap-2">
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-              Valgte dele til denne template
+              Selected parts in this template
             </div>
             {rows.length === 0 ? (
               <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
-                Vælg dele fra kategorierne til venstre.
+                Pick parts from the categories on the left.
               </div>
             ) : (
               <div className="flex flex-col gap-2">
@@ -418,9 +418,9 @@ function CategoryPickerRow({
   onPick: (partId: string) => void;
   disabled: boolean;
 }) {
-  // Mirror the FleetManager Pro mock's "1. STEL" heading style — sort_order
-  // numbers can collide so we use the visual index passed in.
-  const label = (category.name_da ?? category.name_en).toUpperCase();
+  // EN-only display; operating language is English. Title case matches the
+  // rest of the app rather than the all-caps in Dennis's mock.
+  const label = category.name_en;
   const totalCount = partsInCategory.length;
   const remaining = partsInCategory.filter(
     (p) => !inRecipePartIds.has(p.id),
@@ -449,16 +449,16 @@ function CategoryPickerRow({
           <SelectValue
             placeholder={
               totalCount === 0
-                ? "-- Vælg (0) --"
+                ? "-- None available --"
                 : remaining === 0
                   ? "-- All added --"
-                  : `-- Vælg (${remaining}) --`
+                  : `-- Pick (${remaining}) --`
             }
           />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__placeholder__" disabled>
-            -- Vælg --
+            -- Pick a part --
           </SelectItem>
           {partsInCategory.map((p) => {
             const already = inRecipePartIds.has(p.id);

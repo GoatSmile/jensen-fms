@@ -129,7 +129,7 @@ export default async function BikeTemplateDetailPage({
       partSku: row.parts?.internal_sku ?? "—",
       partName: row.parts?.name_en ?? "—",
       categoryId: row.parts?.category?.id ?? null,
-      categoryName: row.parts?.category?.name_da ?? row.parts?.category?.name_en ?? null,
+      categoryName: row.parts?.category?.name_en ?? null,
       quantity: String(Number(row.quantity)),
       isOptional: row.is_optional,
       notes: row.notes ?? "",
