@@ -115,6 +115,55 @@ export async function substituteMOPart(
 }
 
 /**
+ * Update the quantity-per-bike on an MO part row. Allowed for non-template
+ * rows; if invoked against a template-origin row we bump its origin to
+ * 'modified' so the BOM history makes it clear the qty diverged from the
+ * template snapshot.
+ */
+export async function updateMOPartQuantity(
+  moId: string,
+  rowId: string,
+  qty: number,
+): Promise<MOPartsResult> {
+  if (!moId || !rowId) return { ok: false, error: "Missing MO id or row id." };
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return { ok: false, error: "Quantity must be a positive number." };
+  }
+
+  const supabase = await createClient();
+  const { data: row, error: lookupErr } = await supabase
+    .from("manufacturing_order_parts")
+    .select("origin, manufacturing_order_id, quantity_per_bike")
+    .eq("id", rowId)
+    .maybeSingle();
+  if (lookupErr || !row) {
+    return {
+      ok: false,
+      error: `Could not load row: ${lookupErr?.message ?? "not found"}`,
+    };
+  }
+  if (row.manufacturing_order_id !== moId) {
+    return { ok: false, error: "That row does not belong to this MO." };
+  }
+  if (Number(row.quantity_per_bike) === qty) {
+    return { ok: true }; // no-op
+  }
+
+  const newOrigin = row.origin === "template" ? "modified" : row.origin;
+
+  const { error: updErr } = await supabase
+    .from("manufacturing_order_parts")
+    .update({ quantity_per_bike: qty, origin: newOrigin })
+    .eq("id", rowId);
+  if (updErr) {
+    return { ok: false, error: `Could not update qty: ${updErr.message}` };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}`);
+  return { ok: true };
+}
+
+/**
  * Remove a part from the MO. Only allowed for non-'template' rows so a
  * mistake on a template-origin row doesn't silently reshape the recipe.
  * If you genuinely need to remove a templated part, save the template as a

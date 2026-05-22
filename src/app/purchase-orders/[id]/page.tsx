@@ -244,6 +244,7 @@ export default async function PurchaseOrderDetailPage({
       <LinesSection
         poId={po.id}
         status={status}
+        orderDate={po.order_date}
         totalCurrency={po.total_currency}
         rows={poLineRows}
         partsCatalog={partsCatalog}

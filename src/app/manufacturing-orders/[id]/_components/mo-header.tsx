@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,6 +133,15 @@ export function MOHeader({
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link
+              href={`/manufacturing-orders/${moId}/print`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Printer aria-hidden /> Print parts list
+            </Link>
+          </Button>
           {nextStatuses.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

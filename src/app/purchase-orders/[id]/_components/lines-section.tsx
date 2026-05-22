@@ -54,6 +54,8 @@ export type POLineRow = {
 type Props = {
   poId: string;
   status: PurchaseOrderStatus;
+  /** PO's order_date — drives historical FX lookup in the line dialog. */
+  orderDate: string;
   totalCurrency: string | null;
   rows: POLineRow[];
   partsCatalog: PartChoice[];
@@ -70,6 +72,7 @@ type DialogState =
 export function LinesSection({
   poId,
   status,
+  orderDate,
   totalCurrency,
   rows,
   partsCatalog,
@@ -268,6 +271,7 @@ export function LinesSection({
           currencies={currencies}
           fxRatesByCurrency={fxRatesByCurrency}
           defaultTransportPct={defaultTransportPct}
+          orderDate={orderDate}
           excludePartIds={
             dialog.kind === "add"
               ? onPoPartIds

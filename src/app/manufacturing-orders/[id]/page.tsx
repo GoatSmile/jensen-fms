@@ -19,7 +19,9 @@ import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
 import { MOHeader } from "./_components/mo-header";
 import {
   MOPartsSection,
+  type CategoryOption,
   type MOPartRow,
+  type PartInCatalog,
 } from "./_components/mo-parts-section";
 import type { PartChoice } from "./_components/substitute-part-dialog";
 import { Section } from "./_components/section";
@@ -63,13 +65,17 @@ export default async function ManufacturingOrderDetailPage({
     bikesRes,
     partsCatalogRes,
     bikeTypeRequiredRes,
+    categoriesRes,
   ] = await Promise.all([
     supabase
       .from("manufacturing_order_parts")
       .select(
         `
           id, part_id, quantity_per_bike, origin, substituted_part_id, notes,
-          part:parts!part_id(id, internal_sku, name_en),
+          part:parts!part_id(
+            id, internal_sku, name_en,
+            category:part_categories(id, name_en)
+          ),
           substituted_from:parts!substituted_part_id(id, internal_sku, name_en)
         `,
       )
@@ -91,7 +97,10 @@ export default async function ManufacturingOrderDetailPage({
       .order("frame_number", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en, category:part_categories(name_en)")
+      .select(
+        `id, internal_sku, name_en, category_id,
+         category:part_categories(name_en)`,
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
     supabase
@@ -99,18 +108,24 @@ export default async function ManufacturingOrderDetailPage({
       .select("bike_type_id, bike_identifier_type_id, is_required")
       .eq("bike_type_id", mo.bike_type_id)
       .eq("is_required", true),
+    // 57 active categories — drives the LEFT-column picker.
+    supabase
+      .from("part_categories")
+      .select("id, name_en, sort_order")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("name_en", { ascending: true }),
   ]);
 
-  // Stock lookup keyed by part_id, summed across all locations.
-  const partIds = (moPartsRes.data ?? [])
-    .map((r) => r.part_id)
-    .filter((x): x is string => x != null);
+  // Stock lookup keyed by part_id, summed across all locations. We pull
+  // for the WHOLE catalog (not just MO parts) so the picker dropdowns can
+  // show on-hand next to each candidate without N+1 round-trips.
   const stockByPart = new Map<string, number>();
-  if (partIds.length > 0) {
+  {
     const { data: stock } = await supabase
       .from("v_current_stock")
-      .select("part_id, quantity_on_hand")
-      .in("part_id", partIds);
+      .select("part_id, quantity_on_hand");
     for (const row of stock ?? []) {
       const key = row.part_id;
       if (!key) continue;
@@ -127,6 +142,8 @@ export default async function ManufacturingOrderDetailPage({
       partId: row.part_id,
       partSku: row.part?.internal_sku ?? "—",
       partName: row.part?.name_en ?? "—",
+      categoryId: row.part?.category?.id ?? null,
+      categoryName: row.part?.category?.name_en ?? null,
       quantityPerBike: Number(row.quantity_per_bike),
       origin: row.origin as MOPartRow["origin"],
       substitutedFromPartName: row.substituted_from?.name_en ?? null,
@@ -134,6 +151,44 @@ export default async function ManufacturingOrderDetailPage({
       onHand: stockByPart.get(row.part_id) ?? 0,
     }))
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
+
+  // Picker data: every active category + every active part with its
+  // current stock (passed to the LEFT-column dropdowns).
+  const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({
+    id: c.id,
+    name_en: c.name_en,
+    sortOrder: c.sort_order,
+  }));
+  const partsCatalogWithStock: PartInCatalog[] = (partsCatalogRes.data ?? []).map(
+    (p) => ({
+      id: p.id,
+      internal_sku: p.internal_sku,
+      name_en: p.name_en,
+      category_id: p.category_id ?? null,
+      onHand: stockByPart.get(p.id) ?? 0,
+    }),
+  );
+
+  // Projected build cost = Σ (qty/bike × last_cost_dkk × outstanding bikes).
+  // last_cost_dkk per part comes from v_part_last_cost.
+  const moPartIds = moPartRows.map((r) => r.partId);
+  const lastCostByPart = new Map<string, number>();
+  if (moPartIds.length > 0) {
+    const { data: costs } = await supabase
+      .from("v_part_last_cost")
+      .select("part_id, last_cost_dkk")
+      .in("part_id", moPartIds);
+    for (const c of costs ?? []) {
+      if (!c.part_id) continue;
+      lastCostByPart.set(c.part_id, Number(c.last_cost_dkk ?? 0));
+    }
+  }
+  const projectedPartsCostPerBike = moPartRows.reduce((sum, r) => {
+    const lc = lastCostByPart.get(r.partId) ?? 0;
+    return sum + r.quantityPerBike * lc;
+  }, 0);
+  // Total projected build cost is multiplied by outstandingBikes below
+  // (it depends on moBikeRows which we compute next).
 
   const requiredIdCount = bikeTypeRequiredRes.data?.length ?? 0;
   const moBikeRows: MOBikeRow[] = (bikesRes.data ?? []).map((b) => {
@@ -176,6 +231,7 @@ export default async function ManufacturingOrderDetailPage({
 
   // Compute outstanding bikes for the parts stock-check (target − attached).
   const outstandingBikes = Math.max(0, mo.target_quantity - moBikeRows.length);
+  const projectedBuildCost = projectedPartsCostPerBike * outstandingBikes;
 
   // Frame-number suggestion for the next bike. With models gone, we derive
   // the prefix from the bike_type's slug (uppercased, e.g. "hsb" → "HSB").
@@ -263,6 +319,30 @@ export default async function ManufacturingOrderDetailPage({
               : "—"
           }
         />
+        <Stat
+          label="Projected per bike"
+          value={
+            projectedPartsCostPerBike > 0
+              ? new Intl.NumberFormat("da-DK", {
+                  style: "currency",
+                  currency: "DKK",
+                  maximumFractionDigits: 0,
+                }).format(projectedPartsCostPerBike)
+              : "—"
+          }
+        />
+        <Stat
+          label="Projected remaining"
+          value={
+            projectedBuildCost > 0
+              ? new Intl.NumberFormat("da-DK", {
+                  style: "currency",
+                  currency: "DKK",
+                  maximumFractionDigits: 0,
+                }).format(projectedBuildCost)
+              : "—"
+          }
+        />
       </div>
 
       <Section title="Plan" description="Planned and actual dates and notes.">
@@ -298,6 +378,8 @@ export default async function ManufacturingOrderDetailPage({
         rows={moPartRows}
         outstandingBikes={outstandingBikes}
         partsCatalog={partsCatalog}
+        catalog={partsCatalogWithStock}
+        categories={categories}
         hasTemplate={mo.bike_template?.id != null}
         readOnly={closed}
       />

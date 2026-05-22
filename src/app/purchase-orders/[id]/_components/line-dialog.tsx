@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
 import { formatPct } from "@/lib/parts/format";
 
+import { lookupFxRate } from "../_actions/lookup-fx";
 import { addLine, updateLine } from "../_actions/manage-lines";
 
 export type PartChoice = {
@@ -73,6 +74,8 @@ type Props = {
   excludePartIds: Set<string>;
   /** Default transport % for new lines, sourced from app_settings (0.10 = 10 %). */
   defaultTransportPct: number;
+  /** PO's order_date — used for historical FX lookup against fx_rates / Frankfurter. */
+  orderDate: string;
 };
 
 /**
@@ -94,6 +97,7 @@ export function LineDialog({
   fxRatesByCurrency,
   excludePartIds,
   defaultTransportPct,
+  orderDate,
 }: Props) {
   const router = useRouter();
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
@@ -128,6 +132,15 @@ export function LineDialog({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
+  // FX lookup state — when the user picks a foreign currency we hit
+  // /admin/fx-rates' cache (then Frankfurter) for the rate that was
+  // effective on the PO's order_date. Stays out of the way for DKK.
+  const [fxLookup, setFxLookup] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "ok"; actualDate: string; source: "cache" | "frankfurter" }
+    | { kind: "missing"; message: string }
+  >({ kind: "idle" });
 
   // Look up the selected part's tariff snapshot for the preview. Edit mode
   // shows the snapshotted value from when the line was first added; add mode
@@ -148,20 +161,51 @@ export function LineDialog({
   // Edit mode locks the part to keep the row identity stable in the UI.
   const partLocked = mode.kind === "edit";
 
-  // Keep FX rate in lock-step with the currency choice. Handled inline on
-  // currency change rather than via an effect to avoid a cascading render
-  // (and to satisfy react-hooks/set-state-in-effect). DKK is always 1; for
-  // foreign currencies we prefer the seeded fx_rates row but let the user
-  // override after.
+  // Keep FX rate in lock-step with the currency choice. For DKK we hard-code
+  // 1. For foreign currencies we kick off a historical lookup against the
+  // PO's order_date (cache-first via /admin/fx-rates, falls through to
+  // Frankfurter). The user can still override the number after.
   function onCurrencyChange(next: string) {
     setCurrency(next);
     if (next === "DKK") {
       setFxRate("1");
-    } else {
-      const known = fxRatesByCurrency[next];
-      setFxRate(known != null ? String(known) : "");
+      setFxLookup({ kind: "idle" });
+      return;
     }
+    // Optimistic pre-fill from whatever's already cached so the input
+    // doesn't go blank while the lookup runs.
+    const known = fxRatesByCurrency[next];
+    if (known != null) setFxRate(String(known));
+    void runFxLookup(next);
   }
+
+  function runFxLookup(forCurrency: string) {
+    return (async () => {
+      setFxLookup({ kind: "loading" });
+      const r = await lookupFxRate(forCurrency, "DKK", orderDate);
+      if (!r.ok) {
+        setFxLookup({ kind: "missing", message: r.error });
+        return;
+      }
+      setFxRate(String(r.rate));
+      setFxLookup({
+        kind: "ok",
+        actualDate: r.actualDate,
+        source: r.source,
+      });
+    })();
+  }
+
+  // On mount: if we're adding a new foreign-currency line, fetch the
+  // historical rate. Edit mode keeps the snapshotted value untouched.
+  useEffect(() => {
+    if (mode.kind !== "add") return;
+    if (initialCurrency === "DKK") return;
+    void runFxLookup(initialCurrency);
+    // Intentionally fire once on mount; runFxLookup's dependencies (orderDate,
+    // currencies list) are stable per dialog instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredParts = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -386,14 +430,17 @@ export function LineDialog({
                 disabled={currency === "DKK"}
                 required
               />
-              {currency !== "DKK" && !fxKnown ? (
+              {currency !== "DKK" ? (
                 <p className="text-muted-foreground text-xs">
-                  No FX rate on file for {currency} — enter manually.
-                </p>
-              ) : currency !== "DKK" ? (
-                <p className="text-muted-foreground text-xs">
-                  Pre-filled from the latest fx_rates row. Override if you have
-                  a fresher number on the invoice.
+                  {fxLookup.kind === "loading"
+                    ? `Looking up ${currency} → DKK for ${orderDate}…`
+                    : fxLookup.kind === "ok"
+                      ? `ECB rate for ${fxLookup.actualDate}${fxLookup.actualDate !== orderDate ? ` (closest business day to ${orderDate})` : ""}${fxLookup.source === "frankfurter" ? " — just fetched" : ""}. Override if your invoice quotes a different rate.`
+                      : fxLookup.kind === "missing"
+                        ? `Could not auto-look-up: ${fxLookup.message}. Enter manually.`
+                        : fxKnown
+                          ? "Pre-filled from the latest fx_rates row. Override if you have a fresher number on the invoice."
+                          : `No FX rate on file for ${currency} — enter manually.`}
                 </p>
               ) : null}
             </div>
