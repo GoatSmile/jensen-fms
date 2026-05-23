@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { countryName } from "@/lib/countries";
 
 import { archiveOrganization } from "../_actions/archive-organization";
 
@@ -63,7 +64,7 @@ export function OrganizationHeader({
 
   const metaParts: string[] = [];
   if (segmentLabel) metaParts.push(segmentLabel);
-  if (countryCode) metaParts.push(countryCode);
+  if (countryCode) metaParts.push(countryName(countryCode));
   if (preferredLanguage)
     metaParts.push(LANGUAGE_LABEL[preferredLanguage] ?? preferredLanguage);
 

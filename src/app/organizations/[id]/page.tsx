@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { countryName } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 
 import { AssignedBikesSection } from "../_components/assigned-bikes-section";
@@ -155,7 +156,7 @@ export default async function OrganizationDetailPage({
   const zipLine = [o.zip_code, o.city].filter(Boolean).join(" ");
   if (zipLine) addressLines.push(zipLine);
   if (o.state_province) addressLines.push(o.state_province);
-  if (o.country_code) addressLines.push(o.country_code);
+  if (o.country_code) addressLines.push(countryName(o.country_code));
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">

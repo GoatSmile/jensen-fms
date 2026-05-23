@@ -9,12 +9,16 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
+import { DEFAULT_COUNTRY_CODE, groupedCountries } from "@/lib/countries";
 
 import {
   createOrganization,
@@ -365,17 +369,34 @@ export function OrganizationForm({
           </Field>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Country code" htmlFor="org-country">
-            <Input
-              id="org-country"
-              value={values.country_code}
-              onChange={(e) =>
-                update("country_code", e.target.value.toUpperCase())
-              }
-              maxLength={2}
-              placeholder="DK"
-              className="font-mono uppercase"
-            />
+          <Field label="Country" htmlFor="org-country">
+            <Select
+              value={values.country_code || DEFAULT_COUNTRY_CODE}
+              onValueChange={(v) => update("country_code", v)}
+            >
+              <SelectTrigger id="org-country">
+                <SelectValue placeholder="Pick a country" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectGroup>
+                  <SelectLabel>Common</SelectLabel>
+                  {groupedCountries().popular.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>All countries</SelectLabel>
+                  {groupedCountries().rest.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="State / region" htmlFor="org-state">
             <Input

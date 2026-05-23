@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
 
 import { Button } from "@/components/ui/button";
+import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 
 import "leaflet/dist/leaflet.css";
@@ -132,7 +133,14 @@ export default function CustomerMap({ pins, segments }: Props) {
         });
         const saPct =
           c.bikes > 0 ? Math.round((c.saBikes / c.bikes) * 100) : 0;
-        const cityLine = [c.city, c.countryCode].filter(Boolean).join(", ");
+        // City + country name. Country goes through `countryName` so
+        // popups show "Denmark" instead of "DK".
+        const cityLine = [
+          c.city,
+          c.countryCode ? countryName(c.countryCode) : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
         marker.bindPopup(
           `<div class="jp-pop">
              <div class="jp-pop__name">${escapeHtml(c.name)}</div>

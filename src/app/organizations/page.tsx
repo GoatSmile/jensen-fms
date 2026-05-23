@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
+import { countryName } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 
 type SearchParams = {
@@ -279,9 +280,9 @@ export default async function OrganizationsPage({
                     <TableCell className="hidden p-0 md:table-cell">
                       <Link
                         href={`/organizations/${o.id}`}
-                        className="block px-4 py-2.5 font-mono text-xs"
+                        className="block px-4 py-2.5 text-xs"
                       >
-                        {o.country_code ?? "—"}
+                        {o.country_code ? countryName(o.country_code) : "—"}
                       </Link>
                     </TableCell>
                     <TableCell className="hidden p-0 text-right md:table-cell">

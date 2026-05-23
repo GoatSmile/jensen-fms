@@ -29,8 +29,10 @@ export function Money({
    *  contrasted against the dim fraction). Useful inside already-bold
    *  contexts like total rows. */
   bold?: boolean;
-  /** Override the fractional precision. PO line unit prices use 4 to
-   *  preserve the supplier's quoted øre; everything else defaults to 2. */
+  /** Maximum fractional precision. The minimum stays at 2 (so "258"
+   *  renders "258,00", not "258,0000"). PO line unit prices set this
+   *  to 4 so a supplier's "12,3456" quote keeps its precision, but a
+   *  whole number doesn't drag a tail of zeros along with it. */
   fractionDigits?: number;
 }) {
   if (amount == null) {
@@ -47,8 +49,8 @@ export function Money({
     style: "currency",
     currency: currency ?? "DKK",
     currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: Math.max(2, fractionDigits),
   }).format(n);
 
   // Find the locale's decimal separator (`,` for da-DK, `.` for en-US).
