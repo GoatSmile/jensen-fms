@@ -102,21 +102,30 @@ export async function updateHsCode(
 }
 
 /**
- * Soft-archive: HS codes referenced by parts can't be hard-deleted without
- * cascading the tariff snapshot loss. Flipping is_active off is a quick way
- * to hide the code from pickers without disrupting historical PO lines
- * (which carry their own snapshotted tariff_pct).
+ * Soft-archive / restore. HS codes referenced by parts can't be
+ * hard-deleted without cascading the tariff snapshot loss. Flipping
+ * `is_active` is the toggle — pickers hide archived rows; historical
+ * PO lines carry their own snapshotted `tariff_pct` so nothing
+ * downstream breaks.
+ *
+ * Replaces the old one-way `archiveHsCode` action — now that the
+ * detail page is harmonized with /admin/colors and
+ * /admin/customer-segments, the same setActive shape lets the
+ * ArchiveButton component handle both directions.
  */
-export async function archiveHsCode(id: string): Promise<HsCodeResult> {
+export async function setHsCodeActive(
+  id: string,
+  isActive: boolean,
+): Promise<HsCodeResult> {
   if (!id) return { ok: false, error: "Missing id." };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("hs_codes")
-    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not archive: ${error.message}` };
+    return { ok: false, error: `Could not save: ${error.message}` };
   }
   revalidatePath("/admin/hs-codes");
   revalidatePath("/admin");
