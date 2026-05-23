@@ -52,7 +52,7 @@ export default async function AdminSettingsPage() {
         </p>
       </header>
 
-      <ReportUrlCard variant="settings" />
+      <ReportUrlCard />
 
       <section className="rounded-md border">
         <header className="border-b px-4 py-3">

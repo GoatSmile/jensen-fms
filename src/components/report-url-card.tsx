@@ -6,30 +6,28 @@ import { appOrigin } from "@/lib/qr";
 import { createServiceClient } from "@/lib/supabase/service";
 import { reportPageViewCount } from "@/lib/report/track-view";
 
+const STATS_WINDOW_DAYS = 30;
+
 /**
- * Shared widget showing the public customer report URL + recent usage
- * stats. Rendered on the dashboard and on /admin/settings so the URL is
- * easy to find for anyone in the company.
+ * Widget showing the public customer report URL + recent usage stats.
+ * Rendered on /admin/settings so the URL is easy to find for anyone in
+ * the company.
  */
-export async function ReportUrlCard({
-  variant = "dashboard",
-}: {
-  variant?: "dashboard" | "settings";
-}) {
+export async function ReportUrlCard() {
   const reportUrl = `${appOrigin()}/report`;
   const helpUrl = `${appOrigin()}/report/help`;
 
-  // 7-day stats. Views are aggregate counts in report_page_views; the
+  // 30-day stats. Views are aggregate counts in report_page_views; the
   // submission count is just maintenance_tickets rows with
   // source='app' (both per-bike sticker reports and "I don't know my
   // bike" general reports use the same source enum).
   const supabase = createServiceClient();
   const sinceIso = new Date(
-    Date.now() - 7 * 24 * 60 * 60 * 1000,
+    Date.now() - STATS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
   const [views, helpViews, ticketsRes] = await Promise.all([
-    reportPageViewCount(["/report"], 7),
-    reportPageViewCount(["/report/help"], 7),
+    reportPageViewCount(["/report"], STATS_WINDOW_DAYS),
+    reportPageViewCount(["/report/help"], STATS_WINDOW_DAYS),
     supabase
       .from("maintenance_tickets")
       .select("id", { count: "exact", head: true })
@@ -74,48 +72,35 @@ export async function ReportUrlCard({
           <Stat
             label="Visits"
             value={views}
-            hint={`/report · last 7 days`}
+            hint={`/report · last ${STATS_WINDOW_DAYS} days`}
           />
           <Stat
             label="Send-a-message visits"
             value={helpViews}
-            hint={`/report/help · last 7 days`}
+            hint={`/report/help · last ${STATS_WINDOW_DAYS} days`}
           />
           <Stat
             label="Reports submitted"
             value={ticketsCount}
-            hint="From customer · last 7 days"
+            hint={`From customer · last ${STATS_WINDOW_DAYS} days`}
           />
         </div>
 
-        {variant === "settings" ? (
-          <div className="text-muted-foreground border-t pt-3 text-xs">
-            <p>
-              The &quot;I don&rsquo;t know my bike&quot; fallback lives at{" "}
-              <code className="font-mono">{helpUrl}</code> — useful when a
-              customer can&rsquo;t find the QR sticker. Both paths land in{" "}
-              <Link
-                href="/maintenance/tickets"
-                className="hover:text-foreground underline-offset-4 hover:underline"
-              >
-                /maintenance/tickets
-              </Link>
-              ; unidentified-bike reports show up flagged &ldquo;Needs
-              triage&rdquo; in the Bike column.
-            </p>
-          </div>
-        ) : (
-          <div className="text-muted-foreground text-xs">
-            Configured in{" "}
+        <div className="text-muted-foreground border-t pt-3 text-xs">
+          <p>
+            The &quot;I don&rsquo;t know my bike&quot; fallback lives at{" "}
+            <code className="font-mono">{helpUrl}</code> — useful when a
+            customer can&rsquo;t find the QR sticker. Both paths land in{" "}
             <Link
-              href="/admin/settings"
+              href="/maintenance/tickets"
               className="hover:text-foreground underline-offset-4 hover:underline"
             >
-              admin → settings
+              /maintenance/tickets
             </Link>
-            .
-          </div>
-        )}
+            ; unidentified-bike reports show up flagged &ldquo;Needs
+            triage&rdquo; in the Bike column.
+          </p>
+        </div>
       </div>
     </section>
   );
