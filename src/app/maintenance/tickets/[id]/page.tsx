@@ -46,7 +46,7 @@ export default async function TicketDetailPage({
         id, ticket_number, status, priority, source,
         description, reported_language, notes,
         reported_at, resolved_at, created_at, updated_at,
-        reported_by_text,
+        reported_by_text, reported_by_phone,
         bike:bikes!bike_id(
           id, frame_number,
           bike_type:bike_types(name_en),
@@ -346,7 +346,21 @@ export default async function TicketDetailPage({
                 ) : null}
               </dl>
             ) : reporterFallback ? (
-              <p className="text-sm">{reporterFallback}</p>
+              <dl className="flex flex-col gap-3">
+                <Field label="From">
+                  <span className="text-sm">{reporterFallback}</span>
+                </Field>
+                {ticket.reported_by_phone ? (
+                  <Field label="Phone">
+                    <a
+                      href={`tel:${ticket.reported_by_phone}`}
+                      className="hover:text-foreground text-sm underline-offset-4 hover:underline"
+                    >
+                      {ticket.reported_by_phone}
+                    </a>
+                  </Field>
+                ) : null}
+              </dl>
             ) : (
               <Muted>—</Muted>
             )}

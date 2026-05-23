@@ -723,6 +723,7 @@ export type Database = {
           decimal_places: number
           name_da: string | null
           name_en: string
+          sort_order: number
           symbol: string | null
         }
         Insert: {
@@ -730,6 +731,7 @@ export type Database = {
           decimal_places?: number
           name_da?: string | null
           name_en: string
+          sort_order?: number
           symbol?: string | null
         }
         Update: {
@@ -737,6 +739,7 @@ export type Database = {
           decimal_places?: number
           name_da?: string | null
           name_en?: string
+          sort_order?: number
           symbol?: string | null
         }
         Relationships: []
@@ -1208,7 +1211,7 @@ export type Database = {
       }
       maintenance_tickets: {
         Row: {
-          bike_id: string
+          bike_id: string | null
           created_at: string
           description: string
           id: string
@@ -1216,6 +1219,7 @@ export type Database = {
           priority: number
           reported_at: string
           reported_by_contact_id: string | null
+          reported_by_phone: string | null
           reported_by_text: string | null
           reported_language: string | null
           resolved_at: string | null
@@ -1225,7 +1229,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          bike_id: string
+          bike_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -1233,6 +1237,7 @@ export type Database = {
           priority?: number
           reported_at?: string
           reported_by_contact_id?: string | null
+          reported_by_phone?: string | null
           reported_by_text?: string | null
           reported_language?: string | null
           resolved_at?: string | null
@@ -1242,7 +1247,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          bike_id?: string
+          bike_id?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -1250,6 +1255,7 @@ export type Database = {
           priority?: number
           reported_at?: string
           reported_by_contact_id?: string | null
+          reported_by_phone?: string | null
           reported_by_text?: string | null
           reported_language?: string | null
           resolved_at?: string | null
@@ -2254,21 +2260,21 @@ export type Database = {
       }
       public_report_attempts: {
         Row: {
-          bike_id: string
+          bike_id: string | null
           created_at: string
           id: string
           ip: unknown
           ticket_id: string | null
         }
         Insert: {
-          bike_id: string
+          bike_id?: string | null
           created_at?: string
           id?: string
           ip: unknown
           ticket_id?: string | null
         }
         Update: {
-          bike_id?: string
+          bike_id?: string | null
           created_at?: string
           id?: string
           ip?: unknown

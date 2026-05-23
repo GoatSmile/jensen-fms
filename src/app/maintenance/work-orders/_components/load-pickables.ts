@@ -65,13 +65,18 @@ export async function loadWOPickables(): Promise<{
     };
   });
 
-  const tickets: TicketOption[] = (ticketsRes.data ?? []).map((t) => ({
-    id: t.id,
-    ticket_number: t.ticket_number,
-    status: t.status,
-    description: t.description ?? "",
-    bike_id: t.bike_id,
-  }));
+  // Untriaged customer reports (bike_id = NULL, from /report/help) can't
+  // anchor a work order yet — a staff member needs to identify the bike
+  // first. Filter them out so the picker only shows actionable tickets.
+  const tickets: TicketOption[] = (ticketsRes.data ?? [])
+    .filter((t): t is typeof t & { bike_id: string } => t.bike_id != null)
+    .map((t) => ({
+      id: t.id,
+      ticket_number: t.ticket_number,
+      status: t.status,
+      description: t.description ?? "",
+      bike_id: t.bike_id,
+    }));
 
   return { bikes, tickets };
 }

@@ -214,14 +214,24 @@ export default async function MaintenanceTicketsPage({
                     </TableCell>
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
-                        <div className="font-mono text-xs">
-                          {bike?.frame_number ?? "—"}
-                        </div>
-                        {templateLabel ? (
-                          <div className="text-muted-foreground text-xs">
-                            {templateLabel}
+                        {bike ? (
+                          <>
+                            <div className="font-mono text-xs">
+                              {bike.frame_number}
+                            </div>
+                            {templateLabel ? (
+                              <div className="text-muted-foreground text-xs">
+                                {templateLabel}
+                              </div>
+                            ) : null}
+                          </>
+                        ) : (
+                          // Customer report via /report/help — no bike id
+                          // yet; staff triages from here.
+                          <div className="text-amber-700 dark:text-amber-400 text-xs italic">
+                            Needs triage — no bike specified
                           </div>
-                        ) : null}
+                        )}
                       </Link>
                     </TableCell>
                     <TableCell className="hidden p-0 text-sm lg:table-cell">

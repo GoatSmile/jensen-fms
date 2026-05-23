@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CameraOff, ScanLine } from "lucide-react";
 
@@ -11,28 +12,72 @@ import { Label } from "@/components/ui/label";
 import { findBikeByFrameNumber } from "../_actions/find-bike";
 
 /**
- * Customer-facing entry point. Two routes in, both end at /b/<bike-id>:
+ * Customer-facing entry point. Three routes in, all anonymous:
  *
- *   1. Type the frame number → server action looks it up → navigate.
- *   2. Tap "Scan QR code" → camera opens → decoded sticker URL → navigate.
+ *   1. "Scan QR code" (primary) — opens the camera, decoded sticker URL
+ *      → /b/<bike-id>.
+ *   2. Type the frame number (secondary) — server action looks it up
+ *      → /b/<bike-id>.
+ *   3. "I don't know my bike" (tertiary) → /report/help — free-form
+ *      contact form, ticket lands with bike_id = NULL for staff to triage.
  *
- * Same anonymous-public posture as /b/* — no auth.
+ * Scan is primary because the QR sticker is right there on the bike and
+ * one tap is friendlier than typing a frame number on a phone keyboard.
+ * Manual entry stays available as a fallback for damaged stickers.
  */
 export function ReportEntry() {
-  const [mode, setMode] = useState<"input" | "camera">("input");
+  const [mode, setMode] = useState<"start" | "camera">("start");
 
   return (
-    <div className="flex flex-col gap-4">
-      {mode === "input" ? (
-        <ManualEntry onScanClick={() => setMode("camera")} />
+    <div className="flex flex-col gap-5">
+      {mode === "camera" ? (
+        <CameraScan onCancel={() => setMode("start")} />
       ) : (
-        <CameraScan onCancel={() => setMode("input")} />
+        <PrimaryStart onScanClick={() => setMode("camera")} />
       )}
     </div>
   );
 }
 
-function ManualEntry({ onScanClick }: { onScanClick: () => void }) {
+function PrimaryStart({ onScanClick }: { onScanClick: () => void }) {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          size="lg"
+          onClick={onScanClick}
+          className="h-14 text-base"
+        >
+          <ScanLine className="mr-2 size-5" aria-hidden />
+          Scan QR code on your bike
+        </Button>
+        <p className="text-muted-foreground text-center text-xs">
+          Point your phone at the QR sticker on the bike frame.
+        </p>
+      </div>
+
+      <div className="text-muted-foreground flex items-center gap-3 text-xs">
+        <div className="flex-1 border-t" />
+        <span>or</span>
+        <div className="flex-1 border-t" />
+      </div>
+
+      <ManualEntry />
+
+      <div className="text-muted-foreground border-t pt-4 text-center text-xs">
+        <Link
+          href="/report/help"
+          className="hover:text-foreground underline-offset-4 hover:underline"
+        >
+          Don&rsquo;t know which bike? Send us a message →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ManualEntry() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +88,7 @@ function ManualEntry({ onScanClick }: { onScanClick: () => void }) {
     setError(null);
     const v = value.trim();
     if (!v) {
-      setError("Please enter your bike's frame number.");
+      setError("Please enter the frame number.");
       return;
     }
     start(async () => {
@@ -57,9 +102,11 @@ function ManualEntry({ onScanClick }: { onScanClick: () => void }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="report-frame">Frame number</Label>
+        <Label htmlFor="report-frame" className="text-sm">
+          Or enter the frame number
+        </Label>
         <Input
           id="report-frame"
           value={value}
@@ -71,11 +118,9 @@ function ManualEntry({ onScanClick }: { onScanClick: () => void }) {
           className="font-mono"
           autoComplete="off"
           autoCapitalize="characters"
-          autoFocus
         />
         <p className="text-muted-foreground text-xs">
-          The frame number is printed on a label or stamped into the frame,
-          usually near the bottom bracket.
+          Printed on a label or stamped near the bottom bracket.
         </p>
         {error ? (
           <p className="text-destructive text-sm" role="alert">
@@ -84,19 +129,12 @@ function ManualEntry({ onScanClick }: { onScanClick: () => void }) {
         ) : null}
       </div>
 
-      <Button type="submit" disabled={pending || !value.trim()}>
+      <Button
+        type="submit"
+        variant="outline"
+        disabled={pending || !value.trim()}
+      >
         {pending ? "Looking up…" : "Continue"}
-      </Button>
-
-      <div className="text-muted-foreground flex items-center gap-3 text-xs">
-        <div className="flex-1 border-t" />
-        <span>or</span>
-        <div className="flex-1 border-t" />
-      </div>
-
-      <Button type="button" variant="outline" onClick={onScanClick}>
-        <ScanLine className="mr-1 size-4" aria-hidden />
-        Scan QR code with camera
       </Button>
     </form>
   );
@@ -157,12 +195,11 @@ function CameraScan({ onCancel }: { onCancel: () => void }) {
     }
 
     /**
-     * Customer-side routing: every code path ends at /b/<id> (the public
-     * report form). The QR stickers we print encode the /b/<id> URL on
-     * our own origin, so the common case is just a same-origin redirect.
+     * Customer-side routing: every code path ends at /b/<id>. The QR
+     * stickers we print encode /b/<id> on our own origin, so the common
+     * case is a same-origin redirect.
      */
     function handleDecoded(value: string) {
-      // Same-origin /b/<uuid> sticker → navigate to the same path.
       try {
         const u = new URL(value, window.location.origin);
         if (u.origin === window.location.origin) {
@@ -173,21 +210,17 @@ function CameraScan({ onCancel }: { onCancel: () => void }) {
             router.push(`/b/${m[1]}`);
             return;
           }
-          // Same origin but unknown path — fall through to error state.
         } else {
-          // Different origin — the QR isn't one of ours. Surface a
-          // friendly error and let them try again.
           setStatus({
             kind: "error",
             message:
-              "That QR code doesn't look like a Jensen sticker. Try again or type the frame number.",
+              "That QR code doesn't look like a Jensen sticker. Try again or enter the frame number.",
           });
           return;
         }
       } catch {
         /* not a URL — fall through */
       }
-      // Bare UUID — treat as bike id.
       if (
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           value,
@@ -196,7 +229,6 @@ function CameraScan({ onCancel }: { onCancel: () => void }) {
         router.push(`/b/${value}`);
         return;
       }
-      // Looks like a frame number — resolve via server action then navigate.
       findBikeByFrameNumber(value).then((r) => {
         if (cancelled) return;
         if (!r.ok) {
@@ -241,7 +273,7 @@ function CameraScan({ onCancel }: { onCancel: () => void }) {
         {status.kind === "scanning" ? (
           <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
             <ScanLine className="size-3.5" aria-hidden /> Point at the QR
-            sticker on your bike
+            sticker
           </div>
         ) : null}
       </div>
