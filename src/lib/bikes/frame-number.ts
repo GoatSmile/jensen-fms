@@ -8,12 +8,18 @@
  * `bike_identifier_types.frame_number` does not have a `format_regex` so
  * anything goes.
  *
- * Sequence is computed by counting bikes whose frame_number starts with the
- * `JP-{year}-{code}-` prefix and adding 1. Cheap query and good enough for
- * a single shop. If two operators race they get the same suggestion; the
- * UNIQUE constraint on bike_identifier_types(frame_number, value) blocks the
- * second submit and they pick a different number.
+ * Sequence is computed by scanning bikes whose frame_number starts with the
+ * `JP-{year}-{code}-` prefix and adding 1. The lookup is **global across all
+ * MOs** because the uniqueness constraint on `bikes.frame_number` is
+ * table-wide — scoping to a single MO let two MOs both pick `001` and the
+ * second insert blew up on the unique constraint (caught in production on
+ * bulk-add against a new MO).
+ *
+ * If two operators race they get the same suggestion; the UNIQUE constraint
+ * blocks the second submit and they pick a different number.
  */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type FrameNumberSuggestionInput = {
   year: number;
@@ -22,13 +28,17 @@ export type FrameNumberSuggestionInput = {
   existing: string[];
 };
 
+export function framePrefix(year: number, code: string | null): string {
+  const upperCode = code?.trim().toUpperCase() ?? "";
+  return upperCode === "" ? `JP-${year}-` : `JP-${year}-${upperCode}-`;
+}
+
 export function nextFrameNumberSuggestion({
   year,
   code,
   existing,
 }: FrameNumberSuggestionInput): string {
-  const upperCode = code?.trim().toUpperCase() ?? "";
-  const prefix = upperCode === "" ? `JP-${year}-` : `JP-${year}-${upperCode}-`;
+  const prefix = framePrefix(year, code);
 
   let max = 0;
   for (const fn of existing) {
@@ -42,4 +52,31 @@ export function nextFrameNumberSuggestion({
   }
   const next = String(max + 1).padStart(3, "0");
   return `${prefix}${next}`;
+}
+
+/**
+ * Server-side helper: query every existing frame_number sharing the
+ * `JP-{year}-{code}-` prefix (across ALL MOs, since uniqueness is global)
+ * and feed them into the suggester. Pre-pend `extra` to plan a batch
+ * without round-tripping the DB for each step.
+ */
+export async function nextFrameNumberFromDb(
+  supabase: SupabaseClient,
+  args: { year: number; code: string | null; extra?: string[] },
+): Promise<string> {
+  const prefix = framePrefix(args.year, args.code);
+  const { data } = await supabase
+    .from("bikes")
+    .select("frame_number")
+    .like("frame_number", `${prefix}%`);
+
+  const existing = [
+    ...(data ?? []).map((b) => b.frame_number as string),
+    ...(args.extra ?? []),
+  ];
+  return nextFrameNumberSuggestion({
+    year: args.year,
+    code: args.code,
+    existing,
+  });
 }

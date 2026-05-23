@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { nextFrameNumberSuggestion } from "@/lib/bikes/frame-number";
+import {
+  framePrefix,
+  nextFrameNumberSuggestion,
+} from "@/lib/bikes/frame-number";
 
 export type BulkAddResult =
   | { ok: true; created: number }
@@ -82,22 +85,27 @@ export async function bulkAddBikesToMO(
   }
   const toCreate = Math.min(count, slotsLeft);
 
-  // Use the bike_type slug as the frame-number prefix and pull every existing
-  // frame number on bikes belonging to this MO so we don't collide.
+  // Use the bike_type slug as the frame-number prefix. We pull existing
+  // frames globally (not just within this MO) because the unique constraint
+  // on bikes.frame_number is table-wide; scoping to the MO let a fresh MO
+  // collide with frames from a previous MO that shared the same prefix.
   const { data: bikeTypeRow } = await supabase
     .from("bike_types")
     .select("slug")
     .eq("id", mo.bike_type_id)
     .maybeSingle();
+
+  const year = new Date().getFullYear();
+  const prefix = framePrefix(year, bikeTypeRow?.slug ?? null);
+
   const { data: existingFrames } = await supabase
     .from("bikes")
     .select("frame_number")
-    .eq("manufacturing_order_id", moId);
+    .like("frame_number", `${prefix}%`);
+  const existing = (existingFrames ?? []).map((b) => b.frame_number as string);
 
-  const existing = (existingFrames ?? []).map((b) => b.frame_number);
-  const year = new Date().getFullYear();
-
-  // Pre-compute the full sequence by feeding back each suggestion as we go.
+  // Pre-compute the full sequence by feeding back each suggestion. One
+  // round trip total; the suggester is a pure max-scan after that.
   const planned: string[] = [];
   for (let i = 0; i < toCreate; i++) {
     const next = nextFrameNumberSuggestion({

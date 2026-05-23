@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import type { BikeStatus } from "@/lib/bikes/status";
 import type { MOStatus } from "@/lib/mo/status";
-import { nextFrameNumberSuggestion } from "@/lib/bikes/frame-number";
+import { nextFrameNumberFromDb } from "@/lib/bikes/frame-number";
 
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
 import { MOHeader } from "./_components/mo-header";
@@ -235,15 +235,12 @@ export default async function ManufacturingOrderDetailPage({
 
   // Frame-number suggestion for the next bike. With models gone, we derive
   // the prefix from the bike_type's slug (uppercased, e.g. "hsb" → "HSB").
-  // Existing frame numbers come from bikes attached to this MO so the
-  // sequence stays per-batch.
-  const existingFrameNumbers =
-    bikesRes.data?.map((b) => b.frame_number) ?? [];
-
-  const suggestedFrameNumber = nextFrameNumberSuggestion({
+  // The lookup is GLOBAL (not scoped to this MO) — bike frame_number is
+  // unique table-wide, so a per-MO scope let a new MO suggest `001` that
+  // already belonged to a sibling MO.
+  const suggestedFrameNumber = await nextFrameNumberFromDb(supabase, {
     year: new Date().getFullYear(),
     code: mo.bike_type?.slug ?? null,
-    existing: existingFrameNumbers,
   });
 
   const templateLabel = mo.bike_template
