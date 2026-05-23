@@ -17,7 +17,11 @@ export function ScanFab() {
   const hide =
     pathname === "/scan" ||
     pathname.startsWith("/b/") ||
-    pathname.startsWith("/report/");
+    pathname.startsWith("/report/") ||
+    // /work has its own Scan button in the queue header; the workspace
+    // (/work/<woId>) reserves the bottom edge for the Start/Mark-done
+    // action bar — the FAB would sit on top of it.
+    pathname.startsWith("/work");
   if (hide) return null;
   return (
     <Link

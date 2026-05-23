@@ -189,9 +189,9 @@ export default async function WorkspacePage({
           top-0` so it stays visible while the tech edits notes below. */}
       <header className="bg-card sticky top-0 z-10 overflow-hidden rounded-lg border shadow-sm">
         <div
-          className={`flex items-center justify-between gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider ${bannerClass}`}
+          className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide sm:text-xs sm:tracking-wider ${bannerClass}`}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex shrink-0 items-center gap-2">
             {status === "in_progress" ? (
               <span
                 aria-hidden
@@ -201,7 +201,7 @@ export default async function WorkspacePage({
             {WO_STATUS_LABEL[status]}
           </span>
           {bannerSubtitle ? (
-            <span className="text-xs font-medium tabular-nums opacity-90">
+            <span className="text-[11px] font-medium tabular-nums opacity-90 sm:text-xs">
               {bannerSubtitle}
             </span>
           ) : null}
@@ -211,9 +211,9 @@ export default async function WorkspacePage({
           <span className="text-muted-foreground font-mono text-[10px] font-medium uppercase tracking-wider">
             {wo.wo_number}
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <BikeColorDot hex={colorHex} label={colorName} />
-            <span className="font-mono text-3xl font-bold tracking-tight">
+            <span className="min-w-0 font-mono text-2xl font-bold tracking-tight break-all sm:text-3xl">
               {wo.bike?.frame_number ?? "—"}
             </span>
           </div>
