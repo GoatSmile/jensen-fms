@@ -12,6 +12,9 @@ import {
 } from "@/lib/maintenance/work-order-status";
 
 import { Workspace } from "./_components/workspace";
+import type { WOPartRow } from "./_components/parts-section";
+import type { WOPhoto } from "./_components/photos-section";
+import type { PartChoice } from "@/app/maintenance/work-orders/[id]/_components/wo-part-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +62,70 @@ export default async function WorkspacePage({
     throw new Error(`Failed to load work order: ${error.message}`);
   }
   if (!wo) notFound();
+
+  // Parts, photos, and the parts catalog load in parallel. They're
+  // independent of the WO load (which we needed for the notFound check)
+  // so it's two round-trips total — fine for a low-traffic detail page.
+  const [woPartsRes, partsCatalogRes, photosRes] = await Promise.all([
+    supabase
+      .from("work_order_parts")
+      .select(
+        `id, part_id, quantity, unit_price, installed_at,
+         part:parts!part_id(id, internal_sku, name_en)`,
+      )
+      .eq("work_order_id", wo.id)
+      .order("installed_at", { ascending: true }),
+    supabase
+      .from("parts")
+      .select("id, internal_sku, name_en, category:part_categories(name_en)")
+      .is("deleted_at", null)
+      .order("internal_sku", { ascending: true }),
+    supabase
+      .from("attachments")
+      .select("id, file_url, file_name")
+      .eq("entity_type", "work_order")
+      .eq("entity_id", wo.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
+    id: p.id,
+    internal_sku: p.internal_sku,
+    name_en: p.name_en,
+    category_name: p.category?.name_en ?? null,
+  }));
+
+  // Pull last-cost for prefill in the add-part dialog — same shape as
+  // the desktop WO page uses.
+  const lastCostByPartId = new Map<string, number>();
+  const allPartIds = partsCatalog.map((p) => p.id);
+  if (allPartIds.length > 0) {
+    const { data: costs } = await supabase
+      .from("v_part_last_cost")
+      .select("part_id, last_cost_dkk")
+      .in("part_id", allPartIds);
+    for (const row of costs ?? []) {
+      if (row.part_id != null && row.last_cost_dkk != null) {
+        lastCostByPartId.set(row.part_id, Number(row.last_cost_dkk));
+      }
+    }
+  }
+
+  const partRows: WOPartRow[] = (woPartsRes.data ?? []).map((r) => ({
+    id: r.id,
+    partId: r.part_id,
+    partSku: r.part?.internal_sku ?? "—",
+    partName: r.part?.name_en ?? "—",
+    quantity: Number(r.quantity),
+    unitPrice: r.unit_price != null ? Number(r.unit_price) : null,
+  }));
+
+  const photos: WOPhoto[] = (photosRes.data ?? []).map((p) => ({
+    id: p.id,
+    fileUrl: p.file_url,
+    fileName: p.file_name,
+  }));
 
   const status = wo.status as WorkOrderStatus;
   const language: "da" | "en" = wo.language === "en" ? "en" : "da";
@@ -148,6 +215,10 @@ export default async function WorkspacePage({
         initialDiagnosis={wo.diagnosis ?? ""}
         initialWorkPerformed={wo.work_performed ?? ""}
         bikeId={wo.bike?.id ?? null}
+        partRows={partRows}
+        partsCatalog={partsCatalog}
+        lastCostByPartId={lastCostByPartId}
+        photos={photos}
       />
     </div>
   );

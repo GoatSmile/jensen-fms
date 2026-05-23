@@ -13,7 +13,18 @@ import {
   type WOTransitionResult,
 } from "@/app/maintenance/work-orders/_actions/transition-wo";
 import { updateWODetails } from "@/app/maintenance/work-orders/_actions/save-wo";
+import { appendTimestamped } from "@/lib/notes/append";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
+
+import {
+  PartsSection,
+  type WOPartRow,
+} from "./parts-section";
+import {
+  PhotosSection,
+  type WOPhoto,
+} from "./photos-section";
+import type { PartChoice } from "@/app/maintenance/work-orders/[id]/_components/wo-part-dialog";
 
 type Props = {
   woId: string;
@@ -23,6 +34,10 @@ type Props = {
   initialDiagnosis: string;
   initialWorkPerformed: string;
   bikeId: string | null;
+  partRows: WOPartRow[];
+  partsCatalog: PartChoice[];
+  lastCostByPartId: Map<string, number>;
+  photos: WOPhoto[];
 };
 
 /**
@@ -41,6 +56,10 @@ export function Workspace({
   language,
   initialDiagnosis,
   initialWorkPerformed,
+  partRows,
+  partsCatalog,
+  lastCostByPartId,
+  photos,
 }: Props) {
   const router = useRouter();
   const [diagnosis, setDiagnosis] = useState(initialDiagnosis);
@@ -175,6 +194,16 @@ export function Workspace({
             the desktop view if you need to edit.
           </div>
         ) : null}
+
+        <PartsSection
+          woId={woId}
+          rows={partRows}
+          partsCatalog={partsCatalog}
+          lastCostByPartId={lastCostByPartId}
+          readOnly={readOnly}
+        />
+
+        <PhotosSection woId={woId} photos={photos} readOnly={readOnly} />
       </div>
 
       {/* Bottom-fixed status action bar. Always reachable on mobile
@@ -236,10 +265,15 @@ function NotesField({
   readOnly,
 }: FieldProps) {
   function appendDictated(text: string) {
-    // Add a space separator if the existing notes don't already end with
-    // whitespace, so multiple dictation passes read naturally.
-    const sep = value.length === 0 || /\s$/.test(value) ? "" : " ";
-    onChange(`${value}${sep}${text}`);
+    // Each dictation pass becomes its own timestamped block, so the
+    // tech ends up with a chronological log instead of one smeared
+    // paragraph. Format produced by appendTimestamped:
+    //
+    //     prior content
+    //
+    //     [2026-05-23 14:52]
+    //     freshly dictated text
+    onChange(appendTimestamped(value, text));
   }
 
   return (
