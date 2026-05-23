@@ -10,7 +10,9 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { SegmentedId } from "@/components/segmented-id";
+import { formatDate } from "@/lib/parts/format";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
 
 import { POHeader } from "./_components/po-header";
@@ -199,7 +201,9 @@ export default async function PurchaseOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-mono">{po.po_number}</BreadcrumbPage>
+            <BreadcrumbPage>
+              <SegmentedId value={po.po_number} />
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -217,12 +221,12 @@ export default async function PurchaseOrderDetailPage({
         <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
         <Stat label="Received">{formatDate(po.received_date)}</Stat>
         <Stat label="Total">
-          <span className="tabular-nums">
-            {formatMoney(
-              po.total_amount != null ? Number(po.total_amount) : null,
-              po.total_currency,
-            )}
-          </span>
+          <Money
+            amount={
+              po.total_amount != null ? Number(po.total_amount) : null
+            }
+            currency={po.total_currency}
+          />
         </Stat>
         <Stat label="Lines">{poLineRows.length}</Stat>
         <Stat label="Units ordered" className="tabular-nums">

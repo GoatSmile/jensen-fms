@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
+import { SegmentedId } from "@/components/segmented-id";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -157,8 +158,8 @@ export default async function TicketDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-mono">
-              {ticket.ticket_number}
+            <BreadcrumbPage>
+              <SegmentedId value={ticket.ticket_number} />
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>

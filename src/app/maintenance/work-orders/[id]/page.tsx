@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { Money } from "@/components/money";
+import { SegmentedId } from "@/components/segmented-id";
 import { formatMoney } from "@/lib/parts/format";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
 import { CLOSED_WO_STATUSES } from "@/lib/maintenance/work-order-status";
@@ -151,8 +153,8 @@ export default async function WorkOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-mono">
-              {wo.wo_number}
+            <BreadcrumbPage>
+              <SegmentedId value={wo.wo_number} />
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
@@ -272,7 +274,13 @@ export default async function WorkOrderDetailPage({
             <dl className="flex flex-col gap-2 text-sm">
               <SummaryRow
                 label="Parts subtotal"
-                value={formatMoney(partsSubtotal, "DKK")}
+                value={
+                  <Money
+                    amount={partsSubtotal}
+                    currency="DKK"
+                    bold={false}
+                  />
+                }
               />
               <SummaryRow
                 label={
@@ -281,15 +289,21 @@ export default async function WorkOrderDetailPage({
                     : "Labor"
                 }
                 value={
-                  laborRate != null && laborMinutes > 0
-                    ? formatMoney(laborSubtotal, "DKK")
-                    : "—"
+                  laborRate != null && laborMinutes > 0 ? (
+                    <Money
+                      amount={laborSubtotal}
+                      currency="DKK"
+                      bold={false}
+                    />
+                  ) : (
+                    "—"
+                  )
                 }
               />
               <div className="my-1 border-t" />
               <SummaryRow
                 label="Total"
-                value={formatMoney(total, "DKK")}
+                value={<Money amount={total} currency="DKK" />}
                 strong
               />
               {!wo.is_billable && wo.service_agreement ? (
@@ -336,7 +350,7 @@ function SummaryRow({
   strong,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   strong?: boolean;
 }) {
   return (

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -195,12 +196,12 @@ export default async function PaintOrdersPage({
             <TableBody>
               {(rows ?? []).map((r) => (
                 <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer">
-                  <TableCell className="p-0 font-mono text-xs">
+                  <TableCell className="p-0 text-xs">
                     <Link
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
                     >
-                      {r.paint_order_number}
+                      <SegmentedId value={r.paint_order_number} />
                     </Link>
                   </TableCell>
                   <TableCell className="p-0">

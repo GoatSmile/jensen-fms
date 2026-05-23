@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import {
   BIKE_STATUS_VARIANT,
@@ -272,9 +273,9 @@ export default async function BikesPage({
                   key={b.id}
                   className="hover:bg-muted/50 cursor-pointer"
                 >
-                  <TableCell className="p-0 font-mono text-xs">
+                  <TableCell className="p-0 text-xs">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5">
-                      {b.frame_number}
+                      <SegmentedId value={b.frame_number} />
                     </Link>
                   </TableCell>
                   <TableCell className="hidden p-0 md:table-cell">

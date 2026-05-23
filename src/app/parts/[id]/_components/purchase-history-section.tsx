@@ -8,10 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Money } from "@/components/money";
 import {
   formatDate,
   formatFxRate,
-  formatMoney,
   formatPct,
 } from "@/lib/parts/format";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
@@ -104,9 +104,12 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                       {formatQuantity(row.quantity)}
                     </TableCell>
                     <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                      {formatMoney(row.unitPrice, row.currency, {
-                        maximumFractionDigits: 4,
-                      })}
+                      <Money
+                        amount={row.unitPrice}
+                        currency={row.currency}
+                        fractionDigits={4}
+                        bold={false}
+                      />
                     </TableCell>
                     <TableCell className="hidden text-right tabular-nums lg:table-cell">
                       {formatFxRate(row.fxRateToDkk)}

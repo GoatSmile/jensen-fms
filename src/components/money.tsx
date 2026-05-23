@@ -20,6 +20,7 @@ export function Money({
   currency,
   className,
   bold = true,
+  fractionDigits = 2,
 }: {
   amount: number | string | null | undefined;
   currency?: string | null;
@@ -28,6 +29,9 @@ export function Money({
    *  contrasted against the dim fraction). Useful inside already-bold
    *  contexts like total rows. */
   bold?: boolean;
+  /** Override the fractional precision. PO line unit prices use 4 to
+   *  preserve the supplier's quoted øre; everything else defaults to 2. */
+  fractionDigits?: number;
 }) {
   if (amount == null) {
     return <span className={cn("text-muted-foreground", className)}>—</span>;
@@ -43,8 +47,8 @@ export function Money({
     style: "currency",
     currency: currency ?? "DKK",
     currencyDisplay: "narrowSymbol",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(n);
 
   // Find the locale's decimal separator (`,` for da-DK, `.` for en-US).

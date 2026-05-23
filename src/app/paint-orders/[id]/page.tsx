@@ -10,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ColorChip } from "@/components/color-swatch";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";

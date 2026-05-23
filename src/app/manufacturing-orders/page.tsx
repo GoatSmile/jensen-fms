@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import {
@@ -152,12 +153,12 @@ export default async function ManufacturingOrdersPage() {
                       overdue && OVERDUE_BORDER,
                     )}
                   >
-                    <TableCell className="p-0 font-mono text-xs">
+                    <TableCell className="p-0 text-xs">
                       <Link
                         href={`/manufacturing-orders/${mo.id}`}
                         className="block px-4 py-2.5"
                       >
-                        {mo.mo_number}
+                        <SegmentedId value={mo.mo_number} />
                       </Link>
                     </TableCell>
                     <TableCell className="hidden p-0 md:table-cell">

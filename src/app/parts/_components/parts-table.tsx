@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { SegmentedId } from "@/components/segmented-id";
 import {
   Table,
   TableBody,
@@ -128,8 +129,11 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                 </Link>
               </TableCell>
               <TableCell className="p-0">
-                <Link href={`/parts/${row.id}`} className="block px-4 py-2.5 font-mono text-xs">
-                  {row.internalSku}
+                <Link
+                  href={`/parts/${row.id}`}
+                  className="block px-4 py-2.5 text-xs"
+                >
+                  <SegmentedId value={row.internalSku} />
                 </Link>
               </TableCell>
               <TableCell className="min-w-0 p-0 whitespace-normal">

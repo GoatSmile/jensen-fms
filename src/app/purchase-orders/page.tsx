@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { SegmentedId } from "@/components/segmented-id";
+import { formatDate } from "@/lib/parts/format";
 import {
   PO_STATUS_VARIANT,
   poStatusLabel,
@@ -117,9 +119,9 @@ export default async function PurchaseOrdersPage() {
                   <TableCell className="p-0">
                     <Link
                       href={`/purchase-orders/${po.id}`}
-                      className="block px-4 py-2.5 font-mono text-xs"
+                      className="block px-4 py-2.5 text-xs"
                     >
-                      {po.po_number}
+                      <SegmentedId value={po.po_number} />
                     </Link>
                   </TableCell>
                   <TableCell className="hidden p-0 md:table-cell">
@@ -166,12 +168,15 @@ export default async function PurchaseOrdersPage() {
                       href={`/purchase-orders/${po.id}`}
                       className="block px-4 py-2.5"
                     >
-                      {formatMoney(
-                        po.total_amount != null
-                          ? Number(po.total_amount)
-                          : null,
-                        po.total_currency,
-                      )}
+                      <Money
+                        amount={
+                          po.total_amount != null
+                            ? Number(po.total_amount)
+                            : null
+                        }
+                        currency={po.total_currency}
+                        bold={false}
+                      />
                     </Link>
                   </TableCell>
                 </TableRow>

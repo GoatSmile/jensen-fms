@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import {
@@ -201,16 +202,17 @@ export default async function WorkOrdersPage({
                     key={wo.id}
                     className={cn("hover:bg-muted/50 cursor-pointer")}
                   >
-                    <TableCell className="p-0 font-mono text-xs">
+                    <TableCell className="p-0 text-xs">
                       <Link href={href} className="block px-4 py-2.5">
-                        {wo.wo_number}
+                        <SegmentedId value={wo.wo_number} />
                       </Link>
                     </TableCell>
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
-                        <div className="font-mono text-xs">
-                          {bike?.frame_number ?? "—"}
-                        </div>
+                        <SegmentedId
+                          value={bike?.frame_number ?? "—"}
+                          className="text-xs"
+                        />
                         {templateLabel ? (
                           <div className="text-muted-foreground text-xs">
                             {templateLabel}

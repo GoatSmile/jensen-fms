@@ -15,7 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { SegmentedId } from "@/components/segmented-id";
+import { formatDate } from "@/lib/parts/format";
 import {
   OPEN_TICKET_STATUSES,
   type TicketStatus,
@@ -119,9 +121,9 @@ export function WorkOrdersForTicketSection({
                   const href = `/maintenance/work-orders/${wo.id}`;
                   return (
                     <TableRow key={wo.id} className="hover:bg-muted/50">
-                      <TableCell className="p-0 font-mono text-xs">
+                      <TableCell className="p-0 text-xs">
                         <Link href={href} className="block px-4 py-2.5">
-                          {wo.wo_number}
+                          <SegmentedId value={wo.wo_number} />
                         </Link>
                       </TableCell>
                       <TableCell className="p-0">
@@ -153,9 +155,15 @@ export function WorkOrdersForTicketSection({
                       </TableCell>
                       <TableCell className="p-0 text-right tabular-nums">
                         <Link href={href} className="block px-4 py-2.5">
-                          {wo.parts_total_dkk > 0
-                            ? formatMoney(wo.parts_total_dkk, "DKK")
-                            : "—"}
+                          {wo.parts_total_dkk > 0 ? (
+                            <Money
+                              amount={wo.parts_total_dkk}
+                              currency="DKK"
+                              bold={false}
+                            />
+                          ) : (
+                            "—"
+                          )}
                         </Link>
                       </TableCell>
                     </TableRow>

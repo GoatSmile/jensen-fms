@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -107,12 +108,12 @@ export default async function SalesOrdersListPage() {
                   "—";
                 return (
                   <TableRow key={so.id} className="hover:bg-muted/50">
-                    <TableCell className="p-0 font-mono text-xs">
+                    <TableCell className="p-0 text-xs">
                       <Link
                         href={`/sales-orders/${so.id}`}
                         className="block px-4 py-2.5 hover:underline"
                       >
-                        {so.sales_order_number}
+                        <SegmentedId value={so.sales_order_number} />
                       </Link>
                     </TableCell>
                     <TableCell>

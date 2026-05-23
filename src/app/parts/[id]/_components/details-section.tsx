@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
 
 import { Section } from "./section";
 
@@ -53,9 +53,10 @@ export function DetailsSection({
         </Field>
         <Field label="Default retail price">
           {defaultRetailPrice != null ? (
-            <span className="tabular-nums">
-              {formatMoney(defaultRetailPrice, defaultRetailCurrency ?? "DKK")}
-            </span>
+            <Money
+              amount={defaultRetailPrice}
+              currency={defaultRetailCurrency ?? "DKK"}
+            />
           ) : (
             <Muted>—</Muted>
           )}

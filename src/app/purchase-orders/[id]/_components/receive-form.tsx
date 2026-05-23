@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
 
 import { receivePurchaseOrder } from "../_actions/receive";
@@ -228,9 +228,12 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
                         {formatQuantity(outstanding)}
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatMoney(line.unitPrice, line.currency, {
-                          maximumFractionDigits: 4,
-                        })}
+                        <Money
+                          amount={line.unitPrice}
+                          currency={line.currency}
+                          fractionDigits={4}
+                          bold={false}
+                        />
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums lg:table-cell">
                         {formatDkk(line.landedDkkPerUnit)}

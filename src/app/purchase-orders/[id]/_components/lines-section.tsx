@@ -20,7 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatFxRate, formatMoney, formatPct } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { formatFxRate, formatPct } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
@@ -193,9 +194,12 @@ export function LinesSection({
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums sm:table-cell">
                         <div>
-                          {formatMoney(row.unitPrice, row.currency, {
-                            maximumFractionDigits: 4,
-                          })}
+                          <Money
+                            amount={row.unitPrice}
+                            currency={row.currency}
+                            fractionDigits={4}
+                            bold={false}
+                          />
                         </div>
                         {foreignCurrency ? (
                           <div className="text-muted-foreground text-[10px]">

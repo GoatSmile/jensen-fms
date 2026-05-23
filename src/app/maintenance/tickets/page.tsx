@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import {
@@ -207,18 +208,19 @@ export default async function MaintenanceTicketsPage({
                       isUrgentOpen && URGENT_BORDER,
                     )}
                   >
-                    <TableCell className="p-0 font-mono text-xs">
+                    <TableCell className="p-0 text-xs">
                       <Link href={href} className="block px-4 py-2.5">
-                        {t.ticket_number}
+                        <SegmentedId value={t.ticket_number} />
                       </Link>
                     </TableCell>
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         {bike ? (
                           <>
-                            <div className="font-mono text-xs">
-                              {bike.frame_number}
-                            </div>
+                            <SegmentedId
+                              value={bike.frame_number}
+                              className="text-xs"
+                            />
                             {templateLabel ? (
                               <div className="text-muted-foreground text-xs">
                                 {templateLabel}

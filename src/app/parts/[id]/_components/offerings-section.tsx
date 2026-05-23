@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
 import { formatPriceWithDkk } from "@/lib/format";
 
 import {
@@ -248,17 +248,24 @@ function OfferingTableRow({
       </TableCell>
       <TableCell className="text-right tabular-nums">
         {row.defaultPurchaseCurrency &&
-        row.defaultPurchaseCurrency.toUpperCase() !== "DKK"
-          ? formatPriceWithDkk(
-              row.defaultPurchasePrice,
-              row.defaultPurchaseCurrency,
-              row.fxRateToDkk,
-            )
-          : formatMoney(
-              row.defaultPurchasePrice,
-              row.defaultPurchaseCurrency,
-              { maximumFractionDigits: 4 },
-            )}
+        row.defaultPurchaseCurrency.toUpperCase() !== "DKK" ? (
+          // Foreign-currency display: composite string with an
+          // approximate-DKK suffix — keep formatPriceWithDkk for the
+          // dual-currency rendering since the dim-øre treatment doesn't
+          // carry through "X.XX EUR (~Y.YY DKK)".
+          formatPriceWithDkk(
+            row.defaultPurchasePrice,
+            row.defaultPurchaseCurrency,
+            row.fxRateToDkk,
+          )
+        ) : (
+          <Money
+            amount={row.defaultPurchasePrice}
+            currency={row.defaultPurchaseCurrency ?? "DKK"}
+            fractionDigits={4}
+            bold={false}
+          />
+        )}
       </TableCell>
       <TableCell className="hidden text-right tabular-nums md:table-cell">
         {row.minimumOrderQuantity ?? (

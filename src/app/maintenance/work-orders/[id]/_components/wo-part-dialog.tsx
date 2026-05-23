@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appendField } from "@/lib/forms";
-import { formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
 
 import { addPartToWO } from "../_actions/manage-wo-parts";
 
@@ -184,8 +184,13 @@ export function WOPartDialog({
                               already on WO
                             </span>
                           ) : last != null ? (
-                            <span className="text-muted-foreground text-xs tabular-nums">
-                              last {formatMoney(last, "DKK")}
+                            <span className="text-muted-foreground text-xs">
+                              last{" "}
+                              <Money
+                                amount={last}
+                                currency="DKK"
+                                bold={false}
+                              />
                             </span>
                           ) : null}
                         </div>
@@ -224,9 +229,15 @@ export function WOPartDialog({
 
           {previewTotal != null ? (
             <p className="text-muted-foreground text-xs">
-              Cost preview: {qtyN} × {formatMoney(unitPriceN!, "DKK")} ={" "}
-              <span className="text-foreground font-medium">
-                {formatMoney(previewTotal, "DKK")}
+              Cost preview: {qtyN} ×{" "}
+              <Money
+                amount={unitPriceN!}
+                currency="DKK"
+                bold={false}
+              />{" "}
+              ={" "}
+              <span className="text-foreground">
+                <Money amount={previewTotal} currency="DKK" />
               </span>
             </p>
           ) : null}

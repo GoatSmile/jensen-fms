@@ -7,7 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { formatDate } from "@/lib/parts/format";
 
 import { EmptyRow, Section } from "./section";
 
@@ -48,7 +49,11 @@ export function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
                     ) : null}
                   </TableCell>
                   <TableCell className="text-right tabular-nums font-medium">
-                    {formatMoney(row.price, row.currency)}
+                    <Money
+                      amount={row.price}
+                      currency={row.currency}
+                      bold={false}
+                    />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {formatDate(row.effectiveFrom)}

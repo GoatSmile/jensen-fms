@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
+import { formatDate } from "@/lib/parts/format";
 
 import { removePartFromWO } from "../_actions/manage-wo-parts";
 import { Section } from "./section";
@@ -118,12 +119,14 @@ export function WOPartsSection({
                       {row.quantity}
                     </TableCell>
                     <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                      {row.unitPrice != null
-                        ? formatMoney(row.unitPrice, "DKK")
-                        : "—"}
+                      <Money
+                        amount={row.unitPrice}
+                        currency="DKK"
+                        bold={false}
+                      />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {total != null ? formatMoney(total, "DKK") : "—"}
+                      <Money amount={total} currency="DKK" bold={false} />
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
                       {formatDate(row.installedAt)}

@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -226,8 +227,8 @@ export default async function SODetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-mono">
-              {so.sales_order_number}
+            <BreadcrumbPage>
+              <SegmentedId value={so.sales_order_number} />
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
