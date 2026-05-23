@@ -840,6 +840,27 @@ export type Database = {
         }
         Relationships: []
       }
+      frame_lookup_attempts: {
+        Row: {
+          attempted_at: string
+          found: boolean
+          id: number
+          ip: unknown
+        }
+        Insert: {
+          attempted_at?: string
+          found: boolean
+          id?: number
+          ip: unknown
+        }
+        Update: {
+          attempted_at?: string
+          found?: boolean
+          id?: number
+          ip?: unknown
+        }
+        Relationships: []
+      }
       fx_rates: {
         Row: {
           created_at: string
@@ -2439,6 +2460,24 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      report_page_views: {
+        Row: {
+          id: number
+          path: string
+          visited_at: string
+        }
+        Insert: {
+          id?: number
+          path: string
+          visited_at?: string
+        }
+        Update: {
+          id?: number
+          path?: string
+          visited_at?: string
+        }
+        Relationships: []
       }
       sales_order_lines: {
         Row: {

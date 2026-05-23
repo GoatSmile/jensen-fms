@@ -3,6 +3,7 @@ import { ArrowLeft, MessageSquareText } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { trackReportPageView } from "@/lib/report/track-view";
 
 import { GeneralReportForm } from "./_components/general-report-form";
 
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
  * with bike_id = NULL for staff to triage.
  */
 export default function ReportHelpPage() {
+  trackReportPageView("/report/help");
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col items-center gap-3 pt-2 text-center">

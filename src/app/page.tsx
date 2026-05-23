@@ -15,6 +15,7 @@ import {
   AttentionCard,
   StatCard,
 } from "@/components/dashboard-card";
+import { ReportUrlCard } from "@/components/report-url-card";
 import { Badge } from "@/components/ui/badge";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
@@ -207,6 +208,11 @@ export default async function DashboardPage() {
           href="/paint-orders"
         />
       </section>
+
+      {/* Customer report URL — the canonical link to share with
+          customers. Surfaced on the dashboard so anyone in the company
+          can grab it quickly. */}
+      <ReportUrlCard variant="dashboard" />
 
       {/* Attention strip */}
       <section className="grid gap-3 lg:grid-cols-3">

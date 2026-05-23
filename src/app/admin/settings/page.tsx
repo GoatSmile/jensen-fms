@@ -8,6 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { ReportUrlCard } from "@/components/report-url-card";
 import { createClient } from "@/lib/supabase/server";
 
 import { SettingsForm } from "./_components/settings-form";
@@ -50,6 +51,8 @@ export default async function AdminSettingsPage() {
           lines or HS codes are not touched.
         </p>
       </header>
+
+      <ReportUrlCard variant="settings" />
 
       <section className="rounded-md border">
         <header className="border-b px-4 py-3">

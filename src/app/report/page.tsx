@@ -1,6 +1,7 @@
 import { Bike } from "lucide-react";
 
 import { Logo } from "@/components/logo";
+import { trackReportPageView } from "@/lib/report/track-view";
 
 import { ReportEntry } from "./_components/report-entry";
 
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
  * stays on the public allow-list alongside /b/*.
  */
 export default function ReportLandingPage() {
+  trackReportPageView("/report");
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col items-center gap-3 pt-2 text-center">
