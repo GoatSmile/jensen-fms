@@ -1775,9 +1775,12 @@ export type Database = {
           display_name_en: string | null
           ean_number: string | null
           email: string | null
+          geocoded_at: string | null
           id: string
           is_active: boolean
+          latitude: number | null
           legal_name: string
+          longitude: number | null
           notes: string | null
           payment_terms_days: number | null
           phone: string | null
@@ -1805,9 +1808,12 @@ export type Database = {
           display_name_en?: string | null
           ean_number?: string | null
           email?: string | null
+          geocoded_at?: string | null
           id?: string
           is_active?: boolean
+          latitude?: number | null
           legal_name: string
+          longitude?: number | null
           notes?: string | null
           payment_terms_days?: number | null
           phone?: string | null
@@ -1835,9 +1841,12 @@ export type Database = {
           display_name_en?: string | null
           ean_number?: string | null
           email?: string | null
+          geocoded_at?: string | null
           id?: string
           is_active?: boolean
+          latitude?: number | null
           legal_name?: string
+          longitude?: number | null
           notes?: string | null
           payment_terms_days?: number | null
           phone?: string | null

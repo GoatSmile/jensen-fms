@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/parts/format";
+import { Money } from "@/components/money";
 import { removePartFromWO } from "@/app/maintenance/work-orders/[id]/_actions/manage-wo-parts";
 import {
   WOPartDialog,
@@ -74,10 +74,15 @@ export function PartsSection({
         <div className="flex items-center gap-2">
           <Wrench className="size-4 text-indigo-600" aria-hidden />
           <h2 className="text-sm font-semibold">Parts used</h2>
-          <span className="text-muted-foreground text-xs">
-            {rows.length === 0
-              ? "None yet"
-              : `${rows.length} · ${formatMoney(totalCost, "DKK")}`}
+          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            {rows.length === 0 ? (
+              "None yet"
+            ) : (
+              <>
+                {rows.length} ·{" "}
+                <Money amount={totalCost} currency="DKK" bold={false} />
+              </>
+            )}
           </span>
         </div>
         {!readOnly ? (
@@ -123,13 +128,20 @@ export function PartsSection({
                   <div className="text-right">
                     <div className="tabular-nums text-sm">
                       {row.quantity} ×{" "}
-                      {row.unitPrice != null
-                        ? formatMoney(row.unitPrice, "DKK")
-                        : "—"}
+                      <Money
+                        amount={row.unitPrice}
+                        currency="DKK"
+                        bold={false}
+                      />
                     </div>
                     {lineTotal != null ? (
-                      <div className="text-muted-foreground text-xs tabular-nums">
-                        = {formatMoney(lineTotal, "DKK")}
+                      <div className="text-muted-foreground text-xs">
+                        ={" "}
+                        <Money
+                          amount={lineTotal}
+                          currency="DKK"
+                          bold={false}
+                        />
                       </div>
                     ) : null}
                   </div>

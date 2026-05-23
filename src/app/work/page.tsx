@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, ScanLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { elapsedShort } from "@/lib/work/elapsed";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
@@ -150,9 +151,10 @@ export default async function WorkQueuePage() {
                               colour of the actual bike for physical
                               recognition on the bench. */}
                           <BikeColorDot hex={colorHex} label={colorName} />
-                          <span className="font-mono text-base font-semibold">
-                            {wo.bike?.frame_number ?? "—"}
-                          </span>
+                          <SegmentedId
+                            value={wo.bike?.frame_number ?? "—"}
+                            className="text-base font-semibold"
+                          />
                         </div>
                         {templateLabel || ownerName ? (
                           <div className="text-muted-foreground text-xs">

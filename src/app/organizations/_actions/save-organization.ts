@@ -2,9 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import {
+  addressChanged,
+  geocodeAddress,
+  type GeocodeInput,
+} from "@/lib/geocode/nominatim";
 
 export type SaveOrganizationResult =
   | { ok: true; organizationId: string }
@@ -97,6 +104,69 @@ function parseOrganization(
   };
 }
 
+/**
+ * Pluck the address subset the geocoder cares about. Used both for the
+ * change-detection comparison on update and for the actual lookup call.
+ */
+function geocodeInputFrom(o: {
+  address_line1: string | null;
+  address_line2: string | null;
+  zip_code: string | null;
+  city: string | null;
+  country_code: string | null;
+}): GeocodeInput {
+  return {
+    address_line1: o.address_line1,
+    address_line2: o.address_line2,
+    zip_code: o.zip_code,
+    city: o.city,
+    country_code: o.country_code,
+  };
+}
+
+/**
+ * Background geocode-and-persist. Fire-and-forget from create / update
+ * via Next 15's `after()` so the redirect happens immediately and the
+ * Nominatim round-trip (~1s) doesn't block the user. Failures are
+ * logged but never bubble — the org saves successfully even if the
+ * geocoder is down; the customer just won't appear on the map until
+ * the next address edit (or a manual backfill).
+ */
+async function geocodeAndPersist(
+  orgId: string,
+  input: GeocodeInput,
+): Promise<void> {
+  const result = await geocodeAddress(input);
+  if (!result.ok) {
+    if (result.reason !== "no_address") {
+      console.warn("[geocodeAndPersist] failed", {
+        orgId,
+        reason: result.reason,
+        message: result.message,
+      });
+    }
+    return;
+  }
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      latitude: result.latitude,
+      longitude: result.longitude,
+      geocoded_at: new Date().toISOString(),
+    })
+    .eq("id", orgId);
+  if (error) {
+    console.warn("[geocodeAndPersist] write failed", {
+      orgId,
+      message: error.message,
+    });
+    return;
+  }
+  revalidatePath("/organizations/map");
+  revalidatePath(`/organizations/${orgId}`);
+}
+
 export async function createOrganization(
   formData: FormData,
 ): Promise<SaveOrganizationResult> {
@@ -119,6 +189,11 @@ export async function createOrganization(
       error: `Could not create customer: ${error?.message ?? "unknown error"}`,
     };
   }
+
+  // Geocode in the background so the user doesn't wait on Nominatim.
+  // No address → the helper bails internally.
+  after(() => geocodeAndPersist(data.id, geocodeInputFrom(parsed)));
+
   revalidatePath("/organizations");
   redirect(`/organizations/${data.id}`);
 }
@@ -133,6 +208,18 @@ export async function updateOrganization(
     return { ok: false, error: parsed.error, field: parsed.field };
 
   const supabase = await createClient();
+
+  // Pull the current address so we only re-geocode when it actually
+  // changed. Saves a Nominatim round-trip on every "fix a typo in the
+  // notes field" save.
+  const { data: existing } = await supabase
+    .from("organizations")
+    .select(
+      "address_line1, address_line2, zip_code, city, country_code, latitude",
+    )
+    .eq("id", organizationId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("organizations")
     .update({
@@ -141,6 +228,17 @@ export async function updateOrganization(
     })
     .eq("id", organizationId);
   if (error) return { ok: false, error: `Could not save: ${error.message}` };
+
+  // Re-geocode when the address changed, or when we never successfully
+  // geocoded before but the org now has an address to try.
+  const prevInput = existing ? geocodeInputFrom(existing) : null;
+  const nextInput = geocodeInputFrom(parsed);
+  const needsGeocode =
+    (prevInput && addressChanged(prevInput, nextInput)) ||
+    (existing?.latitude == null && nextInput.address_line1 != null);
+  if (needsGeocode) {
+    after(() => geocodeAndPersist(organizationId, nextInput));
+  }
 
   revalidatePath("/organizations");
   revalidatePath(`/organizations/${organizationId}`);

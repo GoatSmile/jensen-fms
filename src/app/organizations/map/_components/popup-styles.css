@@ -1,0 +1,71 @@
+/* Leaflet popup styling tuned to match the FMS design system. Loaded
+   alongside leaflet's own stylesheet via the customer-map client
+   component so it only ships when the map route mounts. */
+
+.leaflet-popup.jp-popup .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md, 0 1px 3px rgba(0, 0, 0, 0.07));
+  padding: 0;
+}
+.leaflet-popup.jp-popup .leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: var(--font-sans, system-ui), sans-serif;
+}
+.leaflet-popup.jp-popup .leaflet-popup-tip {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.jp-pop {
+  font-size: 13px;
+  color: var(--foreground);
+  min-width: 220px;
+}
+.jp-pop__name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.jp-pop__sub {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin-top: 3px;
+}
+.jp-pop__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+  align-items: baseline;
+}
+.jp-pop__row:first-of-type {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.jp-pop__row strong {
+  font-weight: 600;
+}
+.jp-pop__pct {
+  color: var(--muted-foreground);
+  font-weight: 500;
+  font-size: 11px;
+  margin-left: 2px;
+}
+.jp-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Smaller attribution and bordered zoom controls so the chrome matches
+   the rest of the app's neutral palette. */
+.leaflet-control-attribution {
+  font-family: var(--font-mono, ui-monospace), monospace;
+  font-size: 9px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+.leaflet-control-zoom a {
+  border-radius: 6px !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}

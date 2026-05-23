@@ -11,6 +11,7 @@ import {
   Hammer,
   HardHat,
   Home,
+  Map as MapIcon,
   Paintbrush,
   Receipt,
   Settings,
@@ -38,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
   { href: "/work", label: "Workshop floor", icon: HardHat },
   { href: "/organizations", label: "Customers", icon: Building2 },
+  { href: "/organizations/map", label: "Customer map", icon: MapIcon },
   { href: "/sales-orders", label: "Sales orders", icon: Receipt },
   { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
   { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
@@ -68,12 +70,23 @@ export function AppSidebar() {
           // The Maintenance entry links to tickets but also owns work orders.
           // Highlight it for both sub-routes so the nav state reads correctly.
           const isMaintenanceItem = item.href === "/maintenance/tickets";
+          // /organizations and /organizations/map are siblings — match
+          // each exactly so the parent doesn't claim its child's
+          // active state.
+          const isCustomerListItem = item.href === "/organizations";
+          const isCustomerMapItem = item.href === "/organizations/map";
           const active = item.exact
             ? pathname === item.href
-            : pathname === item.href ||
-              pathname.startsWith(`${item.href}/`) ||
-              (isMaintenanceItem &&
-                pathname.startsWith("/maintenance/work-orders"));
+            : isCustomerListItem
+              ? pathname === item.href ||
+                (pathname.startsWith(`${item.href}/`) &&
+                  pathname !== "/organizations/map")
+              : isCustomerMapItem
+                ? pathname === item.href
+                : pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`) ||
+                  (isMaintenanceItem &&
+                    pathname.startsWith("/maintenance/work-orders"));
           return (
             <Link
               key={item.href}

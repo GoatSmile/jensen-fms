@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Bike } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import {
   WO_STATUS_LABEL,
@@ -242,9 +243,9 @@ export default async function WorkspacePage({
               From ticket{" "}
               <Link
                 href={`/maintenance/tickets/${wo.ticket.id}`}
-                className="hover:text-foreground font-mono underline-offset-4 hover:underline"
+                className="hover:text-foreground underline-offset-4 hover:underline"
               >
-                {wo.ticket.ticket_number}
+                <SegmentedId value={wo.ticket.ticket_number} />
               </Link>
               {wo.ticket.description
                 ? `: "${wo.ticket.description.slice(0, 140)}${wo.ticket.description.length > 140 ? "…" : ""}"`

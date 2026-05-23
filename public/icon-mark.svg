@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Jensen — lettermark">
+  
+  <rect width="512" height="512" fill="#000000"></rect>
+  
+  <g transform="translate(256 252)" fill="#ffffff">
+    <path d="&#xA;      M -118 -118&#xA;      L 118 -118&#xA;      L 118 -86&#xA;      L 70 -86&#xA;      C 56 -86, 48 -78, 48 -64&#xA;      L 48 50&#xA;      C 48 110, 16 156, -44 156&#xA;      C -94 156, -130 130, -140 88&#xA;      C -142 78, -134 70, -124 72&#xA;      L -98 78&#xA;      C -90 80, -84 86, -82 94&#xA;      C -76 122, -62 132, -42 132&#xA;      C -16 132, -4 116, -4 78&#xA;      L -4 -64&#xA;      C -4 -78, -12 -86, -26 -86&#xA;      L -118 -86&#xA;      Z&#xA;    "></path>
+  </g>
+</svg>

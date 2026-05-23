@@ -21,7 +21,10 @@ export function ScanFab() {
     // /work has its own Scan button in the queue header; the workspace
     // (/work/<woId>) reserves the bottom edge for the Start/Mark-done
     // action bar — the FAB would sit on top of it.
-    pathname.startsWith("/work");
+    pathname.startsWith("/work") ||
+    // The customer map is full-bleed Leaflet; the FAB would float
+    // on top of the legend / zoom controls.
+    pathname === "/organizations/map";
   if (hide) return null;
   return (
     <Link
