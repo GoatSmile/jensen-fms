@@ -69,10 +69,10 @@ export function PartsSection({
   }
 
   return (
-    <section className="bg-card flex flex-col gap-3 rounded-md border p-4">
+    <section className="bg-card flex flex-col gap-3 rounded-md border border-l-[3px] border-l-indigo-600 p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Wrench className="text-muted-foreground size-4" aria-hidden />
+          <Wrench className="size-4 text-indigo-600" aria-hidden />
           <h2 className="text-sm font-semibold">Parts used</h2>
           <span className="text-muted-foreground text-xs">
             {rows.length === 0

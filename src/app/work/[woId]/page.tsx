@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Bike, Building2 } from "lucide-react";
+import { ArrowLeft, Bike } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import {
   WO_STATUS_LABEL,
-  WO_STATUS_VARIANT,
   type WorkOrderStatus,
 } from "@/lib/maintenance/work-order-status";
+import { startedFullLabel } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
 import type { WOPartRow } from "./_components/parts-section";
@@ -19,12 +18,20 @@ import type { PartChoice } from "@/app/maintenance/work-orders/[id]/_components/
 export const dynamic = "force-dynamic";
 
 /**
- * Per-WO technician workspace. Sticky bike header, status action bar
- * (Start / Mark done), diagnosis + work-performed editors with voice
- * dictation, parts list.
+ * Per-WO technician workspace.
  *
- * Reuses the existing transition-wo and update-wo-details server
- * actions — this is a new front-end, not new business logic.
+ * Workshop-mode chrome:
+ *   - Full-width status banner sticks to the top while the tech
+ *     scrolls (azure for in_progress, amber for open, emerald for
+ *     completed, slate for cancelled). Shows "Started 14:32 · 23 min
+ *     ago" for in-progress WOs so the tech has a running sense of
+ *     time spent.
+ *   - Hero header below: WO number caps, big mono frame number with a
+ *     bike-colour dot beside it, customer name + ticket excerpt.
+ *
+ * The form sections (Diagnosis, Work performed, Parts, Photos) and
+ * the bottom action bar live in the <Workspace /> client component
+ * below; this page just frames them.
  */
 export default async function WorkspacePage({
   params,
@@ -46,6 +53,7 @@ export default async function WorkspacePage({
           id, frame_number,
           bike_type:bike_types(name_en),
           bike_template:bike_templates(family, frame_size, name_en),
+          color:colors(name_en, hex),
           owner_organization:organizations!owner_organization_id(
             id, legal_name, display_name_da, display_name_en
           )
@@ -63,9 +71,6 @@ export default async function WorkspacePage({
   }
   if (!wo) notFound();
 
-  // Parts, photos, and the parts catalog load in parallel. They're
-  // independent of the WO load (which we needed for the notFound check)
-  // so it's two round-trips total — fine for a low-traffic detail page.
   const [woPartsRes, partsCatalogRes, photosRes] = await Promise.all([
     supabase
       .from("work_order_parts")
@@ -96,8 +101,6 @@ export default async function WorkspacePage({
     category_name: p.category?.name_en ?? null,
   }));
 
-  // Pull last-cost for prefill in the add-part dialog — same shape as
-  // the desktop WO page uses.
   const lastCostByPartId = new Map<string, number>();
   const allPartIds = partsCatalog.map((p) => p.id);
   if (allPartIds.length > 0) {
@@ -143,6 +146,32 @@ export default async function WorkspacePage({
         .filter(Boolean)
         .join(" · ")
     : null;
+  const colorHex =
+    wo.bike?.color?.hex && /^#[0-9a-fA-F]{6}$/.test(wo.bike.color.hex)
+      ? wo.bike.color.hex
+      : null;
+  const colorName = wo.bike?.color?.name_en ?? null;
+
+  // Status-banner classes. Workshop-mode tokens — not the generic
+  // shadcn Badge variants — so they read as "state of work" rather
+  // than "danger / warning."
+  const bannerClass =
+    status === "in_progress"
+      ? "bg-blue-600 text-white"
+      : status === "open"
+        ? "bg-amber-500 text-amber-950"
+        : status === "completed"
+          ? "bg-emerald-600 text-white"
+          : "bg-slate-400 text-white";
+
+  const bannerSubtitle =
+    status === "in_progress" && wo.started_at
+      ? startedFullLabel(wo.started_at)
+      : status === "completed" && wo.completed_at
+        ? `Completed ${startedFullLabel(wo.completed_at, { includeElapsed: false })}`
+        : status === "open" && wo.created_at
+          ? `Created ${startedFullLabel(wo.created_at)}`
+          : null;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col p-4 pb-24 sm:p-6 sm:pb-28">
@@ -152,59 +181,77 @@ export default async function WorkspacePage({
             <ArrowLeft className="mr-1 size-4" aria-hidden /> Queue
           </Link>
         </Button>
-        <Badge variant={WO_STATUS_VARIANT[status]}>
-          {WO_STATUS_LABEL[status]}
-        </Badge>
       </div>
 
-      {/* Sticky bike header — always visible while the tech scrolls
-          through the editor sections below. */}
-      <header className="bg-card sticky top-0 z-10 flex flex-col gap-1 rounded-lg border p-4 shadow-sm">
-        <span className="text-muted-foreground font-mono text-xs">
-          {wo.wo_number}
-        </span>
-        <div className="flex items-center gap-2">
-          <Bike className="text-muted-foreground size-5" aria-hidden />
-          <span className="font-mono text-lg font-semibold">
-            {wo.bike?.frame_number ?? "—"}
+      {/* Sticky header card — banner (full-width inside the card) sits
+          flush with the top of the rounded container; hero header sits
+          below it. Both scroll together; the whole card is `sticky
+          top-0` so it stays visible while the tech edits notes below. */}
+      <header className="bg-card sticky top-0 z-10 overflow-hidden rounded-lg border shadow-sm">
+        <div
+          className={`flex items-center justify-between gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider ${bannerClass}`}
+        >
+          <span className="flex items-center gap-2">
+            {status === "in_progress" ? (
+              <span
+                aria-hidden
+                className="size-2 animate-pulse rounded-full bg-white/90"
+              />
+            ) : null}
+            {WO_STATUS_LABEL[status]}
           </span>
+          {bannerSubtitle ? (
+            <span className="text-xs font-medium tabular-nums opacity-90">
+              {bannerSubtitle}
+            </span>
+          ) : null}
         </div>
-        {templateLabel ? (
-          <span className="text-muted-foreground text-xs">{templateLabel}</span>
-        ) : null}
-        {ownerName ? (
-          <div className="flex items-center gap-1.5">
-            <Building2
-              className="text-muted-foreground size-3.5"
-              aria-hidden
-            />
-            <Link
-              href={
-                wo.bike?.owner_organization?.id
-                  ? `/organizations/${wo.bike.owner_organization.id}`
-                  : "#"
-              }
-              className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
-            >
-              {ownerName}
-            </Link>
+
+        <div className="flex flex-col gap-1.5 px-4 py-4">
+          <span className="text-muted-foreground font-mono text-[10px] font-medium uppercase tracking-wider">
+            {wo.wo_number}
+          </span>
+          <div className="flex items-center gap-3">
+            <BikeColorDot hex={colorHex} label={colorName} />
+            <span className="font-mono text-3xl font-bold tracking-tight">
+              {wo.bike?.frame_number ?? "—"}
+            </span>
           </div>
-        ) : null}
-        {wo.ticket ? (
-          <p className="text-muted-foreground mt-2 border-t pt-2 text-xs">
-            From ticket{" "}
-            <Link
-              href={`/maintenance/tickets/${wo.ticket.id}`}
-              className="hover:text-foreground font-mono underline-offset-4 hover:underline"
-            >
-              {wo.ticket.ticket_number}
-            </Link>
-            {wo.ticket.description ? `: ${wo.ticket.description.slice(0, 120)}` : ""}
-            {wo.ticket.description && wo.ticket.description.length > 120
-              ? "…"
-              : ""}
-          </p>
-        ) : null}
+          {templateLabel ? (
+            <span className="text-muted-foreground text-sm">
+              {templateLabel}
+            </span>
+          ) : null}
+          {ownerName ? (
+            <div className="flex items-center gap-1.5">
+              <Bike className="text-muted-foreground size-3.5" aria-hidden />
+              <Link
+                href={
+                  wo.bike?.owner_organization?.id
+                    ? `/organizations/${wo.bike.owner_organization.id}`
+                    : "#"
+                }
+                className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+              >
+                {ownerName}
+              </Link>
+            </div>
+          ) : null}
+          {wo.ticket ? (
+            <p className="bg-muted/40 text-muted-foreground mt-2 rounded-md px-3 py-2 text-xs">
+              From ticket{" "}
+              <Link
+                href={`/maintenance/tickets/${wo.ticket.id}`}
+                className="hover:text-foreground font-mono underline-offset-4 hover:underline"
+              >
+                {wo.ticket.ticket_number}
+              </Link>
+              {wo.ticket.description
+                ? `: "${wo.ticket.description.slice(0, 140)}${wo.ticket.description.length > 140 ? "…" : ""}"`
+                : ""}
+            </p>
+          ) : null}
+        </div>
       </header>
 
       <Workspace
@@ -221,5 +268,29 @@ export default async function WorkspacePage({
         photos={photos}
       />
     </div>
+  );
+}
+
+function BikeColorDot({
+  hex,
+  label,
+}: {
+  hex: string | null;
+  label: string | null;
+}) {
+  return (
+    <span
+      role={label ? "img" : undefined}
+      aria-label={label ?? undefined}
+      className="ring-foreground/15 inline-block size-5 shrink-0 rounded-full ring-1 ring-inset"
+      style={
+        hex
+          ? { backgroundColor: hex }
+          : {
+              backgroundImage:
+                "repeating-linear-gradient(45deg, #e2e8f0 0 3px, #cbd5e1 3px 6px)",
+            }
+      }
+    />
   );
 }
