@@ -11,6 +11,7 @@ type ParsedHsCode = {
   code: string;
   description: string;
   tariff_pct: number;
+  anti_dumping_pct: number | null;
   notes: string | null;
   is_active: boolean;
 };
@@ -46,12 +47,31 @@ function parseFormData(
   const tariff = parsePctInput(nullable(formData.get("tariff_pct")));
   if (!tariff.ok) return { ok: false, error: tariff.error };
 
+  // Anti-dumping is optional. Form sends "" when not set; treat as null.
+  // When provided, accept up to 2.00 (200 %) — anti-dumping regimes can
+  // push into the high double-digits, well above the 100 % cap on
+  // ordinary tariff.
+  const adRaw = nullable(formData.get("anti_dumping_pct"));
+  let anti_dumping_pct: number | null = null;
+  if (adRaw && adRaw.trim() !== "") {
+    const n = Number(adRaw.replace(",", "."));
+    if (!Number.isFinite(n) || n < 0 || n > 2) {
+      return {
+        ok: false,
+        error:
+          "Anti-dumping % must be between 0 and 2 (decimal — 0.485 = 48.5 %).",
+      };
+    }
+    anti_dumping_pct = n;
+  }
+
   return {
     ok: true,
     values: {
       code,
       description,
       tariff_pct: tariff.value,
+      anti_dumping_pct,
       notes: nullable(formData.get("notes")),
       is_active: formData.get("is_active") === "on",
     },

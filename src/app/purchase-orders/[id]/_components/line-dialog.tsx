@@ -36,6 +36,8 @@ export type PartChoice = {
   /** Snapshotted onto the PO line at insert; preview here for transparency. */
   hsCode: string | null;
   tariffPct: number;
+  /** Anti-dumping rate (0 = none) — same snapshot rule as tariffPct. */
+  antiDumpingPct: number;
 };
 
 export type CurrencyChoice = {
@@ -55,6 +57,8 @@ export type LineDialogInitial = {
   transportPct: number;
   /** Decimal — snapshotted from the part's HS code at the time the line was added. */
   tariffPct: number;
+  /** Decimal — anti-dumping rate snapshotted alongside tariffPct (0 = none). */
+  antiDumpingPct: number;
   notes: string | null;
 };
 
@@ -153,6 +157,10 @@ export function LineDialog({
     mode.kind === "edit"
       ? mode.initial.tariffPct
       : (selectedPart?.tariffPct ?? 0);
+  const previewAntiDumpingPct =
+    mode.kind === "edit"
+      ? mode.initial.antiDumpingPct
+      : (selectedPart?.antiDumpingPct ?? 0);
   const previewHsCode =
     mode.kind === "edit"
       ? null
@@ -224,27 +232,31 @@ export function LineDialog({
     const fx = Number(String(fxRate).replace(",", "."));
     const tpPercent = Number(String(transport).replace(",", "."));
     const tt = previewTariffPct;
+    const ad = previewAntiDumpingPct;
     if (
       !Number.isFinite(u) ||
       !Number.isFinite(fx) ||
       !Number.isFinite(tpPercent) ||
-      !Number.isFinite(tt)
+      !Number.isFinite(tt) ||
+      !Number.isFinite(ad)
     ) {
       return null;
     }
-    if (u < 0 || fx <= 0 || tpPercent < 0 || tt < 0) return null;
+    if (u < 0 || fx <= 0 || tpPercent < 0 || tt < 0 || ad < 0) return null;
     const tp = tpPercent / 100;
     const base = u * fx;
     const transportDkk = base * tp;
     const importTaxDkk = base * tt;
-    const landed = base + transportDkk + importTaxDkk;
+    const antiDumpingDkk = base * ad;
+    const landed = base + transportDkk + importTaxDkk + antiDumpingDkk;
     return {
       base: Math.round(base * 10000) / 10000,
       transportDkk: Math.round(transportDkk * 10000) / 10000,
       importTaxDkk: Math.round(importTaxDkk * 10000) / 10000,
+      antiDumpingDkk: Math.round(antiDumpingDkk * 10000) / 10000,
       landed: Math.round(landed * 10000) / 10000,
     };
-  }, [unitPrice, fxRate, transport, previewTariffPct]);
+  }, [unitPrice, fxRate, transport, previewTariffPct, previewAntiDumpingPct]);
 
   const lineTotalNative = useMemo(() => {
     const u = Number(String(unitPrice).replace(",", "."));
@@ -512,6 +524,16 @@ export function LineDialog({
                 {formatPrice(breakdown?.importTaxDkk ?? null, "DKK")}
               </span>
             </div>
+            {previewAntiDumpingPct > 0 ? (
+              <div className="flex justify-between">
+                <span className="text-destructive">
+                  + Anti-dumping ({formatPct(previewAntiDumpingPct)})
+                </span>
+                <span className="tabular-nums">
+                  {formatPrice(breakdown?.antiDumpingDkk ?? null, "DKK")}
+                </span>
+              </div>
+            ) : null}
             <div className="flex justify-between border-t pt-1.5">
               <span className="text-muted-foreground">Landed DKK/unit</span>
               <span className="font-semibold tabular-nums">

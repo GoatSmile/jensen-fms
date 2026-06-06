@@ -135,6 +135,29 @@ async function resolveTariffPctForPart(
 }
 
 /**
+ * Look up the EU anti-dumping rate for a part at the moment its line is
+ * added to a PO. Snapshotted alongside tariff_pct.
+ *
+ * Resolution: the active HS code's `anti_dumping_pct`, or 0 when null.
+ * No per-part override today — anti-dumping is a regulatory regime, not
+ * a per-part judgement call. If we ever need that, the same override
+ * pattern that exists for tariff_pct can be added in a second column.
+ */
+async function resolveAntiDumpingPctForPart(
+  supabase: SupabaseServer,
+  partId: string,
+): Promise<number> {
+  const { data: part } = await supabase
+    .from("parts")
+    .select("hs_code:hs_codes!hs_code_id(anti_dumping_pct, is_active)")
+    .eq("id", partId)
+    .maybeSingle();
+  const hs = part?.hs_code;
+  if (!hs || !hs.is_active) return 0;
+  return Number(hs.anti_dumping_pct ?? 0);
+}
+
+/**
  * Recompute the parent PO's `total_amount` after a lines change.
  *
  * V1 sums only lines whose currency matches the parent's `total_currency`.
@@ -256,7 +279,10 @@ export async function addLine(
     };
   }
 
-  const tariff_pct = await resolveTariffPctForPart(supabase, v.part_id);
+  const [tariff_pct, anti_dumping_pct] = await Promise.all([
+    resolveTariffPctForPart(supabase, v.part_id),
+    resolveAntiDumpingPctForPart(supabase, v.part_id),
+  ]);
 
   const { error: insErr } = await supabase
     .from("purchase_order_lines")
@@ -269,6 +295,7 @@ export async function addLine(
       fx_rate_to_dkk: v.fx_rate_to_dkk,
       transport_pct: v.transport_pct,
       tariff_pct,
+      anti_dumping_pct: anti_dumping_pct > 0 ? anti_dumping_pct : null,
       notes: v.notes,
     });
   if (insErr) {
@@ -342,7 +369,10 @@ export async function updateLine(
     };
   }
 
-  const tariff_pct = await resolveTariffPctForPart(supabase, v.part_id);
+  const [tariff_pct, anti_dumping_pct] = await Promise.all([
+    resolveTariffPctForPart(supabase, v.part_id),
+    resolveAntiDumpingPctForPart(supabase, v.part_id),
+  ]);
 
   const { error: updErr } = await supabase
     .from("purchase_order_lines")
@@ -354,6 +384,7 @@ export async function updateLine(
       fx_rate_to_dkk: v.fx_rate_to_dkk,
       transport_pct: v.transport_pct,
       tariff_pct,
+      anti_dumping_pct: anti_dumping_pct > 0 ? anti_dumping_pct : null,
       notes: v.notes,
       updated_at: new Date().toISOString(),
     })

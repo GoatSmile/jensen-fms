@@ -47,6 +47,9 @@ export type POLineRow = {
   transportPct: number;
   /** Decimal — import duty snapshotted from the part's HS code. */
   tariffPct: number;
+  /** Decimal — EU anti-dumping duty (0 = none). Snapshotted alongside
+   *  tariffPct and added into the landed-cost formula. */
+  antiDumpingPct: number;
   landedDkkPerUnit: number;
   receivedQuantity: number;
   notes: string | null;
@@ -217,6 +220,11 @@ export function LinesSection({
                             + {formatPct(row.tariffPct)} tariff
                           </div>
                         ) : null}
+                        {row.antiDumpingPct > 0 ? (
+                          <div className="text-destructive text-[10px]">
+                            + {formatPct(row.antiDumpingPct)} anti-dumping
+                          </div>
+                        ) : null}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatPrice(row.landedDkkPerUnit, "DKK")}
@@ -306,6 +314,7 @@ function rowToInitial(row: POLineRow): LineDialogInitial {
     fxRateToDkk: row.fxRateToDkk,
     transportPct: row.transportPct,
     tariffPct: row.tariffPct,
+    antiDumpingPct: row.antiDumpingPct,
     notes: row.notes,
   };
 }

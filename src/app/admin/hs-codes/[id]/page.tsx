@@ -29,7 +29,9 @@ export default async function HsCodeDetailPage({
   const [codeRes, partUsageRes] = await Promise.all([
     supabase
       .from("hs_codes")
-      .select("id, code, description, tariff_pct, notes, is_active")
+      .select(
+        "id, code, description, tariff_pct, anti_dumping_pct, notes, is_active",
+      )
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -52,11 +54,16 @@ export default async function HsCodeDetailPage({
   const tariffAsPercent = String(
     Math.round(Number(c.tariff_pct) * 10000) / 100,
   );
+  const antiDumpingAsPercent =
+    c.anti_dumping_pct == null
+      ? ""
+      : String(Math.round(Number(c.anti_dumping_pct) * 10000) / 100);
 
   const initial: HsCodeFormValues = {
     code: c.code,
     description: c.description,
     tariff: tariffAsPercent,
+    antiDumping: antiDumpingAsPercent,
     notes: c.notes ?? "",
     is_active: c.is_active,
   };

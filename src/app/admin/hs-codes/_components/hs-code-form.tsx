@@ -18,6 +18,9 @@ export type HsCodeFormValues = {
   /** Tariff as percent string (e.g. "5.2" for 5.2%). Converted to the
    *  DB-side decimal (0.052) on submit. */
   tariff: string;
+  /** Anti-dumping as percent string (e.g. "48.5" for 48.5%). Blank when
+   *  no anti-dumping applies. Same percent↔decimal conversion. */
+  antiDumping: string;
   notes: string;
   is_active: boolean;
 };
@@ -26,6 +29,7 @@ export const EMPTY_HS_CODE_FORM: HsCodeFormValues = {
   code: "",
   description: "",
   tariff: "",
+  antiDumping: "",
   notes: "",
   is_active: true,
 };
@@ -52,15 +56,24 @@ export function HsCodeForm({ mode, initial }: Props) {
   }
 
   function buildFormData(): FormData {
-    const pct = Number(values.tariff.trim().replace(",", "."));
-    const decimal = Number.isFinite(pct) ? pct / 100 : NaN;
+    const tariffPct = Number(values.tariff.trim().replace(",", "."));
+    const tariffDecimal = Number.isFinite(tariffPct) ? tariffPct / 100 : NaN;
+    const adRaw = values.antiDumping.trim();
+    const adPct = adRaw === "" ? null : Number(adRaw.replace(",", "."));
+    const adDecimal =
+      adPct != null && Number.isFinite(adPct) ? adPct / 100 : null;
     const fd = new FormData();
     appendField(fd, "code", values.code.trim());
     appendField(fd, "description", values.description.trim());
     appendField(
       fd,
       "tariff_pct",
-      Number.isFinite(decimal) ? String(decimal) : "",
+      Number.isFinite(tariffDecimal) ? String(tariffDecimal) : "",
+    );
+    appendField(
+      fd,
+      "anti_dumping_pct",
+      adDecimal != null ? String(adDecimal) : "",
     );
     appendField(fd, "notes", values.notes);
     if (values.is_active) fd.set("is_active", "on");
@@ -70,10 +83,20 @@ export function HsCodeForm({ mode, initial }: Props) {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
-    const pct = Number(values.tariff.trim().replace(",", "."));
-    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+    const tariffPct = Number(values.tariff.trim().replace(",", "."));
+    if (!Number.isFinite(tariffPct) || tariffPct < 0 || tariffPct > 100) {
       setError("Tariff must be a number between 0 and 100.");
       return;
+    }
+    const adRaw = values.antiDumping.trim();
+    if (adRaw !== "") {
+      const adPct = Number(adRaw.replace(",", "."));
+      if (!Number.isFinite(adPct) || adPct < 0 || adPct > 200) {
+        setError(
+          "Anti-dumping must be a number between 0 and 200, or blank.",
+        );
+        return;
+      }
     }
     const fd = buildFormData();
     start(async () => {
@@ -136,6 +159,27 @@ export function HsCodeForm({ mode, initial }: Props) {
           <span className="font-mono">5</span> for 5 %,{" "}
           <span className="font-mono">10.2</span> for 10.2 %. Snapshotted
           onto each new PO line at insert.
+        </p>
+      </Field>
+
+      <Field label="Anti-dumping %" htmlFor="hs-anti-dumping">
+        <div className="flex items-center gap-2">
+          <Input
+            id="hs-anti-dumping"
+            inputMode="decimal"
+            value={values.antiDumping}
+            onChange={(e) => update("antiDumping", e.target.value)}
+            placeholder="Leave blank when none applies"
+            className="max-w-[160px]"
+          />
+          <span className="text-muted-foreground text-sm">%</span>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Optional second tariff column applied alongside the base duty
+          for goods subject to EU anti-dumping measures (most Chinese-
+          origin bicycle parts under heading 8714 carry{" "}
+          <span className="font-mono">48.5</span> %). Snapshotted onto
+          PO lines and added to the landed-cost formula.
         </p>
       </Field>
 

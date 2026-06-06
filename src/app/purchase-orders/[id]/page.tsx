@@ -63,7 +63,7 @@ export default async function PurchaseOrderDetailPage({
       .select(
         `
           id, quantity, received_quantity, unit_price, currency,
-          fx_rate_to_dkk, transport_pct, tariff_pct, landed_cost_dkk_per_unit, notes,
+          fx_rate_to_dkk, transport_pct, tariff_pct, anti_dumping_pct, landed_cost_dkk_per_unit, notes,
           parts(id, internal_sku, name_en)
         `,
       )
@@ -78,7 +78,7 @@ export default async function PurchaseOrderDetailPage({
       .from("parts")
       .select(
         `id, internal_sku, name_en,
-         hs_code:hs_codes!hs_code_id(code, tariff_pct, is_active)`,
+         hs_code:hs_codes!hs_code_id(code, tariff_pct, anti_dumping_pct, is_active)`,
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
@@ -124,6 +124,7 @@ export default async function PurchaseOrderDetailPage({
     fxRateToDkk: Number(l.fx_rate_to_dkk),
     transportPct: Number(l.transport_pct),
     tariffPct: Number(l.tariff_pct ?? 0),
+    antiDumpingPct: Number(l.anti_dumping_pct ?? 0),
     landedDkkPerUnit: Number(l.landed_cost_dkk_per_unit ?? 0),
     receivedQuantity: Number(l.received_quantity),
     notes: l.notes,
@@ -163,6 +164,7 @@ export default async function PurchaseOrderDetailPage({
       name_en: p.name_en,
       hsCode: active ? (hs?.code ?? null) : null,
       tariffPct: active ? Number(hs?.tariff_pct ?? 0) : 0,
+      antiDumpingPct: active ? Number(hs?.anti_dumping_pct ?? 0) : 0,
     };
   });
 

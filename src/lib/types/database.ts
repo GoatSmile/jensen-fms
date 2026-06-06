@@ -908,6 +908,7 @@ export type Database = {
       }
       hs_codes: {
         Row: {
+          anti_dumping_pct: number | null
           code: string
           created_at: string
           description: string
@@ -918,6 +919,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anti_dumping_pct?: number | null
           code: string
           created_at?: string
           description: string
@@ -928,6 +930,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anti_dumping_pct?: number | null
           code?: string
           created_at?: string
           description?: string
@@ -2332,6 +2335,7 @@ export type Database = {
       }
       purchase_order_lines: {
         Row: {
+          anti_dumping_pct: number | null
           created_at: string
           currency: string
           fx_rate_to_dkk: number
@@ -2348,6 +2352,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anti_dumping_pct?: number | null
           created_at?: string
           currency: string
           fx_rate_to_dkk: number
@@ -2364,6 +2369,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anti_dumping_pct?: number | null
           created_at?: string
           currency?: string
           fx_rate_to_dkk?: number
