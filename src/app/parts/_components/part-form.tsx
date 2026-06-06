@@ -41,6 +41,9 @@ export type PartFormValues = {
   category_id: string;
   /** "" when unclassified. */
   hs_code_id: string;
+  /** "" when no override; otherwise a percent string like "5" or "10.2"
+   *  that gets converted to the decimal (0.05, 0.102) on submit. */
+  tariff_pct_override: string;
   unit_of_measure: string;
   default_retail_price: string;
   default_retail_currency: string;
@@ -62,6 +65,7 @@ export const EMPTY_PART_FORM: PartFormValues = {
   description_da: "",
   category_id: "",
   hs_code_id: "",
+  tariff_pct_override: "",
   unit_of_measure: "pcs",
   default_retail_price: "",
   default_retail_currency: "DKK",
@@ -134,6 +138,7 @@ export function PartForm({
     fd.append("description_da", values.description_da);
     fd.append("category_id", values.category_id);
     fd.append("hs_code_id", values.hs_code_id);
+    fd.append("tariff_pct_override", values.tariff_pct_override);
     fd.append("unit_of_measure", values.unit_of_measure);
     fd.append("default_retail_price", values.default_retail_price);
     fd.append("default_retail_currency", values.default_retail_currency);
@@ -260,6 +265,31 @@ export function PartForm({
               ))}
             </SelectContent>
           </Select>
+        </Field>
+        <Field
+          label="Tariff override (%)"
+          htmlFor="tariff_pct_override"
+          error={errorField === "tariff_pct_override" ? error : null}
+        >
+          <div className="flex items-center gap-2">
+            <Input
+              id="tariff_pct_override"
+              inputMode="decimal"
+              value={values.tariff_pct_override}
+              onChange={(e) =>
+                update("tariff_pct_override", e.target.value)
+              }
+              placeholder="Leave blank to use HS code"
+              className="max-w-[160px]"
+            />
+            <span className="text-muted-foreground text-sm">%</span>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Optional. When set, this rate is snapshotted onto new PO lines
+            for this part instead of the HS code&rsquo;s rate. Use only
+            when the standard classification is wrong for this specific
+            part. Existing PO lines stay frozen.
+          </p>
         </Field>
       </FormSection>
 

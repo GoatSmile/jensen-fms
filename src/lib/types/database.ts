@@ -2218,6 +2218,7 @@ export type Database = {
           notes: string | null
           reorder_point: number | null
           reorder_quantity: number | null
+          tariff_pct_override: number | null
           unit_of_measure: string
           updated_at: string
           weight_grams: number | null
@@ -2239,6 +2240,7 @@ export type Database = {
           notes?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
+          tariff_pct_override?: number | null
           unit_of_measure?: string
           updated_at?: string
           weight_grams?: number | null
@@ -2260,6 +2262,7 @@ export type Database = {
           notes?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
+          tariff_pct_override?: number | null
           unit_of_measure?: string
           updated_at?: string
           weight_grams?: number | null

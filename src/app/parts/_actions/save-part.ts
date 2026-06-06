@@ -18,6 +18,7 @@ type ParsedFields = {
   description_da: string | null;
   category_id: string;
   hs_code_id: string | null;
+  tariff_pct_override: number | null;
   unit_of_measure: string;
   default_retail_price: number | null;
   default_retail_currency: string | null;
@@ -121,6 +122,22 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
   const hsRaw = nullable(formData.get("hs_code_id"));
   const hs_code_id = hsRaw && hsRaw !== "" ? hsRaw : null;
 
+  // Tariff override (optional). Form holds a percent string ("5" for
+  // 5 %, "10.2" for 10.2 %); DB stores the decimal (0.05, 0.102).
+  // Blank → no override, fall back to HS code at PO snapshot time.
+  let tariff_pct_override: number | null = null;
+  const tariffOverrideRaw = nullable(formData.get("tariff_pct_override"));
+  if (tariffOverrideRaw) {
+    const pct = Number(tariffOverrideRaw.replace(",", "."));
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+      return {
+        error: "Tariff override must be a number between 0 and 100.",
+        field: "tariff_pct_override",
+      };
+    }
+    tariff_pct_override = pct / 100;
+  }
+
   return {
     internal_sku,
     name_en,
@@ -129,6 +146,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     description_da: nullable(formData.get("description_da")),
     category_id,
     hs_code_id,
+    tariff_pct_override,
     unit_of_measure,
     default_retail_price,
     default_retail_currency,
@@ -172,6 +190,7 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
       description_da: parsed.description_da,
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
+      tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
       default_retail_currency: parsed.default_retail_currency,
@@ -213,6 +232,7 @@ export async function updatePart(
       description_da: parsed.description_da,
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
+      tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
       default_retail_currency: parsed.default_retail_currency,

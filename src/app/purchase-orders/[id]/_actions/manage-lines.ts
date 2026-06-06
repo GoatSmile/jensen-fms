@@ -104,8 +104,16 @@ function parseLineFields(
  * PO. The lookup is denormalised onto the PO line (tariff_pct) so the cost
  * basis stays frozen — same rule as fx_rate_to_dkk.
  *
- * Returns 0 when the part has no HS classification or its HS code is
- * inactive. The admin can assign one later; new PO lines will pick it up.
+ * Resolution order:
+ *   1. `parts.tariff_pct_override` if set (admin-managed escape hatch
+ *      for misclassified or provisional parts).
+ *   2. The active HS code's `tariff_pct`.
+ *   3. 0 — no HS, archived HS, or unclassified.
+ *
+ * The override is rarely used in practice but exists so the workshop
+ * doesn't have to create a one-off HS code for an edge-case part.
+ * Historical PO line snapshots are unaffected — only new lines
+ * picked up the new value.
  */
 async function resolveTariffPctForPart(
   supabase: SupabaseServer,
@@ -113,9 +121,14 @@ async function resolveTariffPctForPart(
 ): Promise<number> {
   const { data: part } = await supabase
     .from("parts")
-    .select("hs_code:hs_codes!hs_code_id(tariff_pct, is_active)")
+    .select(
+      "tariff_pct_override, hs_code:hs_codes!hs_code_id(tariff_pct, is_active)",
+    )
     .eq("id", partId)
     .maybeSingle();
+  if (part?.tariff_pct_override != null) {
+    return Number(part.tariff_pct_override);
+  }
   const hs = part?.hs_code;
   if (!hs || !hs.is_active) return 0;
   return Number(hs.tariff_pct ?? 0);
