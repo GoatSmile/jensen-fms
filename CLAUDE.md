@@ -227,3 +227,65 @@ the Supabase SQL editor or via `supabase db push` once the CLI is configured.
 Architectural questions ("should this be one table or two?", "how do we model
 service-agreement billing?") get escalated to the human — these often live in
 a separate planning chat on claude.ai. Tactical implementation questions stay here.
+
+## Current status & roadmap (handoff — updated at v0.10.0)
+
+This section is the cross-thread handoff. A new chat won't have prior
+conversation transcripts; it has this file + git history + the live DB.
+
+### Where we are
+- **v0.10.0**, deployed on Vercel (push-to-`main` → prod), gated behind
+  Vercel SSO. ~25 migrations, single-tenant, solo-dev.
+- **Operationally feature-complete** for the workshop's daily job. Built and
+  working: Parts + categories + inventory ledger, Suppliers (CRUD +
+  multi-supplier offerings), Purchase orders + landed cost (FX, transport,
+  HS/TARIC tariff, anti-dumping — all additive & frozen-at-purchase), Bike
+  templates, Manufacturing orders + per-bike build workbench, Bikes +
+  lifecycle + QR, Paint orders, Sales orders (3C) + slating automation,
+  Organizations + contacts + units + customer map (geocoded), Maintenance
+  tickets + Work orders, Workshop floor technician view (M3d, with
+  voice-to-text), public customer report flow, PWA, admin section
+  (HS codes, FX rates, colours, customer segments, suppliers, settings).
+
+### M1 — Auth + RLS: DELAYED until further notice (owner's call)
+The publishable key has full table access; only Vercel SSO protects prod.
+This is the gate to a real `1.0` and to public internet exposure, but it is
+**deliberately deferred**. Do not start it unless the owner re-prioritises it.
+When it resumes: Supabase auth + login + middleware + `profiles`/role table +
+per-table RLS, plus a `DEV_AUTH_BYPASS` escape hatch for local dev. Open
+decisions to confirm first: sign-in method (magic link vs Google Workspace
+vs password), and the role model.
+
+### Next phases (owner's stated priority order)
+The next work is the **commercial / billing** cluster, roughly:
+1. **Customers** — deepen the organizations module as needed.
+2. **Invoices (3D)** — biggest missing business capability. SOs and WOs
+   already compute costs; schema for invoices/invoice_lines exists; no UI yet.
+   Closes the quote → build → deliver → **bill** loop.
+3. **Purchase orders** — further enhancements.
+4. **Service agreements (M3c)** — coverage is currently *inferred* on work
+   orders (findActiveCoverageForBike in save-wo.ts); there's no UI to manage
+   the agreements themselves.
+5. **e-conomic push (3E)** — accounting integration, after invoicing exists.
+
+### Carry-over data notes
+- **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
+  variants (`JP-AND-M100-PWR`, `JP-AND-M100-CS`, `JP-AND-DSP-NTC`),
+  `JP-SLFFH01B`, and `JP-SP207- 27,2 350`. They snapshot 0% tariff on new PO
+  lines until classified.
+- **"For cycle manufacture" TARIC splits**: the customs broker (DA Custom
+  Brokers) files some parts under favourable splits (e.g. 8714911077,
+  8714913072, 8714961010) to avoid the 48.5% anti-dumping. Our classification
+  uses the standard splits. Confirm with the broker before reclassifying.
+- **Anti-dumping** is modelled per HS code (`hs_codes.anti_dumping_pct`,
+  snapshotted to `purchase_order_lines.anti_dumping_pct`); currently set on
+  8714963090 + 8714991099 (48.5%). It's origin-agnostic — fine while sourcing
+  is ~all China; revisit if supplier mix diversifies.
+- **Supplier country codes** were name-inferred (migration 25); a few
+  (Herrmans→FI, RYDE→NL, SAPIM→BE, Shimano Nordic→SE, MessingschKG→DE) are
+  best-guesses worth confirming.
+
+### Hardening backlog (do as it bites)
+- audit_log triggers (wait on auth for user_id); SQL-side pagination for the
+  parts list at scale; offline write-queue for the workshop floor; Whisper
+  voice fallback; bulk CSV import for parts/suppliers.
