@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, Palette, Percent, Tag, Users } from "lucide-react";
+import { Coins, Palette, Percent, Tag, Truck, Users } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -23,7 +23,8 @@ import { formatPct } from "@/lib/parts/format";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
-  const [hsRes, settingsRes, fxRes, colorsRes, segmentsRes] = await Promise.all([
+  const [hsRes, settingsRes, fxRes, colorsRes, segmentsRes, suppliersRes] =
+    await Promise.all([
     supabase
       .from("hs_codes")
       .select("id", { count: "exact", head: true })
@@ -47,6 +48,11 @@ export default async function AdminLandingPage() {
       .from("customer_segments")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    supabase
+      .from("suppliers")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .is("deleted_at", null),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -56,6 +62,7 @@ export default async function AdminLandingPage() {
   const lastFxRefresh = fxRes.data?.rate_date as string | undefined;
   const activeColorCount = colorsRes.count ?? 0;
   const activeSegmentCount = segmentsRes.count ?? 0;
+  const activeSupplierCount = suppliersRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -113,6 +120,13 @@ export default async function AdminLandingPage() {
           title="Customer segments"
           description="Hotel / hospital / municipality / FM / B2B / B2C. Used to classify organisations and report on the customer mix."
           stat={`${activeSegmentCount} active segment${activeSegmentCount === 1 ? "" : "s"}`}
+        />
+        <Tile
+          href="/admin/suppliers"
+          icon={Truck}
+          title="Suppliers"
+          description="Vendors parts are bought from. Used by part offerings, purchase orders, and paint orders."
+          stat={`${activeSupplierCount} active supplier${activeSupplierCount === 1 ? "" : "s"}`}
         />
         <Tile
           href="/admin/settings"
