@@ -148,6 +148,7 @@ export default async function PartDetailPage({
           fx_rate_to_dkk,
           transport_pct,
           tariff_pct,
+          anti_dumping_pct,
           landed_cost_dkk_per_unit,
           purchase_orders(id, po_number, order_date)
         `,
@@ -357,6 +358,7 @@ export default async function PartDetailPage({
       fxRateToDkk: Number(row.fx_rate_to_dkk),
       transportPct: Number(row.transport_pct),
       tariffPct: Number(row.tariff_pct ?? 0),
+      antiDumpingPct: Number(row.anti_dumping_pct ?? 0),
       landedCostDkkPerUnit: Number(row.landed_cost_dkk_per_unit ?? 0),
     }))
     .sort((a, b) => (a.orderDate < b.orderDate ? 1 : -1))

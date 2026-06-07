@@ -31,6 +31,8 @@ export type PurchaseLineRow = {
   transportPct: number;
   /** Decimal — snapshot of the part's HS code duty at purchase time. */
   tariffPct: number;
+  /** Decimal — anti-dumping snapshot (0 = none). */
+  antiDumpingPct: number;
   landedCostDkkPerUnit: number;
 };
 
@@ -48,7 +50,7 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
   return (
     <Section
       title="Purchase history"
-      description="Last 10 purchase order lines. Landed DKK/unit = unit price × FX rate × (1 + transport % + import duty %), frozen at the moment of purchase."
+      description="Last 10 purchase order lines. Landed DKK/unit = unit price × FX rate × (1 + transport % + import duty % + anti-dumping %), frozen at the moment of purchase."
     >
       {rows.length === 0 ? (
         <EmptyRow>No purchases recorded for this part yet.</EmptyRow>
@@ -72,6 +74,7 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                   Transport
                 </TableHead>
                 <TableHead className="text-right">Import tax</TableHead>
+                <TableHead className="text-right">Anti-dumping</TableHead>
                 <TableHead className="text-right">Landed DKK / unit</TableHead>
               </TableRow>
             </TableHeader>
@@ -83,6 +86,7 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                 const baseDkk = row.unitPrice * row.fxRateToDkk;
                 const transportDkk = baseDkk * row.transportPct;
                 const importTaxDkk = baseDkk * row.tariffPct;
+                const antiDumpingDkk = baseDkk * row.antiDumpingPct;
                 return (
                   <TableRow key={row.id}>
                     <TableCell className="font-mono text-xs">
@@ -139,6 +143,20 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                             no HS code
                           </div>
                         </>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.antiDumpingPct > 0 ? (
+                        <>
+                          <span className="text-destructive">
+                            {formatDkk(antiDumpingDkk)}
+                          </span>
+                          <div className="text-destructive font-mono text-[10px]">
+                            {formatPct(row.antiDumpingPct)}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums font-medium">
