@@ -47,8 +47,11 @@ export default async function EditPartPage({
     supabase
       .from("hs_codes")
       .select("id, code, description, tariff_pct, is_active")
+      // hs_codes has no sort_order column — ordering by it errored the
+      // query, and because the error wasn't checked the picker fell back
+      // to an empty list, so a classified part rendered as "Unclassified".
+      // Order by is_active then code.
       .order("is_active", { ascending: false })
-      .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
   ]);
 
@@ -56,6 +59,11 @@ export default async function EditPartPage({
     throw new Error(`Failed to load part: ${partRes.error.message}`);
   }
   if (!partRes.data) notFound();
+  // Fail loudly if HS codes can't load, rather than silently presenting an
+  // empty picker that would let a save wipe the part's classification.
+  if (hsCodesRes.error) {
+    throw new Error(`Failed to load HS codes: ${hsCodesRes.error.message}`);
+  }
 
   const part = partRes.data;
 

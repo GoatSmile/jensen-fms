@@ -31,7 +31,8 @@ export default async function NewPartPage() {
       .from("hs_codes")
       .select("id, code, description, tariff_pct")
       .eq("is_active", true)
-      .order("sort_order", { ascending: true })
+      // hs_codes has no sort_order column — ordering by it errored the
+      // query and silently emptied the picker. Order by code.
       .order("code", { ascending: true }),
   ]);
 
