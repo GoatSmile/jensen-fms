@@ -179,6 +179,12 @@ export default async function PurchaseOrderDetailPage({
     (s, l) => s + l.receivedQuantity,
     0,
   );
+  // Landed total in DKK from the lines (matches the list / v_po_totals):
+  // includes transport, tariff and anti-dumping, unified across currencies.
+  const landedTotalDkk = poLineRows.reduce(
+    (s, l) => s + l.quantity * l.landedDkkPerUnit,
+    0,
+  );
 
   // The receive form should only render when the PO is mid-flight. Drafts
   // can't be received against (no order placed yet); cancelled/received
@@ -222,12 +228,18 @@ export default async function PurchaseOrderDetailPage({
         <Stat label="Ordered">{formatDate(po.order_date)}</Stat>
         <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
         <Stat label="Received">{formatDate(po.received_date)}</Stat>
-        <Stat label="Total">
+        <Stat label="Order total">
           <Money
             amount={
               po.total_amount != null ? Number(po.total_amount) : null
             }
             currency={po.total_currency}
+          />
+        </Stat>
+        <Stat label="Landed total">
+          <Money
+            amount={poLineRows.length > 0 ? landedTotalDkk : null}
+            currency="DKK"
           />
         </Stat>
         <Stat label="Lines">{poLineRows.length}</Stat>
