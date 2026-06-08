@@ -332,12 +332,6 @@ export default async function CustomerMapPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/organizations">Customers</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
               <BreadcrumbPage>Map</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>

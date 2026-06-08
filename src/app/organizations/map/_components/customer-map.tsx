@@ -42,63 +42,69 @@ const MUTED_GREY = "#737373";
 const PROSPECT_AMBER = "#d97706";
 const UNIT_TEAL = "#0d9488";
 const EXPIRING_RED = "#dc2626";
-const BIKE_INDIGO = "#4f46e5";
+const BIKE_NEUTRAL = "#4f46e5";
 
-type Layers = {
-  customers: boolean;
-  prospects: boolean;
-  departments: boolean;
-  bikes: boolean;
-  expiringOnly: boolean;
+// Bike pins are coloured by lifecycle status, with human-readable labels
+// (the raw enum is planning/building/in_stock/assigned/in_service/
+// in_maintenance). Green = out working, red = needs repair, amber = in the
+// build pipeline, blue = ready/with customer, grey = not yet real.
+const BIKE_STATUS: Record<string, { label: string; color: string }> = {
+  in_service: { label: "In service", color: "#16a34a" },
+  assigned: { label: "Delivered to customer", color: "#0284c7" },
+  in_stock: { label: "Ready in stock", color: "#0ea5e9" },
+  in_maintenance: { label: "In repair", color: "#dc2626" },
+  building: { label: "Being built", color: "#d97706" },
+  planning: { label: "Planned", color: "#94a3b8" },
 };
+const BIKE_FALLBACK = { label: "Bike", color: BIKE_NEUTRAL };
+const bikeMeta = (status: string | null) =>
+  (status && BIKE_STATUS[status]) || BIKE_FALLBACK;
+
+type View =
+  | "all"
+  | "customers"
+  | "prospects"
+  | "departments"
+  | "bikes"
+  | "expiring";
 
 /**
- * Customer map — Leaflet (CARTO Positron). A sales/prospecting surface, not
- * just current state. Toggleable layers: customers (blue = has a service
- * agreement, grey = none), prospects (amber sales leads), departments (teal
- * org units, e.g. kommune sub-departments), and an "expiring ≤90d" filter
- * that isolates customers whose service agreement is up for renewal (red
- * ring). The segment chip rail filters within whatever layers are on.
- *
- * Leaflet touches `window` at import time, so this whole component is the
- * client-only side of the route; the server page fetches + renders it.
+ * Map — Leaflet (CARTO Positron). A sales/prospecting + fleet surface.
+ * Single-select view chips isolate one thing in a click: All, Customers
+ * (blue = has a service agreement, grey = none), Prospects (amber leads),
+ * Departments (teal org units), Bikes (coloured by status), or Expiring
+ * (customers whose agreement renews within 90 days, red ring). The segment
+ * chip rail filters within the chosen view.
  */
 export default function CustomerMap({ pins, segments }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
   const [segment, setSegment] = useState<string>("all");
-  const [layers, setLayers] = useState<Layers>({
-    customers: true,
-    prospects: true,
-    departments: true,
-    bikes: true,
-    expiringOnly: false,
-  });
+  const [view, setView] = useState<View>("all");
   const [mapReady, setMapReady] = useState(false);
 
-  function toggleLayer(key: keyof Layers) {
-    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
-
   const filtered = useMemo(() => {
-    const layerOn = (p: CustomerPin) =>
-      p.kind === "customer"
-        ? layers.customers
-        : p.kind === "prospect"
-          ? layers.prospects
-          : p.kind === "bike"
-            ? layers.bikes
-            : layers.departments;
+    const matchesView = (p: CustomerPin) => {
+      switch (view) {
+        case "customers":
+          return p.kind === "customer";
+        case "prospects":
+          return p.kind === "prospect";
+        case "departments":
+          return p.kind === "unit";
+        case "bikes":
+          return p.kind === "bike";
+        case "expiring":
+          return p.expiringSoon;
+        default:
+          return true;
+      }
+    };
     return pins.filter(
-      (p) =>
-        layerOn(p) &&
-        (segment === "all" || p.segmentSlug === segment) &&
-        // "expiring only" is a service-agreement filter; it doesn't apply to
-        // bike pins, which would otherwise all vanish when it's on.
-        (!layers.expiringOnly || p.kind === "bike" || p.expiringSoon),
+      (p) => matchesView(p) && (segment === "all" || p.segmentSlug === segment),
     );
-  }, [pins, segment, layers]);
+  }, [pins, segment, view]);
 
   const totals = useMemo(() => {
     let bikes = 0;
@@ -112,8 +118,8 @@ export default function CustomerMap({ pins, segments }: Props) {
     return { pins: filtered.length, bikes, prospects, expiring };
   }, [filtered]);
 
-  // Counts per layer across the full set (for the toggle labels).
-  const layerCounts = useMemo(() => {
+  // Counts per view across the full set (for the chip labels).
+  const viewCounts = useMemo(() => {
     let customers = 0;
     let prospects = 0;
     let departments = 0;
@@ -126,7 +132,7 @@ export default function CustomerMap({ pins, segments }: Props) {
       else departments += 1;
       if (p.expiringSoon) expiring += 1;
     }
-    return { customers, prospects, departments, bikes, expiring };
+    return { all: pins.length, customers, prospects, departments, bikes, expiring };
   }, [pins]);
 
   // Mount the map once. Tile layer + zoom controls, nothing else.
@@ -141,7 +147,7 @@ export default function CustomerMap({ pins, segments }: Props) {
         zoomControl: true,
         attributionControl: true,
         worldCopyJump: true,
-      }).setView([55, 11], 5); // Denmark-ish initial; fit-bounds replaces this.
+      }).setView([55, 11], 5);
 
       L.tileLayer(
         "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
@@ -165,8 +171,7 @@ export default function CustomerMap({ pins, segments }: Props) {
     };
   }, []);
 
-  // Re-plot pins whenever the filtered set changes. Replaces the whole
-  // layer instead of diffing — cheaper to read, fast enough at our scale.
+  // Re-plot pins whenever the filtered set changes.
   useEffect(() => {
     if (!mapReady) return;
     const map = mapRef.current;
@@ -181,8 +186,7 @@ export default function CustomerMap({ pins, segments }: Props) {
       if (filtered.length === 0) return;
 
       const layer = L.layerGroup();
-      // Bikes drawn last so they sit on top of the customer/dept pins they
-      // share a location with.
+      // Bikes drawn last so they sit on top of the pins they share a spot with.
       const ordered = [...filtered].sort(
         (a, b) => (a.kind === "bike" ? 1 : 0) - (b.kind === "bike" ? 1 : 0),
       );
@@ -192,7 +196,7 @@ export default function CustomerMap({ pins, segments }: Props) {
           ? 5
           : Math.min(7 + Math.sqrt(c.bikes) * 1.7, 28);
         const fillColor = isBike
-          ? BIKE_INDIGO
+          ? bikeMeta(c.status).color
           : c.kind === "prospect"
             ? PROSPECT_AMBER
             : c.kind === "unit"
@@ -212,7 +216,7 @@ export default function CustomerMap({ pins, segments }: Props) {
           marker.bindPopup(
             `<div class="jp-pop">
                <div class="jp-pop__name">${escapeHtml(c.name)}</div>
-               <div class="jp-pop__sub">Bike${c.status ? " · " + escapeHtml(c.status.replace(/_/g, " ")) : ""}</div>
+               <div class="jp-pop__sub">Bike · ${escapeHtml(bikeMeta(c.status).label)}</div>
                <div class="jp-pop__row"><span>Location</span><strong>${escapeHtml(c.parentName ?? "—")}</strong></div>
              </div>`,
             { closeButton: true, className: "jp-popup", maxWidth: 280 },
@@ -289,19 +293,26 @@ export default function CustomerMap({ pins, segments }: Props) {
     }
   }
 
+  const viewChips: { id: View; label: string; count: number; color?: string }[] =
+    [
+      { id: "all", label: "All", count: viewCounts.all },
+      { id: "customers", label: "Customers", count: viewCounts.customers, color: BRAND_BLUE },
+      { id: "prospects", label: "Prospects", count: viewCounts.prospects, color: PROSPECT_AMBER },
+      { id: "departments", label: "Departments", count: viewCounts.departments, color: UNIT_TEAL },
+      { id: "bikes", label: "Bikes", count: viewCounts.bikes, color: BIKE_NEUTRAL },
+      { id: "expiring", label: "Expiring ≤90d", count: viewCounts.expiring, color: EXPIRING_RED },
+    ];
+
+  const showBikeLegend = view === "all" || view === "bikes";
+
   return (
     <div className="flex flex-1 flex-col">
       <header className="flex items-start justify-between gap-4 border-b px-4 py-3 sm:px-6">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Customer map
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Map</h1>
           <p className="text-muted-foreground text-sm">
             <span className="tabular-nums">{totals.pins}</span> pins ·{" "}
-            <span className="tabular-nums">
-              {totals.bikes.toLocaleString("da-DK")}
-            </span>{" "}
-            bikes ·{" "}
+            <span className="tabular-nums">{totals.bikes}</span> bikes ·{" "}
             <span className="tabular-nums">{totals.prospects}</span> prospects ·{" "}
             <span className="tabular-nums">{totals.expiring}</span> expiring
           </p>
@@ -311,48 +322,37 @@ export default function CustomerMap({ pins, segments }: Props) {
         </Button>
       </header>
 
-      {/* Layer toggles — multi-select. */}
+      {/* View chips — single-select: one click isolates a layer. */}
       <div className="border-b">
         <div className="flex flex-wrap gap-1.5 px-4 py-2.5 sm:px-6">
-          <LayerToggle
-            label="Customers"
-            count={layerCounts.customers}
-            color={BRAND_BLUE}
-            active={layers.customers}
-            onClick={() => toggleLayer("customers")}
-          />
-          <LayerToggle
-            label="Prospects"
-            count={layerCounts.prospects}
-            color={PROSPECT_AMBER}
-            active={layers.prospects}
-            onClick={() => toggleLayer("prospects")}
-          />
-          <LayerToggle
-            label="Departments"
-            count={layerCounts.departments}
-            color={UNIT_TEAL}
-            active={layers.departments}
-            onClick={() => toggleLayer("departments")}
-          />
-          <LayerToggle
-            label="Bikes"
-            count={layerCounts.bikes}
-            color={BIKE_INDIGO}
-            active={layers.bikes}
-            onClick={() => toggleLayer("bikes")}
-          />
-          <LayerToggle
-            label="Expiring ≤90d"
-            count={layerCounts.expiring}
-            color={EXPIRING_RED}
-            active={layers.expiringOnly}
-            onClick={() => toggleLayer("expiringOnly")}
-          />
+          {viewChips.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setView(c.id)}
+              aria-pressed={view === c.id}
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                view === c.id
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-background text-foreground hover:bg-muted",
+              )}
+            >
+              {c.color ? (
+                <span
+                  aria-hidden
+                  className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-white/40"
+                  style={{ backgroundColor: c.color }}
+                />
+              ) : null}
+              {c.label}
+              <span className="tabular-nums opacity-70">{c.count}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Segment chip rail. Horizontally scrollable on narrow viewports. */}
+      {/* Segment chip rail. */}
       <div className="border-b">
         <div className="flex gap-1.5 overflow-x-auto px-4 py-2.5 sm:px-6">
           {segments.map((s) => (
@@ -377,88 +377,63 @@ export default function CustomerMap({ pins, segments }: Props) {
         <div ref={containerRef} className="h-full w-full" />
 
         {/* Legend overlay — top-right. */}
-        <div className="bg-background absolute right-3 top-3 z-[400] hidden min-w-[200px] rounded-md border p-3 shadow-md sm:block">
-          <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
-            Pin scale · bikes
-          </div>
-          <div className="flex items-center gap-2">
-            <Dot size={12} />
-            <span className="text-muted-foreground text-xs">≤ 10</span>
-            <Dot size={18} className="ml-3" />
-            <span className="text-muted-foreground text-xs">50</span>
-            <Dot size={28} className="ml-3" />
-            <span className="text-muted-foreground text-xs">300+</span>
-          </div>
-          <div className="mt-3 flex flex-col gap-1.5">
-            <LegendRow color={BRAND_BLUE} label="Customer · has agreement" />
-            <LegendRow color={MUTED_GREY} label="Customer · no agreement" />
-            <LegendRow color={PROSPECT_AMBER} label="Prospect (sales lead)" />
-            <LegendRow color={UNIT_TEAL} label="Department / unit" />
-            <LegendRow color={BIKE_INDIGO} label="Bike (owner / workshop)" />
-            <LegendRow
-              color={BRAND_BLUE}
-              ring={EXPIRING_RED}
-              label="Agreement expiring ≤90d"
-            />
-          </div>
+        <div className="bg-background absolute right-3 top-3 z-[400] hidden max-h-[calc(100%-1.5rem)] min-w-[200px] overflow-auto rounded-md border p-3 shadow-md sm:block">
+          {view !== "bikes" ? (
+            <>
+              <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
+                Pin scale · bikes in service
+              </div>
+              <div className="flex items-center gap-2">
+                <Dot size={12} />
+                <span className="text-muted-foreground text-xs">≤ 10</span>
+                <Dot size={18} className="ml-3" />
+                <span className="text-muted-foreground text-xs">50</span>
+                <Dot size={28} className="ml-3" />
+                <span className="text-muted-foreground text-xs">300+</span>
+              </div>
+              <div className="mt-3 flex flex-col gap-1.5">
+                <LegendRow color={BRAND_BLUE} label="Customer · has agreement" />
+                <LegendRow color={MUTED_GREY} label="Customer · no agreement" />
+                <LegendRow color={PROSPECT_AMBER} label="Prospect (sales lead)" />
+                <LegendRow color={UNIT_TEAL} label="Department / unit" />
+                <LegendRow
+                  color={BRAND_BLUE}
+                  ring={EXPIRING_RED}
+                  label="Agreement expiring ≤90d"
+                />
+              </div>
+            </>
+          ) : null}
+          {showBikeLegend ? (
+            <div className={cn("flex flex-col gap-1.5", view !== "bikes" && "mt-3 border-t pt-3")}>
+              <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+                Bikes by status
+              </div>
+              {Object.values(BIKE_STATUS).map((s) => (
+                <LegendRow key={s.label} color={s.color} label={s.label} />
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {pins.length === 0 ? (
           <div className="bg-background/85 absolute inset-0 z-[300] flex items-center justify-center p-6 text-center">
             <div className="flex max-w-md flex-col gap-2 rounded-lg border bg-card p-6 shadow-sm">
-              <h2 className="text-sm font-semibold">
-                No customers on the map yet
-              </h2>
+              <h2 className="text-sm font-semibold">Nothing on the map yet</h2>
               <p className="text-muted-foreground text-sm">
-                Customers appear here once their address is geocoded. Edit a
-                customer with a postal address and save — the geocoder fires
-                in the background.
+                Customers, prospects, and bikes appear here once they have a
+                location. Add a postal address (or assign a bike) and it shows
+                up.
               </p>
             </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-background/85 absolute left-1/2 top-4 z-[300] -translate-x-1/2 rounded-md border bg-card px-4 py-2 text-center text-sm shadow-sm">
-            No pins match the current layers / filter.
+            No pins match the current view / segment.
           </div>
         ) : null}
       </div>
     </div>
-  );
-}
-
-function LayerToggle({
-  label,
-  count,
-  color,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  color: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-        active
-          ? "border-foreground/30 bg-muted text-foreground"
-          : "border-input bg-background text-muted-foreground opacity-60 hover:opacity-100",
-      )}
-    >
-      <span
-        aria-hidden
-        className="inline-block h-2.5 w-2.5 rounded-full"
-        style={{ backgroundColor: color }}
-      />
-      {label}
-      <span className="tabular-nums opacity-70">{count}</span>
-    </button>
   );
 }
 
@@ -505,9 +480,7 @@ function Dot({
 }
 
 /**
- * Tiny escape helper for the popup HTML strings. The popup content goes
- * through Leaflet's innerHTML, so any customer name with `<` or `&` in it
- * would otherwise misrender.
+ * Escapes popup HTML strings — popup content goes through Leaflet's innerHTML.
  */
 function escapeHtml(s: string): string {
   return s

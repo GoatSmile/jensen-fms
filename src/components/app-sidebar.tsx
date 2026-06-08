@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
   { href: "/work", label: "Workshop floor", icon: HardHat },
   { href: "/organizations", label: "Customers", icon: Building2 },
-  { href: "/organizations/map", label: "Customer map", icon: MapIcon },
+  { href: "/organizations/map", label: "Map", icon: MapIcon },
   { href: "/sales-orders", label: "Sales orders", icon: Receipt },
   { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
   { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
