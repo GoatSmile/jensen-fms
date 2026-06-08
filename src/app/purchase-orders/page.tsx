@@ -32,28 +32,37 @@ import {
 
 export default async function PurchaseOrdersPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("purchase_orders")
-    .select(
-      `
+  const [poRes, totalsRes] = await Promise.all([
+    supabase
+      .from("purchase_orders")
+      .select(
+        `
         id,
         po_number,
         status,
         order_date,
         expected_date,
         received_date,
-        total_amount,
-        total_currency,
         suppliers(id, name)
       `,
-    )
-    .order("order_date", { ascending: false });
+      )
+      .order("order_date", { ascending: false }),
+    // Landed totals computed from the lines (includes transport, tariff and
+    // anti-dumping, unified in DKK) — see v_po_totals. Avoids relying on the
+    // stored total_amount, which is null for imported POs.
+    supabase.from("v_po_totals").select("purchase_order_id, landed_total_dkk"),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to load purchase orders: ${error.message}`);
+  if (poRes.error) {
+    throw new Error(`Failed to load purchase orders: ${poRes.error.message}`);
   }
 
-  const rows = data ?? [];
+  const rows = poRes.data ?? [];
+  const landedByPo = new Map<string, number>();
+  for (const t of totalsRes.data ?? []) {
+    if (t.purchase_order_id != null && t.landed_total_dkk != null)
+      landedByPo.set(t.purchase_order_id, Number(t.landed_total_dkk));
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -106,7 +115,7 @@ export default async function PurchaseOrdersPage() {
                 <TableHead className="hidden md:table-cell">Ordered</TableHead>
                 <TableHead className="hidden lg:table-cell">Expected</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Total
+                  Landed total
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -169,12 +178,8 @@ export default async function PurchaseOrdersPage() {
                       className="block px-4 py-2.5"
                     >
                       <Money
-                        amount={
-                          po.total_amount != null
-                            ? Number(po.total_amount)
-                            : null
-                        }
-                        currency={po.total_currency}
+                        amount={landedByPo.get(po.id) ?? null}
+                        currency="DKK"
                         bold={false}
                       />
                     </Link>

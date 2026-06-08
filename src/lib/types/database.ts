@@ -3455,6 +3455,22 @@ export type Database = {
           },
         ]
       }
+      v_po_totals: {
+        Row: {
+          landed_total_dkk: number | null
+          line_count: number | null
+          purchase_order_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_lines_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_sales_order_lines_localized: {
         Row: {
           bike_template_id: string | null
