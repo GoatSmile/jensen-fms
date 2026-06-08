@@ -19,6 +19,11 @@ import CustomerMap, {
 // to a stub `<div>` and the map mounts on the client.
 export const dynamic = "force-dynamic";
 
+// Jensen workshop (Ellekær 3, 2730 Herlev) — fallback location for bikes
+// that have no owner yet (in build / in stock), so the whole fleet is
+// visible until per-bike GPS exists. Geocoded once via DAWA.
+const WORKSHOP = { lat: 55.7203944, lng: 12.4268145 };
+
 /**
  * World map of customers, sized by bikes-in-service and coloured by
  * service-agreement coverage. Pins come from organisations that have
@@ -63,11 +68,11 @@ export default async function CustomerMapPage() {
       .is("deleted_at", null)
       .not("latitude", "is", null)
       .not("longitude", "is", null),
-    // All in-service bikes grouped by owner (org and unit). We exclude
-    // terminal-state bikes (retired, lost) since they're not "in service".
+    // All in-service bikes (excludes terminal retired/lost). Used both for
+    // per-owner counts (pin size) and the individual Bikes layer.
     supabase
       .from("bikes")
-      .select("owner_organization_id, owner_unit_id, status")
+      .select("id, frame_number, status, owner_organization_id, owner_unit_id")
       .is("deleted_at", null)
       .not("status", "in", "(retired,lost_or_stolen)"),
     // Active service agreements — per-org coverage boolean + expiry signal.
@@ -126,6 +131,7 @@ export default async function CustomerMapPage() {
         kind: o.lifecycle_stage === "prospect" ? "prospect" : "customer",
         name: o.display_name_da ?? o.display_name_en ?? o.legal_name,
         parentName: null,
+        status: null,
         city: o.city,
         countryCode: o.country_code,
         segmentSlug: o.segment?.slug ?? null,
@@ -156,6 +162,7 @@ export default async function CustomerMapPage() {
         id: u.id,
         kind: "unit",
         name: u.name,
+        status: null,
         parentName:
           org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null,
         city: u.city,
@@ -171,7 +178,131 @@ export default async function CustomerMapPage() {
     })
     .filter((p): p is CustomerPin => p !== null);
 
-  const pins: CustomerPin[] = [...orgPins, ...unitPins];
+  // Bikes layer — one pin per in-service bike, located at its owning unit,
+  // then owning org, then the workshop fallback. Segment is inherited from
+  // the owner so the segment filter still applies; workshop bikes have none.
+  const orgById = new Map(
+    (orgsRes.data ?? []).map((o) => [
+      o.id,
+      {
+        lat: finiteCoord(o.latitude),
+        lng: finiteCoord(o.longitude),
+        name: o.display_name_da ?? o.display_name_en ?? o.legal_name,
+        segSlug: o.segment?.slug ?? null,
+        segLabel: o.segment?.name_en ?? null,
+      },
+    ]),
+  );
+  const unitById = new Map(
+    (unitsRes.data ?? []).map((u) => {
+      const org = Array.isArray(u.organization)
+        ? u.organization[0]
+        : u.organization;
+      const seg = org?.segment
+        ? Array.isArray(org.segment)
+          ? org.segment[0]
+          : org.segment
+        : null;
+      const parent =
+        org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null;
+      return [
+        u.id,
+        {
+          lat: finiteCoord(u.latitude),
+          lng: finiteCoord(u.longitude),
+          name: parent ? `${parent} · ${u.name}` : u.name,
+          segSlug: seg?.slug ?? null,
+          segLabel: seg?.name_en ?? null,
+        },
+      ];
+    }),
+  );
+
+  type BikeBase = {
+    id: string;
+    frame: string;
+    status: string;
+    lat: number;
+    lng: number;
+    owner: string | null;
+    atWorkshop: boolean;
+    segSlug: string | null;
+    segLabel: string | null;
+  };
+  const resolved: BikeBase[] = [];
+  for (const b of bikesRes.data ?? []) {
+    const unit = b.owner_unit_id ? unitById.get(b.owner_unit_id) : null;
+    const org = b.owner_organization_id
+      ? orgById.get(b.owner_organization_id)
+      : null;
+    let loc: { lat: number; lng: number } | null = null;
+    let owner: string | null = null;
+    let segSlug: string | null = null;
+    let segLabel: string | null = null;
+    if (unit && unit.lat != null && unit.lng != null) {
+      loc = { lat: unit.lat, lng: unit.lng };
+      owner = unit.name;
+      segSlug = unit.segSlug;
+      segLabel = unit.segLabel;
+    } else if (org && org.lat != null && org.lng != null) {
+      loc = { lat: org.lat, lng: org.lng };
+      owner = org.name;
+      segSlug = org.segSlug;
+      segLabel = org.segLabel;
+    }
+    const atWorkshop = loc == null;
+    const base = loc ?? WORKSHOP;
+    resolved.push({
+      id: b.id,
+      frame: b.frame_number,
+      status: b.status,
+      lat: base.lat,
+      lng: base.lng,
+      owner,
+      atWorkshop,
+      segSlug,
+      segLabel,
+    });
+  }
+  // Fan co-located bikes onto a small ring so stacked pins (e.g. the
+  // workshop cluster) are individually clickable.
+  const byLoc = new Map<string, BikeBase[]>();
+  for (const r of resolved) {
+    const key = `${r.lat.toFixed(4)},${r.lng.toFixed(4)}`;
+    (byLoc.get(key) ?? byLoc.set(key, []).get(key)!).push(r);
+  }
+  const bikePins: CustomerPin[] = [];
+  for (const group of byLoc.values()) {
+    group.forEach((r, i) => {
+      let { lat, lng } = r;
+      if (group.length > 1) {
+        const angle = (i / group.length) * 2 * Math.PI;
+        const rad = 0.0011;
+        lat += rad * Math.cos(angle);
+        lng += (rad * Math.sin(angle)) / Math.cos((lat * Math.PI) / 180);
+      }
+      bikePins.push({
+        id: `bike:${r.id}`,
+        kind: "bike",
+        name: r.frame,
+        parentName: r.atWorkshop
+          ? "In build / stock — at workshop"
+          : r.owner,
+        status: r.status,
+        city: null,
+        countryCode: "DK",
+        segmentSlug: r.segSlug,
+        segmentLabel: r.segLabel,
+        bikes: 0,
+        saBikes: 0,
+        expiringSoon: false,
+        latitude: lat,
+        longitude: lng,
+      });
+    });
+  }
+
+  const pins: CustomerPin[] = [...orgPins, ...unitPins, ...bikePins];
 
   // Build the segment filter chips from the segments that are actually
   // represented in the pin set. The "All" chip is always first.

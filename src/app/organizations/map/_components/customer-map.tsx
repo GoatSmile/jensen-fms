@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 import "leaflet/dist/leaflet.css";
 import "./popup-styles.css";
 
-export type PinKind = "customer" | "prospect" | "unit";
+export type PinKind = "customer" | "prospect" | "unit" | "bike";
 
 export type CustomerPin = {
   id: string;
   kind: PinKind;
   name: string;
   parentName: string | null;
+  status: string | null;
   city: string | null;
   countryCode: string | null;
   segmentSlug: string | null;
@@ -41,11 +42,13 @@ const MUTED_GREY = "#737373";
 const PROSPECT_AMBER = "#d97706";
 const UNIT_TEAL = "#0d9488";
 const EXPIRING_RED = "#dc2626";
+const BIKE_INDIGO = "#4f46e5";
 
 type Layers = {
   customers: boolean;
   prospects: boolean;
   departments: boolean;
+  bikes: boolean;
   expiringOnly: boolean;
 };
 
@@ -69,6 +72,7 @@ export default function CustomerMap({ pins, segments }: Props) {
     customers: true,
     prospects: true,
     departments: true,
+    bikes: true,
     expiringOnly: false,
   });
   const [mapReady, setMapReady] = useState(false);
@@ -83,27 +87,29 @@ export default function CustomerMap({ pins, segments }: Props) {
         ? layers.customers
         : p.kind === "prospect"
           ? layers.prospects
-          : layers.departments;
+          : p.kind === "bike"
+            ? layers.bikes
+            : layers.departments;
     return pins.filter(
       (p) =>
         layerOn(p) &&
         (segment === "all" || p.segmentSlug === segment) &&
-        (!layers.expiringOnly || p.expiringSoon),
+        // "expiring only" is a service-agreement filter; it doesn't apply to
+        // bike pins, which would otherwise all vanish when it's on.
+        (!layers.expiringOnly || p.kind === "bike" || p.expiringSoon),
     );
   }, [pins, segment, layers]);
 
   const totals = useMemo(() => {
     let bikes = 0;
-    let sa = 0;
     let prospects = 0;
     let expiring = 0;
     for (const p of filtered) {
-      bikes += p.bikes;
-      sa += p.saBikes;
+      if (p.kind === "bike") bikes += 1;
       if (p.kind === "prospect") prospects += 1;
       if (p.expiringSoon) expiring += 1;
     }
-    return { pins: filtered.length, bikes, sa, prospects, expiring };
+    return { pins: filtered.length, bikes, prospects, expiring };
   }, [filtered]);
 
   // Counts per layer across the full set (for the toggle labels).
@@ -111,14 +117,16 @@ export default function CustomerMap({ pins, segments }: Props) {
     let customers = 0;
     let prospects = 0;
     let departments = 0;
+    let bikes = 0;
     let expiring = 0;
     for (const p of pins) {
       if (p.kind === "customer") customers += 1;
       else if (p.kind === "prospect") prospects += 1;
+      else if (p.kind === "bike") bikes += 1;
       else departments += 1;
       if (p.expiringSoon) expiring += 1;
     }
-    return { customers, prospects, departments, expiring };
+    return { customers, prospects, departments, bikes, expiring };
   }, [pins]);
 
   // Mount the map once. Tile layer + zoom controls, nothing else.
@@ -173,10 +181,19 @@ export default function CustomerMap({ pins, segments }: Props) {
       if (filtered.length === 0) return;
 
       const layer = L.layerGroup();
-      for (const c of filtered) {
-        const radius = Math.min(7 + Math.sqrt(c.bikes) * 1.7, 28);
-        const fillColor =
-          c.kind === "prospect"
+      // Bikes drawn last so they sit on top of the customer/dept pins they
+      // share a location with.
+      const ordered = [...filtered].sort(
+        (a, b) => (a.kind === "bike" ? 1 : 0) - (b.kind === "bike" ? 1 : 0),
+      );
+      for (const c of ordered) {
+        const isBike = c.kind === "bike";
+        const radius = isBike
+          ? 5
+          : Math.min(7 + Math.sqrt(c.bikes) * 1.7, 28);
+        const fillColor = isBike
+          ? BIKE_INDIGO
+          : c.kind === "prospect"
             ? PROSPECT_AMBER
             : c.kind === "unit"
               ? UNIT_TEAL
@@ -186,10 +203,24 @@ export default function CustomerMap({ pins, segments }: Props) {
         const marker = L.circleMarker([c.latitude, c.longitude], {
           radius,
           color: c.expiringSoon ? EXPIRING_RED : "#ffffff",
-          weight: c.expiringSoon ? 3 : 2,
+          weight: c.expiringSoon ? 3 : isBike ? 1.5 : 2,
           fillColor,
-          fillOpacity: 0.88,
+          fillOpacity: isBike ? 0.95 : 0.88,
         });
+
+        if (isBike) {
+          marker.bindPopup(
+            `<div class="jp-pop">
+               <div class="jp-pop__name">${escapeHtml(c.name)}</div>
+               <div class="jp-pop__sub">Bike${c.status ? " · " + escapeHtml(c.status.replace(/_/g, " ")) : ""}</div>
+               <div class="jp-pop__row"><span>Location</span><strong>${escapeHtml(c.parentName ?? "—")}</strong></div>
+             </div>`,
+            { closeButton: true, className: "jp-popup", maxWidth: 280 },
+          );
+          layer.addLayer(marker);
+          continue;
+        }
+
         const saPct =
           c.bikes > 0 ? Math.round((c.saBikes / c.bikes) * 100) : 0;
         const cityLine = [
@@ -305,6 +336,13 @@ export default function CustomerMap({ pins, segments }: Props) {
             onClick={() => toggleLayer("departments")}
           />
           <LayerToggle
+            label="Bikes"
+            count={layerCounts.bikes}
+            color={BIKE_INDIGO}
+            active={layers.bikes}
+            onClick={() => toggleLayer("bikes")}
+          />
+          <LayerToggle
             label="Expiring ≤90d"
             count={layerCounts.expiring}
             color={EXPIRING_RED}
@@ -356,6 +394,7 @@ export default function CustomerMap({ pins, segments }: Props) {
             <LegendRow color={MUTED_GREY} label="Customer · no agreement" />
             <LegendRow color={PROSPECT_AMBER} label="Prospect (sales lead)" />
             <LegendRow color={UNIT_TEAL} label="Department / unit" />
+            <LegendRow color={BIKE_INDIGO} label="Bike (owner / workshop)" />
             <LegendRow
               color={BRAND_BLUE}
               ring={EXPIRING_RED}
