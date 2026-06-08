@@ -33,7 +33,7 @@ export default async function EditOrganizationPage({
       .select(
         `
           id, legal_name, display_name_en, display_name_da,
-          customer_segment_id, preferred_language,
+          customer_segment_id, lifecycle_stage, preferred_language,
           cvr_number, ean_number, vat_number,
           address_line1, address_line2, zip_code, city, state_province,
           country_code, phone, email, website,
@@ -72,6 +72,7 @@ export default async function EditOrganizationPage({
     display_name_en: o.display_name_en ?? "",
     display_name_da: o.display_name_da ?? "",
     customer_segment_id: o.customer_segment_id ?? "",
+    lifecycle_stage: o.lifecycle_stage ?? "customer",
     preferred_language: o.preferred_language ?? "da",
     cvr_number: o.cvr_number ?? "",
     ean_number: o.ean_number ?? "",

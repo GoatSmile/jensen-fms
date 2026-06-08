@@ -44,6 +44,7 @@ export type OrganizationFormValues = {
   display_name_en: string;
   display_name_da: string;
   customer_segment_id: string;
+  lifecycle_stage: string;
   preferred_language: string;
   cvr_number: string;
   ean_number: string;
@@ -68,6 +69,7 @@ export const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
   display_name_en: "",
   display_name_da: "",
   customer_segment_id: "",
+  lifecycle_stage: "customer",
   preferred_language: "da",
   cvr_number: "",
   ean_number: "",
@@ -131,6 +133,7 @@ export function OrganizationForm({
     appendField(fd, "display_name_en", values.display_name_en);
     appendField(fd, "display_name_da", values.display_name_da);
     appendField(fd, "customer_segment_id", values.customer_segment_id);
+    appendField(fd, "lifecycle_stage", values.lifecycle_stage);
     appendField(fd, "preferred_language", values.preferred_language);
     appendField(fd, "cvr_number", values.cvr_number);
     appendField(fd, "ean_number", values.ean_number);
@@ -235,6 +238,24 @@ export function OrganizationForm({
                   {s.name_en}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field
+          label="Lifecycle stage"
+          htmlFor="org-stage"
+          error={errorField === "lifecycle_stage" ? error : null}
+        >
+          <Select
+            value={values.lifecycle_stage}
+            onValueChange={(v) => update("lifecycle_stage", v)}
+          >
+            <SelectTrigger id="org-stage">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="customer">Customer</SelectItem>
+              <SelectItem value="prospect">Prospect (sales lead)</SelectItem>
             </SelectContent>
           </Select>
         </Field>

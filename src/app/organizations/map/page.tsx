@@ -33,12 +33,17 @@ export const dynamic = "force-dynamic";
 export default async function CustomerMapPage() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
+  // Agreements ending within 90 days count as "expiring soon" — the
+  // prospecting/renewal signal on the map.
+  const soonCutoff = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 
-  const [orgsRes, bikesRes, saRes] = await Promise.all([
+  const [orgsRes, unitsRes, bikesRes, saRes] = await Promise.all([
     supabase
       .from("organizations")
       .select(
-        `id, legal_name, display_name_da, display_name_en,
+        `id, legal_name, display_name_da, display_name_en, lifecycle_stage,
          city, country_code, latitude, longitude,
          segment:customer_segments(id, slug, name_en)`,
       )
@@ -46,16 +51,26 @@ export default async function CustomerMapPage() {
       .eq("is_active", true)
       .not("latitude", "is", null)
       .not("longitude", "is", null),
-    // All in-service bikes grouped by owner. We exclude terminal-state
-    // bikes (retired, lost) since they're not "in service" for the
-    // purposes of the map count.
+    // Geocoded org units (kommune/hospital departments). Segment is
+    // inherited from the parent org since units have no segment of their own.
+    supabase
+      .from("organization_units")
+      .select(
+        `id, name, city, country_code, latitude, longitude,
+         organization:organizations(legal_name, display_name_da, display_name_en,
+           segment:customer_segments(slug, name_en))`,
+      )
+      .is("deleted_at", null)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null),
+    // All in-service bikes grouped by owner (org and unit). We exclude
+    // terminal-state bikes (retired, lost) since they're not "in service".
     supabase
       .from("bikes")
-      .select("owner_organization_id, status")
+      .select("owner_organization_id, owner_unit_id, status")
       .is("deleted_at", null)
-      .not("owner_organization_id", "is", null)
       .not("status", "in", "(retired,lost_or_stolen)"),
-    // Active service agreements — used as a per-org boolean for now.
+    // Active service agreements — per-org coverage boolean + expiry signal.
     supabase
       .from("service_agreements")
       .select("organization_id, start_date, end_date, status")
@@ -67,49 +82,96 @@ export default async function CustomerMapPage() {
     throw new Error(`Failed to load customers: ${orgsRes.error.message}`);
   }
 
-  // Tally bikes per org so the pin radius can scale with the count.
+  // Tally in-service bikes per org and per unit so pin radius scales.
   const bikesByOrg = new Map<string, number>();
+  const bikesByUnit = new Map<string, number>();
   for (const b of bikesRes.data ?? []) {
-    if (!b.owner_organization_id) continue;
-    bikesByOrg.set(
-      b.owner_organization_id,
-      (bikesByOrg.get(b.owner_organization_id) ?? 0) + 1,
-    );
+    if (b.owner_organization_id)
+      bikesByOrg.set(
+        b.owner_organization_id,
+        (bikesByOrg.get(b.owner_organization_id) ?? 0) + 1,
+      );
+    if (b.owner_unit_id)
+      bikesByUnit.set(
+        b.owner_unit_id,
+        (bikesByUnit.get(b.owner_unit_id) ?? 0) + 1,
+      );
   }
 
-  // Set of orgs covered by an active service agreement (handling NULL
-  // end_date and end_date >= today in JS rather than fighting Supabase's
-  // .or() builder).
+  // Orgs with an active SA (for coverage colour) and a subset whose SA
+  // expires within the window (for the renewal layer).
   const orgsWithActiveSA = new Set<string>();
+  const orgsExpiringSoon = new Set<string>();
   for (const sa of saRes.data ?? []) {
     if (!sa.organization_id) continue;
     if (sa.end_date && sa.end_date < today) continue;
     orgsWithActiveSA.add(sa.organization_id);
+    if (sa.end_date && sa.end_date >= today && sa.end_date <= soonCutoff)
+      orgsExpiringSoon.add(sa.organization_id);
   }
 
-  const pins: CustomerPin[] = (orgsRes.data ?? [])
-    .map((o) => {
-      const lat = o.latitude == null ? null : Number(o.latitude);
-      const lng = o.longitude == null ? null : Number(o.longitude);
+  const finiteCoord = (v: unknown) => {
+    const n = v == null ? null : Number(v);
+    return n != null && Number.isFinite(n) ? n : null;
+  };
+
+  const orgPins: CustomerPin[] = (orgsRes.data ?? [])
+    .map((o): CustomerPin | null => {
+      const lat = finiteCoord(o.latitude);
+      const lng = finiteCoord(o.longitude);
       if (lat == null || lng == null) return null;
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
       const bikes = bikesByOrg.get(o.id) ?? 0;
-      const saBikes = orgsWithActiveSA.has(o.id) ? bikes : 0;
-      const name = o.display_name_da ?? o.display_name_en ?? o.legal_name;
       return {
         id: o.id,
-        name,
+        kind: o.lifecycle_stage === "prospect" ? "prospect" : "customer",
+        name: o.display_name_da ?? o.display_name_en ?? o.legal_name,
+        parentName: null,
         city: o.city,
         countryCode: o.country_code,
         segmentSlug: o.segment?.slug ?? null,
         segmentLabel: o.segment?.name_en ?? null,
         bikes,
-        saBikes,
+        saBikes: orgsWithActiveSA.has(o.id) ? bikes : 0,
+        expiringSoon: orgsExpiringSoon.has(o.id),
         latitude: lat,
         longitude: lng,
       } satisfies CustomerPin;
     })
     .filter((p): p is CustomerPin => p !== null);
+
+  const unitPins: CustomerPin[] = (unitsRes.data ?? [])
+    .map((u): CustomerPin | null => {
+      const lat = finiteCoord(u.latitude);
+      const lng = finiteCoord(u.longitude);
+      if (lat == null || lng == null) return null;
+      const org = Array.isArray(u.organization)
+        ? u.organization[0]
+        : u.organization;
+      const seg = org?.segment
+        ? Array.isArray(org.segment)
+          ? org.segment[0]
+          : org.segment
+        : null;
+      return {
+        id: u.id,
+        kind: "unit",
+        name: u.name,
+        parentName:
+          org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null,
+        city: u.city,
+        countryCode: u.country_code,
+        segmentSlug: seg?.slug ?? null,
+        segmentLabel: seg?.name_en ?? null,
+        bikes: bikesByUnit.get(u.id) ?? 0,
+        saBikes: 0,
+        expiringSoon: false,
+        latitude: lat,
+        longitude: lng,
+      } satisfies CustomerPin;
+    })
+    .filter((p): p is CustomerPin => p !== null);
+
+  const pins: CustomerPin[] = [...orgPins, ...unitPins];
 
   // Build the segment filter chips from the segments that are actually
   // represented in the pin set. The "All" chip is always first.

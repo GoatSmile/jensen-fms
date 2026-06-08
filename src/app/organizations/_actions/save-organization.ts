@@ -22,6 +22,7 @@ type ParsedOrganization = {
   display_name_en: string | null;
   display_name_da: string | null;
   customer_segment_id: string;
+  lifecycle_stage: string;
   preferred_language: string;
   cvr_number: string | null;
   ean_number: string | null;
@@ -79,11 +80,18 @@ function parseOrganization(
   // The DB column is NOT NULL; default to 'da' if the form ever sent nothing.
   const preferred_language = rawLang ?? "da";
 
+  // Lifecycle stage: 'customer' (default) or 'prospect'. DB CHECK enforces
+  // the same set; we guard here so a bad value gives a clean error.
+  const rawStage = nullable(formData.get("lifecycle_stage")) ?? "customer";
+  if (rawStage !== "customer" && rawStage !== "prospect")
+    return { error: "Invalid lifecycle stage.", field: "lifecycle_stage" };
+
   return {
     legal_name,
     display_name_en: nullable(formData.get("display_name_en")),
     display_name_da: nullable(formData.get("display_name_da")),
     customer_segment_id,
+    lifecycle_stage: rawStage,
     preferred_language,
     cvr_number: nullable(formData.get("cvr_number")),
     ean_number: nullable(formData.get("ean_number")),

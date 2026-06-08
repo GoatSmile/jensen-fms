@@ -1723,33 +1723,66 @@ export type Database = {
       organization_units: {
         Row: {
           address: string | null
+          city: string | null
           code: string | null
+          country_code: string | null
           created_at: string
+          cvr_number: string | null
           deleted_at: string | null
+          ean_number: string | null
+          email: string | null
+          external_customer_no: number | null
+          geocoded_at: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
           notes: string | null
           organization_id: string
+          phone: string | null
+          zip_code: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           code?: string | null
+          country_code?: string | null
           created_at?: string
+          cvr_number?: string | null
           deleted_at?: string | null
+          ean_number?: string | null
+          email?: string | null
+          external_customer_no?: number | null
+          geocoded_at?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
           notes?: string | null
           organization_id: string
+          phone?: string | null
+          zip_code?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           code?: string | null
+          country_code?: string | null
           created_at?: string
+          cvr_number?: string | null
           deleted_at?: string | null
+          ean_number?: string | null
+          email?: string | null
+          external_customer_no?: number | null
+          geocoded_at?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           notes?: string | null
           organization_id?: string
+          phone?: string | null
+          zip_code?: string | null
         }
         Relationships: [
           {
@@ -1778,11 +1811,13 @@ export type Database = {
           display_name_en: string | null
           ean_number: string | null
           email: string | null
+          external_customer_no: number | null
           geocoded_at: string | null
           id: string
           is_active: boolean
           latitude: number | null
           legal_name: string
+          lifecycle_stage: string
           longitude: number | null
           notes: string | null
           payment_terms_days: number | null
@@ -1811,11 +1846,13 @@ export type Database = {
           display_name_en?: string | null
           ean_number?: string | null
           email?: string | null
+          external_customer_no?: number | null
           geocoded_at?: string | null
           id?: string
           is_active?: boolean
           latitude?: number | null
           legal_name: string
+          lifecycle_stage?: string
           longitude?: number | null
           notes?: string | null
           payment_terms_days?: number | null
@@ -1844,11 +1881,13 @@ export type Database = {
           display_name_en?: string | null
           ean_number?: string | null
           email?: string | null
+          external_customer_no?: number | null
           geocoded_at?: string | null
           id?: string
           is_active?: boolean
           latitude?: number | null
           legal_name?: string
+          lifecycle_stage?: string
           longitude?: number | null
           notes?: string | null
           payment_terms_days?: number | null
