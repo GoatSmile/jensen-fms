@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
 
 import {
@@ -423,23 +424,6 @@ export default async function BikeDetailPage({
       <PartsInstalledSection rows={partRows} />
 
       <StateLogSection rows={stateRows} />
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </dt>
-      <dd className="text-sm">{children}</dd>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 
@@ -193,31 +193,3 @@ export function UnitDialog({
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  error?: string | null;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>
-        {label}
-        {required ? <span className="text-destructive ml-0.5">*</span> : null}
-      </Label>
-      {children}
-      {error ? (
-        <p className="text-destructive text-xs" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}

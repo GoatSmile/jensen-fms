@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ReadField } from "@/components/field";
+import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
 import { Pencil } from "lucide-react";
 
@@ -217,53 +219,3 @@ export default async function ServiceAgreementDetailPage({
   );
 }
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function ReadField({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value: string | null;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </dt>
-      <dd className="text-sm">
-        {value && value.trim() !== "" ? (
-          multiline ? (
-            <pre className="whitespace-pre-wrap font-sans text-sm">{value}</pre>
-          ) : (
-            value
-          )
-        ) : (
-          <span className="text-muted-foreground italic">—</span>
-        )}
-      </dd>
-    </div>
-  );
-}

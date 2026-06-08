@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Field } from "@/components/field";
+import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
@@ -400,45 +402,6 @@ export default async function TicketDetailPage({
           </Section>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </dt>
-      <dd>{children}</dd>
     </div>
   );
 }

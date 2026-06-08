@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
 
 import {
@@ -308,19 +309,3 @@ export default async function OrganizationDetailPage({
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-      </header>
-      <div className="px-4 py-3">{children}</div>
-    </section>
-  );
-}

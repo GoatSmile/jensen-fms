@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Field, ReadField } from "@/components/field";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -241,48 +241,3 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function ReadField({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value: string | null;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </dt>
-      <dd className="text-sm">
-        {value && value.trim() !== "" ? (
-          multiline ? (
-            <pre className="whitespace-pre-wrap font-sans text-sm">{value}</pre>
-          ) : (
-            value
-          )
-        ) : (
-          <span className="text-muted-foreground italic">—</span>
-        )}
-      </dd>
-    </div>
-  );
-}

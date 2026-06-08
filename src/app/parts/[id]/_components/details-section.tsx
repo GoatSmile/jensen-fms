@@ -1,4 +1,5 @@
 import { Money } from "@/components/money";
+import { Field } from "@/components/field";
 
 import { Section } from "./section";
 
@@ -104,23 +105,6 @@ export function DetailsSection({
         </div>
       ) : null}
     </Section>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        {label}
-      </dt>
-      <dd className="text-sm">{children}</dd>
-    </div>
   );
 }
 

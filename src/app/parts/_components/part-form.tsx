@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -523,31 +524,3 @@ function FormSection({
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  error?: string | null;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>
-        {label}
-        {required ? <span className="text-destructive ml-0.5">*</span> : null}
-      </Label>
-      {children}
-      {error ? (
-        <p className="text-destructive text-xs" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}

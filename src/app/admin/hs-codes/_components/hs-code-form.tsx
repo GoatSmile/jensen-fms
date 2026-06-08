@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 
@@ -234,19 +234,3 @@ export function HsCodeForm({ mode, initial }: Props) {
   );
 }
 
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
-  );
-}
