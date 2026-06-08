@@ -171,7 +171,7 @@ export default async function PaintOrdersPage({
             icon={Paintbrush}
             title="No paint orders yet"
             description="Paint orders are batches of bikes sent to a supplier for paint."
-            action={{ label: "Create paint order", href: "/paint-orders/new" }}
+            action={{ label: "New paint order", href: "/paint-orders/new" }}
           />
         )
       ) : (

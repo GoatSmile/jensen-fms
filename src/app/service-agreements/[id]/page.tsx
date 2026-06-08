@@ -13,6 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { formatPrice } from "@/lib/format";
+import { woStatusLabel } from "@/lib/maintenance/work-order-status";
 import {
   SA_STATUS_VARIANT,
   type ServiceAgreementStatus,
@@ -146,7 +148,7 @@ export default async function ServiceAgreementDetailPage({
             label="Monthly fee"
             value={
               sa.monthly_fee != null
-                ? `${Number(sa.monthly_fee).toLocaleString("da-DK")} ${sa.fee_currency ?? ""}`
+                ? formatPrice(Number(sa.monthly_fee), sa.fee_currency ?? "DKK")
                 : null
             }
           />
@@ -204,7 +206,7 @@ export default async function ServiceAgreementDetailPage({
                   {wo.wo_number}
                 </Link>{" "}
                 <span className="text-muted-foreground">
-                  · {wo.status} · {wo.is_billable ? "billable" : "covered"}
+                  · {woStatusLabel(wo.status)} · {wo.is_billable ? "billable" : "covered"}
                 </span>
               </li>
             ))}

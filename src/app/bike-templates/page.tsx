@@ -137,7 +137,7 @@ export default async function BikeTemplatesPage({
           </div>
           <Button asChild>
             <Link href="/bike-templates/new">
-              <Plus aria-hidden /> Add template
+              <Plus aria-hidden /> New template
             </Link>
           </Button>
         </div>
@@ -148,7 +148,7 @@ export default async function BikeTemplatesPage({
           icon={BookOpen}
           title="No templates yet"
           description="Templates are the product catalog. Create one for each frame size of each bike — color is picked at order time."
-          action={{ label: "Add template", href: "/bike-templates/new" }}
+          action={{ label: "New template", href: "/bike-templates/new" }}
         />
       ) : (
         <div className="flex flex-col gap-6">

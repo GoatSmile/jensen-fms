@@ -109,7 +109,7 @@ export default async function ManufacturingOrdersPage() {
           icon={Hammer}
           title="No manufacturing orders yet"
           description="Start a production run against a template — or go one-off and build the BOM by hand."
-          action={{ label: "Create MO", href: "/manufacturing-orders/new" }}
+          action={{ label: "New MO", href: "/manufacturing-orders/new" }}
         />
       ) : (
         <div className="overflow-hidden rounded-md border">

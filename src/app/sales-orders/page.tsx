@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SegmentedId } from "@/components/segmented-id";
+import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -79,9 +80,12 @@ export default async function SalesOrdersListPage() {
       </div>
 
       {!rows || rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No sales orders yet.
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="No sales orders yet"
+          description="Create a sales order to quote, build, and deliver bikes for a customer."
+          action={{ label: "New sales order", href: "/sales-orders/new" }}
+        />
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>

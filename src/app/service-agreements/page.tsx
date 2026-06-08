@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, ShieldCheck } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -19,7 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
   SA_STATUS_VARIANT,
@@ -37,13 +39,6 @@ const FILTERS = [
   { id: "expired", label: "Expired" },
   { id: "cancelled", label: "Cancelled" },
 ];
-
-function fmtDkk(n: number, currency: string) {
-  return `${n.toLocaleString("da-DK", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ${currency === "DKK" ? "kr." : currency}`;
-}
 
 export default async function ServiceAgreementsListPage({
   searchParams,
@@ -117,9 +112,16 @@ export default async function ServiceAgreementsListPage({
       </div>
 
       {!rows || rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No agreements{filter !== "all" ? ` with status “${filter}”` : ""} yet.
-        </div>
+        <EmptyState
+          icon={ShieldCheck}
+          title={
+            filter === "all"
+              ? "No agreements yet"
+              : `No ${filter} agreements`
+          }
+          description="Coverage agreements drive work-order billing and the map's renewal layer."
+          action={{ label: "New agreement", href: "/service-agreements/new" }}
+        />
       ) : (
         <div className="overflow-x-auto rounded-md border">
           <Table>
@@ -195,7 +197,7 @@ export default async function ServiceAgreementsListPage({
                     </TableCell>
                     <TableCell className="text-right text-sm tabular-nums">
                       {sa.monthly_fee != null
-                        ? fmtDkk(Number(sa.monthly_fee), sa.fee_currency ?? "DKK")
+                        ? formatPrice(Number(sa.monthly_fee), sa.fee_currency ?? "DKK")
                         : "—"}
                     </TableCell>
                   </TableRow>

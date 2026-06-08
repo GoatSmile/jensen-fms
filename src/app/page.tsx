@@ -20,6 +20,7 @@ import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
 import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
 import { formatPrice } from "@/lib/format";
+import { formatDate } from "@/lib/parts/format";
 import { createClient } from "@/lib/supabase/server";
 
 const OPEN_PAINT_STATUSES = ["planned", "sent_to_painter", "at_painter"] as const;
@@ -40,16 +41,6 @@ function todayISODate(): string {
 function diffDays(fromISO: string): number {
   const ms = Date.now() - Date.parse(fromISO);
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
-}
-
-function formatDateDa(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat("da-DK", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(d);
 }
 
 export default async function DashboardPage() {
@@ -273,7 +264,7 @@ export default async function DashboardPage() {
                       {mo.mo_number}
                     </span>
                     <span className="text-muted-foreground truncate text-xs">
-                      due {formatDateDa(mo.planned_completion_date)}
+                      due {formatDate(mo.planned_completion_date)}
                     </span>
                   </div>
                   <span className="text-destructive shrink-0 text-xs tabular-nums">

@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { poStatusLabel } from "@/lib/po/status";
 
 import {
   POForm,
@@ -99,7 +100,7 @@ export default async function EditPurchaseOrderPage({
         <div className="rounded-md border p-6">
           <h1 className="text-lg font-semibold">PO is no longer editable</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Only draft POs can be edited — this one is in &quot;{po.status}&quot;.
+            Only draft POs can be edited — this one is in &quot;{poStatusLabel(po.status)}&quot;.
             Use the receive flow on the detail page to log incoming stock, or
             cancel the PO from the &quot;Move to&quot; menu.
           </p>

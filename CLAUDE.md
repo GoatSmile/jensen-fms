@@ -179,7 +179,14 @@ cross-cutting. Original SQL files live in `/migrations/`.
   `asChild` prop (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (uses `@base-ui/react` and a
   `render` prop), which won't compose with the existing components.
-- Sentence case in UI text — never Title Case, never ALL CAPS.
+- Sentence case in UI text — never Title Case, never ALL CAPS in headings,
+  buttons, or body copy. **Accepted exception:** small "eyebrow" micro-labels
+  (dashboard KPI captions, `dt` field labels, map legend headers) rendered
+  ALL CAPS via CSS (`uppercase tracking-wide text-xs`) are a deliberate design
+  token — keep the underlying string sentence-case and let CSS uppercase it;
+  don't "fix" these to sentence case.
+- **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New part",
+  "New bike", "New MO") — not "Add X" or "Create X". Standardised June 2026.
 - Display DKK as `1.234,56 kr.` (Danish locale).
 - Plan-then-build: before writing code, list files you intend to create/modify
   and wait for confirmation.

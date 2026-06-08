@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { formatPrice } from "@/lib/format";
 
 import {
   PartsRecipeSection,
@@ -24,23 +25,6 @@ import {
   VersionHistorySection,
   type VersionRow,
 } from "./_components/version-history-section";
-
-function formatPrice(
-  amount: number | null,
-  currency: string | null,
-): string {
-  if (amount == null || !currency) return "—";
-  if (currency === "DKK") {
-    return `${new Intl.NumberFormat("da-DK", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount)} kr.`;
-  }
-  return `${new Intl.NumberFormat("en", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)} ${currency}`;
-}
 
 export default async function BikeTemplateDetailPage({
   params,

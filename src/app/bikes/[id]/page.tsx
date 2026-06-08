@@ -12,7 +12,7 @@ import {
 import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
-import type { BikeStatus } from "@/lib/bikes/status";
+import { bikeStatusLabel, type BikeStatus } from "@/lib/bikes/status";
 
 import {
   AssignCustomerDialog,
@@ -267,7 +267,7 @@ export default async function BikeDetailPage({
     b.deleted_at != null
       ? "Bike is archived."
       : assignBlocked
-        ? `A "${b.status}" bike is out of the active fleet.`
+        ? `A "${bikeStatusLabel(b.status)}" bike is out of the active fleet.`
         : undefined;
 
   return (

@@ -23,20 +23,12 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { countryName } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/parts/format";
 
 type SearchParams = {
   q?: string;
   segment?: string;
 };
-
-function formatDateDa(iso: string | null): string {
-  if (!iso) return "—";
-  return new Intl.DateTimeFormat("da-DK", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(iso));
-}
 
 export default async function OrganizationsPage({
   searchParams,
@@ -149,7 +141,7 @@ export default async function OrganizationsPage({
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus aria-hidden /> Add customer
+              <Plus aria-hidden /> New customer
             </Link>
           </Button>
         </div>
@@ -202,7 +194,7 @@ export default async function OrganizationsPage({
             icon={Building2}
             title="No customers yet"
             description="Add your first customer to start assigning bikes and tracking service."
-            action={{ label: "Add customer", href: "/organizations/new" }}
+            action={{ label: "New customer", href: "/organizations/new" }}
           />
         )
       ) : (
@@ -299,7 +291,7 @@ export default async function OrganizationsPage({
                         className="block px-4 py-2.5 text-xs"
                       >
                         <span className="text-muted-foreground">
-                          {formatDateDa(o.created_at)}
+                          {formatDate(o.created_at)}
                         </span>
                       </Link>
                     </TableCell>

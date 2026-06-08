@@ -170,7 +170,7 @@ export default async function BikesPage({
           </div>
           <Button asChild>
             <Link href="/bikes/new">
-              <Plus aria-hidden /> Add bike
+              <Plus aria-hidden /> New bike
             </Link>
           </Button>
         </div>
@@ -245,7 +245,7 @@ export default async function BikesPage({
             icon={Bike}
             title="No bikes yet"
             description="Add a manual bike, or create one through a manufacturing order."
-            action={{ label: "Add bike", href: "/bikes/new" }}
+            action={{ label: "New bike", href: "/bikes/new" }}
             secondaryAction={{
               label: "Start a manufacturing order",
               href: "/manufacturing-orders/new",

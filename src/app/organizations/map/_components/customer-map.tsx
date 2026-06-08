@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
 
 import { Button } from "@/components/ui/button";
+import { bikeStatusLabel } from "@/lib/bikes/status";
 import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 
@@ -44,21 +45,28 @@ const UNIT_TEAL = "#0d9488";
 const EXPIRING_RED = "#dc2626";
 const BIKE_NEUTRAL = "#4f46e5";
 
-// Bike pins are coloured by lifecycle status, with human-readable labels
-// (the raw enum is planning/building/in_stock/assigned/in_service/
-// in_maintenance). Green = out working, red = needs repair, amber = in the
-// build pipeline, blue = ready/with customer, grey = not yet real.
-const BIKE_STATUS: Record<string, { label: string; color: string }> = {
-  in_service: { label: "In service", color: "#16a34a" },
-  assigned: { label: "Delivered to customer", color: "#0284c7" },
-  in_stock: { label: "Ready in stock", color: "#0ea5e9" },
-  in_maintenance: { label: "In repair", color: "#dc2626" },
-  building: { label: "Being built", color: "#d97706" },
-  planning: { label: "Planned", color: "#94a3b8" },
+// Map-only pin colours per bike status. Labels come from the canonical
+// bikeStatusLabel (src/lib/bikes/status) so the map matches the rest of the
+// app. Green = working, red = needs repair, amber = build pipeline,
+// blue = ready/with customer, grey = not yet real.
+const BIKE_STATUS_COLOR: Record<string, string> = {
+  in_service: "#16a34a",
+  assigned: "#0284c7",
+  in_stock: "#0ea5e9",
+  in_maintenance: "#dc2626",
+  building: "#d97706",
+  planning: "#94a3b8",
 };
-const BIKE_FALLBACK = { label: "Bike", color: BIKE_NEUTRAL };
-const bikeMeta = (status: string | null) =>
-  (status && BIKE_STATUS[status]) || BIKE_FALLBACK;
+const BIKE_LEGEND_STATUSES = [
+  "in_service",
+  "assigned",
+  "in_stock",
+  "in_maintenance",
+  "building",
+  "planning",
+] as const;
+const bikeColor = (status: string | null) =>
+  (status && BIKE_STATUS_COLOR[status]) || BIKE_NEUTRAL;
 
 type View =
   | "all"
@@ -196,7 +204,7 @@ export default function CustomerMap({ pins, segments }: Props) {
           ? 5
           : Math.min(7 + Math.sqrt(c.bikes) * 1.7, 28);
         const fillColor = isBike
-          ? bikeMeta(c.status).color
+          ? bikeColor(c.status)
           : c.kind === "prospect"
             ? PROSPECT_AMBER
             : c.kind === "unit"
@@ -216,7 +224,7 @@ export default function CustomerMap({ pins, segments }: Props) {
           marker.bindPopup(
             `<div class="jp-pop">
                <div class="jp-pop__name">${escapeHtml(c.name)}</div>
-               <div class="jp-pop__sub">Bike · ${escapeHtml(bikeMeta(c.status).label)}</div>
+               <div class="jp-pop__sub">Bike · ${escapeHtml(bikeStatusLabel(c.status))}</div>
                <div class="jp-pop__row"><span>Location</span><strong>${escapeHtml(c.parentName ?? "—")}</strong></div>
              </div>`,
             { closeButton: true, className: "jp-popup", maxWidth: 280 },
@@ -409,8 +417,8 @@ export default function CustomerMap({ pins, segments }: Props) {
               <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
                 Bikes by status
               </div>
-              {Object.values(BIKE_STATUS).map((s) => (
-                <LegendRow key={s.label} color={s.color} label={s.label} />
+              {BIKE_LEGEND_STATUSES.map((s) => (
+                <LegendRow key={s} color={BIKE_STATUS_COLOR[s]} label={bikeStatusLabel(s)} />
               ))}
             </div>
           ) : null}

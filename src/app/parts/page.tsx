@@ -262,7 +262,7 @@ export default async function PartsPage({
             </Button>
             <Button asChild>
               <Link href="/parts/new">
-                <Plus aria-hidden /> Add part
+                <Plus aria-hidden /> New part
               </Link>
             </Button>
           </div>
@@ -279,7 +279,7 @@ export default async function PartsPage({
           icon={Boxes}
           title="No parts yet"
           description="Add parts to the catalog or import from a supplier order."
-          action={{ label: "Add part", href: "/parts/new" }}
+          action={{ label: "New part", href: "/parts/new" }}
           secondaryAction={{ label: "Import CSV", href: "/parts/import" }}
         />
       ) : (
