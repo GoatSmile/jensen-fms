@@ -2745,12 +2745,14 @@ export type Database = {
           description_en: string | null
           end_date: string | null
           fee_currency: string | null
+          has_gps: boolean
           id: string
           monthly_fee: number | null
           name_da: string | null
           name_en: string
           notes: string | null
           organization_id: string
+          organization_unit_id: string | null
           start_date: string
           status: Database["public"]["Enums"]["service_agreement_status"]
           updated_at: string
@@ -2764,12 +2766,14 @@ export type Database = {
           description_en?: string | null
           end_date?: string | null
           fee_currency?: string | null
+          has_gps?: boolean
           id?: string
           monthly_fee?: number | null
           name_da?: string | null
           name_en: string
           notes?: string | null
           organization_id: string
+          organization_unit_id?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
@@ -2783,12 +2787,14 @@ export type Database = {
           description_en?: string | null
           end_date?: string | null
           fee_currency?: string | null
+          has_gps?: boolean
           id?: string
           monthly_fee?: number | null
           name_da?: string | null
           name_en?: string
           notes?: string | null
           organization_id?: string
+          organization_unit_id?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
@@ -2806,6 +2812,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreements_organization_unit_id_fkey"
+            columns: ["organization_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organization_units"
             referencedColumns: ["id"]
           },
         ]

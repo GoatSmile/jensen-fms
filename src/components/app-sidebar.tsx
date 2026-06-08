@@ -15,6 +15,7 @@ import {
   Paintbrush,
   Receipt,
   Settings,
+  ShieldCheck,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
   { href: "/bikes", label: "Bikes", icon: Bike },
   { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
+  { href: "/service-agreements", label: "Service agreements", icon: ShieldCheck },
   { href: "/work", label: "Workshop floor", icon: HardHat },
   { href: "/organizations", label: "Customers", icon: Building2 },
   { href: "/organizations/map", label: "Map", icon: MapIcon },

@@ -34,23 +34,31 @@ async function findActiveCoverageForBike(
 ): Promise<{ agreementId: string | null; isBillable: boolean }> {
   const { data: bike } = await supabase
     .from("bikes")
-    .select("owner_organization_id")
+    .select("owner_organization_id, owner_unit_id")
     .eq("id", bikeId)
     .maybeSingle();
   const orgId = bike?.owner_organization_id ?? null;
   if (!orgId) return { agreementId: null, isBillable: true };
+  const unitId = bike?.owner_unit_id ?? null;
 
   const today = new Date().toISOString().slice(0, 10);
-  const { data: agreement } = await supabase
+  const { data: agreements } = await supabase
     .from("service_agreements")
-    .select("id, covers_parts, covers_labor")
+    .select("id, covers_parts, covers_labor, organization_unit_id")
     .eq("organization_id", orgId)
     .eq("status", "active")
     .lte("start_date", today)
     .or(`end_date.is.null,end_date.gte.${today}`)
-    .order("start_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("start_date", { ascending: false });
+
+  // Prefer an agreement scoped to the bike's own unit; otherwise fall back to
+  // an org-wide one (organization_unit_id IS NULL). A unit-scoped agreement
+  // for a *different* unit does NOT cover this bike.
+  const list = agreements ?? [];
+  const agreement =
+    (unitId && list.find((a) => a.organization_unit_id === unitId)) ||
+    list.find((a) => a.organization_unit_id == null) ||
+    null;
 
   if (!agreement) return { agreementId: null, isBillable: true };
   const isBillable = !(agreement.covers_parts && agreement.covers_labor);
