@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDkk } from "@/lib/parts/stock";
+import { kitCode, stickerColor } from "@/lib/kits/colors";
 
 import { cloneAsNewVersion } from "../_actions/clone-as-version";
 import { saveTemplateParts } from "../_actions/save-parts";
@@ -57,12 +58,22 @@ export type RecipeRow = {
   retailDkk: number | null;
 };
 
+export type KitOption = {
+  id: string;
+  sticker_color: string;
+  kit_number: number | null;
+};
+
 type Props = {
   templateId: string;
   isCurrent: boolean;
   initialRows: RecipeRow[];
   categories: CategoryOption[];
   parts: PartInCategory[];
+  /** Active kits, for the "add from kit" bulk action. */
+  kits: KitOption[];
+  /** kit_id → part_id[] (active kits only). */
+  kitParts: Record<string, string[]>;
   /** The template's own sale price (DKK), for the margin sanity-check. */
   templateRetailDkk: number | null;
 };
@@ -92,6 +103,8 @@ export function PartsRecipeSection({
   initialRows,
   categories,
   parts,
+  kits,
+  kitParts,
   templateRetailDkk,
 }: Props) {
   const router = useRouter();
@@ -104,6 +117,8 @@ export function PartsRecipeSection({
   const [pickerValueByCat, setPickerValueByCat] = useState<
     Record<string, string>
   >({});
+  const [kitId, setKitId] = useState<string>("");
+  const [kitNote, setKitNote] = useState<string | null>(null);
 
   const canEdit = isCurrent;
 
@@ -136,6 +151,32 @@ export function PartsRecipeSection({
     () => new Set(rows.map((r) => r.partId)),
     [rows],
   );
+
+  const partsById = useMemo(
+    () => new Map(parts.map((p) => [p.id, p])),
+    [parts],
+  );
+  const categoriesById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories],
+  );
+
+  // For the selected kit: its parts that exist in the catalog, split into
+  // addable vs already-in-recipe. Drives the button label and the result note.
+  const kitAddable = useMemo(() => {
+    if (!kitId) return { addable: [] as PartInCategory[], alreadyIn: 0 };
+    const addable: PartInCategory[] = [];
+    let alreadyIn = 0;
+    for (const partId of kitParts[kitId] ?? []) {
+      if (inRecipePartIds.has(partId)) {
+        alreadyIn += 1;
+        continue;
+      }
+      const part = partsById.get(partId);
+      if (part) addable.push(part);
+    }
+    return { addable, alreadyIn };
+  }, [kitId, kitParts, inRecipePartIds, partsById]);
 
   // How many recipe rows each category has — drives the done-state and the
   // picked/available counter on the left.
@@ -224,6 +265,38 @@ export function PartsRecipeSection({
     setSuccess(null);
   }
 
+  // One-shot copy of a kit's parts into the (unsaved) recipe — the mirror
+  // of the "label this BOM" action. No linkage: later kit edits don't touch
+  // the template, and vice versa. Nothing hits the DB until Save changes.
+  function onAddKit() {
+    const kit = kits.find((k) => k.id === kitId);
+    if (!kit || kitAddable.addable.length === 0) return;
+    setRows((prev) => [
+      ...prev,
+      ...kitAddable.addable.map((part) => ({
+        partId: part.id,
+        partSku: part.internal_sku,
+        partName: part.name_en,
+        categoryId: part.category_id,
+        categoryName: part.category_id
+          ? (categoriesById.get(part.category_id)?.name_en ?? null)
+          : null,
+        quantity: "1",
+        isOptional: false,
+        notes: "",
+        retailDkk: part.retailDkk,
+      })),
+    ]);
+    const code = kitCode(kit.sticker_color, kit.kit_number);
+    setKitNote(
+      `Added ${kitAddable.addable.length} part${kitAddable.addable.length === 1 ? "" : "s"} from ${code}` +
+        (kitAddable.alreadyIn > 0
+          ? ` · ${kitAddable.alreadyIn} already in recipe`
+          : ""),
+    );
+    setSuccess(null);
+  }
+
   function updateRow(partId: string, patch: Partial<RecipeRow>) {
     setRows((prev) =>
       prev.map((r) => (r.partId === partId ? { ...r, ...patch } : r)),
@@ -291,11 +364,29 @@ export function PartsRecipeSection({
               <>
                 {" · "}
                 <span className="text-foreground font-medium tabular-nums">
-                  retail {formatDkk(retailTotal.sum)}
+                  parts retail {formatDkk(retailTotal.sum)}
                 </span>
                 {retailTotal.unpriced > 0
                   ? ` (${retailTotal.unpriced} unpriced)`
                   : null}
+                {templateRetailDkk != null ? (
+                  <>
+                    {" · "}
+                    <span className="tabular-nums">
+                      sale price {formatDkk(templateRetailDkk)}
+                    </span>
+                    {" · "}
+                    <span
+                      className={`tabular-nums ${
+                        templateRetailDkk - retailTotal.sum < 0
+                          ? "text-destructive font-medium"
+                          : ""
+                      }`}
+                    >
+                      difference {formatDkk(templateRetailDkk - retailTotal.sum)}
+                    </span>
+                  </>
+                ) : null}
               </>
             ) : null}
           </p>
@@ -339,6 +430,73 @@ export function PartsRecipeSection({
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
               Parts by category
             </div>
+
+            {canEdit && kits.length > 0 ? (
+              <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    Add a whole kit
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={kitId}
+                      onValueChange={(v) => {
+                        setKitId(v);
+                        setKitNote(null);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-36 text-xs">
+                        <SelectValue placeholder="Pick a kit…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {kits.map((k) => (
+                          <SelectItem key={k.id} value={k.id}>
+                            <span
+                              aria-hidden
+                              className="inline-block size-2.5 rounded-full border border-black/10"
+                              style={{
+                                backgroundColor: stickerColor(k.sticker_color)
+                                  .hex,
+                              }}
+                            />
+                            {kitCode(k.sticker_color, k.kit_number)}
+                            <span className="text-muted-foreground ml-1 text-[10px] tabular-nums">
+                              {(kitParts[k.id] ?? []).length}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={onAddKit}
+                      disabled={!kitId || kitAddable.addable.length === 0}
+                    >
+                      <Plus aria-hidden />
+                      Add{" "}
+                      {kitId
+                        ? `${kitAddable.addable.length} part${kitAddable.addable.length === 1 ? "" : "s"}`
+                        : "parts"}
+                    </Button>
+                  </div>
+                </div>
+                {kitNote ? (
+                  <p
+                    className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400"
+                    role="status"
+                  >
+                    {kitNote}
+                  </p>
+                ) : kitId && kitAddable.addable.length === 0 ? (
+                  <p className="text-muted-foreground mt-1.5 text-xs">
+                    Every part in this kit is already in the recipe.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
             {populated.map((category, index) => (
               <CategoryPickerRow
                 key={category.id}
@@ -726,17 +884,6 @@ function RecipeLine({
           >
             {row.partName}
           </Link>
-          <span className="text-muted-foreground text-[10px]">
-            <span className="font-mono break-all">{row.partSku}</span>
-            {row.retailDkk != null ? (
-              <span className="tabular-nums">
-                {" "}
-                · {formatDkk(row.retailDkk)} each
-              </span>
-            ) : (
-              <span className="italic"> · no retail price</span>
-            )}
-          </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {lineTotal != null ? (

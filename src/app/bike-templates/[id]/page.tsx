@@ -77,6 +77,7 @@ export default async function BikeTemplateDetailPage({
     chainRes,
     chainPartCountsRes,
     kitsRes,
+    kitMembershipsRes,
   ] = await Promise.all([
     supabase
       .from("bike_template_parts")
@@ -116,6 +117,7 @@ export default async function BikeTemplateDetailPage({
       .eq("is_active", true)
       .order("sticker_color", { ascending: true })
       .order("kit_number", { ascending: true, nullsFirst: true }),
+    supabase.from("part_kits").select("part_id, kit_id"),
   ]);
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
@@ -163,6 +165,15 @@ export default async function BikeTemplateDetailPage({
       (chainCounts.get(row.template_id) ?? 0) + 1,
     );
   }
+  // kit_id → part_id[] for the recipe editor's "add from kit" bulk action.
+  // Only active kits (kitsRes is already filtered) get an entry.
+  const activeKitIds = new Set((kitsRes.data ?? []).map((k) => k.id));
+  const kitParts: Record<string, string[]> = {};
+  for (const m of kitMembershipsRes.data ?? []) {
+    if (!activeKitIds.has(m.kit_id)) continue;
+    (kitParts[m.kit_id] ??= []).push(m.part_id);
+  }
+
   const versionRows: VersionRow[] = (chainRes.data ?? []).map((v) => ({
     id: v.id,
     version: v.version,
@@ -253,6 +264,8 @@ export default async function BikeTemplateDetailPage({
         initialRows={initialRows}
         categories={categories}
         parts={parts}
+        kits={kitsRes.data ?? []}
+        kitParts={kitParts}
         templateRetailDkk={
           t.default_retail_price != null &&
           (t.default_retail_currency ?? "DKK") === "DKK"
