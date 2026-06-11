@@ -21,8 +21,10 @@ export type CategoryNode = {
 };
 
 /**
- * Sort categories into a stable depth-first order: parent before children,
- * siblings alphabetically, with `depth` and `path` precomputed for the UI.
+ * Arrange categories into a stable depth-first order: parent before children,
+ * siblings in the order the rows arrive (callers query
+ * `ORDER BY sort_order, name_en` — the workshop's canonical build order, same
+ * as the template recipe page), with `depth` and `path` precomputed for the UI.
  */
 export function flattenCategoryTree(rows: FlatCategory[]): CategoryNode[] {
   const byId = new Map<string, FlatCategory>();
@@ -34,13 +36,6 @@ export function flattenCategoryTree(rows: FlatCategory[]): CategoryNode[] {
     const list = childrenByParent.get(k);
     if (list) list.push(r);
     else childrenByParent.set(k, [r]);
-  }
-  for (const list of childrenByParent.values()) {
-    list.sort((a, b) =>
-      (a.name_en ?? "").localeCompare(b.name_en ?? "", "en", {
-        sensitivity: "base",
-      }),
-    );
   }
 
   const out: CategoryNode[] = [];
