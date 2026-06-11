@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Money } from "@/components/money";
 import {
   STOCK_BADGE_LABEL,
   STOCK_BADGE_VARIANT,
@@ -6,13 +7,14 @@ import {
   formatQuantity,
   type StockStatus,
 } from "@/lib/parts/stock";
-import { formatDate } from "@/lib/parts/format";
 
 type Props = {
   stockOnHand: number;
   stockStatus: StockStatus;
+  /** Still feeds the stock-value card (on-hand × last cost). */
   lastCostDkk: number | null;
-  lastCostDate: string | null;
+  retailPrice: number | null;
+  retailCurrency: string | null;
   supplierCount: number;
 };
 
@@ -20,7 +22,8 @@ export function StatStrip({
   stockOnHand,
   stockStatus,
   lastCostDkk,
-  lastCostDate,
+  retailPrice,
+  retailCurrency,
   supplierCount,
 }: Props) {
   const stockValue =
@@ -38,13 +41,15 @@ export function StatStrip({
           </Badge>
         </div>
       </Stat>
-      <Stat label="Last landed cost">
-        <span className="text-2xl font-semibold tabular-nums">
-          {formatDkk(lastCostDkk)}
-        </span>
-        {lastCostDate ? (
+      <Stat label="Default retail price">
+        <Money
+          amount={retailPrice}
+          currency={retailCurrency ?? "DKK"}
+          className="text-2xl font-semibold"
+        />
+        {retailPrice != null ? (
           <span className="text-muted-foreground text-xs">
-            as of {formatDate(lastCostDate)}
+            customer-facing price
           </span>
         ) : null}
       </Stat>

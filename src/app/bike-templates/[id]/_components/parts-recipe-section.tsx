@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronRight,
   GitBranch,
+  Minus,
+  Plus,
   Trash2,
 } from "lucide-react";
 
@@ -607,7 +609,24 @@ function CategoryPickerRow({
           {partsInCategory.map((p) => {
             const already = inRecipePartIds.has(p.id);
             return (
-              <SelectItem key={p.id} value={p.id} disabled={already}>
+              <SelectItem
+                key={p.id}
+                value={p.id}
+                disabled={already}
+                className={
+                  // Same done-language as the category rows: a softer
+                  // green wash on options that are already in the recipe.
+                  already
+                    ? "bg-emerald-50/80 data-disabled:opacity-100 dark:bg-emerald-500/10"
+                    : undefined
+                }
+              >
+                {already ? (
+                  <Check
+                    className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                    aria-hidden
+                  />
+                ) : null}
                 <span className="font-mono text-xs">{p.internal_sku}</span>
                 <span className="text-muted-foreground ml-2 text-xs">
                   {p.name_en}
@@ -617,16 +636,67 @@ function CategoryPickerRow({
                     {formatDkk(p.retailDkk)}
                   </span>
                 ) : null}
-                {already ? (
-                  <span className="text-muted-foreground ml-2 text-[10px] italic">
-                    already added
-                  </span>
-                ) : null}
               </SelectItem>
             );
           })}
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+/**
+ * Recipe quantities are almost always 1, so instead of a free-text field
+ * the line shows the number with −/+ steppers. Floor is 1 (remove the
+ * line via its trash button instead of stepping to 0). Legacy fractional
+ * quantities still display; stepping from one rounds to whole units.
+ */
+function QtyStepper({
+  value,
+  partSku,
+  onChange,
+}: {
+  value: string;
+  partSku: string;
+  onChange: (quantity: string) => void;
+}) {
+  const n = Number(value);
+  const qty = Number.isFinite(n) && n > 0 ? n : 1;
+
+  function step(delta: number) {
+    const next = Math.max(1, Math.round(qty) + delta);
+    onChange(String(next));
+  }
+
+  return (
+    <div className="flex items-center rounded-md border">
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        className="size-6 rounded-r-none"
+        onClick={() => step(-1)}
+        disabled={qty <= 1}
+        aria-label={`Decrease quantity for ${partSku}`}
+      >
+        <Minus className="size-3" aria-hidden />
+      </Button>
+      <span
+        className="min-w-7 px-1 text-center tabular-nums"
+        aria-label={`Quantity for ${partSku}`}
+      >
+        {value}
+      </span>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="ghost"
+        className="size-6 rounded-l-none"
+        onClick={() => step(1)}
+        aria-label={`Increase quantity for ${partSku}`}
+      >
+        <Plus className="size-3" aria-hidden />
+      </Button>
     </div>
   );
 }
@@ -687,20 +757,18 @@ function RecipeLine({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <label className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground">Qty</span>
           {canEdit ? (
-            <Input
-              inputMode="decimal"
+            <QtyStepper
               value={row.quantity}
-              onChange={(e) => onChange({ quantity: e.target.value })}
-              className="h-7 w-[60px] text-right text-xs"
-              aria-label={`Quantity for ${row.partSku}`}
+              partSku={row.partSku}
+              onChange={(quantity) => onChange({ quantity })}
             />
           ) : (
             <span className="tabular-nums">{row.quantity}</span>
           )}
-        </label>
+        </div>
         <label className="flex cursor-pointer items-center gap-1.5">
           <input
             type="checkbox"

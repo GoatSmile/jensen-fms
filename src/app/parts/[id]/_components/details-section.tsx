@@ -1,5 +1,6 @@
-import { Money } from "@/components/money";
 import { Field } from "@/components/field";
+import { formatDkk } from "@/lib/parts/stock";
+import { formatDate } from "@/lib/parts/format";
 
 import { Section } from "./section";
 
@@ -8,8 +9,8 @@ type Props = {
   descriptionDa: string | null;
   unitOfMeasure: string;
   weightGrams: number | null;
-  defaultRetailPrice: number | null;
-  defaultRetailCurrency: string | null;
+  lastCostDkk: number | null;
+  lastCostDate: string | null;
   reorderPoint: number | null;
   reorderQuantity: number | null;
   notes: string | null;
@@ -23,8 +24,8 @@ export function DetailsSection({
   descriptionDa,
   unitOfMeasure,
   weightGrams,
-  defaultRetailPrice,
-  defaultRetailCurrency,
+  lastCostDkk,
+  lastCostDate,
   reorderPoint,
   reorderQuantity,
   notes,
@@ -52,12 +53,17 @@ export function DetailsSection({
             <Muted>—</Muted>
           )}
         </Field>
-        <Field label="Default retail price">
-          {defaultRetailPrice != null ? (
-            <Money
-              amount={defaultRetailPrice}
-              currency={defaultRetailCurrency ?? "DKK"}
-            />
+        <Field label="Last landed cost">
+          {lastCostDkk != null ? (
+            <span className="tabular-nums">
+              {formatDkk(lastCostDkk)}
+              {lastCostDate ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · as of {formatDate(lastCostDate)}
+                </span>
+              ) : null}
+            </span>
           ) : (
             <Muted>—</Muted>
           )}

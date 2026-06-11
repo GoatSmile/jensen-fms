@@ -51,7 +51,8 @@ export type PartRow = {
   supplierName: string | null;
   supplierCount: number;
   stockOnHand: number;
-  lastCostDkk: number | null;
+  /** Customer (retail) price in DKK; null when unset or non-DKK. */
+  retailDkk: number | null;
   stockStatus: StockStatus;
   heroUrl: string | null;
   kits: PartRowKit[];
@@ -99,12 +100,11 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               align="right"
               className="text-right"
             />
-            <SortableHeader
-              column="last_cost_dkk"
-              label="Last paid (DKK)"
-              align="right"
-              className="hidden text-right md:table-cell"
-            />
+            {/* Sortable again once migration 36 (retail on the dashboard
+                view) is applied and the DB types are regenerated. */}
+            <TableHead className="hidden text-right md:table-cell">
+              Retail (DKK)
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -231,7 +231,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                   href={`/parts/${row.id}`}
                   className="block px-4 py-2.5 tabular-nums"
                 >
-                  {formatDkk(row.lastCostDkk)}
+                  {formatDkk(row.retailDkk)}
                 </Link>
               </TableCell>
             </TableRow>

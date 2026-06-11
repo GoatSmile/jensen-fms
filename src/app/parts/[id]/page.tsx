@@ -482,7 +482,12 @@ export default async function PartDetailPage({
         stockOnHand={totalStock}
         stockStatus={stockStatus}
         lastCostDkk={lastCostDkk}
-        lastCostDate={lastCostRow?.last_order_date ?? null}
+        retailPrice={
+          part.default_retail_price != null
+            ? Number(part.default_retail_price)
+            : null
+        }
+        retailCurrency={part.default_retail_currency}
         supplierCount={offeringRows.length}
       />
 
@@ -493,12 +498,8 @@ export default async function PartDetailPage({
         descriptionDa={part.description_da}
         unitOfMeasure={part.unit_of_measure}
         weightGrams={part.weight_grams}
-        defaultRetailPrice={
-          part.default_retail_price != null
-            ? Number(part.default_retail_price)
-            : null
-        }
-        defaultRetailCurrency={part.default_retail_currency}
+        lastCostDkk={lastCostDkk}
+        lastCostDate={lastCostRow?.last_order_date ?? null}
         reorderPoint={
           part.reorder_point != null ? Number(part.reorder_point) : null
         }

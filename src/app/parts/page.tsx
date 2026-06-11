@@ -33,7 +33,6 @@ const SORTABLE_COLUMNS: ReadonlyArray<SortColumn> = [
   "category_name",
   "primary_supplier_name",
   "stock_on_hand",
-  "last_cost_dkk",
 ];
 
 type SearchParams = {
@@ -216,16 +215,35 @@ export default async function PartsPage({
     .map((r) => r.id)
     .filter((id): id is string => id != null);
   const heroByPartId = new Map<string, string>();
+  // Retail prices for the visible page only — the dashboard view doesn't
+  // carry them yet (migration 36 adds them; switch to view columns + a
+  // sortable header once it's applied and types are regenerated).
+  const retailByPartId = new Map<string, number>();
   if (visibleIds.length > 0) {
-    const { data: heroAttachments } = await supabase
-      .from("attachments")
-      .select("entity_id, file_url")
-      .eq("entity_type", "part")
-      .eq("purpose", "hero")
-      .is("deleted_at", null)
-      .in("entity_id", visibleIds);
+    const [{ data: heroAttachments }, { data: retailRows }] =
+      await Promise.all([
+        supabase
+          .from("attachments")
+          .select("entity_id, file_url")
+          .eq("entity_type", "part")
+          .eq("purpose", "hero")
+          .is("deleted_at", null)
+          .in("entity_id", visibleIds),
+        supabase
+          .from("parts")
+          .select("id, default_retail_price, default_retail_currency")
+          .in("id", visibleIds),
+      ]);
     for (const row of heroAttachments ?? []) {
       heroByPartId.set(row.entity_id, row.file_url);
+    }
+    for (const row of retailRows ?? []) {
+      if (
+        row.default_retail_price != null &&
+        (row.default_retail_currency ?? "DKK") === "DKK"
+      ) {
+        retailByPartId.set(row.id, Number(row.default_retail_price));
+      }
     }
   }
 
@@ -260,8 +278,7 @@ export default async function PartsPage({
     supplierName: row.primary_supplier_name,
     supplierCount: row.supplier_count ?? 0,
     stockOnHand: Number(row.stock_on_hand ?? 0),
-    lastCostDkk:
-      row.last_cost_dkk != null ? Number(row.last_cost_dkk) : null,
+    retailDkk: retailByPartId.get(row.id!) ?? null,
     stockStatus: (row.stock_status ?? "ok") as StockStatus,
     heroUrl: heroByPartId.get(row.id!) ?? null,
     kits: kitsByPartId.get(row.id!) ?? [],
