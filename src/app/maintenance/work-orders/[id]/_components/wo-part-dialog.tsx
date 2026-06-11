@@ -33,8 +33,8 @@ type Props = {
   parts: PartChoice[];
   /** Already-on-WO part ids to disable in the picker. */
   excludeIds: Set<string>;
-  /** Last cost per part (from v_part_last_cost), used to prefill unit_price. */
-  lastCostByPartId: Map<string, number>;
+  /** Retail (customer) price per part, used to prefill unit_price. */
+  retailByPartId: Map<string, number>;
 };
 
 export function WOPartDialog({
@@ -43,7 +43,7 @@ export function WOPartDialog({
   woId,
   parts,
   excludeIds,
-  lastCostByPartId,
+  retailByPartId,
 }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState("");
@@ -67,12 +67,13 @@ export function WOPartDialog({
     );
   }, [parts, filter]);
 
-  // Auto-prefill the unit price from last-cost when the part picker changes.
+  // Auto-prefill the unit price from the part's retail price when the
+  // picker changes — WO parts bill at retail.
   useEffect(() => {
     if (!partId || unitPriceTouched) return;
-    const last = lastCostByPartId.get(partId);
+    const last = retailByPartId.get(partId);
     setUnitPrice(last != null ? String(last) : "");
-  }, [partId, lastCostByPartId, unitPriceTouched]);
+  }, [partId, retailByPartId, unitPriceTouched]);
 
   function reset() {
     setFilter("");
@@ -155,7 +156,7 @@ export function WOPartDialog({
                 {filtered.map((p) => {
                   const disabled = excludeIds.has(p.id);
                   const isPicked = partId === p.id;
-                  const last = lastCostByPartId.get(p.id);
+                  const last = retailByPartId.get(p.id);
                   return (
                     <li key={p.id}>
                       <button

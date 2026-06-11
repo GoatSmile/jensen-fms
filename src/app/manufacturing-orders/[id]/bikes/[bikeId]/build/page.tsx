@@ -61,6 +61,7 @@ export default async function BikeBuildWorkbenchPage({
         `id, part_id, quantity, inventory_movement_id, notes,
          part:parts!part_id(
            id, internal_sku, name_en,
+           default_retail_price, default_retail_currency,
            category:part_categories(id, name_en)
          )`,
       )
@@ -80,7 +81,9 @@ export default async function BikeBuildWorkbenchPage({
       .order("name_en", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en, category_id")
+      .select(
+        "id, internal_sku, name_en, category_id, default_retail_price, default_retail_currency",
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
   ]);
@@ -122,6 +125,11 @@ export default async function BikeBuildWorkbenchPage({
       consumed: r.inventory_movement_id != null,
       notes: r.notes,
       onHand: stockByPart.get(r.part_id) ?? 0,
+      retailDkk:
+        r.part?.default_retail_price != null &&
+        (r.part.default_retail_currency ?? "DKK") === "DKK"
+          ? Number(r.part.default_retail_price)
+          : null,
     }));
 
   const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({
@@ -135,6 +143,11 @@ export default async function BikeBuildWorkbenchPage({
     name_en: p.name_en,
     category_id: p.category_id ?? null,
     onHand: stockByPart.get(p.id) ?? 0,
+    retailDkk:
+      p.default_retail_price != null &&
+      (p.default_retail_currency ?? "DKK") === "DKK"
+        ? Number(p.default_retail_price)
+        : null,
   }));
 
   const recipeRowCount = moRecipeCountRes.count ?? 0;

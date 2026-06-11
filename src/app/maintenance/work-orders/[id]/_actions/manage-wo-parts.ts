@@ -75,7 +75,10 @@ export async function addPartToWO(
     };
   }
 
-  // Last-cost fallback for unit_price.
+  // Retail fallback for unit_price — work_order_parts.unit_price is the
+  // customer-facing (retail) snapshot: it's what technicians see and what
+  // invoicing (3D) will bill. Internal cost stays on the inventory
+  // movement (unit_cost_dkk), so the ledger is unaffected.
   let unitPrice: number | null = null;
   if (unitPriceRaw != null) {
     const n = Number(unitPriceRaw);
@@ -84,13 +87,16 @@ export async function addPartToWO(
     }
     unitPrice = n;
   } else {
-    const { data: cost } = await supabase
-      .from("v_part_last_cost")
-      .select("last_cost_dkk")
-      .eq("part_id", partId)
+    const { data: part } = await supabase
+      .from("parts")
+      .select("default_retail_price, default_retail_currency")
+      .eq("id", partId)
       .maybeSingle();
-    if (cost?.last_cost_dkk != null) {
-      unitPrice = Number(cost.last_cost_dkk);
+    if (
+      part?.default_retail_price != null &&
+      (part.default_retail_currency ?? "DKK") === "DKK"
+    ) {
+      unitPrice = Number(part.default_retail_price);
     }
   }
 

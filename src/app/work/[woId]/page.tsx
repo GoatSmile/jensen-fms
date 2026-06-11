@@ -83,7 +83,9 @@ export default async function WorkspacePage({
       .order("installed_at", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en, category:part_categories(name_en)")
+      .select(
+        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en)",
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
     supabase
@@ -102,17 +104,15 @@ export default async function WorkspacePage({
     category_name: p.category?.name_en ?? null,
   }));
 
-  const lastCostByPartId = new Map<string, number>();
-  const allPartIds = partsCatalog.map((p) => p.id);
-  if (allPartIds.length > 0) {
-    const { data: costs } = await supabase
-      .from("v_part_last_cost")
-      .select("part_id, last_cost_dkk")
-      .in("part_id", allPartIds);
-    for (const row of costs ?? []) {
-      if (row.part_id != null && row.last_cost_dkk != null) {
-        lastCostByPartId.set(row.part_id, Number(row.last_cost_dkk));
-      }
+  // Retail per part — work_order_parts.unit_price is the customer-facing
+  // (retail) snapshot, so the dialog prefills retail, not cost.
+  const retailByPartId = new Map<string, number>();
+  for (const p of partsCatalogRes.data ?? []) {
+    if (
+      p.default_retail_price != null &&
+      (p.default_retail_currency ?? "DKK") === "DKK"
+    ) {
+      retailByPartId.set(p.id, Number(p.default_retail_price));
     }
   }
 
@@ -265,7 +265,7 @@ export default async function WorkspacePage({
         bikeId={wo.bike?.id ?? null}
         partRows={partRows}
         partsCatalog={partsCatalog}
-        lastCostByPartId={lastCostByPartId}
+        retailByPartId={retailByPartId}
         photos={photos}
       />
     </div>

@@ -36,7 +36,7 @@ type Props = {
   bikeId: string | null;
   partRows: WOPartRow[];
   partsCatalog: PartChoice[];
-  lastCostByPartId: Map<string, number>;
+  retailByPartId: Map<string, number>;
   photos: WOPhoto[];
 };
 
@@ -48,7 +48,7 @@ export function Workspace({
   initialWorkPerformed,
   partRows,
   partsCatalog,
-  lastCostByPartId,
+  retailByPartId,
   photos,
 }: Props) {
   const router = useRouter();
@@ -199,7 +199,7 @@ export function Workspace({
           woId={woId}
           rows={partRows}
           partsCatalog={partsCatalog}
-          lastCostByPartId={lastCostByPartId}
+          retailByPartId={retailByPartId}
           readOnly={readOnly}
         />
 

@@ -74,7 +74,9 @@ export default async function WorkOrderDetailPage({
       .order("installed_at", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en, category:part_categories(name_en)")
+      .select(
+        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en)",
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
   ]);
@@ -86,17 +88,15 @@ export default async function WorkOrderDetailPage({
     category_name: p.category?.name_en ?? null,
   }));
 
-  const allPartIds = partsCatalog.map((p) => p.id);
-  const lastCostByPartId = new Map<string, number>();
-  if (allPartIds.length > 0) {
-    const { data: costs } = await supabase
-      .from("v_part_last_cost")
-      .select("part_id, last_cost_dkk")
-      .in("part_id", allPartIds);
-    for (const row of costs ?? []) {
-      if (row.part_id != null && row.last_cost_dkk != null) {
-        lastCostByPartId.set(row.part_id, Number(row.last_cost_dkk));
-      }
+  // Retail per part — work_order_parts.unit_price is the customer-facing
+  // (retail) snapshot, so the dialog prefills retail, not cost.
+  const retailByPartId = new Map<string, number>();
+  for (const p of partsCatalogRes.data ?? []) {
+    if (
+      p.default_retail_price != null &&
+      (p.default_retail_currency ?? "DKK") === "DKK"
+    ) {
+      retailByPartId.set(p.id, Number(p.default_retail_price));
     }
   }
 
@@ -261,20 +261,20 @@ export default async function WorkOrderDetailPage({
             rows={woPartRows}
             readOnly={readOnly}
             partsCatalog={partsCatalog}
-            lastCostByPartId={lastCostByPartId}
+            retailByPartId={retailByPartId}
           />
 
           <Section
             title="Cost summary"
             description={
               wo.is_billable
-                ? "Subtotals and total. Invoicing wires in M4."
-                : "Subtotals shown for the workshop ledger — this work is covered by a service agreement and won't be invoiced."
+                ? "Parts at retail price + labour — the customer-facing total. Invoicing wires in M4."
+                : "Parts at retail price + labour — this work is covered by a service agreement and won't be invoiced."
             }
           >
             <dl className="flex flex-col gap-2 text-sm">
               <SummaryRow
-                label="Parts subtotal"
+                label="Parts (retail)"
                 value={
                   <Money
                     amount={partsSubtotal}

@@ -25,7 +25,7 @@ type Props = {
   woId: string;
   rows: WOPartRow[];
   partsCatalog: PartChoice[];
-  lastCostByPartId: Map<string, number>;
+  retailByPartId: Map<string, number>;
   readOnly: boolean;
 };
 
@@ -39,7 +39,7 @@ export function PartsSection({
   woId,
   rows,
   partsCatalog,
-  lastCostByPartId,
+  retailByPartId,
   readOnly,
 }: Props) {
   const router = useRouter();
@@ -171,7 +171,7 @@ export function PartsSection({
           woId={woId}
           parts={partsCatalog}
           excludeIds={excludeIds}
-          lastCostByPartId={lastCostByPartId}
+          retailByPartId={retailByPartId}
         />
       ) : null}
     </section>

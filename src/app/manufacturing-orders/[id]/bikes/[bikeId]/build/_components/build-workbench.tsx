@@ -50,6 +50,8 @@ export type PartInCatalog = {
   name_en: string;
   category_id: string | null;
   onHand: number;
+  /** Customer (retail) price in DKK; null when unset or non-DKK. */
+  retailDkk: number | null;
 };
 
 export type BikePartRow = {
@@ -63,6 +65,8 @@ export type BikePartRow = {
   consumed: boolean;
   notes: string | null;
   onHand: number;
+  /** Customer (retail) price in DKK; null when unset or non-DKK. */
+  retailDkk: number | null;
 };
 
 type Props = {
@@ -154,15 +158,18 @@ export function BuildWorkbench({
     return m;
   }, [rows]);
 
-  // Pending changes vs. last cost = a running projection of what this bike
-  // will cost to build. After finishBuild the actual cost is in
-  // bikeBuildCostDkk; before, this is the best estimate.
-  const projectedCost = useMemo(() => {
-    // Each bike_part row's on-hand isn't its cost — cost would need a
-    // per-part last_cost lookup which we don't fetch here for size. So the
-    // estimate sums qty only; show the actual build_cost once finished.
-    return null as number | null;
-  }, []);
+  // Running retail total of the bike — what the customer-facing price of
+  // the assembled parts adds up to. Rows without a retail price are
+  // excluded and counted so the gap is visible rather than silent.
+  const retailTotal = useMemo(() => {
+    let sum = 0;
+    let unpriced = 0;
+    for (const r of rows) {
+      if (r.retailDkk == null) unpriced += 1;
+      else sum += r.quantity * r.retailDkk;
+    }
+    return { sum, unpriced };
+  }, [rows]);
 
   function onCopyRecipe() {
     setError(null);
@@ -363,8 +370,24 @@ export function BuildWorkbench({
 
             {/* RIGHT: this bike's parts */}
             <div className={`flex flex-col gap-2 ${readOnly ? "lg:col-span-2" : ""}`}>
-              <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-                Selected parts ({rows.length})
+              <div className="mb-1 flex items-baseline justify-between gap-2">
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                  Selected parts ({rows.length})
+                </span>
+                {rows.length > 0 ? (
+                  <span className="text-xs tabular-nums">
+                    Retail total:{" "}
+                    <span className="font-semibold">
+                      {formatDkk(retailTotal.sum)}
+                    </span>
+                    {retailTotal.unpriced > 0 ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        ({retailTotal.unpriced} unpriced)
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
               </div>
               {isEmpty ? (
                 <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
@@ -430,9 +453,6 @@ export function BuildWorkbench({
           </footer>
         ) : null}
       </section>
-
-      {/* Tiny no-op so the unused projectedCost var doesn't trip the linter */}
-      <span hidden>{projectedCost ?? ""}</span>
     </div>
   );
 }
@@ -651,6 +671,11 @@ function RecipeLine({
           }`}
         >
           {shortfall > 0 ? `Short by ${formatQuantity(shortfall)}` : "Stocked"}
+        </span>
+        <span className="text-muted-foreground ml-auto tabular-nums">
+          {row.retailDkk != null
+            ? `${formatDkk(row.quantity * row.retailDkk)}`
+            : "no retail price"}
         </span>
       </div>
     </li>

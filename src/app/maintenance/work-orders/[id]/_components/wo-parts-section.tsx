@@ -36,7 +36,7 @@ type Props = {
   rows: WOPartRow[];
   readOnly: boolean;
   partsCatalog: PartChoice[];
-  lastCostByPartId: Map<string, number>;
+  retailByPartId: Map<string, number>;
 };
 
 export function WOPartsSection({
@@ -44,7 +44,7 @@ export function WOPartsSection({
   rows,
   readOnly,
   partsCatalog,
-  lastCostByPartId,
+  retailByPartId,
 }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -155,7 +155,7 @@ export function WOPartsSection({
           woId={woId}
           parts={partsCatalog}
           excludeIds={onWOPartIds}
-          lastCostByPartId={lastCostByPartId}
+          retailByPartId={retailByPartId}
         />
       ) : null}
     </Section>
