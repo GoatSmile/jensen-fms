@@ -3501,6 +3501,8 @@ export type Database = {
         Row: {
           category_id: string | null
           category_name: string | null
+          default_retail_currency: string | null
+          default_retail_price: number | null
           deleted_at: string | null
           description_da: string | null
           description_en: string | null
@@ -3525,6 +3527,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "part_categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_default_retail_currency_fkey"
+            columns: ["default_retail_currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
           },
         ]
       }

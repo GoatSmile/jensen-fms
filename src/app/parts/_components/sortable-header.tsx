@@ -13,7 +13,7 @@ export type SortColumn =
   | "category_name"
   | "primary_supplier_name"
   | "stock_on_hand"
-  | "last_cost_dkk";
+  | "default_retail_price";
 
 type Props = {
   column: SortColumn;

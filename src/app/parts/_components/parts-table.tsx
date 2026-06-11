@@ -100,11 +100,12 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               align="right"
               className="text-right"
             />
-            {/* Sortable again once migration 36 (retail on the dashboard
-                view) is applied and the DB types are regenerated. */}
-            <TableHead className="hidden text-right md:table-cell">
-              Retail (DKK)
-            </TableHead>
+            <SortableHeader
+              column="default_retail_price"
+              label="Retail (DKK)"
+              align="right"
+              className="hidden text-right md:table-cell"
+            />
           </TableRow>
         </TableHeader>
         <TableBody>
