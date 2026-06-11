@@ -54,6 +54,7 @@ export function WOPartDialog({
   // different part should NOT clobber their override.
   const [unitPriceTouched, setUnitPriceTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addedNote, setAddedNote] = useState<string | null>(null);
   const [isPending, start] = useTransition();
 
   const filtered = useMemo(() => {
@@ -82,6 +83,7 @@ export function WOPartDialog({
     setUnitPrice("");
     setUnitPriceTouched(false);
     setError(null);
+    setAddedNote(null);
   }
 
   function handleOpenChange(next: boolean) {
@@ -123,7 +125,14 @@ export function WOPartDialog({
         setError(r.error);
         return;
       }
-      handleOpenChange(false);
+      // Stay open for the next part — reset the picks but keep the filter,
+      // so adding several parts from one search is one fluid session.
+      const added = parts.find((p) => p.id === partId);
+      setPartId("");
+      setQty("1");
+      setUnitPrice("");
+      setUnitPriceTouched(false);
+      setAddedNote(added ? `Added ${added.name_en}.` : "Part added.");
       router.refresh();
     });
   }
@@ -133,10 +142,10 @@ export function WOPartDialog({
       <DialogContent className="sm:max-w-xl">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add part to work order</DialogTitle>
+            <DialogTitle>Add parts to work order</DialogTitle>
             <DialogDescription>
-              The part is consumed from inventory immediately — a negative
-              movement is written and the work-order row links to it.
+              Each part is consumed from inventory immediately. The dialog
+              stays open so you can add several in one go.
             </DialogDescription>
           </DialogHeader>
 
@@ -186,7 +195,7 @@ export function WOPartDialog({
                             </span>
                           ) : last != null ? (
                             <span className="text-muted-foreground text-xs">
-                              last{" "}
+                              retail{" "}
                               <Money
                                 amount={last}
                                 currency="DKK"
@@ -223,14 +232,14 @@ export function WOPartDialog({
                   setUnitPrice(e.target.value);
                   setUnitPriceTouched(true);
                 }}
-                placeholder="Prefilled from last cost"
+                placeholder="Prefilled from retail price"
               />
             </div>
           </div>
 
           {previewTotal != null ? (
             <p className="text-muted-foreground text-xs">
-              Cost preview: {qtyN} ×{" "}
+              Price: {qtyN} ×{" "}
               <Money
                 amount={unitPriceN!}
                 currency="DKK"
@@ -248,6 +257,14 @@ export function WOPartDialog({
               {error}
             </p>
           ) : null}
+          {addedNote && !error ? (
+            <p
+              className="text-sm text-emerald-700 dark:text-emerald-400"
+              role="status"
+            >
+              {addedNote}
+            </p>
+          ) : null}
 
           <DialogFooter>
             <Button
@@ -256,7 +273,7 @@ export function WOPartDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {addedNote ? "Done" : "Cancel"}
             </Button>
             <Button
               type="submit"

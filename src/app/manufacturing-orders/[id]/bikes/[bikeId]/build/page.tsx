@@ -52,7 +52,7 @@ export default async function BikeBuildWorkbenchPage({
       .maybeSingle(),
     supabase
       .from("bikes")
-      .select("id, frame_number, status, build_cost_dkk, manufacturing_order_id")
+      .select("id, frame_number, status, manufacturing_order_id")
       .eq("id", bikeId)
       .maybeSingle(),
     supabase
@@ -319,9 +319,6 @@ export default async function BikeBuildWorkbenchPage({
         bikeId={bikeId}
         bikeFrameNumber={bike.frame_number}
         bikeStatus={bikeStatus}
-        bikeBuildCostDkk={
-          bike.build_cost_dkk != null ? Number(bike.build_cost_dkk) : null
-        }
         templateLabel={templateLabel}
         colorName={mo.color?.name_en ?? null}
         colorHex={mo.color?.hex ?? null}

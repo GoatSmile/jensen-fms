@@ -24,7 +24,6 @@ import {
   PhotosSection,
   type WOPhoto,
 } from "./photos-section";
-import type { PartChoice } from "@/app/maintenance/work-orders/[id]/_components/wo-part-dialog";
 
 type Props = {
   woId: string;
@@ -35,8 +34,6 @@ type Props = {
   initialWorkPerformed: string;
   bikeId: string | null;
   partRows: WOPartRow[];
-  partsCatalog: PartChoice[];
-  retailByPartId: Map<string, number>;
   photos: WOPhoto[];
 };
 
@@ -47,8 +44,6 @@ export function Workspace({
   initialDiagnosis,
   initialWorkPerformed,
   partRows,
-  partsCatalog,
-  retailByPartId,
   photos,
 }: Props) {
   const router = useRouter();
@@ -195,13 +190,7 @@ export function Workspace({
           </div>
         ) : null}
 
-        <PartsSection
-          woId={woId}
-          rows={partRows}
-          partsCatalog={partsCatalog}
-          retailByPartId={retailByPartId}
-          readOnly={readOnly}
-        />
+        <PartsSection woId={woId} rows={partRows} readOnly={readOnly} />
 
         <PhotosSection woId={woId} photos={photos} readOnly={readOnly} />
       </div>

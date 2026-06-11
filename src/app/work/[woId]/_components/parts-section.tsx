@@ -1,16 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
 import { removePartFromWO } from "@/app/maintenance/work-orders/[id]/_actions/manage-wo-parts";
-import {
-  WOPartDialog,
-  type PartChoice,
-} from "@/app/maintenance/work-orders/[id]/_components/wo-part-dialog";
 
 export type WOPartRow = {
   id: string;
@@ -24,31 +21,20 @@ export type WOPartRow = {
 type Props = {
   woId: string;
   rows: WOPartRow[];
-  partsCatalog: PartChoice[];
-  retailByPartId: Map<string, number>;
   readOnly: boolean;
 };
 
 /**
  * Parts-used section on the technician workspace. Compact list of
- * already-consumed parts plus an "Add part" button that opens the
- * shared WOPartDialog (which writes both the work_order_parts row and
- * the consuming inventory_movement).
+ * already-consumed parts; "Add parts" navigates to the dedicated
+ * full-screen add-parts page (kit shortcuts, multi-add, steppers).
  */
-export function PartsSection({
-  woId,
-  rows,
-  partsCatalog,
-  retailByPartId,
-  readOnly,
-}: Props) {
+export function PartsSection({ woId, rows, readOnly }: Props) {
   const router = useRouter();
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const excludeIds = new Set(rows.map((r) => r.partId));
   const totalCost = rows.reduce(
     (s, r) => s + (r.unitPrice != null ? r.unitPrice * r.quantity : 0),
     0,
@@ -86,13 +72,10 @@ export function PartsSection({
           </span>
         </div>
         {!readOnly ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setDialogOpen(true)}
-          >
-            <Plus className="size-4" aria-hidden /> Add part
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/work/${woId}/parts`}>
+              <Plus className="size-4" aria-hidden /> Add parts
+            </Link>
           </Button>
         ) : null}
       </div>
@@ -163,17 +146,6 @@ export function PartsSection({
           })}
         </ul>
       )}
-
-      {dialogOpen ? (
-        <WOPartDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          woId={woId}
-          parts={partsCatalog}
-          excludeIds={excludeIds}
-          retailByPartId={retailByPartId}
-        />
-      ) : null}
     </section>
   );
 }

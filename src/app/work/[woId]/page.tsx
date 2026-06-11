@@ -14,7 +14,6 @@ import { startedFullLabel } from "@/lib/work/elapsed";
 import { Workspace } from "./_components/workspace";
 import type { WOPartRow } from "./_components/parts-section";
 import type { WOPhoto } from "./_components/photos-section";
-import type { PartChoice } from "@/app/maintenance/work-orders/[id]/_components/wo-part-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +71,7 @@ export default async function WorkspacePage({
   }
   if (!wo) notFound();
 
-  const [woPartsRes, partsCatalogRes, photosRes] = await Promise.all([
+  const [woPartsRes, photosRes] = await Promise.all([
     supabase
       .from("work_order_parts")
       .select(
@@ -82,13 +81,6 @@ export default async function WorkspacePage({
       .eq("work_order_id", wo.id)
       .order("installed_at", { ascending: true }),
     supabase
-      .from("parts")
-      .select(
-        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en)",
-      )
-      .is("deleted_at", null)
-      .order("internal_sku", { ascending: true }),
-    supabase
       .from("attachments")
       .select("id, file_url, file_name")
       .eq("entity_type", "work_order")
@@ -96,25 +88,6 @@ export default async function WorkspacePage({
       .is("deleted_at", null)
       .order("created_at", { ascending: true }),
   ]);
-
-  const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
-    id: p.id,
-    internal_sku: p.internal_sku,
-    name_en: p.name_en,
-    category_name: p.category?.name_en ?? null,
-  }));
-
-  // Retail per part — work_order_parts.unit_price is the customer-facing
-  // (retail) snapshot, so the dialog prefills retail, not cost.
-  const retailByPartId = new Map<string, number>();
-  for (const p of partsCatalogRes.data ?? []) {
-    if (
-      p.default_retail_price != null &&
-      (p.default_retail_currency ?? "DKK") === "DKK"
-    ) {
-      retailByPartId.set(p.id, Number(p.default_retail_price));
-    }
-  }
 
   const partRows: WOPartRow[] = (woPartsRes.data ?? []).map((r) => ({
     id: r.id,
@@ -264,8 +237,6 @@ export default async function WorkspacePage({
         initialWorkPerformed={wo.work_performed ?? ""}
         bikeId={wo.bike?.id ?? null}
         partRows={partRows}
-        partsCatalog={partsCatalog}
-        retailByPartId={retailByPartId}
         photos={photos}
       />
     </div>

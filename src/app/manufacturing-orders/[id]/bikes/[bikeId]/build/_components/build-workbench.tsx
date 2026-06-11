@@ -75,7 +75,6 @@ type Props = {
   bikeId: string;
   bikeFrameNumber: string;
   bikeStatus: BikeStatus;
-  bikeBuildCostDkk: number | null;
   templateLabel: string | null;
   colorName: string | null;
   colorHex: string | null;
@@ -96,7 +95,6 @@ export function BuildWorkbench({
   bikeId,
   bikeFrameNumber,
   bikeStatus,
-  bikeBuildCostDkk,
   templateLabel,
   colorName,
   colorHex,
@@ -210,7 +208,7 @@ export function BuildWorkbench({
         return;
       }
       setSuccess(
-        `Build finished — ${r.partsConsumed} part${r.partsConsumed === 1 ? "" : "s"} consumed${r.buildCostDkk > 0 ? `, cost ${formatDkk(r.buildCostDkk)}` : ""}.`,
+        `Build finished — ${r.partsConsumed} part${r.partsConsumed === 1 ? "" : "s"} consumed.`,
       );
       router.refresh();
     });
@@ -249,22 +247,6 @@ export function BuildWorkbench({
               {templateLabel ? (
                 <p className="text-muted-foreground text-sm">{templateLabel}</p>
               ) : null}
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              {bikeBuildCostDkk != null ? (
-                <div className="text-right">
-                  <div className="text-muted-foreground text-xs uppercase">
-                    Build cost
-                  </div>
-                  <div className="text-2xl font-semibold tabular-nums">
-                    {formatDkk(bikeBuildCostDkk)}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-xs italic">
-                  Build cost stamps when you finish the build.
-                </p>
-              )}
             </div>
           </div>
         </div>
