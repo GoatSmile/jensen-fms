@@ -54,7 +54,7 @@ export default async function KitDetailPage({
   const colour = stickerColor(kit.sticker_color);
   const initial: KitFormValues = {
     sticker_color: kit.sticker_color,
-    kit_number: String(kit.kit_number),
+    kit_number: kit.kit_number == null ? "" : String(kit.kit_number),
     description: kit.description ?? "",
   };
 

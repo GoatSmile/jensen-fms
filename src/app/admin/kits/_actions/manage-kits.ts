@@ -15,7 +15,7 @@ function parseKit(fd: FormData):
       ok: true;
       values: {
         sticker_color: string;
-        kit_number: number;
+        kit_number: number | null;
         description: string | null;
       };
     }
@@ -28,14 +28,20 @@ function parseKit(fd: FormData):
     return { ok: false, error: "Pick a sticker colour.", field: "sticker_color" };
   }
 
+  // Number is optional — blank means a bare-colour code ("Red"). When
+  // given it must be a positive whole number.
   const numberRaw = nullable(fd.get("kit_number"));
-  const kit_number = Number(numberRaw);
-  if (!numberRaw || !Number.isInteger(kit_number) || kit_number <= 0) {
-    return {
-      ok: false,
-      error: "The number must be a positive whole number.",
-      field: "kit_number",
-    };
+  let kit_number: number | null = null;
+  if (numberRaw) {
+    const n = Number(numberRaw);
+    if (!Number.isInteger(n) || n <= 0) {
+      return {
+        ok: false,
+        error: "The number must be a positive whole number, or blank for a colour-only code.",
+        field: "kit_number",
+      };
+    }
+    kit_number = n;
   }
 
   return {
@@ -69,7 +75,7 @@ export async function createKit(fd: FormData): Promise<KitResult> {
     return {
       ok: false,
       error: msg.includes("duplicate")
-        ? "That colour + number already exists."
+        ? "That sticker code already exists."
         : `Could not create kit: ${msg}`,
     };
   }
@@ -91,7 +97,7 @@ export async function updateKit(id: string, fd: FormData): Promise<KitResult> {
     return {
       ok: false,
       error: error.message.includes("duplicate")
-        ? "That colour + number already exists."
+        ? "That sticker code already exists."
         : `Could not save: ${error.message}`,
     };
   }

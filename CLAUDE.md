@@ -63,8 +63,11 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **Kits (kitting) ≠ part categories.** `kits` ("Red 1", "Green 9" — colour +
   number sticker labels on part boxes) are an assembly-floor *picking* aid,
   not catalog taxonomy. Full-code picking: colour+number is the identity
-  (`UNIQUE (sticker_color, kit_number)`); colours repeat freely and the
-  number prints big on the sticker. `part_kits` is a plain M-to-N — parts
+  (`UNIQUE NULLS NOT DISTINCT (sticker_color, kit_number)`); colours repeat
+  freely and the code prints big on the sticker. **The number is optional** —
+  a bare colour ("Red") is a valid code, and NULLS NOT DISTINCT means at most
+  one bare kit per colour. Bare sorts before numbered ("Red" < "Red 1") via
+  `compareKits` in `src/lib/kits/colors.ts`. `part_kits` is a plain M-to-N — parts
   carry 0..n labels, no snapshotting (picking aid, not cost basis). The
   sticker-colour palette is an app constant (`src/lib/kits/colors.ts`), not
   a DB table. Labels are independent of BOMs: the "label this BOM" bulk

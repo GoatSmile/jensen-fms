@@ -25,7 +25,7 @@ type Option = { id: string; name_en?: string | null; name?: string | null };
 type Props = {
   categories: FlatCategory[];
   suppliers: Array<{ id: string; name: string }>;
-  kits: Array<{ id: string; sticker_color: string; kit_number: number }>;
+  kits: Array<{ id: string; sticker_color: string; kit_number: number | null }>;
 };
 
 const STOCK_OPTIONS: Array<{ value: string; label: string }> = [

@@ -20,7 +20,7 @@ import { labelTemplateBomWithKit } from "../_actions/label-bom-kit";
 export type KitChoice = {
   id: string;
   sticker_color: string;
-  kit_number: number;
+  kit_number: number | null;
 };
 
 /**

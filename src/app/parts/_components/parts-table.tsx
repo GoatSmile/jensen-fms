@@ -40,7 +40,7 @@ function attentionBorder(status: StockStatus): string {
 
 export type PartRowKit = {
   sticker_color: string;
-  kit_number: number;
+  kit_number: number | null;
 };
 
 export type PartRow = {

@@ -7,12 +7,12 @@ export type PickRow = {
   name: string;
   quantity: number;
   /** Other kit labels this part carries — shown as a hint, never re-listed. */
-  also: Array<{ sticker_color: string; kit_number: number }>;
+  also: Array<{ sticker_color: string; kit_number: number | null }>;
 };
 
 export type PickGroup = {
   sticker_color: string;
-  kit_number: number;
+  kit_number: number | null;
   /** Every live part of the kit is on this bike — grab the whole sticker code. */
   complete: boolean;
   totalKitParts: number;

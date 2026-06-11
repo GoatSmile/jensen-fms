@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { EmptyState } from "@/components/empty-state";
+import { compareKits } from "@/lib/kits/colors";
 import { createClient } from "@/lib/supabase/server";
 import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
@@ -195,7 +196,7 @@ export default async function PartsPage({
       .select("id, sticker_color, kit_number")
       .eq("is_active", true)
       .order("sticker_color", { ascending: true })
-      .order("kit_number", { ascending: true }),
+      .order("kit_number", { ascending: true, nullsFirst: true }),
     viewQuery,
   ]);
 
@@ -247,11 +248,7 @@ export default async function PartsPage({
       kitsByPartId.set(m.part_id, list);
     }
     for (const list of kitsByPartId.values()) {
-      list.sort((a, b) =>
-        a.sticker_color === b.sticker_color
-          ? a.kit_number - b.kit_number
-          : a.sticker_color.localeCompare(b.sticker_color),
-      );
+      list.sort(compareKits);
     }
   }
 

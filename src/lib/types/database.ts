@@ -1239,7 +1239,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
-          kit_number: number
+          kit_number: number | null
           sticker_color: string
           updated_at: string
         }
@@ -1248,7 +1248,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
-          kit_number: number
+          kit_number?: number | null
           sticker_color: string
           updated_at?: string
         }
@@ -1257,7 +1257,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
-          kit_number?: number
+          kit_number?: number | null
           sticker_color?: string
           updated_at?: string
         }

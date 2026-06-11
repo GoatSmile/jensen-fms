@@ -19,14 +19,14 @@ import { Section } from "./section";
 export type PartKitChip = {
   kitId: string;
   sticker_color: string;
-  kit_number: number;
+  kit_number: number | null;
   is_active: boolean;
 };
 
 export type KitOption = {
   id: string;
   sticker_color: string;
-  kit_number: number;
+  kit_number: number | null;
 };
 
 const PLACEHOLDER = "__placeholder__";

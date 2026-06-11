@@ -33,7 +33,7 @@ export default async function KitsPage() {
       .select("id, sticker_color, kit_number, description, is_active")
       .order("is_active", { ascending: false })
       .order("sticker_color", { ascending: true })
-      .order("kit_number", { ascending: true }),
+      .order("kit_number", { ascending: true, nullsFirst: true }),
     supabase.from("part_kits").select("kit_id"),
   ]);
 

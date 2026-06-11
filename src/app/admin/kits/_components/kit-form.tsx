@@ -75,9 +75,14 @@ export function KitForm({ mode, kitId, initial }: Props) {
     });
   }
 
-  const previewNumber = Number(values.kit_number);
+  // Live sticker-code preview: "Red" when the number is blank, "Red 1"
+  // when a valid number is typed. Hidden while the number is invalid.
+  const numberDraft = values.kit_number.trim();
+  const previewNumber = numberDraft === "" ? null : Number(numberDraft);
   const preview =
-    values.sticker_color && Number.isInteger(previewNumber) && previewNumber > 0
+    values.sticker_color &&
+    (previewNumber === null ||
+      (Number.isInteger(previewNumber) && previewNumber > 0))
       ? kitCode(values.sticker_color, previewNumber)
       : null;
 
@@ -114,9 +119,8 @@ export function KitForm({ mode, kitId, initial }: Props) {
           </Select>
         </Field>
         <Field
-          label="Number"
+          label="Number (optional)"
           htmlFor="kit-number"
-          required
           error={errorField === "kit_number" ? error : null}
         >
           <Input
@@ -124,7 +128,7 @@ export function KitForm({ mode, kitId, initial }: Props) {
             inputMode="numeric"
             value={values.kit_number}
             onChange={(e) => update("kit_number", e.target.value)}
-            placeholder="e.g. 1"
+            placeholder="Blank = colour only"
           />
         </Field>
       </div>

@@ -43,8 +43,9 @@ export default function NewKitPage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold">New kit</h1>
         <p className="text-muted-foreground text-sm">
-          Colour + number is the sticker identity — the floor picks by the
-          full code, so the number prints big on the label.
+          The sticker identity is the colour plus an optional number — "Red"
+          on its own, or "Red 1". The floor picks by the full code, so it
+          prints big on the label.
         </p>
       </header>
 

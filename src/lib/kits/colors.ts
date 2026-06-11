@@ -27,11 +27,30 @@ export function stickerColor(slug: string | null | undefined) {
   return KIT_STICKER_COLORS.find((c) => c.slug === slug) ?? FALLBACK;
 }
 
-/** Display code for a kit: ("red", 1) → "Red 1". Full-code picking. */
+/**
+ * Display code for a kit: ("red", 1) → "Red 1". The number is optional —
+ * ("red", null) → just "Red" (a bare-colour code). Full-code picking either
+ * way: the printed sticker carries exactly this string.
+ */
 export function kitCode(
   colorSlug: string | null | undefined,
   number: number | null | undefined,
 ): string {
-  if (!colorSlug || number == null) return "—";
-  return `${stickerColor(colorSlug).label} ${number}`;
+  if (!colorSlug) return "—";
+  const label = stickerColor(colorSlug).label;
+  return number == null ? label : `${label} ${number}`;
+}
+
+/**
+ * Canonical kit ordering: colour A→Z, then bare colour before numbered
+ * ("Red" < "Red 1" < "Red 2"). Use everywhere kits are sorted so pickers,
+ * chips, and pick lists agree.
+ */
+export function compareKits(
+  a: { sticker_color: string; kit_number: number | null },
+  b: { sticker_color: string; kit_number: number | null },
+): number {
+  if (a.sticker_color !== b.sticker_color)
+    return a.sticker_color.localeCompare(b.sticker_color);
+  return (a.kit_number ?? 0) - (b.kit_number ?? 0);
 }

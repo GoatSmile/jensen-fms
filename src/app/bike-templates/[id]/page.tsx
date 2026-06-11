@@ -112,7 +112,7 @@ export default async function BikeTemplateDetailPage({
       .select("id, sticker_color, kit_number")
       .eq("is_active", true)
       .order("sticker_color", { ascending: true })
-      .order("kit_number", { ascending: true }),
+      .order("kit_number", { ascending: true, nullsFirst: true }),
   ]);
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])

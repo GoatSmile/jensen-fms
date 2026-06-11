@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { lookupDkkRate } from "@/lib/format";
 import { getStockStatus } from "@/lib/parts/stock";
+import { compareKits } from "@/lib/kits/colors";
 
 import type { LocationOption } from "./_components/adjust-stock-dialog";
 import { DetailsSection } from "./_components/details-section";
@@ -240,7 +241,7 @@ export default async function PartDetailPage({
       .select("id, sticker_color, kit_number")
       .eq("is_active", true)
       .order("sticker_color", { ascending: true })
-      .order("kit_number", { ascending: true }),
+      .order("kit_number", { ascending: true, nullsFirst: true }),
   ]);
 
   if (partRes.error) {
@@ -391,11 +392,7 @@ export default async function PartDetailPage({
       kit_number: k.kit_number,
       is_active: k.is_active,
     }))
-    .sort((a, b) =>
-      a.sticker_color === b.sticker_color
-        ? a.kit_number - b.kit_number
-        : a.sticker_color.localeCompare(b.sticker_color),
-    );
+    .sort(compareKits);
   const kitOptions: KitOption[] = kitOptionsRes.data ?? [];
 
   // ------- Photos: hero first, then gallery (most recent first) -------

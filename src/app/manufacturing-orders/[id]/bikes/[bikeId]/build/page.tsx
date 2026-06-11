@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
+import { compareKits } from "@/lib/kits/colors";
 
 import {
   BuildWorkbench,
@@ -159,7 +160,11 @@ export default async function BikeBuildWorkbenchPage({
       )
       .in("part_id", bikePartIds);
 
-    type KitRef = { id: string; sticker_color: string; kit_number: number };
+    type KitRef = {
+      id: string;
+      sticker_color: string;
+      kit_number: number | null;
+    };
     const kitsByPart = new Map<string, KitRef[]>();
     const involvedKits = new Map<string, KitRef>();
     for (const m of memberships ?? []) {
@@ -192,11 +197,7 @@ export default async function BikeBuildWorkbenchPage({
         kitTotalParts.set(m.kit_id, set);
       }
 
-      const byCode = (a: KitRef, b: KitRef) =>
-        a.sticker_color === b.sticker_color
-          ? a.kit_number - b.kit_number
-          : a.sticker_color.localeCompare(b.sticker_color);
-      const sortedKits = [...involvedKits.values()].sort(byCode);
+      const sortedKits = [...involvedKits.values()].sort(compareKits);
       const bikePartIdSet = new Set(bikePartIds);
       const assigned = new Set<string>();
 
@@ -204,7 +205,7 @@ export default async function BikeBuildWorkbenchPage({
         const rows: PickRow[] = [];
         for (const r of bikeParts) {
           if (assigned.has(r.partId)) continue;
-          const labels = (kitsByPart.get(r.partId) ?? []).sort(byCode);
+          const labels = (kitsByPart.get(r.partId) ?? []).sort(compareKits);
           if (labels.length === 0 || labels[0].id !== kit.id) continue;
           assigned.add(r.partId);
           rows.push({
