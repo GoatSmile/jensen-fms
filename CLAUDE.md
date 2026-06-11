@@ -312,3 +312,49 @@ The next work is the **commercial / billing** cluster, roughly:
 - audit_log triggers (wait on auth for user_id); SQL-side pagination for the
   parts list at scale; offline write-queue for the workshop floor; Whisper
   voice fallback; bulk CSV import for parts/suppliers.
+
+### Parked ideas
+The durable home for ideas parked mid-session (session "chips" die with the
+app). Add new ones here with enough context to act cold; delete the entry
+when the work ships or the idea is rejected.
+
+- **Ticket picker: guard against unbuilt bikes** (parked June 2026). The
+  new-ticket bike picker (`src/app/maintenance/tickets/_components/
+  load-pickables.ts`) only excludes retired / lost_or_stolen / soft-deleted,
+  so tickets and WOs can be opened against `planning`/`building` bikes that
+  don't physically exist yet (happened: WO-2026-0004 on a planning-stage
+  bike). Fix: exclude `planning` (probably `building` too) from the picker,
+  plus the same guard server-side in `save-ticket.ts`. Softer alternative
+  considered: show lifecycle status in the picker and let the human decide.
+
+- **Phone-call → ticket AI pipeline** (parked June 2026, designed in-session).
+  Workshop calls become maintenance tickets automatically:
+  - Telephony: Twilio (conditional forwarding from the existing number),
+    dual-channel recording (tech leg / caller leg — speaker attribution for
+    free), bilingual da/en "call is recorded" announcement (GDPR, Denmark).
+  - Webhook → store audio in Supabase Storage (EU) → per-channel
+    transcription (Whisper API or Azure Speech EU; da/en auto-detect) →
+    Claude structured extraction (caller, org, callback number, bike clues,
+    problem, urgency, language).
+  - Matching is deterministic code, not the model: caller ID →
+    `contacts.phone` → org; spoken org name → trigram on
+    `organizations.legal_name`; spoken frame/QR → `bike_identifiers` exact;
+    else owner org's fleet filtered by colour/type. Attach the bike only if
+    exactly one candidate survives; otherwise store candidates for the tech
+    to confirm on the ticket.
+  - Schema: `maintenance_tickets` is already shaped for it (nullable
+    bike_id, reported_by_contact_id/text/phone, reported_language, source
+    enum already has 'phone'). New `calls` table (recording path, caller
+    number, duration, language, transcript jsonb with speaker+timestamps,
+    summary, extraction payload, candidate bikes, pipeline status, nullable
+    ticket_id). New `bike_identifiers` type `fleet_number` for customers'
+    own numbering ("bike 25") — big match-rate win for municipalities.
+  - Notifications: SMS ack to caller via GatewayAPI (Danish, alphanumeric
+    sender) including the public report link `/b/<bikeId>`; Web Push to the
+    tech PWA (needs `push_subscriptions` + service-worker handler).
+  - Phasing: v1 voicemail-only in shadow mode ("review me" banner, measure
+    match accuracy); v2 live-call bridging + recording; v3 screen-pop on
+    inbound ring, callback threading to open tickets, email ingestion.
+  - GDPR non-negotiables: recording announcement, retention policy (audio
+    ~90 days, transcript/summary kept on ticket), DPAs with providers, EU
+    residency. Cost ≈ under 2 kr. per 5-min call + ~50 kr./mo for the number.
