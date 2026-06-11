@@ -16,6 +16,8 @@ import {
   flattenCategoryTree,
   type FlatCategory,
 } from "@/lib/parts/categories";
+import { cn } from "@/lib/utils";
+import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { kitCode } from "@/lib/kits/colors";
 
 import { CategoryDrawer } from "./category-drawer";
@@ -112,6 +114,7 @@ export function PartsFilters({
           placeholder="Search SKU, name, description, supplier SKU…"
           value={qDraft}
           onChange={(e) => setQDraft(e.target.value)}
+          className={cn(qDraft.trim() && FILTER_ACTIVE_CLASS)}
         />
       </div>
 
@@ -179,7 +182,10 @@ function FilterSelect({
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={(v) => onChange(v ?? "all")}>
-        <SelectTrigger id={id}>
+        <SelectTrigger
+          id={id}
+          className={cn(value !== "all" && FILTER_ACTIVE_CLASS)}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

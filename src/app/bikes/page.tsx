@@ -24,6 +24,8 @@ import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import {
   BIKE_STATUS_VARIANT,
   bikeStatusLabel,
@@ -189,7 +191,7 @@ export default async function BikesPage({
             name="q"
             defaultValue={q}
             placeholder="JP-2026-HSB-…"
-            className="font-mono"
+            className={cn("font-mono", q && FILTER_ACTIVE_CLASS)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -200,7 +202,10 @@ export default async function BikesPage({
             id="bikes-status"
             name="status"
             defaultValue={statusFilter ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className={cn(
+              "border-input bg-background h-9 rounded-md border px-2 text-sm",
+              statusFilter && FILTER_ACTIVE_CLASS,
+            )}
           >
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((s) => (
@@ -218,7 +223,10 @@ export default async function BikesPage({
             id="bikes-type"
             name="type"
             defaultValue={typeFilter ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className={cn(
+              "border-input bg-background h-9 rounded-md border px-2 text-sm",
+              typeFilter && FILTER_ACTIVE_CLASS,
+            )}
           >
             <option value="">All types</option>
             {(typesRes.data ?? []).map((t) => (

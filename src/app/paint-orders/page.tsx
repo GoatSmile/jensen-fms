@@ -23,6 +23,8 @@ import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import {
@@ -146,7 +148,10 @@ export default async function PaintOrdersPage({
             id="paint-status"
             name="status"
             defaultValue={statusFilter ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className={cn(
+              "border-input bg-background h-9 rounded-md border px-2 text-sm",
+              statusFilter && FILTER_ACTIVE_CLASS,
+            )}
           >
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((s) => (

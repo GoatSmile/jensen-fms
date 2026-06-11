@@ -23,6 +23,8 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { countryName } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { formatDate } from "@/lib/parts/format";
 
 type SearchParams = {
@@ -157,6 +159,7 @@ export default async function OrganizationsPage({
             name="q"
             defaultValue={q}
             placeholder="Legal name or display name…"
+            className={cn(q && FILTER_ACTIVE_CLASS)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -167,7 +170,10 @@ export default async function OrganizationsPage({
             id="org-segment"
             name="segment"
             defaultValue={segmentSlug}
-            className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+            className={cn(
+              "border-input bg-background h-9 rounded-md border px-2 text-sm",
+              segmentSlug && FILTER_ACTIVE_CLASS,
+            )}
           >
             <option value="">All segments</option>
             {segments.map((s) => (

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import {
   Sheet,
   SheetContent,
@@ -75,7 +76,10 @@ export function CategoryDrawer({
       <SheetTrigger
         id={id}
         data-placeholder={selected ? undefined : ""}
-        className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50 flex h-8 w-fit items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-3"
+        className={cn(
+          "border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50 flex h-8 w-fit items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:ring-3",
+          value !== "all" && FILTER_ACTIVE_CLASS,
+        )}
       >
         <span className="line-clamp-1 text-left">
           {selected ? selected.name : "All categories"}
