@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Check,
   ChevronDown,
   ChevronRight,
   GitBranch,
@@ -19,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatDkk } from "@/lib/parts/stock";
 
 import { cloneAsNewVersion } from "../_actions/clone-as-version";
 import { saveTemplateParts } from "../_actions/save-parts";
@@ -35,6 +37,8 @@ export type PartInCategory = {
   internal_sku: string;
   name_en: string;
   category_id: string | null;
+  /** Customer (retail) price in DKK; null when unset or non-DKK. */
+  retailDkk: number | null;
 };
 
 export type RecipeRow = {
@@ -47,6 +51,8 @@ export type RecipeRow = {
   quantity: string;
   isOptional: boolean;
   notes: string;
+  /** Customer (retail) price in DKK; null when unset or non-DKK. */
+  retailDkk: number | null;
 };
 
 type Props = {
@@ -55,22 +61,26 @@ type Props = {
   initialRows: RecipeRow[];
   categories: CategoryOption[];
   parts: PartInCategory[];
+  /** The template's own sale price (DKK), for the margin sanity-check. */
+  templateRetailDkk: number | null;
 };
 
 /**
  * Category-driven template parts editor.
  *
- * Layout (per Dennis's FleetManager Pro mock + adjustments we agreed on):
- *   - LEFT column: one row per category that has parts in the catalog. Each
- *     row shows the category name and a picker of its parts. Categories
- *     without any catalog parts collapse into a single "+ N empty" expander
- *     at the bottom so they're available but don't bury the populated ones.
- *   - RIGHT column: the running recipe — every part the user has added,
- *     grouped by category, with editable quantity / optional / notes /
- *     remove. The DB enforces UNIQUE(template, part) so the same part can
- *     only appear once; the picker disables already-added parts.
- *   - Footer: Save changes + Save as new version (existing actions; the data
- *     shape going into saveTemplateParts is unchanged).
+ * Layout:
+ *   - LEFT column: one single-line row per category that has catalog parts —
+ *     category name + its part picker side by side. Once at least one part
+ *     from a category is in the recipe the row turns green with a check, and
+ *     the counter reads picked/available — so the eye can scan down and see
+ *     what's done. Categories without catalog parts collapse into an
+ *     expander at the bottom.
+ *   - RIGHT column: the running recipe grouped by category, each line with
+ *     qty / optional / notes / remove + retail price, each group with a
+ *     retail subtotal, and a parts-retail total compared against the
+ *     template's own sale price at the bottom.
+ *   - Footer: Save changes + Save as new version (data shape into
+ *     saveTemplateParts is unchanged).
  *
  * Past versions render the same layout in read-only mode.
  */
@@ -80,6 +90,7 @@ export function PartsRecipeSection({
   initialRows,
   categories,
   parts,
+  templateRetailDkk,
 }: Props) {
   const router = useRouter();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
@@ -124,6 +135,17 @@ export function PartsRecipeSection({
     [rows],
   );
 
+  // How many recipe rows each category has — drives the done-state and the
+  // picked/available counter on the left.
+  const pickedByCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.categoryId) continue;
+      m.set(r.categoryId, (m.get(r.categoryId) ?? 0) + 1);
+    }
+    return m;
+  }, [rows]);
+
   // Group the recipe by category for the RIGHT panel.
   const recipeByCategory = useMemo(() => {
     const m = new Map<string, RecipeRow[]>();
@@ -164,6 +186,19 @@ export function PartsRecipeSection({
     [rows],
   );
 
+  // Running retail total of the recipe. Rows without a retail price are
+  // counted so the gap is visible rather than silent.
+  const retailTotal = useMemo(() => {
+    let sum = 0;
+    let unpriced = 0;
+    for (const r of rows) {
+      const qty = Number(r.quantity);
+      if (r.retailDkk == null) unpriced += 1;
+      else if (Number.isFinite(qty)) sum += qty * r.retailDkk;
+    }
+    return { sum, unpriced };
+  }, [rows]);
+
   function onPickFromCategory(category: CategoryOption, partId: string) {
     if (!partId || partId === "__placeholder__") return;
     const part = partsByCategory.get(category.id)?.find((p) => p.id === partId);
@@ -179,9 +214,10 @@ export function PartsRecipeSection({
         quantity: "1",
         isOptional: false,
         notes: "",
+        retailDkk: part.retailDkk,
       },
     ]);
-    // Reset the picker so it reads "-- Vælg --" again, ready for another.
+    // Reset the picker so it reads the placeholder again, ready for another.
     setPickerValueByCat((prev) => ({ ...prev, [category.id]: "__placeholder__" }));
     setSuccess(null);
   }
@@ -247,7 +283,19 @@ export function PartsRecipeSection({
           <h2 className="text-sm font-semibold">Parts recipe</h2>
           <p className="text-muted-foreground text-xs">
             {rows.length} part{rows.length === 1 ? "" : "s"} ·{" "}
-            {totalUnitsPerBike} unit{totalUnitsPerBike === 1 ? "" : "s"} per bike
+            {totalUnitsPerBike} unit{totalUnitsPerBike === 1 ? "" : "s"} per
+            bike
+            {rows.length > 0 ? (
+              <>
+                {" · "}
+                <span className="text-foreground font-medium tabular-nums">
+                  retail {formatDkk(retailTotal.sum)}
+                </span>
+                {retailTotal.unpriced > 0
+                  ? ` (${retailTotal.unpriced} unpriced)`
+                  : null}
+              </>
+            ) : null}
           </p>
         </div>
         {canEdit ? (
@@ -285,7 +333,7 @@ export function PartsRecipeSection({
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* LEFT: Categories */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
               Parts by category
             </div>
@@ -296,6 +344,7 @@ export function PartsRecipeSection({
                 category={category}
                 partsInCategory={partsByCategory.get(category.id) ?? []}
                 inRecipePartIds={inRecipePartIds}
+                pickedCount={pickedByCategory.get(category.id) ?? 0}
                 selectValue={
                   pickerValueByCat[category.id] ?? "__placeholder__"
                 }
@@ -347,7 +396,7 @@ export function PartsRecipeSection({
                 Pick parts from the categories on the left.
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5">
                 {[...recipeByCategory.entries()]
                   .sort((a, b) => {
                     // Keep the right-panel grouping in the same order as the
@@ -359,13 +408,29 @@ export function PartsRecipeSection({
                   .map(([catKey, catRows]) => {
                     const catName =
                       catRows[0]?.categoryName ?? "Uncategorised";
+                    let subtotal = 0;
+                    let hasPrice = false;
+                    for (const r of catRows) {
+                      const qty = Number(r.quantity);
+                      if (r.retailDkk != null && Number.isFinite(qty)) {
+                        subtotal += qty * r.retailDkk;
+                        hasPrice = true;
+                      }
+                    }
                     return (
                       <div
                         key={catKey}
-                        className="rounded-md border"
+                        className="overflow-hidden rounded-md border shadow-xs"
                       >
-                        <div className="bg-muted/30 border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
-                          {catName}
+                        <div className="bg-muted/40 flex items-center justify-between gap-2 border-b px-3 py-1.5">
+                          <span className="text-xs font-medium uppercase tracking-wide">
+                            {catName}
+                          </span>
+                          {hasPrice ? (
+                            <span className="text-muted-foreground text-xs tabular-nums">
+                              {formatDkk(subtotal)}
+                            </span>
+                          ) : null}
                         </div>
                         <ul className="divide-y">
                           {catRows.map((r) => (
@@ -381,6 +446,47 @@ export function PartsRecipeSection({
                       </div>
                     );
                   })}
+
+                {/* Margin sanity-check: parts retail vs the template's own
+                    sale price, live while composing. */}
+                <div className="bg-muted/20 flex flex-col gap-1 rounded-md border px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      Parts retail total
+                      {retailTotal.unpriced > 0 ? (
+                        <span className="text-muted-foreground text-xs">
+                          {" "}
+                          ({retailTotal.unpriced} unpriced)
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="font-semibold tabular-nums">
+                      {formatDkk(retailTotal.sum)}
+                    </span>
+                  </div>
+                  {templateRetailDkk != null ? (
+                    <>
+                      <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+                        <span>Template sale price</span>
+                        <span className="tabular-nums">
+                          {formatDkk(templateRetailDkk)}
+                        </span>
+                      </div>
+                      <div
+                        className={`flex items-center justify-between gap-2 text-xs ${
+                          templateRetailDkk - retailTotal.sum < 0
+                            ? "text-destructive font-medium"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span>Difference (price − parts)</span>
+                        <span className="tabular-nums">
+                          {formatDkk(templateRetailDkk - retailTotal.sum)}
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
               </div>
             )}
           </div>
@@ -416,6 +522,7 @@ function CategoryPickerRow({
   category,
   partsInCategory,
   inRecipePartIds,
+  pickedCount,
   selectValue,
   onSelectValue,
   onPick,
@@ -425,28 +532,53 @@ function CategoryPickerRow({
   category: CategoryOption;
   partsInCategory: PartInCategory[];
   inRecipePartIds: Set<string>;
+  pickedCount: number;
   selectValue: string;
   onSelectValue: (v: string) => void;
   onPick: (partId: string) => void;
   disabled: boolean;
 }) {
-  // EN-only display; operating language is English. Title case matches the
-  // rest of the app rather than the all-caps in Dennis's mock.
+  // EN-only display; operating language is English.
   const label = category.name_en;
   const totalCount = partsInCategory.length;
   const remaining = partsInCategory.filter(
     (p) => !inRecipePartIds.has(p.id),
   ).length;
+  const done = pickedCount > 0;
 
+  // Single-line row: name (+ picked counter) left, picker right. Green tint
+  // + check once something from this category is in the recipe, so the
+  // template builder can scan down and see what's handled.
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-2">
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {index}.
+    <div
+      className={`flex items-center justify-between gap-3 rounded-md border px-2.5 py-1.5 transition-colors ${
+        done
+          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10"
+          : ""
+      }`}
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        {done ? (
+          <Check
+            className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+            aria-label="Category has parts in the recipe"
+          />
+        ) : (
+          <span className="text-muted-foreground w-4 shrink-0 text-right text-xs tabular-nums">
+            {index}.
+          </span>
+        )}
+        <span className="truncate text-xs font-semibold tracking-wide">
+          {label}
         </span>
-        <span className="text-xs font-semibold tracking-wide">{label}</span>
-        <span className="text-muted-foreground text-[10px]">
-          ({remaining}/{totalCount})
+        <span
+          className={`shrink-0 text-[10px] tabular-nums ${
+            done
+              ? "font-medium text-emerald-700 dark:text-emerald-400"
+              : "text-muted-foreground"
+          }`}
+        >
+          {pickedCount}/{totalCount} picked
         </span>
       </div>
       <Select
@@ -457,20 +589,20 @@ function CategoryPickerRow({
         }}
         disabled={disabled || remaining === 0}
       >
-        <SelectTrigger className="h-8 text-xs">
+        <SelectTrigger className="h-8 w-44 shrink-0 text-xs">
           <SelectValue
             placeholder={
               totalCount === 0
-                ? "-- None available --"
+                ? "None available"
                 : remaining === 0
-                  ? "-- All added --"
-                  : `-- Pick (${remaining}) --`
+                  ? "All added"
+                  : "Pick a part…"
             }
           />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__placeholder__" disabled>
-            -- Pick a part --
+            Pick a part…
           </SelectItem>
           {partsInCategory.map((p) => {
             const already = inRecipePartIds.has(p.id);
@@ -480,6 +612,11 @@ function CategoryPickerRow({
                 <span className="text-muted-foreground ml-2 text-xs">
                   {p.name_en}
                 </span>
+                {p.retailDkk != null ? (
+                  <span className="text-muted-foreground ml-2 text-[10px] tabular-nums">
+                    {formatDkk(p.retailDkk)}
+                  </span>
+                ) : null}
                 {already ? (
                   <span className="text-muted-foreground ml-2 text-[10px] italic">
                     already added
@@ -505,6 +642,10 @@ function RecipeLine({
   onChange: (patch: Partial<RecipeRow>) => void;
   onRemove: () => void;
 }) {
+  const qty = Number(row.quantity);
+  const lineTotal =
+    row.retailDkk != null && Number.isFinite(qty) ? qty * row.retailDkk : null;
+
   return (
     <li className="flex flex-col gap-1.5 p-2.5">
       <div className="flex items-start justify-between gap-2">
@@ -515,20 +656,35 @@ function RecipeLine({
           >
             {row.partName}
           </Link>
-          <span className="text-muted-foreground font-mono text-[10px] break-all">
-            {row.partSku}
+          <span className="text-muted-foreground text-[10px]">
+            <span className="font-mono break-all">{row.partSku}</span>
+            {row.retailDkk != null ? (
+              <span className="tabular-nums">
+                {" "}
+                · {formatDkk(row.retailDkk)} each
+              </span>
+            ) : (
+              <span className="italic"> · no retail price</span>
+            )}
           </span>
         </div>
-        {canEdit ? (
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            onClick={onRemove}
-            aria-label={`Remove ${row.partSku}`}
-          >
-            <Trash2 aria-hidden />
-          </Button>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {lineTotal != null ? (
+            <span className="text-sm font-medium tabular-nums">
+              {formatDkk(lineTotal)}
+            </span>
+          ) : null}
+          {canEdit ? (
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              onClick={onRemove}
+              aria-label={`Remove ${row.partSku}`}
+            >
+              <Trash2 aria-hidden />
+            </Button>
+          ) : null}
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <label className="flex items-center gap-1.5">

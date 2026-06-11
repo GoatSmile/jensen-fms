@@ -85,6 +85,7 @@ export default async function BikeTemplateDetailPage({
         id, quantity, is_optional, notes,
         parts:parts(
           id, internal_sku, name_en,
+          default_retail_price, default_retail_currency,
           category:part_categories(id, name_en, name_da)
         )
       `,
@@ -102,7 +103,9 @@ export default async function BikeTemplateDetailPage({
       .order("name_en", { ascending: true }),
     supabase
       .from("parts")
-      .select("id, internal_sku, name_en, category_id")
+      .select(
+        "id, internal_sku, name_en, category_id, default_retail_price, default_retail_currency",
+      )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
     chainFilters.order("version", { ascending: false }),
@@ -125,6 +128,11 @@ export default async function BikeTemplateDetailPage({
       quantity: String(Number(row.quantity)),
       isOptional: row.is_optional,
       notes: row.notes ?? "",
+      retailDkk:
+        row.parts?.default_retail_price != null &&
+        (row.parts.default_retail_currency ?? "DKK") === "DKK"
+          ? Number(row.parts.default_retail_price)
+          : null,
     }))
     .filter((r) => r.partId !== "")
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
@@ -141,6 +149,11 @@ export default async function BikeTemplateDetailPage({
     internal_sku: p.internal_sku,
     name_en: p.name_en,
     category_id: p.category_id ?? null,
+    retailDkk:
+      p.default_retail_price != null &&
+      (p.default_retail_currency ?? "DKK") === "DKK"
+        ? Number(p.default_retail_price)
+        : null,
   }));
 
   const chainCounts = new Map<string, number>();
@@ -240,6 +253,12 @@ export default async function BikeTemplateDetailPage({
         initialRows={initialRows}
         categories={categories}
         parts={parts}
+        templateRetailDkk={
+          t.default_retail_price != null &&
+          (t.default_retail_currency ?? "DKK") === "DKK"
+            ? Number(t.default_retail_price)
+            : null
+        }
       />
 
       <LabelBomKit
