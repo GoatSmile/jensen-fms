@@ -16,7 +16,11 @@ import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
 
 import { PartsFilters } from "./_components/parts-filters";
-import { PartsTable, type PartRow } from "./_components/parts-table";
+import {
+  PartsTable,
+  type PartRow,
+  type PartRowKit,
+} from "./_components/parts-table";
 import { PartsPagination } from "./_components/pagination";
 import type { SortColumn } from "./_components/sortable-header";
 
@@ -35,6 +39,7 @@ type SearchParams = {
   q?: string;
   category?: string;
   supplier?: string;
+  kit?: string;
   stock?: string;
   page?: string;
   sort?: string;
@@ -79,6 +84,7 @@ export default async function PartsPage({
   const q = sp.q?.trim() ?? "";
   const categoryId = sp.category && sp.category !== "all" ? sp.category : null;
   const supplierId = sp.supplier && sp.supplier !== "all" ? sp.supplier : null;
+  const kitId = sp.kit && sp.kit !== "all" ? sp.kit : null;
   const stockFilter = parseStockFilter(sp.stock);
   const page = parsePage(sp.page);
   const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
@@ -113,6 +119,17 @@ export default async function PartsPage({
     if (supplierFilteredIds.length === 0) supplierFilteredIds = ["__none__"];
   }
 
+  // Pre-step 3: kit filter — same id.in() pattern as the supplier filter.
+  let kitFilteredIds: string[] | null = null;
+  if (kitId) {
+    const { data } = await supabase
+      .from("part_kits")
+      .select("part_id")
+      .eq("kit_id", kitId);
+    kitFilteredIds = Array.from(new Set((data ?? []).map((r) => r.part_id)));
+    if (kitFilteredIds.length === 0) kitFilteredIds = ["__none__"];
+  }
+
   // Categories are needed to expand a parent-category filter into its
   // descendants. Cheap query (~dozens of rows), so a separate await is fine.
   const categoriesRes = await supabase
@@ -143,6 +160,9 @@ export default async function PartsPage({
   if (supplierFilteredIds) {
     viewQuery = viewQuery.in("id", supplierFilteredIds);
   }
+  if (kitFilteredIds) {
+    viewQuery = viewQuery.in("id", kitFilteredIds);
+  }
   if (q) {
     const escaped = escapeOrValue(`%${q}%`);
     const orClauses = [
@@ -163,13 +183,19 @@ export default async function PartsPage({
     .order("internal_sku", { ascending: true })
     .range(offset, offset + PAGE_SIZE - 1);
 
-  const [suppliersRes, viewRes] = await Promise.all([
+  const [suppliersRes, kitsRes, viewRes] = await Promise.all([
     supabase
       .from("suppliers")
       .select("id,name")
       .is("deleted_at", null)
       .eq("is_active", true)
       .order("name", { ascending: true }),
+    supabase
+      .from("kits")
+      .select("id, sticker_color, kit_number")
+      .eq("is_active", true)
+      .order("sticker_color", { ascending: true })
+      .order("kit_number", { ascending: true }),
     viewQuery,
   ]);
 
@@ -202,6 +228,33 @@ export default async function PartsPage({
     }
   }
 
+  // Kit labels for the visible page only — chips in the Kits column. Only
+  // active kits show here; archived labels stay visible on the part detail.
+  const kitsByPartId = new Map<string, PartRowKit[]>();
+  if (visibleIds.length > 0) {
+    const { data: memberships } = await supabase
+      .from("part_kits")
+      .select("part_id, kit:kits!kit_id(sticker_color, kit_number, is_active)")
+      .in("part_id", visibleIds);
+    for (const m of memberships ?? []) {
+      const kit = Array.isArray(m.kit) ? m.kit[0] : m.kit;
+      if (!kit || !kit.is_active) continue;
+      const list = kitsByPartId.get(m.part_id) ?? [];
+      list.push({
+        sticker_color: kit.sticker_color,
+        kit_number: kit.kit_number,
+      });
+      kitsByPartId.set(m.part_id, list);
+    }
+    for (const list of kitsByPartId.values()) {
+      list.sort((a, b) =>
+        a.sticker_color === b.sticker_color
+          ? a.kit_number - b.kit_number
+          : a.sticker_color.localeCompare(b.sticker_color),
+      );
+    }
+  }
+
   const pageRows: PartRow[] = (viewRes.data ?? []).map((row) => ({
     id: row.id!,
     internalSku: row.internal_sku!,
@@ -214,6 +267,7 @@ export default async function PartsPage({
       row.last_cost_dkk != null ? Number(row.last_cost_dkk) : null,
     stockStatus: (row.stock_status ?? "ok") as StockStatus,
     heroUrl: heroByPartId.get(row.id!) ?? null,
+    kits: kitsByPartId.get(row.id!) ?? [],
   }));
 
   return (
@@ -272,9 +326,10 @@ export default async function PartsPage({
       <PartsFilters
         categories={categoriesRes.data ?? []}
         suppliers={suppliersRes.data ?? []}
+        kits={kitsRes.data ?? []}
       />
 
-      {totalCount === 0 && !q && !categoryId && !supplierId && stockFilter === "all" ? (
+      {totalCount === 0 && !q && !categoryId && !supplierId && !kitId && stockFilter === "all" ? (
         <EmptyState
           icon={Boxes}
           title="No parts yet"

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, Palette, Percent, Tag, Truck, Users } from "lucide-react";
+import { Coins, Package, Palette, Percent, Tag, Truck, Users } from "lucide-react";
 
 import {
   Breadcrumb,
@@ -23,8 +23,15 @@ import { formatPct } from "@/lib/parts/format";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
-  const [hsRes, settingsRes, fxRes, colorsRes, segmentsRes, suppliersRes] =
-    await Promise.all([
+  const [
+    hsRes,
+    settingsRes,
+    fxRes,
+    colorsRes,
+    segmentsRes,
+    suppliersRes,
+    kitsRes,
+  ] = await Promise.all([
     supabase
       .from("hs_codes")
       .select("id", { count: "exact", head: true })
@@ -53,6 +60,10 @@ export default async function AdminLandingPage() {
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
       .is("deleted_at", null),
+    supabase
+      .from("kits")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -63,6 +74,7 @@ export default async function AdminLandingPage() {
   const activeColorCount = colorsRes.count ?? 0;
   const activeSegmentCount = segmentsRes.count ?? 0;
   const activeSupplierCount = suppliersRes.count ?? 0;
+  const activeKitCount = kitsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -127,6 +139,13 @@ export default async function AdminLandingPage() {
           title="Suppliers"
           description="Vendors parts are bought from. Used by part offerings, purchase orders, and paint orders."
           stat={`${activeSupplierCount} active supplier${activeSupplierCount === 1 ? "" : "s"}`}
+        />
+        <Tile
+          href="/admin/kits"
+          icon={Package}
+          title="Kits"
+          description="Colour + number sticker labels for part boxes — the assembly floor picks complete part sets by code."
+          stat={`${activeKitCount} active kit${activeKitCount === 1 ? "" : "s"}`}
         />
         <Tile
           href="/admin/settings"

@@ -15,6 +15,11 @@ import { getStockStatus } from "@/lib/parts/stock";
 
 import type { LocationOption } from "./_components/adjust-stock-dialog";
 import { DetailsSection } from "./_components/details-section";
+import {
+  KitsSection,
+  type KitOption,
+  type PartKitChip,
+} from "./_components/kits-section";
 import { MovementsSection } from "./_components/movements-section";
 import { OfferingsSection } from "./_components/offerings-section";
 import { PartHeader } from "./_components/part-header";
@@ -58,6 +63,8 @@ export default async function PartDetailPage({
     moUsageRes,
     bikePartsUsageRes,
     fxRatesRes,
+    partKitsRes,
+    kitOptionsRes,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -224,6 +231,16 @@ export default async function PartDetailPage({
       .select("from_currency, rate, rate_date")
       .eq("to_currency", "DKK")
       .order("rate_date", { ascending: false }),
+    supabase
+      .from("part_kits")
+      .select("kit:kits!kit_id(id, sticker_color, kit_number, is_active)")
+      .eq("part_id", id),
+    supabase
+      .from("kits")
+      .select("id, sticker_color, kit_number")
+      .eq("is_active", true)
+      .order("sticker_color", { ascending: true })
+      .order("kit_number", { ascending: true }),
   ]);
 
   if (partRes.error) {
@@ -364,6 +381,23 @@ export default async function PartDetailPage({
     .sort((a, b) => (a.orderDate < b.orderDate ? 1 : -1))
     .slice(0, PURCHASE_LINES_LIMIT);
 
+  // ------- Kit labels on this part + active kits for the add-picker -------
+  const kitChips: PartKitChip[] = (partKitsRes.data ?? [])
+    .map((row) => (Array.isArray(row.kit) ? row.kit[0] : row.kit))
+    .filter((k): k is NonNullable<typeof k> => k != null)
+    .map((k) => ({
+      kitId: k.id,
+      sticker_color: k.sticker_color,
+      kit_number: k.kit_number,
+      is_active: k.is_active,
+    }))
+    .sort((a, b) =>
+      a.sticker_color === b.sticker_color
+        ? a.kit_number - b.kit_number
+        : a.sticker_color.localeCompare(b.sticker_color),
+    );
+  const kitOptions: KitOption[] = kitOptionsRes.data ?? [];
+
   // ------- Photos: hero first, then gallery (most recent first) -------
   const photoRows: PhotoRow[] = (attachmentsRes.data ?? [])
     .map((row) => ({
@@ -480,6 +514,8 @@ export default async function PartDetailPage({
         attributes={(part.attributes as Record<string, unknown>) ?? {}}
         templateUsageCount={templateUsageCount}
       />
+
+      <KitsSection partId={part.id} chips={kitChips} options={kitOptions} />
 
       <OfferingsSection
         partId={part.id}

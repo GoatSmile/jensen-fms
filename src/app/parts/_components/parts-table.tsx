@@ -20,6 +20,8 @@ import {
   type StockStatus,
 } from "@/lib/parts/stock";
 
+import { kitCode, stickerColor } from "@/lib/kits/colors";
+
 import { SortableHeader } from "./sortable-header";
 
 /** Map a stock status to a per-row left-edge accent so low/out parts pop
@@ -36,6 +38,11 @@ function attentionBorder(status: StockStatus): string {
   }
 }
 
+export type PartRowKit = {
+  sticker_color: string;
+  kit_number: number;
+};
+
 export type PartRow = {
   id: string;
   internalSku: string;
@@ -47,6 +54,7 @@ export type PartRow = {
   lastCostDkk: number | null;
   stockStatus: StockStatus;
   heroUrl: string | null;
+  kits: PartRowKit[];
 };
 
 export function PartsTable({ rows }: { rows: PartRow[] }) {
@@ -84,6 +92,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
               label="Supplier"
               className="hidden lg:table-cell"
             />
+            <TableHead className="hidden xl:table-cell">Kits</TableHead>
             <SortableHeader
               column="stock_on_hand"
               label="Stock"
@@ -162,6 +171,39 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
+                  )}
+                </Link>
+              </TableCell>
+              <TableCell className="hidden p-0 xl:table-cell">
+                <Link
+                  href={`/parts/${row.id}`}
+                  className="flex flex-wrap items-center gap-1 px-4 py-2.5"
+                >
+                  {row.kits.length === 0 ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <>
+                      {row.kits.slice(0, 2).map((k) => (
+                        <span
+                          key={`${k.sticker_color}-${k.kit_number}`}
+                          className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium"
+                        >
+                          <span
+                            aria-hidden
+                            className="inline-block size-2 rounded-full border border-black/10"
+                            style={{
+                              backgroundColor: stickerColor(k.sticker_color).hex,
+                            }}
+                          />
+                          {kitCode(k.sticker_color, k.kit_number)}
+                        </span>
+                      ))}
+                      {row.kits.length > 2 ? (
+                        <span className="text-muted-foreground text-[10px]">
+                          +{row.kits.length - 2}
+                        </span>
+                      ) : null}
+                    </>
                   )}
                 </Link>
               </TableCell>

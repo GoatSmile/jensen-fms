@@ -18,6 +18,11 @@ import {
   type CategoryOption,
   type PartInCatalog,
 } from "./_components/build-workbench";
+import {
+  PickList,
+  type PickGroup,
+  type PickRow,
+} from "./_components/pick-list";
 
 export default async function BikeBuildWorkbenchPage({
   params,
@@ -133,6 +138,111 @@ export default async function BikeBuildWorkbenchPage({
 
   const recipeRowCount = moRecipeCountRes.count ?? 0;
 
+  // ------- Pick list by kit -------
+  // Group this bike's parts by their kit labels so the floor can pick by
+  // sticker code ("Red 1 — whole kit, plus these loose parts"). A part with
+  // several labels appears once, under its first kit (sorted by code) — the
+  // remaining codes show as "also" hints so nothing gets double-picked.
+  const bikePartIds = bikeParts.map((r) => r.partId);
+  const pickGroups: PickGroup[] = [];
+  let loosePicks: PickRow[] = bikeParts.map((r) => ({
+    sku: r.partSku,
+    name: r.partName,
+    quantity: r.quantity,
+    also: [],
+  }));
+  if (bikePartIds.length > 0) {
+    const { data: memberships } = await supabase
+      .from("part_kits")
+      .select(
+        "part_id, kit:kits!kit_id(id, sticker_color, kit_number, is_active)",
+      )
+      .in("part_id", bikePartIds);
+
+    type KitRef = { id: string; sticker_color: string; kit_number: number };
+    const kitsByPart = new Map<string, KitRef[]>();
+    const involvedKits = new Map<string, KitRef>();
+    for (const m of memberships ?? []) {
+      const kit = Array.isArray(m.kit) ? m.kit[0] : m.kit;
+      if (!kit || !kit.is_active) continue;
+      const ref: KitRef = {
+        id: kit.id,
+        sticker_color: kit.sticker_color,
+        kit_number: kit.kit_number,
+      };
+      involvedKits.set(kit.id, ref);
+      const list = kitsByPart.get(m.part_id) ?? [];
+      list.push(ref);
+      kitsByPart.set(m.part_id, list);
+    }
+
+    if (involvedKits.size > 0) {
+      // Full membership of the involved kits (live parts only), to tell a
+      // complete kit from a partial pick.
+      const { data: fullMemberships } = await supabase
+        .from("part_kits")
+        .select("kit_id, part:parts!part_id(id, deleted_at)")
+        .in("kit_id", [...involvedKits.keys()]);
+      const kitTotalParts = new Map<string, Set<string>>();
+      for (const m of fullMemberships ?? []) {
+        const part = Array.isArray(m.part) ? m.part[0] : m.part;
+        if (!part || part.deleted_at != null) continue;
+        const set = kitTotalParts.get(m.kit_id) ?? new Set<string>();
+        set.add(part.id);
+        kitTotalParts.set(m.kit_id, set);
+      }
+
+      const byCode = (a: KitRef, b: KitRef) =>
+        a.sticker_color === b.sticker_color
+          ? a.kit_number - b.kit_number
+          : a.sticker_color.localeCompare(b.sticker_color);
+      const sortedKits = [...involvedKits.values()].sort(byCode);
+      const bikePartIdSet = new Set(bikePartIds);
+      const assigned = new Set<string>();
+
+      for (const kit of sortedKits) {
+        const rows: PickRow[] = [];
+        for (const r of bikeParts) {
+          if (assigned.has(r.partId)) continue;
+          const labels = (kitsByPart.get(r.partId) ?? []).sort(byCode);
+          if (labels.length === 0 || labels[0].id !== kit.id) continue;
+          assigned.add(r.partId);
+          rows.push({
+            sku: r.partSku,
+            name: r.partName,
+            quantity: r.quantity,
+            also: labels.slice(1).map((l) => ({
+              sticker_color: l.sticker_color,
+              kit_number: l.kit_number,
+            })),
+          });
+        }
+        if (rows.length === 0) continue;
+        const fullSet = kitTotalParts.get(kit.id) ?? new Set<string>();
+        const presentFromKit = [...fullSet].filter((p) =>
+          bikePartIdSet.has(p),
+        ).length;
+        pickGroups.push({
+          sticker_color: kit.sticker_color,
+          kit_number: kit.kit_number,
+          complete: fullSet.size > 0 && presentFromKit === fullSet.size,
+          totalKitParts: fullSet.size,
+          presentKitParts: presentFromKit,
+          rows,
+        });
+      }
+
+      loosePicks = bikeParts
+        .filter((r) => !assigned.has(r.partId))
+        .map((r) => ({
+          sku: r.partSku,
+          name: r.partName,
+          quantity: r.quantity,
+          also: [],
+        }));
+    }
+  }
+
   const templateLabel = mo.bike_template
     ? [
         mo.bike_template.family,
@@ -206,6 +316,11 @@ export default async function BikeBuildWorkbenchPage({
         catalog={catalog}
         moRecipeRowCount={recipeRowCount}
         readOnly={isReadOnly}
+        pickListSlot={
+          pickGroups.length > 0 ? (
+            <PickList groups={pickGroups} loose={loosePicks} />
+          ) : null
+        }
       />
     </div>
   );

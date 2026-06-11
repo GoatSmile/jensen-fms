@@ -82,6 +82,8 @@ type Props = {
   moRecipeRowCount: number;
   /** True when status is in_stock+ / MO closed — read-only display. */
   readOnly: boolean;
+  /** Server-rendered "pick list by kit" card, shown above the workbench. */
+  pickListSlot?: React.ReactNode;
 };
 
 export function BuildWorkbench({
@@ -99,6 +101,7 @@ export function BuildWorkbench({
   catalog,
   moRecipeRowCount,
   readOnly,
+  pickListSlot,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -259,6 +262,8 @@ export function BuildWorkbench({
           </div>
         </div>
       </section>
+
+      {pickListSlot}
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

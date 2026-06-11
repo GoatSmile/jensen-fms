@@ -16,6 +16,7 @@ import {
   flattenCategoryTree,
   type FlatCategory,
 } from "@/lib/parts/categories";
+import { kitCode } from "@/lib/kits/colors";
 
 import { CategoryPicker } from "./category-picker";
 
@@ -24,6 +25,7 @@ type Option = { id: string; name_en?: string | null; name?: string | null };
 type Props = {
   categories: FlatCategory[];
   suppliers: Array<{ id: string; name: string }>;
+  kits: Array<{ id: string; sticker_color: string; kit_number: number }>;
 };
 
 const STOCK_OPTIONS: Array<{ value: string; label: string }> = [
@@ -39,7 +41,7 @@ const STOCK_OPTIONS: Array<{ value: string; label: string }> = [
  * immediately. Any change resets `page` to 1 so the user doesn't land on
  * an empty page after narrowing the filter.
  */
-export function PartsFilters({ categories, suppliers }: Props) {
+export function PartsFilters({ categories, suppliers, kits }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -48,6 +50,7 @@ export function PartsFilters({ categories, suppliers }: Props) {
   const currentQ = searchParams.get("q") ?? "";
   const currentCategory = searchParams.get("category") ?? "all";
   const currentSupplier = searchParams.get("supplier") ?? "all";
+  const currentKit = searchParams.get("kit") ?? "all";
   const currentStock = searchParams.get("stock") ?? "all";
 
   const categoryNodes = useMemo(
@@ -94,7 +97,7 @@ export function PartsFilters({ categories, suppliers }: Props) {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="parts-search">Search</Label>
         <Input
@@ -125,6 +128,20 @@ export function PartsFilters({ categories, suppliers }: Props) {
         options={[
           { value: "all", label: "All suppliers" },
           ...suppliers.map((s) => ({ value: s.id, label: s.name })),
+        ]}
+      />
+
+      <FilterSelect
+        label="Kit"
+        id="parts-kit"
+        value={currentKit}
+        onChange={(value) => pushParams({ kit: value, page: null })}
+        options={[
+          { value: "all", label: "All kits" },
+          ...kits.map((k) => ({
+            value: k.id,
+            label: kitCode(k.sticker_color, k.kit_number),
+          })),
         ]}
       />
 

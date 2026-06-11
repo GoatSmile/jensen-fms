@@ -21,6 +21,7 @@ import {
   type PartInCategory,
   type RecipeRow,
 } from "./_components/parts-recipe-section";
+import { LabelBomKit } from "./_components/label-bom-kit";
 import {
   VersionHistorySection,
   type VersionRow,
@@ -75,6 +76,7 @@ export default async function BikeTemplateDetailPage({
     catalogRes,
     chainRes,
     chainPartCountsRes,
+    kitsRes,
   ] = await Promise.all([
     supabase
       .from("bike_template_parts")
@@ -105,6 +107,12 @@ export default async function BikeTemplateDetailPage({
       .order("internal_sku", { ascending: true }),
     chainFilters.order("version", { ascending: false }),
     supabase.from("bike_template_parts").select("template_id"),
+    supabase
+      .from("kits")
+      .select("id, sticker_color, kit_number")
+      .eq("is_active", true)
+      .order("sticker_color", { ascending: true })
+      .order("kit_number", { ascending: true }),
   ]);
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
@@ -232,6 +240,12 @@ export default async function BikeTemplateDetailPage({
         initialRows={initialRows}
         categories={categories}
         parts={parts}
+      />
+
+      <LabelBomKit
+        templateId={t.id}
+        kits={kitsRes.data ?? []}
+        bomPartCount={initialRows.length}
       />
 
       <VersionHistorySection rows={versionRows} thisTemplateId={t.id} />

@@ -56,7 +56,7 @@ export function AppSidebar() {
     return null;
   }
   return (
-    <aside className="bg-muted/30 sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r md:flex">
+    <aside className="bg-muted/30 sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r md:flex print:hidden">
       <div className="flex h-20 items-center justify-center border-b px-4">
         <Link
           href="/"

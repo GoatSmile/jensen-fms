@@ -60,6 +60,19 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).
+- **Kits (kitting) ≠ part categories.** `kits` ("Red 1", "Green 9" — colour +
+  number sticker labels on part boxes) are an assembly-floor *picking* aid,
+  not catalog taxonomy. Full-code picking: colour+number is the identity
+  (`UNIQUE (sticker_color, kit_number)`); colours repeat freely and the
+  number prints big on the sticker. `part_kits` is a plain M-to-N — parts
+  carry 0..n labels, no snapshotting (picking aid, not cost basis). The
+  sticker-colour palette is an app constant (`src/lib/kits/colors.ts`), not
+  a DB table. Labels are independent of BOMs: the "label this BOM" bulk
+  action on a template is a one-shot writer; later recipe edits don't move
+  labels. Archived kits keep their labels on parts (greyed on the part
+  detail) but drop out of pickers, pick lists, and the parts filter.
+  Admin at `/admin/kits` (+ printable sticker sheet per kit); build
+  workbench shows the bike's parts grouped by kit as a pick list.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR, RFID, AirTag.
 - `audit_log` table exists; apply triggers per-table as needed.
 - **Product entity = `bike_templates`** (no more `bike_models` / `bike_model_variants`,

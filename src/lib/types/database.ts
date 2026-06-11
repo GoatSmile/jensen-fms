@@ -1233,6 +1233,36 @@ export type Database = {
           },
         ]
       }
+      kits: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          kit_number: number
+          sticker_color: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kit_number: number
+          sticker_color: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          kit_number?: number
+          sticker_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maintenance_tickets: {
         Row: {
           bike_id: string | null
@@ -2109,6 +2139,49 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "part_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      part_kits: {
+        Row: {
+          created_at: string
+          id: string
+          kit_id: string
+          part_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kit_id: string
+          part_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kit_id?: string
+          part_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_kits_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_kits_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_kits_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
             referencedColumns: ["id"]
           },
         ]

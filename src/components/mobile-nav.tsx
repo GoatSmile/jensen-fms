@@ -73,7 +73,7 @@ export function MobileNav() {
   }
 
   return (
-    <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between border-b px-3 md:hidden">
+    <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between border-b px-3 md:hidden print:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger asChild>
           <Button variant="ghost" size="icon-sm" aria-label="Open navigation">
