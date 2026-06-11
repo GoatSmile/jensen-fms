@@ -184,7 +184,7 @@ export default async function PartsPage({
     .order("internal_sku", { ascending: true })
     .range(offset, offset + PAGE_SIZE - 1);
 
-  const [suppliersRes, kitsRes, viewRes] = await Promise.all([
+  const [suppliersRes, kitsRes, viewRes, countRowsRes] = await Promise.all([
     supabase
       .from("suppliers")
       .select("id,name")
@@ -198,10 +198,20 @@ export default async function PartsPage({
       .order("sticker_color", { ascending: true })
       .order("kit_number", { ascending: true, nullsFirst: true }),
     viewQuery,
+    // Catalog-wide part count per category for the drawer grid. One slim
+    // column over all parts — fine at this scale (same caveat as the
+    // in-memory pagination); push to a grouped view if the catalog grows.
+    supabase.from("parts").select("category_id").is("deleted_at", null),
   ]);
 
   if (viewRes.error) {
     throw new Error(`Failed to load parts: ${viewRes.error.message}`);
+  }
+
+  const categoryCounts: Record<string, number> = {};
+  for (const row of countRowsRes.data ?? []) {
+    if (!row.category_id) continue;
+    categoryCounts[row.category_id] = (categoryCounts[row.category_id] ?? 0) + 1;
   }
 
   const totalCount = viewRes.count ?? 0;
@@ -325,6 +335,7 @@ export default async function PartsPage({
 
       <PartsFilters
         categories={categoriesRes.data ?? []}
+        categoryCounts={categoryCounts}
         suppliers={suppliersRes.data ?? []}
         kits={kitsRes.data ?? []}
       />

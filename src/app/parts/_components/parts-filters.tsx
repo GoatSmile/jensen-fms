@@ -18,12 +18,13 @@ import {
 } from "@/lib/parts/categories";
 import { kitCode } from "@/lib/kits/colors";
 
-import { CategoryPicker } from "./category-picker";
+import { CategoryDrawer } from "./category-drawer";
 
 type Option = { id: string; name_en?: string | null; name?: string | null };
 
 type Props = {
   categories: FlatCategory[];
+  categoryCounts: Record<string, number>;
   suppliers: Array<{ id: string; name: string }>;
   kits: Array<{ id: string; sticker_color: string; kit_number: number | null }>;
 };
@@ -41,7 +42,12 @@ const STOCK_OPTIONS: Array<{ value: string; label: string }> = [
  * immediately. Any change resets `page` to 1 so the user doesn't land on
  * an empty page after narrowing the filter.
  */
-export function PartsFilters({ categories, suppliers, kits }: Props) {
+export function PartsFilters({
+  categories,
+  categoryCounts,
+  suppliers,
+  kits,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -111,12 +117,12 @@ export function PartsFilters({ categories, suppliers, kits }: Props) {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="parts-category">Category</Label>
-        <CategoryPicker
+        <CategoryDrawer
           id="parts-category"
-          options={categoryNodes}
+          nodes={categoryNodes}
+          countsByCategory={categoryCounts}
           value={currentCategory}
           onChange={(value) => pushParams({ category: value, page: null })}
-          allOption={{ value: "all", label: "All categories" }}
         />
       </div>
 
