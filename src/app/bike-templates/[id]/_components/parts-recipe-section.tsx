@@ -297,6 +297,17 @@ export function PartsRecipeSection({
     setSuccess(null);
   }
 
+  // Throw away unsaved edits — back to the recipe as last saved. Purely
+  // client state, so this is the undo for stray picks / kit adds.
+  function onDiscard() {
+    setRows(initialRows);
+    setPickerValueByCat({});
+    setKitId("");
+    setKitNote(null);
+    setError(null);
+    setSuccess(null);
+  }
+
   function updateRow(partId: string, patch: Partial<RecipeRow>) {
     setRows((prev) =>
       prev.map((r) => (r.partId === partId ? { ...r, ...patch } : r)),
@@ -393,6 +404,15 @@ export function PartsRecipeSection({
         </div>
         {canEdit ? (
           <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onDiscard}
+              disabled={isPending || !dirty}
+            >
+              Discard
+            </Button>
             <Button
               type="button"
               size="sm"
@@ -654,6 +674,15 @@ export function PartsRecipeSection({
 
         {canEdit ? (
           <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onDiscard}
+              disabled={isPending || !dirty}
+              title="Throw away unsaved edits and go back to the recipe as last saved."
+            >
+              Discard
+            </Button>
             <Button
               type="button"
               variant="outline"
