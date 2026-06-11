@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -193,31 +194,20 @@ export function AssignCustomerDialog({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="assign-org">Customer</Label>
-            <Select value={orgId} onValueChange={onOrgChange}>
-              <SelectTrigger id="assign-org">
-                <SelectValue placeholder="Pick a customer…" />
-              </SelectTrigger>
-              <SelectContent>
-                {organizations.length === 0 ? (
-                  <div className="text-muted-foreground p-2 text-xs">
-                    No active customers. Add one from the Customers page.
-                  </div>
-                ) : (
-                  organizations.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      <div className="flex flex-col">
-                        <span>{o.display_name ?? o.legal_name}</span>
-                        {o.segment_name ? (
-                          <span className="text-muted-foreground text-xs">
-                            {o.segment_name}
-                          </span>
-                        ) : null}
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <Combobox
+              id="assign-org"
+              value={orgId}
+              onValueChange={onOrgChange}
+              options={organizations.map((o) => ({
+                value: o.id,
+                label: o.display_name ?? o.legal_name,
+                sublabel: o.segment_name,
+              }))}
+              placeholder="Pick a customer…"
+              searchPlaceholder="Search customers…"
+              emptyMessage="No customers match."
+              emptyState="No active customers. Add one from the Customers page."
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">

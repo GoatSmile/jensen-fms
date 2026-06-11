@@ -5,6 +5,7 @@ import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -152,18 +153,18 @@ export function ServiceAgreementForm({
           required
           error={errorField === "organization_id" ? error : null}
         >
-          <Select value={values.organization_id} onValueChange={onOrgChange}>
-            <SelectTrigger id="sa-org">
-              <SelectValue placeholder="Pick a customer…" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {organizations.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  {o.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            id="sa-org"
+            value={values.organization_id}
+            onValueChange={onOrgChange}
+            options={organizations.map((o) => ({
+              value: o.id,
+              label: o.name,
+            }))}
+            placeholder="Pick a customer…"
+            searchPlaceholder="Search customers…"
+            emptyMessage="No customers match."
+          />
         </Field>
         <Field label="Unit (optional)" htmlFor="sa-unit">
           <Select

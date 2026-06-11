@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -154,23 +155,19 @@ export function SOForm({
           <Label htmlFor="so-org">
             Customer <span className="text-destructive">*</span>
           </Label>
-          <Select value={values.organization_id} onValueChange={onOrgChange}>
-            <SelectTrigger id="so-org">
-              <SelectValue placeholder="Pick a customer…" />
-            </SelectTrigger>
-            <SelectContent>
-              {organizations.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  {o.name}
-                  {o.default_vat_code ? (
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      ({o.default_vat_code})
-                    </span>
-                  ) : null}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            id="so-org"
+            value={values.organization_id}
+            onValueChange={onOrgChange}
+            options={organizations.map((o) => ({
+              value: o.id,
+              label: o.name,
+              sublabel: o.default_vat_code,
+            }))}
+            placeholder="Pick a customer…"
+            searchPlaceholder="Search customers…"
+            emptyMessage="No customers match."
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="so-unit">Sub-unit (optional)</Label>
