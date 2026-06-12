@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Banknote, Trash2 } from "lucide-react";
+import { BadgeCheck, Banknote, Trash2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { InvoiceStatus } from "@/lib/invoicing/status";
 
+import { createCreditNote } from "../_actions/create-credit-note";
 import {
   cancelDraftInvoice,
   issueInvoice,
@@ -16,6 +17,10 @@ import {
 type Props = {
   invoiceId: string;
   status: InvoiceStatus;
+  /** Credit notes can't be credited again or marked paid. */
+  isCreditNote?: boolean;
+  /** A live (non-cancelled) credit note already covers this invoice. */
+  hasLiveCreditNote?: boolean;
 };
 
 /**
@@ -23,11 +28,25 @@ type Props = {
  * (assigns the sequential INV number + locks the invoice), so it arms a
  * two-step confirm instead of firing on first click.
  */
-export function InvoiceActions({ invoiceId, status }: Props) {
+export function InvoiceActions({
+  invoiceId,
+  status,
+  isCreditNote = false,
+  hasLiveCreditNote = false,
+}: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [armedIssue, setArmedIssue] = useState(false);
   const [isPending, start] = useTransition();
+
+  function onCreditNote() {
+    setError(null);
+    start(async () => {
+      // Redirects to the new credit-note draft; only errors land here.
+      const r = await createCreditNote(invoiceId);
+      if (r && !r.ok) setError(r.error);
+    });
+  }
 
   function run(action: () => Promise<{ ok: true } | { ok: false; error: string }>) {
     setError(null);
@@ -74,7 +93,9 @@ export function InvoiceActions({ invoiceId, status }: Props) {
                   onClick={() => run(() => issueInvoice(invoiceId))}
                 >
                   <BadgeCheck aria-hidden />
-                  {isPending ? "Issuing…" : "Confirm — issue and lock"}
+                  {isPending
+                    ? "Issuing…"
+                    : `Confirm — issue ${isCreditNote ? "credit note" : "and lock"}`}
                 </Button>
               </>
             ) : (
@@ -84,12 +105,13 @@ export function InvoiceActions({ invoiceId, status }: Props) {
                 disabled={isPending}
                 onClick={() => setArmedIssue(true)}
               >
-                <BadgeCheck aria-hidden /> Issue invoice
+                <BadgeCheck aria-hidden />{" "}
+                {isCreditNote ? "Issue credit note" : "Issue invoice"}
               </Button>
             )}
           </>
         ) : null}
-        {status === "issued" || status === "overdue" ? (
+        {(status === "issued" || status === "overdue") && !isCreditNote ? (
           <Button
             type="button"
             size="sm"
@@ -98,6 +120,20 @@ export function InvoiceActions({ invoiceId, status }: Props) {
           >
             <Banknote aria-hidden />
             {isPending ? "Saving…" : "Mark paid"}
+          </Button>
+        ) : null}
+        {["issued", "overdue", "paid"].includes(status) &&
+        !isCreditNote &&
+        !hasLiveCreditNote ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={onCreditNote}
+          >
+            <Undo2 aria-hidden />
+            {isPending ? "Creating…" : "Create credit note"}
           </Button>
         ) : null}
       </div>

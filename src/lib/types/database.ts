@@ -1042,6 +1042,8 @@ export type Database = {
       invoice_lines: {
         Row: {
           bike_template_id: string | null
+          billing_period_end: string | null
+          billing_period_start: string | null
           color_id: string | null
           description_da: string | null
           description_en: string | null
@@ -1053,12 +1055,15 @@ export type Database = {
           line_vat_amount: number
           part_id: string | null
           quantity: number
+          service_agreement_id: string | null
           unit_price: number
           vat_code: string | null
           vat_rate: number
         }
         Insert: {
           bike_template_id?: string | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           color_id?: string | null
           description_da?: string | null
           description_en?: string | null
@@ -1070,12 +1075,15 @@ export type Database = {
           line_vat_amount: number
           part_id?: string | null
           quantity: number
+          service_agreement_id?: string | null
           unit_price: number
           vat_code?: string | null
           vat_rate?: number
         }
         Update: {
           bike_template_id?: string | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           color_id?: string | null
           description_da?: string | null
           description_en?: string | null
@@ -1087,6 +1095,7 @@ export type Database = {
           line_vat_amount?: number
           part_id?: string | null
           quantity?: number
+          service_agreement_id?: string | null
           unit_price?: number
           vat_code?: string | null
           vat_rate?: number
@@ -1128,6 +1137,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_lines_service_agreement_id_fkey"
+            columns: ["service_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoice_lines_vat_code_fkey"
             columns: ["vat_code"]
             isOneToOne: false
@@ -1139,6 +1155,7 @@ export type Database = {
       invoices: {
         Row: {
           created_at: string
+          credited_invoice_id: string | null
           currency: string
           due_date: string | null
           ean_number_used: string | null
@@ -1163,6 +1180,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credited_invoice_id?: string | null
           currency?: string
           due_date?: string | null
           ean_number_used?: string | null
@@ -1187,6 +1205,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credited_invoice_id?: string | null
           currency?: string
           due_date?: string | null
           ean_number_used?: string | null
@@ -1210,6 +1229,13 @@ export type Database = {
           total_vat_amount?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_credited_invoice_id_fkey"
+            columns: ["credited_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_currency_fkey"
             columns: ["currency"]

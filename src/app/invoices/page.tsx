@@ -24,6 +24,7 @@ import { Section } from "@/components/section";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatDkk } from "@/lib/parts/stock";
+import { findUnbilledFeePeriods } from "@/lib/invoicing/agreement-fees";
 import {
   findAgreementMonthlyFees,
   findUninvoicedSOs,
@@ -37,14 +38,16 @@ import {
 } from "@/lib/invoicing/status";
 
 import { CreateInvoiceButton } from "./_components/create-invoice-button";
+import { DraftFeeInvoicesButton } from "./_components/draft-fee-invoices-button";
 
 export default async function InvoicesPage() {
   const supabase = await createClient();
 
-  const [wosRes, sosRes, feesRes, invoicesRes] = await Promise.all([
+  const [wosRes, sosRes, feesRes, unbilledRes, invoicesRes] = await Promise.all([
     findUninvoicedWOs(supabase),
     findUninvoicedSOs(supabase),
     findAgreementMonthlyFees(supabase),
+    findUnbilledFeePeriods(supabase),
     supabase
       .from("invoices")
       .select(
@@ -61,10 +64,12 @@ export default async function InvoicesPage() {
   const wos = "error" in wosRes ? [] : wosRes;
   const sos = "error" in sosRes ? [] : sosRes;
   const fees = "error" in feesRes ? [] : feesRes;
+  const unbilled = "error" in unbilledRes ? { periods: [], skipped: [] } : unbilledRes;
   const loadErrors = [
     "error" in wosRes ? wosRes.error : null,
     "error" in sosRes ? sosRes.error : null,
     "error" in feesRes ? feesRes.error : null,
+    "error" in unbilledRes ? unbilledRes.error : null,
     invoicesRes.error ? `Could not load invoices: ${invoicesRes.error.message}` : null,
   ].filter(Boolean);
   const invoices = invoicesRes.data ?? [];
@@ -72,6 +77,16 @@ export default async function InvoicesPage() {
   const woTotal = round2(wos.reduce((s, w) => s + w.total, 0));
   const soTotal = round2(sos.reduce((s, so) => s + so.total, 0));
   const feeTotal = round2(fees.reduce((s, f) => s + f.monthlyFee, 0));
+  const unbilledByAgreement = new Map<string, number>();
+  for (const p of unbilled.periods) {
+    unbilledByAgreement.set(
+      p.agreementId,
+      round2((unbilledByAgreement.get(p.agreementId) ?? 0) + p.fee),
+    );
+  }
+  const feesDue = round2(
+    unbilled.periods.reduce((s, p) => s + p.fee, 0),
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -106,7 +121,7 @@ export default async function InvoicesPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Uninvoiced work orders" value={formatDkk(woTotal)} sub={`${wos.length} ready`} />
         <Kpi label="Delivered sales orders" value={formatDkk(soTotal)} sub={`${sos.length} uninvoiced`} />
-        <Kpi label="Agreement fees" value={`${formatDkk(feeTotal)}/md.`} sub={`${fees.length} active`} />
+        <Kpi label="Agreement fees" value={`${formatDkk(feeTotal)}/md.`} sub={`${formatDkk(feesDue)} unbilled`} />
         <Kpi label="Invoices" value={String(invoices.length)} sub="all time" />
       </div>
 
@@ -235,48 +250,64 @@ export default async function InvoicesPage() {
       </Section>
 
       <Section
-        title="Active agreements with monthly fees"
-        description="Recurring fees are invoiced manually for now — automated recurring invoicing comes later."
+        title="Agreement fees"
+        description="Billed in arrears, one invoice per customer, one line per agreement-month. Partial months are pro-rated by days."
       >
         {fees.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             No active service agreements carry a monthly fee.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Agreement</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-right">Fee / month</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fees.map((f) => (
-                  <TableRow key={f.agreementId}>
-                    <TableCell className="text-sm">
-                      <Link
-                        href={`/service-agreements/${f.agreementId}`}
-                        className="hover:underline"
-                      >
-                        {f.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {f.orgName ?? (
-                        <span className="text-muted-foreground italic">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-medium tabular-nums">
-                      {f.currency === "DKK"
-                        ? formatDkk(f.monthlyFee)
-                        : `${f.monthlyFee} ${f.currency}`}
-                    </TableCell>
+          <div className="flex flex-col gap-3">
+            <DraftFeeInvoicesButton />
+            <div className="overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Agreement</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right">Fee / month</TableHead>
+                    <TableHead className="text-right">Unbilled</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {fees.map((f) => {
+                    const due = unbilledByAgreement.get(f.agreementId) ?? 0;
+                    return (
+                      <TableRow key={f.agreementId}>
+                        <TableCell className="text-sm">
+                          <Link
+                            href={`/service-agreements/${f.agreementId}`}
+                            className="hover:underline"
+                          >
+                            {f.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {f.orgName ?? (
+                            <span className="text-muted-foreground italic">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">
+                          {f.currency === "DKK"
+                            ? formatDkk(f.monthlyFee)
+                            : `${f.monthlyFee} ${f.currency}`}
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium tabular-nums">
+                          {due > 0 ? (
+                            formatDkk(due)
+                          ) : (
+                            <span className="text-muted-foreground font-normal">
+                              up to date
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
       </Section>

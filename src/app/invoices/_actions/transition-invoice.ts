@@ -30,7 +30,7 @@ export async function issueInvoice(
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .select(
-      `id, status, due_date,
+      `id, status, due_date, credited_invoice_id,
        organization:organizations!organization_id(ean_number, payment_terms_days)`,
     )
     .eq("id", invoiceId)
@@ -44,6 +44,7 @@ export async function issueInvoice(
   if (invoice.status !== "draft") {
     return { ok: false, error: "Only draft invoices can be issued." };
   }
+  const isCreditNote = invoice.credited_invoice_id != null;
   const org = Array.isArray(invoice.organization)
     ? invoice.organization[0]
     : invoice.organization;
@@ -56,9 +57,12 @@ export async function issueInvoice(
     return { ok: false, error: "Cannot issue an invoice with no lines." };
   }
 
+  // Credit notes draw from their own sequential series (CRE-yyyy-xxxx) —
+  // OIOUBL treats CreditNote as a distinct document type and the issued
+  // INV series must stay gapless.
   const { data: invoiceNumber, error: numErr } = await supabase.rpc(
     "next_document_number",
-    { p_doc_type: "invoice" },
+    { p_doc_type: isCreditNote ? "credit_note" : "invoice" },
   );
   if (numErr || typeof invoiceNumber !== "string") {
     return {
@@ -79,7 +83,10 @@ export async function issueInvoice(
       invoice_number: invoiceNumber,
       status: "issued",
       issued_date: today,
-      due_date: invoice.due_date ?? due.toISOString().slice(0, 10),
+      // A credit note isn't payable — its due date is its issue date.
+      due_date: isCreditNote
+        ? today
+        : (invoice.due_date ?? due.toISOString().slice(0, 10)),
       issued_locked_at: nowIso,
       ean_number_used: org?.ean_number ?? null,
     })
@@ -87,6 +94,22 @@ export async function issueInvoice(
     .eq("status", "draft");
   if (updErr) {
     return { ok: false, error: `Could not issue invoice: ${updErr.message}` };
+  }
+
+  // Issuing a credit note settles the original: status → credited, and
+  // its work orders go back to the uninvoiced pool (the work itself is
+  // still billable — the document covering it just got reversed).
+  if (isCreditNote && invoice.credited_invoice_id) {
+    await supabase
+      .from("invoices")
+      .update({ status: "credited" })
+      .eq("id", invoice.credited_invoice_id)
+      .in("status", ["issued", "overdue", "paid"]);
+    await supabase
+      .from("work_orders")
+      .update({ invoice_id: null, updated_at: nowIso })
+      .eq("invoice_id", invoice.credited_invoice_id);
+    revalidatePath(`/invoices/${invoice.credited_invoice_id}`);
   }
 
   revalidatePath("/invoices");

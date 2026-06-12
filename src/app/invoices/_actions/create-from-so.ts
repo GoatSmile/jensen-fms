@@ -62,7 +62,8 @@ export async function createInvoiceFromSO(
     .from("invoices")
     .select("id, invoice_number")
     .eq("sales_order_id", soId)
-    .neq("status", "cancelled")
+    .not("status", "in", "(cancelled,credited)")
+    .is("credited_invoice_id", null)
     .limit(1)
     .maybeSingle();
   if (existing) {

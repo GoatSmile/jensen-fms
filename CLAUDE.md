@@ -353,8 +353,25 @@ Slices, in order:
    `ean_number` → `ean_number_used` and uses per-org
    `payment_terms_days` (orgs already had EAN/CVR/payment-terms/billing
    columns — the "customers module deepens later" note was stale too).
-5. Recurring agreement fees + credit notes afterwards — the remaining 3D
-   work, plus OIOUBL/e-invoicing transmission with 3E.
+5. ~~**Recurring agreement fees + credit notes**~~ — SHIPPED June 2026,
+   completing 3D. Policy (owner): fees billed **in arrears** (only fully
+   elapsed months), **one invoice per customer** (one line per
+   agreement-month), **pro-rated by days** for partial months (start and
+   end dates both cap). Engine in `src/lib/invoicing/agreement-fees.ts`;
+   "billed through" = max `billing_period_end` over live fee lines
+   (migration 37 added line-level `service_agreement_id` + period cols),
+   so re-running never double-bills and crediting a fee invoice makes its
+   months billable again. Expired (not cancelled) agreements still bill
+   their unbilled months. Credit notes are **full reversals only**:
+   one click on an issued/paid invoice → negative-mirror draft; at issue
+   it draws from its own `CRE-yyyy-xxxx` series, the original flips to
+   `credited`, and its WOs/SO return to the uninvoiced pool (partial
+   unique index allows a replacement after a cancelled CN draft).
+   Print layout renders credit notes as "Kreditnota" with a reference to
+   the original. Heads-up: PostgREST self-join embeds
+   (`invoices!credited_invoice_id`) resolve direction-ambiguously —
+   fetch the credited original with a second query instead.
+Remaining 3D-adjacent work: OIOUBL/e-invoicing transmission lands with 3E.
 
 **After that**: e-conomic push (3E), then the phone-call → ticket pipeline
 (Parked ideas below) as the parallel innovation track — v1 voicemail-only

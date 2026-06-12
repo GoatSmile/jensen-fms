@@ -35,7 +35,7 @@ export default async function InvoicePrintPage({
           id, invoice_number, status, language, currency, notes,
           issued_date, due_date, paid_date,
           subtotal_amount, total_vat_amount, total_amount,
-          ean_number_used, is_reverse_charge, is_export,
+          ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
           organization:organizations!organization_id(
             id, legal_name, display_name_da, display_name_en,
             address_line1, address_line2, zip_code, city, country_code,
@@ -66,6 +66,16 @@ export default async function InvoicePrintPage({
   const t = (daText: string, enText: string) => (da ? daText : enText);
   const status = invoice.status as InvoiceStatus;
   const isDraft = status === "draft";
+  // Self-join embeds are direction-ambiguous on PostgREST — explicit fetch.
+  const creditedOriginal = invoice.credited_invoice_id
+    ? (
+        await supabase
+          .from("invoices")
+          .select("invoice_number, issued_date")
+          .eq("id", invoice.credited_invoice_id)
+          .maybeSingle()
+      ).data
+    : null;
   const orgName =
     (da
       ? (org?.display_name_da ?? org?.display_name_en)
@@ -108,10 +118,21 @@ export default async function InvoicePrintPage({
       <header className="flex items-start justify-between gap-6">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-semibold tracking-tight">
-            {t("Faktura", "Invoice")}
+            {creditedOriginal
+              ? t("Kreditnota", "Credit note")
+              : t("Faktura", "Invoice")}
           </h1>
           <div className="text-sm">
             <div className="font-mono">{invoice.invoice_number}</div>
+            {creditedOriginal ? (
+              <div className="text-muted-foreground">
+                {t("Kreditnota til faktura", "Credit note for invoice")}{" "}
+                {creditedOriginal.invoice_number}
+                {creditedOriginal.issued_date
+                  ? ` (${formatDate(creditedOriginal.issued_date)})`
+                  : ""}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 text-right">
@@ -265,12 +286,14 @@ export default async function InvoicePrintPage({
           {COMPANY.bank.name} · {t("reg.nr.", "reg. no.")} {COMPANY.bank.regNumber} ·{" "}
           {t("kontonr.", "account no.")} {COMPANY.bank.accountNumber}
         </div>
-        <div className="text-muted-foreground mt-1">
-          {t(
-            `Angiv venligst fakturanummer ${invoice.invoice_number} ved betaling.`,
-            `Please reference invoice number ${invoice.invoice_number} with your payment.`,
-          )}
-        </div>
+        {!creditedOriginal ? (
+          <div className="text-muted-foreground mt-1">
+            {t(
+              `Angiv venligst fakturanummer ${invoice.invoice_number} ved betaling.`,
+              `Please reference invoice number ${invoice.invoice_number} with your payment.`,
+            )}
+          </div>
+        ) : null}
       </footer>
     </div>
   );

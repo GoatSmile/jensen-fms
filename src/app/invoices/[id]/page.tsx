@@ -41,7 +41,7 @@ export default async function InvoiceDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [invoiceRes, linesRes, wosRes] = await Promise.all([
+  const [invoiceRes, linesRes, wosRes, creditNoteRes] = await Promise.all([
     supabase
       .from("invoices")
       .select(
@@ -49,7 +49,7 @@ export default async function InvoiceDetailPage({
           id, invoice_number, status, language, currency, notes,
           issued_date, due_date, paid_date, issued_locked_at, created_at,
           subtotal_amount, total_vat_amount, total_amount,
-          ean_number_used, is_reverse_charge, is_export,
+          ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
           organization:organizations!organization_id(
             id, legal_name, display_name_da, display_name_en
           )
@@ -72,6 +72,13 @@ export default async function InvoiceDetailPage({
       .select("id, wo_number")
       .eq("invoice_id", id)
       .order("wo_number", { ascending: true }),
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, status")
+      .eq("credited_invoice_id", id)
+      .neq("status", "cancelled")
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const invoice = invoiceRes.data;
@@ -79,6 +86,18 @@ export default async function InvoiceDetailPage({
 
   const lines = linesRes.data ?? [];
   const linkedWOs = wosRes.data ?? [];
+  // Self-join embeds are direction-ambiguous on PostgREST — fetch the
+  // credited original explicitly instead.
+  const creditedOriginal = invoice.credited_invoice_id
+    ? (
+        await supabase
+          .from("invoices")
+          .select("id, invoice_number")
+          .eq("id", invoice.credited_invoice_id)
+          .maybeSingle()
+      ).data
+    : null;
+  const creditNote = creditNoteRes.data;
   const org = Array.isArray(invoice.organization)
     ? invoice.organization[0]
     : invoice.organization;
@@ -119,6 +138,11 @@ export default async function InvoiceDetailPage({
               <Badge variant={INVOICE_STATUS_VARIANT[status] ?? "outline"}>
                 {invoiceStatusLabel(status)}
               </Badge>
+              {creditedOriginal ? (
+                <Badge variant="secondary" className="font-normal">
+                  Credit note
+                </Badge>
+              ) : null}
               <Badge variant="outline" className="font-normal">
                 {danish ? "Dansk" : "English"}
               </Badge>
@@ -148,6 +172,28 @@ export default async function InvoiceDetailPage({
                 ))}
               </p>
             ) : null}
+            {creditedOriginal ? (
+              <p className="text-muted-foreground text-sm">
+                Credits{" "}
+                <Link
+                  href={`/invoices/${creditedOriginal.id}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {creditedOriginal.invoice_number}
+                </Link>
+              </p>
+            ) : null}
+            {creditNote ? (
+              <p className="text-muted-foreground text-sm">
+                Credited by{" "}
+                <Link
+                  href={`/invoices/${creditNote.id}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {creditNote.invoice_number}
+                </Link>
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-col items-end gap-2">
             <Button asChild variant="outline" size="sm">
@@ -155,7 +201,12 @@ export default async function InvoiceDetailPage({
                 <Printer aria-hidden /> Print
               </Link>
             </Button>
-            <InvoiceActions invoiceId={invoice.id} status={status} />
+            <InvoiceActions
+              invoiceId={invoice.id}
+              status={status}
+              isCreditNote={!!creditedOriginal}
+              hasLiveCreditNote={!!creditNote}
+            />
           </div>
         </div>
       </header>
