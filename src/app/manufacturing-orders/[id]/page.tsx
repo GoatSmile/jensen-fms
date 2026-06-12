@@ -74,6 +74,8 @@ export default async function ManufacturingOrderDetailPage({
     partsCatalogRes,
     bikeTypeRequiredRes,
     categoriesRes,
+    kitsRes,
+    kitMembershipsRes,
   ] = await Promise.all([
     supabase
       .from("manufacturing_order_parts")
@@ -124,7 +126,22 @@ export default async function ManufacturingOrderDetailPage({
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
+    supabase
+      .from("kits")
+      .select("id, sticker_color, kit_number")
+      .eq("is_active", true)
+      .order("sticker_color", { ascending: true })
+      .order("kit_number", { ascending: true, nullsFirst: true }),
+    supabase.from("part_kits").select("part_id, kit_id"),
   ]);
+
+  // kit_id → part_id[] for the recipe editor's "add a whole kit" bulk action.
+  const activeKitIds = new Set((kitsRes.data ?? []).map((k) => k.id));
+  const kitParts: Record<string, string[]> = {};
+  for (const m of kitMembershipsRes.data ?? []) {
+    if (!activeKitIds.has(m.kit_id)) continue;
+    (kitParts[m.kit_id] ??= []).push(m.part_id);
+  }
 
   // Stock lookup keyed by part_id, summed across all locations. We pull
   // for the WHOLE catalog (not just MO parts) so the picker dropdowns can
@@ -411,6 +428,8 @@ export default async function ManufacturingOrderDetailPage({
         partsCatalog={partsCatalog}
         catalog={partsCatalogWithStock}
         categories={categories}
+        kits={kitsRes.data ?? []}
+        kitParts={kitParts}
         hasTemplate={mo.bike_template?.id != null}
         readOnly={closed}
       />

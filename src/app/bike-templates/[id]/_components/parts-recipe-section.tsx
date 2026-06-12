@@ -4,7 +4,6 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Check,
   ChevronDown,
   ChevronRight,
   GitBranch,
@@ -15,18 +14,18 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  KitBulkAdd,
+  type KitAddOutcome,
+  type KitOption,
+} from "@/components/recipe/kit-bulk-add";
 import { formatDkk } from "@/lib/parts/stock";
-import { kitCode, stickerColor } from "@/lib/kits/colors";
 
 import { cloneAsNewVersion } from "../_actions/clone-as-version";
 import { saveTemplateParts } from "../_actions/save-parts";
+
+export type { KitOption };
 
 export type CategoryOption = {
   id: string;
@@ -56,12 +55,6 @@ export type RecipeRow = {
   notes: string;
   /** Customer (retail) price in DKK; null when unset or non-DKK. */
   retailDkk: number | null;
-};
-
-export type KitOption = {
-  id: string;
-  sticker_color: string;
-  kit_number: number | null;
 };
 
 type Props = {
@@ -117,8 +110,6 @@ export function PartsRecipeSection({
   const [pickerValueByCat, setPickerValueByCat] = useState<
     Record<string, string>
   >({});
-  const [kitId, setKitId] = useState<string>("");
-  const [kitNote, setKitNote] = useState<string | null>(null);
 
   const canEdit = isCurrent;
 
@@ -161,22 +152,10 @@ export function PartsRecipeSection({
     [categories],
   );
 
-  // For the selected kit: its parts that exist in the catalog, split into
-  // addable vs already-in-recipe. Drives the button label and the result note.
-  const kitAddable = useMemo(() => {
-    if (!kitId) return { addable: [] as PartInCategory[], alreadyIn: 0 };
-    const addable: PartInCategory[] = [];
-    let alreadyIn = 0;
-    for (const partId of kitParts[kitId] ?? []) {
-      if (inRecipePartIds.has(partId)) {
-        alreadyIn += 1;
-        continue;
-      }
-      const part = partsById.get(partId);
-      if (part) addable.push(part);
-    }
-    return { addable, alreadyIn };
-  }, [kitId, kitParts, inRecipePartIds, partsById]);
+  const knownPartIds = useMemo(
+    () => new Set(parts.map((p) => p.id)),
+    [parts],
+  );
 
   // How many recipe rows each category has — drives the done-state and the
   // picked/available counter on the left.
@@ -268,12 +247,19 @@ export function PartsRecipeSection({
   // One-shot copy of a kit's parts into the (unsaved) recipe — the mirror
   // of the "label this BOM" action. No linkage: later kit edits don't touch
   // the template, and vice versa. Nothing hits the DB until Save changes.
-  function onAddKit() {
-    const kit = kits.find((k) => k.id === kitId);
-    if (!kit || kitAddable.addable.length === 0) return;
+  async function onAddKitParts(
+    kitId: string,
+    addablePartIds: string[],
+  ): Promise<KitAddOutcome> {
+    const addable = addablePartIds
+      .map((id) => partsById.get(id))
+      .filter((p): p is PartInCategory => p != null);
+    const alreadyIn = (kitParts[kitId] ?? []).filter((id) =>
+      inRecipePartIds.has(id),
+    ).length;
     setRows((prev) => [
       ...prev,
-      ...kitAddable.addable.map((part) => ({
+      ...addable.map((part) => ({
         partId: part.id,
         partSku: part.internal_sku,
         partName: part.name_en,
@@ -287,14 +273,8 @@ export function PartsRecipeSection({
         retailDkk: part.retailDkk,
       })),
     ]);
-    const code = kitCode(kit.sticker_color, kit.kit_number);
-    setKitNote(
-      `Added ${kitAddable.addable.length} part${kitAddable.addable.length === 1 ? "" : "s"} from ${code}` +
-        (kitAddable.alreadyIn > 0
-          ? ` · ${kitAddable.alreadyIn} already in recipe`
-          : ""),
-    );
     setSuccess(null);
+    return { added: addable.length, alreadyIn };
   }
 
   // Throw away unsaved edits — back to the recipe as last saved. Purely
@@ -302,8 +282,6 @@ export function PartsRecipeSection({
   function onDiscard() {
     setRows(initialRows);
     setPickerValueByCat({});
-    setKitId("");
-    setKitNote(null);
     setError(null);
     setSuccess(null);
   }
@@ -451,79 +429,29 @@ export function PartsRecipeSection({
               Parts by category
             </div>
 
-            {canEdit && kits.length > 0 ? (
-              <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground shrink-0 text-xs">
-                    Add a whole kit
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={kitId}
-                      onValueChange={(v) => {
-                        setKitId(v);
-                        setKitNote(null);
-                      }}
-                    >
-                      <SelectTrigger className="h-8 w-36 text-xs">
-                        <SelectValue placeholder="Pick a kit…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {kits.map((k) => (
-                          <SelectItem key={k.id} value={k.id}>
-                            <span
-                              aria-hidden
-                              className="inline-block size-2.5 rounded-full border border-black/10"
-                              style={{
-                                backgroundColor: stickerColor(k.sticker_color)
-                                  .hex,
-                              }}
-                            />
-                            {kitCode(k.sticker_color, k.kit_number)}
-                            <span className="text-muted-foreground ml-1 text-[10px] tabular-nums">
-                              {(kitParts[k.id] ?? []).length}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={onAddKit}
-                      disabled={!kitId || kitAddable.addable.length === 0}
-                    >
-                      <Plus aria-hidden />
-                      Add{" "}
-                      {kitId
-                        ? `${kitAddable.addable.length} part${kitAddable.addable.length === 1 ? "" : "s"}`
-                        : "parts"}
-                    </Button>
-                  </div>
-                </div>
-                {kitNote ? (
-                  <p
-                    className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400"
-                    role="status"
-                  >
-                    {kitNote}
-                  </p>
-                ) : kitId && kitAddable.addable.length === 0 ? (
-                  <p className="text-muted-foreground mt-1.5 text-xs">
-                    Every part in this kit is already in the recipe.
-                  </p>
-                ) : null}
-              </div>
+            {canEdit ? (
+              <KitBulkAdd
+                kits={kits}
+                kitParts={kitParts}
+                addedIds={inRecipePartIds}
+                knownPartIds={knownPartIds}
+                onAdd={onAddKitParts}
+                disabled={!canEdit}
+              />
             ) : null}
 
             {populated.map((category, index) => (
-              <CategoryPickerRow
+              <CategoryChecklistRow
                 key={category.id}
                 index={index + 1}
-                category={category}
-                partsInCategory={partsByCategory.get(category.id) ?? []}
-                inRecipePartIds={inRecipePartIds}
+                label={category.name_en}
+                parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
+                  id: p.id,
+                  sku: p.internal_sku,
+                  name: p.name_en,
+                  meta: p.retailDkk != null ? formatDkk(p.retailDkk) : null,
+                }))}
+                addedIds={inRecipePartIds}
                 pickedCount={pickedByCategory.get(category.id) ?? 0}
                 selectValue={
                   pickerValueByCat[category.id] ?? "__placeholder__"
@@ -703,132 +631,6 @@ export function PartsRecipeSection({
         ) : null}
       </div>
     </section>
-  );
-}
-
-function CategoryPickerRow({
-  index,
-  category,
-  partsInCategory,
-  inRecipePartIds,
-  pickedCount,
-  selectValue,
-  onSelectValue,
-  onPick,
-  disabled,
-}: {
-  index: number;
-  category: CategoryOption;
-  partsInCategory: PartInCategory[];
-  inRecipePartIds: Set<string>;
-  pickedCount: number;
-  selectValue: string;
-  onSelectValue: (v: string) => void;
-  onPick: (partId: string) => void;
-  disabled: boolean;
-}) {
-  // EN-only display; operating language is English.
-  const label = category.name_en;
-  const totalCount = partsInCategory.length;
-  const remaining = partsInCategory.filter(
-    (p) => !inRecipePartIds.has(p.id),
-  ).length;
-  const done = pickedCount > 0;
-
-  // Single-line row: name (+ picked counter) left, picker right. Green tint
-  // + check once something from this category is in the recipe, so the
-  // template builder can scan down and see what's handled.
-  return (
-    <div
-      className={`flex items-center justify-between gap-3 rounded-md border px-2.5 py-1.5 transition-colors ${
-        done
-          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10"
-          : ""
-      }`}
-    >
-      <div className="flex min-w-0 items-center gap-2">
-        {done ? (
-          <Check
-            className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-            aria-label="Category has parts in the recipe"
-          />
-        ) : (
-          <span className="text-muted-foreground w-4 shrink-0 text-right text-xs tabular-nums">
-            {index}.
-          </span>
-        )}
-        <span className="truncate text-xs font-semibold tracking-wide">
-          {label}
-        </span>
-        <span
-          className={`shrink-0 text-[10px] tabular-nums ${
-            done
-              ? "font-medium text-emerald-700 dark:text-emerald-400"
-              : "text-muted-foreground"
-          }`}
-        >
-          {pickedCount}/{totalCount} picked
-        </span>
-      </div>
-      <Select
-        value={selectValue}
-        onValueChange={(v) => {
-          onSelectValue(v);
-          onPick(v);
-        }}
-        disabled={disabled || remaining === 0}
-      >
-        <SelectTrigger className="h-8 w-44 shrink-0 text-xs">
-          <SelectValue
-            placeholder={
-              totalCount === 0
-                ? "None available"
-                : remaining === 0
-                  ? "All added"
-                  : "Pick a part…"
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__placeholder__" disabled>
-            Pick a part…
-          </SelectItem>
-          {partsInCategory.map((p) => {
-            const already = inRecipePartIds.has(p.id);
-            return (
-              <SelectItem
-                key={p.id}
-                value={p.id}
-                disabled={already}
-                className={
-                  // Same done-language as the category rows: a softer
-                  // green wash on options that are already in the recipe.
-                  already
-                    ? "bg-emerald-50/80 data-disabled:opacity-100 dark:bg-emerald-500/10"
-                    : undefined
-                }
-              >
-                {already ? (
-                  <Check
-                    className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
-                    aria-hidden
-                  />
-                ) : null}
-                <span className="font-mono text-xs">{p.internal_sku}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  {p.name_en}
-                </span>
-                {p.retailDkk != null ? (
-                  <span className="text-muted-foreground ml-2 text-[10px] tabular-nums">
-                    {formatDkk(p.retailDkk)}
-                  </span>
-                ) : null}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
-    </div>
   );
 }
 

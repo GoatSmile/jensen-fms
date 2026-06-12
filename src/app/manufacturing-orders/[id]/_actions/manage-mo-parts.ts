@@ -6,6 +6,84 @@ import { createClient } from "@/lib/supabase/server";
 
 export type MOPartsResult = { ok: true } | { ok: false; error: string };
 
+export type MOKitAddResult =
+  | { ok: true; added: number; skipped: number }
+  | { ok: false; error: string };
+
+/**
+ * "Add a whole kit" on the MO recipe: insert every live part carrying the
+ * kit label that isn't already on the MO, qty 1 per bike, origin='added'.
+ * Parts already on the MO are skipped (counted, not errored) — same
+ * semantics as the template editor's kit add, just persisted immediately.
+ */
+export async function addKitPartsToMO(
+  moId: string,
+  kitId: string,
+): Promise<MOKitAddResult> {
+  if (!moId || !kitId) return { ok: false, error: "Missing MO id or kit id." };
+
+  const supabase = await createClient();
+
+  const { data: mo } = await supabase
+    .from("manufacturing_orders")
+    .select("id, status")
+    .eq("id", moId)
+    .maybeSingle();
+  if (!mo) return { ok: false, error: "Manufacturing order not found." };
+  if (mo.status === "completed" || mo.status === "cancelled") {
+    return { ok: false, error: `Cannot edit the recipe of a ${mo.status} MO.` };
+  }
+
+  const [membershipsRes, existingRes] = await Promise.all([
+    supabase
+      .from("part_kits")
+      .select("part_id, part:parts!part_id(id, deleted_at)")
+      .eq("kit_id", kitId),
+    supabase
+      .from("manufacturing_order_parts")
+      .select("part_id")
+      .eq("manufacturing_order_id", moId),
+  ]);
+  if (membershipsRes.error) {
+    return {
+      ok: false,
+      error: `Could not load kit parts: ${membershipsRes.error.message}`,
+    };
+  }
+
+  const alreadyOnMO = new Set(
+    (existingRes.data ?? []).map((r) => r.part_id),
+  );
+  const livePartIds: string[] = [];
+  let skipped = 0;
+  for (const m of membershipsRes.data ?? []) {
+    const part = Array.isArray(m.part) ? m.part[0] : m.part;
+    if (!part || part.deleted_at != null) continue;
+    if (alreadyOnMO.has(m.part_id)) skipped += 1;
+    else livePartIds.push(m.part_id);
+  }
+  if (livePartIds.length === 0) {
+    return { ok: true, added: 0, skipped };
+  }
+
+  const { error: insErr } = await supabase
+    .from("manufacturing_order_parts")
+    .insert(
+      livePartIds.map((part_id) => ({
+        manufacturing_order_id: moId,
+        part_id,
+        quantity_per_bike: 1,
+        origin: "added",
+      })),
+    );
+  if (insErr) {
+    return { ok: false, error: `Could not add kit parts: ${insErr.message}` };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}`);
+  return { ok: true, added: livePartIds.length, skipped };
+}
+
 /**
  * Add a part to an MO with origin='added'. Used for parts that aren't in
  * the template recipe but are needed for this specific build.

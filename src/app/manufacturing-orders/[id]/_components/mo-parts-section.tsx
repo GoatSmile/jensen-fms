@@ -20,16 +20,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
+import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
 import { formatQuantity } from "@/lib/parts/stock";
 
 import {
+  addKitPartsToMO,
   addMOPart,
   removeMOPart,
   updateMOPartQuantity,
@@ -79,6 +75,9 @@ type Props = {
   catalog: PartInCatalog[];
   /** All 57 active categories, sort_order-ordered. */
   categories: CategoryOption[];
+  /** Active kits + their part ids, for the "add a whole kit" bulk action. */
+  kits: KitOption[];
+  kitParts: Record<string, string[]>;
   /** True when the MO is template-driven; false for one-off builds. */
   hasTemplate: boolean;
   /** Hide write actions when the MO is completed/cancelled. */
@@ -111,15 +110,19 @@ export function MOPartsSection({
   partsCatalog,
   catalog,
   categories,
+  kits,
+  kitParts,
   hasTemplate,
   readOnly,
 }: Props) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [substitute, setSubstitute] = useState<SubstituteState | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
   const [pickerValueByCat, setPickerValueByCat] = useState<
     Record<string, string>
   >({});
+  const [, startAdd] = useTransition();
 
   // Group catalog parts by category for the picker.
   const partsByCategory = useMemo(() => {
@@ -148,6 +151,45 @@ export function MOPartsSection({
     () => new Set(rows.map((r) => r.partId)),
     [rows],
   );
+
+  const knownPartIds = useMemo(
+    () => new Set(catalog.map((p) => p.id)),
+    [catalog],
+  );
+
+  // Recipe rows per category — drives the checklist's green done-state.
+  const pickedByCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.categoryId) continue;
+      m.set(r.categoryId, (m.get(r.categoryId) ?? 0) + 1);
+    }
+    return m;
+  }, [rows]);
+
+  function onPickFromCategory(categoryId: string, partId: string) {
+    if (!partId || partId === "__placeholder__") return;
+    setError(null);
+    startAdd(async () => {
+      const r = await addMOPart(moId, partId, 1);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setPickerValueByCat((prev) => ({
+        ...prev,
+        [categoryId]: "__placeholder__",
+      }));
+      router.refresh();
+    });
+  }
+
+  async function onAddKit(kitId: string) {
+    const r = await addKitPartsToMO(moId, kitId);
+    if (!r.ok) return { error: r.error };
+    router.refresh();
+    return { added: r.added, alreadyIn: r.skipped };
+  }
 
   // Right-panel grouping. The recipe order follows the category sort_order
   // so left and right stay visually aligned.
@@ -183,26 +225,36 @@ export function MOPartsSection({
           <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
             Parts by category
           </div>
+          {!readOnly ? (
+            <KitBulkAdd
+              kits={kits}
+              kitParts={kitParts}
+              addedIds={onMoPartIds}
+              knownPartIds={knownPartIds}
+              onAdd={onAddKit}
+              disabled={readOnly}
+            />
+          ) : null}
           {populated.map((category, index) => (
-            <CategoryPickerRow
+            <CategoryChecklistRow
               key={category.id}
               index={index + 1}
-              category={category}
-              partsInCategory={partsByCategory.get(category.id) ?? []}
-              inMoPartIds={onMoPartIds}
+              label={category.name_en}
+              parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
+                id: p.id,
+                sku: p.internal_sku,
+                name: p.name_en,
+                meta: `(${formatQuantity(p.onHand)} on hand)`,
+                metaDanger: p.onHand <= 0,
+              }))}
+              addedIds={onMoPartIds}
+              pickedCount={pickedByCategory.get(category.id) ?? 0}
               selectValue={pickerValueByCat[category.id] ?? "__placeholder__"}
               onSelectValue={(v) =>
                 setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
               }
-              moId={moId}
+              onPick={(partId) => onPickFromCategory(category.id, partId)}
               disabled={readOnly}
-              onError={setError}
-              onAdded={(partId) =>
-                setPickerValueByCat((prev) => ({
-                  ...prev,
-                  [category.id]: "__placeholder__",
-                }))
-              }
             />
           ))}
 
@@ -310,117 +362,6 @@ export function MOPartsSection({
         />
       ) : null}
     </Section>
-  );
-}
-
-function CategoryPickerRow({
-  index,
-  category,
-  partsInCategory,
-  inMoPartIds,
-  selectValue,
-  onSelectValue,
-  moId,
-  disabled,
-  onError,
-  onAdded,
-}: {
-  index: number;
-  category: CategoryOption;
-  partsInCategory: PartInCatalog[];
-  inMoPartIds: Set<string>;
-  selectValue: string;
-  onSelectValue: (v: string) => void;
-  moId: string;
-  disabled: boolean;
-  onError: (msg: string | null) => void;
-  onAdded: (partId: string) => void;
-}) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-
-  const totalCount = partsInCategory.length;
-  const remaining = partsInCategory.filter((p) => !inMoPartIds.has(p.id))
-    .length;
-
-  function onPick(partId: string) {
-    if (!partId || partId === "__placeholder__") return;
-    onSelectValue(partId);
-    onError(null);
-    start(async () => {
-      const r = await addMOPart(moId, partId, 1);
-      if (!r.ok) {
-        onError(r.error);
-        return;
-      }
-      onAdded(partId);
-      router.refresh();
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-2">
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {index}.
-        </span>
-        <span className="text-xs font-semibold tracking-wide">
-          {category.name_en}
-        </span>
-        <span className="text-muted-foreground text-[10px]">
-          ({remaining}/{totalCount})
-        </span>
-      </div>
-      <Select
-        value={selectValue}
-        onValueChange={(v) => {
-          onPick(v);
-        }}
-        disabled={disabled || remaining === 0 || pending}
-      >
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue
-            placeholder={
-              totalCount === 0
-                ? "-- None available --"
-                : remaining === 0
-                  ? "-- All added --"
-                  : `-- Pick (${remaining}) --`
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__placeholder__" disabled>
-            -- Pick a part --
-          </SelectItem>
-          {partsInCategory.map((p) => {
-            const already = inMoPartIds.has(p.id);
-            return (
-              <SelectItem key={p.id} value={p.id} disabled={already}>
-                <span className="font-mono text-xs">{p.internal_sku}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  {p.name_en}
-                </span>
-                <span
-                  className={`ml-2 text-[10px] ${
-                    p.onHand <= 0
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  ({formatQuantity(p.onHand)} on hand)
-                </span>
-                {already ? (
-                  <span className="text-muted-foreground ml-2 text-[10px] italic">
-                    already added
-                  </span>
-                ) : null}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
-    </div>
   );
 }
 
