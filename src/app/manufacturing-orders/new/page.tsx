@@ -13,13 +13,17 @@ import { createClient } from "@/lib/supabase/server";
 import {
   EMPTY_MO_FORM,
   MOForm,
+  ONE_OFF_VALUE,
   type BikeTypeOption,
   type ColorOption,
   type TemplateOption,
 } from "../_components/mo-form";
+import { MOBatchForm } from "../_components/mo-batch-form";
 
 type SearchParams = {
   template?: string;
+  /** "oneoff" switches to the single-MO form for template-less builds. */
+  mode?: string;
 };
 
 export default async function NewManufacturingOrderPage({
@@ -76,6 +80,7 @@ export default async function NewManufacturingOrderPage({
   const defaultBikeTypeId =
     typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const colors: ColorOption[] = colorsRes.data ?? [];
+  const isOneOff = sp.mode === "oneoff";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -100,23 +105,43 @@ export default async function NewManufacturingOrderPage({
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          New manufacturing order
+          {isOneOff ? "New one-off build" : "New manufacturing orders"}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Picking a template seeds the parts list automatically. One-off builds
-          start with an empty BOM that you fill in on the next screen.
+          {isOneOff ? (
+            <>
+              No template — you assemble the parts list by hand on the next
+              screen.{" "}
+              <Link
+                href="/manufacturing-orders/new"
+                className="hover:text-foreground underline underline-offset-4"
+              >
+                Back to batch creation
+              </Link>
+            </>
+          ) : (
+            "Build the batch row by row — each row becomes one MO with its parts list seeded from the template, and the bikes can be created in the same go."
+          )}
         </p>
       </div>
-      <MOForm
-        initial={{
-          ...EMPTY_MO_FORM,
-          bike_template_id: sp.template ?? "",
-          bike_type_id: defaultBikeTypeId,
-        }}
-        templates={templates}
-        bikeTypes={bikeTypes}
-        colors={colors}
-      />
+      {isOneOff ? (
+        <MOForm
+          initial={{
+            ...EMPTY_MO_FORM,
+            bike_template_id: ONE_OFF_VALUE,
+            bike_type_id: defaultBikeTypeId,
+          }}
+          templates={templates}
+          bikeTypes={bikeTypes}
+          colors={colors}
+        />
+      ) : (
+        <MOBatchForm
+          templates={templates}
+          colors={colors}
+          initialTemplateId={sp.template}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,512 @@
+"use client";
+
+import { useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Minus, Plus, Search, Trash2, Wrench } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ColorSwatch } from "@/components/color-swatch";
+import { Field } from "@/components/field";
+import { appendField } from "@/lib/forms";
+
+import {
+  createManufacturingOrdersBatch,
+  type BatchRowInput,
+} from "../_actions/save-mo-batch";
+import type { ColorOption, TemplateOption } from "./mo-form";
+
+const QTY_PRESETS = [10, 20, 50, 100];
+const DEFAULT_QTY = 10;
+
+type BatchRow = {
+  /** Client-side row identity (template can repeat across rows). */
+  key: number;
+  templateId: string;
+  colorId: string;
+  qty: string;
+};
+
+type Props = {
+  templates: TemplateOption[];
+  colors: ColorOption[];
+  /** Pre-seed one row for this template (deep link from a template page). */
+  initialTemplateId?: string;
+};
+
+/**
+ * Bulk-first MO creation: click template cards to add batch rows
+ * (template × colour × quantity), then create every MO — and optionally
+ * all their bikes — in one submit. 2+ rows become sibling MOs whose notes
+ * cross-reference each other ("Batch siblings: MO-…").
+ */
+export function MOBatchForm({ templates, colors, initialTemplateId }: Props) {
+  const router = useRouter();
+  const [rows, setRows] = useState<BatchRow[]>(() =>
+    initialTemplateId && templates.some((t) => t.id === initialTemplateId)
+      ? [
+          {
+            key: 0,
+            templateId: initialTemplateId,
+            colorId: "",
+            qty: String(DEFAULT_QTY),
+          },
+        ]
+      : [],
+  );
+  // Ref, not state: two add-clicks in one React batch would both read a
+  // stale state counter and mint duplicate keys (updateRow then hits both).
+  const nextKeyRef = useRef(1);
+  const [search, setSearch] = useState("");
+  const [createBikes, setCreateBikes] = useState(true);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [errorRow, setErrorRow] = useState<number | null>(null);
+  const [isPending, start] = useTransition();
+
+  const templateById = useMemo(
+    () => new Map(templates.map((t) => [t.id, t])),
+    [templates],
+  );
+
+  // Family groups for the card grid. Templates without a family group under
+  // their own name so every template gets a card.
+  const families = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q
+      ? templates.filter((t) =>
+          [t.family ?? "", t.name_en, t.frame_size, t.bike_type_name ?? ""]
+            .join(" ")
+            .toLowerCase()
+            .includes(q),
+        )
+      : templates;
+    const m = new Map<string, TemplateOption[]>();
+    for (const t of filtered) {
+      const key = t.family ?? t.name_en;
+      const arr = m.get(key);
+      if (arr) arr.push(t);
+      else m.set(key, [t]);
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [templates, search]);
+
+  const rowCountByTemplate = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      m.set(r.templateId, (m.get(r.templateId) ?? 0) + 1);
+    }
+    return m;
+  }, [rows]);
+
+  const totalBikes = rows.reduce((s, r) => {
+    const n = Number(r.qty);
+    return s + (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
+  }, 0);
+
+  function addRow(templateId: string) {
+    const key = nextKeyRef.current++;
+    setRows((prev) => [
+      ...prev,
+      { key, templateId, colorId: "", qty: String(DEFAULT_QTY) },
+    ]);
+    setError(null);
+    setErrorRow(null);
+  }
+
+  function updateRow(key: number, patch: Partial<BatchRow>) {
+    setRows((prev) =>
+      prev.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+    );
+    setError(null);
+    setErrorRow(null);
+  }
+
+  function removeRow(key: number) {
+    setRows((prev) => prev.filter((r) => r.key !== key));
+    setError(null);
+    setErrorRow(null);
+  }
+
+  function stepQty(row: BatchRow, delta: number) {
+    const n = Number(row.qty);
+    const current = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+    updateRow(row.key, { qty: String(Math.max(1, current + delta)) });
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setErrorRow(null);
+
+    if (rows.length === 0) {
+      setError("Click a template above to add a batch row.");
+      return;
+    }
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const n = Number(r.qty);
+      if (!r.colorId) {
+        setError("Pick a colour — one MO covers one template and one colour.");
+        setErrorRow(i);
+        return;
+      }
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+        setError("Quantity must be a positive whole number.");
+        setErrorRow(i);
+        return;
+      }
+    }
+
+    const payload: BatchRowInput[] = rows.map((r) => ({
+      bike_template_id: r.templateId,
+      color_id: r.colorId,
+      quantity: Number(r.qty),
+    }));
+
+    start(async () => {
+      const fd = new FormData();
+      appendField(fd, "rows", JSON.stringify(payload));
+      appendField(fd, "planned_start_date", startDate);
+      appendField(fd, "planned_completion_date", endDate);
+      appendField(fd, "notes", notes);
+      appendField(fd, "create_bikes", createBikes ? "true" : "false");
+      const result = await createManufacturingOrdersBatch(fd);
+      // Success redirects server-side; reaching here means failure.
+      if (result && !result.ok) {
+        const created = result.createdMoNumbers?.length
+          ? ` Already created and kept: ${result.createdMoNumbers.join(", ")}.`
+          : "";
+        setError(`${result.error}${created}`);
+        setErrorRow(result.rowIndex ?? null);
+        if (result.createdMoNumbers?.length) router.refresh();
+      }
+    });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-6">
+      {/* 1 — template cards. Click to add a batch row. */}
+      <section className="rounded-md border">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-sm font-semibold">What are we building?</h2>
+            <p className="text-muted-foreground text-xs">
+              Click a template to add it to the batch — click again for a
+              second colour run.
+            </p>
+          </div>
+          <div className="relative w-full sm:w-56">
+            <Search
+              className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+              aria-hidden
+            />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search templates…"
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+        </header>
+        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          {families.length === 0 ? (
+            <p className="text-muted-foreground col-span-full p-2 text-center text-sm italic">
+              {templates.length === 0 ? (
+                <>
+                  No current templates yet. Create one in{" "}
+                  <Link href="/bike-templates" className="underline">
+                    Bike templates
+                  </Link>{" "}
+                  first.
+                </>
+              ) : (
+                "No templates match."
+              )}
+            </p>
+          ) : (
+            families.map(([family, members]) => (
+              <div key={family} className="rounded-md border p-3">
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold">{family}</span>
+                  <span className="text-muted-foreground text-[10px]">
+                    {members[0].bike_type_name ?? ""}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {members.map((t) => {
+                    const inBatch = rowCountByTemplate.get(t.id) ?? 0;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => addRow(t.id)}
+                        className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                          inBatch > 0
+                            ? "border-primary/40 bg-primary/10 text-primary"
+                            : "hover:bg-muted/60"
+                        }`}
+                        title={`${t.name_en} · v${t.version}`}
+                      >
+                        <Plus className="size-3" aria-hidden />
+                        {t.frame_size}
+                        {t.family == null ? (
+                          <span className="text-muted-foreground font-normal">
+                            {t.name_en}
+                          </span>
+                        ) : null}
+                        {inBatch > 0 ? (
+                          <span className="bg-primary text-primary-foreground rounded-full px-1.5 text-[10px] tabular-nums">
+                            {inBatch}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <footer className="text-muted-foreground border-t px-4 py-2 text-xs">
+          Building something with no template?{" "}
+          <Link
+            href="/manufacturing-orders/new?mode=oneoff"
+            className="hover:text-foreground underline underline-offset-4"
+          >
+            One-off build by parts
+          </Link>
+        </footer>
+      </section>
+
+      {/* 2 — the batch rows */}
+      <section className="rounded-md border">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-sm font-semibold">Batch</h2>
+            <p className="text-muted-foreground text-xs">
+              One MO per row — one template, one colour, N bikes.
+            </p>
+          </div>
+          {rows.length > 0 ? (
+            <span className="text-sm tabular-nums">
+              {rows.length} MO{rows.length === 1 ? "" : "s"} ·{" "}
+              <span className="font-semibold">{totalBikes}</span> bike
+              {totalBikes === 1 ? "" : "s"}
+            </span>
+          ) : null}
+        </header>
+        {rows.length === 0 ? (
+          <p className="text-muted-foreground p-6 text-center text-sm italic">
+            Nothing in the batch yet — click a template above.
+          </p>
+        ) : (
+          <ul className="divide-y">
+            {rows.map((row, i) => {
+              const tpl = templateById.get(row.templateId);
+              const label = tpl
+                ? [tpl.family, tpl.frame_size, tpl.name_en]
+                    .filter(Boolean)
+                    .join(" · ")
+                : "—";
+              const isErrorRow = errorRow === i;
+              return (
+                <li
+                  key={row.key}
+                  className={`flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center sm:justify-between ${
+                    isErrorRow ? "bg-destructive/5" : ""
+                  }`}
+                >
+                  <div className="flex min-w-0 flex-col">
+                    <span className="text-sm font-medium">{label}</span>
+                    <span className="text-muted-foreground text-xs">
+                      v{tpl?.version}
+                      {tpl?.bike_type_name ? ` · ${tpl.bike_type_name}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      value={row.colorId}
+                      onValueChange={(v) => updateRow(row.key, { colorId: v })}
+                    >
+                      <SelectTrigger
+                        className="h-9 w-[150px]"
+                        aria-label={`Colour for ${label}`}
+                      >
+                        <SelectValue placeholder="Colour…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {colors.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            <ColorSwatch hex={c.hex} label={c.name_en} />
+                            {c.name_en}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        aria-label={`Fewer bikes for ${label}`}
+                        onClick={() => stepQty(row, -1)}
+                        disabled={Number(row.qty) <= 1}
+                      >
+                        <Minus className="size-3.5" aria-hidden />
+                      </Button>
+                      <Input
+                        inputMode="numeric"
+                        value={row.qty}
+                        onChange={(e) =>
+                          updateRow(row.key, { qty: e.target.value })
+                        }
+                        className="h-9 w-14 text-center tabular-nums"
+                        aria-label={`Quantity for ${label}`}
+                      />
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        aria-label={`More bikes for ${label}`}
+                        onClick={() => stepQty(row, 1)}
+                      >
+                        <Plus className="size-3.5" aria-hidden />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {QTY_PRESETS.map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => updateRow(row.key, { qty: String(n) })}
+                          className={`rounded border px-1.5 py-0.5 text-[10px] tabular-nums transition-colors ${
+                            Number(row.qty) === n
+                              ? "border-primary/40 bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted/60"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={`Remove ${label} from the batch`}
+                      onClick={() => removeRow(row.key)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* 3 — shared production plan */}
+      <section className="rounded-md border">
+        <header className="flex flex-col gap-0.5 border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Production plan</h2>
+          <p className="text-muted-foreground text-xs">
+            Shared by every MO in the batch. Dates are advisory; actuals stamp
+            on status transitions.
+          </p>
+        </header>
+        <div className="flex flex-col gap-3 p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Planned start date" htmlFor="batch-start">
+              <Input
+                id="batch-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </Field>
+            <Field label="Planned completion date" htmlFor="batch-end">
+              <Input
+                id="batch-end"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </Field>
+          </div>
+          <Field label="Notes" htmlFor="batch-notes">
+            <Textarea
+              id="batch-notes"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Internal — e.g. 'spring stock build' or 'Aarhus tender, delivery week 30'."
+            />
+          </Field>
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3">
+            <input
+              type="checkbox"
+              checked={createBikes}
+              onChange={(e) => setCreateBikes(e.target.checked)}
+              className="accent-primary mt-0.5 size-4"
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-medium">
+                Create the bikes now (auto frame numbers)
+              </span>
+              <span className="text-muted-foreground text-xs">
+                Every MO gets its bikes immediately, numbered in sequence.
+                Uncheck to add bikes later from the MO page.
+              </span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      {error ? (
+        <p
+          className="bg-destructive/10 text-destructive border-destructive/30 rounded-md border p-3 text-sm"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="flex items-center justify-end gap-2 border-t pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/manufacturing-orders")}
+          disabled={isPending}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isPending || rows.length === 0}>
+          <Wrench className="size-4" aria-hidden />
+          {isPending
+            ? "Creating…"
+            : rows.length === 0
+              ? "Create manufacturing orders"
+              : `Create ${rows.length} MO${rows.length === 1 ? "" : "s"}${
+                  createBikes && totalBikes > 0
+                    ? ` + ${totalBikes} bike${totalBikes === 1 ? "" : "s"}`
+                    : ""
+                }`}
+        </Button>
+      </div>
+    </form>
+  );
+}
