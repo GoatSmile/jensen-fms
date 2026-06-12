@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { bulkAddBikesToMO } from "@/app/manufacturing-orders/[id]/_actions/bulk-add-bikes";
 import { createClient } from "@/lib/supabase/server";
 
 export type SpawnMOResult =
@@ -10,7 +11,12 @@ export type SpawnMOResult =
   | { ok: false; error: string };
 
 /**
- * Spawn a manufacturing order from a sales order line.
+ * Spawn a manufacturing order from a sales order line — aligned with the
+ * batch-creation screen so both MO entry paths behave the same: recipe via
+ * the `mo_copy_template_parts` RPC, bikes bulk-created up front (auto frame
+ * numbers; they inherit the SO's customer slate when the SO is past draft).
+ * The redirect lands on the MO detail page, where stock coverage and the
+ * shortfall→draft-PO button are already waiting.
  *
  * Pre-conditions:
  *   - Line must reference a bike_template (not a part).
@@ -140,22 +146,27 @@ export async function spawnMOFromSOLine(
     };
   }
 
-  // Copy the template's parts into manufacturing_order_parts so the recipe
-  // is ready when the build floor opens the MO. Match the pattern used by
-  // the existing template-driven save-mo path.
-  const { data: tplParts } = await supabase
-    .from("bike_template_parts")
-    .select("part_id, quantity, is_optional, notes")
-    .eq("template_id", line.bike_template_id);
-  if (tplParts && tplParts.length > 0) {
-    const rows = tplParts.map((p) => ({
-      manufacturing_order_id: mo.id,
-      part_id: p.part_id,
-      quantity_per_bike: Number(p.quantity),
-      origin: "template",
-      notes: p.notes,
-    }));
-    await supabase.from("manufacturing_order_parts").insert(rows);
+  // Recipe + bikes, same as the batch screen. Recipe copy soft-fails (the
+  // MO detail page supports manual part adds); bike creation failing is
+  // surfaced — the MO exists, the user finishes bike setup from its page.
+  const { error: copyErr } = await supabase.rpc("mo_copy_template_parts", {
+    p_mo_id: mo.id,
+  });
+  if (copyErr) {
+    console.warn(
+      `MO ${mo.id} created but template parts copy failed: ${copyErr.message}`,
+    );
+  }
+
+  const bulk = await bulkAddBikesToMO(mo.id, Math.trunc(Number(line.quantity)));
+  if (!bulk.ok) {
+    revalidatePath("/sales-orders");
+    revalidatePath(`/sales-orders/${soId}`);
+    revalidatePath("/manufacturing-orders");
+    return {
+      ok: false,
+      error: `${numberData} was created, but bike creation stopped: ${bulk.error} Add the remaining bikes from the MO page.`,
+    };
   }
 
   revalidatePath("/sales-orders");

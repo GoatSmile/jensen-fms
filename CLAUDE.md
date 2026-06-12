@@ -287,7 +287,10 @@ conversation transcripts; it has this file + git history + the live DB.
   `save-ticket.ts` now block `planning`/`building` bikes (build defects
   belong on the build workbench); reorder-point banner on `/parts` with
   one-click per-supplier draft POs — the demand→draft-PO engine is shared
-  in `src/lib/purchasing/draft-pos.ts` (MO shortfall + reorder both use it).
+  in `src/lib/purchasing/draft-pos.ts` (MO shortfall + reorder both use it);
+  SO spawn-MO aligned with the batch screen (`mo_copy_template_parts` RPC +
+  `bulkAddBikesToMO`, so spawned bikes inherit the SO slate past draft and
+  the redirect lands on MO detail with coverage visible).
 
 ### M1 — Auth + RLS: DELAYED until further notice (owner's call)
 The publishable key has full table access; only Vercel SSO protects prod.
@@ -302,13 +305,10 @@ real invoice issued** — financial records behind SSO-only is the line.
 ### Next up (handoff plan, agreed with owner June 2026)
 
 **Quick fine-tunes first** (each ≤ 1 h, independent):
-- ~~Ticket-picker guard~~ and ~~reorder-point → draft PO~~ — both shipped
-  June 2026 (see session summary above). Note: no part currently has a
-  `reorder_point` set, so the `/parts` banner stays hidden until the owner
-  fills them in (part edit form).
-- **Align SO spawn-MO with the batch screen**: `spawn-mo.ts` doesn't
-  auto-create bikes or show coverage; both MO entry paths should feel
-  the same.
+- ~~Ticket-picker guard~~, ~~reorder-point → draft PO~~, and ~~SO spawn-MO
+  alignment~~ — all shipped June 2026 (see session summary above). Note:
+  no part currently has a `reorder_point` set, so the `/parts` banner
+  stays hidden until the owner fills them in (part edit form).
 - Data entry (owner/admin, not code): fill `default_purchase_price` on
   supplier offerings (draft POs currently come out at 0 kr. with a
   "set price before placing" note), set `reorder_point` /
