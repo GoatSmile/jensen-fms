@@ -257,13 +257,13 @@ Architectural questions ("should this be one table or two?", "how do we model
 service-agreement billing?") get escalated to the human — these often live in
 a separate planning chat on claude.ai. Tactical implementation questions stay here.
 
-## Current status & roadmap (handoff — updated at v0.10.0)
+## Current status & roadmap (handoff — updated June 2026, post-MO-overhaul)
 
 This section is the cross-thread handoff. A new chat won't have prior
 conversation transcripts; it has this file + git history + the live DB.
 
 ### Where we are
-- **v0.10.0**, deployed on Vercel (push-to-`main` → prod), gated behind
+- **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
   Vercel SSO. ~25 migrations, single-tenant, solo-dev.
 - **Operationally feature-complete** for the workshop's daily job. Built and
   working: Parts + categories + inventory ledger, Suppliers (CRUD +
@@ -275,6 +275,15 @@ conversation transcripts; it has this file + git history + the live DB.
   tickets + Work orders, Workshop floor technician view (M3d, with
   voice-to-text), public customer report flow, PWA, admin section
   (HS codes, FX rates, colours, customer segments, suppliers, settings).
+- **June 2026 session** (commits f1b437b…27ca92f): technician add-parts
+  page (`/work/<wo>/parts`, kit shortcut, retail-only enforcement on tech
+  screens); MO module overhauled for bulk — batch creation screen (template
+  cards, sibling MOs, auto-created bikes), stock coverage on creation + MO
+  detail, one-click draft POs from shortfall (per-supplier, full landed-cost
+  snapshots via `src/lib/purchasing/po-snapshots.ts`), shared green-checklist
+  recipe builder (`src/components/recipe/`) now powering both template and
+  MO editors incl. kit bulk-add, bikes section at 100-bike scale (progress
+  strip, status filters, mark-next-N).
 
 ### M1 — Auth + RLS: DELAYED until further notice (owner's call)
 The publishable key has full table access; only Vercel SSO protects prod.
@@ -283,19 +292,51 @@ This is the gate to a real `1.0` and to public internet exposure, but it is
 When it resumes: Supabase auth + login + middleware + `profiles`/role table +
 per-table RLS, plus a `DEV_AUTH_BYPASS` escape hatch for local dev. Open
 decisions to confirm first: sign-in method (magic link vs Google Workspace
-vs password), and the role model.
+vs password), and the role model. **Agreed trigger to reconsider: the first
+real invoice issued** — financial records behind SSO-only is the line.
 
-### Next phases (owner's stated priority order)
-The next work is the **commercial / billing** cluster, roughly:
-1. **Customers** — deepen the organizations module as needed.
-2. **Invoices (3D)** — biggest missing business capability. SOs and WOs
-   already compute costs; schema for invoices/invoice_lines exists; no UI yet.
-   Closes the quote → build → deliver → **bill** loop.
-3. **Purchase orders** — further enhancements.
-4. **Service agreements (M3c)** — coverage is currently *inferred* on work
-   orders (findActiveCoverageForBike in save-wo.ts); there's no UI to manage
-   the agreements themselves.
-5. **e-conomic push (3E)** — accounting integration, after invoicing exists.
+### Next up (handoff plan, agreed with owner June 2026)
+
+**Quick fine-tunes first** (each ≤ 1 h, independent):
+- Launch the parked ticket-picker guard (see Parked ideas below).
+- **Reorder-point → draft PO**: parts carry `reorder_point` /
+  `reorder_quantity`; the MO-shortfall draft-PO machinery
+  (`draft-po-from-shortfall.ts` + `po-snapshots.ts`) does 90% of the work.
+  Build a "below reorder point" list with the same one-click button.
+- **Align SO spawn-MO with the batch screen**: `spawn-mo.ts` doesn't
+  auto-create bikes or show coverage; both MO entry paths should feel
+  the same.
+- Data entry (owner/admin, not code): fill `default_purchase_price` on
+  supplier offerings (draft POs currently come out at 0 kr. with a
+  "set price before placing" note), classify the 5 HS-less parts,
+  confirm inferred supplier country codes.
+
+**Then the big piece: Invoicing (3D).** Schema verified ready (June 2026):
+`invoices` already has per-line VAT w/ snapshot rates, `language`,
+`issued_locked_at`, `pdf_url`, `is_reverse_charge`/`is_export`,
+`ean_number_used` (Danish public-sector e-invoicing — municipalities and
+hospitals will demand it), and `economic_voucher_id`/`economic_synced_at`
+for 3E. **Known schema gap: no work-order linkage** — add nullable
+`invoices.work_order_id` (mirror of `sales_order_id`) in a new migration.
+Agreed slices, in order:
+1. **"Uninvoiced work" list** — delivered SOs, completed billable WOs,
+   agreements with `monthly_fee` due. The money-on-the-table view and the
+   entry point to everything else.
+2. **Invoice from WO** — parts at retail + labor minutes × rate,
+   respecting `is_billable` / agreement coverage. Draft → issued (lock +
+   sequential number via `next_document_number`) → paid.
+3. **Invoice from SO** — lines from SO lines, frame numbers in descriptions.
+4. **PDF + bilingual layout** via the existing print-page pattern. Record
+   `ean_number_used` from day one; actual OIOUBL transmission lands with 3E.
+5. Recurring agreement fees + credit notes afterwards.
+Fold a **minimal service-agreements CRUD (M3c)** into this push —
+billability correctness depends on it and `monthly_fee` is itself
+invoiceable. Customers module deepens demand-driven (billing addresses,
+per-org EAN numbers, payment terms) as invoicing surfaces the gaps.
+
+**After that**: e-conomic push (3E), then the phone-call → ticket pipeline
+(Parked ideas below) as the parallel innovation track — v1 voicemail-only
+shadow mode is low-risk whenever a change of pace is wanted.
 
 ### Carry-over data notes
 - **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
@@ -313,6 +354,10 @@ The next work is the **commercial / billing** cluster, roughly:
 - **Supplier country codes** were name-inferred (migration 25); a few
   (Herrmans→FI, RYDE→NL, SAPIM→BE, Shimano Nordic→SE, MessingschKG→DE) are
   best-guesses worth confirming.
+- **Supplier offerings mostly lack `default_purchase_price`** (June 2026):
+  the shortfall draft-PO action falls back to 0 kr. and flags the line
+  "set price before placing". Filling prices on the part pages makes
+  drafted POs land ready to place.
 
 ### Hardening backlog (do as it bites)
 - audit_log triggers (wait on auth for user_id); SQL-side pagination for the
