@@ -10,6 +10,7 @@ import {
   Boxes,
   Building2,
   ClipboardList,
+  FileText,
   Hammer,
   HardHat,
   Home,
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/work", label: "Workshop floor", icon: HardHat },
   { href: "/organizations", label: "Customers", icon: Building2 },
   { href: "/organizations/map", label: "Map", icon: MapIcon },
+  { href: "/invoices", label: "Invoices", icon: FileText },
   { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
   { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
 ];

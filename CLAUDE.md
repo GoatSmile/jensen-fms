@@ -321,23 +321,31 @@ real invoice issued** — financial records behind SSO-only is the line.
 `issued_locked_at`, `pdf_url`, `is_reverse_charge`/`is_export`,
 `ean_number_used` (Danish public-sector e-invoicing — municipalities and
 hospitals will demand it), and `economic_voucher_id`/`economic_synced_at`
-for 3E. **Known schema gap: no work-order linkage** — add nullable
-`invoices.work_order_id` (mirror of `sales_order_id`) in a new migration.
-Agreed slices, in order:
-1. **"Uninvoiced work" list** — delivered SOs, completed billable WOs,
-   agreements with `monthly_fee` due. The money-on-the-table view and the
-   entry point to everything else.
-2. **Invoice from WO** — parts at retail + labor minutes × rate,
-   respecting `is_billable` / agreement coverage. Draft → issued (lock +
-   sequential number via `next_document_number`) → paid.
+for 3E. Two earlier roadmap notes turned out stale (verified June 2026):
+the WO↔invoice linkage **already exists** as `work_orders.invoice_id`
+(no migration needed — an invoice can cover several WOs), and the
+**service-agreements CRUD (M3c) is already built** at `/service-agreements`.
+Slices, in order:
+1. ~~**"Uninvoiced work" list**~~ — SHIPPED June 2026. `/invoices` shows
+   uninvoiced WOs (parts at retail + labor, minus agreement-covered
+   buckets), delivered SOs, agreement monthly fees; queries in
+   `src/lib/invoicing/uninvoiced.ts`.
+2. ~~**Invoice from WO**~~ — SHIPPED June 2026. One-click draft from the
+   uninvoiced list (`create-from-wo.ts`), respecting `is_billable` /
+   `covers_parts` / `covers_labor`; VAT snapshot from `DK_STANDARD`.
+   Drafts carry a `DRAFT-xxxx` placeholder number; **the sequential INV
+   number is allocated at issue** (`issueInvoice` — lock + net-14 due
+   date), so abandoned drafts never burn a number. Cancelling a draft
+   releases its WOs back to the uninvoiced list. Issued invoices are
+   immutable; un-issuing doesn't exist (that's a credit note, slice 5).
 3. **Invoice from SO** — lines from SO lines, frame numbers in descriptions.
-4. **PDF + bilingual layout** via the existing print-page pattern. Record
-   `ean_number_used` from day one; actual OIOUBL transmission lands with 3E.
+4. **PDF + bilingual layout** via the existing print-page pattern (line
+   descriptions are already stored bilingual). Record `ean_number_used`
+   from day one; actual OIOUBL transmission lands with 3E.
 5. Recurring agreement fees + credit notes afterwards.
-Fold a **minimal service-agreements CRUD (M3c)** into this push —
-billability correctness depends on it and `monthly_fee` is itself
-invoiceable. Customers module deepens demand-driven (billing addresses,
-per-org EAN numbers, payment terms) as invoicing surfaces the gaps.
+Customers module deepens demand-driven (billing addresses, per-org EAN
+numbers, payment terms — issue currently defaults to net 14) as invoicing
+surfaces the gaps.
 
 **After that**: e-conomic push (3E), then the phone-call → ticket pipeline
 (Parked ideas below) as the parallel innovation track — v1 voicemail-only
