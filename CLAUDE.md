@@ -218,6 +218,12 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **Pagination prev/next links don't preserve other filters** — the server
   component can't read URLSearchParams. To fix, thread `searchParams`
   through to `PartsPagination` or convert it to a client component.
+- **MO stock coverage is per-MO** (`src/lib/manufacturing/coverage.ts`) —
+  two open MOs needing the same part each compare against the full on-hand
+  figure; cross-MO competition for stock isn't modelled. Fine while the
+  planner can see all open MOs at once; revisit if parallel batches grow.
+  Coverage also excludes `JP-lak*` paint service SKUs by SKU-prefix
+  convention (paint is the paint-order workflow's concern).
 
 ## Local environment
 - Env file is `.env.local` (with the leading dot — Next.js won't auto-load
