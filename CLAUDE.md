@@ -399,6 +399,12 @@ shadow mode is low-risk whenever a change of pace is wanted.
   drafted POs land ready to place.
 
 ### Hardening backlog (do as it bites)
+- **CI smoke-test pipeline** (curl every route + Vitest over server
+  actions — see Pre-commit hygiene above). Owner reviewed June 2026 and
+  parked it deliberately: manual browser verification before every commit
+  is the safety net until then ("I like the discipline"). **Agreed
+  revisit: the auth/first-real-invoice milestone** — build it alongside
+  auth, since auth touches every page.
 - audit_log triggers (wait on auth for user_id); SQL-side pagination for the
   parts list at scale; offline write-queue for the workshop floor; Whisper
   voice fallback; bulk CSV import for parts/suppliers.
