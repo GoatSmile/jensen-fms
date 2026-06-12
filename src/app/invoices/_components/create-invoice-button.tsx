@@ -5,27 +5,32 @@ import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
+import { createInvoiceFromSO } from "../_actions/create-from-so";
 import { createInvoiceFromWO } from "../_actions/create-from-wo";
 
 type Props = {
-  woId: string;
+  /** What the invoice is drafted from — picks the server action. */
+  source: { kind: "wo"; woId: string } | { kind: "so"; soId: string };
   /** Disable with a reason, e.g. the bike has no owner organization. */
   disabledReason?: string | null;
 };
 
 /**
- * Per-row "Create invoice" on the uninvoiced-WOs table. The action
- * redirects to the new draft on success, so the only local state is the
- * pending spinner and an error line.
+ * Per-row "Create invoice" on the uninvoiced tables (WOs and SOs). The
+ * action redirects to the new draft on success, so the only local state
+ * is the pending spinner and an error line.
  */
-export function CreateInvoiceButton({ woId, disabledReason }: Props) {
+export function CreateInvoiceButton({ source, disabledReason }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
 
   function onCreate() {
     setError(null);
     start(async () => {
-      const r = await createInvoiceFromWO(woId);
+      const r =
+        source.kind === "wo"
+          ? await createInvoiceFromWO(source.woId)
+          : await createInvoiceFromSO(source.soId);
       // Success redirects (throws) — only error results land here.
       if (r && !r.ok) setError(r.error);
     });

@@ -338,14 +338,23 @@ Slices, in order:
    date), so abandoned drafts never burn a number. Cancelling a draft
    releases its WOs back to the uninvoiced list. Issued invoices are
    immutable; un-issuing doesn't exist (that's a credit note, slice 5).
-3. **Invoice from SO** — lines from SO lines, frame numbers in descriptions.
-4. **PDF + bilingual layout** via the existing print-page pattern (line
-   descriptions are already stored bilingual). Record `ean_number_used`
-   from day one; actual OIOUBL transmission lands with 3E.
-5. Recurring agreement fees + credit notes afterwards.
-Customers module deepens demand-driven (billing addresses, per-org EAN
-numbers, payment terms — issue currently defaults to net 14) as invoicing
-surfaces the gaps.
+3. ~~**Invoice from SO**~~ — SHIPPED June 2026. One-click from the
+   uninvoiced list (`create-from-so.ts`): lines copy from SO lines
+   (VAT snapshots preserved, template+colour / part+SKU fallback when an
+   SO line has no stored description), frame numbers of the bikes built
+   under the line's MOs appended bilingually ("frames:" / "stelnumre:").
+4. ~~**Print/PDF bilingual layout**~~ — SHIPPED June 2026.
+   `/invoices/<id>/print` (browser print-to-PDF, same pattern as the MO
+   parts list): all labels da/en per `invoices.language`, seller block
+   from `src/lib/invoicing/company.ts` (**CVR/bank/address are
+   placeholders — owner must fill before the first real invoice**; the
+   screen shows a warning until then), customer address + CVR + EAN,
+   UDKAST/DRAFT watermark on drafts. `issueInvoice` snapshots the org's
+   `ean_number` → `ean_number_used` and uses per-org
+   `payment_terms_days` (orgs already had EAN/CVR/payment-terms/billing
+   columns — the "customers module deepens later" note was stale too).
+5. Recurring agreement fees + credit notes afterwards — the remaining 3D
+   work, plus OIOUBL/e-invoicing transmission with 3E.
 
 **After that**: e-conomic push (3E), then the phone-call → ticket pipeline
 (Parked ideas below) as the parallel innovation track — v1 voicemail-only

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -147,7 +149,14 @@ export default async function InvoiceDetailPage({
               </p>
             ) : null}
           </div>
-          <InvoiceActions invoiceId={invoice.id} status={status} />
+          <div className="flex flex-col items-end gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/invoices/${invoice.id}/print`}>
+                <Printer aria-hidden /> Print
+              </Link>
+            </Button>
+            <InvoiceActions invoiceId={invoice.id} status={status} />
+          </div>
         </div>
       </header>
 

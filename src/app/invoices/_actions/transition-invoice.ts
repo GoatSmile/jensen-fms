@@ -14,9 +14,12 @@ export type InvoiceTransitionResult = { ok: true } | { ok: false; error: string 
 /**
  * Issue a draft invoice: allocate the sequential INV number (drafts carry a
  * DRAFT-xxxx placeholder so abandoned drafts never burn a number), stamp
- * issued_date + issued_locked_at, default the due date to net
- * DEFAULT_PAYMENT_TERMS_DAYS. Issuing is the lock — after this the invoice
- * is immutable bookkeeping material.
+ * issued_date + issued_locked_at, set the due date from the customer's
+ * payment terms (net DEFAULT_PAYMENT_TERMS_DAYS when the org has none),
+ * and snapshot the org's EAN number into ean_number_used — public-sector
+ * customers bill via EAN and the number used must survive later org edits.
+ * Issuing is the lock — after this the invoice is immutable bookkeeping
+ * material.
  */
 export async function issueInvoice(
   invoiceId: string,
@@ -26,7 +29,10 @@ export async function issueInvoice(
   const supabase = await createClient();
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
-    .select("id, status, due_date")
+    .select(
+      `id, status, due_date,
+       organization:organizations!organization_id(ean_number, payment_terms_days)`,
+    )
     .eq("id", invoiceId)
     .maybeSingle();
   if (invErr || !invoice) {
@@ -38,6 +44,9 @@ export async function issueInvoice(
   if (invoice.status !== "draft") {
     return { ok: false, error: "Only draft invoices can be issued." };
   }
+  const org = Array.isArray(invoice.organization)
+    ? invoice.organization[0]
+    : invoice.organization;
 
   const { count: lineCount } = await supabase
     .from("invoice_lines")
@@ -60,8 +69,9 @@ export async function issueInvoice(
 
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
+  const termsDays = Number(org?.payment_terms_days) || DEFAULT_PAYMENT_TERMS_DAYS;
   const due = new Date();
-  due.setDate(due.getDate() + DEFAULT_PAYMENT_TERMS_DAYS);
+  due.setDate(due.getDate() + termsDays);
 
   const { error: updErr } = await supabase
     .from("invoices")
@@ -71,6 +81,7 @@ export async function issueInvoice(
       issued_date: today,
       due_date: invoice.due_date ?? due.toISOString().slice(0, 10),
       issued_locked_at: nowIso,
+      ean_number_used: org?.ean_number ?? null,
     })
     .eq("id", invoiceId)
     .eq("status", "draft");

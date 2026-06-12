@@ -170,7 +170,7 @@ export default async function InvoicesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <CreateInvoiceButton
-                        woId={wo.woId}
+                        source={{ kind: "wo", woId: wo.woId }}
                         disabledReason={wo.orgId ? null : "Assign an owner first"}
                       />
                     </TableCell>
@@ -184,7 +184,7 @@ export default async function InvoicesPage() {
 
       <Section
         title="Delivered sales orders"
-        description="Delivered with no invoice yet. Invoicing from an SO is the next slice — listed here so the money stays visible."
+        description="Delivered with no invoice yet. Lines copy from the SO; frame numbers of the delivered bikes land in the descriptions."
       >
         {sos.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -199,6 +199,7 @@ export default async function InvoicesPage() {
                   <TableHead>Customer</TableHead>
                   <TableHead className="hidden md:table-cell">Delivered</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="w-[150px]" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,6 +222,9 @@ export default async function InvoicesPage() {
                       {so.currency === "DKK"
                         ? formatDkk(so.total)
                         : `${so.total} ${so.currency}`}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CreateInvoiceButton source={{ kind: "so", soId: so.soId }} />
                     </TableCell>
                   </TableRow>
                 ))}
