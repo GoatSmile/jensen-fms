@@ -283,7 +283,11 @@ conversation transcripts; it has this file + git history + the live DB.
   snapshots via `src/lib/purchasing/po-snapshots.ts`), shared green-checklist
   recipe builder (`src/components/recipe/`) now powering both template and
   MO editors incl. kit bulk-add, bikes section at 100-bike scale (progress
-  strip, status filters, mark-next-N).
+  strip, status filters, mark-next-N). Follow-up fine-tunes: ticket picker +
+  `save-ticket.ts` now block `planning`/`building` bikes (build defects
+  belong on the build workbench); reorder-point banner on `/parts` with
+  one-click per-supplier draft POs — the demand→draft-PO engine is shared
+  in `src/lib/purchasing/draft-pos.ts` (MO shortfall + reorder both use it).
 
 ### M1 — Auth + RLS: DELAYED until further notice (owner's call)
 The publishable key has full table access; only Vercel SSO protects prod.
@@ -298,18 +302,19 @@ real invoice issued** — financial records behind SSO-only is the line.
 ### Next up (handoff plan, agreed with owner June 2026)
 
 **Quick fine-tunes first** (each ≤ 1 h, independent):
-- Launch the parked ticket-picker guard (see Parked ideas below).
-- **Reorder-point → draft PO**: parts carry `reorder_point` /
-  `reorder_quantity`; the MO-shortfall draft-PO machinery
-  (`draft-po-from-shortfall.ts` + `po-snapshots.ts`) does 90% of the work.
-  Build a "below reorder point" list with the same one-click button.
+- ~~Ticket-picker guard~~ and ~~reorder-point → draft PO~~ — both shipped
+  June 2026 (see session summary above). Note: no part currently has a
+  `reorder_point` set, so the `/parts` banner stays hidden until the owner
+  fills them in (part edit form).
 - **Align SO spawn-MO with the batch screen**: `spawn-mo.ts` doesn't
   auto-create bikes or show coverage; both MO entry paths should feel
   the same.
 - Data entry (owner/admin, not code): fill `default_purchase_price` on
   supplier offerings (draft POs currently come out at 0 kr. with a
-  "set price before placing" note), classify the 5 HS-less parts,
-  confirm inferred supplier country codes.
+  "set price before placing" note), set `reorder_point` /
+  `reorder_quantity` on fast-moving parts so the reorder banner earns
+  its keep, classify the 5 HS-less parts, confirm inferred supplier
+  country codes.
 
 **Then the big piece: Invoicing (3D).** Schema verified ready (June 2026):
 `invoices` already has per-line VAT w/ snapshot rates, `language`,
@@ -368,15 +373,6 @@ shadow mode is low-risk whenever a change of pace is wanted.
 The durable home for ideas parked mid-session (session "chips" die with the
 app). Add new ones here with enough context to act cold; delete the entry
 when the work ships or the idea is rejected.
-
-- **Ticket picker: guard against unbuilt bikes** (parked June 2026). The
-  new-ticket bike picker (`src/app/maintenance/tickets/_components/
-  load-pickables.ts`) only excludes retired / lost_or_stolen / soft-deleted,
-  so tickets and WOs can be opened against `planning`/`building` bikes that
-  don't physically exist yet (happened: WO-2026-0004 on a planning-stage
-  bike). Fix: exclude `planning` (probably `building` too) from the picker,
-  plus the same guard server-side in `save-ticket.ts`. Softer alternative
-  considered: show lifecycle status in the picker and let the human decide.
 
 - **Phone-call → ticket AI pipeline** (parked June 2026, designed in-session).
   Workshop calls become maintenance tickets automatically:

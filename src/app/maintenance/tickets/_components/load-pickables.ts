@@ -6,8 +6,11 @@ import type { BikeOption, ContactOption } from "./ticket-form";
  * Server-side helper that fetches the two pickable lists shared by /new and
  * /[id]/edit:
  *
- * - Bikes that aren't retired or lost/stolen (and not soft-deleted), with
- *   the template label and the owner organization joined in.
+ * - Bikes that physically exist and aren't gone: `planning`/`building`
+ *   bikes are excluded (no physical bike to repair yet — defects during
+ *   build belong on the build workbench, not a maintenance ticket), and so
+ *   are retired / lost-or-stolen / soft-deleted ones. Same rule enforced
+ *   server-side in save-ticket.ts.
  * - Contacts (not soft-deleted), with their organization joined so the form
  *   can filter to the chosen bike's owner roster.
  */
@@ -29,7 +32,7 @@ export async function loadTicketPickables(): Promise<{
         `,
       )
       .is("deleted_at", null)
-      .not("status", "in", "(retired,lost_or_stolen)")
+      .not("status", "in", "(planning,building,retired,lost_or_stolen)")
       .order("frame_number", { ascending: true }),
     supabase
       .from("contacts")

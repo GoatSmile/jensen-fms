@@ -19,6 +19,49 @@ export type SaveTicketResult =
 const VALID_LANGUAGES = new Set(["da", "en"]);
 
 /**
+ * Bike statuses a ticket can't be opened against: unbuilt bikes have no
+ * physical bike to repair (build defects belong on the build workbench),
+ * terminal bikes are gone. Mirrors the picker filter in load-pickables.ts —
+ * this is the server-side enforcement so a stale form or direct call can't
+ * bypass it (WO-2026-0004 was once opened against a planning-stage bike).
+ */
+const UNTICKETABLE_STATUSES = new Set([
+  "planning",
+  "building",
+  "retired",
+  "lost_or_stolen",
+]);
+
+async function assertTicketableBike(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bikeId: string,
+): Promise<{ ok: true } | { ok: false; error: string; field: string }> {
+  const { data: bike, error } = await supabase
+    .from("bikes")
+    .select("id, status, deleted_at")
+    .eq("id", bikeId)
+    .maybeSingle();
+  if (error || !bike || bike.deleted_at != null) {
+    return {
+      ok: false,
+      error: `Could not load that bike: ${error?.message ?? "not found"}`,
+      field: "bike_id",
+    };
+  }
+  if (UNTICKETABLE_STATUSES.has(bike.status as string)) {
+    const unbuilt = bike.status === "planning" || bike.status === "building";
+    return {
+      ok: false,
+      error: unbuilt
+        ? "That bike hasn't been built yet — build issues belong on the MO's build workbench, not a maintenance ticket."
+        : "That bike is retired or lost/stolen — tickets can't be opened against it.",
+      field: "bike_id",
+    };
+  }
+  return { ok: true };
+}
+
+/**
  * Parse + validate the fields shared between create and update. Returns
  * either a clean payload or an error description matching SaveTicketResult.
  */
@@ -113,6 +156,9 @@ export async function createTicket(formData: FormData): Promise<SaveTicketResult
 
   const supabase = await createClient();
 
+  const bikeGate = await assertTicketableBike(supabase, parsed.payload.bike_id);
+  if (!bikeGate.ok) return bikeGate;
+
   const { data: ticketNumber, error: numErr } = await supabase.rpc(
     "next_document_number",
     { p_doc_type: "maintenance_ticket" },
@@ -167,6 +213,22 @@ export async function updateTicket(
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
+
+  // Gate only a bike CHANGE — a ticket legitimately opened before its bike
+  // retired must stay editable with the bike it has.
+  const { data: existing } = await supabase
+    .from("maintenance_tickets")
+    .select("bike_id")
+    .eq("id", ticketId)
+    .maybeSingle();
+  if (existing?.bike_id !== parsed.payload.bike_id) {
+    const bikeGate = await assertTicketableBike(
+      supabase,
+      parsed.payload.bike_id,
+    );
+    if (!bikeGate.ok) return bikeGate;
+  }
+
   const { error: updErr } = await supabase
     .from("maintenance_tickets")
     .update({

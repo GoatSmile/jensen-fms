@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
 
+import { findPartsBelowReorderPoint } from "./_actions/draft-po-from-reorder";
 import { PartsFilters } from "./_components/parts-filters";
 import {
   PartsTable,
@@ -23,6 +24,7 @@ import {
   type PartRowKit,
 } from "./_components/parts-table";
 import { PartsPagination } from "./_components/pagination";
+import { ReorderBanner } from "./_components/reorder-banner";
 import type { SortColumn } from "./_components/sortable-header";
 
 const PAGE_SIZE = 40;
@@ -280,6 +282,10 @@ export default async function PartsPage({
     kits: kitsByPartId.get(row.id!) ?? [],
   }));
 
+  // Low-stock banner — empty (and invisible) until parts get reorder points.
+  const reorderRes = await findPartsBelowReorderPoint();
+  const reorderRows = "error" in reorderRes ? [] : reorderRes;
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
@@ -332,6 +338,8 @@ export default async function PartsPage({
           </div>
         </div>
       </header>
+
+      <ReorderBanner rows={reorderRows} />
 
       <PartsFilters
         categories={categoriesRes.data ?? []}
