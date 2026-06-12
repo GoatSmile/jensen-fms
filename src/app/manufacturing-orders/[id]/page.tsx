@@ -17,6 +17,12 @@ import type { BikeStatus } from "@/lib/bikes/status";
 import type { MOStatus } from "@/lib/mo/status";
 import { nextFrameNumberFromDb } from "@/lib/bikes/frame-number";
 
+import {
+  computeCoverageRows,
+  remainingToBuildCount,
+} from "@/lib/manufacturing/coverage";
+
+import { CoverageSection } from "./_components/coverage-section";
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
 import { MOHeader } from "./_components/mo-header";
 import {
@@ -231,9 +237,26 @@ export default async function ManufacturingOrderDetailPage({
     category_name: p.category?.name_en ?? null,
   }));
 
-  // Compute outstanding bikes for the parts stock-check (target − attached).
-  const outstandingBikes = Math.max(0, mo.target_quantity - moBikeRows.length);
+  // Bikes that still need parts: attached pre-build bikes + unfilled slots.
+  // (Pre-bulk-creation this was "target − attached", but now that batch
+  // creation attaches every bike up front, that metric was permanently 0 —
+  // the honest demand basis is "not yet built".)
+  const outstandingBikes = remainingToBuildCount({
+    targetQuantity: mo.target_quantity,
+    bikeStatuses: (bikesRes.data ?? []).map((b) => b.status as string),
+  });
   const projectedBuildCost = projectedPartsCostPerBike * outstandingBikes;
+
+  const coverageRows = computeCoverageRows(
+    moPartRows.map((r) => ({
+      partId: r.partId,
+      sku: r.partSku,
+      name: r.partName,
+      perBike: r.quantityPerBike,
+    })),
+    outstandingBikes,
+    stockByPart,
+  );
 
   // Frame-number suggestion for the next bike. With models gone, we derive
   // the prefix from the bike_type's slug (uppercased, e.g. "hsb" → "HSB").
@@ -373,6 +396,13 @@ export default async function ManufacturingOrderDetailPage({
           </div>
         </dl>
       </Section>
+
+      <CoverageSection
+        moId={mo.id}
+        remainingToBuild={outstandingBikes}
+        rows={coverageRows}
+        readOnly={closed}
+      />
 
       <MOPartsSection
         moId={mo.id}

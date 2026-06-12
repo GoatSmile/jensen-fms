@@ -19,6 +19,9 @@ import { ColorSwatch } from "@/components/color-swatch";
 import { Field } from "@/components/field";
 import { appendField } from "@/lib/forms";
 
+import { isServiceSku } from "@/lib/manufacturing/coverage";
+import { formatDkk, formatQuantity } from "@/lib/parts/stock";
+
 import {
   createManufacturingOrdersBatch,
   type BatchRowInput,
@@ -36,11 +39,25 @@ type BatchRow = {
   qty: string;
 };
 
+export type BomLine = { partId: string; qty: number };
+
+export type PartPreviewInfo = {
+  sku: string;
+  name: string;
+  onHand: number;
+  /** Last landed cost in DKK; null when never purchased. */
+  lastCost: number | null;
+};
+
 type Props = {
   templates: TemplateOption[];
   colors: ColorOption[];
   /** Pre-seed one row for this template (deep link from a template page). */
   initialTemplateId?: string;
+  /** templateId → BOM lines, for the live coverage preview. */
+  boms: Record<string, BomLine[]>;
+  /** partId → sku/name/stock/cost, for the live coverage preview. */
+  partsInfo: Record<string, PartPreviewInfo>;
 };
 
 /**
@@ -49,7 +66,13 @@ type Props = {
  * all their bikes — in one submit. 2+ rows become sibling MOs whose notes
  * cross-reference each other ("Batch siblings: MO-…").
  */
-export function MOBatchForm({ templates, colors, initialTemplateId }: Props) {
+export function MOBatchForm({
+  templates,
+  colors,
+  initialTemplateId,
+  boms,
+  partsInfo,
+}: Props) {
   const router = useRouter();
   const [rows, setRows] = useState<BatchRow[]>(() =>
     initialTemplateId && templates.some((t) => t.id === initialTemplateId)
@@ -68,6 +91,7 @@ export function MOBatchForm({ templates, colors, initialTemplateId }: Props) {
   const nextKeyRef = useRef(1);
   const [search, setSearch] = useState("");
   const [createBikes, setCreateBikes] = useState(true);
+  const [showShortfall, setShowShortfall] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -114,6 +138,60 @@ export function MOBatchForm({ templates, colors, initialTemplateId }: Props) {
     const n = Number(r.qty);
     return s + (Number.isFinite(n) && n > 0 ? Math.floor(n) : 0);
   }, 0);
+
+  // Live coverage: aggregate part demand across every row, compare against
+  // on-hand stock, and price the whole batch at last landed cost.
+  const coverage = useMemo(() => {
+    const demand = new Map<string, number>();
+    for (const r of rows) {
+      const n = Number(r.qty);
+      const qty = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      if (qty === 0) continue;
+      for (const line of boms[r.templateId] ?? []) {
+        demand.set(line.partId, (demand.get(line.partId) ?? 0) + line.qty * qty);
+      }
+    }
+    const shortfall: {
+      partId: string;
+      sku: string;
+      name: string;
+      need: number;
+      have: number;
+    }[] = [];
+    let coveredCount = 0;
+    let estimatedCost = 0;
+    let unpriced = 0;
+    for (const [partId, need] of demand) {
+      const info = partsInfo[partId];
+      // Paint service SKUs never hold stock — excluded, same as the lib.
+      if (info && isServiceSku(info.sku)) continue;
+      const have = info?.onHand ?? 0;
+      if (need > have) {
+        shortfall.push({
+          partId,
+          sku: info?.sku ?? "—",
+          name: info?.name ?? "—",
+          need,
+          have,
+        });
+      } else {
+        coveredCount += 1;
+      }
+      if (info?.lastCost != null && info.lastCost > 0) {
+        estimatedCost += need * info.lastCost;
+      } else {
+        unpriced += 1;
+      }
+    }
+    shortfall.sort((a, b) => b.need - b.have - (a.need - a.have));
+    return {
+      totalParts: demand.size,
+      coveredCount,
+      shortfall,
+      estimatedCost,
+      unpriced,
+    };
+  }, [rows, boms, partsInfo]);
 
   function addRow(templateId: string) {
     const key = nextKeyRef.current++;
@@ -417,6 +495,66 @@ export function MOBatchForm({ templates, colors, initialTemplateId }: Props) {
             })}
           </ul>
         )}
+        {rows.length > 0 && totalBikes > 0 && coverage.totalParts > 0 ? (
+          <footer className="bg-muted/20 border-t px-4 py-2.5 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Parts coverage:</span>
+                {coverage.shortfall.length === 0 ? (
+                  <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                    all {coverage.totalParts} parts in stock
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowShortfall((v) => !v)}
+                    className="text-destructive font-medium underline-offset-4 hover:underline"
+                  >
+                    {coverage.shortfall.length} part
+                    {coverage.shortfall.length === 1 ? "" : "s"} short —{" "}
+                    {showShortfall ? "hide" : "show"}
+                  </button>
+                )}
+              </div>
+              <span className="text-muted-foreground tabular-nums">
+                Est. parts cost (last landed):{" "}
+                <span className="text-foreground font-medium">
+                  {coverage.estimatedCost > 0
+                    ? formatDkk(coverage.estimatedCost)
+                    : "—"}
+                </span>
+                {coverage.unpriced > 0 ? (
+                  <span> ({coverage.unpriced} unpriced)</span>
+                ) : null}
+              </span>
+            </div>
+            {showShortfall && coverage.shortfall.length > 0 ? (
+              <ul className="mt-2 flex flex-col gap-1 border-t pt-2">
+                {coverage.shortfall.map((s) => (
+                  <li
+                    key={s.partId}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="min-w-0 truncate">
+                      {s.name}{" "}
+                      <span className="text-muted-foreground font-mono text-[10px]">
+                        {s.sku}
+                      </span>
+                    </span>
+                    <span className="text-destructive shrink-0 tabular-nums">
+                      need {formatQuantity(s.need)} · have{" "}
+                      {formatQuantity(s.have)}
+                    </span>
+                  </li>
+                ))}
+                <li className="text-muted-foreground mt-1">
+                  Shortfalls don&rsquo;t block creation — the MO page has a
+                  one-click draft PO for whatever is missing.
+                </li>
+              </ul>
+            ) : null}
+          </footer>
+        ) : null}
       </section>
 
       {/* 3 — shared production plan */}
