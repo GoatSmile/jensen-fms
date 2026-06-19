@@ -109,7 +109,7 @@ export default async function SODetailPage({
         .order("default_rate", { ascending: false }),
       supabase
         .from("colors")
-        .select("id, name_en, hex, is_active")
+        .select("id, name_en, hex, ral_code, coating, is_active")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("name_en", { ascending: true }),

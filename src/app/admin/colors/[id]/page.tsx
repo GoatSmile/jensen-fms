@@ -33,7 +33,7 @@ export default async function ColorDetailPage({
     supabase
       .from("colors")
       .select(
-        "id, slug, name_en, name_da, hex, ral_code, sort_order, is_active",
+        "id, slug, name_en, name_da, hex, ral_code, coating, sort_order, is_active",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -62,6 +62,7 @@ export default async function ColorDetailPage({
     slug: c.slug,
     hex: c.hex ?? "",
     ral_code: c.ral_code ?? "",
+    coating: c.coating ?? "",
     sort_order: String(c.sort_order ?? 100),
     is_active: c.is_active,
   };

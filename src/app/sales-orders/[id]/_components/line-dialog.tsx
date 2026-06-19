@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
+import { colorFinishLabel } from "@/lib/colors/coating";
 
 import { addSOLine, updateSOLine } from "../../_actions/manage-so-lines";
 
@@ -43,7 +44,13 @@ export type VatCodeChoice = {
   name_en: string;
   default_rate: number;
 };
-export type ColorChoice = { id: string; name_en: string; hex: string | null };
+export type ColorChoice = {
+  id: string;
+  name_en: string;
+  hex: string | null;
+  ral_code: string | null;
+  coating: string | null;
+};
 
 export type LineDialogInitial = {
   lineId: string;
@@ -403,18 +410,26 @@ export function LineDialog({
                       No colour (decide later)
                     </span>
                   </SelectItem>
-                  {colors.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.hex ? (
-                        <span
-                          className="mr-2 inline-block size-3 rounded-full border"
-                          style={{ backgroundColor: c.hex }}
-                          aria-hidden
-                        />
-                      ) : null}
-                      {c.name_en}
-                    </SelectItem>
-                  ))}
+                  {colors.map((c) => {
+                    const finish = colorFinishLabel(c.ral_code, c.coating);
+                    return (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.hex ? (
+                          <span
+                            className="mr-2 inline-block size-3 rounded-full border"
+                            style={{ backgroundColor: c.hex }}
+                            aria-hidden
+                          />
+                        ) : null}
+                        {c.name_en}
+                        {finish ? (
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {finish}
+                          </span>
+                        ) : null}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

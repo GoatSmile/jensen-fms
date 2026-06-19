@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ColorSwatch } from "@/components/color-swatch";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
+import { COATINGS, coatingLabel } from "@/lib/colors/coating";
 
 import { createColor, updateColor } from "../_actions/manage-colors";
 
@@ -18,6 +19,7 @@ export type ColorFormValues = {
   slug: string;
   hex: string;
   ral_code: string;
+  coating: string;
   sort_order: string;
   is_active: boolean;
 };
@@ -28,6 +30,7 @@ export const EMPTY_COLOR_FORM: ColorFormValues = {
   slug: "",
   hex: "",
   ral_code: "",
+  coating: "",
   sort_order: "100",
   is_active: true,
 };
@@ -71,6 +74,7 @@ export function ColorForm({ mode, initial }: Props) {
     appendField(fd, "slug", values.slug.trim());
     appendField(fd, "hex", values.hex.trim());
     appendField(fd, "ral_code", values.ral_code.trim());
+    appendField(fd, "coating", values.coating);
     appendField(fd, "sort_order", values.sort_order.trim());
     if (values.is_active) fd.set("is_active", "on");
     return fd;
@@ -175,6 +179,27 @@ export function ColorForm({ mode, initial }: Props) {
           </p>
         </Field>
       </div>
+
+      <Field label="Coating / finish" htmlFor="color-coating">
+        <select
+          id="color-coating"
+          value={values.coating}
+          onChange={(e) => update("coating", e.target.value)}
+          className="border-input bg-background h-9 max-w-[200px] rounded-md border px-2 text-sm"
+        >
+          <option value="">— None / unspecified</option>
+          {COATINGS.map((c) => (
+            <option key={c} value={c}>
+              {coatingLabel(c)}
+            </option>
+          ))}
+        </select>
+        <p className="text-muted-foreground text-xs">
+          Optional. Make &ldquo;matte&rdquo; and &ldquo;glossy&rdquo; of the same
+          RAL separate colours so the finish carries through to the build and
+          paint order.
+        </p>
+      </Field>
 
       <Field label="Sort order" htmlFor="color-sort">
         <Input

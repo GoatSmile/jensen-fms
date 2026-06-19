@@ -13,6 +13,7 @@ type ParsedColor = {
   slug: string;
   hex: string | null;
   ral_code: string | null;
+  coating: string | null;
   sort_order: number;
   is_active: boolean;
 };
@@ -50,6 +51,8 @@ function parseFormData(
   const ralRaw = nullable(formData.get("ral_code"))?.trim() ?? null;
   const ral_code = ralRaw && ralRaw !== "" ? ralRaw : null;
 
+  const coating = nullable(formData.get("coating"))?.trim() ?? null;
+
   const sortOrderRaw = nullable(formData.get("sort_order"));
   let sort_order = 0;
   if (sortOrderRaw) {
@@ -75,6 +78,7 @@ function parseFormData(
       slug,
       hex,
       ral_code,
+      coating,
       sort_order,
       is_active: formData.get("is_active") === "on",
     },

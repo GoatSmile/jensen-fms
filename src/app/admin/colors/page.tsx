@@ -21,7 +21,7 @@ export default async function AdminColorsPage() {
   const [colorsRes, bikeUsageRes, moUsageRes] = await Promise.all([
     supabase
       .from("colors")
-      .select("id, slug, name_en, name_da, hex, ral_code, sort_order, is_active")
+      .select("id, slug, name_en, name_da, hex, ral_code, coating, sort_order, is_active")
       .order("is_active", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
@@ -59,6 +59,7 @@ export default async function AdminColorsPage() {
     nameDa: c.name_da,
     hex: c.hex,
     ralCode: c.ral_code,
+    coating: c.coating,
     sortOrder: c.sort_order,
     isActive: c.is_active,
     usageCount: usageById.get(c.id) ?? 0,

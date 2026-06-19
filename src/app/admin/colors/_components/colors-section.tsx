@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { colorFinishLabel } from "@/lib/colors/coating";
 
 export type ColorRow = {
   id: string;
@@ -20,6 +21,7 @@ export type ColorRow = {
   nameDa: string;
   hex: string | null;
   ralCode: string | null;
+  coating: string | null;
   sortOrder: number;
   isActive: boolean;
   usageCount: number;
@@ -61,7 +63,7 @@ export function ColorsSection({ rows }: { rows: ColorRow[] }) {
               <TableRow>
                 <TableHead>Colour</TableHead>
                 <TableHead className="hidden sm:table-cell">Slug</TableHead>
-                <TableHead className="hidden md:table-cell">RAL</TableHead>
+                <TableHead className="hidden md:table-cell">RAL / finish</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
                   Sort
                 </TableHead>
@@ -106,7 +108,7 @@ export function ColorsSection({ rows }: { rows: ColorRow[] }) {
                     </TableCell>
                     <TableCell className="hidden p-0 text-xs md:table-cell">
                       <Link href={href} className="block px-4 py-2.5">
-                        {row.ralCode ?? (
+                        {colorFinishLabel(row.ralCode, row.coating) ?? (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </Link>

@@ -621,6 +621,7 @@ export type Database = {
       }
       colors: {
         Row: {
+          coating: string | null
           created_at: string
           hex: string | null
           id: string
@@ -633,6 +634,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          coating?: string | null
           created_at?: string
           hex?: string | null
           id?: string
@@ -645,6 +647,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          coating?: string | null
           created_at?: string
           hex?: string | null
           id?: string
