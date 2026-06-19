@@ -17,6 +17,7 @@ type ParsedSOFields = {
   language: string;
   order_date: string;
   requested_delivery_date: string | null;
+  requested_delivery_precision: "exact" | "week" | null;
   currency: string;
   notes: string | null;
 };
@@ -44,6 +45,17 @@ function parseFields(
     return { ok: false, error: "Pick a currency.", field: "currency" };
   }
 
+  const requested_delivery_date = nullable(
+    formData.get("requested_delivery_date"),
+  );
+  const precisionRaw = nullable(formData.get("requested_delivery_precision"));
+  // Precision only means something when there's a date; clear it otherwise.
+  const requested_delivery_precision = !requested_delivery_date
+    ? null
+    : precisionRaw === "week"
+      ? "week"
+      : "exact";
+
   return {
     ok: true,
     values: {
@@ -52,7 +64,8 @@ function parseFields(
       contact_id: nullable(formData.get("contact_id")),
       language,
       order_date,
-      requested_delivery_date: nullable(formData.get("requested_delivery_date")),
+      requested_delivery_date,
+      requested_delivery_precision,
       currency,
       notes: nullable(formData.get("notes")),
     },

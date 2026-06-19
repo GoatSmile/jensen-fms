@@ -12,6 +12,7 @@ import {
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
+import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
 import { canEditSOLines, type SOStatus } from "@/lib/so/status";
 import type { MOStatus } from "@/lib/mo/status";
@@ -44,7 +45,7 @@ export default async function SODetailPage({
     .from("sales_orders")
     .select(
       `id, sales_order_number, status, language, order_date,
-       requested_delivery_date, actual_delivery_date,
+       requested_delivery_date, requested_delivery_precision, actual_delivery_date,
        currency, subtotal_amount, total_vat_amount, total_amount,
        notes, created_at,
        organization:organizations!organization_id(
@@ -246,7 +247,11 @@ export default async function SODetailPage({
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
         <Stat label="Order date">{formatDate(so.order_date)}</Stat>
         <Stat label="Requested delivery">
-          {formatDate(so.requested_delivery_date)}
+          {formatDeliveryTarget(
+            so.requested_delivery_date,
+            so.requested_delivery_precision,
+            so.language === "da" ? "da" : "en",
+          ) ?? "—"}
         </Stat>
         <Stat label="Actual delivery">
           {formatDate(so.actual_delivery_date)}

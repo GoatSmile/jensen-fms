@@ -32,7 +32,8 @@ export default async function EditSOPage({
     .from("sales_orders")
     .select(
       `id, sales_order_number, status, organization_id, organization_unit_id,
-       contact_id, language, order_date, requested_delivery_date, currency, notes`,
+       contact_id, language, order_date, requested_delivery_date,
+       requested_delivery_precision, currency, notes`,
     )
     .eq("id", id)
     .maybeSingle();
@@ -90,6 +91,8 @@ export default async function EditSOPage({
     language: (so.language === "en" ? "en" : "da") as "da" | "en",
     order_date: so.order_date,
     requested_delivery_date: so.requested_delivery_date ?? "",
+    requested_delivery_precision:
+      so.requested_delivery_precision === "week" ? "week" : "exact",
     currency: so.currency,
     notes: so.notes ?? "",
   };

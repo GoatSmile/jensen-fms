@@ -23,6 +23,7 @@ import { SegmentedId } from "@/components/segmented-id";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
+import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
 import {
   SO_STATUS_VARIANT,
@@ -39,7 +40,7 @@ export default async function SalesOrdersListPage() {
     .from("sales_orders")
     .select(
       `id, sales_order_number, status, order_date, requested_delivery_date,
-       total_amount, currency,
+       requested_delivery_precision, total_amount, currency,
        organization:organizations!organization_id(id, legal_name, display_name_en, display_name_da)`,
     )
     .order("order_date", { ascending: false });
@@ -141,7 +142,10 @@ export default async function SalesOrdersListPage() {
                       {formatDate(so.order_date)}
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden text-xs lg:table-cell">
-                      {formatDate(so.requested_delivery_date)}
+                      {formatDeliveryTarget(
+                        so.requested_delivery_date,
+                        so.requested_delivery_precision,
+                      ) ?? "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {so.total_amount != null

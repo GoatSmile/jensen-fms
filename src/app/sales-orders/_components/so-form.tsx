@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,6 +44,7 @@ export type SOFormValues = {
   language: "da" | "en";
   order_date: string;
   requested_delivery_date: string;
+  requested_delivery_precision: "exact" | "week";
   currency: string;
   notes: string;
 };
@@ -54,6 +56,7 @@ export const EMPTY_SO_FORM: SOFormValues = {
   language: "da",
   order_date: new Date().toISOString().slice(0, 10),
   requested_delivery_date: "",
+  requested_delivery_precision: "exact",
   currency: "DKK",
   notes: "",
 };
@@ -122,6 +125,11 @@ export function SOForm({
       fd,
       "requested_delivery_date",
       values.requested_delivery_date,
+    );
+    appendField(
+      fd,
+      "requested_delivery_precision",
+      values.requested_delivery_precision,
     );
     appendField(fd, "currency", values.currency);
     appendField(fd, "notes", values.notes);
@@ -266,11 +274,14 @@ export function SOForm({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="so-delivery-date">Requested delivery</Label>
-          <Input
+          <DeliveryWeekDateField
             id="so-delivery-date"
-            type="date"
-            value={values.requested_delivery_date}
-            onChange={(e) => update("requested_delivery_date", e.target.value)}
+            date={values.requested_delivery_date}
+            precision={values.requested_delivery_precision}
+            onChange={(date, precision) => {
+              update("requested_delivery_date", date);
+              update("requested_delivery_precision", precision);
+            }}
           />
         </div>
         <div className="flex flex-col gap-1.5">

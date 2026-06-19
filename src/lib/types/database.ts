@@ -2750,6 +2750,7 @@ export type Database = {
           organization_id: string
           organization_unit_id: string | null
           requested_delivery_date: string | null
+          requested_delivery_precision: string | null
           sales_order_number: string
           status: Database["public"]["Enums"]["sales_order_status"]
           subtotal_amount: number | null
@@ -2771,6 +2772,7 @@ export type Database = {
           organization_id: string
           organization_unit_id?: string | null
           requested_delivery_date?: string | null
+          requested_delivery_precision?: string | null
           sales_order_number: string
           status?: Database["public"]["Enums"]["sales_order_status"]
           subtotal_amount?: number | null
@@ -2792,6 +2794,7 @@ export type Database = {
           organization_id?: string
           organization_unit_id?: string | null
           requested_delivery_date?: string | null
+          requested_delivery_precision?: string | null
           sales_order_number?: string
           status?: Database["public"]["Enums"]["sales_order_status"]
           subtotal_amount?: number | null
