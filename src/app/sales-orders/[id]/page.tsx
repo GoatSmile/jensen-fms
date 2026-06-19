@@ -246,7 +246,7 @@ export default async function SODetailPage({
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
         <Stat label="Order date">{formatDate(so.order_date)}</Stat>
-        <Stat label="Requested delivery">
+        <Stat label="Expected delivery">
           {formatDeliveryTarget(
             so.requested_delivery_date,
             so.requested_delivery_precision,

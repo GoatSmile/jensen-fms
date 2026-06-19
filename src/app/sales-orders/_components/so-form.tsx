@@ -287,7 +287,7 @@ export function SOForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-delivery-date">Requested delivery</Label>
+          <Label htmlFor="so-delivery-date">Expected delivery</Label>
           <DeliveryWeekDateField
             id="so-delivery-date"
             date={values.requested_delivery_date}

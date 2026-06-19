@@ -99,7 +99,7 @@ export default async function SalesOrdersListPage() {
                   Order date
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">
-                  Requested delivery
+                  Expected delivery
                 </TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
