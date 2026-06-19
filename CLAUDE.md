@@ -377,6 +377,56 @@ Remaining 3D-adjacent work: OIOUBL/e-invoicing transmission lands with 3E.
 (Parked ideas below) as the parallel innovation track — v1 voicemail-only
 shadow mode is low-risk whenever a change of pace is wanted.
 
+### Dennis app-review backlog (call 2026-06-19)
+
+Requirements pulled from the 84-min Dennis app-review call, each verified
+against live code before sequencing. **Locked decisions:** first slice =
+core daily flow; RAL + coating → extend the controlled `colors` table (not
+free-text); payments & stock value → deferred to its own session; PO email
+→ **Resend** (transactional API; verify `jensenproduction.dk` DNS, from =
+`deej@jensenproduction.dk`, reply-to = his inbox).
+
+**Tier 0–1 core daily flow — items 1–6 SHIPPED (2026-06-19):**
+1. ✅ PO line unit price optional ([c4bb80a]) — "price pending", receiving
+   blocked until priced.
+2. ✅ Template cost-to-produce total + margin ([365fc48]).
+3. ✅ Template recipe unsaved-changes guard ([0bfb298]); reusable hook.
+4. ✅ Bike shows its sales order ([efdff9f]) — detail + list.
+5. ✅ Invoice-from-SO sets `is_export`/`is_reverse_charge` from line VAT
+   codes ([9241c78]) — Iceland export note now prints.
+6. ✅ Part-category admin CRUD at `/admin/categories` ([1760cd0]) — unblocks
+   "wheel sets"; first write-path to `part_categories`.
+
+**Remaining core-flow (items 7–11, not started):**
+7. HS-code picker → searchable combobox (flat list today; optional
+   category narrowing — no category↔HS table exists yet).
+8. Delivery as ISO week + "expected" label on SO *and* MO (store Monday of
+   the week + a precision flag; keep exact-date option).
+9. RAL colour + coating on the SO line — add `coating` to `colors`, seed
+   RAL+coating rows, surface `ral_code` (column exists, unused); capture on
+   SO line now, wire into paint orders in Tier 2.
+10. SO currency picker exposed (header-level, defaults DKK; EUR/USD).
+11. Supplier emails — `email_primary`/`email_secondary` exist; surface/label
+    on the supplier form (prep for Tier 3 PO email).
+
+**Tier 2 — SO → paint → build pipeline (biggest; correctness epic):**
+12. Deliberate build step — stop auto-advance to `in_stock` + silent MO
+    auto-complete; gate "Finish" behind a real frame number.
+13. Identifiers entered in the build workbench, per bike (frame required).
+14. Paint order from the SO — "needs painter" flag → paint order for a
+    *subset* of frames; back-link SO ↔ paint.
+15. Paint gates build — a frame at the painter can't be built;
+    `received_back` frees it (today that transition doesn't touch bikes).
+16. Labeling note that flows SO → build floor (e.g. service-contract munis).
+
+**Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
+zero email/PDF infra today). **Tier 4 — payments & stock value** (down
+payments, pre-paid parts, partial invoicing, stock-valuation report;
+deferred — tangles with Danish VAT-on-prepayment, a revisor question).
+**Tier 5 — deferred:** offers/quotes module (price breakdown lives here);
+service-contract → auto-add to maintenance fleet. Website/marketing copy is
+not app work. Commitment to Dennis: core flow usable "by next week".
+
 ### Carry-over data notes
 - **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
   variants (`JP-AND-M100-PWR`, `JP-AND-M100-CS`, `JP-AND-DSP-NTC`),
