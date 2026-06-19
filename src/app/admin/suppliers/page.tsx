@@ -21,7 +21,7 @@ export default async function AdminSuppliersPage() {
   const [suppliersRes, offeringsRes] = await Promise.all([
     supabase
       .from("suppliers")
-      .select("id, name, country_code, default_currency, is_active")
+      .select("id, name, country_code, default_currency, is_active, email_primary")
       .is("deleted_at", null)
       .order("is_active", { ascending: false })
       .order("name", { ascending: true }),
@@ -49,6 +49,7 @@ export default async function AdminSuppliersPage() {
     defaultCurrency: s.default_currency,
     isActive: s.is_active,
     partCount: partsBySupplier.get(s.id) ?? 0,
+    emailPrimary: s.email_primary ?? null,
   }));
 
   return (

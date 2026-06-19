@@ -20,6 +20,8 @@ export type SupplierRow = {
   defaultCurrency: string | null;
   isActive: boolean;
   partCount: number;
+  /** Primary contact email (where POs will be sent); null when not yet set. */
+  emailPrimary: string | null;
 };
 
 /**
@@ -58,6 +60,7 @@ export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                 <TableHead>Supplier</TableHead>
                 <TableHead className="hidden sm:table-cell">Country</TableHead>
                 <TableHead className="hidden md:table-cell">Currency</TableHead>
+                <TableHead className="hidden lg:table-cell">Email</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
                   Parts
                 </TableHead>
@@ -91,6 +94,17 @@ export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                       <Link href={href} className="block px-4 py-2.5">
                         {row.defaultCurrency ?? (
                           <span className="text-muted-foreground">—</span>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 font-mono text-xs lg:table-cell">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.emailPrimary ? (
+                          <span className="break-all">{row.emailPrimary}</span>
+                        ) : (
+                          <span className="font-sans text-amber-700 dark:text-amber-400">
+                            Set email
+                          </span>
                         )}
                       </Link>
                     </TableCell>
