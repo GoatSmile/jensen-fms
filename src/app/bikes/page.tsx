@@ -103,6 +103,10 @@ export default async function BikesPage({
         bike_type:bike_types(id, name_en),
         template:bike_templates(id, name_en, family, frame_size, version),
         color:colors(id, name_en, hex),
+        manufacturing_order:manufacturing_orders(
+          id,
+          sales_order:sales_orders!sales_order_id(id, sales_order_number)
+        ),
         owner_organization:organizations!owner_organization_id(
           id, legal_name, display_name_en, display_name_da
         )
@@ -273,6 +277,7 @@ export default async function BikesPage({
                 <TableHead className="hidden lg:table-cell">Colour</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden lg:table-cell">Owner</TableHead>
+                <TableHead className="hidden xl:table-cell">Sales order</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -341,6 +346,23 @@ export default async function BikesPage({
                         {b.owner_organization.display_name_da ??
                           b.owner_organization.display_name_en ??
                           b.owner_organization.legal_name}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/bikes/${b.id}`}
+                        className="text-muted-foreground block px-4 py-2.5 text-sm"
+                      >
+                        —
+                      </Link>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden p-0 xl:table-cell">
+                    {b.manufacturing_order?.sales_order ? (
+                      <Link
+                        href={`/sales-orders/${b.manufacturing_order.sales_order.id}`}
+                        className="block px-4 py-2.5 font-mono text-xs hover:underline"
+                      >
+                        {b.manufacturing_order.sales_order.sales_order_number}
                       </Link>
                     ) : (
                       <Link

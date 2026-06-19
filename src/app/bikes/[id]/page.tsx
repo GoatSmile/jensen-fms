@@ -75,7 +75,10 @@ export default async function BikeDetailPage({
             bike_type:bike_types(id, name_en),
             template:bike_templates(id, name_en, family, frame_size, version),
             color:colors(id, slug, name_en, hex),
-            manufacturing_order:manufacturing_orders(id, mo_number, status),
+            manufacturing_order:manufacturing_orders(
+              id, mo_number, status,
+              sales_order:sales_orders!sales_order_id(id, sales_order_number)
+            ),
             owner_organization:organizations!owner_organization_id(
               id, legal_name, display_name_en, display_name_da,
               segment:customer_segments(name_en)
@@ -366,6 +369,18 @@ export default async function BikeDetailPage({
               </Link>
             ) : (
               <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Sales order">
+            {b.manufacturing_order?.sales_order ? (
+              <Link
+                href={`/sales-orders/${b.manufacturing_order.sales_order.id}`}
+                className="font-mono text-xs hover:underline"
+              >
+                {b.manufacturing_order.sales_order.sales_order_number}
+              </Link>
+            ) : (
+              <Muted>Stock build</Muted>
             )}
           </Field>
           <Field label="Owner">
