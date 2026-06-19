@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   flattenCategoryTree,
@@ -99,6 +100,20 @@ export function PartForm({
   const categoryNodes = useMemo(
     () => flattenCategoryTree(categories),
     [categories],
+  );
+  // The HS list can run to hundreds of codes — a searchable combobox beats a
+  // flat Select. The sentinel "none" row sits first; codes are searchable by
+  // both code and description (the combobox matches label + sublabel).
+  const hsOptions = useMemo<ComboboxOption[]>(
+    () => [
+      { value: NO_HS_CODE, label: "Unclassified — no import duty applied" },
+      ...hsCodes.map((hs) => ({
+        value: hs.id,
+        label: hs.code,
+        sublabel: `${hs.description} · ${(hs.tariffPct * 100).toFixed(2)}%`,
+      })),
+    ],
+    [hsCodes],
   );
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -241,31 +256,18 @@ export function PartForm({
           htmlFor="hs_code_id"
           error={errorField === "hs_code_id" ? error : null}
         >
-          <Select
+          <Combobox
+            id="hs_code_id"
             value={values.hs_code_id === "" ? NO_HS_CODE : values.hs_code_id}
             onValueChange={(v) =>
               update("hs_code_id", v === NO_HS_CODE ? "" : v)
             }
-          >
-            <SelectTrigger id="hs_code_id">
-              <SelectValue placeholder="Unclassified" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_HS_CODE}>
-                <span className="text-muted-foreground italic">
-                  Unclassified — no import duty applied
-                </span>
-              </SelectItem>
-              {hsCodes.map((hs) => (
-                <SelectItem key={hs.id} value={hs.id}>
-                  <span className="font-mono">{hs.code}</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    {hs.description} · {(hs.tariffPct * 100).toFixed(2)}%
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={hsOptions}
+            placeholder="Unclassified"
+            searchPlaceholder="Search code or description…"
+            emptyMessage="No matching HS code."
+            className="h-9 w-full"
+          />
         </Field>
         <Field
           label="Tariff override (%)"
