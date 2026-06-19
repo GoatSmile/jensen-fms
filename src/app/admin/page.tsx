@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { Coins, Package, Palette, Percent, Tag, Truck, Users } from "lucide-react";
+import {
+  Coins,
+  FolderTree,
+  Package,
+  Palette,
+  Percent,
+  Tag,
+  Truck,
+  Users,
+} from "lucide-react";
 
 import {
   Breadcrumb,
@@ -31,6 +40,7 @@ export default async function AdminLandingPage() {
     segmentsRes,
     suppliersRes,
     kitsRes,
+    categoriesRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -64,6 +74,11 @@ export default async function AdminLandingPage() {
       .from("kits")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    supabase
+      .from("part_categories")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true)
+      .is("deleted_at", null),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -75,6 +90,7 @@ export default async function AdminLandingPage() {
   const activeSegmentCount = segmentsRes.count ?? 0;
   const activeSupplierCount = suppliersRes.count ?? 0;
   const activeKitCount = kitsRes.count ?? 0;
+  const activeCategoryCount = categoriesRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -101,6 +117,13 @@ export default async function AdminLandingPage() {
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Tile
+          href="/admin/categories"
+          icon={FolderTree}
+          title="Part categories"
+          description="The hierarchy parts are classified under. Every part carries one."
+          stat={`${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}`}
+        />
         <Tile
           href="/admin/hs-codes"
           icon={Tag}
