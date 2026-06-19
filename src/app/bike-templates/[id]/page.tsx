@@ -78,6 +78,7 @@ export default async function BikeTemplateDetailPage({
     chainPartCountsRes,
     kitsRes,
     kitMembershipsRes,
+    lastCostRes,
   ] = await Promise.all([
     supabase
       .from("bike_template_parts")
@@ -118,7 +119,20 @@ export default async function BikeTemplateDetailPage({
       .order("sticker_color", { ascending: true })
       .order("kit_number", { ascending: true, nullsFirst: true }),
     supabase.from("part_kits").select("part_id, kit_id"),
+    // Last landed purchase cost per part (additive transport+tariff+anti-dumping,
+    // frozen at purchase) — the same figure the MO build-cost projection uses.
+    // Drives the "cost to produce" total Dennis asked for.
+    supabase.from("v_part_last_cost").select("part_id, last_cost_dkk"),
   ]);
+
+  // part_id → last landed cost (DKK/unit). Parts with no purchase history are
+  // absent and surface as "uncosted" in the recipe summary.
+  const costByPart = new Map<string, number>();
+  for (const row of lastCostRes.data ?? []) {
+    if (row.part_id != null && row.last_cost_dkk != null) {
+      costByPart.set(row.part_id, Number(row.last_cost_dkk));
+    }
+  }
 
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
     .map((row) => ({
@@ -135,6 +149,7 @@ export default async function BikeTemplateDetailPage({
         (row.parts.default_retail_currency ?? "DKK") === "DKK"
           ? Number(row.parts.default_retail_price)
           : null,
+      costDkk: row.parts?.id ? costByPart.get(row.parts.id) ?? null : null,
     }))
     .filter((r) => r.partId !== "")
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
@@ -156,6 +171,7 @@ export default async function BikeTemplateDetailPage({
       (p.default_retail_currency ?? "DKK") === "DKK"
         ? Number(p.default_retail_price)
         : null,
+    costDkk: costByPart.get(p.id) ?? null,
   }));
 
   const chainCounts = new Map<string, number>();

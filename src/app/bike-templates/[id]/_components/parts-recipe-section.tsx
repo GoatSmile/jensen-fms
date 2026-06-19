@@ -41,6 +41,8 @@ export type PartInCategory = {
   category_id: string | null;
   /** Customer (retail) price in DKK; null when unset or non-DKK. */
   retailDkk: number | null;
+  /** Last landed purchase cost in DKK/unit; null when no purchase history. */
+  costDkk: number | null;
 };
 
 export type RecipeRow = {
@@ -55,6 +57,8 @@ export type RecipeRow = {
   notes: string;
   /** Customer (retail) price in DKK; null when unset or non-DKK. */
   retailDkk: number | null;
+  /** Last landed purchase cost in DKK/unit; null when no purchase history. */
+  costDkk: number | null;
 };
 
 type Props = {
@@ -221,6 +225,20 @@ export function PartsRecipeSection({
     return { sum, unpriced };
   }, [rows]);
 
+  // What the bike costs us to build: sum of last landed purchase costs.
+  // Rows without purchase history are counted as "uncosted" so the gap is
+  // visible rather than silently understating the figure.
+  const costTotal = useMemo(() => {
+    let sum = 0;
+    let uncosted = 0;
+    for (const r of rows) {
+      const qty = Number(r.quantity);
+      if (r.costDkk == null) uncosted += 1;
+      else if (Number.isFinite(qty)) sum += qty * r.costDkk;
+    }
+    return { sum, uncosted };
+  }, [rows]);
+
   function onPickFromCategory(category: CategoryOption, partId: string) {
     if (!partId || partId === "__placeholder__") return;
     const part = partsByCategory.get(category.id)?.find((p) => p.id === partId);
@@ -237,6 +255,7 @@ export function PartsRecipeSection({
         isOptional: false,
         notes: "",
         retailDkk: part.retailDkk,
+        costDkk: part.costDkk,
       },
     ]);
     // Reset the picker so it reads the placeholder again, ready for another.
@@ -271,6 +290,7 @@ export function PartsRecipeSection({
         isOptional: false,
         notes: "",
         retailDkk: part.retailDkk,
+        costDkk: part.costDkk,
       })),
     ]);
     setSuccess(null);
@@ -353,6 +373,13 @@ export function PartsRecipeSection({
               <>
                 {" · "}
                 <span className="text-foreground font-medium tabular-nums">
+                  parts cost {formatDkk(costTotal.sum)}
+                </span>
+                {costTotal.uncosted > 0
+                  ? ` (${costTotal.uncosted} uncosted)`
+                  : null}
+                {" · "}
+                <span className="tabular-nums">
                   parts retail {formatDkk(retailTotal.sum)}
                 </span>
                 {retailTotal.unpriced > 0
@@ -555,10 +582,39 @@ export function PartsRecipeSection({
                     );
                   })}
 
-                {/* Margin sanity-check: parts retail vs the template's own
-                    sale price, live while composing. */}
+                {/* Cost to produce + margin sanity-check, live while composing.
+                    Cost = last landed purchase cost; retail = parts' customer
+                    prices; margin compares the template sale price to cost. */}
                 <div className="bg-muted/20 flex flex-col gap-1 rounded-md border px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">
+                      Parts cost (to produce)
+                      {costTotal.uncosted > 0 ? (
+                        <span className="text-muted-foreground text-xs">
+                          {" "}
+                          ({costTotal.uncosted} uncosted)
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="font-semibold tabular-nums">
+                      {formatDkk(costTotal.sum)}
+                    </span>
+                  </div>
+                  {templateRetailDkk != null ? (
+                    <div
+                      className={`flex items-center justify-between gap-2 text-xs ${
+                        templateRetailDkk - costTotal.sum < 0
+                          ? "text-destructive font-medium"
+                          : "text-emerald-700 dark:text-emerald-400"
+                      }`}
+                    >
+                      <span>Margin (sale price − cost)</span>
+                      <span className="tabular-nums">
+                        {formatDkk(templateRetailDkk - costTotal.sum)}
+                      </span>
+                    </div>
+                  ) : null}
+                  <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1">
                     <span>
                       Parts retail total
                       {retailTotal.unpriced > 0 ? (
