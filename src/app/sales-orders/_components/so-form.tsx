@@ -24,6 +24,10 @@ export type OrgOption = {
   id: string;
   name: string;
   default_vat_code: string | null;
+  /** Customer's billing currency — seeds a new SO's currency. */
+  billing_currency: string | null;
+  /** Customer's preferred language — seeds a new SO's language. */
+  preferred_language: "da" | "en";
 };
 export type OrgUnitOption = {
   id: string;
@@ -112,6 +116,16 @@ export function SOForm({
     // Clear unit/contact when customer changes — they belong to the old org.
     update("organization_unit_id", "");
     update("contact_id", "");
+    // On a NEW order, seed currency + language from the customer (an Iceland
+    // export customer billed in EUR shouldn't default to DKK). In edit mode we
+    // leave the existing choices alone — they may have been set deliberately.
+    if (mode === "create") {
+      const org = organizations.find((o) => o.id === orgId);
+      if (org) {
+        update("currency", org.billing_currency ?? "DKK");
+        update("language", org.preferred_language);
+      }
+    }
   }
 
   function buildFormData(): FormData {

@@ -25,7 +25,7 @@ export default async function NewSOPage() {
     supabase
       .from("organizations")
       .select(
-        "id, legal_name, display_name_en, display_name_da, default_vat_code",
+        "id, legal_name, display_name_en, display_name_da, default_vat_code, billing_currency, preferred_language",
       )
       .is("deleted_at", null)
       .eq("is_active", true)
@@ -51,6 +51,8 @@ export default async function NewSOPage() {
     id: o.id,
     name: o.display_name_da ?? o.display_name_en ?? o.legal_name,
     default_vat_code: o.default_vat_code,
+    billing_currency: o.billing_currency,
+    preferred_language: o.preferred_language === "en" ? "en" : "da",
   }));
   const units: OrgUnitOption[] = unitsRes.data ?? [];
   const contacts: ContactOption[] = (contactsRes.data ?? []).map((c) => ({
