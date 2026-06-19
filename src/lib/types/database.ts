@@ -2486,7 +2486,7 @@ export type Database = {
           received_quantity: number
           tariff_pct: number
           transport_pct: number
-          unit_price: number
+          unit_price: number | null
           updated_at: string
         }
         Insert: {
@@ -2503,7 +2503,7 @@ export type Database = {
           received_quantity?: number
           tariff_pct?: number
           transport_pct?: number
-          unit_price: number
+          unit_price?: number | null
           updated_at?: string
         }
         Update: {
@@ -2520,7 +2520,7 @@ export type Database = {
           received_quantity?: number
           tariff_pct?: number
           transport_pct?: number
-          unit_price?: number
+          unit_price?: number | null
           updated_at?: string
         }
         Relationships: [

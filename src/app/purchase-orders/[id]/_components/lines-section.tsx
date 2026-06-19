@@ -40,7 +40,8 @@ export type POLineRow = {
   partSku: string;
   partName: string;
   quantity: number;
-  unitPrice: number;
+  /** Nullable — a PO request can be created before the supplier quotes a price. */
+  unitPrice: number | null;
   currency: string;
   fxRateToDkk: number;
   /** Decimal 0.10 = 10 %. */
@@ -50,7 +51,8 @@ export type POLineRow = {
   /** Decimal — EU anti-dumping duty (0 = none). Snapshotted alongside
    *  tariffPct and added into the landed-cost formula. */
   antiDumpingPct: number;
-  landedDkkPerUnit: number;
+  /** Nullable — NULL while the line's unit_price is blank (price pending). */
+  landedDkkPerUnit: number | null;
   receivedQuantity: number;
   notes: string | null;
 };
@@ -196,19 +198,27 @@ export function LinesSection({
                         {formatQuantity(row.quantity)}
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                        <div>
-                          <Money
-                            amount={row.unitPrice}
-                            currency={row.currency}
-                            fractionDigits={4}
-                            bold={false}
-                          />
-                        </div>
-                        {foreignCurrency ? (
-                          <div className="text-muted-foreground text-[10px]">
-                            in {row.currency}
-                          </div>
-                        ) : null}
+                        {row.unitPrice == null ? (
+                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            price pending
+                          </span>
+                        ) : (
+                          <>
+                            <div>
+                              <Money
+                                amount={row.unitPrice}
+                                currency={row.currency}
+                                fractionDigits={4}
+                                bold={false}
+                              />
+                            </div>
+                            {foreignCurrency ? (
+                              <div className="text-muted-foreground text-[10px]">
+                                in {row.currency}
+                              </div>
+                            ) : null}
+                          </>
+                        )}
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums lg:table-cell">
                         {formatFxRate(row.fxRateToDkk)}

@@ -50,7 +50,8 @@ export type LineDialogInitial = {
   partId: string;
   partLabel: string;
   quantity: number;
-  unitPrice: number;
+  /** Nullable — a PO request can carry a line whose price isn't known yet. */
+  unitPrice: number | null;
   currency: string;
   fxRateToDkk: number;
   /** Decimal 0.10 = 10 %. */
@@ -108,7 +109,9 @@ export function LineDialog({
   const initialQty =
     mode.kind === "edit" ? String(mode.initial.quantity) : "1";
   const initialPrice =
-    mode.kind === "edit" ? String(mode.initial.unitPrice) : "";
+    mode.kind === "edit" && mode.initial.unitPrice != null
+      ? String(mode.initial.unitPrice)
+      : "";
   const initialCurrency =
     mode.kind === "edit" ? mode.initial.currency : "DKK";
   const initialFx =
@@ -411,8 +414,12 @@ export function LineDialog({
                 inputMode="decimal"
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
-                required
+                placeholder="Optional"
               />
+              <p className="text-muted-foreground text-[11px] leading-tight">
+                Leave blank if the supplier hasn&apos;t quoted yet — fill it in
+                from the order confirmation before receiving.
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="line-currency">Currency</Label>

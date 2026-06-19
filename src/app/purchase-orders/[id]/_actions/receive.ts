@@ -67,11 +67,20 @@ export async function receivePurchaseOrder(
     return { ok: false, error: "One or more lines could not be found on this PO." };
   }
 
-  // Validate over-receipt before writing anything.
+  // Validate over-receipt + unpriced lines before writing anything.
   for (const r of receipts) {
     const line = lines.find((l) => l.id === r.lineId);
     if (!line) {
       return { ok: false, error: `Unknown line ${r.lineId}.` };
+    }
+    // A line with no price yet has a NULL landed cost; receiving it would stamp
+    // a NULL cost basis onto inventory. Block until the price is entered.
+    if (line.landed_cost_dkk_per_unit == null) {
+      return {
+        ok: false,
+        error:
+          "This line has no price yet. Enter the unit price (from the supplier's order confirmation) before receiving it.",
+      };
     }
     const outstanding =
       Number(line.quantity) - Number(line.received_quantity);

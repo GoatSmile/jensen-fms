@@ -119,13 +119,16 @@ export default async function PurchaseOrderDetailPage({
     partSku: l.parts?.internal_sku ?? "—",
     partName: l.parts?.name_en ?? "—",
     quantity: Number(l.quantity),
-    unitPrice: Number(l.unit_price),
+    unitPrice: l.unit_price == null ? null : Number(l.unit_price),
     currency: l.currency,
     fxRateToDkk: Number(l.fx_rate_to_dkk),
     transportPct: Number(l.transport_pct),
     tariffPct: Number(l.tariff_pct ?? 0),
     antiDumpingPct: Number(l.anti_dumping_pct ?? 0),
-    landedDkkPerUnit: Number(l.landed_cost_dkk_per_unit ?? 0),
+    landedDkkPerUnit:
+      l.landed_cost_dkk_per_unit == null
+        ? null
+        : Number(l.landed_cost_dkk_per_unit),
     receivedQuantity: Number(l.received_quantity),
     notes: l.notes,
   }));
@@ -138,9 +141,12 @@ export default async function PurchaseOrderDetailPage({
     partName: l.parts?.name_en ?? "—",
     quantity: Number(l.quantity),
     receivedQuantity: Number(l.received_quantity),
-    unitPrice: Number(l.unit_price),
+    unitPrice: l.unit_price == null ? null : Number(l.unit_price),
     currency: l.currency,
-    landedDkkPerUnit: Number(l.landed_cost_dkk_per_unit ?? 0),
+    landedDkkPerUnit:
+      l.landed_cost_dkk_per_unit == null
+        ? null
+        : Number(l.landed_cost_dkk_per_unit),
   }));
 
   const locationOptions: LocationOption[] = (locationsRes.data ?? []).map(
@@ -181,10 +187,14 @@ export default async function PurchaseOrderDetailPage({
   );
   // Landed total in DKK from the lines (matches the list / v_po_totals):
   // includes transport, tariff and anti-dumping, unified across currencies.
-  const landedTotalDkk = poLineRows.reduce(
-    (s, l) => s + l.quantity * l.landedDkkPerUnit,
-    0,
-  );
+  // Partial total over priced lines only — unpriced lines (NULL landed cost)
+  // are skipped, matching v_po_totals' SUM(). Stays null until at least one
+  // line has a price, so the header shows "—" instead of a misleading 0,00 kr.
+  let landedTotalDkk: number | null = null;
+  for (const l of poLineRows) {
+    if (l.landedDkkPerUnit == null) continue;
+    landedTotalDkk = (landedTotalDkk ?? 0) + l.quantity * l.landedDkkPerUnit;
+  }
 
   // The receive form should only render when the PO is mid-flight. Drafts
   // can't be received against (no order placed yet); cancelled/received

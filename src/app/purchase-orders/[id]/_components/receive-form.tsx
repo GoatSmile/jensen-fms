@@ -34,9 +34,11 @@ export type LineRow = {
   partName: string;
   quantity: number;
   receivedQuantity: number;
-  unitPrice: number;
+  /** Nullable — a line whose price hasn't been entered yet. */
+  unitPrice: number | null;
   currency: string;
-  landedDkkPerUnit: number;
+  /** NULL while the line is unpriced; such lines can't be received yet. */
+  landedDkkPerUnit: number | null;
 };
 
 export type LocationOption = {
@@ -236,7 +238,9 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
                         />
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatDkk(line.landedDkkPerUnit)}
+                        {line.landedDkkPerUnit == null
+                          ? "—"
+                          : formatDkk(line.landedDkkPerUnit)}
                       </TableCell>
                       <TableCell>
                         {outstanding === 0 ? (
@@ -246,6 +250,10 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
                         ) : isClosed ? (
                           <span className="text-muted-foreground text-xs">
                             PO closed
+                          </span>
+                        ) : line.landedDkkPerUnit == null ? (
+                          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                            Enter price first
                           </span>
                         ) : (
                           <div className="flex items-center gap-1.5">

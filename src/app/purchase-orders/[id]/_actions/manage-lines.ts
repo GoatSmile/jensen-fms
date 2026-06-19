@@ -19,7 +19,13 @@ export type ManageLinesResult = { ok: true } | { ok: false; error: string };
 type ParsedLineFields = {
   part_id: string;
   quantity: number;
-  unit_price: number;
+  /**
+   * Nullable — Dennis sends a PO "request" before the supplier has quoted, then
+   * fills the price from the order confirmation. A blank price is allowed; the
+   * DB's GENERATED landed cost is NULL until a price is entered, and receiving
+   * is blocked on unpriced lines (see receive.ts).
+   */
+  unit_price: number | null;
   currency: string;
   fx_rate_to_dkk: number;
   /** 0.10 = 10 %. Snapshotted onto the PO line. */
@@ -47,6 +53,20 @@ function parseNumeric(
   return { ok: true, value: n };
 }
 
+/**
+ * Like parseNumeric but a blank value resolves to null instead of an error.
+ * Used for the optional unit price on a PO request.
+ */
+function parseOptionalNumeric(
+  raw: string | null,
+  field: string,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (!raw || raw.trim() === "") return { ok: true, value: null };
+  const parsed = parseNumeric(raw, field, { allowZero: true });
+  if (!parsed.ok) return parsed;
+  return { ok: true, value: parsed.value };
+}
+
 function parseLineFields(
   formData: FormData,
 ): { ok: true; values: ParsedLineFields } | { ok: false; error: string } {
@@ -56,10 +76,9 @@ function parseLineFields(
   const qty = parseNumeric(nullable(formData.get("quantity")), "Quantity");
   if (!qty.ok) return { ok: false, error: qty.error };
 
-  const unit = parseNumeric(
+  const unit = parseOptionalNumeric(
     nullable(formData.get("unit_price")),
     "Unit price",
-    { allowZero: true },
   );
   if (!unit.ok) return { ok: false, error: unit.error };
 
