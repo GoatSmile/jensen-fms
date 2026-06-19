@@ -35,6 +35,13 @@ export async function createManufacturingOrder(
   const planned_completion_date = nullable(
     formData.get("planned_completion_date"),
   );
+  // Precision only means something when there's a date; clear it otherwise.
+  const precisionRaw = nullable(formData.get("planned_completion_precision"));
+  const planned_completion_precision = !planned_completion_date
+    ? null
+    : precisionRaw === "week"
+      ? "week"
+      : "exact";
   const notes = nullable(formData.get("notes"));
 
   if (!targetRaw) {
@@ -125,6 +132,7 @@ export async function createManufacturingOrder(
       status: "planned",
       planned_start_date,
       planned_completion_date,
+      planned_completion_precision,
       notes,
     })
     .select("id")

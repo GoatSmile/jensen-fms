@@ -45,6 +45,12 @@ export async function createManufacturingOrdersBatch(
   const planned_completion_date = nullable(
     formData.get("planned_completion_date"),
   );
+  const precisionRaw = nullable(formData.get("planned_completion_precision"));
+  const planned_completion_precision = !planned_completion_date
+    ? null
+    : precisionRaw === "week"
+      ? "week"
+      : "exact";
   const notes = nullable(formData.get("notes"));
   const createBikes = nullable(formData.get("create_bikes")) === "true";
 
@@ -155,6 +161,7 @@ export async function createManufacturingOrdersBatch(
         status: "planned",
         planned_start_date,
         planned_completion_date,
+        planned_completion_precision,
         notes,
       })
       .select("id")

@@ -81,7 +81,7 @@ export async function spawnMOFromSOLine(
 
   const { data: so, error: soErr } = await supabase
     .from("sales_orders")
-    .select("id, status, requested_delivery_date")
+    .select("id, status, requested_delivery_date, requested_delivery_precision")
     .eq("id", soId)
     .maybeSingle();
   if (soErr || !so) {
@@ -136,6 +136,7 @@ export async function spawnMOFromSOLine(
       sales_order_id: soId,
       sales_order_line_id: lineId,
       planned_completion_date: so.requested_delivery_date ?? null,
+      planned_completion_precision: so.requested_delivery_precision ?? null,
     })
     .select("id")
     .single();

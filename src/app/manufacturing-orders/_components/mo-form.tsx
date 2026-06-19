@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
+import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { appendField } from "@/lib/forms";
 
 import { createManufacturingOrder } from "../_actions/save-mo";
@@ -58,6 +59,7 @@ export type MOFormValues = {
   target_quantity: string;
   planned_start_date: string;
   planned_completion_date: string;
+  planned_completion_precision: "exact" | "week";
   notes: string;
 };
 
@@ -68,6 +70,7 @@ export const EMPTY_MO_FORM: MOFormValues = {
   target_quantity: "1",
   planned_start_date: "",
   planned_completion_date: "",
+  planned_completion_precision: "exact",
   notes: "",
 };
 
@@ -113,6 +116,11 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
     appendField(fd, "target_quantity", values.target_quantity);
     appendField(fd, "planned_start_date", values.planned_start_date);
     appendField(fd, "planned_completion_date", values.planned_completion_date);
+    appendField(
+      fd,
+      "planned_completion_precision",
+      values.planned_completion_precision,
+    );
     appendField(fd, "notes", values.notes);
     return fd;
   }
@@ -279,14 +287,15 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               onChange={(e) => update("planned_start_date", e.target.value)}
             />
           </Field>
-          <Field label="Planned completion date" htmlFor="mo-end">
-            <Input
+          <Field label="Planned completion" htmlFor="mo-end">
+            <DeliveryWeekDateField
               id="mo-end"
-              type="date"
-              value={values.planned_completion_date}
-              onChange={(e) =>
-                update("planned_completion_date", e.target.value)
-              }
+              date={values.planned_completion_date}
+              precision={values.planned_completion_precision}
+              onChange={(date, precision) => {
+                update("planned_completion_date", date);
+                update("planned_completion_precision", precision);
+              }}
             />
           </Field>
         </div>

@@ -13,6 +13,7 @@ import {
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
+import { formatDeliveryTarget } from "@/lib/iso-week";
 import type { BikeStatus } from "@/lib/bikes/status";
 import type { MOStatus } from "@/lib/mo/status";
 import { nextFrameNumberFromDb } from "@/lib/bikes/frame-number";
@@ -47,7 +48,7 @@ export default async function ManufacturingOrderDetailPage({
     .select(
       `
         id, mo_number, status, target_quantity, completed_quantity,
-        planned_start_date, planned_completion_date,
+        planned_start_date, planned_completion_date, planned_completion_precision,
         actual_start_date, actual_completion_date,
         notes, created_at,
         bike_template_id, bike_type_id, color_id,
@@ -392,7 +393,10 @@ export default async function ManufacturingOrderDetailPage({
             {formatDate(mo.planned_start_date)}
           </Field>
           <Field label="Planned completion">
-            {formatDate(mo.planned_completion_date)}
+            {formatDeliveryTarget(
+              mo.planned_completion_date,
+              mo.planned_completion_precision,
+            ) ?? "—"}
           </Field>
           <Field label="Actual start">
             {formatDate(mo.actual_start_date)}

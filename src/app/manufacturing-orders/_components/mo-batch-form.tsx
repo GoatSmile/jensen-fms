@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
 import { Field } from "@/components/field";
+import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { appendField } from "@/lib/forms";
 
 import { isServiceSku } from "@/lib/manufacturing/coverage";
@@ -94,6 +95,7 @@ export function MOBatchForm({
   const [showShortfall, setShowShortfall] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [endPrecision, setEndPrecision] = useState<"exact" | "week">("exact");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [errorRow, setErrorRow] = useState<number | null>(null);
@@ -258,6 +260,7 @@ export function MOBatchForm({
       appendField(fd, "rows", JSON.stringify(payload));
       appendField(fd, "planned_start_date", startDate);
       appendField(fd, "planned_completion_date", endDate);
+      appendField(fd, "planned_completion_precision", endPrecision);
       appendField(fd, "notes", notes);
       appendField(fd, "create_bikes", createBikes ? "true" : "false");
       const result = await createManufacturingOrdersBatch(fd);
@@ -576,12 +579,15 @@ export function MOBatchForm({
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </Field>
-            <Field label="Planned completion date" htmlFor="batch-end">
-              <Input
+            <Field label="Planned completion" htmlFor="batch-end">
+              <DeliveryWeekDateField
                 id="batch-end"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                date={endDate}
+                precision={endPrecision}
+                onChange={(date, precision) => {
+                  setEndDate(date);
+                  setEndPrecision(precision);
+                }}
               />
             </Field>
           </div>

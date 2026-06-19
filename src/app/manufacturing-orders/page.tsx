@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
+import { formatDeliveryTarget } from "@/lib/iso-week";
 import {
   MO_STATUS_VARIANT,
   OPEN_MO_STATUSES,
@@ -56,7 +57,7 @@ export default async function ManufacturingOrdersPage() {
     .select(
       `
         id, mo_number, status, target_quantity, completed_quantity,
-        planned_start_date, planned_completion_date, notes,
+        planned_start_date, planned_completion_date, planned_completion_precision, notes,
         bike_type:bike_types(id, name_en),
         bike_template:bike_templates(id, name_en, family, frame_size, version),
         color:colors(id, name_en, hex)
@@ -239,7 +240,14 @@ export default async function ManufacturingOrdersPage() {
                       >
                         {formatDate(mo.planned_start_date)}
                         {mo.planned_completion_date ? (
-                          <> – {formatDate(mo.planned_completion_date)}</>
+                          <>
+                            {" "}
+                            –{" "}
+                            {formatDeliveryTarget(
+                              mo.planned_completion_date,
+                              mo.planned_completion_precision,
+                            )}
+                          </>
                         ) : null}
                       </Link>
                     </TableCell>

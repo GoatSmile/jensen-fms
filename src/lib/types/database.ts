@@ -1451,6 +1451,7 @@ export type Database = {
           mo_number: string
           notes: string | null
           planned_completion_date: string | null
+          planned_completion_precision: string | null
           planned_start_date: string | null
           sales_order_id: string | null
           sales_order_line_id: string | null
@@ -1472,6 +1473,7 @@ export type Database = {
           mo_number: string
           notes?: string | null
           planned_completion_date?: string | null
+          planned_completion_precision?: string | null
           planned_start_date?: string | null
           sales_order_id?: string | null
           sales_order_line_id?: string | null
@@ -1493,6 +1495,7 @@ export type Database = {
           mo_number?: string
           notes?: string | null
           planned_completion_date?: string | null
+          planned_completion_precision?: string | null
           planned_start_date?: string | null
           sales_order_id?: string | null
           sales_order_line_id?: string | null
