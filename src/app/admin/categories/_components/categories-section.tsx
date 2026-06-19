@@ -1,8 +1,12 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus, CornerDownRight } from "lucide-react";
+import { ChevronRight, Plus, CornerDownRight, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,33 +27,70 @@ export type CategoryRow = {
 };
 
 /**
- * Server component — rows are <Link>s into /admin/categories/[id]. Edit +
- * Archive live on the detail page, matching /admin/hs-codes and
- * /admin/colors. Rows are pre-flattened depth-first; `depth` drives the
- * indentation so the hierarchy reads at a glance.
+ * Rows are <Link>s into /admin/categories/[id]; edit + archive live on the
+ * detail page (matching /admin/hs-codes, /admin/colors). Rows arrive
+ * pre-flattened depth-first so `depth` drives indentation. The search box
+ * filters client-side on name (en + da) — instant feedback for a small,
+ * admin-only list. While filtering, matches render flat (no indentation),
+ * since a matched child's parent may be filtered out.
  */
 export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+
+  const filtered = useMemo(() => {
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        r.name_en.toLowerCase().includes(q) ||
+        (r.name_da?.toLowerCase().includes(q) ?? false),
+    );
+  }, [rows, q]);
+
   const activeCount = rows.filter((r) => r.isActive).length;
+  const searching = q.length > 0;
 
   return (
     <section className="rounded-md border">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
+      <header className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-baseline gap-2">
           <h2 className="text-sm font-semibold">Part categories</h2>
           <span className="text-muted-foreground text-xs">
-            {activeCount} active · {rows.length} total
+            {searching
+              ? `${filtered.length} of ${rows.length} shown`
+              : `${activeCount} active · ${rows.length} total`}
           </span>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link href="/admin/categories/new">
-            <Plus aria-hidden /> New category
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
+              aria-hidden
+            />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search categories…"
+              aria-label="Search categories"
+              className="h-8 w-full pl-8 sm:w-56"
+            />
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/admin/categories/new">
+              <Plus aria-hidden /> New category
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
           No categories yet. Add one to start classifying parts.
+        </p>
+      ) : filtered.length === 0 ? (
+        <p className="text-muted-foreground p-4 text-sm italic">
+          No categories match &ldquo;{query}&rdquo;.
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
@@ -65,8 +106,10 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => {
+              {filtered.map((row) => {
                 const href = `/admin/categories/${row.id}`;
+                // Indentation only makes sense in the full tree view.
+                const depth = searching ? 0 : row.depth;
                 return (
                   <TableRow
                     key={row.id}
@@ -76,9 +119,9 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                       <Link
                         href={href}
                         className="flex items-center gap-1.5 px-4 py-2.5"
-                        style={{ paddingLeft: `${1 + row.depth * 1.5}rem` }}
+                        style={{ paddingLeft: `${1 + depth * 1.5}rem` }}
                       >
-                        {row.depth > 0 ? (
+                        {depth > 0 ? (
                           <CornerDownRight
                             className="text-muted-foreground/50 size-3.5 shrink-0"
                             aria-hidden
