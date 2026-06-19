@@ -21,6 +21,7 @@ import {
   type KitOption,
 } from "@/components/recipe/kit-bulk-add";
 import { formatDkk } from "@/lib/parts/stock";
+import { useUnsavedChangesGuard } from "@/hooks/use-unsaved-changes-guard";
 
 import { cloneAsNewVersion } from "../_actions/clone-as-version";
 import { saveTemplateParts } from "../_actions/save-parts";
@@ -202,6 +203,13 @@ export function PartsRecipeSection({
     }
     return false;
   }, [rows, initialRows]);
+
+  // Staged picks live only in local state until "Save changes" — warn before
+  // navigating away with unsaved edits (Dennis lost a whole recipe this way).
+  useUnsavedChangesGuard(
+    dirty,
+    "You have unsaved recipe changes. Leave this page and discard them?",
+  );
 
   const totalUnitsPerBike = useMemo(
     () =>
