@@ -78,13 +78,16 @@ export async function createInvoiceFromSO(
     return { ok: false, error: "The sales order has no lines to invoice." };
   }
 
-  // Fallback VAT for lines that predate per-line VAT capture on SOs.
-  const { data: vat } = await supabase
+  // VAT lookup: every code, keyed for two jobs — the DK_STANDARD fallback for
+  // lines that predate per-line VAT capture, and deriving the invoice-header
+  // export / reverse-charge flags from the codes the lines actually carry.
+  // (No is_active filter: a historical line may reference a since-archived code
+  // whose flag still matters.)
+  const { data: vatCodes } = await supabase
     .from("vat_codes")
-    .select("code, default_rate")
-    .eq("code", "DK_STANDARD")
-    .eq("is_active", true)
-    .maybeSingle();
+    .select("code, default_rate, is_export, is_reverse_charge");
+  const vatByCode = new Map((vatCodes ?? []).map((v) => [v.code, v]));
+  const vat = vatByCode.get("DK_STANDARD") ?? null;
 
   // Frame numbers per SO line: bikes created under MOs linked to the line.
   const lineIds = soLines.map((l) => l.id);
@@ -168,6 +171,19 @@ export async function createInvoiceFromSO(
       };
     });
 
+  // Danish VAT compliance: a zero-rated export (e.g. Iceland → NON_EU_EXPORT)
+  // or a reverse-charge B2B EU sale must carry the matching legal note on the
+  // printed invoice. That note is driven by these header flags, so derive them
+  // from the codes the lines use — otherwise the zero-rate sits silently on the
+  // lines and the invoice prints with no explanation.
+  const usedCodes = new Set(lineRows.map((l) => l.vat_code));
+  const isExport = [...usedCodes].some(
+    (c) => vatByCode.get(c)?.is_export === true,
+  );
+  const isReverseCharge = [...usedCodes].some(
+    (c) => vatByCode.get(c)?.is_reverse_charge === true,
+  );
+
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .insert({
@@ -180,6 +196,8 @@ export async function createInvoiceFromSO(
       subtotal_amount: subtotal,
       total_vat_amount: totalVat,
       total_amount: round2(subtotal + totalVat),
+      is_export: isExport,
+      is_reverse_charge: isReverseCharge,
       notes: `Drafted from ${so.sales_order_number}.`,
     })
     .select("id")
