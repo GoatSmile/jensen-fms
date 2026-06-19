@@ -386,7 +386,7 @@ free-text); payments & stock value → deferred to its own session; PO email
 → **Resend** (transactional API; verify `jensenproduction.dk` DNS, from =
 `deej@jensenproduction.dk`, reply-to = his inbox).
 
-**Tier 0–1 core daily flow — items 1–6 SHIPPED (2026-06-19):**
+**Tier 0–1 core daily flow — items 1–11 ALL SHIPPED (2026-06-19):**
 1. ✅ PO line unit price optional ([c4bb80a]) — "price pending", receiving
    blocked until priced.
 2. ✅ Template cost-to-produce total + margin ([365fc48]).
@@ -397,17 +397,28 @@ free-text); payments & stock value → deferred to its own session; PO email
 6. ✅ Part-category admin CRUD at `/admin/categories` ([1760cd0]) — unblocks
    "wheel sets"; first write-path to `part_categories`.
 
-**Remaining core-flow (items 7–11, not started):**
-7. HS-code picker → searchable combobox (flat list today; optional
-   category narrowing — no category↔HS table exists yet).
-8. Delivery as ISO week + "expected" label on SO *and* MO (store Monday of
-   the week + a precision flag; keep exact-date option).
-9. RAL colour + coating on the SO line — add `coating` to `colors`, seed
-   RAL+coating rows, surface `ral_code` (column exists, unused); capture on
-   SO line now, wire into paint orders in Tier 2.
-10. SO currency picker exposed (header-level, defaults DKK; EUR/USD).
-11. Supplier emails — `email_primary`/`email_secondary` exist; surface/label
-    on the supplier form (prep for Tier 3 PO email).
+**Core-flow items 7–11 — SHIPPED (2026-06-19):**
+7. ✅ HS-code picker → searchable combobox ([6c7ed33]). Flat searchable list;
+   no category↔HS table built (deferred — searchable list solved the gripe).
+8. ✅ Delivery as ISO week + "expected" on SO ([e73b280]) *and* MO ([912d739]).
+   `requested_delivery_precision` (migration 40) + `planned_completion_precision`
+   (migration 41); date column stores the Monday of the ISO week, precision flag
+   drives "week N YYYY" rendering. Shared `src/lib/iso-week.ts` +
+   `DeliveryWeekDateField`. spawn-mo carries SO precision → MO. Exact-date kept.
+9. ✅ RAL colour + coating on the SO line ([ef5e307]) — `coating` added to
+   `colors` (migration 39), `ral_code` surfaced; pickable controlled vocab.
+   Captured on the SO line; paint-order wiring is Tier 2.
+10. ✅ SO currency + language default from the customer ([220a6ba]) — seeded
+    from `organizations.billing_currency` / `preferred_language` on a new SO;
+    the picker already existed (Dennis just always saw the DKK default).
+11. ✅ Supplier emails ([397036e]) — form already had primary/secondary; added
+    an Email column to the supplier list ("Set email" hint flags gaps). Prep
+    for Tier 3 PO email; **owner still needs to fill the addresses** (all blank).
+
+**Data note (from the 2026-06-19 call):** no "Wheels / Wheel sets" category
+exists — only `Rims`, `Rim Tapes`, `Front Chainwheel`, `Front Sprocket`. Full
+wheel SKUs do exist (e.g. `JP-EWHRX010FDAB` Shimano front, `JP-EWHRX010RDACB`
+rear). Dennis can now create the category at `/admin/categories` (item 6).
 
 **Tier 2 — SO → paint → build pipeline (biggest; correctness epic):**
 12. Deliberate build step — stop auto-advance to `in_stock` + silent MO
