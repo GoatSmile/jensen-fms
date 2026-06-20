@@ -14,11 +14,13 @@ type Props = {
 
 /**
  * Round colour swatch — used inline next to a colour name, and inside
- * Select dropdowns. Resolves the fill as explicit hex → RAL approximation,
- * falling back to a neutral grey ring when neither is known.
+ * Select dropdowns. RAL is the source of truth for colour, so a recognised
+ * RAL code wins; we fall back to the explicit hex (for custom, non-RAL
+ * colours or unrecognised codes), then to a neutral grey ring when neither
+ * is known.
  */
 export function ColorSwatch({ hex, ralCode, label, size = 3, className }: Props) {
-  const safe = isValidHex(hex) ? hex! : (ralToHex(ralCode) ?? null);
+  const safe = ralToHex(ralCode) ?? (isValidHex(hex) ? hex! : null);
   const sizeClass = sizeToClass(size);
   return (
     <span
