@@ -184,13 +184,17 @@ export async function finishBikeBuild(
     partsConsumed += 1;
   }
 
-  // Advance bike status AND stamp build_cost_dkk.
+  // Advance bike status AND stamp build_cost_dkk + built_at. The idempotent
+  // guard above returns early if the bike is already in_stock, so this UPDATE
+  // runs once on the planning/building → in_stock transition.
+  const nowIso = new Date().toISOString();
   const { error: statusErr } = await supabase
     .from("bikes")
     .update({
       status: "in_stock",
       build_cost_dkk: runningBuildCostDkk > 0 ? runningBuildCostDkk : null,
-      updated_at: new Date().toISOString(),
+      built_at: nowIso,
+      updated_at: nowIso,
     })
     .eq("id", bikeId);
   if (statusErr) {

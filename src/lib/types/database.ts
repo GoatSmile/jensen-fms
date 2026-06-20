@@ -501,6 +501,7 @@ export type Database = {
           assigned_at: string | null
           bike_type_id: string
           build_cost_dkk: number | null
+          built_at: string | null
           color_id: string | null
           created_at: string
           current_location_id: string | null
@@ -522,6 +523,7 @@ export type Database = {
           assigned_at?: string | null
           bike_type_id: string
           build_cost_dkk?: number | null
+          built_at?: string | null
           color_id?: string | null
           created_at?: string
           current_location_id?: string | null
@@ -543,6 +545,7 @@ export type Database = {
           assigned_at?: string | null
           bike_type_id?: string
           build_cost_dkk?: number | null
+          built_at?: string | null
           color_id?: string | null
           created_at?: string
           current_location_id?: string | null
