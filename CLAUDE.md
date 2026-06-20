@@ -558,31 +558,55 @@ Phases:
 zero email/PDF infra today).
 
 **Tier 4 — payments & stock value** (down payments, pre-paid parts, partial
-invoicing, stock-valuation report). The **VAT-on-prepayment policy that was
-blocking this is now decided with the owner (2026-06-20)** — this is the model
-to build (still get a revisor nod before the first *real* prepayment invoice,
-but it matches standard Danish acontofaktura/slutfaktura practice):
-- The shop takes a **down payment before delivery**; VAT (25 %) is recognised
-  **immediately at payment time** (Danish momsloven: payment ahead of delivery
-  sets the tax point).
-- The down payment is its **own invoice** — a deposit invoice (acontofaktura),
-  numbered, with VAT on the down-payment amount, issued when the deposit is taken.
-- At delivery a **final/settlement invoice (slutfaktura)** bills the **remaining
-  balance only** (order total − deposit already invoiced) — NOT a fresh full
-  invoice. It shows the order, subtracts the invoiced deposit, and charges the
-  balance + VAT on the balance, referencing the deposit. Avoids double-counting VAT.
-- **Defaults the owner delegated ("pick the most likely"):** export /
-  reverse-charge orders → deposit + final inherit the order's VAT code (a
-  0 %/reverse-charge order's deposit also carries 0 %, same as invoice-from-SO
-  today); pre-paid parts → same deposit-invoice-with-VAT-now treatment;
-  period straddle → VAT lands in the period of the deposit invoice's date (falls
-  out automatically); EAN / public sector → deposit + final transmit via EAN like
-  any invoice (with 3E). Stock-valuation report → **weighted-average cost** of
-  on-hand (the one accounting-policy choice still worth a revisor nod; FIFO is the
-  alternative). Schema is mostly ready (`invoices` already has per-line VAT
-  snapshots + `is_export`/`is_reverse_charge`); the new pieces are an invoice
-  "kind" (deposit vs final/standard) and computing remaining = SO total −
-  Σ(deposit invoices).
+invoicing, stock-valuation report). **Model decided with the owner** — VAT
+policy locked 2026-06-20, prepayment shapes from the Dennis app-review call
+2026-06-19 (transcript). It follows standard Danish acontofaktura/slutfaktura
+practice; still get a revisor nod before the first *real* prepayment invoice.
+
+- **VAT timing (the question that was blocking this):** the shop takes payment
+  **before delivery**; VAT (25 %) is recognised **immediately at payment time**
+  (Danish momsloven: payment ahead of delivery sets the tax point). **Same rule
+  for both prepayment kinds below** — part-based prepayment adds no new tax
+  question, just more invoice plumbing.
+- **Every prepayment is its own deposit invoice (acontofaktura)** — numbered,
+  VAT on the prepaid amount, issued when the money is taken. **More than one is
+  allowed (installments)**: a customer can pay in several rounds before the final.
+- **A deposit invoice is one of two KINDS** (the owner uses both, per customer):
+  - **(A) amount / % on account** — a single summary line ("down payment 50 %"),
+    not tied to parts ("hotel guys pay 50 % up front"; "180 bikes → 10 % or 50 %").
+  - **(B) specific parts paid up front** — the deposit itemises actual parts at
+    their prices ("one customer pays for the frames because these are *special
+    parts* … I order them for you, put them in stock, but they're paid for").
+- **Final/settlement invoice (slutfaktura)** at delivery bills the **remaining
+  balance only**: `order total − Σ(all deposit invoices)` — NOT a fresh full
+  invoice. Shows the order, subtracts every prior deposit, charges the balance +
+  VAT on the balance, referencing the deposits. Avoids double-counting VAT.
+- **Part-based deposits (B) carry two extra effects the owner spelled out:**
+  (1) the flagged parts are **not re-charged on the final** ("only charge the
+  rest"); (2) they're **excluded from the stock-valuation total** even while
+  physically in stock ("200 paid stainless frames still on stock shouldn't count
+  in my stock value"). A **"customer-paid" flag** on the part-for-this-order is
+  the single hinge for BOTH the final-invoice exclusion and the stock report.
+- **Reflected on the bike/order, visible any time** (not just at invoice time):
+  "if they pay for a part like a frame I reflect it on the bike; if they pay a %
+  of the order I also reflect it on the bike" → an order/bike "% invoiced · paid
+  parts" surface.
+- **Delegated defaults (owner: "pick the most likely"):** export / reverse-charge
+  → deposits + final inherit the order's VAT code (a 0 %/reverse-charge order's
+  deposit also carries 0 %, like invoice-from-SO today); period straddle → VAT
+  lands in the period of each deposit's date (automatic); EAN / public sector →
+  deposits + final transmit via EAN like any invoice (with 3E); stock-valuation →
+  **weighted-average cost** of on-hand *minus customer-paid parts* (the one
+  accounting-policy choice still worth a revisor nod; FIFO is the alternative).
+- **Build pieces** (schema mostly ready — `invoices` already has per-line VAT
+  snapshots, `sales_order_id`, totals, `is_export`/`is_reverse_charge`): add
+  invoice `kind` (`standard | deposit | final`); a **customer-paid link** from a
+  part-on-an-order (or `bike_parts` row) to its deposit invoice, driving the
+  final-exclusion + stock report; `final = SO total − Σ(deposits)`; the
+  stock-valuation report (weighted-avg, excluding customer-paid parts).
+  **Suggested order:** deposit invoice kind A → order "% invoiced" surface →
+  final invoice (subtracts deposits) → print (aconto/slut headings) → kind B
+  (part-based) + customer-paid flag → stock-valuation report. Each shippable alone.
 
 **Tier 5 — deferred:** offers/quotes module (price breakdown lives here);
 service-contract → auto-add to maintenance fleet. Website/marketing copy is
