@@ -318,7 +318,7 @@ function BuildStream({ bikes }: { bikes: BuildQueueBike[] }) {
                   {b.buildNote ? (
                     <div className="mt-1 flex items-start gap-1 text-amber-700 dark:text-amber-300">
                       <Tag className="mt-0.5 size-3 shrink-0" aria-hidden />
-                      <span className="line-clamp-2 text-xs">
+                      <span className="line-clamp-2 text-xs" title={b.buildNote}>
                         {b.buildNote}
                       </span>
                     </div>

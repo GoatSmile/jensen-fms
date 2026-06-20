@@ -296,9 +296,10 @@ export default async function BikeBuildWorkbenchPage({
     : null;
 
   // Build-floor labeling note from the MO's sales order (Tier 2 Phase D).
-  const moSalesOrder = Array.isArray(mo.sales_order)
-    ? mo.sales_order[0]
-    : mo.sales_order;
+  // `?? null` pins the type to `T | null` (the MO may have no sales order).
+  const moSalesOrder =
+    (Array.isArray(mo.sales_order) ? mo.sales_order[0] : mo.sales_order) ??
+    null;
   const buildNote = moSalesOrder?.production_note ?? null;
 
   const moClosed = mo.status === "completed" || mo.status === "cancelled";

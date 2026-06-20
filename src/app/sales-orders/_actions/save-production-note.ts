@@ -14,9 +14,11 @@ export type SaveProductionNoteResult =
  * the SO is confirmed — so unlike the draft-only header form this only blocks
  * the terminal states (cancelled / delivered). Empty input clears the note.
  *
- * Revalidates the SO detail and the /work floor so the note propagates to the
- * build cards; the per-bike build workbench reads cookies (dynamic) so it
- * picks up the change on next load.
+ * Revalidates the SO detail, the /work floor, and the per-bike build workbench
+ * route so the note propagates to every surface. The build pages render
+ * dynamically (cookies) but the client Router Cache can still serve a
+ * previously-visited workbench stale on back-navigation, so we invalidate that
+ * route too (dynamic-segment revalidate covers every bike's workbench).
  */
 export async function saveProductionNote(
   soId: string,
@@ -58,5 +60,6 @@ export async function saveProductionNote(
 
   revalidatePath(`/sales-orders/${soId}`);
   revalidatePath("/work");
+  revalidatePath("/manufacturing-orders/[id]/bikes/[bikeId]/build", "page");
   return { ok: true };
 }
