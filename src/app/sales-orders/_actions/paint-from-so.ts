@@ -18,6 +18,10 @@ export type PaintFromSOInput = {
   notes: string | null;
 };
 
+// Note: on success the action redirect()s (which throws), so the `ok: true`
+// variant is never actually returned to the caller — it exists only to match
+// the result-union shape used by the sibling actions (createPaintOrder,
+// spawnMOFromSOLine). Callers treat "returned a value" as failure.
 export type PaintFromSOResult =
   | { ok: true; paintOrderId: string }
   | { ok: false; error: string; field?: string };
@@ -176,6 +180,12 @@ export async function createPaintOrderFromSO(
     };
   }
 
+  // Not transactional: if this attach fails after the header inserted, the
+  // paint order is left empty. That's a VALID, recoverable state, not a broken
+  // one — the ad-hoc createPaintOrder flow intentionally creates empty orders
+  // (bikes are added on the detail page), so an empty order here is identical
+  // and the user can finish or cancel it from the message below. An RPC/
+  // transaction is over-engineering at this scale (single-tenant, solo-dev).
   const { error: attachErr } = await supabase
     .from("paint_order_bikes")
     .insert(requested.map((bikeId) => ({ paint_order_id: po.id, bike_id: bikeId })));
