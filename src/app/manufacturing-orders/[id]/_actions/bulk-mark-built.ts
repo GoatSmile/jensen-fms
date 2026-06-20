@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { markBikeBuilt } from "./mark-bike-built";
 
 export type BulkBuiltResult =
-  | { ok: true; built: number }
+  | { ok: true; built: number; skipped: number }
   | { ok: false; error: string; built: number };
 
 /**
@@ -18,6 +18,12 @@ export type BulkBuiltResult =
  * bike. Sequential, not transactional — partial failures surface a clear
  * "got K of N" message and the user can re-run; the per-bike action no-ops
  * cleanly on already-built bikes.
+ *
+ * Tier 2 deliberate build: bikes whose real frame number hasn't been
+ * confirmed are NOT force-built here — they're skipped and reported. The
+ * shortcut can't bypass the per-bike frame confirmation (which happens in
+ * the build workbench). `limit` counts only buildable (frame-confirmed)
+ * bikes.
  */
 export async function bulkMarkBikesBuilt(
   moId: string,
@@ -38,15 +44,13 @@ export async function bulkMarkBikesBuilt(
   const supabase = await createClient();
 
   // Find unbuilt bikes attached to this MO. "Unbuilt" = planning or building.
-  let query = supabase
+  const { data: unbuilt, error: candErr } = await supabase
     .from("bikes")
-    .select("id, frame_number")
+    .select("id, frame_number, frame_number_confirmed")
     .eq("manufacturing_order_id", moId)
     .in("status", ["planning", "building"])
     .is("deleted_at", null)
     .order("frame_number", { ascending: true });
-  if (limit != null) query = query.limit(limit);
-  const { data: candidates, error: candErr } = await query;
   if (candErr) {
     return {
       ok: false,
@@ -55,7 +59,8 @@ export async function bulkMarkBikesBuilt(
     };
   }
 
-  if ((candidates ?? []).length === 0) {
+  const all = unbuilt ?? [];
+  if (all.length === 0) {
     return {
       ok: false,
       error: "No unbuilt bikes attached to this MO.",
@@ -63,13 +68,27 @@ export async function bulkMarkBikesBuilt(
     };
   }
 
+  // Only frame-confirmed bikes can be bulk-built; the rest are skipped.
+  const buildable = all.filter((b) => b.frame_number_confirmed);
+  const unconfirmed = all.length - buildable.length;
+
+  if (buildable.length === 0) {
+    return {
+      ok: false,
+      error: `No bikes are ready to build: ${unconfirmed} need their real frame number confirmed in the build workbench first.`,
+      built: 0,
+    };
+  }
+
+  const targets = limit != null ? buildable.slice(0, limit) : buildable;
+
   let built = 0;
-  for (const bike of candidates ?? []) {
+  for (const bike of targets) {
     const r = await markBikeBuilt(moId, bike.id);
     if (!r.ok) {
       return {
         ok: false,
-        error: `Marked ${built} of ${candidates?.length ?? 0} built; aborted on ${bike.frame_number}: ${r.error}`,
+        error: `Marked ${built} of ${targets.length} built; aborted on ${bike.frame_number}: ${r.error}`,
         built,
       };
     }
@@ -80,5 +99,7 @@ export async function bulkMarkBikesBuilt(
   revalidatePath("/manufacturing-orders");
   revalidatePath(`/manufacturing-orders/${moId}`);
   revalidatePath("/parts");
-  return { ok: true, built };
+  // Skipped = unconfirmed bikes not attempted (those beyond `limit` aren't
+  // "skipped", just not reached this round).
+  return { ok: true, built, skipped: unconfirmed };
 }

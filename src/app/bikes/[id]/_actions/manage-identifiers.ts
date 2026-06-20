@@ -19,6 +19,7 @@ export type IdentifierResult = { ok: true } | { ok: false; error: string; field?
 export async function createBikeIdentifier(
   bikeId: string,
   formData: FormData,
+  extraRevalidatePaths?: string[],
 ): Promise<IdentifierResult> {
   if (!bikeId) return { ok: false, error: "Missing bike id." };
   const identifier_type_id = nullable(formData.get("identifier_type_id"));
@@ -75,6 +76,9 @@ export async function createBikeIdentifier(
 
   revalidatePath(`/bikes/${bikeId}`);
   revalidatePath("/bikes");
+  // Callers that render this bike's identifiers on another route (e.g. the
+  // build workbench) pass their own path so it refreshes too.
+  for (const p of extraRevalidatePaths ?? []) revalidatePath(p);
   return { ok: true };
 }
 

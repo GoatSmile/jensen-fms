@@ -67,6 +67,11 @@ export default async function ManufacturingOrderDetailPage({
 
   const mo = moRes.data;
   const closed = mo.status === "completed" || mo.status === "cancelled";
+  // Every bike built but the MO not yet closed — nudge the deliberate complete.
+  const readyToComplete =
+    mo.status === "in_progress" &&
+    mo.target_quantity > 0 &&
+    mo.completed_quantity >= mo.target_quantity;
 
   // Pull MO parts + their stock + the "substituted from" name in parallel.
   const [
@@ -95,7 +100,7 @@ export default async function ManufacturingOrderDetailPage({
       .from("bikes")
       .select(
         `
-          id, frame_number, status, manufacturing_order_id, build_cost_dkk,
+          id, frame_number, frame_number_confirmed, status, manufacturing_order_id, build_cost_dkk,
           owner_organization:organizations!owner_organization_id(
             id, legal_name, display_name_en, display_name_da
           ),
@@ -227,6 +232,7 @@ export default async function ManufacturingOrderDetailPage({
       id: b.id,
       frameNumber: b.frame_number,
       status: b.status as BikeStatus,
+      frameConfirmed: b.frame_number_confirmed,
       identifierCount:
         b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
       requiredIdentifierCount: requiredIdCount,
@@ -324,6 +330,7 @@ export default async function ManufacturingOrderDetailPage({
         moId={mo.id}
         moNumber={mo.mo_number}
         status={mo.status as MOStatus}
+        readyToComplete={readyToComplete}
         templateLabel={templateLabel}
         templateId={mo.bike_template?.id ?? null}
         templateVersion={mo.bike_template?.version ?? null}

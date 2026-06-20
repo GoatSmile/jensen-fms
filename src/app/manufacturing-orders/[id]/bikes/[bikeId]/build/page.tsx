@@ -12,6 +12,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
+import { loadBikeIdentifierContext } from "@/lib/bikes/identifier-context";
 
 import {
   BuildWorkbench,
@@ -52,7 +53,9 @@ export default async function BikeBuildWorkbenchPage({
       .maybeSingle(),
     supabase
       .from("bikes")
-      .select("id, frame_number, status, manufacturing_order_id")
+      .select(
+        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id",
+      )
       .eq("id", bikeId)
       .maybeSingle(),
     supabase
@@ -257,6 +260,23 @@ export default async function BikeBuildWorkbenchPage({
     }
   }
 
+  // Identifier context for the in-build "Frame & identifiers" panel. The frame
+  // has its own dedicated confirm control, so the panel's "X / Y required"
+  // hint counts only the OTHER required identifiers (excluding frame_number),
+  // keeping it consistent with the filtered "Other identifiers" list.
+  const identifierContext = await loadBikeIdentifierContext(
+    supabase,
+    bikeId,
+    bike.bike_type_id,
+  );
+  const otherRequiredTypes = identifierContext.types.filter(
+    (t) => t.is_required && t.slug !== "frame_number",
+  );
+  const otherRequiredCount = otherRequiredTypes.length;
+  const otherRequiredRegisteredCount = otherRequiredTypes.filter(
+    (t) => t.alreadyRegistered,
+  ).length;
+
   const templateLabel = mo.bike_template
     ? [
         mo.bike_template.family,
@@ -318,6 +338,7 @@ export default async function BikeBuildWorkbenchPage({
         moNumber={mo.mo_number}
         bikeId={bikeId}
         bikeFrameNumber={bike.frame_number}
+        frameConfirmed={bike.frame_number_confirmed}
         bikeStatus={bikeStatus}
         templateLabel={templateLabel}
         colorName={mo.color?.name_en ?? null}
@@ -326,6 +347,10 @@ export default async function BikeBuildWorkbenchPage({
         categories={categories}
         catalog={catalog}
         moRecipeRowCount={recipeRowCount}
+        identifierTypes={identifierContext.types}
+        identifiers={identifierContext.rows}
+        requiredIdentifierCount={otherRequiredCount}
+        requiredRegisteredCount={otherRequiredRegisteredCount}
         readOnly={isReadOnly}
         pickListSlot={
           pickGroups.length > 0 ? (

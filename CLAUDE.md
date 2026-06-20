@@ -425,18 +425,49 @@ exists — only `Rims`, `Rim Tapes`, `Front Chainwheel`, `Front Sprocket`. Full
 wheel SKUs do exist (e.g. `JP-EWHRX010FDAB` Shimano front, `JP-EWHRX010RDACB`
 rear). Dennis can now create the category at `/admin/categories` (item 6).
 
-**Tier 2 — SO → paint → build pipeline (biggest; correctness epic)
-← PARKED 2026-06-20, agreed next step. Tier 1 core flow is done; this is where
-to resume.** Sequence Dennis described: SO → paint (subset of frames to painter)
-→ build, and a frame at the painter must not be buildable until it's back.
-12. Deliberate build step — stop auto-advance to `in_stock` + silent MO
-    auto-complete; gate "Finish" behind a real frame number.
-13. Identifiers entered in the build workbench, per bike (frame required).
-14. Paint order from the SO — "needs painter" flag → paint order for a
-    *subset* of frames; back-link SO ↔ paint.
-15. Paint gates build — a frame at the painter can't be built;
-    `received_back` frees it (today that transition doesn't touch bikes).
-16. Labeling note that flows SO → build floor (e.g. service-contract munis).
+**Tier 2 — SO → paint → build pipeline, rebuilt around the technician
+(biggest; correctness epic). IN PROGRESS — started 2026-06-20.** Two moves:
+make the workshop floor the unified technician home (build *and* repair), and
+make the build a deliberate, gated flow. Sequenced **B → A → C → D**. Four
+design decisions locked with the owner:
+- **D1 — confirmed-frame flag.** `bikes.frame_number_confirmed` (migration 44)
+  separates a CONFIRMED real frame from the provisional auto-generated
+  placeholder (`JP-{year}-{code}-{seq}`, see `src/lib/bikes/frame-number.ts`).
+  New bikes start FALSE; bikes already past building backfilled TRUE. Flips TRUE
+  only at the deliberate build "Confirm frame" step (`confirmBikeFrame`).
+- **D2 — "at painter" is derived, not a bike status.** A bike is at-painter iff
+  it belongs to a `paint_order` with status `sent_to_painter`/`at_painter`;
+  `received_back` frees it automatically. No new bike column/status. (Phase C.)
+- **D3 — SO↔paint link + explicit subset.** add `paint_orders.sales_order_id`;
+  "paint from SO" picks a *subset* of frames, back-linked both ways. (Phase C.)
+- **D4 — deliberate completion.** No silent MO auto-complete; completion is a
+  one-click "Complete MO" (banner when every bike is built). Bulk "Mark N
+  built" SKIPS unconfirmed (and, in C, at-painter) bikes instead of bypassing
+  the gate.
+
+Phases:
+- **B — Deliberate build page ✅ SHIPPED 2026-06-20.** Migration 44; new
+  `confirmBikeFrame` action (rewrites `bikes.frame_number` + syncs the
+  `bike_identifiers` frame row); `finishBikeBuild` now gated on
+  `frame_number_confirmed`; the build workbench gained a "Frame & identifiers"
+  panel (frame confirm + reused `IdentifierDialog`; Finish disabled until
+  confirmed AND ≥1 part); `bulkMarkBikesBuilt` skips unconfirmed bikes and
+  reports the skip count; `autoAdvanceMOAfterBuild` no longer auto-completes;
+  `mo-header` shows a "Complete MO" banner once every bike is built;
+  `mo-bikes-section` shows per-row "provisional" hints, an unconfirmed note, and
+  a buildable-count bulk button. Shared `loadBikeIdentifierContext` in
+  `src/lib/bikes/identifier-context.ts`.
+- **A — Unified workshop floor** (NEXT). `/work` gets a "To build" stream beside
+  "To repair"; new per-bike readiness helper
+  (`src/lib/manufacturing/bike-readiness.ts`): parts-in-stock + frame-confirmed
+  (+ paint-clear once C lands) → ready / blocked-with-reason. Build cards match
+  the repair-card style; tap → workbench; scan a frame → build if buildable.
+- **C — Paint → build pipeline.** D2 + D3: paint-from-SO subset action, paint
+  gates build (workbench + floor + finish + bulk all honour it), `received_back`
+  frees frames, SO↔paint back-links. Migration for `paint_orders.sales_order_id`.
+- **D — Labeling note** to the build floor (item 16) —
+  `sales_order_lines.build_note` (or `sales_orders.production_note`), surfaced on
+  the build card + workbench (e.g. service-contract muni labeling).
 
 **Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
 zero email/PDF infra today). **Tier 4 — payments & stock value** (down

@@ -8,12 +8,21 @@
  * Allowed transitions follow the design review's "Bike lifecycle" table:
  *
  *   planning      → building
- *   building      → in_stock
+ *   building      → (in_stock only via the build workbench — see below)
  *   in_stock      → assigned | in_service
  *   assigned      → in_service
  *   in_service    → in_maintenance
  *   in_maintenance → in_service
  *   any state     → retired | lost_or_stolen   (both terminal)
+ *
+ * **building → in_stock is NOT a manual transition.** A bike reaches in_stock
+ * only through `finishBikeBuild` (the build workbench Finish, and the bulk
+ * "Mark N built" shortcut), which confirms the real frame number, consumes
+ * inventory, and stamps build_cost. Allowing a manual dropdown move would let
+ * a tech mint an in_stock bike with no confirmed frame, no parts, and no cost
+ * basis — defeating the Tier 2 deliberate build. So it's omitted from the
+ * matrix here; finishBikeBuild updates status directly (it bypasses this matrix
+ * by design, same as autoAdvanceMOAfterBuild does for MOs).
  *
  * Returns from a customer (Phase 4 maintenance) and refurbish flows aren't
  * encoded here — they require model changes that aren't in scope yet.
@@ -61,7 +70,9 @@ export function bikeStatusLabel(status: string | null | undefined): string {
 
 const FORWARD_TRANSITIONS: Record<BikeStatus, BikeStatus[]> = {
   planning: ["building"],
-  building: ["in_stock"],
+  // building → in_stock is intentionally NOT here — see the module docstring.
+  // The build workbench (finishBikeBuild) is the only path to in_stock.
+  building: [],
   in_stock: ["assigned", "in_service"],
   assigned: ["in_service"],
   in_service: ["in_maintenance"],

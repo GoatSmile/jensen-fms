@@ -508,6 +508,7 @@ export type Database = {
           current_location_text: string | null
           deleted_at: string | null
           frame_number: string
+          frame_number_confirmed: boolean
           id: string
           manufacturing_order_id: string | null
           notes: string | null
@@ -530,6 +531,7 @@ export type Database = {
           current_location_text?: string | null
           deleted_at?: string | null
           frame_number: string
+          frame_number_confirmed?: boolean
           id?: string
           manufacturing_order_id?: string | null
           notes?: string | null
@@ -552,6 +554,7 @@ export type Database = {
           current_location_text?: string | null
           deleted_at?: string | null
           frame_number?: string
+          frame_number_confirmed?: boolean
           id?: string
           manufacturing_order_id?: string | null
           notes?: string | null

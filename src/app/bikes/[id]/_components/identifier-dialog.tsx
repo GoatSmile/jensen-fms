@@ -42,12 +42,16 @@ type Props = {
   identifierTypes: IdentifierTypeOption[];
   /** Visual hint above the trigger button. */
   triggerLabel?: string;
+  /** Extra routes to revalidate when used outside the bike detail page
+   *  (e.g. the build workbench renders this bike's identifiers). */
+  extraRevalidatePaths?: string[];
 };
 
 export function IdentifierDialog({
   bikeId,
   identifierTypes,
   triggerLabel = "Add identifier",
+  extraRevalidatePaths,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -103,7 +107,7 @@ export function IdentifierDialog({
     fd.append("identifier_value", value);
     fd.append("notes", notes);
     startTransition(async () => {
-      const r = await createBikeIdentifier(bikeId, fd);
+      const r = await createBikeIdentifier(bikeId, fd, extraRevalidatePaths);
       if (!r.ok) {
         setError(r.error);
         setErrorField(r.field ?? null);

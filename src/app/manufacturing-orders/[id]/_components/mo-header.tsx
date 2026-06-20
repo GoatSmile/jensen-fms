@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { ChevronDown, Printer } from "lucide-react";
+import { CheckCircle2, ChevronDown, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ type Props = {
   moId: string;
   moNumber: string;
   status: MOStatus;
+  /** All target bikes built but the MO is still in progress — nudge completion. */
+  readyToComplete: boolean;
   templateLabel: string | null;
   templateId: string | null;
   templateVersion: number | null;
@@ -53,6 +55,7 @@ export function MOHeader({
   moId,
   moNumber,
   status,
+  readyToComplete,
   templateLabel,
   templateId,
   templateVersion,
@@ -94,6 +97,20 @@ export function MOHeader({
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
+      ) : null}
+      {readyToComplete ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 dark:border-emerald-900 dark:bg-emerald-950/40">
+          <p className="text-sm text-emerald-800 dark:text-emerald-300">
+            Every bike is built. Complete the MO when the batch is done.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => runTransition("completed", null)}
+            disabled={pending}
+          >
+            <CheckCircle2 aria-hidden /> Complete MO
+          </Button>
+        </div>
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">

@@ -40,7 +40,9 @@ export async function finishBikeBuild(
 
   const { data: bike, error: bikeErr } = await supabase
     .from("bikes")
-    .select("id, status, manufacturing_order_id, frame_number")
+    .select(
+      "id, status, manufacturing_order_id, frame_number, frame_number_confirmed",
+    )
     .eq("id", bikeId)
     .maybeSingle();
   if (bikeErr || !bike) {
@@ -67,6 +69,13 @@ export async function finishBikeBuild(
   }
   if (!bike.frame_number || bike.frame_number.trim() === "") {
     return { ok: false, error: "Frame number is required before finishing." };
+  }
+  if (!bike.frame_number_confirmed) {
+    return {
+      ok: false,
+      error:
+        "Confirm the real frame number in the build workbench before finishing.",
+    };
   }
 
   // Pick the default inventory location for v1 (single-location consume).
@@ -204,9 +213,9 @@ export async function finishBikeBuild(
     };
   }
 
-  // The MO-completion trigger has incremented completed_quantity. Auto-
-  // advance the MO status (planned → in_progress on first build,
-  // in_progress → completed at target).
+  // The MO-completion trigger has incremented completed_quantity. Auto-advance
+  // planned/released → in_progress on the first build. The MO does NOT
+  // auto-complete — completion is deliberate (the "Complete MO" banner).
   await autoAdvanceMOAfterBuild(moId);
 
   revalidatePath("/bikes");

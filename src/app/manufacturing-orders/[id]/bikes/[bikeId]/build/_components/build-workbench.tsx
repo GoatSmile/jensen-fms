@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Copy,
   Lock,
+  ScanLine,
   Trash2,
 } from "lucide-react";
 
@@ -29,6 +30,8 @@ import {
   bikeStatusLabel,
   type BikeStatus,
 } from "@/lib/bikes/status";
+import { IdentifierDialog } from "@/app/bikes/[id]/_components/identifier-dialog";
+import type { IdentifierTypeOption } from "@/app/bikes/[id]/_components/identifier-dialog";
 
 import {
   addBikePart,
@@ -37,6 +40,14 @@ import {
   updateBikePartQuantity,
 } from "../_actions/manage-bike-parts";
 import { finishBikeBuild } from "../_actions/finish-build";
+import { confirmBikeFrame } from "../_actions/confirm-frame";
+
+export type WorkbenchIdentifierRow = {
+  id: string;
+  typeName: string;
+  typeSlug: string;
+  value: string;
+};
 
 export type CategoryOption = {
   id: string;
@@ -74,6 +85,8 @@ type Props = {
   moNumber: string;
   bikeId: string;
   bikeFrameNumber: string;
+  /** Whether the real frame number has been confirmed (gates Finish). */
+  frameConfirmed: boolean;
   bikeStatus: BikeStatus;
   templateLabel: string | null;
   colorName: string | null;
@@ -83,6 +96,12 @@ type Props = {
   catalog: PartInCatalog[];
   /** How many parts are in the MO recipe — used for the "Copy recipe" CTA. */
   moRecipeRowCount: number;
+  /** Identifier types pickable in the in-build "add identifier" dialog. */
+  identifierTypes: IdentifierTypeOption[];
+  /** Active identifiers already on this bike. */
+  identifiers: WorkbenchIdentifierRow[];
+  requiredIdentifierCount: number;
+  requiredRegisteredCount: number;
   /** True when status is in_stock+ / MO closed — read-only display. */
   readOnly: boolean;
   /** Server-rendered "pick list by kit" card, shown above the workbench. */
@@ -94,6 +113,7 @@ export function BuildWorkbench({
   moNumber,
   bikeId,
   bikeFrameNumber,
+  frameConfirmed,
   bikeStatus,
   templateLabel,
   colorName,
@@ -102,6 +122,10 @@ export function BuildWorkbench({
   categories,
   catalog,
   moRecipeRowCount,
+  identifierTypes,
+  identifiers,
+  requiredIdentifierCount,
+  requiredRegisteredCount,
   readOnly,
   pickListSlot,
 }: Props) {
@@ -115,8 +139,20 @@ export function BuildWorkbench({
   const [isFinishing, startFinish] = useTransition();
   const [isSeeding, startSeed] = useTransition();
 
+  // Frame confirmation (the "Identify" step). Local state so the panel reflects
+  // the confirm immediately; router.refresh re-syncs the rest of the page.
+  const [frameValue, setFrameValue] = useState(bikeFrameNumber);
+  const [confirmed, setConfirmed] = useState(frameConfirmed);
+  const [isConfirming, startConfirm] = useTransition();
+
   const rows = initialBikeParts;
   const isEmpty = rows.length === 0;
+
+  // The frame has its own dedicated control above; list only the rest.
+  const otherIdentifiers = useMemo(
+    () => identifiers.filter((i) => i.typeSlug !== "frame_number"),
+    [identifiers],
+  );
 
   // Group catalog parts by category for the picker.
   const partsByCategory = useMemo(() => {
@@ -198,6 +234,22 @@ export function BuildWorkbench({
     });
   }
 
+  function onConfirmFrame() {
+    setError(null);
+    setSuccess(null);
+    startConfirm(async () => {
+      const r = await confirmBikeFrame(moId, bikeId, frameValue);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setFrameValue(r.frameNumber);
+      setConfirmed(true);
+      setSuccess(`Frame number confirmed — ${r.frameNumber}.`);
+      router.refresh();
+    });
+  }
+
   function onFinish() {
     setError(null);
     setSuccess(null);
@@ -251,6 +303,121 @@ export function BuildWorkbench({
           </div>
         </div>
       </section>
+
+      {/* Identify: confirm the real frame number + register identifiers. */}
+      {!readOnly ? (
+        <section className="rounded-md border">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-sm font-semibold">Frame &amp; identifiers</h2>
+              <p className="text-muted-foreground text-xs">
+                {confirmed
+                  ? "Frame confirmed. Update it here if it was mistyped."
+                  : "Enter the real frame number stamped on this bike — required before you can finish the build."}
+              </p>
+            </div>
+            {confirmed ? (
+              <Badge variant="success">
+                <CheckCircle2 aria-hidden className="size-3.5" /> Frame confirmed
+              </Badge>
+            ) : (
+              <Badge variant="warning">Provisional frame</Badge>
+            )}
+          </div>
+          <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="frame-confirm"
+                  className="text-xs font-medium tracking-wide"
+                >
+                  Frame number
+                </label>
+                <div className="relative">
+                  <ScanLine
+                    aria-hidden
+                    className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
+                  />
+                  <Input
+                    id="frame-confirm"
+                    value={frameValue}
+                    onChange={(e) => setFrameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (frameValue.trim() !== "") onConfirmFrame();
+                      }
+                    }}
+                    disabled={isConfirming}
+                    className="w-[240px] pl-8 font-mono"
+                    aria-label="Real frame number"
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant={confirmed ? "outline" : "default"}
+                onClick={onConfirmFrame}
+                disabled={isConfirming || frameValue.trim() === ""}
+              >
+                {isConfirming
+                  ? "Saving…"
+                  : confirmed
+                    ? "Update frame"
+                    : "Confirm frame"}
+              </Button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                  Other identifiers ({otherIdentifiers.length})
+                </span>
+                {requiredIdentifierCount > 0 ? (
+                  <span
+                    className={`text-xs tabular-nums ${
+                      requiredRegisteredCount < requiredIdentifierCount
+                        ? "text-amber-700 dark:text-amber-300"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {requiredRegisteredCount} / {requiredIdentifierCount} required
+                  </span>
+                ) : null}
+              </div>
+              {otherIdentifiers.length > 0 ? (
+                <ul className="divide-y rounded-md border text-sm">
+                  {otherIdentifiers.map((id) => (
+                    <li
+                      key={id.id}
+                      className="flex items-center justify-between gap-2 px-3 py-1.5"
+                    >
+                      <span className="text-muted-foreground text-xs">
+                        {id.typeName}
+                      </span>
+                      <span className="font-mono text-xs">{id.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs italic">
+                  No lock / battery / GPS identifiers registered yet.
+                </p>
+              )}
+              <div>
+                <IdentifierDialog
+                  bikeId={bikeId}
+                  identifierTypes={identifierTypes}
+                  triggerLabel="Add identifier"
+                  extraRevalidatePaths={[
+                    `/manufacturing-orders/${moId}/bikes/${bikeId}/build`,
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {pickListSlot}
 
@@ -419,15 +586,19 @@ export function BuildWorkbench({
         {!readOnly ? (
           <footer className="border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <p className="text-muted-foreground text-xs">
-              {rows.length === 0
-                ? "Add parts before finishing."
-                : `${rows.length} part${rows.length === 1 ? "" : "s"} ready to consume.`}
+              {!confirmed
+                ? "Confirm the frame number above before finishing."
+                : rows.length === 0
+                  ? "Add parts before finishing."
+                  : `${rows.length} part${rows.length === 1 ? "" : "s"} ready to consume.`}
             </p>
             <Button
               type="button"
               size="lg"
               onClick={onFinish}
-              disabled={isFinishing || isSeeding || rows.length === 0}
+              disabled={
+                isFinishing || isSeeding || isConfirming || rows.length === 0 || !confirmed
+              }
             >
               <CheckCircle2 aria-hidden />{" "}
               {isFinishing ? "Finishing…" : "Finish build"}

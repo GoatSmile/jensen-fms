@@ -31,6 +31,8 @@ export type MOBikeRow = {
   id: string;
   frameNumber: string;
   status: BikeStatus;
+  /** Whether the real frame number has been confirmed (gates build). */
+  frameConfirmed: boolean;
   identifierCount: number;
   requiredIdentifierCount: number;
   /** Customer this bike is slated/assigned to. Null until someone earmarks it. */
@@ -87,9 +89,19 @@ export function MOBikesSection({
     return m;
   }, [rows]);
 
-  const unbuiltCount =
-    (countByStatus.get("planning") ?? 0) + (countByStatus.get("building") ?? 0);
-  const canBulkBuild = !closed && unbuiltCount > 0;
+  // Only frame-confirmed unbuilt bikes can be bulk-built; the rest must have
+  // their real frame confirmed in the build workbench first.
+  const { buildableCount, unconfirmedCount } = useMemo(() => {
+    let buildable = 0;
+    let unconfirmed = 0;
+    for (const r of rows) {
+      if (r.status !== "planning" && r.status !== "building") continue;
+      if (r.frameConfirmed) buildable += 1;
+      else unconfirmed += 1;
+    }
+    return { buildableCount: buildable, unconfirmedCount: unconfirmed };
+  }, [rows]);
+  const canBulkBuild = !closed && buildableCount > 0;
 
   const filtered = useMemo(
     () =>
@@ -117,7 +129,13 @@ export function MOBikesSection({
         setError(r.error);
         return;
       }
-      setNotice(`Marked ${r.built} bike${r.built === 1 ? "" : "s"} built.`);
+      const skippedNote =
+        r.skipped > 0
+          ? ` ${r.skipped} skipped — confirm their frame number in the build workbench.`
+          : "";
+      setNotice(
+        `Marked ${r.built} bike${r.built === 1 ? "" : "s"} built.${skippedNote}`,
+      );
       setBuildCount("");
       router.refresh();
     });
@@ -135,7 +153,7 @@ export function MOBikesSection({
                 inputMode="numeric"
                 value={buildCount}
                 onChange={(e) => setBuildCount(e.target.value)}
-                placeholder={String(unbuiltCount)}
+                placeholder={String(buildableCount)}
                 className="h-8 w-14 text-center text-xs tabular-nums"
                 aria-label="How many bikes to mark built"
               />
@@ -149,7 +167,7 @@ export function MOBikesSection({
                 {bulkPending
                   ? "Building…"
                   : buildCount.trim() === ""
-                    ? `Mark ${unbuiltCount} built`
+                    ? `Mark ${buildableCount} built`
                     : "Mark next built"}
               </Button>
             </div>
@@ -192,6 +210,13 @@ export function MOBikesSection({
           role="status"
         >
           {notice}
+        </p>
+      ) : null}
+      {!closed && unconfirmedCount > 0 ? (
+        <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+          {unconfirmedCount} bike{unconfirmedCount === 1 ? "" : "s"} need
+          {unconfirmedCount === 1 ? "s" : ""} a confirmed frame number — open the
+          build workbench to enter the real frame before building.
         </p>
       ) : null}
 
@@ -344,6 +369,8 @@ function BikeRow({
     row.status === "in_service";
   const isTerminal =
     row.status === "retired" || row.status === "lost_or_stolen";
+  const isUnbuilt = row.status === "planning" || row.status === "building";
+  const needsFrame = isUnbuilt && !row.frameConfirmed;
 
   return (
     <TableRow>
@@ -351,6 +378,14 @@ function BikeRow({
         <Link href={`/bikes/${row.id}`} className="hover:underline">
           {row.frameNumber}
         </Link>
+        {needsFrame ? (
+          <span
+            className="ml-2 align-middle text-[10px] font-sans text-amber-700 dark:text-amber-300"
+            title="Provisional frame — confirm the real one in the build workbench"
+          >
+            provisional
+          </span>
+        ) : null}
       </TableCell>
       <TableCell>
         <Badge
@@ -395,7 +430,7 @@ function BikeRow({
             <Link
               href={`/manufacturing-orders/${moId}/bikes/${row.id}/build`}
             >
-              <Wrench aria-hidden /> Build
+              <Wrench aria-hidden /> {needsFrame ? "Confirm & build" : "Build"}
             </Link>
           </Button>
         ) : (
