@@ -58,10 +58,13 @@ export async function createInvoiceFromSO(
     return { ok: false, error: "The sales order has no customer organization." };
   }
 
+  // Only a prior standard/final invoice blocks this one — deposits are expected
+  // and get netted out below (they don't count as "already invoiced in full").
   const { data: existing } = await supabase
     .from("invoices")
     .select("id, invoice_number")
     .eq("sales_order_id", soId)
+    .in("kind", ["standard", "final"])
     .not("status", "in", "(cancelled,credited)")
     .is("credited_invoice_id", null)
     .limit(1)
@@ -184,10 +187,60 @@ export async function createInvoiceFromSO(
     (c) => vatByCode.get(c)?.is_reverse_charge === true,
   );
 
+  // Tier 4: subtract any deposits already invoiced on this SO so the final
+  // bills only the remaining balance. Each becomes a negative deduction line,
+  // so the stored totals + the printed invoice net out automatically. Only
+  // issued/paid/overdue deposits count — a draft deposit isn't a real invoice.
+  const { data: deposits } = await supabase
+    .from("invoices")
+    .select(
+      "invoice_number, subtotal_amount, total_vat_amount, issued_date, lines:invoice_lines(vat_code, vat_rate)",
+    )
+    .eq("sales_order_id", soId)
+    .eq("kind", "deposit")
+    .not("status", "in", "(draft,cancelled,credited)")
+    .is("credited_invoice_id", null)
+    .order("issued_date", { ascending: true });
+
+  let depositCount = 0;
+  let nextLineNo = lineRows.length;
+  for (const d of deposits ?? []) {
+    const depSubtotal = round2(Number(d.subtotal_amount ?? 0));
+    const depVat = round2(Number(d.total_vat_amount ?? 0));
+    if (depSubtotal <= 0) continue;
+    const depLine = one(d.lines);
+    depositCount += 1;
+    nextLineNo += 1;
+    lineRows.push({
+      line_number: nextLineNo,
+      bike_template_id: null,
+      description_en: `Less down payment already invoiced (${d.invoice_number})`,
+      description_da: `Minus acontobetaling (${d.invoice_number})`,
+      quantity: 1,
+      unit_price: -depSubtotal,
+      vat_code: depLine?.vat_code ?? "DK_STANDARD",
+      vat_rate: Number(depLine?.vat_rate ?? 25),
+      line_subtotal: -depSubtotal,
+      line_vat_amount: -depVat,
+      line_total: round2(-(depSubtotal + depVat)),
+    });
+    subtotal = round2(subtotal - depSubtotal);
+    totalVat = round2(totalVat - depVat);
+  }
+
+  if (depositCount > 0 && round2(subtotal) <= 0) {
+    return {
+      ok: false,
+      error: "Deposits already cover this order in full — nothing left to bill.",
+    };
+  }
+  const invoiceKind = depositCount > 0 ? "final" : "standard";
+
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .insert({
       invoice_number: `DRAFT-${crypto.randomUUID().slice(0, 8)}`,
+      kind: invoiceKind,
       sales_order_id: soId,
       organization_id: so.organization_id,
       language: so.language ?? "da",
@@ -198,7 +251,10 @@ export async function createInvoiceFromSO(
       total_amount: round2(subtotal + totalVat),
       is_export: isExport,
       is_reverse_charge: isReverseCharge,
-      notes: `Drafted from ${so.sales_order_number}.`,
+      notes:
+        depositCount > 0
+          ? `Final invoice for ${so.sales_order_number} — ${depositCount} deposit${depositCount === 1 ? "" : "s"} deducted.`
+          : `Drafted from ${so.sales_order_number}.`,
     })
     .select("id")
     .single();

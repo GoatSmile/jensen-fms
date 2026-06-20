@@ -32,7 +32,7 @@ export default async function InvoicePrintPage({
       .from("invoices")
       .select(
         `
-          id, invoice_number, status, language, currency, notes,
+          id, invoice_number, kind, status, language, currency, notes,
           issued_date, due_date, paid_date,
           subtotal_amount, total_vat_amount, total_amount,
           ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
@@ -120,7 +120,11 @@ export default async function InvoicePrintPage({
           <h1 className="text-3xl font-semibold tracking-tight">
             {creditedOriginal
               ? t("Kreditnota", "Credit note")
-              : t("Faktura", "Invoice")}
+              : invoice.kind === "deposit"
+                ? t("Acontofaktura", "Deposit invoice")
+                : invoice.kind === "final"
+                  ? t("Slutfaktura", "Final invoice")
+                  : t("Faktura", "Invoice")}
           </h1>
           <div className="text-sm">
             <div className="font-mono">{invoice.invoice_number}</div>

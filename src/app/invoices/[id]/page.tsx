@@ -46,7 +46,7 @@ export default async function InvoiceDetailPage({
       .from("invoices")
       .select(
         `
-          id, invoice_number, status, language, currency, notes,
+          id, invoice_number, kind, status, language, currency, notes,
           issued_date, due_date, paid_date, issued_locked_at, created_at,
           subtotal_amount, total_vat_amount, total_amount,
           ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
@@ -138,6 +138,15 @@ export default async function InvoiceDetailPage({
               <Badge variant={INVOICE_STATUS_VARIANT[status] ?? "outline"}>
                 {invoiceStatusLabel(status)}
               </Badge>
+              {invoice.kind === "deposit" ? (
+                <Badge variant="secondary" className="font-normal">
+                  Deposit
+                </Badge>
+              ) : invoice.kind === "final" ? (
+                <Badge variant="secondary" className="font-normal">
+                  Final
+                </Badge>
+              ) : null}
               {creditedOriginal ? (
                 <Badge variant="secondary" className="font-normal">
                   Credit note

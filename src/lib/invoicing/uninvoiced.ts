@@ -126,12 +126,15 @@ export async function findUninvoicedSOs(
   supabase: SupabaseClient,
 ): Promise<UninvoicedSORow[] | { error: string }> {
   const [invoicedRes, sosRes] = await Promise.all([
-    // Cancelled and credited invoices don't block re-invoicing; neither do
-    // credit notes themselves (they inherit the SO link for traceability).
+    // Only a standard/final invoice means the SO is invoiced — a deposit
+    // (acontofaktura) leaves the SO still needing its final, so deposits must
+    // NOT exclude it here. Cancelled/credited invoices and credit notes (which
+    // inherit the SO link) don't block re-invoicing either.
     supabase
       .from("invoices")
       .select("sales_order_id")
       .not("sales_order_id", "is", null)
+      .in("kind", ["standard", "final"])
       .not("status", "in", "(cancelled,credited)")
       .is("credited_invoice_id", null),
     supabase
