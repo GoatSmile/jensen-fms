@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,7 +13,6 @@ import {
   Hammer,
   HardHat,
   Home,
-  Map as MapIcon,
   Paintbrush,
   PanelLeftClose,
   PanelLeftOpen,
@@ -41,22 +40,28 @@ type NavItem = {
   exact?: boolean;
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: Home, exact: true },
-  { href: "/parts", label: "Parts", icon: Boxes },
-  { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
-  { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
-  { href: "/bikes", label: "Bikes", icon: Bike },
-  { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
-  { href: "/service-agreements", label: "Service agreements", icon: ShieldCheck },
-  { href: "/work", label: "Workshop floor", icon: HardHat },
-  { href: "/organizations", label: "Customers", icon: Building2 },
-  { href: "/organizations/map", label: "Map", icon: MapIcon },
-  { href: "/sales-orders", label: "Sales orders", icon: Receipt },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
-  { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
-  { href: "/admin", label: "Admin", icon: Settings },
+// Grouped nav. Separators render between groups. Order set with the owner
+// (2026-06-20): daily ops first, then the commercial/orders flow, then Admin.
+// The customer Map moved into the Admin section, so it's no longer here.
+const NAV_GROUPS: NavItem[][] = [
+  [
+    { href: "/", label: "Dashboard", icon: Home, exact: true },
+    { href: "/bikes", label: "Bikes", icon: Bike },
+    { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
+    { href: "/parts", label: "Parts", icon: Boxes },
+    { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
+    { href: "/work", label: "Workshop floor", icon: HardHat },
+  ],
+  [
+    { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
+    { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
+    { href: "/sales-orders", label: "Sales orders", icon: Receipt },
+    { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
+    { href: "/invoices", label: "Invoices", icon: FileText },
+    { href: "/service-agreements", label: "Service agreements", icon: ShieldCheck },
+    { href: "/organizations", label: "Customers", icon: Building2 },
+  ],
+  [{ href: "/admin", label: "Admin", icon: Settings }],
 ];
 
 const COLLAPSE_KEY = "jensen-fms:sidebar-collapsed";
@@ -68,6 +73,7 @@ export function AppSidebar() {
   // root layout, so this runs once per full page load, not per navigation).
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only, so the stored preference is applied after mount (see above)
     setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
   }, []);
   // Hide all workshop chrome on public-scan routes — those pages are
@@ -99,53 +105,63 @@ export function AppSidebar() {
       </div>
       <TooltipProvider>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
-          {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          // The Maintenance entry links to tickets but also owns work orders.
-          // Highlight it for both sub-routes so the nav state reads correctly.
-          const isMaintenanceItem = item.href === "/maintenance/tickets";
-          // /organizations and /organizations/map are siblings — match
-          // each exactly so the parent doesn't claim its child's
-          // active state.
-          const isCustomerListItem = item.href === "/organizations";
-          const isCustomerMapItem = item.href === "/organizations/map";
-          const active = item.exact
-            ? pathname === item.href
-            : isCustomerListItem
-              ? pathname === item.href ||
-                (pathname.startsWith(`${item.href}/`) &&
-                  pathname !== "/organizations/map")
-              : isCustomerMapItem
-                ? pathname === item.href
-                : pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`) ||
-                  (isMaintenanceItem &&
-                    pathname.startsWith("/maintenance/work-orders"));
-          const link = (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-label={collapsed ? item.label : undefined}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md py-1.5 text-sm transition-colors",
-                collapsed ? "justify-center px-0" : "px-2.5",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
-              )}
-            >
-              <Icon aria-hidden className="size-4 shrink-0" />
-              {collapsed ? null : <span className="truncate">{item.label}</span>}
-            </Link>
-          );
-          if (!collapsed) return link;
-          return (
-            <Tooltip key={item.href}>
-              <TooltipTrigger asChild>{link}</TooltipTrigger>
-              <TooltipContent side="right">{item.label}</TooltipContent>
-            </Tooltip>
-          );
-        })}
+          {NAV_GROUPS.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              {groupIndex > 0 ? (
+                <div
+                  role="separator"
+                  className="border-border/60 mx-2 my-1.5 border-t"
+                />
+              ) : null}
+              {group.map((item) => {
+                const Icon = item.icon;
+                // The Maintenance entry links to tickets but also owns work
+                // orders. Highlight it for both sub-routes so the nav state
+                // reads correctly.
+                const isMaintenanceItem =
+                  item.href === "/maintenance/tickets";
+                // Customers (/organizations) shouldn't claim the customer map
+                // (/organizations/map) — that now lives under Admin.
+                const isCustomerListItem = item.href === "/organizations";
+                const active = item.exact
+                  ? pathname === item.href
+                  : isCustomerListItem
+                    ? pathname === item.href ||
+                      (pathname.startsWith(`${item.href}/`) &&
+                        pathname !== "/organizations/map")
+                    : pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`) ||
+                      (isMaintenanceItem &&
+                        pathname.startsWith("/maintenance/work-orders"));
+                const link = (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-label={collapsed ? item.label : undefined}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-md py-1.5 text-sm transition-colors",
+                      collapsed ? "justify-center px-0" : "px-2.5",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+                    )}
+                  >
+                    <Icon aria-hidden className="size-4 shrink-0" />
+                    {collapsed ? null : (
+                      <span className="truncate">{item.label}</span>
+                    )}
+                  </Link>
+                );
+                if (!collapsed) return link;
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>{link}</TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </Fragment>
+          ))}
         </nav>
         <div className="border-t p-2">
           <Tooltip>

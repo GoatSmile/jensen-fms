@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Coins,
   FolderTree,
+  Map as MapIcon,
   Package,
   Palette,
   Percent,
@@ -23,13 +24,10 @@ import { createClient } from "@/lib/supabase/server";
 import { formatPct } from "@/lib/parts/format";
 
 /**
- * Admin landing — tiles for each subsection. v1 holds two:
- *   - HS / TARIC codes (CRUD) — used by parts.hs_code_id and snapshotted
- *     onto PO lines at insert.
- *   - Settings — the default transport % applied to new PO lines.
- *
- * As more controlled-vocab tables grow (currencies, locations, segments,
- * etc.) they slot in here too.
+ * Admin landing — tiles for each subsection, grouped by domain (catalog &
+ * inventory, purchasing & landed cost, customers, system) with the lists you
+ * touch most near the top. The customer Map lives here too (moved out of the
+ * primary nav).
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
@@ -43,6 +41,7 @@ export default async function AdminLandingPage() {
     kitsRes,
     categoriesRes,
     locationsRes,
+    orgsRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -85,6 +84,10 @@ export default async function AdminLandingPage() {
       .from("inventory_locations")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    supabase
+      .from("organizations")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -98,6 +101,7 @@ export default async function AdminLandingPage() {
   const activeKitCount = kitsRes.count ?? 0;
   const activeCategoryCount = categoriesRes.count ?? 0;
   const activeLocationCount = locationsRes.count ?? 0;
+  const customerCount = orgsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -123,76 +127,109 @@ export default async function AdminLandingPage() {
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Tile
-          href="/admin/categories"
-          icon={FolderTree}
-          title="Part categories"
-          description="The hierarchy parts are classified under. Every part carries one."
-          stat={`${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}`}
-        />
-        <Tile
-          href="/admin/hs-codes"
-          icon={Tag}
-          title="HS / TARIC codes"
-          description="Classify parts so EU import duty rolls into the landed cost."
-          stat={`${activeHsCount} active code${activeHsCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/fx-rates"
-          icon={Coins}
-          title="FX rates"
-          description="Currency-to-DKK conversion rates from ECB via Frankfurter."
-          stat={
-            lastFxRefresh
-              ? `Latest: ${lastFxRefresh}`
-              : "No rates on file yet"
-          }
-        />
-        <Tile
-          href="/admin/colors"
-          icon={Palette}
-          title="Colours"
-          description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
-          stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/customer-segments"
-          icon={Users}
-          title="Customer segments"
-          description="Hotel / hospital / municipality / FM / B2B / B2C. Used to classify organisations and report on the customer mix."
-          stat={`${activeSegmentCount} active segment${activeSegmentCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/suppliers"
-          icon={Truck}
-          title="Suppliers"
-          description="Vendors parts are bought from. Used by part offerings, purchase orders, and paint orders."
-          stat={`${activeSupplierCount} active supplier${activeSupplierCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/kits"
-          icon={Package}
-          title="Kits"
-          description="Colour + number sticker labels for part boxes — the assembly floor picks complete part sets by code."
-          stat={`${activeKitCount} active kit${activeKitCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/locations"
-          icon={Warehouse}
-          title="Locations"
-          description="Physical sites stock lives at. The primary location is the default for receiving and consumption."
-          stat={`${activeLocationCount} active location${activeLocationCount === 1 ? "" : "s"}`}
-        />
-        <Tile
-          href="/admin/settings"
-          icon={Percent}
-          title="Settings"
-          description="App-wide defaults that PO line creation reads from."
-          stat={`Default transport: ${formatPct(defaultTransportPct)}`}
-        />
+      <div className="flex flex-col gap-8">
+        <AdminGroup title="Catalog & inventory">
+          <Tile
+            href="/admin/categories"
+            icon={FolderTree}
+            title="Part categories"
+            description="The hierarchy parts are classified under. Every part carries one."
+            stat={`${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}`}
+          />
+          <Tile
+            href="/admin/colors"
+            icon={Palette}
+            title="Colours"
+            description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
+            stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/admin/kits"
+            icon={Package}
+            title="Kits"
+            description="Colour + number sticker labels for part boxes — the assembly floor picks complete part sets by code."
+            stat={`${activeKitCount} active kit${activeKitCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/admin/locations"
+            icon={Warehouse}
+            title="Locations"
+            description="Physical sites stock lives at. The primary location is the default for receiving and consumption."
+            stat={`${activeLocationCount} active location${activeLocationCount === 1 ? "" : "s"}`}
+          />
+        </AdminGroup>
+
+        <AdminGroup title="Purchasing & landed cost">
+          <Tile
+            href="/admin/suppliers"
+            icon={Truck}
+            title="Suppliers"
+            description="Vendors parts are bought from. Used by part offerings, purchase orders, and paint orders."
+            stat={`${activeSupplierCount} active supplier${activeSupplierCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/admin/hs-codes"
+            icon={Tag}
+            title="HS / TARIC codes"
+            description="Classify parts so EU import duty rolls into the landed cost."
+            stat={`${activeHsCount} active code${activeHsCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/admin/fx-rates"
+            icon={Coins}
+            title="FX rates"
+            description="Currency-to-DKK conversion rates from ECB via Frankfurter."
+            stat={
+              lastFxRefresh ? `Latest: ${lastFxRefresh}` : "No rates on file yet"
+            }
+          />
+        </AdminGroup>
+
+        <AdminGroup title="Customers">
+          <Tile
+            href="/admin/customer-segments"
+            icon={Users}
+            title="Customer segments"
+            description="Hotel / hospital / municipality / FM / B2B / B2C. Used to classify organisations and report on the customer mix."
+            stat={`${activeSegmentCount} active segment${activeSegmentCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/organizations/map"
+            icon={MapIcon}
+            title="Map"
+            description="Geocoded view of customers and prospects — a sales and routing aid."
+            stat={`${customerCount} customer${customerCount === 1 ? "" : "s"}`}
+          />
+        </AdminGroup>
+
+        <AdminGroup title="System">
+          <Tile
+            href="/admin/settings"
+            icon={Percent}
+            title="Settings"
+            description="App-wide defaults (transport %, primary location, hide location info)."
+            stat={`Default transport: ${formatPct(defaultTransportPct)}`}
+          />
+        </AdminGroup>
       </div>
     </div>
+  );
+}
+
+function AdminGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        {title}
+      </h2>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+    </section>
   );
 }
 
