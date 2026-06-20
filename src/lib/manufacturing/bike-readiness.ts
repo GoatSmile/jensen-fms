@@ -22,13 +22,16 @@
  * confirms the real frame inside the build workbench, so a provisional-frame
  * bike is still "ready" — the card just flags that a confirmation is pending.
  *
- * Phase C will add an `atPainter` block here (a frame at the painter can't be
- * built); the shape already carries a reason string for that.
+ * A bike physically at the painter (Tier 2 Phase C / D2) CANNOT be built, so
+ * `at painter` blocks readiness and TAKES PRECEDENCE over a parts shortfall —
+ * the frame literally isn't here, so that's the actionable reason regardless
+ * of stock. Receiving its paint order back frees it automatically.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/database";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import { isServiceSku } from "./coverage";
 
@@ -93,7 +96,7 @@ export async function loadBuildQueue(
     ),
   ];
 
-  const [stockRes, bikePartsRes, recipeRes] = await Promise.all([
+  const [stockRes, bikePartsRes, recipeRes, atPainterIds] = await Promise.all([
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
     supabase
       .from("bike_parts")
@@ -108,6 +111,7 @@ export async function loadBuildQueue(
         "manufacturing_order_id, part_id, quantity_per_bike, part:parts!part_id(internal_sku)",
       )
       .in("manufacturing_order_id", moIds),
+    loadAtPainterBikeIds(supabase, bikeIds),
   ]);
 
   const stockByPart = new Map<string, number>();
@@ -172,7 +176,16 @@ export async function loadBuildQueue(
     for (const r of req) {
       if ((stockByPart.get(r.partId) ?? 0) < r.qty) shortfallCount += 1;
     }
-    const ready = shortfallCount === 0;
+
+    // At-painter takes precedence over a parts shortfall: the frame isn't
+    // here to build, so that's the reason to surface no matter the stock.
+    const atPainter = atPainterIds.has(b.id);
+    const ready = !atPainter && shortfallCount === 0;
+    const blockedReason = atPainter
+      ? "At painter"
+      : shortfallCount > 0
+        ? `${shortfallCount} part${shortfallCount === 1 ? "" : "s"} short`
+        : null;
 
     return {
       bikeId: b.id,
@@ -193,9 +206,7 @@ export async function loadBuildQueue(
       moNumber: mo.mo_number as string,
       ready,
       shortfallCount,
-      blockedReason: ready
-        ? null
-        : `${shortfallCount} part${shortfallCount === 1 ? "" : "s"} short`,
+      blockedReason,
     };
   });
 

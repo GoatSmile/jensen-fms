@@ -33,6 +33,8 @@ export type MOBikeRow = {
   status: BikeStatus;
   /** Whether the real frame number has been confirmed (gates build). */
   frameConfirmed: boolean;
+  /** Whether the frame is physically at the painter (Tier 2 Phase C). */
+  atPainter: boolean;
   identifierCount: number;
   requiredIdentifierCount: number;
   /** Customer this bike is slated/assigned to. Null until someone earmarks it. */
@@ -89,17 +91,24 @@ export function MOBikesSection({
     return m;
   }, [rows]);
 
-  // Only frame-confirmed unbuilt bikes can be bulk-built; the rest must have
-  // their real frame confirmed in the build workbench first.
-  const { buildableCount, unconfirmedCount } = useMemo(() => {
+  // Only frame-confirmed unbuilt bikes that aren't at the painter can be
+  // bulk-built; the rest are skipped with their reason. At-painter wins over
+  // unconfirmed so a bike is counted under one reason only.
+  const { buildableCount, unconfirmedCount, atPainterCount } = useMemo(() => {
     let buildable = 0;
     let unconfirmed = 0;
+    let atPainter = 0;
     for (const r of rows) {
       if (r.status !== "planning" && r.status !== "building") continue;
-      if (r.frameConfirmed) buildable += 1;
+      if (r.atPainter) atPainter += 1;
+      else if (r.frameConfirmed) buildable += 1;
       else unconfirmed += 1;
     }
-    return { buildableCount: buildable, unconfirmedCount: unconfirmed };
+    return {
+      buildableCount: buildable,
+      unconfirmedCount: unconfirmed,
+      atPainterCount: atPainter,
+    };
   }, [rows]);
   const canBulkBuild = !closed && buildableCount > 0;
 
@@ -129,10 +138,15 @@ export function MOBikesSection({
         setError(r.error);
         return;
       }
+      const skipReasons: string[] = [];
+      if (r.skippedUnconfirmed > 0) {
+        skipReasons.push(`${r.skippedUnconfirmed} need a confirmed frame`);
+      }
+      if (r.skippedAtPainter > 0) {
+        skipReasons.push(`${r.skippedAtPainter} at the painter`);
+      }
       const skippedNote =
-        r.skipped > 0
-          ? ` ${r.skipped} skipped — confirm their frame number in the build workbench.`
-          : "";
+        skipReasons.length > 0 ? ` Skipped: ${skipReasons.join(", ")}.` : "";
       setNotice(
         `Marked ${r.built} bike${r.built === 1 ? "" : "s"} built.${skippedNote}`,
       );
@@ -217,6 +231,13 @@ export function MOBikesSection({
           {unconfirmedCount} bike{unconfirmedCount === 1 ? "" : "s"} need
           {unconfirmedCount === 1 ? "s" : ""} a confirmed frame number — open the
           build workbench to enter the real frame before building.
+        </p>
+      ) : null}
+      {!closed && atPainterCount > 0 ? (
+        <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+          {atPainterCount === 1
+            ? "1 bike is at the painter — it can’t be built until received back on its paint order."
+            : `${atPainterCount} bikes are at the painter — they can’t be built until received back on their paint order.`}
         </p>
       ) : null}
 
@@ -388,11 +409,12 @@ function BikeRow({
         ) : null}
       </TableCell>
       <TableCell>
-        <Badge
-          variant={BIKE_STATUS_VARIANT[row.status] ?? "outline"}
-        >
-          {bikeStatusLabel(row.status)}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant={BIKE_STATUS_VARIANT[row.status] ?? "outline"}>
+            {bikeStatusLabel(row.status)}
+          </Badge>
+          {row.atPainter ? <Badge variant="warning">At painter</Badge> : null}
+        </div>
       </TableCell>
       <TableCell className="hidden text-xs md:table-cell">
         {row.ownerName ? (

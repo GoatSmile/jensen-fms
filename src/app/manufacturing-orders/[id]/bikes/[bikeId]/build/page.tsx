@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
 import { loadBikeIdentifierContext } from "@/lib/bikes/identifier-context";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import {
   BuildWorkbench,
@@ -269,6 +270,12 @@ export default async function BikeBuildWorkbenchPage({
     bikeId,
     bike.bike_type_id,
   );
+
+  // Paint gate (Tier 2 Phase C): block Finish while the frame is at the painter.
+  const atPainterIds = await loadAtPainterBikeIds(supabase, [bikeId]);
+  const atPainterReason = atPainterIds.has(bikeId)
+    ? "This frame is at the painter — receive it back on its paint order before finishing the build."
+    : null;
   const otherRequiredTypes = identifierContext.types.filter(
     (t) => t.is_required && t.slug !== "frame_number",
   );
@@ -339,6 +346,7 @@ export default async function BikeBuildWorkbenchPage({
         bikeId={bikeId}
         bikeFrameNumber={bike.frame_number}
         frameConfirmed={bike.frame_number_confirmed}
+        atPainterReason={atPainterReason}
         bikeStatus={bikeStatus}
         templateLabel={templateLabel}
         colorName={mo.color?.name_en ?? null}

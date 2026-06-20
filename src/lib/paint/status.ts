@@ -69,6 +69,19 @@ export function isPaintOrderOpen(s: string | null | undefined): boolean {
   return OPEN_PAINT_ORDER_STATUSES.includes(s as PaintOrderStatus);
 }
 
+/**
+ * Statuses where a bike is physically AWAY at the painter and so can't be
+ * built (Tier 2 Phase C / D2). Narrower than OPEN_PAINT_ORDER_STATUSES: a
+ * `planned` order hasn't shipped yet, so its bikes are still buildable.
+ * `received_back` frees the frames automatically — a bike simply stops
+ * matching this set. The build gate (finishBikeBuild, bulkMarkBikesBuilt,
+ * the build workbench, the /work queue, the MO bikes section) reads this.
+ */
+export const AT_PAINTER_STATUSES: PaintOrderStatus[] = [
+  "sent_to_painter",
+  "at_painter",
+];
+
 export function paintOrderTransitionRequiresReason(
   to: PaintOrderStatus,
 ): boolean {

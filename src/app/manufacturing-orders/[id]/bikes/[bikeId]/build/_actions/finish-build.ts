@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import { autoAdvanceMOAfterBuild } from "../../../../_actions/transition-mo";
 
@@ -75,6 +76,19 @@ export async function finishBikeBuild(
       ok: false,
       error:
         "Confirm the real frame number in the build workbench before finishing.",
+    };
+  }
+
+  // Paint gate (Tier 2 Phase C): a frame physically at the painter can't be
+  // built. Derived from the bike's open paint orders — receiving the order
+  // back frees it automatically. This is the per-bike backstop; the floor,
+  // workbench, and bulk action surface the same block earlier.
+  const atPainter = await loadAtPainterBikeIds(supabase, [bikeId]);
+  if (atPainter.has(bikeId)) {
+    return {
+      ok: false,
+      error:
+        "Bike is at the painter and can't be built yet. Receive it back on its paint order first.",
     };
   }
 

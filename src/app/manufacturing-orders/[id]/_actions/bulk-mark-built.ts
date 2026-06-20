@@ -3,11 +3,19 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import { markBikeBuilt } from "./mark-bike-built";
 
 export type BulkBuiltResult =
-  | { ok: true; built: number; skipped: number }
+  | {
+      ok: true;
+      built: number;
+      /** Total bikes skipped for a reason (not counting "beyond limit"). */
+      skipped: number;
+      skippedUnconfirmed: number;
+      skippedAtPainter: number;
+    }
   | { ok: false; error: string; built: number };
 
 /**
@@ -69,13 +77,27 @@ export async function bulkMarkBikesBuilt(
   }
 
   // Only frame-confirmed bikes can be bulk-built; the rest are skipped.
-  const buildable = all.filter((b) => b.frame_number_confirmed);
-  const unconfirmed = all.length - buildable.length;
+  const frameConfirmed = all.filter((b) => b.frame_number_confirmed);
+  const unconfirmed = all.length - frameConfirmed.length;
+
+  // And a bike physically at the painter can't be built (Tier 2 Phase C) —
+  // skipped and reported, just like an unconfirmed frame.
+  const atPainterIds = await loadAtPainterBikeIds(
+    supabase,
+    frameConfirmed.map((b) => b.id),
+  );
+  const buildable = frameConfirmed.filter((b) => !atPainterIds.has(b.id));
+  const atPainter = frameConfirmed.length - buildable.length;
 
   if (buildable.length === 0) {
+    const reasons: string[] = [];
+    if (unconfirmed > 0) reasons.push(`${unconfirmed} need a confirmed frame`);
+    if (atPainter > 0) {
+      reasons.push(`${atPainter} ${atPainter === 1 ? "is" : "are"} at the painter`);
+    }
     return {
       ok: false,
-      error: `No bikes are ready to build: ${unconfirmed} need their real frame number confirmed in the build workbench first.`,
+      error: `No bikes are ready to build: ${reasons.join("; ")}.`,
       built: 0,
     };
   }
@@ -99,7 +121,14 @@ export async function bulkMarkBikesBuilt(
   revalidatePath("/manufacturing-orders");
   revalidatePath(`/manufacturing-orders/${moId}`);
   revalidatePath("/parts");
-  // Skipped = unconfirmed bikes not attempted (those beyond `limit` aren't
-  // "skipped", just not reached this round).
-  return { ok: true, built, skipped: unconfirmed };
+  // Skipped = bikes not attempted for a reason (unconfirmed frame or at the
+  // painter). Bikes beyond `limit` aren't "skipped", just not reached this
+  // round.
+  return {
+    ok: true,
+    built,
+    skipped: unconfirmed + atPainter,
+    skippedUnconfirmed: unconfirmed,
+    skippedAtPainter: atPainter,
+  };
 }

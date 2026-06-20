@@ -22,6 +22,7 @@ import {
   computeCoverageRows,
   remainingToBuildCount,
 } from "@/lib/manufacturing/coverage";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import { CoverageSection } from "./_components/coverage-section";
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
@@ -222,6 +223,11 @@ export default async function ManufacturingOrderDetailPage({
   // (it depends on moBikeRows which we compute next).
 
   const requiredIdCount = bikeTypeRequiredRes.data?.length ?? 0;
+  // Paint gate (Tier 2 Phase C): which of this MO's bikes are at the painter.
+  const atPainterIds = await loadAtPainterBikeIds(
+    supabase,
+    (bikesRes.data ?? []).map((b) => b.id),
+  );
   const moBikeRows: MOBikeRow[] = (bikesRes.data ?? []).map((b) => {
     const ownerName =
       b.owner_organization?.display_name_da ??
@@ -233,6 +239,7 @@ export default async function ManufacturingOrderDetailPage({
       frameNumber: b.frame_number,
       status: b.status as BikeStatus,
       frameConfirmed: b.frame_number_confirmed,
+      atPainter: atPainterIds.has(b.id),
       identifierCount:
         b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
       requiredIdentifierCount: requiredIdCount,

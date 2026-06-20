@@ -87,6 +87,11 @@ type Props = {
   bikeFrameNumber: string;
   /** Whether the real frame number has been confirmed (gates Finish). */
   frameConfirmed: boolean;
+  /**
+   * Non-null when the frame is at the painter (Tier 2 Phase C) — blocks Finish
+   * with this human reason until the paint order is received back.
+   */
+  atPainterReason: string | null;
   bikeStatus: BikeStatus;
   templateLabel: string | null;
   colorName: string | null;
@@ -114,6 +119,7 @@ export function BuildWorkbench({
   bikeId,
   bikeFrameNumber,
   frameConfirmed,
+  atPainterReason,
   bikeStatus,
   templateLabel,
   colorName,
@@ -585,19 +591,28 @@ export function BuildWorkbench({
 
         {!readOnly ? (
           <footer className="border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <p className="text-muted-foreground text-xs">
-              {!confirmed
-                ? "Confirm the frame number above before finishing."
-                : rows.length === 0
-                  ? "Add parts before finishing."
-                  : `${rows.length} part${rows.length === 1 ? "" : "s"} ready to consume.`}
+            <p
+              className={`text-xs ${atPainterReason ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}
+            >
+              {atPainterReason
+                ? atPainterReason
+                : !confirmed
+                  ? "Confirm the frame number above before finishing."
+                  : rows.length === 0
+                    ? "Add parts before finishing."
+                    : `${rows.length} part${rows.length === 1 ? "" : "s"} ready to consume.`}
             </p>
             <Button
               type="button"
               size="lg"
               onClick={onFinish}
               disabled={
-                isFinishing || isSeeding || isConfirming || rows.length === 0 || !confirmed
+                isFinishing ||
+                isSeeding ||
+                isConfirming ||
+                rows.length === 0 ||
+                !confirmed ||
+                !!atPainterReason
               }
             >
               <CheckCircle2 aria-hidden />{" "}
