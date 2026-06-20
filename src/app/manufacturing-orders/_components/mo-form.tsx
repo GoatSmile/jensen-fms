@@ -287,7 +287,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               onChange={(e) => update("planned_start_date", e.target.value)}
             />
           </Field>
-          <Field label="Planned completion" htmlFor="mo-end">
+          <Field label="Expected completion" htmlFor="mo-end">
             <DeliveryWeekDateField
               id="mo-end"
               date={values.planned_completion_date}

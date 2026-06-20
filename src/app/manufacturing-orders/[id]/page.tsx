@@ -392,7 +392,7 @@ export default async function ManufacturingOrderDetailPage({
           <Field label="Planned start">
             {formatDate(mo.planned_start_date)}
           </Field>
-          <Field label="Planned completion">
+          <Field label="Expected completion">
             {formatDeliveryTarget(
               mo.planned_completion_date,
               mo.planned_completion_precision,

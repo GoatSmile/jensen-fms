@@ -579,7 +579,7 @@ export function MOBatchForm({
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </Field>
-            <Field label="Planned completion" htmlFor="batch-end">
+            <Field label="Expected completion" htmlFor="batch-end">
               <DeliveryWeekDateField
                 id="batch-end"
                 date={endDate}
