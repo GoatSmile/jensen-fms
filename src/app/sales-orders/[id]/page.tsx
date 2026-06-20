@@ -16,8 +16,13 @@ import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
 import { canEditSOLines, type SOStatus } from "@/lib/so/status";
 import type { MOStatus } from "@/lib/mo/status";
+import type { PaintOrderStatus } from "@/lib/paint/status";
 
 import { SOHeader } from "../_components/so-header";
+import {
+  LinkedPaintOrdersSection,
+  type LinkedPaintRow,
+} from "./_components/linked-paint-orders-section";
 import {
   LinesSection,
   type SOLineRow,
@@ -66,8 +71,8 @@ export default async function SODetailPage({
     status === "confirmed" ||
     status === "in_production";
 
-  // Lines, MOs, and picker/catalog data in parallel.
-  const [linesRes, mosRes, partsRes, templatesRes, vatRes, colorsRes] =
+  // Lines, MOs, paint orders, and picker/catalog data in parallel.
+  const [linesRes, mosRes, paintRes, partsRes, templatesRes, vatRes, colorsRes] =
     await Promise.all([
       supabase
         .from("sales_order_lines")
@@ -87,6 +92,16 @@ export default async function SODetailPage({
           `id, mo_number, status, target_quantity, completed_quantity,
            planned_completion_date,
            bike_template:bike_templates!bike_template_id(name_en, family, frame_size)`,
+        )
+        .eq("sales_order_id", id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("paint_orders")
+        .select(
+          `id, paint_order_number, status,
+           supplier:suppliers(name),
+           color:colors(name_en, hex),
+           paint_order_bikes(count)`,
         )
         .eq("sales_order_id", id)
         .order("created_at", { ascending: true }),
@@ -181,6 +196,17 @@ export default async function SODetailPage({
           .join(" · ")
       : null,
   }));
+
+  const paintRows: LinkedPaintRow[] = (paintRes.data ?? []).map((p) => ({
+    id: p.id,
+    paint_order_number: p.paint_order_number,
+    status: p.status as PaintOrderStatus,
+    supplierName: p.supplier?.name ?? null,
+    colorName: p.color?.name_en ?? null,
+    colorHex: p.color?.hex ?? null,
+    bikeCount: p.paint_order_bikes?.[0]?.count ?? 0,
+  }));
+  const canCreatePaint = status !== "cancelled" && status !== "delivered";
 
   const customerName =
     so.organization?.display_name_da ??
@@ -302,6 +328,12 @@ export default async function SODetailPage({
       />
 
       <LinkedMOsSection rows={moRows} />
+
+      <LinkedPaintOrdersSection
+        soId={so.id}
+        rows={paintRows}
+        canCreate={canCreatePaint}
+      />
     </div>
   );
 }

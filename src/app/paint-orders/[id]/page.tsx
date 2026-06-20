@@ -11,7 +11,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ColorChip } from "@/components/color-swatch";
-import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -47,7 +46,8 @@ export default async function PaintOrderDetailPage({
         unit_cost, unit_cost_currency, notes, created_at,
         supplier:suppliers(id, name),
         color:colors(id, slug, name_en, hex),
-        paint_part:parts(id, internal_sku, name_en)
+        paint_part:parts(id, internal_sku, name_en),
+        sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
     )
     .eq("id", id)
@@ -189,6 +189,18 @@ export default async function PaintOrderDetailPage({
                 <span className="text-muted-foreground font-mono text-xs">
                   ({order.paint_part.internal_sku})
                 </span>
+              </Link>
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label="Sales order">
+            {order.sales_order ? (
+              <Link
+                href={`/sales-orders/${order.sales_order.id}`}
+                className="font-mono hover:underline"
+              >
+                {order.sales_order.sales_order_number}
               </Link>
             ) : (
               <Muted>—</Muted>

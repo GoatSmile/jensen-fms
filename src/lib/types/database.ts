@@ -2080,6 +2080,7 @@ export type Database = {
           paint_part_id: string | null
           planned_send_date: string | null
           received_at: string | null
+          sales_order_id: string | null
           sent_at: string | null
           status: Database["public"]["Enums"]["paint_order_status"]
           supplier_id: string
@@ -2098,6 +2099,7 @@ export type Database = {
           paint_part_id?: string | null
           planned_send_date?: string | null
           received_at?: string | null
+          sales_order_id?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["paint_order_status"]
           supplier_id: string
@@ -2116,6 +2118,7 @@ export type Database = {
           paint_part_id?: string | null
           planned_send_date?: string | null
           received_at?: string | null
+          sales_order_id?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["paint_order_status"]
           supplier_id?: string
@@ -2143,6 +2146,13 @@ export type Database = {
             columns: ["paint_part_id"]
             isOneToOne: false
             referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
           {

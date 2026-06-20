@@ -473,9 +473,35 @@ Phases:
   tap → the build workbench. (The Scan button still links to `/scan`; a
   scan-a-frame → build-if-buildable jump is not wired here.) `blockedReason`
   already carries a string so Phase C can add an `atPainter` block.
-- **C — Paint → build pipeline.** D2 + D3: paint-from-SO subset action, paint
-  gates build (workbench + floor + finish + bulk all honour it), `received_back`
-  frees frames, SO↔paint back-links. Migration for `paint_orders.sales_order_id`.
+- **C — Paint → build pipeline ✅ SHIPPED 2026-06-20.** D2 + D3.
+  - **D2 — at-painter gate.** "At painter" is DERIVED (no bike column): a bike
+    is at-painter iff it's in a paint_order whose current status is
+    `sent_to_painter`/`at_painter` (new `AT_PAINTER_STATUSES` in
+    `src/lib/paint/status.ts` — narrower than `OPEN_PAINT_ORDER_STATUSES`; a
+    `planned` order hasn't shipped, so its bikes stay buildable).
+    `received_back` frees frames automatically (a bike just stops matching —
+    every gate query filters on current status, so NO trigger is needed). One
+    shared helper `src/lib/paint/at-painter.ts` (`loadAtPainterBikeIds`) backs
+    every gate: `finishBikeBuild` (per-bike backstop), `bulkMarkBikesBuilt`
+    (skips + reports `skippedAtPainter` separately from unconfirmed),
+    `loadBuildQueue` (/work floor — "At painter" block takes PRECEDENCE over a
+    parts shortfall), the build workbench (`atPainterReason` prop disables
+    Finish), and the MO bikes section (excluded from buildable count, per-row
+    badge + warning).
+  - **D3 — SO↔paint link.** Migration 45 adds nullable
+    `paint_orders.sales_order_id` (ON DELETE SET NULL + index). New
+    `createPaintOrderFromSO` action (`src/app/sales-orders/_actions/paint-from-so.ts`)
+    paints a SUBSET of an SO's frames (resolves SO→MO→bikes, rejects strays +
+    frames already in an open paint order) at a dedicated route
+    `/sales-orders/[id]/paint/new` (page + `paint-from-so-form`, Metacoat
+    default, native-checkbox frame multi-select). SO detail gains a
+    "Paint orders" section (`linked-paint-orders-section`) with a "New paint
+    order" CTA (hidden when SO is cancelled/delivered); paint-order detail
+    shows a "Sales order" back-link.
+  - Verified end-to-end against temporary paint-order fixtures (gate fires on
+    floor/workbench/MO-section from both ad-hoc and SO-linked orders;
+    back-links render both ways; received-back/teardown frees frames). DB back
+    to baseline after each.
 - **D — Labeling note** to the build floor (item 16) —
   `sales_order_lines.build_note` (or `sales_orders.production_note`), surfaced on
   the build card + workbench (e.g. service-contract muni labeling).
