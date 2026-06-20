@@ -136,6 +136,13 @@ export function ColorForm({ mode, initial, coatings }: Props) {
   const ralHex = ralToHex(values.ral_code);
   const ralConflict = Boolean(ralHex && hexNorm && ralHex.toLowerCase() !== hexNorm);
 
+  // A complete-looking code (4+ digits) that we can't resolve isn't a RAL
+  // Classic colour — warn so a typo like "2150" doesn't pass silently. Stays
+  // quiet while the user is still typing (< 4 digits).
+  const ralDigits = values.ral_code.replace(/[^0-9]/g, "");
+  const ralUnknown =
+    values.ral_code.trim() !== "" && ralHex == null && ralDigits.length >= 4;
+
   function matchRal() {
     if (ralHex) update("hex", ralHex);
   }
@@ -190,10 +197,18 @@ export function ColorForm({ mode, initial, coatings }: Props) {
               <span className="text-muted-foreground text-xs">—</span>
             )}
           </div>
-          <p className="text-muted-foreground text-xs">
-            Optional. For the painter (Metacoat) to mix consistently. A known
-            RAL sets the colour (auto-fills the hex).
-          </p>
+          {ralUnknown ? (
+            <p className="text-xs text-amber-700 dark:text-amber-400" role="alert">
+              &ldquo;{values.ral_code.trim()}&rdquo; isn&rsquo;t a recognised RAL
+              Classic code — no colour to show. Check for a typo, or set the hex
+              manually if it&rsquo;s a non-Classic RAL.
+            </p>
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              Optional. For the painter (Metacoat) to mix consistently. A known
+              RAL sets the colour (auto-fills the hex).
+            </p>
+          )}
         </Field>
         <Field label="Hex" htmlFor="color-hex">
           <div className="flex items-center gap-2">
