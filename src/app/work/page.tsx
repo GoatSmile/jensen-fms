@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ScanLine } from "lucide-react";
+import { ChevronRight, ScanLine, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
@@ -313,6 +313,14 @@ function BuildStream({ bikes }: { bikes: BuildQueueBike[] }) {
                       {[b.templateLabel, b.ownerName]
                         .filter(Boolean)
                         .join(" · ")}
+                    </div>
+                  ) : null}
+                  {b.buildNote ? (
+                    <div className="mt-1 flex items-start gap-1 text-amber-700 dark:text-amber-300">
+                      <Tag className="mt-0.5 size-3 shrink-0" aria-hidden />
+                      <span className="line-clamp-2 text-xs">
+                        {b.buildNote}
+                      </span>
                     </div>
                   ) : null}
                 </div>

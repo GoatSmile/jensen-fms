@@ -48,7 +48,8 @@ export default async function BikeBuildWorkbenchPage({
       .select(
         `id, mo_number, status,
          bike_template:bike_templates(id, name_en, family, frame_size),
-         color:colors(name_en, hex)`,
+         color:colors(name_en, hex),
+         sales_order:sales_orders!sales_order_id(production_note)`,
       )
       .eq("id", moId)
       .maybeSingle(),
@@ -294,6 +295,12 @@ export default async function BikeBuildWorkbenchPage({
         .join(" · ")
     : null;
 
+  // Build-floor labeling note from the MO's sales order (Tier 2 Phase D).
+  const moSalesOrder = Array.isArray(mo.sales_order)
+    ? mo.sales_order[0]
+    : mo.sales_order;
+  const buildNote = moSalesOrder?.production_note ?? null;
+
   const moClosed = mo.status === "completed" || mo.status === "cancelled";
   const bikeStatus = bike.status as BikeStatus;
   const isReadOnly =
@@ -347,6 +354,7 @@ export default async function BikeBuildWorkbenchPage({
         bikeFrameNumber={bike.frame_number}
         frameConfirmed={bike.frame_number_confirmed}
         atPainterReason={atPainterReason}
+        buildNote={buildNote}
         bikeStatus={bikeStatus}
         templateLabel={templateLabel}
         colorName={mo.color?.name_en ?? null}

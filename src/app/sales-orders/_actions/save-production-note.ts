@@ -1,0 +1,62 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { createClient } from "@/lib/supabase/server";
+
+export type SaveProductionNoteResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Set the build-floor production / labeling note on a sales order (Tier 2
+ * Phase D). Editable mid-production — labeling instructions often arrive after
+ * the SO is confirmed — so unlike the draft-only header form this only blocks
+ * the terminal states (cancelled / delivered). Empty input clears the note.
+ *
+ * Revalidates the SO detail and the /work floor so the note propagates to the
+ * build cards; the per-bike build workbench reads cookies (dynamic) so it
+ * picks up the change on next load.
+ */
+export async function saveProductionNote(
+  soId: string,
+  note: string,
+): Promise<SaveProductionNoteResult> {
+  if (!soId) return { ok: false, error: "Missing SO id." };
+
+  const supabase = await createClient();
+
+  const { data: so, error: lookupErr } = await supabase
+    .from("sales_orders")
+    .select("status")
+    .eq("id", soId)
+    .maybeSingle();
+  if (lookupErr || !so) {
+    return {
+      ok: false,
+      error: `Could not load SO: ${lookupErr?.message ?? "not found"}`,
+    };
+  }
+  if (so.status === "cancelled" || so.status === "delivered") {
+    return {
+      ok: false,
+      error: `Can't edit the production note on a ${so.status} sales order.`,
+    };
+  }
+
+  const trimmed = note.trim();
+  const { error } = await supabase
+    .from("sales_orders")
+    .update({
+      production_note: trimmed === "" ? null : trimmed,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", soId);
+  if (error) {
+    return { ok: false, error: `Could not save note: ${error.message}` };
+  }
+
+  revalidatePath(`/sales-orders/${soId}`);
+  revalidatePath("/work");
+  return { ok: true };
+}

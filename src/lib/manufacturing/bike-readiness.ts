@@ -46,6 +46,8 @@ export type BuildQueueBike = {
   ownerName: string | null;
   moId: string;
   moNumber: string;
+  /** Build-floor labeling note from the bike's MO's sales order (Phase D). */
+  buildNote: string | null;
   ready: boolean;
   /** Count of distinct parts short of stock. */
   shortfallCount: number;
@@ -75,7 +77,8 @@ export async function loadBuildQueue(
          legal_name, display_name_da, display_name_en
        ),
        manufacturing_order:manufacturing_orders!manufacturing_order_id(
-         id, mo_number, status
+         id, mo_number, status,
+         sales_order:sales_orders!sales_order_id(production_note)
        )`,
     )
     .in("status", ["planning", "building"])
@@ -162,6 +165,7 @@ export async function loadBuildQueue(
     const color = one(b.color);
     const tpl = one(b.bike_template);
     const owner = one(b.owner_organization);
+    const buildNote = one(mo.sales_order)?.production_note ?? null;
 
     // Own (remaining) parts list once a build has started; else the MO recipe.
     // startedBikes — not reqByBike's presence — is the "started?" signal, so a
@@ -204,6 +208,7 @@ export async function loadBuildQueue(
         null,
       moId,
       moNumber: mo.mo_number as string,
+      buildNote,
       ready,
       shortfallCount,
       blockedReason,

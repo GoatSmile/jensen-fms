@@ -2801,6 +2801,7 @@ export type Database = {
           order_date: string
           organization_id: string
           organization_unit_id: string | null
+          production_note: string | null
           requested_delivery_date: string | null
           requested_delivery_precision: string | null
           sales_order_number: string
@@ -2823,6 +2824,7 @@ export type Database = {
           order_date: string
           organization_id: string
           organization_unit_id?: string | null
+          production_note?: string | null
           requested_delivery_date?: string | null
           requested_delivery_precision?: string | null
           sales_order_number: string
@@ -2845,6 +2847,7 @@ export type Database = {
           order_date?: string
           organization_id?: string
           organization_unit_id?: string | null
+          production_note?: string | null
           requested_delivery_date?: string | null
           requested_delivery_precision?: string | null
           sales_order_number?: string

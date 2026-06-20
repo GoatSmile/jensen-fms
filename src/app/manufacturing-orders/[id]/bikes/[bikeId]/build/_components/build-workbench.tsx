@@ -10,6 +10,7 @@ import {
   Copy,
   Lock,
   ScanLine,
+  Tag,
   Trash2,
 } from "lucide-react";
 
@@ -92,6 +93,8 @@ type Props = {
    * with this human reason until the paint order is received back.
    */
   atPainterReason: string | null;
+  /** Build-floor labeling note from the bike's sales order (Phase D). */
+  buildNote: string | null;
   bikeStatus: BikeStatus;
   templateLabel: string | null;
   colorName: string | null;
@@ -120,6 +123,7 @@ export function BuildWorkbench({
   bikeFrameNumber,
   frameConfirmed,
   atPainterReason,
+  buildNote,
   bikeStatus,
   templateLabel,
   colorName,
@@ -309,6 +313,26 @@ export function BuildWorkbench({
           </div>
         </div>
       </section>
+
+      {/* Build-floor labeling note from the sales order (Tier 2 Phase D). */}
+      {buildNote ? (
+        <section className="rounded-md border border-amber-300/60 bg-amber-50/60 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+          <div className="flex items-start gap-2">
+            <Tag
+              className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300"
+              aria-hidden
+            />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                Production note
+              </span>
+              <p className="text-sm whitespace-pre-wrap text-amber-950 dark:text-amber-100">
+                {buildNote}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Identify: confirm the real frame number + register identifiers. */}
       {!readOnly ? (

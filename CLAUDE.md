@@ -502,9 +502,18 @@ Phases:
     floor/workbench/MO-section from both ad-hoc and SO-linked orders;
     back-links render both ways; received-back/teardown frees frames). DB back
     to baseline after each.
-- **D — Labeling note** to the build floor (item 16) —
-  `sales_order_lines.build_note` (or `sales_orders.production_note`), surfaced on
-  the build card + workbench (e.g. service-contract muni labeling).
+- **D — Labeling note ✅ SHIPPED 2026-06-20.** Chose `sales_orders.production_note`
+  (per-SO, migration 46) over a per-line note — it reaches every bike of the
+  order via bike→MO→SO regardless of whether the MO was line-spawned or
+  batch-created, and matches the order-level use case (muni labeling).
+  Inline-editable on the SO detail (`ProductionNoteCard` + `saveProductionNote`
+  action) — editable mid-production (blocks only cancelled/delivered), since
+  labeling instructions often arrive after confirm; distinct from the
+  draft-only header form and from commercial `sales_orders.notes`. Surfaced to
+  techs on the `/work` build card (truncated, `buildNote` added to
+  `loadBuildQueue` via a nested SO embed) and as a full amber banner atop the
+  build workbench (`buildNote` prop). **Tier 2 (SO→paint→build, B→A→C→D) is now
+  COMPLETE.**
 
 **Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
 zero email/PDF infra today). **Tier 4 — payments & stock value** (down

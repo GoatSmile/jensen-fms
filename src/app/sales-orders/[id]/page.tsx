@@ -23,6 +23,7 @@ import {
   LinkedPaintOrdersSection,
   type LinkedPaintRow,
 } from "./_components/linked-paint-orders-section";
+import { ProductionNoteCard } from "./_components/production-note-card";
 import {
   LinesSection,
   type SOLineRow,
@@ -52,7 +53,7 @@ export default async function SODetailPage({
       `id, sales_order_number, status, language, order_date,
        requested_delivery_date, requested_delivery_precision, actual_delivery_date,
        currency, subtotal_amount, total_vat_amount, total_amount,
-       notes, created_at,
+       notes, production_note, created_at,
        organization:organizations!organization_id(
          id, legal_name, display_name_en, display_name_da, default_vat_code
        ),
@@ -313,6 +314,12 @@ export default async function SODetailPage({
           {so.notes}
         </p>
       ) : null}
+
+      <ProductionNoteCard
+        soId={so.id}
+        initialNote={so.production_note}
+        editable={status !== "cancelled" && status !== "delivered"}
+      />
 
       <LinesSection
         soId={so.id}
