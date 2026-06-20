@@ -415,12 +415,20 @@ free-text); payments & stock value → deferred to its own session; PO email
     an Email column to the supplier list ("Set email" hint flags gaps). Prep
     for Tier 3 PO email; **owner still needs to fill the addresses** (all blank).
 
+**Follow-up tweaks (2026-06-20):** SO delivery label "Requested" → "Expected"
+([c2967af]); new SO now defaults to Week mode and the week input is clamped to
+`1–weeksInIsoYear` (re-clamps on year change) ([004f220]); MO "Planned
+completion" → "Expected completion" ([9547ac7]).
+
 **Data note (from the 2026-06-19 call):** no "Wheels / Wheel sets" category
 exists — only `Rims`, `Rim Tapes`, `Front Chainwheel`, `Front Sprocket`. Full
 wheel SKUs do exist (e.g. `JP-EWHRX010FDAB` Shimano front, `JP-EWHRX010RDACB`
 rear). Dennis can now create the category at `/admin/categories` (item 6).
 
-**Tier 2 — SO → paint → build pipeline (biggest; correctness epic):**
+**Tier 2 — SO → paint → build pipeline (biggest; correctness epic)
+← PARKED 2026-06-20, agreed next step. Tier 1 core flow is done; this is where
+to resume.** Sequence Dennis described: SO → paint (subset of frames to painter)
+→ build, and a frame at the painter must not be buildable until it's back.
 12. Deliberate build step — stop auto-advance to `in_stock` + silent MO
     auto-complete; gate "Finish" behind a real frame number.
 13. Identifiers entered in the build workbench, per bike (frame required).
