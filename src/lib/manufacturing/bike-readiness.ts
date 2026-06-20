@@ -1,0 +1,208 @@
+/**
+ * Build-queue readiness for the unified workshop floor.
+ *
+ * Surfaces every bike that still needs building (planning/building, on an
+ * open MO) and computes, per bike, whether its parts are in stock so the
+ * floor can show ready-to-build first and grey out the blocked ones with a
+ * reason.
+ *
+ * A bike's parts requirement is its own `bike_parts` rows once the build has
+ * started, otherwise the MO recipe (`manufacturing_order_parts`, one bike's
+ * worth). Only the *not-yet-consumed* `bike_parts` count toward the
+ * requirement: a row with an `inventory_movement_id` is already in the bike
+ * and already deducted from `v_current_stock`, so re-checking it against stock
+ * would invent a false shortage (and that's exactly the set `finishBikeBuild`
+ * still has left to pull). Paint service SKUs (`JP-lak*`) are excluded — same
+ * convention as MO coverage.
+ *
+ * Like MO coverage, readiness is computed per bike against the FULL on-hand
+ * figure — it does NOT model two bikes competing for the same scarce part.
+ * Fine at this scale; the planner sees the MO coverage view for the real
+ * cross-bike picture. Frame confirmation is NOT a readiness gate: the tech
+ * confirms the real frame inside the build workbench, so a provisional-frame
+ * bike is still "ready" — the card just flags that a confirmation is pending.
+ *
+ * Phase C will add an `atPainter` block here (a frame at the painter can't be
+ * built); the shape already carries a reason string for that.
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+import type { Database } from "@/lib/types/database";
+
+import { isServiceSku } from "./coverage";
+
+export type BuildQueueBike = {
+  bikeId: string;
+  frameNumber: string;
+  frameConfirmed: boolean;
+  status: string;
+  colorName: string | null;
+  colorHex: string | null;
+  templateLabel: string | null;
+  ownerName: string | null;
+  moId: string;
+  moNumber: string;
+  ready: boolean;
+  /** Count of distinct parts short of stock. */
+  shortfallCount: number;
+  /** Human reason when not ready (null when ready). */
+  blockedReason: string | null;
+};
+
+const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
+
+type Req = { partId: string; qty: number; sku: string };
+
+function one<T>(v: T | T[] | null | undefined): T | null {
+  if (v == null) return null;
+  return Array.isArray(v) ? (v[0] ?? null) : v;
+}
+
+export async function loadBuildQueue(
+  supabase: SupabaseClient<Database>,
+): Promise<BuildQueueBike[]> {
+  const { data: bikes } = await supabase
+    .from("bikes")
+    .select(
+      `id, frame_number, frame_number_confirmed, status,
+       color:colors(name_en, hex),
+       bike_template:bike_templates(family, frame_size),
+       owner_organization:organizations!owner_organization_id(
+         legal_name, display_name_da, display_name_en
+       ),
+       manufacturing_order:manufacturing_orders!manufacturing_order_id(
+         id, mo_number, status
+       )`,
+    )
+    .in("status", ["planning", "building"])
+    .is("deleted_at", null);
+
+  const openBikes = (bikes ?? []).filter((b) => {
+    const mo = one(b.manufacturing_order);
+    return mo != null && OPEN_MO_STATUSES.includes(mo.status as string);
+  });
+  if (openBikes.length === 0) return [];
+
+  const bikeIds = openBikes.map((b) => b.id);
+  const moIds = [
+    ...new Set(
+      openBikes
+        .map((b) => one(b.manufacturing_order)?.id as string | undefined)
+        .filter((x): x is string => x != null),
+    ),
+  ];
+
+  const [stockRes, bikePartsRes, recipeRes] = await Promise.all([
+    supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
+    supabase
+      .from("bike_parts")
+      .select(
+        "bike_id, part_id, quantity, inventory_movement_id, part:parts!part_id(internal_sku)",
+      )
+      .in("bike_id", bikeIds)
+      .is("removed_at", null),
+    supabase
+      .from("manufacturing_order_parts")
+      .select(
+        "manufacturing_order_id, part_id, quantity_per_bike, part:parts!part_id(internal_sku)",
+      )
+      .in("manufacturing_order_id", moIds),
+  ]);
+
+  const stockByPart = new Map<string, number>();
+  for (const r of stockRes.data ?? []) {
+    if (!r.part_id) continue;
+    stockByPart.set(
+      r.part_id,
+      (stockByPart.get(r.part_id) ?? 0) + Number(r.quantity_on_hand ?? 0),
+    );
+  }
+
+  // Any non-removed bike_parts row means the build has started → the bike's
+  // own list governs, not the recipe. But only not-yet-consumed rows still
+  // need pulling from stock (consumed rows are already in the bike and already
+  // out of v_current_stock), so they alone form the requirement.
+  const startedBikes = new Set<string>();
+  const reqByBike = new Map<string, Req[]>();
+  for (const r of bikePartsRes.data ?? []) {
+    if (!r.part_id) continue;
+    startedBikes.add(r.bike_id);
+    if (r.inventory_movement_id != null) continue; // already consumed
+    const part = one(r.part);
+    const list = reqByBike.get(r.bike_id) ?? [];
+    list.push({
+      partId: r.part_id,
+      qty: Number(r.quantity),
+      sku: part?.internal_sku ?? "",
+    });
+    reqByBike.set(r.bike_id, list);
+  }
+
+  const reqByMo = new Map<string, Req[]>();
+  for (const r of recipeRes.data ?? []) {
+    if (!r.part_id) continue;
+    const part = one(r.part);
+    const list = reqByMo.get(r.manufacturing_order_id) ?? [];
+    list.push({
+      partId: r.part_id,
+      qty: Number(r.quantity_per_bike),
+      sku: part?.internal_sku ?? "",
+    });
+    reqByMo.set(r.manufacturing_order_id, list);
+  }
+
+  const result: BuildQueueBike[] = openBikes.map((b) => {
+    const mo = one(b.manufacturing_order)!;
+    const moId = mo.id as string;
+    const color = one(b.color);
+    const tpl = one(b.bike_template);
+    const owner = one(b.owner_organization);
+
+    // Own (remaining) parts list once a build has started; else the MO recipe.
+    // startedBikes — not reqByBike's presence — is the "started?" signal, so a
+    // bike whose parts are all already consumed reads as ready (empty req)
+    // instead of wrongly re-checking the full recipe against stock.
+    const req = (
+      startedBikes.has(b.id)
+        ? (reqByBike.get(b.id) ?? [])
+        : (reqByMo.get(moId) ?? [])
+    ).filter((r) => !isServiceSku(r.sku));
+    let shortfallCount = 0;
+    for (const r of req) {
+      if ((stockByPart.get(r.partId) ?? 0) < r.qty) shortfallCount += 1;
+    }
+    const ready = shortfallCount === 0;
+
+    return {
+      bikeId: b.id,
+      frameNumber: b.frame_number,
+      frameConfirmed: b.frame_number_confirmed,
+      status: b.status as string,
+      colorName: color?.name_en ?? null,
+      colorHex: color?.hex ?? null,
+      templateLabel: tpl
+        ? [tpl.family, tpl.frame_size].filter(Boolean).join(" · ")
+        : null,
+      ownerName:
+        owner?.display_name_da ??
+        owner?.display_name_en ??
+        owner?.legal_name ??
+        null,
+      moId,
+      moNumber: mo.mo_number as string,
+      ready,
+      shortfallCount,
+      blockedReason: ready
+        ? null
+        : `${shortfallCount} part${shortfallCount === 1 ? "" : "s"} short`,
+    };
+  });
+
+  // Ready first, then by frame number for a stable order.
+  result.sort((a, b) => {
+    if (a.ready !== b.ready) return a.ready ? -1 : 1;
+    return a.frameNumber.localeCompare(b.frameNumber);
+  });
+  return result;
+}

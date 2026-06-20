@@ -457,11 +457,22 @@ Phases:
   `mo-bikes-section` shows per-row "provisional" hints, an unconfirmed note, and
   a buildable-count bulk button. Shared `loadBikeIdentifierContext` in
   `src/lib/bikes/identifier-context.ts`.
-- **A — Unified workshop floor** (NEXT). `/work` gets a "To build" stream beside
-  "To repair"; new per-bike readiness helper
-  (`src/lib/manufacturing/bike-readiness.ts`): parts-in-stock + frame-confirmed
-  (+ paint-clear once C lands) → ready / blocked-with-reason. Build cards match
-  the repair-card style; tap → workbench; scan a frame → build if buildable.
+- **A — Unified workshop floor ✅ SHIPPED 2026-06-20.** `/work` is now two
+  URL-driven streams (`?tab=build|repair`): "To build" (bikes in
+  planning/building on open MOs, ready-first) beside the existing "To repair".
+  New per-bike readiness helper `src/lib/manufacturing/bike-readiness.ts` →
+  `loadBuildQueue(supabase)`: a bike's requirement is its own *not-yet-consumed*
+  `bike_parts` once a build has started (consumed rows are already in the bike
+  and already out of `v_current_stock` — counting them would invent a false
+  shortage), else the MO recipe; paint service SKUs excluded; ready = no part
+  short of full on-hand (cross-bike competition NOT modelled, same as MO
+  coverage). **Frame confirmation is deliberately NOT a readiness gate** — the
+  tech confirms the real frame inside the workbench, so the card shows a "frame
+  to confirm" hint instead of blocking. Default tab = build unless build is
+  empty and repairs wait. Build cards match the repair-card visual language;
+  tap → the build workbench. (The Scan button still links to `/scan`; a
+  scan-a-frame → build-if-buildable jump is not wired here.) `blockedReason`
+  already carries a string so Phase C can add an `atPainter` block.
 - **C — Paint → build pipeline.** D2 + D3: paint-from-SO subset action, paint
   gates build (workbench + floor + finish + bulk all honour it), `received_back`
   frees frames, SO↔paint back-links. Migration for `paint_orders.sales_order_id`.
