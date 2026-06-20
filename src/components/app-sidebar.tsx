@@ -41,11 +41,12 @@ type NavItem = {
 };
 
 // Grouped nav. Separators render between groups. Order set with the owner
-// (2026-06-20): daily ops first, then the commercial/orders flow, then Admin.
-// The customer Map moved into the Admin section, so it's no longer here.
+// (2026-06-20): Dashboard alone at the top, then daily ops, then the
+// commercial/orders flow, then Admin. The customer Map moved into the Admin
+// section, so it's no longer here.
 const NAV_GROUPS: NavItem[][] = [
+  [{ href: "/", label: "Dashboard", icon: Home, exact: true }],
   [
-    { href: "/", label: "Dashboard", icon: Home, exact: true },
     { href: "/bikes", label: "Bikes", icon: Bike },
     { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
     { href: "/parts", label: "Parts", icon: Boxes },

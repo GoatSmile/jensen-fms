@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import { formatPct } from "@/lib/parts/format";
+import { cn } from "@/lib/utils";
 
 /**
  * Admin landing — tiles for each subsection, grouped by domain (catalog &
@@ -127,8 +128,11 @@ export default async function AdminLandingPage() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-8">
-        <AdminGroup title="Catalog & inventory">
+      <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <AdminGroup
+          title="Catalog & inventory"
+          tint="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+        >
           <Tile
             href="/admin/categories"
             icon={FolderTree}
@@ -159,7 +163,10 @@ export default async function AdminLandingPage() {
           />
         </AdminGroup>
 
-        <AdminGroup title="Purchasing & landed cost">
+        <AdminGroup
+          title="Purchasing & landed cost"
+          tint="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+        >
           <Tile
             href="/admin/suppliers"
             icon={Truck}
@@ -185,7 +192,10 @@ export default async function AdminLandingPage() {
           />
         </AdminGroup>
 
-        <AdminGroup title="Customers">
+        <AdminGroup
+          title="Customers"
+          tint="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+        >
           <Tile
             href="/admin/customer-segments"
             icon={Users}
@@ -202,7 +212,10 @@ export default async function AdminLandingPage() {
           />
         </AdminGroup>
 
-        <AdminGroup title="System">
+        <AdminGroup
+          title="System"
+          tint="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
+        >
           <Tile
             href="/admin/settings"
             icon={Percent}
@@ -218,17 +231,20 @@ export default async function AdminLandingPage() {
 
 function AdminGroup({
   title,
+  tint,
   children,
 }: {
   title: string;
+  /** Tailwind classes for the section's light tinted background + border. */
+  tint?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className={cn("flex flex-col gap-3 rounded-xl border p-4", tint)}>
       <h2 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
         {title}
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+      <div className="flex flex-col gap-3">{children}</div>
     </section>
   );
 }
@@ -249,7 +265,7 @@ function Tile({
   return (
     <Link
       href={href}
-      className="hover:bg-muted/30 group flex flex-col gap-2 rounded-md border p-4 transition-colors"
+      className="bg-card hover:bg-muted/40 group flex flex-col gap-2 rounded-md border p-4 transition-colors"
     >
       <div className="flex items-start justify-between">
         <Icon className="text-muted-foreground size-5" aria-hidden />

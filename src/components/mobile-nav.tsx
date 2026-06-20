@@ -36,11 +36,11 @@ type NavItem = {
   exact?: boolean;
 };
 
-// Grouped to match the desktop sidebar (separators between groups). The
-// customer Map now lives under Admin, so it's not here.
+// Grouped to match the desktop sidebar (separators between groups). Dashboard
+// sits alone at the top; the customer Map now lives under Admin, so it's not here.
 const NAV_GROUPS: NavItem[][] = [
+  [{ href: "/", label: "Dashboard", icon: Home, exact: true }],
   [
-    { href: "/", label: "Dashboard", icon: Home, exact: true },
     { href: "/bikes", label: "Bikes", icon: Bike },
     { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
     { href: "/parts", label: "Parts", icon: Boxes },

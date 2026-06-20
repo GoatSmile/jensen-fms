@@ -226,18 +226,19 @@ cross-cutting. Original SQL files live in `/migrations/`.
   "New bike", "New MO") — not "Add X" or "Create X". Standardised June 2026.
 - **Navigation / IA (set with owner 2026-06-20).** The left nav is grouped
   with subtle hairline separators between groups, most-used first:
-  1. *Daily ops* — Dashboard · Bikes · Bike templates · Parts · Maintenance ·
-     Workshop floor
-  2. *Orders & commercial* — Manufacturing orders · Purchase orders · Sales
+  1. *Dashboard* (alone at the top, separated)
+  2. *Daily ops* — Bikes · Bike templates · Parts · Maintenance · Workshop floor
+  3. *Orders & commercial* — Manufacturing orders · Purchase orders · Sales
      orders · Paint orders · Invoices · Service agreements · Customers
-  3. *Admin* (on its own)
+  4. *Admin* (on its own)
   - **Two nav components must stay in sync:** `src/components/app-sidebar.tsx`
     (desktop) and `src/components/mobile-nav.tsx` (mobile drawer). They had
     silently drifted (the mobile drawer was missing Sales orders + Admin) —
     edit both when adding/moving a nav item.
   - The customer **Map** (`/organizations/map`) is **not** in the sidebar — it
     lives under the **Admin** landing page (`src/app/admin/page.tsx`), whose
-    tiles are grouped most-used-first: *Catalog & inventory* (part categories,
+    tiles are grouped most-used-first into a 3-column grid of light-tinted
+    section cards (one hue per section): *Catalog & inventory* (part categories,
     colours, kits, locations) · *Purchasing & landed cost* (suppliers, HS/TARIC
     codes, FX rates) · *Customers* (customer segments, **Map**) · *System*
     (settings). The Map page itself is unchanged.

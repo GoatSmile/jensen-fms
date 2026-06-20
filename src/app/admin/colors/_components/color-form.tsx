@@ -82,17 +82,14 @@ export function ColorForm({ mode, initial, coatings }: Props) {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Picking a RAL code auto-fills the hex from the RAL Classic map — but only
-  // when the hex is still blank, so a hand-entered hex is never clobbered. The
-  // hex stays editable; this just gives the swatch a real colour for free.
+  // RAL is the source of truth for the colour: a recognised code syncs the hex
+  // to the RAL's canonical colour so the swatch and the painter always agree.
+  // An unknown/partial code leaves the hex untouched. The hex stays editable
+  // for a deliberate custom shade — a mismatch then surfaces the "match RAL" fix.
   function onRalChange(raw: string) {
     setValues((prev) => {
-      const next = { ...prev, ral_code: raw };
-      if (!prev.hex.trim()) {
-        const hex = ralToHex(raw);
-        if (hex) next.hex = hex;
-      }
-      return next;
+      const hex = ralToHex(raw);
+      return { ...prev, ral_code: raw, ...(hex ? { hex } : {}) };
     });
   }
 
@@ -132,14 +129,16 @@ export function ColorForm({ mode, initial, coatings }: Props) {
     });
   }
 
-  // Derived: a small preview swatch next to the hex input so admins see
-  // what they're picking before saving.
-  const previewHex = (() => {
-    const v = values.hex.trim();
-    if (!v) return null;
-    const normalised = v.startsWith("#") ? v : `#${v}`;
-    return /^#[0-9a-fA-F]{6}$/.test(normalised) ? normalised : null;
-  })();
+  // Preview swatches: the entered hex and the RAL's canonical colour each get
+  // one, so a divergence is visible at a glance. When both are set and disagree,
+  // surface a one-click "match RAL" fix (RAL is the source of truth).
+  const hexNorm = normHex(values.hex);
+  const ralHex = ralToHex(values.ral_code);
+  const ralConflict = Boolean(ralHex && hexNorm && ralHex.toLowerCase() !== hexNorm);
+
+  function matchRal() {
+    if (ralHex) update("hex", ralHex);
+  }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
@@ -177,6 +176,25 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="RAL code" htmlFor="color-ral">
+          <div className="flex items-center gap-2">
+            <Input
+              id="color-ral"
+              value={values.ral_code}
+              onChange={(e) => onRalChange(e.target.value)}
+              placeholder="e.g. RAL 5013"
+            />
+            {ralHex ? (
+              <ColorSwatch hex={ralHex} label={ralHex} />
+            ) : (
+              <span className="text-muted-foreground text-xs">—</span>
+            )}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Optional. For the painter (Metacoat) to mix consistently. A known
+            RAL sets the colour (auto-fills the hex).
+          </p>
+        </Field>
         <Field label="Hex" htmlFor="color-hex">
           <div className="flex items-center gap-2">
             <Input
@@ -186,8 +204,8 @@ export function ColorForm({ mode, initial, coatings }: Props) {
               placeholder="#1e4a7a"
               className="font-mono"
             />
-            {previewHex ? (
-              <ColorSwatch hex={previewHex} label={previewHex} />
+            {hexNorm ? (
+              <ColorSwatch hex={hexNorm} label={hexNorm} />
             ) : (
               <span className="text-muted-foreground text-xs">—</span>
             )}
@@ -196,19 +214,19 @@ export function ColorForm({ mode, initial, coatings }: Props) {
             Optional. Used for the colour chip throughout the app.
           </p>
         </Field>
-        <Field label="RAL code" htmlFor="color-ral">
-          <Input
-            id="color-ral"
-            value={values.ral_code}
-            onChange={(e) => onRalChange(e.target.value)}
-            placeholder="e.g. RAL 5013"
-          />
-          <p className="text-muted-foreground text-xs">
-            Optional. For the painter (Metacoat) to mix consistently. A known
-            RAL auto-fills the hex (still editable).
-          </p>
-        </Field>
       </div>
+
+      {ralConflict ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/30">
+          <span className="text-amber-900 dark:text-amber-200">
+            Hex doesn&rsquo;t match RAL {values.ral_code.trim()} ({ralHex}). The
+            painter mixes to RAL — the on-screen chip won&rsquo;t match.
+          </span>
+          <Button type="button" variant="outline" size="sm" onClick={matchRal}>
+            Match RAL
+          </Button>
+        </div>
+      ) : null}
 
       <Field label="Coating / finish" htmlFor="color-coating">
         <select
@@ -284,5 +302,17 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       </div>
     </form>
   );
+}
+
+/**
+ * Normalise a free-typed hex ("1e4a7a", "#1E4A7A") to lowercase `#rrggbb`, or
+ * null when it isn't a complete 6-digit hex. Used for the preview swatch and
+ * the RAL-divergence check.
+ */
+function normHex(s: string): string | null {
+  const v = s.trim();
+  if (!v) return null;
+  const n = (v.startsWith("#") ? v : `#${v}`).toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(n) ? n : null;
 }
 
