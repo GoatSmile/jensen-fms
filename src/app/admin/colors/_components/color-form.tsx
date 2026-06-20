@@ -10,6 +10,7 @@ import { ColorSwatch } from "@/components/color-swatch";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
 import { COATINGS, coatingLabel } from "@/lib/colors/coating";
+import { ralToHex } from "@/lib/colors/ral";
 
 import { createColor, updateColor } from "../_actions/manage-colors";
 
@@ -65,6 +66,20 @@ export function ColorForm({ mode, initial }: Props) {
     value: ColorFormValues[K],
   ) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  // Picking a RAL code auto-fills the hex from the RAL Classic map — but only
+  // when the hex is still blank, so a hand-entered hex is never clobbered. The
+  // hex stays editable; this just gives the swatch a real colour for free.
+  function onRalChange(raw: string) {
+    setValues((prev) => {
+      const next = { ...prev, ral_code: raw };
+      if (!prev.hex.trim()) {
+        const hex = ralToHex(raw);
+        if (hex) next.hex = hex;
+      }
+      return next;
+    });
   }
 
   function buildFormData(): FormData {
@@ -171,11 +186,12 @@ export function ColorForm({ mode, initial }: Props) {
           <Input
             id="color-ral"
             value={values.ral_code}
-            onChange={(e) => update("ral_code", e.target.value)}
+            onChange={(e) => onRalChange(e.target.value)}
             placeholder="e.g. RAL 5013"
           />
           <p className="text-muted-foreground text-xs">
-            Optional. For the painter (Metacoat) to mix consistently.
+            Optional. For the painter (Metacoat) to mix consistently. A known
+            RAL auto-fills the hex (still editable).
           </p>
         </Field>
       </div>

@@ -20,7 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ColorChip } from "@/components/color-swatch";
+import { ColorSwatch } from "@/components/color-swatch";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
@@ -102,7 +103,7 @@ export default async function BikesPage({
         deleted_at,
         bike_type:bike_types(id, name_en),
         template:bike_templates(id, name_en, family, frame_size, version),
-        color:colors(id, name_en, hex),
+        color:colors(id, name_en, hex, ral_code, coating),
         manufacturing_order:manufacturing_orders(
           id,
           sales_order:sales_orders!sales_order_id(id, sales_order_number)
@@ -319,7 +320,26 @@ export default async function BikesPage({
                   <TableCell className="hidden p-0 lg:table-cell">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5 text-sm">
                       {b.color ? (
-                        <ColorChip hex={b.color.hex} label={b.color.name_en} />
+                        <span className="inline-flex items-center gap-1.5">
+                          <ColorSwatch
+                            hex={b.color.hex}
+                            label={b.color.name_en}
+                          />
+                          <span className="flex flex-col leading-tight">
+                            <span>{b.color.name_en}</span>
+                            {colorFinishLabel(
+                              b.color.ral_code,
+                              b.color.coating,
+                            ) ? (
+                              <span className="text-muted-foreground text-xs">
+                                {colorFinishLabel(
+                                  b.color.ral_code,
+                                  b.color.coating,
+                                )}
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
