@@ -268,3 +268,191 @@ export async function removeBikePart(
   revalidatePath(`/bikes/${bikeId}`);
   return { ok: true };
 }
+
+export type BikeKitAddResult =
+  | { ok: true; added: number; skipped: number }
+  | { ok: false; error: string };
+
+/**
+ * "Add a whole kit" to this bike: insert every live part carrying the kit
+ * label that isn't already on the bike, qty 1. Parts already present are
+ * skipped (counted, not errored). Per-bike mirror of addKitPartsToMO.
+ */
+export async function bulkAddPartsByKit(
+  moId: string,
+  bikeId: string,
+  kitId: string,
+): Promise<BikeKitAddResult> {
+  if (!moId || !bikeId || !kitId) {
+    return { ok: false, error: "Missing MO id, bike id, or kit id." };
+  }
+
+  const supabase = await createClient();
+  const guard = await assertBikeEditable(supabase, bikeId, moId);
+  if (!guard.ok) return guard;
+
+  const [membershipsRes, existingRes] = await Promise.all([
+    supabase
+      .from("part_kits")
+      .select("part_id, part:parts!part_id(id, deleted_at)")
+      .eq("kit_id", kitId),
+    supabase
+      .from("bike_parts")
+      .select("part_id")
+      .eq("bike_id", bikeId)
+      .is("removed_at", null),
+  ]);
+  if (membershipsRes.error) {
+    return {
+      ok: false,
+      error: `Could not load kit parts: ${membershipsRes.error.message}`,
+    };
+  }
+
+  const already = new Set((existingRes.data ?? []).map((r) => r.part_id));
+  const livePartIds: string[] = [];
+  let skipped = 0;
+  for (const m of membershipsRes.data ?? []) {
+    const part = Array.isArray(m.part) ? m.part[0] : m.part;
+    if (!part || part.deleted_at != null) continue;
+    if (already.has(m.part_id)) skipped += 1;
+    else livePartIds.push(m.part_id);
+  }
+  if (livePartIds.length === 0) {
+    return { ok: true, added: 0, skipped };
+  }
+
+  const now = new Date().toISOString();
+  const { error: insErr } = await supabase.from("bike_parts").insert(
+    livePartIds.map((part_id) => ({
+      bike_id: bikeId,
+      part_id,
+      quantity: 1,
+      installed_at: now,
+    })),
+  );
+  if (insErr) {
+    return { ok: false, error: `Could not add kit parts: ${insErr.message}` };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
+  revalidatePath(`/bikes/${bikeId}`);
+  return { ok: true, added: livePartIds.length, skipped };
+}
+
+export type BikePartsClearResult =
+  | { ok: true; removed: number; kept: number }
+  | { ok: false; error: string };
+
+/**
+ * Clear the build: delete every not-yet-consumed part from this bike. Rows
+ * already linked to an inventory movement are frozen and kept (reported as
+ * `kept`). Use case: tech wants to start the parts list over.
+ */
+export async function clearBikeBuildParts(
+  moId: string,
+  bikeId: string,
+): Promise<BikePartsClearResult> {
+  if (!moId || !bikeId) {
+    return { ok: false, error: "Missing MO id or bike id." };
+  }
+
+  const supabase = await createClient();
+  const guard = await assertBikeEditable(supabase, bikeId, moId);
+  if (!guard.ok) return guard;
+
+  const { data: partRows, error: loadErr } = await supabase
+    .from("bike_parts")
+    .select("id, inventory_movement_id")
+    .eq("bike_id", bikeId)
+    .is("removed_at", null);
+  if (loadErr) {
+    return { ok: false, error: `Could not load parts: ${loadErr.message}` };
+  }
+
+  const removableIds = (partRows ?? [])
+    .filter((r) => r.inventory_movement_id == null)
+    .map((r) => r.id);
+  const kept = (partRows ?? []).length - removableIds.length;
+  if (removableIds.length === 0) {
+    return { ok: true, removed: 0, kept };
+  }
+
+  const { error: delErr } = await supabase
+    .from("bike_parts")
+    .delete()
+    .in("id", removableIds);
+  if (delErr) {
+    return { ok: false, error: `Could not clear build: ${delErr.message}` };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
+  revalidatePath(`/bikes/${bikeId}`);
+  return { ok: true, removed: removableIds.length, kept };
+}
+
+export type BikeKitRemoveResult =
+  | { ok: true; removed: number; kept: number }
+  | { ok: false; error: string };
+
+/**
+ * Remove a whole kit from this bike: delete the not-yet-consumed parts that
+ * belong to the kit. `bike_parts` doesn't snapshot kit membership (kits are
+ * just labels on parts), so "remove kit X" = remove this bike's unconsumed
+ * parts that are members of kit X. Consumed rows are frozen and kept.
+ */
+export async function removeBikePartsByKit(
+  moId: string,
+  bikeId: string,
+  kitId: string,
+): Promise<BikeKitRemoveResult> {
+  if (!moId || !bikeId || !kitId) {
+    return { ok: false, error: "Missing MO id, bike id, or kit id." };
+  }
+
+  const supabase = await createClient();
+  const guard = await assertBikeEditable(supabase, bikeId, moId);
+  if (!guard.ok) return guard;
+
+  const { data: memberships, error: memErr } = await supabase
+    .from("part_kits")
+    .select("part_id")
+    .eq("kit_id", kitId);
+  if (memErr) {
+    return { ok: false, error: `Could not load kit parts: ${memErr.message}` };
+  }
+  const kitPartIds = (memberships ?? []).map((m) => m.part_id);
+  if (kitPartIds.length === 0) {
+    return { ok: true, removed: 0, kept: 0 };
+  }
+
+  const { data: rows, error: rowsErr } = await supabase
+    .from("bike_parts")
+    .select("id, inventory_movement_id")
+    .eq("bike_id", bikeId)
+    .is("removed_at", null)
+    .in("part_id", kitPartIds);
+  if (rowsErr) {
+    return { ok: false, error: `Could not load bike parts: ${rowsErr.message}` };
+  }
+
+  const removableIds = (rows ?? [])
+    .filter((r) => r.inventory_movement_id == null)
+    .map((r) => r.id);
+  const kept = (rows ?? []).length - removableIds.length;
+  if (removableIds.length === 0) {
+    return { ok: true, removed: 0, kept };
+  }
+
+  const { error: delErr } = await supabase
+    .from("bike_parts")
+    .delete()
+    .in("id", removableIds);
+  if (delErr) {
+    return { ok: false, error: `Could not remove kit parts: ${delErr.message}` };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
+  revalidatePath(`/bikes/${bikeId}`);
+  return { ok: true, removed: removableIds.length, kept };
+}

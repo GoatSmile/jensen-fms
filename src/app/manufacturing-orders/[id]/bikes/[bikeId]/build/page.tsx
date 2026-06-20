@@ -42,6 +42,8 @@ export default async function BikeBuildWorkbenchPage({
     moRecipeCountRes,
     categoriesRes,
     catalogRes,
+    kitsRes,
+    kitMembershipsRes,
   ] = await Promise.all([
     supabase
       .from("manufacturing_orders")
@@ -91,6 +93,13 @@ export default async function BikeBuildWorkbenchPage({
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
+    supabase
+      .from("kits")
+      .select("id, sticker_color, kit_number")
+      .eq("is_active", true)
+      .order("sticker_color", { ascending: true })
+      .order("kit_number", { ascending: true, nullsFirst: true }),
+    supabase.from("part_kits").select("part_id, kit_id"),
   ]);
 
   if (moRes.error) throw new Error(moRes.error.message);
@@ -156,6 +165,14 @@ export default async function BikeBuildWorkbenchPage({
   }));
 
   const recipeRowCount = moRecipeCountRes.count ?? 0;
+
+  // kit_id → part_id[] for the workbench's "add / remove a whole kit" actions.
+  const activeKitIds = new Set((kitsRes.data ?? []).map((k) => k.id));
+  const kitParts: Record<string, string[]> = {};
+  for (const m of kitMembershipsRes.data ?? []) {
+    if (!activeKitIds.has(m.kit_id)) continue;
+    (kitParts[m.kit_id] ??= []).push(m.part_id);
+  }
 
   // ------- Pick list by kit -------
   // Group this bike's parts by their kit labels so the floor can pick by
@@ -363,6 +380,8 @@ export default async function BikeBuildWorkbenchPage({
         initialBikeParts={bikeParts}
         categories={categories}
         catalog={catalog}
+        kits={kitsRes.data ?? []}
+        kitParts={kitParts}
         moRecipeRowCount={recipeRowCount}
         identifierTypes={identifierContext.types}
         identifiers={identifierContext.rows}

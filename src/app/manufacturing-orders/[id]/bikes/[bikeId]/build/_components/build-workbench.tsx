@@ -26,6 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
+import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
+import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
+import { kitCode, stickerColor } from "@/lib/kits/colors";
 import {
   BIKE_STATUS_VARIANT,
   bikeStatusLabel,
@@ -36,8 +39,11 @@ import type { IdentifierTypeOption } from "@/app/bikes/[id]/_components/identifi
 
 import {
   addBikePart,
+  bulkAddPartsByKit,
+  clearBikeBuildParts,
   copyMoRecipeToBike,
   removeBikePart,
+  removeBikePartsByKit,
   updateBikePartQuantity,
 } from "../_actions/manage-bike-parts";
 import { finishBikeBuild } from "../_actions/finish-build";
@@ -102,6 +108,9 @@ type Props = {
   initialBikeParts: BikePartRow[];
   categories: CategoryOption[];
   catalog: PartInCatalog[];
+  /** Active kits + their part ids, for the "add / remove a whole kit" actions. */
+  kits: KitOption[];
+  kitParts: Record<string, string[]>;
   /** How many parts are in the MO recipe — used for the "Copy recipe" CTA. */
   moRecipeRowCount: number;
   /** Identifier types pickable in the in-build "add identifier" dialog. */
@@ -131,6 +140,8 @@ export function BuildWorkbench({
   initialBikeParts,
   categories,
   catalog,
+  kits,
+  kitParts,
   moRecipeRowCount,
   identifierTypes,
   identifiers,
@@ -143,6 +154,9 @@ export function BuildWorkbench({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
+  // Two-step arm for the destructive "Clear build" (no modal — label flips to
+  // "Confirm…" on first click, matching the app's inline-friction convention).
+  const [clearArmed, setClearArmed] = useState(false);
   const [pickerValueByCat, setPickerValueByCat] = useState<
     Record<string, string>
   >({});
@@ -188,6 +202,31 @@ export function BuildWorkbench({
 
   const inBikePartIds = useMemo(
     () => new Set(rows.map((r) => r.partId)),
+    [rows],
+  );
+
+  // Catalog ids the kit-add control treats as "known" (kit members outside
+  // the catalog are ignored).
+  const knownPartIds = useMemo(() => new Set(catalog.map((p) => p.id)), [catalog]);
+
+  // Recipe rows per category — drives the green-checklist done-state.
+  const pickedByCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      if (!r.categoryId) continue;
+      m.set(r.categoryId, (m.get(r.categoryId) ?? 0) + 1);
+    }
+    return m;
+  }, [rows]);
+
+  // Not-yet-consumed parts: what "clear build" / "remove kit" can act on.
+  // Consumed rows are frozen and excluded.
+  const removablePartIds = useMemo(
+    () => new Set(rows.filter((r) => !r.consumed).map((r) => r.partId)),
+    [rows],
+  );
+  const removableCount = useMemo(
+    () => rows.filter((r) => !r.consumed).length,
     [rows],
   );
 
@@ -240,6 +279,53 @@ export function BuildWorkbench({
         return;
       }
       setPickerValueByCat((prev) => ({ ...prev, [categoryId]: "__placeholder__" }));
+      router.refresh();
+    });
+  }
+
+  async function onAddKit(kitId: string) {
+    setError(null);
+    setSuccess(null);
+    setClearArmed(false);
+    const r = await bulkAddPartsByKit(moId, bikeId, kitId);
+    if (!r.ok) return { error: r.error };
+    router.refresh();
+    return { added: r.added, alreadyIn: r.skipped };
+  }
+
+  async function onRemoveKit(
+    kitId: string,
+  ): Promise<{ error: string } | { removed: number; kept: number }> {
+    setError(null);
+    setSuccess(null);
+    setClearArmed(false);
+    const r = await removeBikePartsByKit(moId, bikeId, kitId);
+    if (!r.ok) return { error: r.error };
+    router.refresh();
+    return { removed: r.removed, kept: r.kept };
+  }
+
+  function onClearBuild() {
+    // First click arms; second click within the same armed state clears.
+    if (!clearArmed) {
+      setClearArmed(true);
+      return;
+    }
+    setClearArmed(false);
+    setError(null);
+    setSuccess(null);
+    startSeed(async () => {
+      const r = await clearBikeBuildParts(moId, bikeId);
+      if (!r.ok) {
+        setError(r.error);
+        return;
+      }
+      setSuccess(
+        `Cleared ${r.removed} part${r.removed === 1 ? "" : "s"}` +
+          (r.kept > 0
+            ? ` · ${r.kept} consumed part${r.kept === 1 ? "" : "s"} kept`
+            : ""),
+      );
       router.refresh();
     });
   }
@@ -473,16 +559,39 @@ export function BuildWorkbench({
               consumed when you click <strong>Finish build</strong>.
             </p>
           </div>
-          {!readOnly && isEmpty && moRecipeRowCount > 0 ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onCopyRecipe}
-              disabled={isSeeding}
-            >
-              <Copy aria-hidden /> Copy MO recipe ({moRecipeRowCount} parts)
-            </Button>
+          {!readOnly ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {isEmpty && moRecipeRowCount > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onCopyRecipe}
+                  disabled={isSeeding}
+                >
+                  <Copy aria-hidden /> Copy MO recipe ({moRecipeRowCount} parts)
+                </Button>
+              ) : null}
+              {removableCount > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onClearBuild}
+                  disabled={isSeeding || isFinishing}
+                  className={
+                    clearArmed
+                      ? "border-destructive text-destructive hover:text-destructive"
+                      : undefined
+                  }
+                >
+                  <Trash2 aria-hidden />
+                  {clearArmed
+                    ? `Confirm — clear ${removableCount}`
+                    : "Clear build"}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -499,13 +608,35 @@ export function BuildWorkbench({
                 <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
                   Parts by category
                 </div>
+                <KitBulkAdd
+                  kits={kits}
+                  kitParts={kitParts}
+                  addedIds={inBikePartIds}
+                  knownPartIds={knownPartIds}
+                  onAdd={onAddKit}
+                  disabled={isSeeding || isFinishing}
+                />
+                <KitBulkRemove
+                  kits={kits}
+                  kitParts={kitParts}
+                  removablePartIds={removablePartIds}
+                  onRemove={onRemoveKit}
+                  disabled={isSeeding || isFinishing}
+                />
                 {populated.map((category, index) => (
-                  <CategoryPickerRow
+                  <CategoryChecklistRow
                     key={category.id}
                     index={index + 1}
-                    category={category}
-                    partsInCategory={partsByCategory.get(category.id) ?? []}
-                    inBikePartIds={inBikePartIds}
+                    label={category.name_en}
+                    parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
+                      id: p.id,
+                      sku: p.internal_sku,
+                      name: p.name_en,
+                      meta: `(${formatQuantity(p.onHand)} on hand)`,
+                      metaDanger: p.onHand <= 0,
+                    }))}
+                    addedIds={inBikePartIds}
+                    pickedCount={pickedByCategory.get(category.id) ?? 0}
                     selectValue={
                       pickerValueByCat[category.id] ?? "__placeholder__"
                     }
@@ -649,92 +780,127 @@ export function BuildWorkbench({
   );
 }
 
-function CategoryPickerRow({
-  index,
-  category,
-  partsInCategory,
-  inBikePartIds,
-  selectValue,
-  onSelectValue,
-  onPick,
+/**
+ * "Remove a whole kit" — the inverse of the shared KitBulkAdd, build-specific.
+ * Lists only kits with not-yet-consumed parts on this bike; one button removes
+ * them. Consumed parts are frozen and left behind (reported as "kept").
+ */
+function KitBulkRemove({
+  kits,
+  kitParts,
+  removablePartIds,
+  onRemove,
   disabled,
 }: {
-  index: number;
-  category: CategoryOption;
-  partsInCategory: PartInCatalog[];
-  inBikePartIds: Set<string>;
-  selectValue: string;
-  onSelectValue: (v: string) => void;
-  onPick: (partId: string) => void;
-  disabled: boolean;
+  kits: KitOption[];
+  kitParts: Record<string, string[]>;
+  /** Bike part ids that can still be removed (not yet consumed). */
+  removablePartIds: Set<string>;
+  onRemove: (
+    kitId: string,
+  ) => Promise<{ error: string } | { removed: number; kept: number }>;
+  disabled?: boolean;
 }) {
-  const totalCount = partsInCategory.length;
-  const remaining = partsInCategory.filter((p) => !inBikePartIds.has(p.id))
-    .length;
+  const [kitId, setKitId] = useState("");
+  const [note, setNote] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, start] = useTransition();
+
+  const removableForKit = (id: string) =>
+    (kitParts[id] ?? []).filter((p) => removablePartIds.has(p)).length;
+
+  const applicableKits = useMemo(
+    () => kits.filter((k) => removableForKit(k.id) > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- removableForKit closes over kitParts + removablePartIds, both in deps
+    [kits, kitParts, removablePartIds],
+  );
+  const count = kitId ? removableForKit(kitId) : 0;
+
+  if (applicableKits.length === 0) return null;
+
+  function runRemove() {
+    const kit = applicableKits.find((k) => k.id === kitId);
+    if (!kit || count === 0) return;
+    setNote(null);
+    setError(null);
+    start(async () => {
+      const outcome = await onRemove(kit.id);
+      if ("error" in outcome) {
+        setError(outcome.error);
+        return;
+      }
+      const code = kitCode(kit.sticker_color, kit.kit_number);
+      setNote(
+        `Removed ${outcome.removed} part${outcome.removed === 1 ? "" : "s"} from ${code}` +
+          (outcome.kept > 0 ? ` · ${outcome.kept} consumed kept` : ""),
+      );
+      setKitId("");
+    });
+  }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-2">
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {index}.
+    <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-muted-foreground shrink-0 text-xs">
+          Remove a whole kit
         </span>
-        <span className="text-xs font-semibold tracking-wide">
-          {category.name_en}
-        </span>
-        <span className="text-muted-foreground text-[10px]">
-          ({remaining}/{totalCount})
-        </span>
-      </div>
-      <Select
-        value={selectValue}
-        onValueChange={(v) => {
-          onSelectValue(v);
-          onPick(v);
-        }}
-        disabled={disabled || remaining === 0}
-      >
-        <SelectTrigger className="h-8 text-xs">
-          <SelectValue
-            placeholder={
-              totalCount === 0
-                ? "-- None available --"
-                : remaining === 0
-                  ? "-- All added --"
-                  : `-- Pick (${remaining}) --`
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__placeholder__" disabled>
-            -- Pick a part --
-          </SelectItem>
-          {partsInCategory.map((p) => {
-            const already = inBikePartIds.has(p.id);
-            return (
-              <SelectItem key={p.id} value={p.id} disabled={already}>
-                <span className="font-mono text-xs">{p.internal_sku}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  {p.name_en}
-                </span>
-                <span
-                  className={`ml-2 text-[10px] ${
-                    p.onHand <= 0
-                      ? "text-destructive"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  ({formatQuantity(p.onHand)} on hand)
-                </span>
-                {already ? (
-                  <span className="text-muted-foreground ml-2 text-[10px] italic">
-                    already added
+        <div className="flex items-center gap-2">
+          <Select
+            value={kitId}
+            onValueChange={(v) => {
+              setKitId(v);
+              setNote(null);
+              setError(null);
+            }}
+            disabled={disabled || isPending}
+          >
+            <SelectTrigger className="h-8 w-36 text-xs">
+              <SelectValue placeholder="Pick a kit…" />
+            </SelectTrigger>
+            <SelectContent>
+              {applicableKits.map((k) => (
+                <SelectItem key={k.id} value={k.id}>
+                  <span
+                    aria-hidden
+                    className="inline-block size-2.5 rounded-full border border-black/10"
+                    style={{ backgroundColor: stickerColor(k.sticker_color).hex }}
+                  />
+                  {kitCode(k.sticker_color, k.kit_number)}
+                  <span className="text-muted-foreground ml-1 text-[10px] tabular-nums">
+                    {removableForKit(k.id)}
                   </span>
-                ) : null}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={runRemove}
+            disabled={disabled || isPending || !kitId || count === 0}
+          >
+            <Trash2 aria-hidden />
+            {isPending
+              ? "Removing…"
+              : kitId
+                ? `Remove ${count} part${count === 1 ? "" : "s"}`
+                : "Remove parts"}
+          </Button>
+        </div>
+      </div>
+      {error ? (
+        <p className="text-destructive mt-1.5 text-xs" role="alert">
+          {error}
+        </p>
+      ) : note ? (
+        <p
+          className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400"
+          role="status"
+        >
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }
