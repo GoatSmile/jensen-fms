@@ -96,9 +96,13 @@ export function DictateButton({
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const finalChunksRef = useRef<string[]>([]);
 
-  // Detect support on mount. Some browsers lazy-define the constructor on
-  // first touch, so we check both names.
+  // Detect support on mount. Done in an effect (not lazy initial state) on
+  // purpose: getSpeechRecognitionCtor() reads `window`, so it must run
+  // client-only — initialising to `true` matches the server render and we
+  // correct it after hydration, avoiding a mismatch. Some browsers also
+  // lazy-define the constructor on first touch, so we check both names.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only detection, see above
     setSupported(getSpeechRecognitionCtor() !== null);
   }, []);
 
@@ -137,15 +141,26 @@ export function DictateButton({
     };
 
     r.onerror = (e) => {
-      // "no-speech" / "aborted" are routine when nobody talks for a few
-      // seconds — surface them quietly. Permission denials need a clearer
-      // message.
+      // Map the Web Speech API's terse error codes to plain language a
+      // technician can act on. "no-speech" / "aborted" are routine (nobody
+      // talked, or we stopped/restarted) so we stay quiet on those.
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
         setErrorMessage(
           "Microphone access was blocked. Check your browser permissions.",
         );
-      } else if (e.error === "no-speech") {
-        // ignore — common at end of utterance
+      } else if (e.error === "network") {
+        // The browser couldn't reach its speech backend (Google's, on Chrome
+        // desktop). Nothing app-side can fix the round-trip — point at the
+        // reliable alternatives instead of showing raw "network".
+        setErrorMessage(
+          "Couldn't reach the browser's speech service. On a laptop this often fails — try again, type in the box above, or use your keyboard's mic key.",
+        );
+      } else if (e.error === "audio-capture") {
+        setErrorMessage(
+          "No microphone found. Plug one in, or type in the box above.",
+        );
+      } else if (e.error === "no-speech" || e.error === "aborted") {
+        // ignore — common at the end of an utterance / on stop
       } else {
         setErrorMessage(e.message || `Speech error: ${e.error}`);
       }
