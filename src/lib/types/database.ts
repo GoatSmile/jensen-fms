@@ -1213,6 +1213,7 @@ export type Database = {
           created_at: string
           credited_invoice_id: string | null
           currency: string
+          deposit_pct: number | null
           due_date: string | null
           ean_number_used: string | null
           economic_synced_at: string | null
@@ -1223,6 +1224,7 @@ export type Database = {
           is_reverse_charge: boolean
           issued_date: string | null
           issued_locked_at: string | null
+          kind: string
           language: string
           notes: string | null
           organization_id: string
@@ -1238,6 +1240,7 @@ export type Database = {
           created_at?: string
           credited_invoice_id?: string | null
           currency?: string
+          deposit_pct?: number | null
           due_date?: string | null
           ean_number_used?: string | null
           economic_synced_at?: string | null
@@ -1248,6 +1251,7 @@ export type Database = {
           is_reverse_charge?: boolean
           issued_date?: string | null
           issued_locked_at?: string | null
+          kind?: string
           language?: string
           notes?: string | null
           organization_id: string
@@ -1263,6 +1267,7 @@ export type Database = {
           created_at?: string
           credited_invoice_id?: string | null
           currency?: string
+          deposit_pct?: number | null
           due_date?: string | null
           ean_number_used?: string | null
           economic_synced_at?: string | null
@@ -1273,6 +1278,7 @@ export type Database = {
           is_reverse_charge?: boolean
           issued_date?: string | null
           issued_locked_at?: string | null
+          kind?: string
           language?: string
           notes?: string | null
           organization_id?: string

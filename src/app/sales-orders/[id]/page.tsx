@@ -38,6 +38,11 @@ import {
   LinkedMOsSection,
   type LinkedMORow,
 } from "./_components/linked-mos-section";
+import {
+  PaymentsSection,
+  type SOInvoiceRow,
+} from "./_components/payments-section";
+import { round2, type InvoiceStatus } from "@/lib/invoicing/status";
 
 export default async function SODetailPage({
   params,
@@ -73,8 +78,16 @@ export default async function SODetailPage({
     status === "in_production";
 
   // Lines, MOs, paint orders, and picker/catalog data in parallel.
-  const [linesRes, mosRes, paintRes, partsRes, templatesRes, vatRes, colorsRes] =
-    await Promise.all([
+  const [
+    linesRes,
+    mosRes,
+    paintRes,
+    partsRes,
+    templatesRes,
+    vatRes,
+    colorsRes,
+    invoicesRes,
+  ] = await Promise.all([
       supabase
         .from("sales_order_lines")
         .select(
@@ -130,6 +143,14 @@ export default async function SODetailPage({
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("name_en", { ascending: true }),
+      supabase
+        .from("invoices")
+        .select(
+          "id, invoice_number, kind, status, total_amount, currency, credited_invoice_id",
+        )
+        .eq("sales_order_id", id)
+        .is("credited_invoice_id", null)
+        .order("created_at", { ascending: true }),
     ]);
 
   // Per-line linked-MO counts so the spawn-MO action is hidden when an
@@ -208,6 +229,27 @@ export default async function SODetailPage({
     bikeCount: p.paint_order_bikes?.[0]?.count ?? 0,
   }));
   const canCreatePaint = status !== "cancelled" && status !== "delivered";
+
+  // Payments: deposits + final invoices on this SO. credited_invoice_id IS NULL
+  // already excludes credit notes; "invoiced" sums the live (non-cancelled,
+  // non-credited) ones against the order total for the % surface.
+  const invoiceRows: SOInvoiceRow[] = (invoicesRes.data ?? []).map((inv) => ({
+    id: inv.id,
+    invoice_number: inv.invoice_number,
+    kind: (inv.kind as SOInvoiceRow["kind"]) ?? "standard",
+    status: inv.status as InvoiceStatus,
+    total_amount: Number(inv.total_amount ?? 0),
+    currency: (inv.currency as string | null)?.trim() || "DKK",
+  }));
+  const invoicedTotal = round2(
+    invoiceRows
+      .filter((inv) => inv.status !== "cancelled" && inv.status !== "credited")
+      .reduce((sum, inv) => sum + inv.total_amount, 0),
+  );
+  const canDeposit =
+    status === "confirmed" ||
+    status === "in_production" ||
+    status === "ready";
 
   const customerName =
     so.organization?.display_name_da ??
@@ -335,6 +377,15 @@ export default async function SODetailPage({
       />
 
       <LinkedMOsSection rows={moRows} />
+
+      <PaymentsSection
+        soId={so.id}
+        rows={invoiceRows}
+        invoicedTotal={invoicedTotal}
+        soTotal={so.total_amount != null ? Number(so.total_amount) : 0}
+        currency={so.currency}
+        canDeposit={canDeposit}
+      />
 
       <LinkedPaintOrdersSection
         soId={so.id}
