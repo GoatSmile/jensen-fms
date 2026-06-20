@@ -60,7 +60,9 @@ export const EMPTY_SO_FORM: SOFormValues = {
   language: "da",
   order_date: new Date().toISOString().slice(0, 10),
   requested_delivery_date: "",
-  requested_delivery_precision: "exact",
+  // New sales orders default to a week target — Dennis commits delivery as a
+  // week, not a specific day. The user can still switch to an exact date.
+  requested_delivery_precision: "week",
   currency: "DKK",
   notes: "",
 };

@@ -35,21 +35,37 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
     seed ? String(seed.year) : String(thisYear),
   );
 
-  function emitWeek(weekStr: string, yearStr: string) {
+  function emitWeek(weekStrRaw: string, yearStr: string) {
+    const yNum = Number(yearStr);
+    const effYear = Number.isInteger(yNum) && yNum >= 2000 ? yNum : thisYear;
+    const maxWeek = weeksInIsoYear(effYear);
+
+    // Clamp a non-empty week into [1, maxWeek] so an out-of-range week (e.g. 60,
+    // or 53 in a 52-week year) simply can't be entered. Empty stays empty —
+    // delivery is optional, so no week = no stored date.
+    let weekStr = weekStrRaw;
+    if (weekStrRaw.trim() !== "") {
+      const w = Math.floor(Number(weekStrRaw));
+      if (Number.isFinite(w)) {
+        weekStr = String(Math.min(maxWeek, Math.max(1, w)));
+      }
+    }
+
     setWeek(weekStr);
     setYear(yearStr);
+
     const w = Number(weekStr);
-    const y = Number(yearStr);
     if (
       Number.isInteger(w) &&
-      Number.isInteger(y) &&
       w >= 1 &&
-      y >= 2000 &&
-      w <= weeksInIsoYear(y)
+      w <= maxWeek &&
+      Number.isInteger(yNum) &&
+      yNum >= 2000
     ) {
-      onChange(mondayOfIsoWeek(y, w), "week");
+      onChange(mondayOfIsoWeek(effYear, w), "week");
     } else {
-      // Incomplete/invalid week — keep precision but clear the stored date.
+      // Incomplete/invalid (e.g. blank week or year) — keep precision but
+      // clear the stored date so nothing out-of-range is ever saved.
       onChange("", "week");
     }
   }
@@ -65,6 +81,13 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
       onChange(date, "exact");
     }
   }
+
+  // Valid week range for the currently-entered year (52 or 53), for the input
+  // bounds + the helper hint.
+  const yNumNow = Number(year);
+  const effYearNow =
+    Number.isInteger(yNumNow) && yNumNow >= 2000 ? yNumNow : thisYear;
+  const maxWeekNow = weeksInIsoYear(effYearNow);
 
   return (
     <div className="flex flex-col gap-2">
@@ -88,33 +111,43 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
       </div>
 
       {precision === "week" ? (
-        <div className="flex items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <label htmlFor={id ? `${id}-week` : undefined} className="text-muted-foreground text-xs">
-              Week
-            </label>
-            <Input
-              id={id ? `${id}-week` : undefined}
-              inputMode="numeric"
-              value={week}
-              onChange={(e) => emitWeek(e.target.value, year)}
-              placeholder="28"
-              className="w-20"
-            />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor={id ? `${id}-week` : undefined} className="text-muted-foreground text-xs">
+                Week
+              </label>
+              <Input
+                id={id ? `${id}-week` : undefined}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={maxWeekNow}
+                value={week}
+                onChange={(e) => emitWeek(e.target.value, year)}
+                placeholder="28"
+                className="w-20"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor={id ? `${id}-year` : undefined} className="text-muted-foreground text-xs">
+                Year
+              </label>
+              <Input
+                id={id ? `${id}-year` : undefined}
+                type="number"
+                inputMode="numeric"
+                min={thisYear}
+                value={year}
+                onChange={(e) => emitWeek(week, e.target.value)}
+                placeholder={String(thisYear)}
+                className="w-24"
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor={id ? `${id}-year` : undefined} className="text-muted-foreground text-xs">
-              Year
-            </label>
-            <Input
-              id={id ? `${id}-year` : undefined}
-              inputMode="numeric"
-              value={year}
-              onChange={(e) => emitWeek(week, e.target.value)}
-              placeholder={String(thisYear)}
-              className="w-24"
-            />
-          </div>
+          <p className="text-muted-foreground text-xs">
+            Week 1–{maxWeekNow} · {effYearNow}
+          </p>
         </div>
       ) : (
         <Input
