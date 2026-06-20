@@ -54,9 +54,30 @@ cross-cutting. Original SQL files live in `/migrations/`.
   snapshot `tariff_pct = 0` and skip the import-tax bucket. Admin manages the
   list at `/admin/hs-codes`. Archiving (`is_active = false`) hides a code
   from new-part pickers but leaves historical snapshots alone.
-- **App-wide defaults** live in a singleton `app_settings` row (id = 1). Today
-  it just holds `default_transport_pct` (0.10 = 10 %), pre-filled into new PO
-  line dialogs. Edited at `/admin/settings`.
+- **App-wide defaults** live in a singleton `app_settings` row (id = 1),
+  edited at `/admin/settings`. Holds: `default_transport_pct` (0.10 = 10 %,
+  pre-filled into new PO line dialogs); and the location-visibility pair added
+  in migration 47 — `primary_location_id` (FK → `inventory_locations`) and
+  `hide_location_info` (bool). See the locations note below.
+- **Single-location simplification + location visibility (migration 47).** The
+  shop runs one stock location (`WH-MAIN`), so location detail is hidden
+  app-wide by default (`app_settings.hide_location_info` seeded `true`), with
+  the design built to scale to a second location later.
+  - `resolveDefaultLocationId()` (`src/lib/inventory/default-location.ts`) is
+    the single source for
+    "which location does a consumption/receipt target" — `app_settings.
+    primary_location_id`, else first active location by code. `finishBikeBuild`
+    and work-order part consumption call it instead of each re-deriving "first
+    active". The primary location **cannot be archived** (consumption falls
+    back to it).
+  - When `hide_location_info` is on, location surfaces collapse: parts "stock by
+    location" → a single on-hand total, the movements ledger drops its location
+    column, and receive / stock-adjust forms hide the location picker and target
+    the primary location. Driven by a `hideLocations` / `primaryLocationId` prop
+    pair threaded from the server pages — not a query-time filter.
+  - Admin CRUD at `/admin/locations` (mirrors `/admin/colors`); one-click
+    hide/reveal toggle there (flips only `hide_location_info`), and a "Locations"
+    section in `/admin/settings` (primary picker + toggle).
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).
@@ -203,6 +224,23 @@ cross-cutting. Original SQL files live in `/migrations/`.
   don't "fix" these to sentence case.
 - **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New part",
   "New bike", "New MO") — not "Add X" or "Create X". Standardised June 2026.
+- **Navigation / IA (set with owner 2026-06-20).** The left nav is grouped
+  with subtle hairline separators between groups, most-used first:
+  1. *Daily ops* — Dashboard · Bikes · Bike templates · Parts · Maintenance ·
+     Workshop floor
+  2. *Orders & commercial* — Manufacturing orders · Purchase orders · Sales
+     orders · Paint orders · Invoices · Service agreements · Customers
+  3. *Admin* (on its own)
+  - **Two nav components must stay in sync:** `src/components/app-sidebar.tsx`
+    (desktop) and `src/components/mobile-nav.tsx` (mobile drawer). They had
+    silently drifted (the mobile drawer was missing Sales orders + Admin) —
+    edit both when adding/moving a nav item.
+  - The customer **Map** (`/organizations/map`) is **not** in the sidebar — it
+    lives under the **Admin** landing page (`src/app/admin/page.tsx`), whose
+    tiles are grouped most-used-first: *Catalog & inventory* (part categories,
+    colours, kits, locations) · *Purchasing & landed cost* (suppliers, HS/TARIC
+    codes, FX rates) · *Customers* (customer segments, **Map**) · *System*
+    (settings). The Map page itself is unchanged.
 - Display DKK as `1.234,56 kr.` (Danish locale).
 - Plan-then-build: before writing code, list files you intend to create/modify
   and wait for confirmation.
