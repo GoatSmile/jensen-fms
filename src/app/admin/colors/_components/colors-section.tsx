@@ -85,11 +85,11 @@ export function ColorsSection({ rows }: { rows: ColorRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          {row.hex ? (
-                            <ColorSwatch hex={row.hex} label={row.nameEn} />
-                          ) : (
-                            <span className="bg-muted inline-block size-4 rounded border" />
-                          )}
+                          <ColorSwatch
+                            hex={row.hex}
+                            ralCode={row.ralCode}
+                            label={row.nameEn}
+                          />
                           <div className="flex flex-col">
                             <span className="font-medium">{row.nameEn}</span>
                             {row.nameDa && row.nameDa !== row.nameEn ? (

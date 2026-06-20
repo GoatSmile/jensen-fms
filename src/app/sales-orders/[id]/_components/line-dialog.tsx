@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { ColorSwatch } from "@/components/color-swatch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -217,7 +218,7 @@ export function LineDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
               Bike templates spawn an MO when the SO is confirmed; parts are
-              priced on the invoice but don't trigger production.
+              priced on the invoice but don&apos;t trigger production.
             </DialogDescription>
           </DialogHeader>
 
@@ -414,13 +415,12 @@ export function LineDialog({
                     const finish = colorFinishLabel(c.ral_code, c.coating);
                     return (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.hex ? (
-                          <span
-                            className="mr-2 inline-block size-3 rounded-full border"
-                            style={{ backgroundColor: c.hex }}
-                            aria-hidden
-                          />
-                        ) : null}
+                        <ColorSwatch
+                          hex={c.hex}
+                          ralCode={c.ral_code}
+                          label={c.name_en}
+                          className="mr-2"
+                        />
                         {c.name_en}
                         {finish ? (
                           <span className="text-muted-foreground ml-2 text-xs">

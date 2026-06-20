@@ -107,11 +107,12 @@ export default async function ColorDetailPage({
 
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          {c.hex ? (
-            <ColorSwatch hex={c.hex} label={c.name_en} size={6} />
-          ) : (
-            <span className="bg-muted inline-block size-6 rounded-full border" />
-          )}
+          <ColorSwatch
+            hex={c.hex}
+            ralCode={c.ral_code}
+            label={c.name_en}
+            size={6}
+          />
           <div className="flex flex-col gap-0.5">
             <h1 className="text-2xl font-semibold">{c.name_en}</h1>
             <p className="text-muted-foreground font-mono text-xs">{c.slug}</p>

@@ -1,7 +1,11 @@
+import { ralToHex } from "@/lib/colors/ral";
 import { cn } from "@/lib/utils";
 
 type Props = {
   hex: string | null | undefined;
+  /** RAL classic code (e.g. "5013"); resolved to an sRGB approximation when
+   * no explicit hex is set, so RAL-only colours still show a real swatch. */
+  ralCode?: string | null;
   label?: string | null;
   /** Size in tailwind units. Default 3 (12px). */
   size?: number;
@@ -10,10 +14,11 @@ type Props = {
 
 /**
  * Round colour swatch — used inline next to a colour name, and inside
- * Select dropdowns. Falls back to a neutral grey when no hex is known.
+ * Select dropdowns. Resolves the fill as explicit hex → RAL approximation,
+ * falling back to a neutral grey ring when neither is known.
  */
-export function ColorSwatch({ hex, label, size = 3, className }: Props) {
-  const safe = isValidHex(hex) ? hex! : null;
+export function ColorSwatch({ hex, ralCode, label, size = 3, className }: Props) {
+  const safe = isValidHex(hex) ? hex! : (ralToHex(ralCode) ?? null);
   const sizeClass = sizeToClass(size);
   return (
     <span
@@ -36,16 +41,18 @@ export function ColorSwatch({ hex, label, size = 3, className }: Props) {
  */
 export function ColorChip({
   hex,
+  ralCode,
   label,
   className,
 }: {
   hex: string | null | undefined;
+  ralCode?: string | null;
   label: string | null | undefined;
   className?: string;
 }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <ColorSwatch hex={hex} label={label} />
+      <ColorSwatch hex={hex} ralCode={ralCode} label={label} />
       <span>{label ?? "—"}</span>
     </span>
   );

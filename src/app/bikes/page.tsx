@@ -609,6 +609,7 @@ export default async function BikesPage({
                         <span className="inline-flex items-center gap-1.5">
                           <ColorSwatch
                             hex={b.color.hex}
+                            ralCode={b.color.ral_code}
                             label={b.color.name_en}
                           />
                           <span className="flex flex-col leading-tight">

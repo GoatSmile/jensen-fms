@@ -37,6 +37,7 @@ const RAL_CLASSIC_HEX: Record<string, string> = {
   "5009": "#22697C", // Azure blue
   "5010": "#0E294B", // Gentian blue
   "5012": "#3481B8", // Light blue
+  "5013": "#193153", // Cobalt blue
   "5015": "#2874B2", // Sky blue
   "5017": "#063971", // Traffic blue
   "6005": "#114232", // Moss green

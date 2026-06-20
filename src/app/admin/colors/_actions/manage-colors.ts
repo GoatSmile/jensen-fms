@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { ralToHex } from "@/lib/colors/ral";
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,6 +51,14 @@ function parseFormData(
 
   const ralRaw = nullable(formData.get("ral_code"))?.trim() ?? null;
   const ral_code = ralRaw && ralRaw !== "" ? ralRaw : null;
+
+  // Server backstop: if no explicit hex but the RAL code resolves to a known
+  // sRGB approximation, store it so the swatch shows a real colour everywhere —
+  // even on surfaces that don't carry ral_code through to the component.
+  if (!hex) {
+    const fromRal = ralToHex(ral_code);
+    if (fromRal) hex = fromRal.toLowerCase();
+  }
 
   const coating = nullable(formData.get("coating"))?.trim() ?? null;
 
