@@ -555,9 +555,35 @@ Phases:
   COMPLETE.**
 
 **Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
-zero email/PDF infra today). **Tier 4 — payments & stock value** (down
-payments, pre-paid parts, partial invoicing, stock-valuation report;
-deferred — tangles with Danish VAT-on-prepayment, a revisor question).
+zero email/PDF infra today).
+
+**Tier 4 — payments & stock value** (down payments, pre-paid parts, partial
+invoicing, stock-valuation report). The **VAT-on-prepayment policy that was
+blocking this is now decided with the owner (2026-06-20)** — this is the model
+to build (still get a revisor nod before the first *real* prepayment invoice,
+but it matches standard Danish acontofaktura/slutfaktura practice):
+- The shop takes a **down payment before delivery**; VAT (25 %) is recognised
+  **immediately at payment time** (Danish momsloven: payment ahead of delivery
+  sets the tax point).
+- The down payment is its **own invoice** — a deposit invoice (acontofaktura),
+  numbered, with VAT on the down-payment amount, issued when the deposit is taken.
+- At delivery a **final/settlement invoice (slutfaktura)** bills the **remaining
+  balance only** (order total − deposit already invoiced) — NOT a fresh full
+  invoice. It shows the order, subtracts the invoiced deposit, and charges the
+  balance + VAT on the balance, referencing the deposit. Avoids double-counting VAT.
+- **Defaults the owner delegated ("pick the most likely"):** export /
+  reverse-charge orders → deposit + final inherit the order's VAT code (a
+  0 %/reverse-charge order's deposit also carries 0 %, same as invoice-from-SO
+  today); pre-paid parts → same deposit-invoice-with-VAT-now treatment;
+  period straddle → VAT lands in the period of the deposit invoice's date (falls
+  out automatically); EAN / public sector → deposit + final transmit via EAN like
+  any invoice (with 3E). Stock-valuation report → **weighted-average cost** of
+  on-hand (the one accounting-policy choice still worth a revisor nod; FIFO is the
+  alternative). Schema is mostly ready (`invoices` already has per-line VAT
+  snapshots + `is_export`/`is_reverse_charge`); the new pieces are an invoice
+  "kind" (deposit vs final/standard) and computing remaining = SO total −
+  Σ(deposit invoices).
+
 **Tier 5 — deferred:** offers/quotes module (price breakdown lives here);
 service-contract → auto-add to maintenance fleet. Website/marketing copy is
 not app work. Commitment to Dennis: core flow usable "by next week".
