@@ -52,11 +52,24 @@ type Props = {
   poStatus: string;
   lines: LineRow[];
   locations: LocationOption[];
+  /** Hide the "Receive into" picker (single-location shops); use the default. */
+  hideLocation?: boolean;
+  /** Location to receive into while the picker is hidden. */
+  primaryLocationId?: string | null;
 };
 
-export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
+export function ReceiveForm({
+  poId,
+  poStatus,
+  lines,
+  locations,
+  hideLocation = false,
+  primaryLocationId = null,
+}: Props) {
   const router = useRouter();
-  const [locationId, setLocationId] = useState(locations[0]?.id ?? "");
+  const [locationId, setLocationId] = useState(
+    primaryLocationId ?? locations[0]?.id ?? "",
+  );
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -148,30 +161,32 @@ export function ReceiveForm({ poId, poStatus, lines, locations }: Props) {
         </header>
 
         <div className="flex flex-col gap-4 p-4">
-          <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="receive-location">Receive into</Label>
-              <Select
-                value={locationId}
-                onValueChange={setLocationId}
-                disabled={isClosed || locations.length <= 1}
-              >
-                <SelectTrigger id="receive-location">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id}>
-                      {loc.name}
-                      <span className="text-muted-foreground ml-1.5 text-xs">
-                        ({loc.code})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {hideLocation ? null : (
+            <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="receive-location">Receive into</Label>
+                <Select
+                  value={locationId}
+                  onValueChange={setLocationId}
+                  disabled={isClosed || locations.length <= 1}
+                >
+                  <SelectTrigger id="receive-location">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                          ({loc.code})
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <Table>

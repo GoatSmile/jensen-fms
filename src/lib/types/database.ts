@@ -17,20 +17,34 @@ export type Database = {
       app_settings: {
         Row: {
           default_transport_pct: number
+          hide_location_info: boolean
           id: number
+          primary_location_id: string | null
           updated_at: string
         }
         Insert: {
           default_transport_pct?: number
+          hide_location_info?: boolean
           id?: number
+          primary_location_id?: string | null
           updated_at?: string
         }
         Update: {
           default_transport_pct?: number
+          hide_location_info?: boolean
           id?: number
+          primary_location_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_primary_location_id_fkey"
+            columns: ["primary_location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attachments: {
         Row: {

@@ -31,6 +31,10 @@ type Props = {
   locations: LocationOption[];
   /** Set of active location ids — rows at retired locations show no Adjust button. */
   activeLocationIds: Set<string>;
+  /** When true, collapse the per-location breakdown to a single on-hand total. */
+  hideLocations?: boolean;
+  /** Location the single Adjust button targets while locations are hidden. */
+  primaryLocationId?: string | null;
 };
 
 export function StockSection({
@@ -39,7 +43,47 @@ export function StockSection({
   partName,
   locations,
   activeLocationIds,
+  hideLocations = false,
+  primaryLocationId = null,
 }: Props) {
+  if (hideLocations) {
+    const total = rows.reduce((sum, r) => sum + r.quantityOnHand, 0);
+    const lastMovementAt = rows.reduce<string | null>(
+      (acc, r) =>
+        r.lastMovementAt && (!acc || r.lastMovementAt > acc)
+          ? r.lastMovementAt
+          : acc,
+      null,
+    );
+    return (
+      <Section
+        title="Stock"
+        description="Live count from the inventory ledger."
+      >
+        <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+          <div className="flex flex-col">
+            <span className="text-muted-foreground text-xs">On hand</span>
+            <span className="text-2xl font-semibold tabular-nums">
+              {formatQuantity(total)}
+            </span>
+            {lastMovementAt ? (
+              <span className="text-muted-foreground text-xs">
+                Last movement {formatDateTime(lastMovementAt)}
+              </span>
+            ) : null}
+          </div>
+          <AdjustStockDialog
+            partId={partId}
+            partName={partName}
+            locations={locations}
+            defaultLocationId={primaryLocationId ?? undefined}
+            hideLocation
+          />
+        </div>
+      </Section>
+    );
+  }
+
   return (
     <Section
       title="Stock by location"

@@ -96,7 +96,7 @@ export default async function PurchaseOrderDetailPage({
       .order("rate_date", { ascending: false }),
     supabase
       .from("app_settings")
-      .select("default_transport_pct")
+      .select("default_transport_pct, hide_location_info, primary_location_id")
       .eq("id", 1)
       .maybeSingle(),
   ]);
@@ -179,6 +179,8 @@ export default async function PurchaseOrderDetailPage({
   const defaultTransportPct = Number(
     settingsRes.data?.default_transport_pct ?? 0.10,
   );
+  const hideLocations = settingsRes.data?.hide_location_info ?? false;
+  const primaryLocationId = settingsRes.data?.primary_location_id ?? null;
 
   const totalOrdered = poLineRows.reduce((s, l) => s + l.quantity, 0);
   const totalReceived = poLineRows.reduce(
@@ -288,6 +290,8 @@ export default async function PurchaseOrderDetailPage({
           poStatus={po.status}
           lines={receiveLineRows}
           locations={locationOptions}
+          hideLocation={hideLocations}
+          primaryLocationId={primaryLocationId}
         />
       ) : null}
     </div>

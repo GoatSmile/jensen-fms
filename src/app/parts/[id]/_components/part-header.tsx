@@ -34,6 +34,10 @@ type Props = {
   categoryName: string | null;
   isDeleted: boolean;
   locations: LocationOption[];
+  /** Hide the adjust dialog's location picker (single-location shops). */
+  hideLocations?: boolean;
+  /** Location the adjust dialog targets while the picker is hidden. */
+  primaryLocationId?: string | null;
   /** Public URL of the hero photo, or null when the part has no photos. */
   heroUrl: string | null;
 };
@@ -55,6 +59,8 @@ export function PartHeader({
   categoryName,
   isDeleted,
   locations,
+  hideLocations = false,
+  primaryLocationId = null,
   heroUrl,
 }: Props) {
   const router = useRouter();
@@ -128,6 +134,8 @@ export function PartHeader({
               partId={partId}
               partName={nameEn}
               locations={locations}
+              defaultLocationId={primaryLocationId ?? undefined}
+              hideLocation={hideLocations}
             />
           )}
           <DropdownMenu>

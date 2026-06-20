@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
 import { createClient } from "@/lib/supabase/server";
 import {
   CLOSED_WO_STATUSES,
@@ -56,24 +57,11 @@ async function loadOpenWO(
   return { ok: true, wo };
 }
 
-/** First active inventory location by code (mirrors mark-bike-built). */
+/** Primary inventory location, else first active by code (shared resolver). */
 async function defaultLocation(
   supabase: SupabaseServerClient,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const { data: location, error: locErr } = await supabase
-    .from("inventory_locations")
-    .select("id")
-    .eq("is_active", true)
-    .order("code", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (locErr || !location) {
-    return {
-      ok: false,
-      error: `No active inventory location to consume from: ${locErr?.message ?? "none configured"}`,
-    };
-  }
-  return { ok: true, id: location.id };
+  return resolveDefaultLocationId(supabase);
 }
 
 /**

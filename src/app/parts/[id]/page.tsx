@@ -66,6 +66,7 @@ export default async function PartDetailPage({
     fxRatesRes,
     partKitsRes,
     kitOptionsRes,
+    settingsRes,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -242,7 +243,15 @@ export default async function PartDetailPage({
       .eq("is_active", true)
       .order("sticker_color", { ascending: true })
       .order("kit_number", { ascending: true, nullsFirst: true }),
+    supabase
+      .from("app_settings")
+      .select("hide_location_info, primary_location_id")
+      .eq("id", 1)
+      .maybeSingle(),
   ]);
+
+  const hideLocations = settingsRes.data?.hide_location_info ?? false;
+  const primaryLocationId = settingsRes.data?.primary_location_id ?? null;
 
   if (partRes.error) {
     throw new Error(`Failed to load part: ${partRes.error.message}`);
@@ -475,6 +484,8 @@ export default async function PartDetailPage({
         categoryName={part.category?.name_en ?? null}
         isDeleted={part.deleted_at != null}
         locations={locationOptions}
+        hideLocations={hideLocations}
+        primaryLocationId={primaryLocationId}
         heroUrl={heroPhoto?.fileUrl ?? null}
       />
 
@@ -532,9 +543,11 @@ export default async function PartDetailPage({
         partName={part.name_en}
         locations={locationOptions}
         activeLocationIds={activeLocationIds}
+        hideLocations={hideLocations}
+        primaryLocationId={primaryLocationId}
       />
 
-      <MovementsSection rows={movementRows} />
+      <MovementsSection rows={movementRows} hideLocations={hideLocations} />
 
       <PurchaseHistorySection
         rows={purchaseRows}

@@ -42,7 +42,13 @@ const MOVEMENT_BADGE_VARIANT: Record<
   disposed: "destructive",
 };
 
-export function MovementsSection({ rows }: { rows: MovementRow[] }) {
+export function MovementsSection({
+  rows,
+  hideLocations = false,
+}: {
+  rows: MovementRow[];
+  hideLocations?: boolean;
+}) {
   return (
     <Section
       title="Recent movements"
@@ -57,7 +63,11 @@ export function MovementsSection({ rows }: { rows: MovementRow[] }) {
               <TableRow>
                 <TableHead className="w-[140px] sm:w-[160px]">When</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead className="hidden sm:table-cell">Location</TableHead>
+                {hideLocations ? null : (
+                  <TableHead className="hidden sm:table-cell">
+                    Location
+                  </TableHead>
+                )}
                 <TableHead className="text-right">Δ qty</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
                   Unit cost (DKK)
@@ -82,9 +92,11 @@ export function MovementsSection({ rows }: { rows: MovementRow[] }) {
                       {movementTypeLabel(row.movementType)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden font-mono text-xs sm:table-cell">
-                    {row.locationCode}
-                  </TableCell>
+                  {hideLocations ? null : (
+                    <TableCell className="hidden font-mono text-xs sm:table-cell">
+                      {row.locationCode}
+                    </TableCell>
+                  )}
                   <TableCell
                     className={`text-right tabular-nums font-medium ${
                       row.quantityDelta > 0

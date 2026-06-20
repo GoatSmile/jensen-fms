@@ -45,6 +45,8 @@ type Props = {
   defaultLocationId?: string;
   /** Render in compact (per-row "Adjust") or default (header) trigger style. */
   triggerVariant?: "default" | "row";
+  /** Hide the location picker (single-location shops) and target the default. */
+  hideLocation?: boolean;
 };
 
 type Mode = "delta" | "set";
@@ -55,6 +57,7 @@ export function AdjustStockDialog({
   locations,
   defaultLocationId,
   triggerVariant = "default",
+  hideLocation = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -94,6 +97,7 @@ export function AdjustStockDialog({
           partName={partName}
           locations={locations}
           defaultLocationId={defaultLocationId}
+          hideLocation={hideLocation}
           onCancel={() => setOpen(false)}
           onSuccess={() => {
             setOpen(false);
@@ -114,6 +118,7 @@ function AdjustStockForm({
   partName,
   locations,
   defaultLocationId,
+  hideLocation,
   onSuccess,
   onCancel,
 }: {
@@ -121,6 +126,7 @@ function AdjustStockForm({
   partName: string;
   locations: LocationOption[];
   defaultLocationId?: string;
+  hideLocation: boolean;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -206,28 +212,34 @@ function AdjustStockForm({
         </DialogDescription>
       </DialogHeader>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="adjust-location">Location</Label>
-        <Select value={locationId} onValueChange={setLocationId}>
-          <SelectTrigger id="adjust-location">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {locations.map((loc) => (
-              <SelectItem key={loc.id} value={loc.id}>
-                {loc.name}{" "}
-                <span className="text-muted-foreground">
-                  ({loc.code} · {formatQuantity(loc.currentOnHand)} on hand)
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {hideLocation ? (
         <p className="text-muted-foreground text-xs">
-          Currently {formatQuantity(selectedLocation.currentOnHand)} at this
-          location.
+          Currently {formatQuantity(selectedLocation.currentOnHand)} on hand.
         </p>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="adjust-location">Location</Label>
+          <Select value={locationId} onValueChange={setLocationId}>
+            <SelectTrigger id="adjust-location">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {locations.map((loc) => (
+                <SelectItem key={loc.id} value={loc.id}>
+                  {loc.name}{" "}
+                  <span className="text-muted-foreground">
+                    ({loc.code} · {formatQuantity(loc.currentOnHand)} on hand)
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-xs">
+            Currently {formatQuantity(selectedLocation.currentOnHand)} at this
+            location.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <Label>Mode</Label>

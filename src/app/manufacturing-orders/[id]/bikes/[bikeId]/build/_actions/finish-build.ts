@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
 import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
 
 import { autoAdvanceMOAfterBuild } from "../../../../_actions/transition-mo";
@@ -92,22 +93,12 @@ export async function finishBikeBuild(
     };
   }
 
-  // Pick the default inventory location for v1 (single-location consume).
-  const { data: location, error: locErr } = await supabase
-    .from("inventory_locations")
-    .select("id")
-    .eq("is_active", true)
-    .order("code", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (locErr || !location) {
-    return {
-      ok: false,
-      error: `No active inventory location to consume from: ${
-        locErr?.message ?? "none configured"
-      }`,
-    };
+  // Pick the default inventory location (primary, else first active by code).
+  const locResult = await resolveDefaultLocationId(supabase);
+  if (!locResult.ok) {
+    return { ok: false, error: locResult.error };
   }
+  const location = { id: locResult.id };
 
   // Pull the bike's parts list. Anything with an inventory_movement_id is
   // already consumed from a prior partial run.

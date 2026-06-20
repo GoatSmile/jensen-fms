@@ -8,6 +8,7 @@ import {
   Tag,
   Truck,
   Users,
+  Warehouse,
 } from "lucide-react";
 
 import {
@@ -41,6 +42,7 @@ export default async function AdminLandingPage() {
     suppliersRes,
     kitsRes,
     categoriesRes,
+    locationsRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -79,6 +81,10 @@ export default async function AdminLandingPage() {
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
       .is("deleted_at", null),
+    supabase
+      .from("inventory_locations")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -91,6 +97,7 @@ export default async function AdminLandingPage() {
   const activeSupplierCount = suppliersRes.count ?? 0;
   const activeKitCount = kitsRes.count ?? 0;
   const activeCategoryCount = categoriesRes.count ?? 0;
+  const activeLocationCount = locationsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -169,6 +176,13 @@ export default async function AdminLandingPage() {
           title="Kits"
           description="Colour + number sticker labels for part boxes — the assembly floor picks complete part sets by code."
           stat={`${activeKitCount} active kit${activeKitCount === 1 ? "" : "s"}`}
+        />
+        <Tile
+          href="/admin/locations"
+          icon={Warehouse}
+          title="Locations"
+          description="Physical sites stock lives at. The primary location is the default for receiving and consumption."
+          stat={`${activeLocationCount} active location${activeLocationCount === 1 ? "" : "s"}`}
         />
         <Tile
           href="/admin/settings"
