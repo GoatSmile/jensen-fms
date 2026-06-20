@@ -9,9 +9,26 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { ColorForm, EMPTY_COLOR_FORM } from "../_components/color-form";
+import { createClient } from "@/lib/supabase/server";
 
-export default function NewColorPage() {
+import {
+  ColorForm,
+  EMPTY_COLOR_FORM,
+  type CoatingChoice,
+} from "../_components/color-form";
+
+export default async function NewColorPage() {
+  const supabase = await createClient();
+  const { data: coatingsData } = await supabase
+    .from("coatings")
+    .select("slug, label_en")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  const coatings: CoatingChoice[] = (coatingsData ?? []).map((c) => ({
+    slug: c.slug,
+    label: c.label_en,
+  }));
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
@@ -48,7 +65,11 @@ export default function NewColorPage() {
         </p>
       </header>
 
-      <ColorForm mode={{ kind: "create" }} initial={EMPTY_COLOR_FORM} />
+      <ColorForm
+        mode={{ kind: "create" }}
+        initial={EMPTY_COLOR_FORM}
+        coatings={coatings}
+      />
     </div>
   );
 }

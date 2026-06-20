@@ -17,6 +17,7 @@ import { ArchiveButton } from "../_components/archive-button";
 import {
   ColorForm,
   type ColorFormValues,
+  type CoatingChoice,
 } from "../_components/color-form";
 
 export default async function ColorDetailPage({
@@ -29,7 +30,7 @@ export default async function ColorDetailPage({
 
   // Pull the row + usage counts (bikes + MOs) in parallel. Usage drives
   // the archive-button warning copy.
-  const [colorRes, bikeUsageRes, moUsageRes] = await Promise.all([
+  const [colorRes, bikeUsageRes, moUsageRes, coatingsRes] = await Promise.all([
     supabase
       .from("colors")
       .select(
@@ -46,6 +47,11 @@ export default async function ColorDetailPage({
       .from("manufacturing_orders")
       .select("id", { count: "exact", head: true })
       .eq("color_id", id),
+    supabase
+      .from("coatings")
+      .select("slug, label_en")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (colorRes.error) {
@@ -55,6 +61,10 @@ export default async function ColorDetailPage({
 
   const c = colorRes.data;
   const usageCount = (bikeUsageRes.count ?? 0) + (moUsageRes.count ?? 0);
+  const coatings: CoatingChoice[] = (coatingsRes.data ?? []).map((x) => ({
+    slug: x.slug,
+    label: x.label_en,
+  }));
 
   const initial: ColorFormValues = {
     name_en: c.name_en,
@@ -112,7 +122,11 @@ export default async function ColorDetailPage({
         </Badge>
       </header>
 
-      <ColorForm mode={{ kind: "edit", id: c.id }} initial={initial} />
+      <ColorForm
+        mode={{ kind: "edit", id: c.id }}
+        initial={initial}
+        coatings={coatings}
+      />
 
       <ArchiveButton
         id={c.id}

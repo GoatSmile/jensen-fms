@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ColorSwatch } from "@/components/color-swatch";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
-import { COATINGS, coatingLabel } from "@/lib/colors/coating";
+import { coatingLabel } from "@/lib/colors/coating";
 import { ralToHex } from "@/lib/colors/ral";
 
 import { createColor, updateColor } from "../_actions/manage-colors";
@@ -38,9 +38,13 @@ export const EMPTY_COLOR_FORM: ColorFormValues = {
 
 type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
+export type CoatingChoice = { slug: string; label: string };
+
 type Props = {
   mode: Mode;
   initial: ColorFormValues;
+  /** Active coating finishes from the managed vocab (admin/colors). */
+  coatings: CoatingChoice[];
 };
 
 /**
@@ -54,9 +58,19 @@ type Props = {
  * "Saved" indicator; admins frequently tweak a colour multiple times
  * (RAL code, then hex, then sort order) before moving on.
  */
-export function ColorForm({ mode, initial }: Props) {
+export function ColorForm({ mode, initial, coatings }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<ColorFormValues>(initial);
+
+  // Keep an already-stored finish selectable even if it's since been archived,
+  // so editing an old colour doesn't silently drop its coating.
+  const coatingOptions =
+    values.coating && !coatings.some((c) => c.slug === values.coating)
+      ? [
+          ...coatings,
+          { slug: values.coating, label: coatingLabel(values.coating) ?? values.coating },
+        ]
+      : coatings;
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -204,9 +218,9 @@ export function ColorForm({ mode, initial }: Props) {
           className="border-input bg-background h-9 max-w-[200px] rounded-md border px-2 text-sm"
         >
           <option value="">— None / unspecified</option>
-          {COATINGS.map((c) => (
-            <option key={c} value={c}>
-              {coatingLabel(c)}
+          {coatingOptions.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.label}
             </option>
           ))}
         </select>

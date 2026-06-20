@@ -14,11 +14,15 @@ import {
   ColorsSection,
   type ColorRow,
 } from "./_components/colors-section";
+import {
+  CoatingsSection,
+  type CoatingRow,
+} from "./_components/coatings-section";
 
 export default async function AdminColorsPage() {
   const supabase = await createClient();
 
-  const [colorsRes, bikeUsageRes, moUsageRes] = await Promise.all([
+  const [colorsRes, bikeUsageRes, moUsageRes, coatingsRes] = await Promise.all([
     supabase
       .from("colors")
       .select("id, slug, name_en, name_da, hex, ral_code, coating, sort_order, is_active")
@@ -34,6 +38,12 @@ export default async function AdminColorsPage() {
       .from("manufacturing_orders")
       .select("color_id")
       .not("color_id", "is", null),
+    supabase
+      .from("coatings")
+      .select("id, slug, label_en, label_da, sort_order, is_active")
+      .order("is_active", { ascending: false })
+      .order("sort_order", { ascending: true })
+      .order("label_en", { ascending: true }),
   ]);
 
   if (colorsRes.error) {
@@ -63,6 +73,15 @@ export default async function AdminColorsPage() {
     sortOrder: c.sort_order,
     isActive: c.is_active,
     usageCount: usageById.get(c.id) ?? 0,
+  }));
+
+  const coatingRows: CoatingRow[] = (coatingsRes.data ?? []).map((c) => ({
+    id: c.id,
+    slug: c.slug,
+    labelEn: c.label_en,
+    labelDa: c.label_da,
+    sortOrder: c.sort_order,
+    isActive: c.is_active,
   }));
 
   return (
@@ -97,6 +116,8 @@ export default async function AdminColorsPage() {
       </header>
 
       <ColorsSection rows={rows} />
+
+      <CoatingsSection rows={coatingRows} />
     </div>
   );
 }

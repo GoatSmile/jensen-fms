@@ -619,6 +619,39 @@ export type Database = {
           },
         ]
       }
+      coatings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label_da: string
+          label_en: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label_da: string
+          label_en: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label_da?: string
+          label_en?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       colors: {
         Row: {
           coating: string | null
