@@ -16,6 +16,7 @@ export function ScanFab() {
   const pathname = usePathname();
   const hide =
     pathname === "/scan" ||
+    pathname === "/login" ||
     pathname.startsWith("/b/") ||
     pathname.startsWith("/report/") ||
     // /work has its own Scan button in the queue header; the workspace

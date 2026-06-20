@@ -79,7 +79,11 @@ export function AppSidebar() {
   }, []);
   // Hide all workshop chrome on public-scan routes — those pages are
   // customer-facing and need a clean shell.
-  if (pathname.startsWith("/b/") || pathname.startsWith("/report/")) {
+  if (
+    pathname.startsWith("/b/") ||
+    pathname.startsWith("/report/") ||
+    pathname === "/login"
+  ) {
     return null;
   }
   function toggleCollapsed() {

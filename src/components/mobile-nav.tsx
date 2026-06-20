@@ -79,7 +79,11 @@ export function MobileNav() {
 
   // Hide on public-scan routes — those pages are customer-facing and
   // shouldn't expose the workshop nav.
-  if (pathname.startsWith("/b/") || pathname.startsWith("/report/")) {
+  if (
+    pathname.startsWith("/b/") ||
+    pathname.startsWith("/report/") ||
+    pathname === "/login"
+  ) {
     return null;
   }
 
