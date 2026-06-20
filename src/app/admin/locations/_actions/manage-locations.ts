@@ -91,6 +91,32 @@ export async function updateLocation(
 }
 
 /**
+ * Flip the app-wide "hide location info" flag straight from the Locations
+ * screen (the same setting lives on /admin/settings alongside the primary
+ * picker; this is the one-click shortcut). Touches only hide_location_info, so
+ * it never disturbs primary_location_id. Revalidates the surfaces whose layout
+ * flexes on the flag.
+ */
+export async function setLocationVisibility(
+  hide: boolean,
+): Promise<LocationResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({ hide_location_info: hide, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) {
+    return { ok: false, error: `Could not save: ${error.message}` };
+  }
+  revalidatePath("/admin/locations");
+  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
+  revalidatePath("/parts/[id]", "page");
+  revalidatePath("/purchase-orders/[id]", "page");
+  return { ok: true };
+}
+
+/**
  * Toggle active. Soft-archive only (controlled vocab) — movements referencing
  * this location keep their reference. The primary shop location can't be
  * archived: consumption/receipt falls back to it and the hidden-location

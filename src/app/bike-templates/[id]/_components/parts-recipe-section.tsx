@@ -407,7 +407,8 @@ export function PartsRecipeSection({
                           : ""
                       }`}
                     >
-                      difference {formatDkk(templateRetailDkk - retailTotal.sum)}
+                      retail difference{" "}
+                      {formatDkk(templateRetailDkk - retailTotal.sum)}
                     </span>
                   </>
                 ) : null}

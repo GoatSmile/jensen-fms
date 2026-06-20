@@ -14,6 +14,7 @@ import {
   LocationsSection,
   type LocationRow,
 } from "./_components/locations-section";
+import { LocationVisibilityToggle } from "./_components/location-visibility-toggle";
 
 export default async function AdminLocationsPage() {
   const supabase = await createClient();
@@ -83,16 +84,15 @@ export default async function AdminLocationsPage() {
         <p className="text-muted-foreground text-sm">
           The physical sites stock lives at. Most shops run one. The primary
           location is where parts are received into and consumed from by default;
-          set it — and whether to hide location detail across the app — in{" "}
+          set it in{" "}
           <Link href="/admin/settings" className="underline">
             Settings
           </Link>
-          .{" "}
-          {hidden
-            ? "Location detail is currently hidden app-wide."
-            : "Location detail is currently shown app-wide."}
+          .
         </p>
       </header>
+
+      <LocationVisibilityToggle hidden={hidden} />
 
       <LocationsSection rows={rows} />
     </div>
