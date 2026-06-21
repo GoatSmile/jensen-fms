@@ -13,7 +13,7 @@ import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { round2 } from "@/lib/invoicing/status";
 
-import { DepositForm } from "./_components/deposit-form";
+import { DepositForm, type DepositPartChoice } from "./_components/deposit-form";
 
 const CAN_DEPOSIT = ["confirmed", "in_production", "ready"];
 
@@ -66,6 +66,25 @@ export default async function NewDepositPage({
     (priorDeposits ?? []).reduce((s, d) => s + Number(d.subtotal_amount ?? 0), 0),
   );
 
+  // Catalog parts for the "specific parts" deposit mode (kind B).
+  const { data: catalogParts } = await supabase
+    .from("parts")
+    .select(
+      "id, internal_sku, name_en, default_retail_price, default_retail_currency",
+    )
+    .is("deleted_at", null)
+    .order("internal_sku", { ascending: true });
+  const parts: DepositPartChoice[] = (catalogParts ?? []).map((p) => ({
+    id: p.id,
+    internal_sku: p.internal_sku,
+    name_en: p.name_en,
+    retail:
+      p.default_retail_price != null &&
+      (p.default_retail_currency ?? "DKK") === "DKK"
+        ? Number(p.default_retail_price)
+        : null,
+  }));
+
   const soSubtotal = round2(Number(so.subtotal_amount ?? 0));
   const canDeposit = CAN_DEPOSIT.includes(so.status);
 
@@ -111,6 +130,7 @@ export default async function NewDepositPage({
           currency={(so.currency as string | null)?.trim() || "DKK"}
           vatRate={vatRate}
           priorDepositSubtotal={priorDepositSubtotal}
+          parts={parts}
         />
       ) : (
         <p className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">

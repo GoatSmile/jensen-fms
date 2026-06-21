@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Boxes, Plus, Printer, Upload } from "lucide-react";
+import { Boxes, Coins, Plus, Printer, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -311,6 +311,11 @@ export default async function PartsPage({
             </p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/parts/stock-value">
+                <Coins aria-hidden /> Stock value
+              </Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link
                 href={`/parts/print${
