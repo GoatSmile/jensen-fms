@@ -230,9 +230,13 @@ export default async function InvoiceDetailPage({
       <Section
         title="Lines"
         description={
-          status === "draft"
-            ? "Drafted from the work order — issuing locks them."
-            : "Locked at issue."
+          status !== "draft"
+            ? "Locked at issue."
+            : invoice.kind === "deposit"
+              ? "Deposit draft — issuing assigns the invoice number and locks these lines."
+              : invoice.kind === "final"
+                ? "Final draft — issuing assigns the invoice number and locks these lines."
+                : "Draft — issuing assigns the invoice number and locks these lines."
         }
       >
         <div className="overflow-hidden rounded-md border">
