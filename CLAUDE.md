@@ -557,11 +557,29 @@ Phases:
 **Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
 zero email/PDF infra today).
 
-**Tier 4 — payments & stock value** (down payments, pre-paid parts, partial
-invoicing, stock-valuation report). **Model decided with the owner** — VAT
-policy locked 2026-06-20, prepayment shapes from the Dennis app-review call
-2026-06-19 (transcript). It follows standard Danish acontofaktura/slutfaktura
-practice; still get a revisor nod before the first *real* prepayment invoice.
+**Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
+6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*
+prepayment invoice (weighted-avg stock valuation + the deposit VAT timing).
+What was built:
+- Migration 48: `invoices.kind` (`standard|deposit|final`) + `deposit_pct`;
+  deposits/finals share the gapless INV series, `kind` drives heading/logic.
+- **Deposits** (`src/app/invoices/_actions/create-deposit.ts`): `createDeposit
+  Invoice(soId, {mode})` — `percent` / `amount` (summary line, kind A) or
+  `parts` (itemised `part_id` lines, kind B). Form at
+  `/sales-orders/[id]/deposit/new`; gated to confirmed–ready; installments
+  capped at order subtotal; VAT inherits the order's dominant code.
+- **Order % surface**: `PaymentsSection` on the SO detail (Σ live invoice
+  totals ÷ order total) + linked deposit/final list + CTA.
+- **Final** (`create-from-so.ts`): nets out every issued deposit as negative
+  lines → bills the remaining balance, self-labels `final`; deposits don't
+  block it. `uninvoiced.ts` only treats a standard/final as "invoiced".
+- **Print**: Acontofaktura / Slutfaktura headings; detail page kind badge.
+- **Stock value** (`/parts/stock-value`, linked from the parts header):
+  on-hand × weighted-avg purchase cost (from `inventory_movements` receipts),
+  MINUS stock paid via an issued part-based deposit — the deposit's `part_id`
+  lines ARE the customer-paid record (no extra flag).
+
+The decided model (reference):
 
 - **VAT timing (the question that was blocking this):** the shop takes payment
   **before delivery**; VAT (25 %) is recognised **immediately at payment time**
