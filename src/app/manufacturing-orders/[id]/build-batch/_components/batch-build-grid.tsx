@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ScanLine } from "lucide-react";
+import { Printer, ScanLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,14 @@ export function BatchBuildGrid({
             ))}
           </div>
         ) : null}
+        <a
+          href={`/manufacturing-orders/${moId}/pick-list/print?n=${n}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-foreground hover:text-foreground ml-auto inline-flex items-center gap-1.5 text-xs underline underline-offset-4"
+        >
+          <Printer aria-hidden className="size-3.5" /> Print pick list ({n})
+        </a>
       </div>
 
       <div className="overflow-x-auto rounded-md border">

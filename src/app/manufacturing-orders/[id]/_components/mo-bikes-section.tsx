@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { CheckSquare, Layers, Wrench } from "lucide-react";
+import { CheckSquare, Layers, Printer, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -161,6 +161,16 @@ export function MOBikesSection({
       description={`${completedQuantity} built · ${targetQuantity} target · ${slotsRemaining} slot${slotsRemaining === 1 ? "" : "s"} remaining`}
       action={
         <div className="flex flex-wrap items-center gap-2">
+          {!closed && unconfirmedCount + buildableCount + atPainterCount > 0 ? (
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                href={`/manufacturing-orders/${moId}/pick-list/print`}
+                target="_blank"
+              >
+                <Printer aria-hidden /> Pick list
+              </Link>
+            </Button>
+          ) : null}
           {!closed && unconfirmedCount + buildableCount > 0 ? (
             <Button size="sm" variant="outline" asChild>
               <Link href={`/manufacturing-orders/${moId}/build-batch`}>
