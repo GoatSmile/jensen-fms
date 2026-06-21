@@ -683,6 +683,19 @@ The durable home for ideas parked mid-session (session "chips" die with the
 app). Add new ones here with enough context to act cold; delete the entry
 when the work ships or the idea is rejected.
 
+- **Full UI internationalisation (parked 2026-06-21, owner's call).** The app
+  UI is English-only — no i18n framework. The two **working-language settings**
+  exist (`app_settings.app_language` + `worker_language`, en/da, default en,
+  edited at `/admin/settings`; migration 49) but currently only **capture the
+  preference** — nothing re-renders in Danish yet. Customer-facing documents
+  (invoices, SO, public report) already honour their own `language`. To make it
+  real: add an i18n library (e.g. `next-intl`), extract every UI string to
+  translation files, translate to Danish, thread the active language through.
+  Recommended first slice: the **workshop/tech screens** (`/work`, work orders,
+  tickets) keyed off `worker_language` (where Danish-speaking build workers
+  need it), to prove the setup before an app-wide rollout. `worker_language`
+  becomes per-user when auth (M1) lands.
+
 - **Phone-call → ticket AI pipeline** (parked June 2026, designed in-session).
   Workshop calls become maintenance tickets automatically:
   - Telephony: Twilio (conditional forwarding from the existing number),
