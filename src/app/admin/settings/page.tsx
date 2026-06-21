@@ -16,13 +16,16 @@ import {
   LocationSettingsForm,
   type LocationChoice,
 } from "./_components/location-settings-form";
+import { LanguageSettingsForm } from "./_components/language-settings-form";
 
 export default async function AdminSettingsPage() {
   const supabase = await createClient();
   const [settingsRes, locationsRes] = await Promise.all([
     supabase
       .from("app_settings")
-      .select("default_transport_pct, primary_location_id, hide_location_info")
+      .select(
+        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language",
+      )
       .eq("id", 1)
       .maybeSingle(),
     supabase
@@ -35,6 +38,10 @@ export default async function AdminSettingsPage() {
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
   const primaryLocationId = data?.primary_location_id ?? "";
   const hideLocationInfo = data?.hide_location_info ?? false;
+  const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
+  const workerLanguage = (
+    data?.worker_language === "da" ? "da" : "en"
+  ) as "en" | "da";
   const locationChoices: LocationChoice[] = (locationsRes.data ?? []).map(
     (l) => ({ id: l.id, label: `${l.name_en} (${l.code})` }),
   );
@@ -70,6 +77,22 @@ export default async function AdminSettingsPage() {
       </header>
 
       <ReportUrlCard />
+
+      <section className="rounded-md border">
+        <header className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Language</h2>
+          <p className="text-muted-foreground text-xs">
+            Working language for the office app and the workshop floor. Defaults
+            to English.
+          </p>
+        </header>
+        <div className="p-4">
+          <LanguageSettingsForm
+            initialAppLanguage={appLanguage}
+            initialWorkerLanguage={workerLanguage}
+          />
+        </div>
+      </section>
 
       <section className="rounded-md border">
         <header className="border-b px-4 py-3">

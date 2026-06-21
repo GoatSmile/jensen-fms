@@ -79,3 +79,34 @@ export async function saveLocationSettings(
   revalidatePath("/purchase-orders/[id]", "page");
   return { ok: true };
 }
+
+/**
+ * Save the working-language preferences: `app_language` (office/admin UI) and
+ * `worker_language` (build-floor + ticket screens). Both constrained to en/da.
+ * Captures the preference today; UI translation is a separate effort, and the
+ * worker language becomes per-user later.
+ */
+export async function saveLanguageSettings(
+  formData: FormData,
+): Promise<SettingsResult> {
+  const appLanguage = formData.get("app_language") === "da" ? "da" : "en";
+  const workerLanguage = formData.get("worker_language") === "da" ? "da" : "en";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      app_language: appLanguage,
+      worker_language: workerLanguage,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  if (error) {
+    return { ok: false, error: `Could not save settings: ${error.message}` };
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  return { ok: true };
+}

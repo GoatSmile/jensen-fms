@@ -362,6 +362,15 @@ export function BuildWorkbench({
     });
   }
 
+  // Shared by the top + footer "Finish build" buttons.
+  const finishDisabled =
+    isFinishing ||
+    isSeeding ||
+    isConfirming ||
+    rows.length === 0 ||
+    !confirmed ||
+    !!atPainterReason;
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header card with bike identity + status + actions */}
@@ -396,6 +405,16 @@ export function BuildWorkbench({
                 <p className="text-muted-foreground text-sm">{templateLabel}</p>
               ) : null}
             </div>
+            {!readOnly ? (
+              <Button
+                type="button"
+                onClick={onFinish}
+                disabled={finishDisabled}
+              >
+                <CheckCircle2 aria-hidden />
+                {isFinishing ? "Finishing…" : "Finish build"}
+              </Button>
+            ) : null}
           </div>
         </div>
       </section>
@@ -761,14 +780,7 @@ export function BuildWorkbench({
               type="button"
               size="lg"
               onClick={onFinish}
-              disabled={
-                isFinishing ||
-                isSeeding ||
-                isConfirming ||
-                rows.length === 0 ||
-                !confirmed ||
-                !!atPainterReason
-              }
+              disabled={finishDisabled}
             >
               <CheckCircle2 aria-hidden />{" "}
               {isFinishing ? "Finishing…" : "Finish build"}

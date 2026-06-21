@@ -439,6 +439,15 @@ export default async function ManufacturingOrderDetailPage({
         readOnly={closed}
       />
 
+      <MOBikesSection
+        moId={mo.id}
+        rows={moBikeRows}
+        targetQuantity={mo.target_quantity}
+        completedQuantity={mo.completed_quantity}
+        suggestedFrameNumber={suggestedFrameNumber}
+        closed={closed}
+      />
+
       <MOPartsSection
         moId={mo.id}
         rows={moPartRows}
@@ -450,15 +459,6 @@ export default async function ManufacturingOrderDetailPage({
         kitParts={kitParts}
         hasTemplate={mo.bike_template?.id != null}
         readOnly={closed}
-      />
-
-      <MOBikesSection
-        moId={mo.id}
-        rows={moBikeRows}
-        targetQuantity={mo.target_quantity}
-        completedQuantity={mo.completed_quantity}
-        suggestedFrameNumber={suggestedFrameNumber}
-        closed={closed}
       />
     </div>
   );

@@ -390,7 +390,11 @@ export default async function BikeBuildWorkbenchPage({
         readOnly={isReadOnly}
         pickListSlot={
           pickGroups.length > 0 ? (
-            <PickList groups={pickGroups} loose={loosePicks} />
+            <PickList
+              groups={pickGroups}
+              loose={loosePicks}
+              printHref={`/manufacturing-orders/${moId}/pick-list/print?n=1`}
+            />
           ) : null
         }
       />

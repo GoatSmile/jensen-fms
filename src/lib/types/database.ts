@@ -16,25 +16,31 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          app_language: string
           default_transport_pct: number
           hide_location_info: boolean
           id: number
           primary_location_id: string | null
           updated_at: string
+          worker_language: string
         }
         Insert: {
+          app_language?: string
           default_transport_pct?: number
           hide_location_info?: boolean
           id?: number
           primary_location_id?: string | null
           updated_at?: string
+          worker_language?: string
         }
         Update: {
+          app_language?: string
           default_transport_pct?: number
           hide_location_info?: boolean
           id?: number
           primary_location_id?: string | null
           updated_at?: string
+          worker_language?: string
         }
         Relationships: [
           {

@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { ChevronDown, Printer } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
 import { formatQuantity } from "@/lib/parts/stock";
@@ -22,37 +25,62 @@ export type PickGroup = {
 
 /**
  * Read-only picking aid: the bike's parts grouped by kit sticker code, so
- * the assembler shops the shelves by colour+number. "Whole kit" means every
- * box with that sticker; partial groups list exactly which boxes to pull.
- * Server-rendered; passed into the client workbench as a slot.
+ * the assembler shops the shelves by colour+number. Each bucket is collapsed
+ * by default (native <details> — no client JS) and unfurls on click, so the
+ * page opens compact. "Whole kit" means every box with that sticker; partial
+ * groups list exactly which boxes to pull. Server-rendered; slotted into the
+ * client workbench.
  */
 export function PickList({
   groups,
   loose,
+  printHref,
 }: {
   groups: PickGroup[];
   loose: PickRow[];
+  /** When set, a "Print" link in the header opens the printable pick sheet. */
+  printHref?: string;
 }) {
   return (
     <section className="rounded-md border">
-      <header className="border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Pick list by kit</h2>
-        <p className="text-muted-foreground text-xs">
-          Shop the shelves by sticker code, then assemble. Parts with several
-          labels are listed once.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-sm font-semibold">Pick list by kit</h2>
+          <p className="text-muted-foreground text-xs">
+            Shop the shelves by sticker code, then assemble. Tap a bucket to
+            unfold its parts.
+          </p>
+        </div>
+        {printHref ? (
+          <Link
+            href={printHref}
+            target="_blank"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs underline underline-offset-4"
+          >
+            <Printer aria-hidden className="size-3.5" /> Print
+          </Link>
+        ) : null}
       </header>
       <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
         {groups.map((g) => {
           const colour = stickerColor(g.sticker_color);
           const code = kitCode(g.sticker_color, g.kit_number);
           return (
-            <div key={code} className="overflow-hidden rounded-md border">
-              <div
-                className="flex items-center justify-between gap-2 px-3 py-2"
+            <details
+              key={code}
+              className="group overflow-hidden rounded-md border"
+            >
+              <summary
+                className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden"
                 style={{ backgroundColor: colour.hex, color: colour.fg }}
               >
-                <span className="text-sm font-bold tracking-wide">{code}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <ChevronDown
+                    aria-hidden
+                    className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                  />
+                  <span className="text-sm font-bold tracking-wide">{code}</span>
+                </span>
                 <Badge
                   variant={g.complete ? "success" : "warning"}
                   className="shrink-0"
@@ -61,8 +89,8 @@ export function PickList({
                     ? `whole kit (${g.totalKitParts})`
                     : `${g.presentKitParts} of ${g.totalKitParts} — pick by list`}
                 </Badge>
-              </div>
-              <ul className="divide-y text-sm">
+              </summary>
+              <ul className="divide-y border-t text-sm">
                 {g.rows.map((r) => (
                   <li key={r.sku} className="flex items-center justify-between gap-2 px-3 py-1.5">
                     <span className="min-w-0">
@@ -82,21 +110,27 @@ export function PickList({
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           );
         })}
 
         {loose.length > 0 ? (
-          <div className="overflow-hidden rounded-md border border-dashed">
-            <div className="bg-muted/40 flex items-center justify-between gap-2 px-3 py-2">
-              <span className="text-sm font-bold tracking-wide">
-                Loose parts
+          <details className="group overflow-hidden rounded-md border border-dashed">
+            <summary className="bg-muted/40 flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-1.5">
+                <ChevronDown
+                  aria-hidden
+                  className="size-4 shrink-0 transition-transform group-open:rotate-180"
+                />
+                <span className="text-sm font-bold tracking-wide">
+                  Loose parts
+                </span>
               </span>
               <Badge variant="outline" className="shrink-0">
                 no sticker
               </Badge>
-            </div>
-            <ul className="divide-y text-sm">
+            </summary>
+            <ul className="divide-y border-t text-sm">
               {loose.map((r) => (
                 <li key={r.sku} className="flex items-center justify-between gap-2 px-3 py-1.5">
                   <span className="min-w-0">
@@ -111,7 +145,7 @@ export function PickList({
                 </li>
               ))}
             </ul>
-          </div>
+          </details>
         ) : null}
       </div>
     </section>
