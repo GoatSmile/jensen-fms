@@ -131,6 +131,22 @@ cross-cutting. Original SQL files live in `/migrations/`.
     from inventory per `bike_parts` row, stamps `bike.build_cost_dkk`,
     and transitions to `in_stock`. Same final code path either way —
     consistent ledger entries, accurate per-bike cost basis.
+  - **Batch build (2026-06-21), for N identical bikes** — splits the shared
+    work (parts = the recipe) from the per-bike-unique work (frame +
+    identifiers). Two routes off the MO bikes section ("Bulk build" + "Pick
+    list" buttons):
+    - `/manufacturing-orders/<mo>/build-batch` — a grid of the unbuilt bikes
+      with an "how many now?" count picker (number + `2/5/all` chips), one row
+      per bike: frame no. (required) + the bike type's required identifier
+      columns (`bike_type_required_identifiers`). `bulkBuildBikesWithIds`
+      (`_actions/build-batch.ts`) loops per row: `confirmBikeFrame` → register
+      identifiers → `markBikeBuilt`. Blank-frame rows skipped for later;
+      at-painter/duplicate/shortfall reported, the rest continue.
+    - `/manufacturing-orders/<mo>/pick-list/print?n=N` — a printable shelf-pick
+      sheet: MO recipe × N, grouped by kit bucket (mirrors the per-bike
+      pick-list grouping), checkbox + per-bike × batch total per line,
+      "whole bucket" vs "pick X of M" badge, loose parts separate, `JP-lak*`
+      excluded.
   - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are
     frozen (qty / removal disallowed); pre-consumption rows are
     editable.
