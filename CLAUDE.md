@@ -295,8 +295,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **Customer segments** — Hospital, Municipality, Facility Management (FM), B2B, B2C, Hotel
 
 ## Out of scope for v1.0
-- Row-Level Security policies (add when wiring Supabase auth — currently the
-  publishable key has full table access via PostgREST; fine for solo dev, not prod)
+- Row-Level Security policy tightening (RLS is now ON across all 55 tables —
+  migration 50, 2026-06-24 — with a permissive `anon_all` policy that preserves
+  current behaviour. The remaining work is replacing those policies with
+  user-scoped ones once auth is wired in M1)
 - Multi-tenancy (schema assumes single bike shop)
 - Materialized views (use regular views; switch if movements exceed ~100k)
 - Full-text search beyond existing trigram indexes on `parts.name`
@@ -347,15 +349,18 @@ conversation transcripts; it has this file + git history + the live DB.
   `bulkAddBikesToMO`, so spawned bikes inherit the SO slate past draft and
   the redirect lands on MO detail with coverage visible).
 
-### M1 — Auth + RLS: DELAYED until further notice (owner's call)
-The publishable key has full table access; only Vercel SSO protects prod.
-This is the gate to a real `1.0` and to public internet exposure, but it is
-**deliberately deferred**. Do not start it unless the owner re-prioritises it.
+### M1 — Auth + RLS tightening: DELAYED until further notice (owner's call)
+RLS is now enabled on all 55 tables (migration 50, 2026-06-24) with a
+permissive `anon_all` policy — Supabase's security warning is cleared and the
+boundary is explicit. What remains is the auth layer itself + replacing those
+permissive policies with user-scoped ones. Only Vercel SSO protects prod today.
+**Deliberately deferred** — do not start unless the owner re-prioritises it.
 When it resumes: Supabase auth + login + middleware + `profiles`/role table +
-per-table RLS, plus a `DEV_AUTH_BYPASS` escape hatch for local dev. Open
-decisions to confirm first: sign-in method (magic link vs Google Workspace
-vs password), and the role model. **Agreed trigger to reconsider: the first
-real invoice issued** — financial records behind SSO-only is the line.
+drop the `anon_all` policies and add `authenticated`-scoped replacements, plus
+a `DEV_AUTH_BYPASS` escape hatch for local dev. Open decisions to confirm first:
+sign-in method (magic link vs Google Workspace vs password), and the role model.
+**Agreed trigger to reconsider: the first real invoice issued** — financial
+records behind SSO-only is the line.
 
 ### Next up (handoff plan, agreed with owner June 2026)
 
