@@ -28,7 +28,8 @@ type Props = {
 
 /**
  * One-click category browser: a Select-shaped trigger opening a slide-over
- * with every category laid out in a grid — no dropdown scroll-hunting. Counts
+ * with every category laid out in vertical columns (fill column 1 top-to-
+ * bottom, then column 2, …) — no dropdown scroll-hunting. Counts
  * are catalog-wide (they ignore the other filters) so the grid doubles as a
  * stock overview; empty categories sit greyed at the bottom but stay
  * clickable.
@@ -111,7 +112,7 @@ export function CategoryDrawer({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+          <div className="columns-2 gap-1 sm:columns-3">
             {!filter.trim() && (
               <CategoryCell
                 label="All categories"
@@ -136,7 +137,7 @@ export function CategoryDrawer({
               <p className="text-muted-foreground mt-4 mb-1 text-xs">
                 Empty categories
               </p>
-              <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+              <div className="columns-2 gap-1 sm:columns-3">
                 {empty.map((n) => (
                   <CategoryCell
                     key={n.id}
@@ -182,7 +183,7 @@ function CategoryCell({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
+        "mb-1 flex w-full break-inside-avoid items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
         active
           ? "bg-primary text-primary-foreground"
           : "hover:bg-muted",
