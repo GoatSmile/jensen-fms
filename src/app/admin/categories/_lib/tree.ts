@@ -7,6 +7,7 @@ export type CategoryInput = {
   name_da: string | null;
   parent_id: string | null;
   is_active: boolean;
+  sort_order: number | null;
 };
 
 export type CategoryTreeRow = CategoryInput & { depth: number };
@@ -16,13 +17,17 @@ const NBSP = "    ";
 function childrenOf(cats: CategoryInput[], parentId: string | null) {
   return cats
     .filter((c) => (c.parent_id ?? null) === parentId)
-    .sort((a, b) => a.name_en.localeCompare(b.name_en));
+    .sort(
+      (a, b) =>
+        (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+        a.name_en.localeCompare(b.name_en),
+    );
 }
 
 /**
- * Depth-first flatten: roots alphabetical, each followed by its children
- * indented one level. The tree is shallow in practice, but this handles
- * arbitrary depth.
+ * Depth-first flatten: roots by sort_order (then name), each followed by its
+ * children indented one level. The tree is shallow in practice, but this
+ * handles arbitrary depth.
  */
 export function buildTreeRows(cats: CategoryInput[]): CategoryTreeRow[] {
   const out: CategoryTreeRow[] = [];

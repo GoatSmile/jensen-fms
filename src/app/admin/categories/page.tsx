@@ -22,7 +22,7 @@ export default async function CategoriesPage() {
   const [catsRes, partCountsRes] = await Promise.all([
     supabase
       .from("part_categories")
-      .select("id, name_en, name_da, parent_id, is_active")
+      .select("id, name_en, name_da, parent_id, is_active, sort_order")
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
@@ -52,6 +52,7 @@ export default async function CategoriesPage() {
     depth: c.depth,
     isActive: c.is_active,
     partCount: partCounts.get(c.id) ?? 0,
+    sortOrder: c.sort_order ?? 0,
   }));
 
   return (

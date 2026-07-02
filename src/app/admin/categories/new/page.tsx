@@ -20,7 +20,7 @@ export default async function NewCategoryPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("part_categories")
-    .select("id, name_en, name_da, parent_id, is_active")
+    .select("id, name_en, name_da, parent_id, is_active, sort_order")
     .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("name_en", { ascending: true });

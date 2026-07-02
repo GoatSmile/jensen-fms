@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Plus, CornerDownRight, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronRight,
+  ChevronsUpDown,
+  CornerDownRight,
+  Plus,
+  Search,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,18 +32,31 @@ export type CategoryRow = {
   isActive: boolean;
   /** Parts directly in this category (not descendants). */
   partCount: number;
+  /** Manual display order (part_categories.sort_order). */
+  sortOrder: number;
 };
+
+/** Sortable columns; "hierarchy" is the default tree view (by sort_order). */
+type SortKey = "hierarchy" | "name" | "parts" | "status" | "order";
+type SortDir = "asc" | "desc";
 
 /**
  * Rows are <Link>s into /admin/categories/[id]; edit + archive live on the
  * detail page (matching /admin/hs-codes, /admin/colors). Rows arrive
- * pre-flattened depth-first so `depth` drives indentation. The search box
- * filters client-side on name (en + da) — instant feedback for a small,
- * admin-only list. While filtering, matches render flat (no indentation),
- * since a matched child's parent may be filtered out.
+ * pre-flattened depth-first (by sort_order, then name) so `depth` drives
+ * indentation in the default view.
+ *
+ * The search box filters client-side on name (en + da); the column headers
+ * sort client-side — both instant for a small, admin-only list. The default
+ * "hierarchy" view keeps parent → child indentation ordered by sort_order.
+ * Clicking a header switches to a FLAT sort by that column (▲ asc → ▼ desc →
+ * back to hierarchy); while searching, rows also render flat since a matched
+ * child's parent may be filtered out.
  */
 export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("hierarchy");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const q = query.trim().toLowerCase();
 
   const filtered = useMemo(() => {
@@ -47,8 +68,86 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
     );
   }, [rows, q]);
 
+  const displayed = useMemo(() => {
+    if (sortKey === "hierarchy") return filtered;
+    const dir = sortDir === "asc" ? 1 : -1;
+    const byName = (a: CategoryRow, b: CategoryRow) =>
+      a.name_en.localeCompare(b.name_en);
+    const cmp = (a: CategoryRow, b: CategoryRow) => {
+      switch (sortKey) {
+        case "name":
+          return byName(a, b) * dir;
+        case "parts":
+          return (a.partCount - b.partCount) * dir || byName(a, b);
+        case "status":
+          return (Number(b.isActive) - Number(a.isActive)) * dir || byName(a, b);
+        case "order":
+          return (a.sortOrder - b.sortOrder) * dir || byName(a, b);
+        default:
+          return 0;
+      }
+    };
+    return [...filtered].sort(cmp);
+  }, [filtered, sortKey, sortDir]);
+
   const activeCount = rows.filter((r) => r.isActive).length;
   const searching = q.length > 0;
+  // A sorted or searched view can't render the tree, so drop indentation.
+  const flat = searching || sortKey !== "hierarchy";
+
+  // asc → desc → back to hierarchy default.
+  function toggleSort(col: Exclude<SortKey, "hierarchy">) {
+    if (sortKey !== col) {
+      setSortKey(col);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      setSortDir("desc");
+    } else {
+      setSortKey("hierarchy");
+      setSortDir("asc");
+    }
+  }
+
+  function SortHeader({
+    col,
+    label,
+    className,
+    align = "left",
+  }: {
+    col: Exclude<SortKey, "hierarchy">;
+    label: string;
+    className?: string;
+    align?: "left" | "right";
+  }) {
+    const active = sortKey === col;
+    return (
+      <TableHead
+        className={className}
+        aria-sort={
+          active ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+        }
+      >
+        <button
+          type="button"
+          onClick={() => toggleSort(col)}
+          className={`hover:text-foreground -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 ${
+            align === "right" ? "flex-row-reverse" : ""
+          } ${active ? "text-foreground" : ""}`}
+        >
+          {label}
+          {active ? (
+            sortDir === "asc" ? (
+              <ArrowUp className="size-3.5" aria-hidden />
+            ) : (
+              <ArrowDown className="size-3.5" aria-hidden />
+            )
+          ) : (
+            <ChevronsUpDown className="size-3.5 opacity-40" aria-hidden />
+          )}
+        </button>
+      </TableHead>
+    );
+  }
 
   return (
     <section className="rounded-md border">
@@ -97,19 +196,28 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden text-right md:table-cell">
-                  Parts
-                </TableHead>
-                <TableHead>Status</TableHead>
+                <SortHeader col="name" label="Name" />
+                <SortHeader
+                  col="parts"
+                  label="Parts"
+                  align="right"
+                  className="hidden [&>button]:justify-end md:table-cell md:text-right"
+                />
+                <SortHeader col="status" label="Status" />
+                <SortHeader
+                  col="order"
+                  label="Order"
+                  align="right"
+                  className="[&>button]:justify-end text-right"
+                />
                 <TableHead className="w-[36px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((row) => {
+              {displayed.map((row) => {
                 const href = `/admin/categories/${row.id}`;
-                // Indentation only makes sense in the full tree view.
-                const depth = searching ? 0 : row.depth;
+                // Indentation only makes sense in the default hierarchy view.
+                const depth = flat ? 0 : row.depth;
                 return (
                   <TableRow
                     key={row.id}
@@ -147,6 +255,11 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                         ) : (
                           <Badge variant="outline">Archived</Badge>
                         )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground p-0 text-right tabular-nums">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.sortOrder}
                       </Link>
                     </TableCell>
                     <TableCell className="p-0 text-right">
