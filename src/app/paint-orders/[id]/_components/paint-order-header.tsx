@@ -43,6 +43,7 @@ type Props = {
   supplierName: string | null;
   colorName: string | null;
   colorHex: string | null;
+  colorFinish: string | null;
 };
 
 export function PaintOrderHeader({
@@ -52,6 +53,7 @@ export function PaintOrderHeader({
   supplierName,
   colorName,
   colorHex,
+  colorFinish,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +105,11 @@ export function PaintOrderHeader({
             {supplierName ?? "Paint order"}
           </h1>
           {colorName ? (
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground flex items-center gap-2 text-sm">
               <ColorChip hex={colorHex} label={colorName} />
+              {colorFinish ? (
+                <span className="text-xs">{colorFinish}</span>
+              ) : null}
             </p>
           ) : null}
         </div>

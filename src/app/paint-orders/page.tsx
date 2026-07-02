@@ -22,6 +22,7 @@ import {
 import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
@@ -64,7 +65,7 @@ export default async function PaintOrdersPage({
         id, paint_order_number, status, planned_send_date, sent_at,
         received_at, unit_cost, unit_cost_currency,
         supplier:suppliers(id, name),
-        color:colors(id, name_en, hex)
+        color:colors(id, name_en, hex, ral_code, coating)
       `,
     )
     .order("created_at", { ascending: false });
@@ -239,7 +240,23 @@ export default async function PaintOrdersPage({
                       className="block px-4 py-2.5"
                     >
                       {r.color ? (
-                        <ColorChip hex={r.color.hex} label={r.color.name_en} />
+                        <span className="flex flex-col gap-0.5">
+                          <ColorChip
+                            hex={r.color.hex}
+                            label={r.color.name_en}
+                          />
+                          {colorFinishLabel(
+                            r.color.ral_code,
+                            r.color.coating,
+                          ) ? (
+                            <span className="text-muted-foreground text-xs">
+                              {colorFinishLabel(
+                                r.color.ral_code,
+                                r.color.coating,
+                              )}
+                            </span>
+                          ) : null}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

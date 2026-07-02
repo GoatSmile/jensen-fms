@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ColorChip } from "@/components/color-swatch";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -45,7 +46,7 @@ export default async function PaintOrderDetailPage({
         planned_send_date, sent_at, expected_return_at, received_at,
         unit_cost, unit_cost_currency, notes, created_at,
         supplier:suppliers(id, name),
-        color:colors(id, slug, name_en, hex),
+        color:colors(id, slug, name_en, hex, ral_code, coating),
         paint_part:parts(id, internal_sku, name_en),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
@@ -162,6 +163,11 @@ export default async function PaintOrderDetailPage({
         supplierName={order.supplier?.name ?? null}
         colorName={order.color?.name_en ?? null}
         colorHex={order.color?.hex ?? null}
+        colorFinish={
+          order.color
+            ? colorFinishLabel(order.color.ral_code, order.color.coating)
+            : null
+        }
       />
 
       <Section
@@ -174,7 +180,17 @@ export default async function PaintOrderDetailPage({
           </Field>
           <Field label="Colour">
             {order.color ? (
-              <ColorChip hex={order.color.hex} label={order.color.name_en} />
+              <span className="flex flex-col gap-0.5">
+                <ColorChip hex={order.color.hex} label={order.color.name_en} />
+                {colorFinishLabel(
+                  order.color.ral_code,
+                  order.color.coating,
+                ) ? (
+                  <span className="text-muted-foreground text-xs">
+                    {colorFinishLabel(order.color.ral_code, order.color.coating)}
+                  </span>
+                ) : null}
+              </span>
             ) : (
               <Muted>—</Muted>
             )}
