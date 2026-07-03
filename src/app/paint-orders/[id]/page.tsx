@@ -128,9 +128,9 @@ export default async function PaintOrderDetailPage({
   const linkData = (linkRes.data ?? []).filter((r) => r.bike != null);
   const bikeCount = linkData.length;
 
-  let orderTotal = 0;
-  let orderCurrency: string | null = null;
-  let anyPriced = false;
+  // Sum per currency so a stray non-DKK JP-lak price never gets blended into a
+  // single mislabelled total (JP-lak should be DKK, but the price is free-form).
+  const totalsByCurrency = new Map<string, number>();
 
   const bikeRows: PaintOrderBikeRow[] = linkData.map((r) => {
     const tpl = r.bike?.template;
@@ -141,9 +141,8 @@ export default async function PaintOrderDetailPage({
     const lak = lakSku ? lakMap.get(lakSku) : undefined;
     const price = lak?.price ?? null;
     if (price != null) {
-      orderTotal += price;
-      orderCurrency = orderCurrency ?? lak?.currency ?? null;
-      anyPriced = true;
+      const cur = lak?.currency ?? "DKK";
+      totalsByCurrency.set(cur, (totalsByCurrency.get(cur) ?? 0) + price);
     }
     return {
       bikeId: r.bike?.id ?? "",
@@ -165,9 +164,14 @@ export default async function PaintOrderDetailPage({
     };
   });
 
-  const orderTotalLabel = anyPriced
-    ? formatPrice(orderTotal, orderCurrency)
-    : null;
+  // One currency → a plain total; multiple → a per-currency breakdown joined
+  // with " + " (never a single blended magnitude under one label).
+  const orderTotalLabel =
+    totalsByCurrency.size === 0
+      ? null
+      : [...totalsByCurrency.entries()]
+          .map(([cur, amt]) => formatPrice(amt, cur))
+          .join(" + ");
   const colors = (colorsRes.data ?? []) as ColorOption[];
 
   const inOpenOrder = new Set((openLinksRes.data ?? []).map((r) => r.bike_id));
