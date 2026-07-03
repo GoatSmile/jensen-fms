@@ -41,9 +41,8 @@ export async function createPaintOrder(
   if (!supplier_id) {
     return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
   }
-  if (!color_id) {
-    return { ok: false, error: "Pick a colour.", field: "color_id" };
-  }
+  // Colour is now an optional batch DEFAULT (per-line colour lives on each
+  // paint_order_bikes row and is set as frames are added).
 
   const priceParsed = parsePrice(nullable(formData.get("unit_cost")));
   if (!priceParsed.ok) {

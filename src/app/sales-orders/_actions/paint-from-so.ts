@@ -5,12 +5,15 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { OPEN_PAINT_ORDER_STATUSES } from "@/lib/paint/status";
+import { isPaintScope } from "@/lib/paint/scope";
 
 export type PaintFromSOInput = {
   soId: string;
   bikeIds: string[];
   supplierId: string;
   colorId: string;
+  /** Scope applied to every selected frame (per-line; editable later). */
+  scope: string | null;
   paintPartId: string | null;
   unitCost: string | null;
   unitCostCurrency: string | null;
@@ -62,6 +65,10 @@ export async function createPaintOrderFromSO(
   }
   if (!input.colorId) {
     return { ok: false, error: "Pick a colour.", field: "color_id" };
+  }
+  const scope = input.scope ?? null;
+  if (scope !== null && !isPaintScope(scope)) {
+    return { ok: false, error: "Invalid paint scope.", field: "scope" };
   }
 
   const priceParsed = parsePrice(input.unitCost);
@@ -186,9 +193,14 @@ export async function createPaintOrderFromSO(
   // (bikes are added on the detail page), so an empty order here is identical
   // and the user can finish or cancel it from the message below. An RPC/
   // transaction is over-engineering at this scale (single-tenant, solo-dev).
-  const { error: attachErr } = await supabase
-    .from("paint_order_bikes")
-    .insert(requested.map((bikeId) => ({ paint_order_id: po.id, bike_id: bikeId })));
+  const { error: attachErr } = await supabase.from("paint_order_bikes").insert(
+    requested.map((bikeId) => ({
+      paint_order_id: po.id,
+      bike_id: bikeId,
+      color_id: input.colorId,
+      scope,
+    })),
+  );
   if (attachErr) {
     return {
       ok: false,

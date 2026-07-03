@@ -17,6 +17,8 @@ import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import type { BikeStatus } from "@/lib/bikes/status";
 import type { PaintOrderStatus } from "@/lib/paint/status";
+import { resolveLakSku } from "@/lib/paint/scope";
+import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
 
 import type { EligibleBikeOption } from "./_components/add-bike-to-paint-dialog";
 import { PaintOrderBikesSection } from "./_components/paint-order-bikes-section";
@@ -60,66 +62,115 @@ export default async function PaintOrderDetailPage({
   if (!orderRes.data) notFound();
   const order = orderRes.data;
 
-  // Bikes currently in this paint order.
-  const linkRes = await supabase
-    .from("paint_order_bikes")
-    .select(
-      `
-        bike_id, added_at, notes,
-        bike:bikes(
-          id, frame_number, status,
-          template:bike_templates(id, name_en, family, frame_size, version)
+  // Bikes in this order (+ per-line colour/scope), the picker's eligible bikes,
+  // the colour list for the pickers, and JP-lak prices for auto-costing — one
+  // round-trip. Eligible = non-deleted bikes NOT in an open order (PostgREST
+  // can't NOT-IN a subquery, so we filter client-side).
+  const [linkRes, allBikesRes, openLinksRes, colorsRes, lakRes] =
+    await Promise.all([
+      supabase
+        .from("paint_order_bikes")
+        .select(
+          `
+            bike_id, added_at, notes, color_id, scope,
+            color:colors(id, name_en, hex, ral_code, coating),
+            bike:bikes(
+              id, frame_number, status,
+              template:bike_templates(id, name_en, family, frame_size, version)
+            )
+          `,
         )
-      `,
-    )
-    .eq("paint_order_id", id)
-    .order("added_at", { ascending: true });
+        .eq("paint_order_id", id)
+        .order("added_at", { ascending: true }),
+      supabase
+        .from("bikes")
+        .select(
+          `
+            id, frame_number,
+            template:bike_templates(id, name_en, family, frame_size)
+          `,
+        )
+        .is("deleted_at", null)
+        .order("frame_number", { ascending: true }),
+      supabase
+        .from("paint_order_bikes")
+        .select(
+          `
+            bike_id,
+            paint_order:paint_orders!inner(status)
+          `,
+        )
+        .in("paint_order.status", OPEN_STATUSES),
+      supabase
+        .from("colors")
+        .select("id, name_en, hex")
+        .eq("is_active", true)
+        .order("name_en", { ascending: true }),
+      supabase
+        .from("parts")
+        .select("internal_sku, default_retail_price, default_retail_currency")
+        .like("internal_sku", "JP-lak%"),
+    ]);
 
-  const bikeRows: PaintOrderBikeRow[] = (linkRes.data ?? [])
-    .filter((r) => r.bike != null)
-    .map((r) => {
-      const tpl = r.bike?.template;
-      const templateLabel = tpl
-        ? [tpl.family, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
-        : null;
-      return {
-        bikeId: r.bike?.id ?? "",
-        frameNumber: r.bike?.frame_number ?? "",
-        status: (r.bike?.status ?? "planning") as BikeStatus,
-        templateLabel,
-        addedAt: r.added_at,
-        notes: r.notes,
-      };
+  // JP-lak per-bike price by SKU (auto-pricing lookup).
+  const lakMap = new Map<
+    string,
+    { price: number | null; currency: string | null }
+  >();
+  for (const p of lakRes.data ?? []) {
+    lakMap.set(p.internal_sku, {
+      price:
+        p.default_retail_price == null ? null : Number(p.default_retail_price),
+      currency: p.default_retail_currency,
     });
+  }
 
-  // Eligible bikes for the picker: any non-deleted bike NOT currently in an
-  // open paint order. PostgREST can't NOT-IN a subquery, so we fetch the list
-  // of bike_ids that are in open orders separately and filter client-side.
-  const [allBikesRes, openLinksRes] = await Promise.all([
-    supabase
-      .from("bikes")
-      .select(
-        `
-          id, frame_number,
-          template:bike_templates(id, name_en, family, frame_size)
-        `,
-      )
-      .is("deleted_at", null)
-      .order("frame_number", { ascending: true }),
-    supabase
-      .from("paint_order_bikes")
-      .select(
-        `
-          bike_id,
-          paint_order:paint_orders!inner(status)
-        `,
-      )
-      .in("paint_order.status", OPEN_STATUSES),
-  ]);
+  const linkData = (linkRes.data ?? []).filter((r) => r.bike != null);
+  const bikeCount = linkData.length;
 
-  const inOpenOrder = new Set(
-    (openLinksRes.data ?? []).map((r) => r.bike_id),
-  );
+  let orderTotal = 0;
+  let orderCurrency: string | null = null;
+  let anyPriced = false;
+
+  const bikeRows: PaintOrderBikeRow[] = linkData.map((r) => {
+    const tpl = r.bike?.template;
+    const templateLabel = tpl
+      ? [tpl.family, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
+      : null;
+    const lakSku = resolveLakSku(r.scope, bikeCount);
+    const lak = lakSku ? lakMap.get(lakSku) : undefined;
+    const price = lak?.price ?? null;
+    if (price != null) {
+      orderTotal += price;
+      orderCurrency = orderCurrency ?? lak?.currency ?? null;
+      anyPriced = true;
+    }
+    return {
+      bikeId: r.bike?.id ?? "",
+      frameNumber: r.bike?.frame_number ?? "",
+      status: (r.bike?.status ?? "planning") as BikeStatus,
+      templateLabel,
+      addedAt: r.added_at,
+      notes: r.notes,
+      colorId: r.color_id ?? null,
+      colorName: r.color?.name_en ?? null,
+      colorHex: r.color?.hex ?? null,
+      colorFinish: r.color
+        ? colorFinishLabel(r.color.ral_code, r.color.coating)
+        : null,
+      scope: r.scope ?? null,
+      lakSku,
+      lakPriceLabel:
+        price != null ? formatPrice(price, lak?.currency ?? null) : null,
+    };
+  });
+
+  const orderTotalLabel = anyPriced
+    ? formatPrice(orderTotal, orderCurrency)
+    : null;
+  const colors = (colorsRes.data ?? []) as ColorOption[];
+
+  const inOpenOrder = new Set((openLinksRes.data ?? []).map((r) => r.bike_id));
   const eligibleBikes: EligibleBikeOption[] = (allBikesRes.data ?? [])
     .filter((b) => !inOpenOrder.has(b.id))
     .map((b) => {
@@ -269,6 +320,9 @@ export default async function PaintOrderDetailPage({
         paintOrderStatus={order.status}
         rows={bikeRows}
         eligibleBikes={eligibleBikes}
+        colors={colors}
+        defaultColorId={order.color?.id ?? null}
+        orderTotalLabel={orderTotalLabel}
       />
     </div>
   );

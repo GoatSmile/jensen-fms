@@ -2062,20 +2062,26 @@ export type Database = {
         Row: {
           added_at: string
           bike_id: string
+          color_id: string | null
           notes: string | null
           paint_order_id: string
+          scope: string | null
         }
         Insert: {
           added_at?: string
           bike_id: string
+          color_id?: string | null
           notes?: string | null
           paint_order_id: string
+          scope?: string | null
         }
         Update: {
           added_at?: string
           bike_id?: string
+          color_id?: string | null
           notes?: string | null
           paint_order_id?: string
+          scope?: string | null
         }
         Relationships: [
           {
@@ -2083,6 +2089,13 @@ export type Database = {
             columns: ["bike_id"]
             isOneToOne: false
             referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paint_order_bikes_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -2096,7 +2109,7 @@ export type Database = {
       }
       paint_orders: {
         Row: {
-          color_id: string
+          color_id: string | null
           created_at: string
           created_by: string | null
           expected_return_at: string | null
@@ -2115,7 +2128,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          color_id: string
+          color_id?: string | null
           created_at?: string
           created_by?: string | null
           expected_return_at?: string | null
@@ -2134,7 +2147,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          color_id?: string
+          color_id?: string | null
           created_at?: string
           created_by?: string | null
           expected_return_at?: string | null

@@ -27,6 +27,11 @@ import type {
   PaintPartOption,
   SupplierOption,
 } from "@/app/paint-orders/_components/paint-order-form";
+import {
+  PAINT_SCOPES,
+  paintScopeLabel,
+  paintScopeParts,
+} from "@/lib/paint/scope";
 
 import { createPaintOrderFromSO } from "@/app/sales-orders/_actions/paint-from-so";
 
@@ -67,6 +72,7 @@ export function PaintFromSOForm({
   );
   const [supplierId, setSupplierId] = useState(defaultSupplierId);
   const [colorId, setColorId] = useState("");
+  const [scope, setScope] = useState<string>("std");
   const [paintPartId, setPaintPartId] = useState("");
   const [unitCost, setUnitCost] = useState("");
   const [currency, setCurrency] = useState("DKK");
@@ -115,6 +121,7 @@ export function PaintFromSOForm({
         bikeIds: [...selected],
         supplierId,
         colorId,
+        scope,
         paintPartId: paintPartId || null,
         unitCost: unitCost || null,
         unitCostCurrency: currency,
@@ -258,6 +265,25 @@ export function PaintFromSOForm({
                 ))}
               </SelectContent>
             </Select>
+          </Field>
+
+          <Field label="Paints (scope)" htmlFor="paint-scope">
+            <Select value={scope} onValueChange={(v) => setScope(v)}>
+              <SelectTrigger id="paint-scope">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAINT_SCOPES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {paintScopeLabel(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {paintScopeParts(scope)} · applied to every selected frame (change
+              per frame later).
+            </p>
           </Field>
 
           <Field label="Paint catalog part (optional)" htmlFor="paint-part">

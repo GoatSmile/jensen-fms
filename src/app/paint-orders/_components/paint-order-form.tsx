@@ -120,7 +120,7 @@ export function PaintOrderForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
         title="Who and what"
-        description="Pick the painter (typically Metacoat A/S) and the colour for this batch."
+        description="Pick the painter (typically Metacoat A/S). The colour is an optional batch default — you set each frame's colour and scope as you add it."
       >
         <Field
           label="Supplier"
@@ -152,9 +152,8 @@ export function PaintOrderForm({
         </Field>
 
         <Field
-          label="Colour"
+          label="Batch default colour (optional)"
           htmlFor="paint-color"
-          required
           error={errorField === "color_id" ? error : null}
         >
           <Select
@@ -162,7 +161,7 @@ export function PaintOrderForm({
             onValueChange={(v) => update("color_id", v)}
           >
             <SelectTrigger id="paint-color">
-              <SelectValue placeholder="Pick a colour…" />
+              <SelectValue placeholder="No default — set per frame" />
             </SelectTrigger>
             <SelectContent>
               {colors.map((c) => (
