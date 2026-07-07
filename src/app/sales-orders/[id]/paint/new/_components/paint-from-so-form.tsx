@@ -16,6 +16,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ColorSwatch } from "@/components/color-swatch";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import {
   BIKE_STATUS_VARIANT,
   bikeStatusLabel,
@@ -261,6 +262,11 @@ export function PaintFromSOForm({
                   <SelectItem key={c.id} value={c.id}>
                     <ColorSwatch hex={c.hex} label={c.name_en} />
                     {c.name_en}
+                    {colorFinishLabel(c.ral_code, c.coating) ? (
+                      <span className="text-muted-foreground ml-1.5 text-xs">
+                        {colorFinishLabel(c.ral_code, c.coating)}
+                      </span>
+                    ) : null}
                   </SelectItem>
                 ))}
               </SelectContent>

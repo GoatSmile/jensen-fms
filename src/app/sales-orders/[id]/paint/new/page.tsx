@@ -104,7 +104,7 @@ export default async function PaintFromSOPage({
         .order("name", { ascending: true }),
       supabase
         .from("colors")
-        .select("id, name_en, hex")
+        .select("id, name_en, hex, ral_code, coating")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       supabase

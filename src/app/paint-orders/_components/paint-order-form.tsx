@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import { appendField } from "@/lib/forms";
 
 import { createPaintOrder } from "../_actions/save-paint-order";
@@ -25,6 +26,10 @@ export type ColorOption = {
   id: string;
   name_en: string;
   hex: string | null;
+  /** Optional finish info — populated by paint surfaces so pickers can
+   * disambiguate e.g. a glossy and a matte "Black 9005". */
+  ral_code?: string | null;
+  coating?: string | null;
 };
 
 export type PaintPartOption = {
@@ -168,6 +173,11 @@ export function PaintOrderForm({
                 <SelectItem key={c.id} value={c.id}>
                   <ColorSwatch hex={c.hex} label={c.name_en} />
                   {c.name_en}
+                  {colorFinishLabel(c.ral_code, c.coating) ? (
+                    <span className="text-muted-foreground ml-1.5 text-xs">
+                      {colorFinishLabel(c.ral_code, c.coating)}
+                    </span>
+                  ) : null}
                 </SelectItem>
               ))}
             </SelectContent>

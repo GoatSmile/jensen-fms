@@ -156,6 +156,17 @@ cross-cutting. Original SQL files live in `/migrations/`.
   supplier is Metacoat A/S. The `Lakering` catalog SKUs (`JP-lak*`) stay in
   `parts` as service SKUs that paint orders reference for costing — they
   never accumulate inventory_movements.
+  - **Colour + scope are PER LINE** (migration 51, 2026-07-02):
+    `paint_order_bikes.color_id` + `.scope` (`std` = frame+fork, `svaj` = +
+    front carrier, mudguards, sign, stays). The header `color_id` is only an
+    optional batch default that pre-fills new lines. Lines are editable while
+    `planned`, frozen once sent. Vocabulary + labels in `src/lib/paint/scope.ts`.
+  - **JP-lak pricing is ADDITIVE for svaj** (owner decision 2026-07-03, from
+    the painter's own quoting): the svaj SKU prices ONLY the extras — a svaj
+    frame costs `JP-lakN std` + `JP-lakN svaj` (tier N from the order's bike
+    count: 1/10/20). Treating svaj as all-inclusive is the misread that once
+    cost ~60.000 kr on a 200-frame order. `resolveLakSkus()` encodes this; do
+    not "simplify" it back to one SKU per line.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:

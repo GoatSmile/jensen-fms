@@ -17,7 +17,7 @@ import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import type { BikeStatus } from "@/lib/bikes/status";
 import type { PaintOrderStatus } from "@/lib/paint/status";
-import { resolveLakSku } from "@/lib/paint/scope";
+import { resolveLakSkus } from "@/lib/paint/scope";
 import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
 
 import type { EligibleBikeOption } from "./_components/add-bike-to-paint-dialog";
@@ -103,7 +103,7 @@ export default async function PaintOrderDetailPage({
         .in("paint_order.status", OPEN_STATUSES),
       supabase
         .from("colors")
-        .select("id, name_en, hex")
+        .select("id, name_en, hex, ral_code, coating")
         .eq("is_active", true)
         .order("name_en", { ascending: true }),
       supabase
@@ -137,13 +137,28 @@ export default async function PaintOrderDetailPage({
     const templateLabel = tpl
       ? [tpl.family, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
       : null;
-    const lakSku = resolveLakSku(r.scope, bikeCount);
-    const lak = lakSku ? lakMap.get(lakSku) : undefined;
-    const price = lak?.price ?? null;
-    if (price != null) {
-      const cur = lak?.currency ?? "DKK";
-      totalsByCurrency.set(cur, (totalsByCurrency.get(cur) ?? 0) + price);
+    // svaj is an add-on SKU, so a line's cost can span several SKUs — sum
+    // them per currency, and flag with "+ ?" if a component SKU is unpriced
+    // (a silently partial figure is exactly the historical 60.000 kr trap).
+    const lakSkus = resolveLakSkus(r.scope, bikeCount);
+    const lineByCurrency = new Map<string, number>();
+    let unpriced = false;
+    for (const sku of lakSkus ?? []) {
+      const lak = lakMap.get(sku);
+      if (lak?.price == null) {
+        unpriced = true;
+        continue;
+      }
+      const cur = lak.currency ?? "DKK";
+      lineByCurrency.set(cur, (lineByCurrency.get(cur) ?? 0) + lak.price);
+      totalsByCurrency.set(cur, (totalsByCurrency.get(cur) ?? 0) + lak.price);
     }
+    const lakPriceLabel =
+      lineByCurrency.size === 0
+        ? null
+        : [...lineByCurrency.entries()]
+            .map(([cur, amt]) => formatPrice(amt, cur))
+            .join(" + ") + (unpriced ? " + ?" : "");
     return {
       bikeId: r.bike?.id ?? "",
       frameNumber: r.bike?.frame_number ?? "",
@@ -158,9 +173,8 @@ export default async function PaintOrderDetailPage({
         ? colorFinishLabel(r.color.ral_code, r.color.coating)
         : null,
       scope: r.scope ?? null,
-      lakSku,
-      lakPriceLabel:
-        price != null ? formatPrice(price, lak?.currency ?? null) : null,
+      lakSku: lakSkus?.join(" + ") ?? null,
+      lakPriceLabel,
     };
   });
 

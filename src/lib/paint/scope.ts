@@ -46,18 +46,28 @@ export function paintScopeParts(
 }
 
 /**
- * Resolve the JP-lak service SKU for a line from its scope and the order's
- * total bike count (the JP-lak SKUs bundle a volume tier 1/10/20 with the
- * std/svaj scope). Returns e.g. "JP-lak10 svaj". Null when scope is unset.
+ * Resolve the JP-lak service SKUs whose per-bike prices SUM to a line's paint
+ * cost, from its scope and the order's total bike count (the JP-lak SKUs
+ * bundle a volume tier 1/10/20 with the std/svaj scope).
  *
- * Tiers: >=20 -> lak20, >=10 -> lak10, else lak1. The price is a per-bike rate;
+ * Pricing model (owner decision 2026-07-03, from the painter's own quoting):
+ * the svaj SKU is an ADD-ON — it prices ONLY the extras (front carrier,
+ * mudguards, sign, stays) on top of the frame+fork price. A svaj frame
+ * therefore costs `JP-lakN std` + `JP-lakN svaj`. Treating svaj as
+ * all-inclusive is exactly the misread that once cost ~60.000 kr on a
+ * 200-frame order.
+ *
+ * Tiers: >=20 -> lak20, >=10 -> lak10, else lak1. Prices are per-bike rates;
  * a mixed-scope order resolves each line independently against the SAME tier.
+ * Null when scope is unset.
  */
-export function resolveLakSku(
+export function resolveLakSkus(
   scope: string | null | undefined,
   bikeCount: number,
-): string | null {
+): string[] | null {
   if (!isPaintScope(scope)) return null;
   const tier = bikeCount >= 20 ? "20" : bikeCount >= 10 ? "10" : "1";
-  return `JP-lak${tier} ${scope}`;
+  return scope === "svaj"
+    ? [`JP-lak${tier} std`, `JP-lak${tier} svaj`]
+    : [`JP-lak${tier} std`];
 }

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ColorChip, ColorSwatch } from "@/components/color-swatch";
+import { colorFinishLabel } from "@/lib/colors/coating";
 import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
 import {
   BIKE_STATUS_VARIANT,
@@ -204,7 +205,7 @@ function BikeRow({
             onValueChange={(v) => patch({ colorId: v })}
             disabled={pending}
           >
-            <SelectTrigger size="sm" className="w-[150px]">
+            <SelectTrigger size="sm" className="w-[190px]">
               <SelectValue placeholder="Batch default" />
             </SelectTrigger>
             <SelectContent>
@@ -212,6 +213,11 @@ function BikeRow({
                 <SelectItem key={c.id} value={c.id}>
                   <ColorSwatch hex={c.hex} label={c.name_en} />
                   {c.name_en}
+                  {colorFinishLabel(c.ral_code, c.coating) ? (
+                    <span className="text-muted-foreground ml-1.5 text-xs">
+                      {colorFinishLabel(c.ral_code, c.coating)}
+                    </span>
+                  ) : null}
                 </SelectItem>
               ))}
             </SelectContent>
