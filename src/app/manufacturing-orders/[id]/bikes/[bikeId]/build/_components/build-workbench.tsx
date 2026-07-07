@@ -268,12 +268,12 @@ export function BuildWorkbench({
     });
   }
 
-  function onPickFromCategory(categoryId: string, partId: string) {
+  function onPickFromCategory(categoryId: string, partId: string, quantity = 1) {
     if (!partId || partId === "__placeholder__") return;
     setError(null);
     setSuccess(null);
     startSeed(async () => {
-      const r = await addBikePart(moId, bikeId, partId, 1);
+      const r = await addBikePart(moId, bikeId, partId, quantity);
       if (!r.ok) {
         setError(r.error);
         return;
@@ -662,7 +662,9 @@ export function BuildWorkbench({
                     onSelectValue={(v) =>
                       setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
                     }
-                    onPick={(partId) => onPickFromCategory(category.id, partId)}
+                    onPick={(partId, qty) =>
+                      onPickFromCategory(category.id, partId, qty)
+                    }
                     disabled={readOnly || isSeeding || isFinishing}
                   />
                 ))}

@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Check } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,7 +32,7 @@ type Props = {
   pickedCount: number;
   selectValue: string;
   onSelectValue: (v: string) => void;
-  onPick: (partId: string) => void;
+  onPick: (partId: string, quantity: number) => void;
   disabled: boolean;
 };
 
@@ -55,6 +57,12 @@ export function CategoryChecklistRow({
   const totalCount = parts.length;
   const remaining = parts.filter((p) => !addedIds.has(p.id)).length;
   const done = pickedCount > 0;
+
+  // Quantity to add with the next pick. Defaults to 1, resets after each pick.
+  // Tolerates partial input; coerced to a whole number ≥ 1 at pick time.
+  const [qtyText, setQtyText] = useState("1");
+  const pickQty = Math.max(1, Math.floor(Number(qtyText)) || 1);
+  const pickDisabled = disabled || remaining === 0;
 
   return (
     <div
@@ -88,66 +96,82 @@ export function CategoryChecklistRow({
           {pickedCount}/{totalCount} picked
         </span>
       </div>
-      <Select
-        value={selectValue}
-        onValueChange={(v) => {
-          onSelectValue(v);
-          onPick(v);
-        }}
-        disabled={disabled || remaining === 0}
-      >
-        <SelectTrigger className="h-8 w-44 shrink-0 text-xs">
-          <SelectValue
-            placeholder={
-              totalCount === 0
-                ? "None available"
-                : remaining === 0
-                  ? "All added"
-                  : "Pick a part…"
-            }
-          />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__placeholder__" disabled>
-            Pick a part…
-          </SelectItem>
-          {parts.map((p) => {
-            const already = addedIds.has(p.id);
-            return (
-              <SelectItem
-                key={p.id}
-                value={p.id}
-                disabled={already}
-                className={
-                  already
-                    ? "bg-emerald-50/80 data-disabled:opacity-100 dark:bg-emerald-500/10"
-                    : undefined
-                }
-              >
-                {already ? (
-                  <Check
-                    className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
-                    aria-hidden
-                  />
-                ) : null}
-                <span className="font-mono text-xs">{p.sku}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  {p.name}
-                </span>
-                {p.meta ? (
-                  <span
-                    className={`ml-2 text-[10px] tabular-nums ${
-                      p.metaDanger ? "text-destructive" : "text-muted-foreground"
-                    }`}
-                  >
-                    {p.meta}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Input
+          type="number"
+          min={1}
+          step={1}
+          inputMode="numeric"
+          aria-label="Quantity to add"
+          value={qtyText}
+          onChange={(e) => setQtyText(e.target.value)}
+          disabled={pickDisabled}
+          className="h-8 w-14 text-xs tabular-nums"
+        />
+        <Select
+          value={selectValue}
+          onValueChange={(v) => {
+            onSelectValue(v);
+            onPick(v, pickQty);
+            setQtyText("1");
+          }}
+          disabled={pickDisabled}
+        >
+          <SelectTrigger className="h-8 w-44 shrink-0 text-xs">
+            <SelectValue
+              placeholder={
+                totalCount === 0
+                  ? "None available"
+                  : remaining === 0
+                    ? "All added"
+                    : "Pick a part…"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__placeholder__" disabled>
+              Pick a part…
+            </SelectItem>
+            {parts.map((p) => {
+              const already = addedIds.has(p.id);
+              return (
+                <SelectItem
+                  key={p.id}
+                  value={p.id}
+                  disabled={already}
+                  className={
+                    already
+                      ? "bg-emerald-50/80 data-disabled:opacity-100 dark:bg-emerald-500/10"
+                      : undefined
+                  }
+                >
+                  {already ? (
+                    <Check
+                      className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      aria-hidden
+                    />
+                  ) : null}
+                  <span className="font-mono text-xs">{p.sku}</span>
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    {p.name}
                   </span>
-                ) : null}
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
+                  {p.meta ? (
+                    <span
+                      className={`ml-2 text-[10px] tabular-nums ${
+                        p.metaDanger
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {p.meta}
+                    </span>
+                  ) : null}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }

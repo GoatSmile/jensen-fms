@@ -167,11 +167,11 @@ export function MOPartsSection({
     return m;
   }, [rows]);
 
-  function onPickFromCategory(categoryId: string, partId: string) {
+  function onPickFromCategory(categoryId: string, partId: string, quantity = 1) {
     if (!partId || partId === "__placeholder__") return;
     setError(null);
     startAdd(async () => {
-      const r = await addMOPart(moId, partId, 1);
+      const r = await addMOPart(moId, partId, quantity);
       if (!r.ok) {
         setError(r.error);
         return;
@@ -253,7 +253,9 @@ export function MOPartsSection({
               onSelectValue={(v) =>
                 setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
               }
-              onPick={(partId) => onPickFromCategory(category.id, partId)}
+              onPick={(partId, qty) =>
+                onPickFromCategory(category.id, partId, qty)
+              }
               disabled={readOnly}
             />
           ))}

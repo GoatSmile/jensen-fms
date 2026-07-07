@@ -247,7 +247,11 @@ export function PartsRecipeSection({
     return { sum, uncosted };
   }, [rows]);
 
-  function onPickFromCategory(category: CategoryOption, partId: string) {
+  function onPickFromCategory(
+    category: CategoryOption,
+    partId: string,
+    quantity = 1,
+  ) {
     if (!partId || partId === "__placeholder__") return;
     const part = partsByCategory.get(category.id)?.find((p) => p.id === partId);
     if (!part) return;
@@ -259,7 +263,7 @@ export function PartsRecipeSection({
         partName: part.name_en,
         categoryId: category.id,
         categoryName: category.name_en,
-        quantity: "1",
+        quantity: String(quantity),
         isOptional: false,
         notes: "",
         retailDkk: part.retailDkk,
@@ -495,7 +499,9 @@ export function PartsRecipeSection({
                 onSelectValue={(v) =>
                   setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
                 }
-                onPick={(partId) => onPickFromCategory(category, partId)}
+                onPick={(partId, qty) =>
+                  onPickFromCategory(category, partId, qty)
+                }
                 disabled={!canEdit}
               />
             ))}
