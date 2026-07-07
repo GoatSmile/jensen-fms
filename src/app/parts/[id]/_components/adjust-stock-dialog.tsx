@@ -137,8 +137,12 @@ function AdjustStockForm({
   const [valueText, setValueText] = useState("");
   const [reason, setReason] = useState("");
   const [unitCostText, setUnitCostText] = useState("");
+  const [dateText, setDateText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Clamp the back-date picker to today — no future ledger entries.
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const selectedLocation = useMemo(
     () => locations.find((l) => l.id === locationId) ?? locations[0]!,
@@ -193,6 +197,7 @@ function AdjustStockForm({
         value,
         reason,
         unitCostDkk,
+        occurredAt: dateText.trim() || null,
       });
       if (!result.ok) {
         setError(result.error);
@@ -320,6 +325,21 @@ function AdjustStockForm({
           onChange={(e) => setUnitCostText(e.target.value)}
           placeholder="Leave blank when removing stock"
         />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="adjust-date">Purchase date (optional)</Label>
+        <Input
+          id="adjust-date"
+          type="date"
+          value={dateText}
+          max={todayIso}
+          onChange={(e) => setDateText(e.target.value)}
+        />
+        <p className="text-muted-foreground text-xs">
+          When this stock actually arrived — back-date for historical entries.
+          Leave blank for today.
+        </p>
       </div>
 
       {error ? (

@@ -13,6 +13,12 @@ export type AdjustStockInput = {
   reason: string;
   /** Optional landed-cost-per-unit in DKK; only meaningful when adding stock. */
   unitCostDkk: number | null;
+  /**
+   * Optional back-dated ledger date (ISO `yyyy-mm-dd`). Lets historical stock
+   * (e.g. parts bought years ago) land in the right period rather than today.
+   * When omitted/empty, `inventory_movements.occurred_at` defaults to `now()`.
+   */
+  occurredAt?: string | null;
 };
 
 export type AdjustStockResult =
@@ -48,6 +54,24 @@ export async function adjustStock(
   }
   if (input.unitCostDkk != null && !Number.isFinite(input.unitCostDkk)) {
     return { ok: false, error: "Unit cost must be a number or empty." };
+  }
+
+  // Optional back-date. Accept an ISO `yyyy-mm-dd`; reject garbage and future
+  // dates (a ledger entry dated in the future would misreport as-of stock).
+  let occurredAt: string | null = null;
+  const rawDate = input.occurredAt?.trim();
+  if (rawDate) {
+    const parsed = new Date(rawDate);
+    if (Number.isNaN(parsed.getTime())) {
+      return { ok: false, error: "Purchase date is not a valid date." };
+    }
+    // Compare on the calendar day (today's date is still allowed).
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (parsed.getTime() > today.getTime()) {
+      return { ok: false, error: "Purchase date cannot be in the future." };
+    }
+    occurredAt = rawDate;
   }
 
   const supabase = await createClient();
@@ -102,6 +126,7 @@ export async function adjustStock(
     quantity_delta: delta,
     unit_cost_dkk: input.unitCostDkk ?? null,
     reason,
+    ...(occurredAt ? { occurred_at: occurredAt } : {}),
   });
 
   if (insertErr) {
