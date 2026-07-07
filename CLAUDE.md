@@ -662,6 +662,43 @@ The decided model (reference):
 service-contract → auto-add to maintenance fleet. Website/marketing copy is
 not app work. Commitment to Dennis: core flow usable "by next week".
 
+### July 2 2026 call backlog (7 items — full plan in `docs/plan-july2-meeting-backlog.md`)
+
+Second Dennis app-review call (transcript in
+`~/Documents/1-Projects/Jensen/Misc - Transcripts/`), verified against live code
+2026-07-07. Already-shipped asks from the same call (NOT below): template family
+grouping, per-PO-line transport %, category sort order + vertical picker, paint
+per-line colour/scope/finish, additive svaj pricing, test-data cleanup, AI
+part-image fetch. Explicitly **won't do**: creating a part inline from inside the
+PO add-part screen (keep part creation on the parts screen — owner+dev agreed).
+
+Build order (no-schema wins first, then two batched migrations):
+1. **Qty at template pick-time** — picker adds qty 1; let the user type the
+   quantity while picking. Shared `category-checklist-row.tsx` `onPick` +
+   3 callers (template recipe, MO parts, build workbench).
+2. **Back-dated purchase date on stock adjust** — surface the existing
+   `inventory_movements.occurred_at` (no migration) so historical stock (e.g.
+   baskets bought 2021) lands in the right period. *Phase-2 option:* foreign-
+   currency historical FX on the adjustment (reuse `lookupFxRate(cur, date)`).
+3. **Template duplication** — copy a template into a brand-new one (new
+   family/name, version=1), distinct from "save as new version".
+4. **Supplier + supplier-SKU on the new-part screen** — optional preferred
+   `part_supplier_offerings` row written at create; extra suppliers still added
+   on the detail page.
+5. **Family as controlled vocab** (migration 52) — new `bike_families`
+   (`name` unique, `sort_order`, `is_active`) + `bike_templates.family_id` FK;
+   backfill from distinct `family` strings then **drop the text column**; admin
+   CRUD at `/admin/families`; template form gets a family `<Select>`; list
+   groups/orders by `sort_order`. Owner-confirmed: single `name` (not bilingual).
+6. **Import-tax origin model** (migration 53) — `parts.origin` (`eu`/`non_eu`,
+   nullable) + `suppliers.import_duty_prepaid_default`; a per-PO-line "Apply
+   import tax" checkbox defaulting from `origin='non_eu' AND NOT supplier
+   prepaid`, driving the snapshotted `tariff_pct`/`anti_dumping_pct` to 0 (fits
+   frozen-at-purchase; HS code stays for records). Covers Dennis's "duty paid by
+   supplier" (Shimano) + "EU vs the rest" asks.
+
+(Numbered by build order, not the plan doc's item numbers.)
+
 ### Carry-over data notes
 - **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
   variants (`JP-AND-M100-PWR`, `JP-AND-M100-CS`, `JP-AND-DSP-NTC`),
