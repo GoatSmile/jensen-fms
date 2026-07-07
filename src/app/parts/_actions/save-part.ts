@@ -208,6 +208,21 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
     return { ok: false, error: e.message, field: e.field };
   }
 
+  // Optional: seed one preferred supplier offering entered on the create form.
+  // Best-effort — the part already exists, so an offering hiccup shouldn't
+  // fail creation; the user can add/fix suppliers on the part page. A brand-new
+  // part has no offerings, so the (part, supplier) unique index can't collide.
+  const supplierId = nullable(formData.get("supplier_id"));
+  if (supplierId) {
+    const supplierSku = nullable(formData.get("supplier_sku"));
+    await supabase.from("part_supplier_offerings").insert({
+      part_id: data.id,
+      supplier_id: supplierId,
+      supplier_sku: supplierSku,
+      is_preferred: true,
+    });
+  }
+
   revalidatePath("/parts");
   redirect(`/parts/${data.id}`);
 }

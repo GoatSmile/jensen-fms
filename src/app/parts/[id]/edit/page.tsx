@@ -107,6 +107,9 @@ export default async function EditPartPage({
       key,
       value: typeof value === "string" ? value : JSON.stringify(value),
     })),
+    // Create-mode-only fields; unused in edit (suppliers managed on the detail).
+    supplier_id: "",
+    supplier_sku: "",
   };
 
   return (

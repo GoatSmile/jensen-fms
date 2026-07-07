@@ -27,6 +27,7 @@ import { CategoryPicker } from "./category-picker";
 
 export type CategoryOption = FlatCategory;
 export type CurrencyOption = { code: string; name_en: string };
+export type SupplierOption = { id: string; name: string };
 export type HsCodeOption = {
   id: string;
   code: string;
@@ -54,10 +55,15 @@ export type PartFormValues = {
   reorder_quantity: string;
   notes: string;
   attributes: Array<{ key: string; value: string }>;
+  /** Create-mode only: seed one preferred supplier offering. "" = none. */
+  supplier_id: string;
+  supplier_sku: string;
 };
 
 /** Sentinel value the HS picker uses for "none" — Select needs a non-empty value. */
 const NO_HS_CODE = "__none__";
+/** Same sentinel trick for the optional create-mode supplier picker. */
+const NO_SUPPLIER = "__none__";
 
 export const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
@@ -76,6 +82,8 @@ export const EMPTY_PART_FORM: PartFormValues = {
   reorder_quantity: "",
   notes: "",
   attributes: [],
+  supplier_id: "",
+  supplier_sku: "",
 };
 
 type Props = {
@@ -85,6 +93,8 @@ type Props = {
   categories: CategoryOption[];
   currencies: CurrencyOption[];
   hsCodes: HsCodeOption[];
+  /** Active suppliers for the optional create-mode offering. Absent in edit. */
+  suppliers?: SupplierOption[];
 };
 
 export function PartForm({
@@ -94,6 +104,7 @@ export function PartForm({
   categories,
   currencies,
   hsCodes,
+  suppliers = [],
 }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<PartFormValues>(initial);
@@ -166,6 +177,9 @@ export function PartForm({
       fd.append(`attr_key[${i}]`, a.key);
       fd.append(`attr_value[${i}]`, a.value);
     });
+    // Create-mode only; updatePart ignores these keys.
+    fd.append("supplier_id", values.supplier_id);
+    fd.append("supplier_sku", values.supplier_sku);
     return fd;
   }
 
@@ -295,6 +309,49 @@ export function PartForm({
           </p>
         </Field>
       </FormSection>
+
+      {mode === "create" && suppliers.length > 0 ? (
+        <FormSection
+          title="Supplier (optional)"
+          description="Attach one supplier and their article number now — you can add more on the part page later."
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Supplier" htmlFor="supplier_id">
+              <Select
+                value={values.supplier_id === "" ? NO_SUPPLIER : values.supplier_id}
+                onValueChange={(v) =>
+                  update("supplier_id", v === NO_SUPPLIER ? "" : v)
+                }
+              >
+                <SelectTrigger id="supplier_id">
+                  <SelectValue placeholder="No supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_SUPPLIER}>No supplier</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Supplier article no." htmlFor="supplier_sku">
+              <Input
+                id="supplier_sku"
+                value={values.supplier_sku}
+                onChange={(e) => update("supplier_sku", e.target.value)}
+                placeholder="e.g. SG-C3001-7C"
+                disabled={values.supplier_id === ""}
+              />
+            </Field>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Saved as this part&rsquo;s preferred offering. Prices and lead time
+            are added on the part page.
+          </p>
+        </FormSection>
+      ) : null}
 
       <FormSection
         title="Description"
