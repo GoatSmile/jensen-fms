@@ -460,7 +460,10 @@ free-text); payments & stock value → deferred to its own session; PO email
 `deej@jensenproduction.dk`, reply-to = his inbox). **Sending domain revised
 2026-07-08:** dev's own `valent.dk` instead (Dynadot DNS, Google Workspace
 mail, used as a Gmail send-as alias) — from/reply-to = `nazar@valent.dk`,
-live in `app_settings`. Resend records sit on their own subdomains
+live in `app_settings` (from later refined to `orders@valent.dk` — the
+mailbox needn't exist for Resend, but create it or a catch-all in Google
+Workspace before go-live so direct replies don't bounce). Resend records
+sit on their own subdomains
 (`resend._domainkey`, `send`), so the Google MX/SPF rows are untouched.
 
 **Tier 0–1 core daily flow — items 1–11 ALL SHIPPED (2026-06-19):**
