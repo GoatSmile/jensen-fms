@@ -34,7 +34,7 @@ export default async function SupplierDetailPage({
     supabase
       .from("suppliers")
       .select(
-        "id, name, address_line1, address_line2, zip_code, town, province, country_code, phone, email_primary, email_secondary, website, default_currency, payment_terms_days, notes, is_active",
+        "id, name, address_line1, address_line2, zip_code, town, province, country_code, phone, email_primary, email_secondary, website, default_currency, payment_terms_days, import_duty_prepaid_default, notes, is_active",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -82,6 +82,7 @@ export default async function SupplierDetailPage({
     default_currency: s.default_currency ?? "",
     payment_terms_days:
       s.payment_terms_days != null ? String(s.payment_terms_days) : "",
+    import_duty_prepaid_default: s.import_duty_prepaid_default ?? false,
     notes: s.notes ?? "",
     is_active: s.is_active,
   };

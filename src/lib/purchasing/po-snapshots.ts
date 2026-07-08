@@ -7,53 +7,65 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/**
- * Look up the EU import duty for a part at the moment its line is added to a
- * PO. The lookup is denormalised onto the PO line (tariff_pct) so the cost
- * basis stays frozen — same rule as fx_rate_to_dkk.
- *
- * Resolution order:
- *   1. `parts.tariff_pct_override` if set (admin-managed escape hatch
- *      for misclassified or provisional parts).
- *   2. The active HS code's `tariff_pct`.
- *   3. 0 — no HS, archived HS, or unclassified.
- */
-export async function resolveTariffPctForPart(
-  supabase: SupabaseClient,
-  partId: string,
-): Promise<number> {
-  const { data: part } = await supabase
-    .from("parts")
-    .select(
-      "tariff_pct_override, hs_code:hs_codes!hs_code_id(tariff_pct, is_active)",
-    )
-    .eq("id", partId)
-    .maybeSingle();
-  if (part?.tariff_pct_override != null) {
-    return Number(part.tariff_pct_override);
-  }
-  const hs = Array.isArray(part?.hs_code) ? part?.hs_code[0] : part?.hs_code;
-  if (!hs || !hs.is_active) return 0;
-  return Number(hs.tariff_pct ?? 0);
-}
+import type { ImportTaxInputs, PartOrigin } from "./import-tax";
 
 /**
- * Look up the EU anti-dumping rate for a part at the moment its line is
- * added to a PO. Snapshotted alongside tariff_pct. Resolution: the active
- * HS code's `anti_dumping_pct`, or 0 when null.
+ * Resolve everything the import-tax snapshot decision needs for a
+ * (part, supplier) pair at the moment a line is written. The conclusion is
+ * denormalised onto the PO line (tariff_pct, anti_dumping_pct,
+ * import_tax_basis) so the cost basis — and its reason — stay frozen, same
+ * rule as fx_rate_to_dkk.
+ *
+ * Rate resolution order (the rate that applies IF import tax is on):
+ *   1. `parts.tariff_pct_override` if set (admin-managed escape hatch
+ *      for misclassified or provisional parts).
+ *   2. The active HS code's `tariff_pct` (+ its `anti_dumping_pct`).
+ *   3. 0 — no HS or archived HS (`hasClassification` false).
+ *
+ * Whether the tax is applied by default — and which basis a zero gets — is
+ * decided by the pure helpers in import-tax.ts over these inputs.
  */
-export async function resolveAntiDumpingPctForPart(
+export async function resolveImportTaxInputs(
   supabase: SupabaseClient,
   partId: string,
-): Promise<number> {
-  const { data: part } = await supabase
-    .from("parts")
-    .select("hs_code:hs_codes!hs_code_id(anti_dumping_pct, is_active)")
-    .eq("id", partId)
-    .maybeSingle();
-  const hs = Array.isArray(part?.hs_code) ? part?.hs_code[0] : part?.hs_code;
-  if (!hs || !hs.is_active) return 0;
-  return Number(hs.anti_dumping_pct ?? 0);
+  supplierId: string | null,
+): Promise<ImportTaxInputs> {
+  const [partRes, supplierRes] = await Promise.all([
+    supabase
+      .from("parts")
+      .select(
+        "origin, tariff_pct_override, hs_code:hs_codes!hs_code_id(tariff_pct, anti_dumping_pct, is_active)",
+      )
+      .eq("id", partId)
+      .maybeSingle(),
+    supplierId
+      ? supabase
+          .from("suppliers")
+          .select("import_duty_prepaid_default")
+          .eq("id", supplierId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const part = partRes.data;
+  const hsRaw = part?.hs_code;
+  const hs = Array.isArray(hsRaw) ? hsRaw[0] : hsRaw;
+  const activeHs = hs && hs.is_active ? hs : null;
+
+  const hasOverride = part?.tariff_pct_override != null;
+  const tariffPct = hasOverride
+    ? Number(part.tariff_pct_override)
+    : Number(activeHs?.tariff_pct ?? 0);
+
+  return {
+    origin: (part?.origin as PartOrigin | null) ?? null,
+    tariffPct,
+    antiDumpingPct: Number(activeHs?.anti_dumping_pct ?? 0),
+    hasClassification: hasOverride || activeHs != null,
+    supplierPrepaid: Boolean(
+      supplierRes.data?.import_duty_prepaid_default ?? false,
+    ),
+  };
 }
 
 /**

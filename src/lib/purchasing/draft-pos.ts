@@ -3,8 +3,10 @@
  * purchase quantities, group them by supplier (preferred offering first,
  * then cheapest), create one draft PO per supplier, and write lines with
  * the full landed-cost snapshot (FX for today, transport default from
- * app_settings, tariff + anti-dumping from the part's HS code via
- * po-snapshots.ts). Quantities are rounded up to the offering's MOQ.
+ * app_settings, tariff + anti-dumping from the part's HS code — zeroed
+ * with a frozen import_tax_basis when the part is EU-origin, the supplier
+ * prepays duty, or the origin is unclassified; see import-tax.ts).
+ * Quantities are rounded up to the offering's MOQ.
  *
  * Used by the MO shortfall action and the reorder-point action — one code
  * path for every machine-drafted PO, so the cost-basis contract can't
@@ -16,9 +18,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getOrFetchRate } from "@/lib/fx/get-or-fetch";
 import {
+  defaultApplyImportTax,
+  importTaxSnapshot,
+} from "@/lib/purchasing/import-tax";
+import {
   recomputePOTotal,
-  resolveAntiDumpingPctForPart,
-  resolveTariffPctForPart,
+  resolveImportTaxInputs,
 } from "@/lib/purchasing/po-snapshots";
 
 export type DraftPODemand = {
@@ -193,10 +198,22 @@ export async function createDraftPOsForDemand(
       const quantity = Math.max(Math.ceil(demand.quantity), moq > 0 ? moq : 0);
       const hasPrice = offering.default_purchase_price != null;
 
-      const [tariff_pct, anti_dumping_pct] = await Promise.all([
-        resolveTariffPctForPart(supabase, demand.partId),
-        resolveAntiDumpingPctForPart(supabase, demand.partId),
-      ]);
+      // No human in the loop here, so the "Apply import tax" decision is the
+      // derived default (origin + supplier prepaid) — the same one a user
+      // would see pre-checked in the line dialog. The frozen basis records
+      // it, and an unclassified-origin zero gets a fix-me note.
+      const importTaxInputs = await resolveImportTaxInputs(
+        supabase,
+        demand.partId,
+        supplierId,
+      );
+      const snap = importTaxSnapshot(
+        importTaxInputs,
+        defaultApplyImportTax(
+          importTaxInputs.origin,
+          importTaxInputs.supplierPrepaid,
+        ),
+      );
 
       const { error: lineErr } = await supabase
         .from("purchase_order_lines")
@@ -208,12 +225,17 @@ export async function createDraftPOsForDemand(
           currency,
           fx_rate_to_dkk,
           transport_pct,
-          tariff_pct,
-          anti_dumping_pct: anti_dumping_pct > 0 ? anti_dumping_pct : null,
+          tariff_pct: snap.tariff_pct,
+          anti_dumping_pct:
+            snap.anti_dumping_pct > 0 ? snap.anti_dumping_pct : null,
+          import_tax_basis: snap.import_tax_basis,
           notes: [
             demand.lineNote,
             moq > Math.ceil(demand.quantity) ? `Rounded up to MOQ ${moq}.` : null,
             hasPrice ? null : "No price on the supplier offering — set before placing.",
+            snap.import_tax_basis === "unclassified"
+              ? "Origin unclassified — no import tax applied; set the part's origin."
+              : null,
             fxNote,
           ]
             .filter(Boolean)

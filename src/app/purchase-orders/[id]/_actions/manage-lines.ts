@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { importTaxSnapshot } from "@/lib/purchasing/import-tax";
 import {
   recomputePOTotal,
-  resolveAntiDumpingPctForPart,
-  resolveTariffPctForPart,
+  resolveImportTaxInputs,
 } from "@/lib/purchasing/po-snapshots";
 
 // Supabase server client type — narrowed for the helper signature so the
@@ -30,6 +30,12 @@ type ParsedLineFields = {
   fx_rate_to_dkk: number;
   /** 0.10 = 10 %. Snapshotted onto the PO line. */
   transport_pct: number;
+  /**
+   * The dialog's "Apply import tax" toggle. Checked → snapshot the part's
+   * resolved tariff/anti-dumping rates; unchecked → snapshot both as 0.
+   * Either way import_tax_basis freezes the reason (import-tax.ts).
+   */
+  apply_import_tax: boolean;
   notes: string | null;
 };
 
@@ -118,6 +124,7 @@ function parseLineFields(
       currency,
       fx_rate_to_dkk: fx.value,
       transport_pct,
+      apply_import_tax: formData.get("apply_import_tax") === "on",
       notes: nullable(formData.get("notes")),
     },
   };
@@ -126,10 +133,13 @@ function parseLineFields(
 async function assertDraft(
   supabase: SupabaseServer,
   poId: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; supplierId: string | null }
+  | { ok: false; error: string }
+> {
   const { data: po, error } = await supabase
     .from("purchase_orders")
-    .select("status")
+    .select("status, supplier_id")
     .eq("id", poId)
     .maybeSingle();
   if (error || !po) {
@@ -144,7 +154,7 @@ async function assertDraft(
       error: "Lines can only be edited while the PO is in draft.",
     };
   }
-  return { ok: true };
+  return { ok: true, supplierId: po.supplier_id ?? null };
 }
 
 /**
@@ -154,8 +164,10 @@ async function assertDraft(
  * Postgres — we do NOT write it. The DB computes it from `unit_price *
  * fx_rate_to_dkk * (1 + transport_pct + tariff_pct)` on every insert/update.
  * The UI previews the same arithmetic so the user sees the landed cost as
- * they type. tariff_pct is snapshotted from the selected part's HS code so
- * the cost basis stays frozen even if Dennis later reclassifies the part.
+ * they type. tariff_pct is snapshotted from the selected part's HS code —
+ * or as 0 when the "Apply import tax" toggle is off (EU origin, supplier
+ * prepaid, …) — with the reason frozen into import_tax_basis, so the cost
+ * basis stays frozen even if Dennis later reclassifies the part.
  *
  * Schema has no UNIQUE(po, part) so we defensively check for a duplicate part
  * before inserting — much friendlier than letting a future constraint blow up
@@ -196,10 +208,12 @@ export async function addLine(
     };
   }
 
-  const [tariff_pct, anti_dumping_pct] = await Promise.all([
-    resolveTariffPctForPart(supabase, v.part_id),
-    resolveAntiDumpingPctForPart(supabase, v.part_id),
-  ]);
+  const inputs = await resolveImportTaxInputs(
+    supabase,
+    v.part_id,
+    guard.supplierId,
+  );
+  const snap = importTaxSnapshot(inputs, v.apply_import_tax);
 
   const { error: insErr } = await supabase
     .from("purchase_order_lines")
@@ -211,8 +225,10 @@ export async function addLine(
       currency: v.currency,
       fx_rate_to_dkk: v.fx_rate_to_dkk,
       transport_pct: v.transport_pct,
-      tariff_pct,
-      anti_dumping_pct: anti_dumping_pct > 0 ? anti_dumping_pct : null,
+      tariff_pct: snap.tariff_pct,
+      anti_dumping_pct:
+        snap.anti_dumping_pct > 0 ? snap.anti_dumping_pct : null,
+      import_tax_basis: snap.import_tax_basis,
       notes: v.notes,
     });
   if (insErr) {
@@ -286,10 +302,12 @@ export async function updateLine(
     };
   }
 
-  const [tariff_pct, anti_dumping_pct] = await Promise.all([
-    resolveTariffPctForPart(supabase, v.part_id),
-    resolveAntiDumpingPctForPart(supabase, v.part_id),
-  ]);
+  const inputs = await resolveImportTaxInputs(
+    supabase,
+    v.part_id,
+    guard.supplierId,
+  );
+  const snap = importTaxSnapshot(inputs, v.apply_import_tax);
 
   const { error: updErr } = await supabase
     .from("purchase_order_lines")
@@ -300,8 +318,10 @@ export async function updateLine(
       currency: v.currency,
       fx_rate_to_dkk: v.fx_rate_to_dkk,
       transport_pct: v.transport_pct,
-      tariff_pct,
-      anti_dumping_pct: anti_dumping_pct > 0 ? anti_dumping_pct : null,
+      tariff_pct: snap.tariff_pct,
+      anti_dumping_pct:
+        snap.anti_dumping_pct > 0 ? snap.anti_dumping_pct : null,
+      import_tax_basis: snap.import_tax_basis,
       notes: v.notes,
       updated_at: new Date().toISOString(),
     })

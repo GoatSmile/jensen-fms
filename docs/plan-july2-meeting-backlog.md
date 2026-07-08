@@ -44,8 +44,19 @@ on the detail page.
 
 ---
 
-## Items 2 + 3 — Import-tax origin model (share one migration)
+## Items 2 + 3 — Import-tax origin model (share one migration) — ✅ SHIPPED 2026-07-08
 These are the same feature from two angles, so build together.
+
+**As built:** migration 54 applied; decision logic pure + shared in
+`src/lib/purchasing/import-tax.ts` (default, basis, hint, labels);
+`resolveImportTaxInputs` in `po-snapshots.ts` replaced the two per-rate
+resolvers; both writers (line dialog actions + `draft-pos.ts`) freeze
+tariff/anti-dumping + `import_tax_basis` together. Verified end-to-end in the
+browser (EU-origin default-off → `eu_origin`; manual override → `applied` @
+4.7%; supplier-prepaid default-off; non-EU default-on), DB restored to
+baseline after. Note for the owner: all `parts.origin` are NULL until
+classified, so new PO lines default to no import tax (see CLAUDE.md
+carry-over data notes).
 
 **Goal:**
 - **(3) EU vs rest-of-world origin per part** drives whether import tax applies
@@ -232,12 +243,16 @@ raise separately. **+~45 min (20 min wait).**
 
 ## Suggested build order
 Fast no-schema wins first, then batch the two migrations at the end:
-1. **Item 4** (qty at pick) — smallest, no schema.
-2. **Item 6 v1** (back-date stock) — no schema.
-3. **Item 5** (duplicate template) — no schema.
-4. **Item 1** (supplier on part-create) — no schema.
+1. ✅ **Item 4** (qty at pick) — SHIPPED (1176597).
+2. ✅ **Item 6 v1** (back-date stock) — SHIPPED (7b0e4c9); phase-2 FX not built.
+3. ✅ **Item 5** (duplicate template) — SHIPPED (9c6ef6b).
+4. ✅ **Item 1** (supplier on part-create) — SHIPPED (136d0ed).
 5. ✅ **Item 7** (family controlled vocab) — SHIPPED (migrations 52 + 53).
-6. **Items 2+3** (origin model) — migration 54; most surface area, do last.
+6. ✅ **Items 2+3** (origin model) — SHIPPED (migration 54, 2026-07-08).
 
 Each is independently shippable (commit + push per repo convention). Total for
 all seven ≈ **5.5–6.5 human-dev-hours**; phase-2 FX on item 6 optional on top.
+
+**Status 2026-07-08: all seven items SHIPPED.** Only the optional item-6
+phase-2 (foreign-currency historical FX on stock adjust) remains unbuilt —
+raise separately if Dennis hits it.

@@ -18,6 +18,7 @@ type ParsedFields = {
   description_da: string | null;
   category_id: string;
   hs_code_id: string | null;
+  origin: "eu" | "non_eu" | null;
   tariff_pct_override: number | null;
   unit_of_measure: string;
   default_retail_price: number | null;
@@ -122,6 +123,14 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
   const hsRaw = nullable(formData.get("hs_code_id"));
   const hs_code_id = hsRaw && hsRaw !== "" ? hsRaw : null;
 
+  // Customs origin — controlled 3-state ("" = unclassified → null). The DB
+  // CHECK would reject anything else; validate here for a friendly error.
+  const originRaw = nullable(formData.get("origin"));
+  if (originRaw !== null && originRaw !== "eu" && originRaw !== "non_eu") {
+    return { error: "Origin must be EU or outside EU.", field: "origin" };
+  }
+  const origin = originRaw;
+
   // Tariff override (optional). Form holds a percent string ("5" for
   // 5 %, "10.2" for 10.2 %); DB stores the decimal (0.05, 0.102).
   // Blank → no override, fall back to HS code at PO snapshot time.
@@ -146,6 +155,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     description_da: nullable(formData.get("description_da")),
     category_id,
     hs_code_id,
+    origin,
     tariff_pct_override,
     unit_of_measure,
     default_retail_price,
@@ -190,6 +200,7 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
       description_da: parsed.description_da,
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
+      origin: parsed.origin,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
@@ -247,6 +258,7 @@ export async function updatePart(
       description_da: parsed.description_da,
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
+      origin: parsed.origin,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,

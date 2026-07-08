@@ -39,6 +39,8 @@ export type SupplierFormValues = {
   website: string;
   default_currency: string;
   payment_terms_days: string;
+  /** Supplier delivers duty-paid — new PO lines default to no import tax. */
+  import_duty_prepaid_default: boolean;
   notes: string;
   is_active: boolean;
 };
@@ -57,6 +59,7 @@ export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   website: "",
   default_currency: "",
   payment_terms_days: "",
+  import_duty_prepaid_default: false,
   notes: "",
   is_active: true,
 };
@@ -107,6 +110,9 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
       values.default_currency === NO_CURRENCY ? "" : values.default_currency,
     );
     appendField(fd, "payment_terms_days", values.payment_terms_days.trim());
+    if (values.import_duty_prepaid_default) {
+      fd.set("import_duty_prepaid_default", "on");
+    }
     appendField(fd, "notes", values.notes.trim());
     if (values.is_active) fd.set("is_active", "on");
     return fd;
@@ -185,6 +191,25 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             className="max-w-[140px]"
           />
         </Field>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={values.import_duty_prepaid_default}
+            onChange={(e) =>
+              update("import_duty_prepaid_default", e.target.checked)
+            }
+            className="size-4"
+          />
+          Import duty prepaid by default
+        </label>
+        <p className="text-muted-foreground pl-6 text-xs">
+          This supplier delivers duty-paid (e.g. Shimano) — new PO lines
+          default to &ldquo;Apply import tax&rdquo; off. Overridable per line;
+          existing lines stay frozen.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

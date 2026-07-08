@@ -25,6 +25,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
 import { formatPct } from "@/lib/parts/format";
+import {
+  defaultApplyImportTax,
+  importTaxDefaultHint,
+  type ImportTaxBasis,
+  type PartOrigin,
+} from "@/lib/purchasing/import-tax";
 
 import { lookupFxRate } from "../_actions/lookup-fx";
 import { addLine, updateLine } from "../_actions/manage-lines";
@@ -38,6 +44,8 @@ export type PartChoice = {
   tariffPct: number;
   /** Anti-dumping rate (0 = none) — same snapshot rule as tariffPct. */
   antiDumpingPct: number;
+  /** Customs origin (null = unclassified) — drives the import-tax default. */
+  origin: PartOrigin | null;
 };
 
 export type CurrencyChoice = {
@@ -60,6 +68,8 @@ export type LineDialogInitial = {
   tariffPct: number;
   /** Decimal — anti-dumping rate snapshotted alongside tariffPct (0 = none). */
   antiDumpingPct: number;
+  /** Frozen reason behind the snapshot; null on lines predating migration 54. */
+  importTaxBasis: ImportTaxBasis | null;
   notes: string | null;
 };
 
@@ -81,6 +91,8 @@ type Props = {
   defaultTransportPct: number;
   /** PO's order_date — used for historical FX lookup against fx_rates / Frankfurter. */
   orderDate: string;
+  /** The PO supplier's import_duty_prepaid_default — feeds the import-tax default. */
+  supplierDutyPrepaid: boolean;
 };
 
 /**
@@ -103,6 +115,7 @@ export function LineDialog({
   excludePartIds,
   defaultTransportPct,
   orderDate,
+  supplierDutyPrepaid,
 }: Props) {
   const router = useRouter();
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
@@ -128,8 +141,19 @@ export function LineDialog({
       : String(Math.round(defaultTransportPct * 10000) / 100);
   const initialNotes =
     mode.kind === "edit" ? mode.initial.notes ?? "" : "";
+  // Edit mode reconstructs the toggle from the frozen basis: "applied" was
+  // on; any recorded zero-reason was off. Pre-tracking lines (null basis)
+  // fall back to "did the snapshot carry a rate" — old lines always applied.
+  // Add mode starts off; picking a part sets the derived default.
+  const initialApplyImportTax =
+    mode.kind === "edit"
+      ? mode.initial.importTaxBasis === "applied" ||
+        (mode.initial.importTaxBasis == null &&
+          (mode.initial.tariffPct > 0 || mode.initial.antiDumpingPct > 0))
+      : false;
 
   const [partId, setPartId] = useState(initialPartId);
+  const [applyImportTax, setApplyImportTax] = useState(initialApplyImportTax);
   const [filter, setFilter] = useState("");
   const [quantity, setQuantity] = useState(initialQty);
   const [unitPrice, setUnitPrice] = useState(initialPrice);
@@ -149,28 +173,34 @@ export function LineDialog({
     | { kind: "missing"; message: string }
   >({ kind: "idle" });
 
-  // Look up the selected part's tariff snapshot for the preview. Edit mode
-  // shows the snapshotted value from when the line was first added; add mode
-  // shows the live value from the part's current HS code.
+  // Preview mirrors what a save will write: saving (add OR update) resolves
+  // the part's live rates and zeroes them when "Apply import tax" is off.
+  // Edit mode falls back to the line's frozen snapshot only if the part has
+  // vanished from the catalog (soft-deleted since the line was added).
   const selectedPart = useMemo(
     () => parts.find((p) => p.id === partId) ?? null,
     [parts, partId],
   );
-  const previewTariffPct =
-    mode.kind === "edit"
-      ? mode.initial.tariffPct
-      : (selectedPart?.tariffPct ?? 0);
-  const previewAntiDumpingPct =
-    mode.kind === "edit"
-      ? mode.initial.antiDumpingPct
-      : (selectedPart?.antiDumpingPct ?? 0);
-  const previewHsCode =
-    mode.kind === "edit"
-      ? null
-      : (selectedPart?.hsCode ?? null);
+  const resolvedTariffPct =
+    selectedPart?.tariffPct ??
+    (mode.kind === "edit" ? mode.initial.tariffPct : 0);
+  const resolvedAntiDumpingPct =
+    selectedPart?.antiDumpingPct ??
+    (mode.kind === "edit" ? mode.initial.antiDumpingPct : 0);
+  const previewTariffPct = applyImportTax ? resolvedTariffPct : 0;
+  const previewAntiDumpingPct = applyImportTax ? resolvedAntiDumpingPct : 0;
+  const previewHsCode = selectedPart?.hsCode ?? null;
 
   // Edit mode locks the part to keep the row identity stable in the UI.
   const partLocked = mode.kind === "edit";
+
+  function onPickPart(part: PartChoice) {
+    setPartId(part.id);
+    // Re-derive the import-tax default for the newly picked part — the
+    // toggle is a per-part decision, so a manual tweak for part A shouldn't
+    // stick to part B.
+    setApplyImportTax(defaultApplyImportTax(part.origin, supplierDutyPrepaid));
+  }
 
   // Keep FX rate in lock-step with the currency choice. For DKK we hard-code
   // 1. For foreign currencies we kick off a historical lookup against the
@@ -288,6 +318,7 @@ export function LineDialog({
       ? transportPercent / 100
       : defaultTransportPct;
     appendField(fd, "transport_pct", String(transportDecimal));
+    if (applyImportTax) fd.set("apply_import_tax", "on");
     appendField(fd, "notes", notes);
     return fd;
   }
@@ -364,7 +395,7 @@ export function LineDialog({
                           <li key={p.id}>
                             <button
                               type="button"
-                              onClick={() => setPartId(p.id)}
+                              onClick={() => onPickPart(p)}
                               disabled={disabled}
                               className={`hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                                 isPicked ? "bg-muted" : ""
@@ -485,6 +516,34 @@ export function LineDialog({
             </div>
           </div>
 
+          <div className="flex flex-col gap-1">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={applyImportTax}
+                onChange={(e) => setApplyImportTax(e.target.checked)}
+                disabled={!partId}
+                className="size-4"
+              />
+              Apply import tax
+            </label>
+            {partId ? (
+              <p className="text-muted-foreground pl-6 text-xs">
+                {importTaxDefaultHint(
+                  selectedPart?.origin ?? null,
+                  supplierDutyPrepaid,
+                )}{" "}
+                Override for this line by toggling; the choice and its reason
+                are frozen onto the line.
+              </p>
+            ) : (
+              <p className="text-muted-foreground pl-6 text-xs">
+                Pick a part — the default follows its origin and the
+                supplier&apos;s duty-prepaid setting.
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="line-notes">Notes</Label>
             <Textarea
@@ -519,7 +578,9 @@ export function LineDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 + Import tax{" "}
-                {previewHsCode ? (
+                {!applyImportTax ? (
+                  <span className="italic">not applied</span>
+                ) : previewHsCode ? (
                   <span className="font-mono">({previewHsCode}, {formatPct(previewTariffPct)})</span>
                 ) : previewTariffPct > 0 ? (
                   <span>({formatPct(previewTariffPct)})</span>

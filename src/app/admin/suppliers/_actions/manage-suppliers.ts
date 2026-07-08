@@ -21,6 +21,7 @@ type ParsedSupplier = {
   website: string | null;
   default_currency: string | null;
   payment_terms_days: number | null;
+  import_duty_prepaid_default: boolean;
   notes: string | null;
   is_active: boolean;
 };
@@ -70,6 +71,8 @@ function parseFormData(
       website: nullable(formData.get("website")),
       default_currency,
       payment_terms_days: pt.value,
+      import_duty_prepaid_default:
+        formData.get("import_duty_prepaid_default") === "on",
       notes: nullable(formData.get("notes")),
       is_active: formData.get("is_active") === "on",
     },

@@ -14,6 +14,10 @@ import { Money } from "@/components/money";
 import { SegmentedId } from "@/components/segmented-id";
 import { formatDate } from "@/lib/parts/format";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
+import type {
+  ImportTaxBasis,
+  PartOrigin,
+} from "@/lib/purchasing/import-tax";
 
 import { POHeader } from "./_components/po-header";
 import {
@@ -53,7 +57,7 @@ export default async function PurchaseOrderDetailPage({
         `
           id, po_number, status, order_date, expected_date, received_date,
           total_amount, total_currency, notes,
-          suppliers(id, name)
+          suppliers(id, name, import_duty_prepaid_default)
         `,
       )
       .eq("id", id)
@@ -63,7 +67,8 @@ export default async function PurchaseOrderDetailPage({
       .select(
         `
           id, quantity, received_quantity, unit_price, currency,
-          fx_rate_to_dkk, transport_pct, tariff_pct, anti_dumping_pct, landed_cost_dkk_per_unit, notes,
+          fx_rate_to_dkk, transport_pct, tariff_pct, anti_dumping_pct,
+          import_tax_basis, landed_cost_dkk_per_unit, notes,
           parts(id, internal_sku, name_en)
         `,
       )
@@ -77,7 +82,7 @@ export default async function PurchaseOrderDetailPage({
     supabase
       .from("parts")
       .select(
-        `id, internal_sku, name_en,
+        `id, internal_sku, name_en, origin, tariff_pct_override,
          hs_code:hs_codes!hs_code_id(code, tariff_pct, anti_dumping_pct, is_active)`,
       )
       .is("deleted_at", null)
@@ -125,6 +130,8 @@ export default async function PurchaseOrderDetailPage({
     transportPct: Number(l.transport_pct),
     tariffPct: Number(l.tariff_pct ?? 0),
     antiDumpingPct: Number(l.anti_dumping_pct ?? 0),
+    // DB CHECK constrains the vocab; narrow the generated string type.
+    importTaxBasis: (l.import_tax_basis ?? null) as ImportTaxBasis | null,
     landedDkkPerUnit:
       l.landed_cost_dkk_per_unit == null
         ? null
@@ -164,13 +171,22 @@ export default async function PurchaseOrderDetailPage({
   const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => {
     const hs = p.hs_code;
     const active = hs?.is_active ?? false;
+    // Mirror the server-side snapshot resolution (po-snapshots.ts): a
+    // part-level tariff override beats the HS code, so the dialog preview
+    // matches what a save will freeze onto the line.
+    const hasOverride = p.tariff_pct_override != null;
     return {
       id: p.id,
       internal_sku: p.internal_sku,
       name_en: p.name_en,
       hsCode: active ? (hs?.code ?? null) : null,
-      tariffPct: active ? Number(hs?.tariff_pct ?? 0) : 0,
+      tariffPct: hasOverride
+        ? Number(p.tariff_pct_override)
+        : active
+          ? Number(hs?.tariff_pct ?? 0)
+          : 0,
       antiDumpingPct: active ? Number(hs?.anti_dumping_pct ?? 0) : 0,
+      origin: (p.origin ?? null) as PartOrigin | null,
     };
   });
 
@@ -282,6 +298,7 @@ export default async function PurchaseOrderDetailPage({
         currencies={currencies}
         fxRatesByCurrency={fxRatesByCurrency}
         defaultTransportPct={defaultTransportPct}
+        supplierDutyPrepaid={po.suppliers?.import_duty_prepaid_default ?? false}
       />
 
       {showReceiveForm ? (

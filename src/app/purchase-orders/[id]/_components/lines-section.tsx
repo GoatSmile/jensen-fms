@@ -25,6 +25,10 @@ import { formatFxRate, formatPct } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
+import {
+  IMPORT_TAX_BASIS_LABELS,
+  type ImportTaxBasis,
+} from "@/lib/purchasing/import-tax";
 
 import { deleteLine } from "../_actions/manage-lines";
 import {
@@ -51,6 +55,8 @@ export type POLineRow = {
   /** Decimal — EU anti-dumping duty (0 = none). Snapshotted alongside
    *  tariffPct and added into the landed-cost formula. */
   antiDumpingPct: number;
+  /** Frozen reason behind the import-tax snapshot (null = pre-migration-54). */
+  importTaxBasis: ImportTaxBasis | null;
   /** Nullable — NULL while the line's unit_price is blank (price pending). */
   landedDkkPerUnit: number | null;
   receivedQuantity: number;
@@ -68,6 +74,8 @@ type Props = {
   currencies: CurrencyChoice[];
   fxRatesByCurrency: Record<string, number>;
   defaultTransportPct: number;
+  /** Supplier's import_duty_prepaid_default — feeds the line dialog's default. */
+  supplierDutyPrepaid: boolean;
 };
 
 type DialogState =
@@ -85,6 +93,7 @@ export function LinesSection({
   currencies,
   fxRatesByCurrency,
   defaultTransportPct,
+  supplierDutyPrepaid,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +244,24 @@ export function LinesSection({
                             + {formatPct(row.antiDumpingPct)} anti-dumping
                           </div>
                         ) : null}
+                        {/* Why a line carries no import tax — a correct zero
+                            (EU origin / duty prepaid / zero-rated) reads
+                            differently from a data-quality gap (unclassified,
+                            amber: understates landed cost). */}
+                        {row.tariffPct === 0 &&
+                        row.importTaxBasis != null &&
+                        row.importTaxBasis !== "applied" ? (
+                          <div
+                            className={
+                              row.importTaxBasis === "unclassified"
+                                ? "text-[10px] text-amber-700 dark:text-amber-400"
+                                : "text-muted-foreground text-[10px]"
+                            }
+                          >
+                            no import tax —{" "}
+                            {IMPORT_TAX_BASIS_LABELS[row.importTaxBasis]}
+                          </div>
+                        ) : null}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatPrice(row.landedDkkPerUnit, "DKK")}
@@ -294,6 +321,7 @@ export function LinesSection({
           fxRatesByCurrency={fxRatesByCurrency}
           defaultTransportPct={defaultTransportPct}
           orderDate={orderDate}
+          supplierDutyPrepaid={supplierDutyPrepaid}
           excludePartIds={
             dialog.kind === "add"
               ? onPoPartIds
@@ -325,6 +353,7 @@ function rowToInitial(row: POLineRow): LineDialogInitial {
     transportPct: row.transportPct,
     tariffPct: row.tariffPct,
     antiDumpingPct: row.antiDumpingPct,
+    importTaxBasis: row.importTaxBasis,
     notes: row.notes,
   };
 }

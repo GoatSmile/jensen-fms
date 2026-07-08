@@ -44,6 +44,8 @@ export type PartFormValues = {
   category_id: string;
   /** "" when unclassified. */
   hs_code_id: string;
+  /** Customs origin: "eu" | "non_eu" | "" (unclassified). */
+  origin: string;
   /** "" when no override; otherwise a percent string like "5" or "10.2"
    *  that gets converted to the decimal (0.05, 0.102) on submit. */
   tariff_pct_override: string;
@@ -64,6 +66,8 @@ export type PartFormValues = {
 const NO_HS_CODE = "__none__";
 /** Same sentinel trick for the optional create-mode supplier picker. */
 const NO_SUPPLIER = "__none__";
+/** And for the origin picker's "unclassified". */
+const NO_ORIGIN = "__none__";
 
 export const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
@@ -73,6 +77,7 @@ export const EMPTY_PART_FORM: PartFormValues = {
   description_da: "",
   category_id: "",
   hs_code_id: "",
+  origin: "",
   tariff_pct_override: "",
   unit_of_measure: "pcs",
   default_retail_price: "",
@@ -165,6 +170,7 @@ export function PartForm({
     fd.append("description_da", values.description_da);
     fd.append("category_id", values.category_id);
     fd.append("hs_code_id", values.hs_code_id);
+    fd.append("origin", values.origin);
     fd.append("tariff_pct_override", values.tariff_pct_override);
     fd.append("unit_of_measure", values.unit_of_measure);
     fd.append("default_retail_price", values.default_retail_price);
@@ -282,6 +288,33 @@ export function PartForm({
             emptyMessage="No matching HS code."
             className="h-9 w-full"
           />
+        </Field>
+        <Field
+          label="Origin"
+          htmlFor="origin"
+          error={errorField === "origin" ? error : null}
+        >
+          <Select
+            value={values.origin === "" ? NO_ORIGIN : values.origin}
+            onValueChange={(v) => update("origin", v === NO_ORIGIN ? "" : v)}
+          >
+            <SelectTrigger id="origin">
+              <SelectValue placeholder="Unclassified" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_ORIGIN}>
+                <span className="text-muted-foreground italic">
+                  Unclassified
+                </span>
+              </SelectItem>
+              <SelectItem value="eu">EU</SelectItem>
+              <SelectItem value="non_eu">Outside EU</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-xs">
+            Sets the default of &ldquo;Apply import tax&rdquo; on new PO
+            lines — EU-origin parts skip it. Existing PO lines stay frozen.
+          </p>
         </Field>
         <Field
           label="Tariff override (%)"

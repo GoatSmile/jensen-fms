@@ -136,6 +136,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bike_families: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       bike_identifier_types: {
         Row: {
           created_at: string
@@ -450,30 +474,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      bike_families: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name: string
-          sort_order?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
       }
       bike_type_required_identifiers: {
         Row: {
@@ -2482,6 +2482,7 @@ export type Database = {
           name_da: string | null
           name_en: string
           notes: string | null
+          origin: string | null
           reorder_point: number | null
           reorder_quantity: number | null
           tariff_pct_override: number | null
@@ -2504,6 +2505,7 @@ export type Database = {
           name_da?: string | null
           name_en: string
           notes?: string | null
+          origin?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
           tariff_pct_override?: number | null
@@ -2526,6 +2528,7 @@ export type Database = {
           name_da?: string | null
           name_en?: string
           notes?: string | null
+          origin?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
           tariff_pct_override?: number | null
@@ -2603,6 +2606,7 @@ export type Database = {
           currency: string
           fx_rate_to_dkk: number
           id: string
+          import_tax_basis: string | null
           landed_cost_dkk_per_unit: number | null
           notes: string | null
           part_id: string
@@ -2620,6 +2624,7 @@ export type Database = {
           currency: string
           fx_rate_to_dkk: number
           id?: string
+          import_tax_basis?: string | null
           landed_cost_dkk_per_unit?: number | null
           notes?: string | null
           part_id: string
@@ -2637,6 +2642,7 @@ export type Database = {
           currency?: string
           fx_rate_to_dkk?: number
           id?: string
+          import_tax_basis?: string | null
           landed_cost_dkk_per_unit?: number | null
           notes?: string | null
           part_id?: string
@@ -3166,6 +3172,7 @@ export type Database = {
           email_primary: string | null
           email_secondary: string | null
           id: string
+          import_duty_prepaid_default: boolean
           is_active: boolean
           name: string
           notes: string | null
@@ -3187,6 +3194,7 @@ export type Database = {
           email_primary?: string | null
           email_secondary?: string | null
           id?: string
+          import_duty_prepaid_default?: boolean
           is_active?: boolean
           name: string
           notes?: string | null
@@ -3208,6 +3216,7 @@ export type Database = {
           email_primary?: string | null
           email_secondary?: string | null
           id?: string
+          import_duty_prepaid_default?: boolean
           is_active?: boolean
           name?: string
           notes?: string | null

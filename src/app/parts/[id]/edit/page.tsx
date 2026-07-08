@@ -28,7 +28,7 @@ export default async function EditPartPage({
     supabase
       .from("parts")
       .select(
-        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
+        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, origin, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -85,6 +85,7 @@ export default async function EditPartPage({
     description_da: part.description_da ?? "",
     category_id: part.category_id,
     hs_code_id: part.hs_code_id ?? "",
+    origin: part.origin ?? "",
     // DB stores override as decimal fraction (0.0470); form holds the
     // percent string ("4.7"). Round to 2 decimals when reading back.
     tariff_pct_override:

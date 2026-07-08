@@ -672,19 +672,21 @@ per-line colour/scope/finish, additive svaj pricing, test-data cleanup, AI
 part-image fetch. Explicitly **won't do**: creating a part inline from inside the
 PO add-part screen (keep part creation on the parts screen — owner+dev agreed).
 
-Build order (no-schema wins first, then two batched migrations):
-1. **Qty at template pick-time** — picker adds qty 1; let the user type the
-   quantity while picking. Shared `category-checklist-row.tsx` `onPick` +
-   3 callers (template recipe, MO parts, build workbench).
-2. **Back-dated purchase date on stock adjust** — surface the existing
-   `inventory_movements.occurred_at` (no migration) so historical stock (e.g.
-   baskets bought 2021) lands in the right period. *Phase-2 option:* foreign-
-   currency historical FX on the adjustment (reuse `lookupFxRate(cur, date)`).
-3. **Template duplication** — copy a template into a brand-new one (new
-   family/name, version=1), distinct from "save as new version".
-4. **Supplier + supplier-SKU on the new-part screen** — optional preferred
-   `part_supplier_offerings` row written at create; extra suppliers still added
-   on the detail page.
+Build order (no-schema wins first, then two batched migrations).
+**All seven SHIPPED as of 2026-07-08** — only the optional item-6 phase-2
+(foreign-currency historical FX on stock adjust) remains unbuilt:
+1. ✅ **Qty at template pick-time** — SHIPPED (1176597). Shared
+   `category-checklist-row.tsx` `onPick(partId, qty)` + 3 callers (template
+   recipe, MO parts, build workbench).
+2. ✅ **Back-dated purchase date on stock adjust** — SHIPPED (7b0e4c9).
+   Surfaces `inventory_movements.occurred_at`; *phase-2 option (unbuilt):*
+   foreign-currency historical FX on the adjustment (reuse
+   `lookupFxRate(cur, date)`).
+3. ✅ **Template duplication** — SHIPPED (9c6ef6b). Copy a template into a
+   brand-new one (version=1), distinct from "save as new version".
+4. ✅ **Supplier + supplier-SKU on the new-part screen** — SHIPPED (136d0ed).
+   Optional preferred `part_supplier_offerings` row written at create; extra
+   suppliers still added on the detail page.
 5. ✅ **Family as controlled vocab** (migrations 52 + 53) — SHIPPED. New
    `bike_families` (`name` unique, `sort_order`, `is_active`) +
    `bike_templates.family_id` FK; backfilled from distinct `family` strings,
@@ -692,24 +694,39 @@ Build order (no-schema wins first, then two batched migrations):
    after deploy). Admin CRUD at `/admin/families` + tile; template form family
    `<Select>`; list groups/orders by `sort_order`. ~37 read sites moved to the
    `family:bike_families(name)` embed. Single `name` (not bilingual).
-6. **Import-tax origin model** (migration 54) — `parts.origin` (`eu`/`non_eu`,
-   nullable) + `suppliers.import_duty_prepaid_default`; a per-PO-line "Apply
-   import tax" checkbox defaulting from `origin='non_eu' AND NOT supplier
-   prepaid`, driving the snapshotted `tariff_pct`/`anti_dumping_pct` to 0 (fits
-   frozen-at-purchase; HS code stays for records). Covers Dennis's "duty paid by
-   supplier" (Shimano) + "EU vs the rest" asks. Also snapshots a **frozen**
+6. ✅ **Import-tax origin model** (migration 54) — SHIPPED 2026-07-08.
+   `parts.origin` (`eu`/`non_eu`, nullable = unclassified; picker on the part
+   form) + `suppliers.import_duty_prepaid_default` (checkbox on the supplier
+   form); a per-PO-line "Apply import tax" checkbox defaulting from
+   `origin='non_eu' AND NOT supplier prepaid`, driving the snapshotted
+   `tariff_pct`/`anti_dumping_pct` to 0 (fits frozen-at-purchase; HS code stays
+   for records). Covers Dennis's "duty paid by supplier" (Shimano) + "EU vs the
+   rest" asks. Also snapshots a **frozen**
    `purchase_order_lines.import_tax_basis` enum (`applied | zero_rated |
-   unclassified | eu_origin | supplier_prepaid`) alongside `tariff_pct` — the
-   resolver already computes the reason to set the toggle default, so storing it
-   is ~free, and a *derived* reason can't be reconstructed later without reading
-   mutable part/supplier/HS state (would fabricate history, breaking
+   unclassified | eu_origin | supplier_prepaid`) alongside `tariff_pct` — a
+   *derived* reason can't be reconstructed later without reading mutable
+   part/supplier/HS state (would fabricate history, breaking
    frozen-at-purchase). Lets a correct 0 (eu_origin/supplier_prepaid) read
-   differently from a data-quality gap 0 (unclassified). Existing lines backfill
-   to `NULL` (pre-tracking). Migration 54 = 3 columns.
+   differently from a data-quality gap 0 (unclassified — amber in the PO lines
+   table). Existing lines stayed `NULL` (pre-tracking). Decision logic is pure
+   and shared in `src/lib/purchasing/import-tax.ts` (UI default + hint + basis);
+   `resolveImportTaxInputs` in `po-snapshots.ts` replaced the two per-rate
+   resolvers, so both line writers (`manage-lines.ts` + `draft-pos.ts`) freeze
+   the same conclusion. Machine-drafted POs apply the derived default and
+   flag unclassified-origin lines "set the part's origin" in the line note.
 
 (Numbered by build order, not the plan doc's item numbers.)
 
 ### Carry-over data notes
+- **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
+  new origin model, unclassified origin means new PO lines default to **no
+  import tax** (`import_tax_basis = 'unclassified'`) until the owner sets
+  origins on the part edit form — owner-confirmed behaviour ("initially
+  without tariff, click to add"), but it flips the old always-apply-HS-tariff
+  default. The line dialog nudges, machine-drafted PO lines carry a "set the
+  part's origin" note, and the PO lines table shows the amber "unclassified"
+  label. Classifying the China-sourced fast movers as `non_eu` restores
+  tariff-by-default where it matters.
 - **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
   variants (`JP-AND-M100-PWR`, `JP-AND-M100-CS`, `JP-AND-DSP-NTC`),
   `JP-SLFFH01B`, and `JP-SP207- 27,2 350`. They snapshot 0% tariff on new PO
