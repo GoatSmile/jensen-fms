@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -5,6 +6,7 @@ import {
   Boxes,
   Building2,
   CalendarClock,
+  CircleCheck,
   Hammer,
   Paintbrush,
   TrendingUp,
@@ -15,7 +17,18 @@ import {
   AttentionCard,
   StatCard,
 } from "@/components/dashboard-card";
+import { FoldSection } from "@/components/dashboard/fold-section";
+import {
+  BikesTrendChart,
+  InvoicedTrendChart,
+  type TrendMonth,
+} from "@/components/dashboard/trend-charts";
 import { Badge } from "@/components/ui/badge";
+import {
+  loadMoneyBand,
+  loadMonthlyStats,
+} from "@/lib/dashboard/queries";
+import { cn } from "@/lib/utils";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
 import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
@@ -43,6 +56,53 @@ function diffDays(fromISO: string): number {
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 
+/** "Aug" for most months, "Jan 26" where the year flips — chart tick labels. */
+function trendLabel(monthStart: string): string {
+  const d = new Date(`${monthStart}T00:00:00Z`);
+  const m = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  return d.getUTCMonth() === 0
+    ? `${m} ${String(d.getUTCFullYear()).slice(2)}`
+    : m;
+}
+
+function plural(n: number, singular: string, pluralForm?: string): string {
+  return `${n} ${n === 1 ? singular : (pluralForm ?? `${singular}s`)}`;
+}
+
+/** One clickable row inside a money-band card, matching the attention-list rows. */
+function BandRow({
+  href,
+  right,
+  rightClassName,
+  children,
+}: {
+  href: string;
+  right?: string;
+  rightClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className="text-sm">
+      <Link
+        href={href}
+        className="hover:bg-muted/50 -mx-1.5 flex items-center justify-between gap-2 rounded px-1.5 py-1 transition-colors"
+      >
+        <span className="flex min-w-0 items-center gap-2">{children}</span>
+        {right ? (
+          <span
+            className={cn(
+              "shrink-0 text-xs tabular-nums",
+              rightClassName ?? "text-muted-foreground",
+            )}
+          >
+            {right}
+          </span>
+        ) : null}
+      </Link>
+    </li>
+  );
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const today = todayISODate();
@@ -60,6 +120,8 @@ export default async function DashboardPage() {
     overdueMOsRes,
     paintAgingRes,
     costBasisRes,
+    moneyBand,
+    monthlyStats,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -127,6 +189,8 @@ export default async function DashboardPage() {
       .select("stock_on_hand, last_cost_dkk")
       .is("deleted_at", null)
       .not("last_cost_dkk", "is", null),
+    loadMoneyBand(supabase),
+    loadMonthlyStats(supabase),
   ]);
 
   let costBasisDkk = 0;
@@ -142,15 +206,227 @@ export default async function DashboardPage() {
   const overdueMOs = overdueMOsRes.data ?? [];
   const paintAging = paintAgingRes.data ?? [];
 
+  // Money band — cards with nothing to report don't render at all; if the
+  // whole band is clear it collapses to a single all-clear line.
+  const { uninvoiced, overdueInvoices, expiringAgreements, latePOs, draftPOCount } =
+    moneyBand;
+  const hasUninvoiced = uninvoiced.total > 0 || uninvoiced.draftInvoiceCount > 0;
+  const hasOverdue = overdueInvoices.rows.length > 0;
+  const hasExpiring = expiringAgreements.length > 0;
+  const hasPOChase = latePOs.length > 0 || draftPOCount > 0;
+  const moneyAllClear =
+    !hasUninvoiced && !hasOverdue && !hasExpiring && !hasPOChase;
+
+  // Trend charts — fold state defaults are data-aware: collapsed while the
+  // history is too thin to be worth screen space, open once it isn't. A
+  // manual toggle (stored per device in FoldSection) always wins.
+  const trendMonths: TrendMonth[] = monthlyStats.map((m) => ({
+    label: trendLabel(m.monthStart),
+    sold: m.bikesSold,
+    serviced: m.bikesServiced,
+    underAgreement: m.bikesUnderAgreement,
+    sales: m.invoicedSales,
+    service: m.invoicedService,
+    fees: m.invoicedFees,
+  }));
+  const totalSold = monthlyStats.reduce((s, m) => s + m.bikesSold, 0);
+  const totalServiced = monthlyStats.reduce((s, m) => s + m.bikesServiced, 0);
+  const underAgreementNow =
+    monthlyStats[monthlyStats.length - 1]?.bikesUnderAgreement ?? 0;
+  const bikesActiveMonths = monthlyStats.filter(
+    (m) => m.bikesSold > 0 || m.bikesServiced > 0,
+  ).length;
+  const bikesSummary =
+    totalSold + totalServiced > 0
+      ? `${totalSold} sold · ${totalServiced} serviced · ${underAgreementNow} under agreement now`
+      : "No bike activity in the last 12 months yet";
+  const invoicedTotal = monthlyStats.reduce(
+    (s, m) => s + m.invoicedSales + m.invoicedService + m.invoicedFees,
+    0,
+  );
+  const invoicedActiveMonths = monthlyStats.filter(
+    (m) => m.invoicedSales + m.invoicedService + m.invoicedFees !== 0,
+  ).length;
+  const invoicedSummary =
+    invoicedTotal !== 0
+      ? `${formatPrice(invoicedTotal, "DKK")} invoiced (ex VAT) in the last 12 months`
+      : "No invoices issued yet";
+
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-10">
       <header className="flex flex-col gap-1">
         <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm">
-          Daily pulse — counts, low stock, and anything that has been
-          sitting too long.
+          Daily pulse — money on the table, counts, low stock, and anything
+          that has been sitting too long.
         </p>
       </header>
+
+      {/* Money band — only cards with something to report are rendered. */}
+      {moneyAllClear ? (
+        <section className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
+          <CircleCheck
+            className="size-4 shrink-0 text-emerald-600 dark:text-emerald-500"
+            aria-hidden
+          />
+          <p className="text-muted-foreground text-sm">
+            Money side is clear — nothing uninvoiced, no overdue invoices, no
+            agreements expiring within 90 days, no late purchase orders.
+          </p>
+        </section>
+      ) : (
+        <section className="grid gap-3 md:grid-cols-2">
+          {hasUninvoiced ? (
+            <AttentionCard
+              title={
+                uninvoiced.total > 0
+                  ? `Uninvoiced work — ${formatPrice(uninvoiced.total, "DKK")}`
+                  : "Invoicing to finish"
+              }
+              emptyMessage=""
+              viewAllHref="/invoices"
+              viewAllLabel="Go invoice"
+              tone="warning"
+            >
+              {uninvoiced.woCount > 0 ? (
+                <BandRow
+                  href="/invoices"
+                  right={formatPrice(uninvoiced.woTotal, "DKK")}
+                >
+                  <span className="truncate">
+                    {plural(uninvoiced.woCount, "completed work order")}
+                  </span>
+                </BandRow>
+              ) : null}
+              {uninvoiced.soCount > 0 ? (
+                <BandRow
+                  href="/invoices"
+                  right={formatPrice(uninvoiced.soTotalDkk, "DKK")}
+                >
+                  <span className="truncate">
+                    {plural(uninvoiced.soCount, "delivered sales order")}
+                    {uninvoiced.soNonDkkCount > 0
+                      ? ` (${uninvoiced.soNonDkkCount} non-DKK)`
+                      : ""}
+                  </span>
+                </BandRow>
+              ) : null}
+              {uninvoiced.feeMonths > 0 ? (
+                <BandRow
+                  href="/invoices"
+                  right={formatPrice(uninvoiced.feeTotal, "DKK")}
+                >
+                  <span className="truncate">
+                    {plural(uninvoiced.feeMonths, "agreement fee month")}
+                  </span>
+                </BandRow>
+              ) : null}
+              {uninvoiced.draftInvoiceCount > 0 ? (
+                <BandRow
+                  href="/invoices"
+                  right={
+                    uninvoiced.draftOldestDays != null &&
+                    uninvoiced.draftOldestDays > 0
+                      ? `oldest ${uninvoiced.draftOldestDays}d`
+                      : undefined
+                  }
+                >
+                  <span className="truncate">
+                    {plural(uninvoiced.draftInvoiceCount, "draft invoice")}{" "}
+                    waiting to be issued
+                  </span>
+                </BandRow>
+              ) : null}
+            </AttentionCard>
+          ) : null}
+
+          {hasOverdue ? (
+            <AttentionCard
+              title={`Overdue invoices — ${formatPrice(
+                overdueInvoices.totalDkk,
+                "DKK",
+              )}`}
+              emptyMessage=""
+              viewAllHref="/invoices"
+              tone="destructive"
+            >
+              {overdueInvoices.rows.slice(0, ATTENTION_LIMIT).map((inv) => (
+                <BandRow
+                  key={inv.id}
+                  href={`/invoices/${inv.id}`}
+                  right={`${inv.daysOverdue}d late`}
+                  rightClassName="text-destructive"
+                >
+                  <span className="truncate font-mono text-xs">
+                    {inv.invoiceNumber}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {inv.orgName ?? "—"} ·{" "}
+                    {formatPrice(inv.total, inv.currency)}
+                  </span>
+                </BandRow>
+              ))}
+            </AttentionCard>
+          ) : null}
+
+          {hasExpiring ? (
+            <AttentionCard
+              title="Agreements expiring"
+              emptyMessage=""
+              viewAllHref="/service-agreements"
+              tone="warning"
+            >
+              {expiringAgreements.slice(0, ATTENTION_LIMIT).map((a) => (
+                <BandRow
+                  key={a.id}
+                  href={`/service-agreements/${a.id}`}
+                  right={`in ${a.daysLeft}d`}
+                  rightClassName="text-amber-700 dark:text-amber-400"
+                >
+                  <span className="truncate">{a.orgName ?? a.name}</span>
+                  {a.monthlyFee > 0 ? (
+                    <span className="text-muted-foreground shrink-0 text-xs">
+                      {formatPrice(a.monthlyFee, a.feeCurrency)}/mo
+                    </span>
+                  ) : null}
+                </BandRow>
+              ))}
+            </AttentionCard>
+          ) : null}
+
+          {hasPOChase ? (
+            <AttentionCard
+              title="Purchase orders to chase"
+              emptyMessage=""
+              viewAllHref="/purchase-orders"
+              tone="warning"
+            >
+              {latePOs.slice(0, ATTENTION_LIMIT).map((po) => (
+                <BandRow
+                  key={po.id}
+                  href={`/purchase-orders/${po.id}`}
+                  right={`${po.daysLate}d past expected`}
+                  rightClassName="text-amber-700 dark:text-amber-400"
+                >
+                  <span className="truncate font-mono text-xs">
+                    {po.poNumber}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {po.supplierName ?? "—"}
+                  </span>
+                </BandRow>
+              ))}
+              {draftPOCount > 0 ? (
+                <BandRow href="/purchase-orders">
+                  <span className="text-muted-foreground truncate text-xs">
+                    {plural(draftPOCount, "draft PO")} waiting to be placed
+                  </span>
+                </BandRow>
+              ) : null}
+            </AttentionCard>
+          ) : null}
+        </section>
+      )}
 
       {/* KPI strip — bumped to xl:grid-cols-7 to fit "Open work orders"
           alongside the existing six cards on wide screens. */}
@@ -310,6 +586,29 @@ export default async function DashboardPage() {
             );
           })}
         </AttentionCard>
+      </section>
+
+      {/* Trends — foldable so a thin history doesn't cost screen space.
+          Defaults are data-aware; the header summary keeps the signal
+          visible while folded, and a manual toggle is remembered per
+          device. */}
+      <section className="flex flex-col gap-3">
+        <FoldSection
+          storageId="bikes-trend"
+          title="Bikes — last 12 months"
+          summary={bikesSummary}
+          defaultOpen={bikesActiveMonths >= 3}
+        >
+          <BikesTrendChart months={trendMonths} />
+        </FoldSection>
+        <FoldSection
+          storageId="invoiced-trend"
+          title="Invoiced — last 12 months"
+          summary={invoicedSummary}
+          defaultOpen={invoicedActiveMonths >= 2}
+        >
+          <InvoicedTrendChart months={trendMonths} />
+        </FoldSection>
       </section>
 
       {/* Catalog cost basis — one-line headline stat */}

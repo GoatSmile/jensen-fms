@@ -3813,6 +3813,18 @@ export type Database = {
       }
     }
     Functions: {
+      dashboard_monthly_stats: {
+        Args: never
+        Returns: {
+          bikes_serviced: number
+          bikes_sold: number
+          bikes_under_agreement: number
+          invoiced_fees_dkk: number
+          invoiced_sales_dkk: number
+          invoiced_service_dkk: number
+          month_start: string
+        }[]
+      }
       effective_line_description: {
         Args: {
           p_lang: string

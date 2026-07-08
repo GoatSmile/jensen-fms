@@ -768,6 +768,34 @@ Build order (no-schema wins first, then two batched migrations).
 
 (Numbered by build order, not the plan doc's item numbers.)
 
+### Dashboard overhaul (2026-07-08, phases 1–2 of 4 shipped — owner green-lit)
+
+Redesign around three bands: act (money/commitments) / watch (pipelines) /
+learn (trends). **Owner's hard requirement: no busy screen — sections whose
+data is too thin to be useful must fold away.** Shipped:
+- **Money band** (`src/lib/dashboard/queries.ts` + top of `src/app/page.tsx`):
+  uninvoiced work (reuses `uninvoiced.ts` + `findUnbilledFeePeriods`, incl.
+  sitting draft invoices), overdue invoices (issued past due_date, CN rows
+  excluded), agreements expiring ≤90 days, late POs (past expected_date) +
+  draft-PO count. Cards with nothing to report DON'T render; if the whole
+  band is clear it collapses to a single all-clear line.
+- **12-month trend charts** (migration 58, RPC `dashboard_monthly_stats`;
+  Recharts used directly — deliberately no shadcn chart wrapper/CLI re-init):
+  bikes sold (bike_state_log in_stock→assigned) / serviced (distinct bikes on
+  completed WOs) / fleet under agreement (documented approximation — current
+  owner projected back, no ownership history exists); invoiced DKK ex VAT
+  split sales/service/fees via line `service_agreement_id` + invoice
+  `sales_order_id`, DKK-only (non-DKK excluded, not mixed).
+- **FoldSection** (`src/components/dashboard/fold-section.tsx`): fold state
+  has DATA-AWARE defaults (charts collapse while history is thin; the header
+  keeps a one-line text summary so folding hides detail, not signal) with a
+  per-device localStorage override (`dashboard.fold.<id>`) that always wins.
+  Children only mount while open (Recharts can't measure hidden containers).
+Parked phases: 3 = pipeline strips replacing the 7 flat KPI cards; 4 =
+purchasing spend chart (real PO history back to 2021) + data-housekeeping
+card. Charts start nearly empty post test-data-cleanup — an optional
+Excel/e-conomic sales-history backfill is an open owner decision.
+
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
   new origin model, unclassified origin means new PO lines default to **no
