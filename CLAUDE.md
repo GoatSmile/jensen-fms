@@ -697,7 +697,15 @@ Build order (no-schema wins first, then two batched migrations):
    import tax" checkbox defaulting from `origin='non_eu' AND NOT supplier
    prepaid`, driving the snapshotted `tariff_pct`/`anti_dumping_pct` to 0 (fits
    frozen-at-purchase; HS code stays for records). Covers Dennis's "duty paid by
-   supplier" (Shimano) + "EU vs the rest" asks.
+   supplier" (Shimano) + "EU vs the rest" asks. Also snapshots a **frozen**
+   `purchase_order_lines.import_tax_basis` enum (`applied | zero_rated |
+   unclassified | eu_origin | supplier_prepaid`) alongside `tariff_pct` — the
+   resolver already computes the reason to set the toggle default, so storing it
+   is ~free, and a *derived* reason can't be reconstructed later without reading
+   mutable part/supplier/HS state (would fabricate history, breaking
+   frozen-at-purchase). Lets a correct 0 (eu_origin/supplier_prepaid) read
+   differently from a data-quality gap 0 (unclassified). Existing lines backfill
+   to `NULL` (pre-tracking). Migration 54 = 3 columns.
 
 (Numbered by build order, not the plan doc's item numbers.)
 

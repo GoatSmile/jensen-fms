@@ -55,13 +55,13 @@ These are the same feature from two angles, so build together.
   supplier delivered duty-paid (his Shimano case), the import-tax bucket is zero.
   Defaultable per supplier, still overridable per PO line.
 
-**Model (respects frozen-at-purchase landed cost):** both concepts simply drive
-the **snapshotted `tariff_pct` (and `anti_dumping_pct`) to 0** on the PO line —
-same mechanism as today, the GENERATED `landed_cost_dkk_per_unit` recomputes
-automatically. The HS code stays on the line for records.
+**Model (respects frozen-at-purchase landed cost):** both concepts drive the
+**snapshotted `tariff_pct` (and `anti_dumping_pct`) to 0** on the PO line — same
+mechanism as today, the GENERATED `landed_cost_dkk_per_unit` recomputes
+automatically. The HS code stays on the part for records.
 
 - `parts.origin` — `'eu' | 'non_eu'`, nullable (unclassified). Migration 54.
-- `suppliers.import_duty_prepaid_default boolean not null default false`. Mig 52.
+- `suppliers.import_duty_prepaid_default boolean not null default false`. Mig 54.
 - PO line dialog gains one **"Apply import tax"** checkbox. Initial state:
   `origin = 'non_eu'  AND NOT supplier.import_duty_prepaid_default`.
   - Checked → snapshot HS `tariff_pct` (+ `anti_dumping_pct`) as today.
@@ -71,10 +71,38 @@ automatically. The HS code stays on the line for records.
 - Unclassified origin (`null`): default **off** (matches "initially without
   tariff, click to add") and nudge to classify.
 
+**Frozen "why" — `purchase_order_lines.import_tax_basis`** (owner-confirmed,
+reverses the original "0 is enough" call). `tariff_pct = 0` already collapses
+several distinct causes (no HS / archived HS / 0%-rated / override=0), and items
+2+3 add three more (EU origin, supplier-prepaid, manual un-check). A *derived*
+reason can't be reconstructed later without reading **mutable** part/supplier/HS
+state — which violates frozen-at-purchase and can fabricate a historical
+explanation (e.g. print "EU origin" for a line that was actually
+supplier-prepaid at the time). The resolver already computes the reason at
+insert to set the toggle default, so snapshotting it is ~free:
+- New nullable enum `import_tax_basis` ∈
+  `applied | zero_rated | unclassified | eu_origin | supplier_prepaid`,
+  set alongside `tariff_pct` in `po-snapshots.ts`. Existing lines backfill to
+  `NULL` = "pre-tracking / unknown" (honest — we didn't record it).
+- Distinguishes a **correct 0** (eu_origin / supplier_prepaid / zero_rated) from
+  a **data-quality gap 0** (unclassified — understates landed cost, customs
+  risk; CLAUDE.md already tracks the 5 unclassified parts). Also unlocks the
+  "how much duty did suppliers prepay" report Dennis wanted, and gives a
+  defensible per-line answer under the 48.5% anti-dumping exposure.
+- Live UI at create still derives-and-shows (accurate at that instant); history
+  reads the frozen value.
+
 **Files**
-- `migrations/54_part_origin_and_supplier_duty.sql` — add the two columns
-  (+ optional backfill: parts with an HS code but EU-made stay unclassified;
-  leave data entry to the owner).
+- `migrations/54_part_origin_and_supplier_duty.sql` — add the three columns
+  (`parts.origin`, `suppliers.import_duty_prepaid_default`,
+  `purchase_order_lines.import_tax_basis`); existing PO lines → `import_tax_basis
+  = NULL`. Part-origin data entry left to the owner.
+- `src/lib/purchasing/po-snapshots.ts` — the resolver returns the tariff **and**
+  the basis (applied/zero_rated/unclassified/eu_origin/supplier_prepaid); shared
+  by every writer (line dialog actions + the draft-PO-from-shortfall path in
+  `draft-pos.ts`), so the reason is captured everywhere a line is created.
+- `src/app/purchase-orders/[id]/_actions/manage-lines.ts` — persist
+  `import_tax_basis` on add/update (both branches).
 - `src/app/parts/_components/part-form.tsx` — origin picker (EU / rest of world
   / unclassified).
 - `src/app/admin/suppliers/…` supplier form — "Import duty prepaid by default"
@@ -83,13 +111,15 @@ automatically. The HS code stays on the line for records.
   tax" checkbox, default logic, hint text, and wire it into the tariff preview
   (currently `:193-208` FX area / tariff snapshot) so the live landed-cost
   preview + the persisted `tariff_pct`/`anti_dumping_pct` both honor it.
+- PO line table / detail — surface the basis where a 0 tariff shows, so
+  "unclassified" (fix me) reads differently from "eu_origin" (correct).
 
-**Schema:** migration 54 (2 columns).
-**Effort:** ~90 min (35 min wait).
-**Open Q (confirm):** (a) store an explicit `import_tax_applied`/reason flag on
-the line for audit, or is `tariff_pct = 0` enough? (rec: 0 is enough, add a
-derived reason in the UI only). (b) 3-state origin (eu/non_eu/unclassified) vs a
-plain `is_eu_origin` boolean — rec: 3-state so "not yet classified" is honest.
+**Schema:** migration 54 (3 columns: `parts.origin`,
+`suppliers.import_duty_prepaid_default`, `purchase_order_lines.import_tax_basis`).
+**Effort:** ~110 min (40 min wait) — +20 for the basis enum plumbing.
+**Decided:** (a) store the frozen `import_tax_basis` enum (not a derived-only
+reason). (b) 3-state origin (eu / non_eu / unclassified), not a boolean — so
+"not yet classified" stays honest.
 
 ---
 
