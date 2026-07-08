@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 import { addSOLine, updateSOLine } from "../../_actions/manage-so-lines";
 
@@ -38,6 +39,10 @@ export type TemplateChoice = {
   id: string;
   name_en: string;
   family: string | null;
+  /** FK to bike_families — drives the family's app-wide tint dot. */
+  family_id: string | null;
+  /** Admin-set family sort_order (page-side family-adjacent ordering). */
+  family_sort: number | null;
   frame_size: string | null;
 };
 export type VatCodeChoice = {
@@ -289,7 +294,13 @@ export function LineDialog({
                                     {t.name_en}
                                   </span>
                                   {t.family || t.frame_size ? (
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                                      {t.family ? (
+                                        <span
+                                          className={`size-1.5 shrink-0 rounded-full ${familyTint(t.family_id).dot}`}
+                                          aria-hidden
+                                        />
+                                      ) : null}
                                       {[t.family, t.frame_size]
                                         .filter(Boolean)
                                         .join(" · ")}

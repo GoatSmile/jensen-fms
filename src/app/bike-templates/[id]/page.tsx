@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 import {
   PartsRecipeSection,
@@ -234,15 +235,23 @@ export default async function BikeTemplateDetailPage({
             <Badge variant="outline" className="font-normal">
               {t.bike_type?.name_en ?? "—"}
             </Badge>
-            {t.family?.name ? (
-              <span className="text-muted-foreground text-xs">
-                {t.family.name} · {t.frame_size}
-              </span>
-            ) : (
-              <span className="text-muted-foreground text-xs">
-                {t.frame_size}
-              </span>
-            )}
+            {t.family?.name && t.family_id ? (
+              // Family chip in the family's colour — links back to this
+              // family's group on the templates list.
+              <Link
+                href={`/bike-templates#family-${t.family_id}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${familyTint(t.family_id).chip}`}
+              >
+                <span
+                  className={`size-1.5 rounded-full ${familyTint(t.family_id).dot}`}
+                  aria-hidden
+                />
+                {t.family.name}
+              </Link>
+            ) : null}
+            <span className="text-muted-foreground text-xs">
+              {t.frame_size}
+            </span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.name_en}</h1>
           {t.name_da && t.name_da !== t.name_en ? (

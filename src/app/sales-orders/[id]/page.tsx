@@ -128,7 +128,9 @@ export default async function SODetailPage({
       // deleted_at column on this table — that's a parts/orgs convention).
       supabase
         .from("bike_templates")
-        .select("id, name_en, family:bike_families(name), frame_size, is_current")
+        .select(
+          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, is_current",
+        )
         .eq("is_current", true)
         .order("frame_size", { ascending: true }),
       supabase
@@ -266,12 +268,27 @@ export default async function SODetailPage({
     internal_sku: p.internal_sku,
     name_en: p.name_en,
   }));
-  const templates: TemplateChoice[] = (templatesRes.data ?? []).map((t) => ({
-    id: t.id,
-    name_en: t.name_en,
-    family: t.family?.name ?? null,
-    frame_size: t.frame_size,
-  }));
+  // Family-adjacent ordering (admin sort_order, then name) so all sizes of
+  // e.g. "Norma" sit together in the picker instead of interleaving by size.
+  const templates: TemplateChoice[] = (templatesRes.data ?? [])
+    .map((t) => ({
+      id: t.id,
+      name_en: t.name_en,
+      family: t.family?.name ?? null,
+      family_id: t.family_id ?? null,
+      family_sort: t.family?.sort_order ?? null,
+      frame_size: t.frame_size,
+    }))
+    .sort(
+      (a, b) =>
+        (a.family_sort ?? Number.MAX_SAFE_INTEGER) -
+          (b.family_sort ?? Number.MAX_SAFE_INTEGER) ||
+        (a.family ?? a.name_en).localeCompare(b.family ?? b.name_en) ||
+        (a.frame_size ?? "").localeCompare(b.frame_size ?? "", undefined, {
+          numeric: true,
+        }) ||
+        a.name_en.localeCompare(b.name_en),
+    );
   const vatCodes: VatCodeChoice[] = (vatRes.data ?? []).map((v) => ({
     code: v.code,
     name_en: v.name_en,

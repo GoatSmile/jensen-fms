@@ -22,6 +22,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 type SearchParams = {
   current?: string;
@@ -163,16 +164,30 @@ export default async function BikeTemplatesPage({
         <div className="flex flex-col gap-6">
           {orderedGroupKeys.map((key) => {
             const group = groups.get(key)!;
+            // Each family is one card with a gently tinted header band —
+            // the same hue this family carries everywhere (detail chip, MO
+            // batch cards). The id anchor lets other screens deep-link here.
+            const tint = familyTint(key === UNGROUPED_KEY ? null : key);
             return (
-              <section key={key} className="flex flex-col gap-2">
-                <div className="flex items-baseline gap-2">
+              <section
+                key={key}
+                id={`family-${key}`}
+                className="scroll-mt-20 overflow-hidden rounded-md border"
+              >
+                <header
+                  className={`flex items-baseline gap-2 border-b px-4 py-2.5 ${tint.header}`}
+                >
+                  <span
+                    className={`size-2 shrink-0 self-center rounded-full ${tint.dot}`}
+                    aria-hidden
+                  />
                   <h2 className="text-sm font-semibold">{group.label}</h2>
                   <span className="text-muted-foreground text-xs">
                     {group.rows.length}{" "}
                     {group.rows.length === 1 ? "template" : "templates"}
                   </span>
-                </div>
-                <div className="overflow-hidden rounded-md border">
+                </header>
+                <div className="overflow-x-auto md:overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>

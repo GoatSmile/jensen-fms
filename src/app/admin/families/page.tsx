@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 export default async function AdminFamiliesPage() {
   const supabase = await createClient();
@@ -128,7 +129,17 @@ export default async function AdminFamiliesPage() {
                       className={`hover:bg-muted/50 cursor-pointer ${row.is_active ? "" : "opacity-60"}`}
                     >
                       <TableCell className="p-0 font-medium">
-                        <Link href={href} className="block px-4 py-2.5">
+                        <Link
+                          href={href}
+                          className="flex items-center gap-2 px-4 py-2.5"
+                        >
+                          {/* The family's app-wide hue (templates list, MO
+                              batch cards, detail chip) — shown here so the
+                              admin doubles as the colour legend. */}
+                          <span
+                            className={`size-2 shrink-0 rounded-full ${familyTint(row.id).dot}`}
+                            aria-hidden
+                          />
                           {row.name}
                         </Link>
                       </TableCell>

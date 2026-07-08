@@ -29,7 +29,7 @@ export default async function NewBikePage() {
     supabase
       .from("bike_templates")
       .select(
-        "id, name_en, family:bike_families(name), frame_size, version, bike_type_id",
+        "id, name_en, family:bike_families(name, sort_order), frame_size, version, bike_type_id",
       )
       .eq("is_current", true)
       .order("frame_size", { ascending: true })
@@ -48,10 +48,23 @@ export default async function NewBikePage() {
   }));
   const defaultBikeTypeId =
     typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
-  const templates: TemplateOption[] = (templatesRes.data ?? []).map((t) => ({
-    ...t,
-    family: t.family?.name ?? null,
-  }));
+  // Family-adjacent ordering (admin sort_order, then name) so the picker
+  // keeps all sizes of a family together instead of interleaving by size.
+  const templates: TemplateOption[] = (templatesRes.data ?? [])
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.family?.sort_order ?? Number.MAX_SAFE_INTEGER) -
+          (b.family?.sort_order ?? Number.MAX_SAFE_INTEGER) ||
+        (a.family?.name ?? a.name_en).localeCompare(
+          b.family?.name ?? b.name_en,
+        ) ||
+        a.frame_size.localeCompare(b.frame_size, undefined, { numeric: true }),
+    )
+    .map((t) => ({
+      ...t,
+      family: t.family?.name ?? null,
+    }));
   const colors: ColorOption[] = colorsRes.data ?? [];
 
   return (

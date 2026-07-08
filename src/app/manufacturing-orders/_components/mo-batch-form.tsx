@@ -19,6 +19,7 @@ import { ColorSwatch } from "@/components/color-swatch";
 import { Field } from "@/components/field";
 import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { appendField } from "@/lib/forms";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 import { isServiceSku } from "@/lib/manufacturing/coverage";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
@@ -107,7 +108,9 @@ export function MOBatchForm({
   );
 
   // Family groups for the card grid. Templates without a family group under
-  // their own name so every template gets a card.
+  // their own name so every template gets a card. The templates prop arrives
+  // pre-sorted family-first (admin sort_order, then name), so insertion
+  // order IS the display order — no alphabetical re-sort here.
   const families = useMemo(() => {
     const q = search.trim().toLowerCase();
     const filtered = q
@@ -118,14 +121,21 @@ export function MOBatchForm({
             .includes(q),
         )
       : templates;
-    const m = new Map<string, TemplateOption[]>();
+    const m = new Map<
+      string,
+      { label: string; familyId: string | null; members: TemplateOption[] }
+    >();
     for (const t of filtered) {
-      const key = t.family ?? t.name_en;
-      const arr = m.get(key);
-      if (arr) arr.push(t);
-      else m.set(key, [t]);
+      const key = t.family_id ?? `name:${t.name_en}`;
+      const entry = m.get(key) ?? {
+        label: t.family ?? t.name_en,
+        familyId: t.family_id,
+        members: [],
+      };
+      entry.members.push(t);
+      m.set(key, entry);
     }
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return [...m.entries()];
   }, [templates, search]);
 
   const rowCountByTemplate = useMemo(() => {
@@ -317,17 +327,36 @@ export function MOBatchForm({
               )}
             </p>
           ) : (
-            families.map(([family, members]) => (
-              <div key={family} className="rounded-md border p-3">
-                <div className="mb-2 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold">{family}</span>
+            families.map(([key, { label, familyId, members }]) => (
+              <div
+                key={key}
+                className="overflow-hidden rounded-md border"
+              >
+                <div
+                  className={`flex items-baseline justify-between gap-2 border-b px-3 py-2 ${familyTint(familyId).header}`}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span
+                      className={`size-2 shrink-0 rounded-full ${familyTint(familyId).dot}`}
+                      aria-hidden
+                    />
+                    {label}
+                  </span>
                   <span className="text-muted-foreground text-[10px]">
                     {members[0].bike_type_name ?? ""}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="p-3">
+                  <div className="flex flex-wrap gap-1.5">
                   {members.map((t) => {
                     const inBatch = rowCountByTemplate.get(t.id) ?? 0;
+                    // A family can hold varied models, not just sizes
+                    // ("Norma FS" and "Norma CS" are both 48cm) — once
+                    // names differ within the group, size alone is
+                    // ambiguous, so the chip carries the name too.
+                    const showName =
+                      t.family == null ||
+                      new Set(members.map((m) => m.name_en)).size > 1;
                     return (
                       <button
                         key={t.id}
@@ -342,7 +371,7 @@ export function MOBatchForm({
                       >
                         <Plus className="size-3" aria-hidden />
                         {t.frame_size}
-                        {t.family == null ? (
+                        {showName ? (
                           <span className="text-muted-foreground font-normal">
                             {t.name_en}
                           </span>
@@ -355,6 +384,7 @@ export function MOBatchForm({
                       </button>
                     );
                   })}
+                  </div>
                 </div>
               </div>
             ))

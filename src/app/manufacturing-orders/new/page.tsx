@@ -38,7 +38,8 @@ export default async function NewManufacturingOrderPage({
       .from("bike_templates")
       .select(
         `
-          id, name_en, family:bike_families(name), frame_size, version, is_current, bike_type_id,
+          id, name_en, family_id, family:bike_families(name, sort_order),
+          frame_size, version, is_current, bike_type_id,
           bike_type:bike_types(name_en)
         `,
       )
@@ -70,16 +71,32 @@ export default async function NewManufacturingOrderPage({
     throw new Error(`Failed to load templates: ${templatesRes.error.message}`);
   }
 
-  const templates: TemplateOption[] = (templatesRes.data ?? []).map((t) => ({
-    id: t.id,
-    name_en: t.name_en,
-    family: t.family?.name ?? null,
-    frame_size: t.frame_size,
-    version: t.version,
-    is_current: t.is_current,
-    bike_type_id: t.bike_type_id,
-    bike_type_name: t.bike_type?.name_en ?? null,
-  }));
+  const templates: TemplateOption[] = (templatesRes.data ?? [])
+    .map((t) => ({
+      id: t.id,
+      name_en: t.name_en,
+      family: t.family?.name ?? null,
+      family_id: t.family_id ?? null,
+      family_sort: t.family?.sort_order ?? null,
+      frame_size: t.frame_size,
+      version: t.version,
+      is_current: t.is_current,
+      bike_type_id: t.bike_type_id,
+      bike_type_name: t.bike_type?.name_en ?? null,
+    }))
+    // Family-adjacent ordering everywhere the list feeds (batch cards +
+    // one-off select): families by their admin sort_order, then no-family
+    // templates alphabetically, sizes within.
+    .sort(
+      (a, b) =>
+        (a.family_sort ?? Number.MAX_SAFE_INTEGER) -
+          (b.family_sort ?? Number.MAX_SAFE_INTEGER) ||
+        (a.family ?? a.name_en).localeCompare(b.family ?? b.name_en) ||
+        a.frame_size.localeCompare(b.frame_size, undefined, {
+          numeric: true,
+        }) ||
+        a.name_en.localeCompare(b.name_en),
+    );
   const typeRows = bikeTypesRes.data ?? [];
   const bikeTypes: BikeTypeOption[] = typeRows.map(({ id, name_en }) => ({
     id,

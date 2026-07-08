@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
+import { familyTint } from "@/lib/bike-templates/family-colors";
 
 import {
   createTemplate,
@@ -190,6 +191,10 @@ export function TemplateForm({
               <SelectItem value={NO_FAMILY}>No family</SelectItem>
               {families.map((f) => (
                 <SelectItem key={f.id} value={f.id}>
+                  <span
+                    className={`size-2 rounded-full ${familyTint(f.id).dot}`}
+                    aria-hidden
+                  />
                   {f.name}
                 </SelectItem>
               ))}

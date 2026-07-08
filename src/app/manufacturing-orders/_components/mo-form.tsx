@@ -26,6 +26,10 @@ export type TemplateOption = {
   id: string;
   name_en: string;
   family: string | null;
+  /** FK to bike_families — drives the family's app-wide tint. */
+  family_id: string | null;
+  /** Admin-set family sort_order; null when the template has no family. */
+  family_sort: number | null;
   frame_size: string;
   version: number;
   is_current: boolean;

@@ -1,8 +1,7 @@
 import { Field } from "@/components/field";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { formatDkk } from "@/lib/parts/stock";
 import { formatDate } from "@/lib/parts/format";
-
-import { Section } from "./section";
 
 type Props = {
   descriptionEn: string | null;
@@ -35,7 +34,13 @@ export function DetailsSection({
   const attributeEntries = Object.entries(attributes ?? {});
 
   return (
-    <Section title="Details">
+    // Folded by default — reference data, not daily-flow data. The
+    // open/closed choice sticks per browser via localStorage.
+    <CollapsibleSection
+      title="Details"
+      description="Descriptions, specs, reorder settings, attributes"
+      storageKey="collapse:parts-details"
+    >
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <Field label="Description (English)">
           {descriptionEn ?? <Muted>—</Muted>}
@@ -110,7 +115,7 @@ export function DetailsSection({
           </dl>
         </div>
       ) : null}
-    </Section>
+    </CollapsibleSection>
   );
 }
 
