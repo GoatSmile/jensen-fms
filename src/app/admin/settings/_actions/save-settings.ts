@@ -81,6 +81,70 @@ export async function saveLocationSettings(
 }
 
 /**
+ * Save the communication settings: outbound email identity (from / reply-to),
+ * the test-mode switch + test inbox list, and the workshop phone. These feed
+ * the PO-to-supplier email and, later, the phone-call → ticket pipeline.
+ * Light validation only — an address must contain "@"; the provider rejects
+ * anything it can't actually send from.
+ */
+export async function saveCommunicationSettings(
+  formData: FormData,
+): Promise<SettingsResult> {
+  const fromEmail = nullable(formData.get("outbound_from_email"));
+  const replyToEmail = nullable(formData.get("outbound_reply_to_email"));
+  const testEmail = nullable(formData.get("outbound_test_email"));
+  const workshopPhone = nullable(formData.get("workshop_phone"));
+  const testMode = formData.get("outbound_test_mode") === "on";
+
+  for (const [label, value] of [
+    ["From address", fromEmail],
+    ["Reply-to address", replyToEmail],
+  ] as const) {
+    if (value && !value.includes("@")) {
+      return { ok: false, error: `${label} does not look like an email.` };
+    }
+  }
+  // The test field may hold several addresses (comma-separated) — every
+  // piece must look like an email so a typo doesn't silently drop mail.
+  if (testEmail) {
+    const pieces = testEmail.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+    if (pieces.length === 0 || pieces.some((p) => !p.includes("@"))) {
+      return {
+        ok: false,
+        error: "Test recipients must be one or more emails, comma-separated.",
+      };
+    }
+  }
+  if (testMode && !testEmail) {
+    return {
+      ok: false,
+      error: "Test mode needs at least one test recipient.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      outbound_from_email: fromEmail,
+      outbound_reply_to_email: replyToEmail,
+      outbound_test_mode: testMode,
+      outbound_test_email: testEmail,
+      workshop_phone: workshopPhone,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  if (error) {
+    return { ok: false, error: `Could not save settings: ${error.message}` };
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/**
  * Save the working-language preferences: `app_language` (office/admin UI) and
  * `worker_language` (build-floor + ticket screens). Both constrained to en/da.
  * Captures the preference today; UI translation is a separate effort, and the

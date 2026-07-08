@@ -20,27 +20,42 @@ export type Database = {
           default_transport_pct: number
           hide_location_info: boolean
           id: number
+          outbound_from_email: string | null
+          outbound_reply_to_email: string | null
+          outbound_test_email: string | null
+          outbound_test_mode: boolean
           primary_location_id: string | null
           updated_at: string
           worker_language: string
+          workshop_phone: string | null
         }
         Insert: {
           app_language?: string
           default_transport_pct?: number
           hide_location_info?: boolean
           id?: number
+          outbound_from_email?: string | null
+          outbound_reply_to_email?: string | null
+          outbound_test_email?: string | null
+          outbound_test_mode?: boolean
           primary_location_id?: string | null
           updated_at?: string
           worker_language?: string
+          workshop_phone?: string | null
         }
         Update: {
           app_language?: string
           default_transport_pct?: number
           hide_location_info?: boolean
           id?: number
+          outbound_from_email?: string | null
+          outbound_reply_to_email?: string | null
+          outbound_test_email?: string | null
+          outbound_test_mode?: boolean
           primary_location_id?: string | null
           updated_at?: string
           worker_language?: string
+          workshop_phone?: string | null
         }
         Relationships: [
           {

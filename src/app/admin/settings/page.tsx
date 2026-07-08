@@ -12,6 +12,7 @@ import { ReportUrlCard } from "@/components/report-url-card";
 import { createClient } from "@/lib/supabase/server";
 
 import { SettingsForm } from "./_components/settings-form";
+import { CommunicationSettingsForm } from "./_components/communication-settings-form";
 import {
   LocationSettingsForm,
   type LocationChoice,
@@ -24,7 +25,7 @@ export default async function AdminSettingsPage() {
     supabase
       .from("app_settings")
       .select(
-        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language",
+        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone",
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -90,6 +91,26 @@ export default async function AdminSettingsPage() {
           <LanguageSettingsForm
             initialAppLanguage={appLanguage}
             initialWorkerLanguage={workerLanguage}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-md border">
+        <header className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Communication</h2>
+          <p className="text-muted-foreground text-xs">
+            Sender identity for app-generated email (PO to supplier; the
+            phone-call pipeline later) and the workshop phone. Test mode
+            reroutes all mail to the test inboxes.
+          </p>
+        </header>
+        <div className="p-4">
+          <CommunicationSettingsForm
+            initialFromEmail={data?.outbound_from_email ?? ""}
+            initialReplyToEmail={data?.outbound_reply_to_email ?? ""}
+            initialTestMode={data?.outbound_test_mode ?? true}
+            initialTestEmail={data?.outbound_test_email ?? ""}
+            initialWorkshopPhone={data?.workshop_phone ?? ""}
           />
         </div>
       </section>

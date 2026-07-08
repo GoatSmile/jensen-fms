@@ -586,8 +586,21 @@ Phases:
   build workbench (`buildNote` prop). **Tier 2 (SO→paint→build, B→A→C→D) is now
   COMPLETE.**
 
-**Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO;
-zero email/PDF infra today).
+**Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO).
+Groundwork SHIPPED 2026-07-08 (migration 55): **communication settings** on
+`app_settings`, edited in a "Communication" section at `/admin/settings` —
+`outbound_from_email` / `outbound_reply_to_email` (seeded
+deej@jensenproduction.dk per the locked Resend decision),
+`outbound_test_mode` (seeded TRUE) + `outbound_test_email` (comma-separated;
+seeded with the owner+dev inboxes), and `workshop_phone` (reserved for the
+phone-call → ticket pipeline: call routing, SMS sender). Owner's rule: all
+send-identity/phone config lives HERE, not in env vars — every future
+outbound channel must read `src/lib/communication/settings.ts`
+(`loadCommunicationSettings` + `resolveRecipients`: while test mode is on,
+ALL outbound mail reroutes to the test inboxes and the message must say who
+it was meant for; unticking test mode is the go-live switch). Remaining for
+Tier 3: the printable PO layout, Resend API integration (key stays in env —
+it's a secret, not config), DNS verification, real supplier emails.
 
 **Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
 6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*
