@@ -457,7 +457,11 @@ against live code before sequencing. **Locked decisions:** first slice =
 core daily flow; RAL + coating → extend the controlled `colors` table (not
 free-text); payments & stock value → deferred to its own session; PO email
 → **Resend** (transactional API; verify `jensenproduction.dk` DNS, from =
-`deej@jensenproduction.dk`, reply-to = his inbox).
+`deej@jensenproduction.dk`, reply-to = his inbox). **Sending domain revised
+2026-07-08:** dev's own `valent.dk` instead (Dynadot DNS, Google Workspace
+mail, used as a Gmail send-as alias) — from/reply-to = `nazar@valent.dk`,
+live in `app_settings`. Resend records sit on their own subdomains
+(`resend._domainkey`, `send`), so the Google MX/SPF rows are untouched.
 
 **Tier 0–1 core daily flow — items 1–11 ALL SHIPPED (2026-06-19):**
 1. ✅ PO line unit price optional ([c4bb80a]) — "price pending", receiving
@@ -592,7 +596,8 @@ Phases:
 Groundwork SHIPPED 2026-07-08 (migration 55): **communication settings** on
 `app_settings`, edited in a "Communication" section at `/admin/settings` —
 `outbound_from_email` / `outbound_reply_to_email` (seeded
-deej@jensenproduction.dk per the locked Resend decision),
+deej@jensenproduction.dk per the locked Resend decision; **switched
+2026-07-08 to `nazar@valent.dk` on domain `valent.dk`** — DB is the truth),
 `outbound_test_mode` (seeded TRUE) + `outbound_test_email` (comma-separated;
 seeded with the owner+dev inboxes), and `workshop_phone` (reserved for the
 phone-call → ticket pipeline: call routing, SMS sender). Owner's rule: all
