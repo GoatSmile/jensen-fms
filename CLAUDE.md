@@ -598,9 +598,17 @@ send-identity/phone config lives HERE, not in env vars — every future
 outbound channel must read `src/lib/communication/settings.ts`
 (`loadCommunicationSettings` + `resolveRecipients`: while test mode is on,
 ALL outbound mail reroutes to the test inboxes and the message must say who
-it was meant for; unticking test mode is the go-live switch). Remaining for
-Tier 3: the printable PO layout, Resend API integration (key stays in env —
-it's a secret, not config), DNS verification, real supplier emails.
+it was meant for; unticking test mode is the go-live switch). Migration 56
+adds `email_domain` + `email_dns_records` (jsonb) with a "Sending domain
+(DNS)" card at `/admin/settings` — a REFERENCE copy of the provider's
+verification records (type/name/value/status/note, copy buttons); the
+authoritative records live at the DNS host, and once the Resend key exists
+the card can fetch records + live status instead of manual upkeep.
+**Config-vs-secrets rule (owner, 2026-07-08): operational identifiers
+(emails, phone numbers, domains, DNS values — public data) live in admin
+config; only real secrets (Resend/Twilio API keys) live in env vars.**
+Remaining for Tier 3: the printable PO layout, Resend API integration,
+actual DNS verification at the host, real supplier emails.
 
 **Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
 6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*

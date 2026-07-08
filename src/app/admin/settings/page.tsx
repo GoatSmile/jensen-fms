@@ -13,6 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { SettingsForm } from "./_components/settings-form";
 import { CommunicationSettingsForm } from "./_components/communication-settings-form";
+import { EmailDnsCard } from "./_components/email-dns-card";
+import type { EmailDnsRecord } from "./_actions/save-settings";
 import {
   LocationSettingsForm,
   type LocationChoice,
@@ -25,7 +27,7 @@ export default async function AdminSettingsPage() {
     supabase
       .from("app_settings")
       .select(
-        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone",
+        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone, email_domain, email_dns_records",
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -46,6 +48,28 @@ export default async function AdminSettingsPage() {
   const locationChoices: LocationChoice[] = (locationsRes.data ?? []).map(
     (l) => ({ id: l.id, label: `${l.name_en} (${l.code})` }),
   );
+
+  // The jsonb rows were validated on write (saveEmailDnsSettings), but read
+  // defensively — a hand-edited row shouldn't crash the settings page.
+  const dnsRecords: EmailDnsRecord[] = Array.isArray(data?.email_dns_records)
+    ? (data.email_dns_records as unknown[]).flatMap((r) => {
+        if (typeof r !== "object" || r === null) return [];
+        const row = r as Record<string, unknown>;
+        return [
+          {
+            type: (["TXT", "CNAME", "MX"].includes(String(row.type))
+              ? String(row.type)
+              : "TXT") as EmailDnsRecord["type"],
+            name: String(row.name ?? ""),
+            value: String(row.value ?? ""),
+            status: (String(row.status) === "verified"
+              ? "verified"
+              : "pending") as EmailDnsRecord["status"],
+            note: String(row.note ?? ""),
+          },
+        ];
+      })
+    : [];
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -111,6 +135,24 @@ export default async function AdminSettingsPage() {
             initialTestMode={data?.outbound_test_mode ?? true}
             initialTestEmail={data?.outbound_test_email ?? ""}
             initialWorkshopPhone={data?.workshop_phone ?? ""}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-md border">
+        <header className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Sending domain (DNS)</h2>
+          <p className="text-muted-foreground text-xs">
+            Reference copy of the DNS records the email provider needs for
+            domain verification. The records take effect at the DNS host —
+            keep the values and their status here so they&rsquo;re never
+            buried in a dashboard or an email thread.
+          </p>
+        </header>
+        <div className="p-4">
+          <EmailDnsCard
+            initialDomain={data?.email_domain ?? ""}
+            initialRecords={dnsRecords}
           />
         </div>
       </section>

@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           app_language: string
           default_transport_pct: number
+          email_dns_records: Json
+          email_domain: string | null
           hide_location_info: boolean
           id: number
           outbound_from_email: string | null
@@ -32,6 +34,8 @@ export type Database = {
         Insert: {
           app_language?: string
           default_transport_pct?: number
+          email_dns_records?: Json
+          email_domain?: string | null
           hide_location_info?: boolean
           id?: number
           outbound_from_email?: string | null
@@ -46,6 +50,8 @@ export type Database = {
         Update: {
           app_language?: string
           default_transport_pct?: number
+          email_dns_records?: Json
+          email_domain?: string | null
           hide_location_info?: boolean
           id?: number
           outbound_from_email?: string | null

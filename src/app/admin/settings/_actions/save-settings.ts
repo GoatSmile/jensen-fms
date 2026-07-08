@@ -144,6 +144,95 @@ export async function saveCommunicationSettings(
   return { ok: true };
 }
 
+const DNS_RECORD_TYPES = ["TXT", "CNAME", "MX"] as const;
+const DNS_RECORD_STATUSES = ["pending", "verified"] as const;
+
+export type EmailDnsRecord = {
+  type: (typeof DNS_RECORD_TYPES)[number];
+  name: string;
+  value: string;
+  status: (typeof DNS_RECORD_STATUSES)[number];
+  note: string;
+};
+
+/**
+ * Save the sending domain + the reference copy of its DNS verification
+ * records. The client serialises the record rows as JSON in `records`;
+ * every row is re-validated here (type/status against the closed vocab,
+ * name + value required) so a malformed payload can't land in the jsonb.
+ * The authoritative records live at the DNS host — this is the paste-source
+ * and status tracker until the provider API can report live status.
+ */
+export async function saveEmailDnsSettings(
+  formData: FormData,
+): Promise<SettingsResult> {
+  const domain = nullable(formData.get("email_domain"));
+  if (domain && !domain.includes(".")) {
+    return { ok: false, error: "Domain does not look like a domain name." };
+  }
+
+  const rawRecords = nullable(formData.get("records"));
+  let parsed: unknown;
+  try {
+    parsed = rawRecords ? JSON.parse(rawRecords) : [];
+  } catch {
+    return { ok: false, error: "Could not read the DNS records payload." };
+  }
+  if (!Array.isArray(parsed)) {
+    return { ok: false, error: "DNS records payload must be a list." };
+  }
+  const records: EmailDnsRecord[] = [];
+  for (const r of parsed) {
+    if (typeof r !== "object" || r === null) {
+      return { ok: false, error: "Malformed DNS record row." };
+    }
+    const row = r as Record<string, unknown>;
+    const type = String(row.type ?? "");
+    const status = String(row.status ?? "pending");
+    const name = String(row.name ?? "").trim();
+    const value = String(row.value ?? "").trim();
+    const note = String(row.note ?? "").trim();
+    if (name === "" && value === "") continue; // silently drop empty rows
+    if (!(DNS_RECORD_TYPES as readonly string[]).includes(type)) {
+      return { ok: false, error: `Unknown record type "${type}".` };
+    }
+    if (!(DNS_RECORD_STATUSES as readonly string[]).includes(status)) {
+      return { ok: false, error: `Unknown record status "${status}".` };
+    }
+    if (name === "" || value === "") {
+      return {
+        ok: false,
+        error: "Every DNS record needs both a name and a value.",
+      };
+    }
+    records.push({
+      type: type as EmailDnsRecord["type"],
+      name,
+      value,
+      status: status as EmailDnsRecord["status"],
+      note,
+    });
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      email_domain: domain,
+      email_dns_records: records,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+
+  if (error) {
+    return { ok: false, error: `Could not save settings: ${error.message}` };
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
 /**
  * Save the working-language preferences: `app_language` (office/admin UI) and
  * `worker_language` (build-floor + ticket screens). Both constrained to en/da.
