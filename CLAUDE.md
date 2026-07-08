@@ -673,15 +673,17 @@ part-image fetch. Explicitly **won't do**: creating a part inline from inside th
 PO add-part screen (keep part creation on the parts screen — owner+dev agreed).
 
 Build order (no-schema wins first, then two batched migrations).
-**All seven SHIPPED as of 2026-07-08** — only the optional item-6 phase-2
-(foreign-currency historical FX on stock adjust) remains unbuilt:
+**All seven SHIPPED as of 2026-07-08, including the optional item-6 phase-2**
+— the July-2 backlog is fully closed:
 1. ✅ **Qty at template pick-time** — SHIPPED (1176597). Shared
    `category-checklist-row.tsx` `onPick(partId, qty)` + 3 callers (template
    recipe, MO parts, build workbench).
 2. ✅ **Back-dated purchase date on stock adjust** — SHIPPED (7b0e4c9).
-   Surfaces `inventory_movements.occurred_at`; *phase-2 option (unbuilt):*
-   foreign-currency historical FX on the adjustment (reuse
-   `lookupFxRate(cur, date)`).
+   Surfaces `inventory_movements.occurred_at`. ✅ *Phase 2* SHIPPED
+   2026-07-08: currency picker on the unit-cost field; foreign cost
+   auto-looks-up the ECB rate for the purchase date (shared `lookupFxRate`),
+   editable override, DKK computed server-side, original amount + rate +
+   ECB date appended to the movement reason (ledger stays DKK-only).
 3. ✅ **Template duplication** — SHIPPED (9c6ef6b). Copy a template into a
    brand-new one (version=1), distinct from "save as new version".
 4. ✅ **Supplier + supplier-SKU on the new-part screen** — SHIPPED (136d0ed).

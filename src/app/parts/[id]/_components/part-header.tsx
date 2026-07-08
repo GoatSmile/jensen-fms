@@ -23,6 +23,7 @@ import {
 import { restorePart, retirePart } from "../_actions/retire-part";
 import {
   AdjustStockDialog,
+  type CurrencyOption,
   type LocationOption,
 } from "./adjust-stock-dialog";
 
@@ -40,6 +41,8 @@ type Props = {
   primaryLocationId?: string | null;
   /** Public URL of the hero photo, or null when the part has no photos. */
   heroUrl: string | null;
+  /** Currencies for the adjust dialog's foreign-cost picker. */
+  currencies?: CurrencyOption[];
 };
 
 /**
@@ -62,6 +65,7 @@ export function PartHeader({
   hideLocations = false,
   primaryLocationId = null,
   heroUrl,
+  currencies = [],
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -136,6 +140,7 @@ export function PartHeader({
               locations={locations}
               defaultLocationId={primaryLocationId ?? undefined}
               hideLocation={hideLocations}
+              currencies={currencies}
             />
           )}
           <DropdownMenu>

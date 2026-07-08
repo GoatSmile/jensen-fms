@@ -232,19 +232,22 @@ holds no stock, so opening stock is naturally an adjust-stock step.)
 **Schema:** none.
 **Effort:** ~30 min (15 min wait).
 
-**Phase 2 (optional, confirm):** Dennis also buys historically in USD/JPY and
-wants "the correct dollar" auto-applied. `adjust-stock` takes DKK only today. A
-phase 2 could add a currency picker + historical FX lookup by `occurred_at`
-(reuse `lookupFxRate(currency, date)` already used by PO lines) so he enters the
-original foreign amount and the system pulls the 2021 rate. Bigger UX change —
-raise separately. **+~45 min (20 min wait).**
+**Phase 2 — ✅ SHIPPED 2026-07-08.** Currency picker on the adjust-stock
+dialog's unit-cost field; picking a foreign currency auto-looks-up the ECB
+rate for the purchase date (back-date drives it; shared `lookupFxRate`
+cache-first path), editable override, live DKK/unit preview. The action
+computes `unit_cost_dkk` server-side and appends the original amount + rate +
+ECB date to the reason (`inventory_movements` has no currency columns — the
+ledger stays DKK, the provenance stays readable). Verified end-to-end with a
+2021 USD entry (rate 6.2384 fetched, 77,98 kr./unit frozen), fixture removed.
 
 ---
 
 ## Suggested build order
 Fast no-schema wins first, then batch the two migrations at the end:
 1. ✅ **Item 4** (qty at pick) — SHIPPED (1176597).
-2. ✅ **Item 6 v1** (back-date stock) — SHIPPED (7b0e4c9); phase-2 FX not built.
+2. ✅ **Item 6 v1** (back-date stock) — SHIPPED (7b0e4c9); ✅ phase-2 FX
+   SHIPPED 2026-07-08.
 3. ✅ **Item 5** (duplicate template) — SHIPPED (9c6ef6b).
 4. ✅ **Item 1** (supplier on part-create) — SHIPPED (136d0ed).
 5. ✅ **Item 7** (family controlled vocab) — SHIPPED (migrations 52 + 53).
@@ -253,6 +256,6 @@ Fast no-schema wins first, then batch the two migrations at the end:
 Each is independently shippable (commit + push per repo convention). Total for
 all seven ≈ **5.5–6.5 human-dev-hours**; phase-2 FX on item 6 optional on top.
 
-**Status 2026-07-08: all seven items SHIPPED.** Only the optional item-6
-phase-2 (foreign-currency historical FX on stock adjust) remains unbuilt —
-raise separately if Dennis hits it.
+**Status 2026-07-08: all seven items SHIPPED, including the optional item-6
+phase-2** (foreign-currency historical FX on stock adjust). Nothing from the
+July-2 call remains.

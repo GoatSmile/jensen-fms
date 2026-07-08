@@ -14,6 +14,22 @@ export type AdjustStockInput = {
   /** Optional landed-cost-per-unit in DKK; only meaningful when adding stock. */
   unitCostDkk: number | null;
   /**
+   * Alternative to `unitCostDkk` — the original foreign amount plus the FX
+   * rate the dialog looked up (or the user overrode) for the purchase date.
+   * The server computes `unit_cost_dkk = amount × fxRate` and appends the
+   * original amount/rate to the reason, since `inventory_movements` has no
+   * currency columns — the ledger stays DKK, the provenance stays readable.
+   * Mutually exclusive with `unitCostDkk`.
+   */
+  unitCostForeign?: {
+    amount: number;
+    /** ISO 4217, e.g. "USD". Never "DKK" — that's the plain path. */
+    currency: string;
+    fxRate: number;
+    /** ECB quote date actually used (may differ from the purchase date). */
+    rateDate?: string | null;
+  } | null;
+  /**
    * Optional back-dated ledger date (ISO `yyyy-mm-dd`). Lets historical stock
    * (e.g. parts bought years ago) land in the right period rather than today.
    * When omitted/empty, `inventory_movements.occurred_at` defaults to `now()`.
@@ -54,6 +70,35 @@ export async function adjustStock(
   }
   if (input.unitCostDkk != null && !Number.isFinite(input.unitCostDkk)) {
     return { ok: false, error: "Unit cost must be a number or empty." };
+  }
+
+  // Foreign-cost path: DKK is computed here (not trusted from the client
+  // arithmetic) and the original amount + rate ride along in the reason.
+  let unitCostDkk = input.unitCostDkk ?? null;
+  let costProvenance: string | null = null;
+  const foreign = input.unitCostForeign ?? null;
+  if (foreign) {
+    if (unitCostDkk != null) {
+      return {
+        ok: false,
+        error: "Provide the unit cost either in DKK or in a foreign currency, not both.",
+      };
+    }
+    if (!Number.isFinite(foreign.amount) || foreign.amount < 0) {
+      return { ok: false, error: "Unit cost must be a non-negative number." };
+    }
+    if (!Number.isFinite(foreign.fxRate) || foreign.fxRate <= 0) {
+      return { ok: false, error: "FX rate must be greater than zero." };
+    }
+    const currency = foreign.currency.trim().toUpperCase();
+    if (currency.length !== 3 || currency === "DKK") {
+      return { ok: false, error: "Pick a valid foreign currency." };
+    }
+    // Same 4-dp rounding as the PO landed-cost money convention.
+    unitCostDkk = Math.round(foreign.amount * foreign.fxRate * 10000) / 10000;
+    costProvenance = `Cost ${foreign.amount} ${currency} @ ${foreign.fxRate}${
+      foreign.rateDate ? ` (ECB ${foreign.rateDate})` : ""
+    } = ${unitCostDkk} DKK/unit.`;
   }
 
   // Optional back-date. Accept an ISO `yyyy-mm-dd`; reject garbage and future
@@ -124,8 +169,8 @@ export async function adjustStock(
     location_id: input.locationId,
     movement_type: "adjustment",
     quantity_delta: delta,
-    unit_cost_dkk: input.unitCostDkk ?? null,
-    reason,
+    unit_cost_dkk: unitCostDkk,
+    reason: costProvenance ? `${reason} · ${costProvenance}` : reason,
     ...(occurredAt ? { occurred_at: occurredAt } : {}),
   });
 

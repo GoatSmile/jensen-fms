@@ -12,6 +12,7 @@ import { formatDateTime } from "@/lib/parts/format";
 
 import {
   AdjustStockDialog,
+  type CurrencyOption,
   type LocationOption,
 } from "./adjust-stock-dialog";
 import { EmptyRow, Section } from "./section";
@@ -35,6 +36,8 @@ type Props = {
   hideLocations?: boolean;
   /** Location the single Adjust button targets while locations are hidden. */
   primaryLocationId?: string | null;
+  /** Currencies for the adjust dialog's foreign-cost picker. */
+  currencies?: CurrencyOption[];
 };
 
 export function StockSection({
@@ -45,6 +48,7 @@ export function StockSection({
   activeLocationIds,
   hideLocations = false,
   primaryLocationId = null,
+  currencies = [],
 }: Props) {
   if (hideLocations) {
     const total = rows.reduce((sum, r) => sum + r.quantityOnHand, 0);
@@ -78,6 +82,7 @@ export function StockSection({
             locations={locations}
             defaultLocationId={primaryLocationId ?? undefined}
             hideLocation
+            currencies={currencies}
           />
         </div>
       </Section>
@@ -131,6 +136,7 @@ export function StockSection({
                         locations={locations}
                         defaultLocationId={row.locationId}
                         triggerVariant="row"
+                        currencies={currencies}
                       />
                     ) : (
                       <Button

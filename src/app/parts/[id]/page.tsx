@@ -487,6 +487,7 @@ export default async function PartDetailPage({
         hideLocations={hideLocations}
         primaryLocationId={primaryLocationId}
         heroUrl={heroPhoto?.fileUrl ?? null}
+        currencies={currenciesRes.data ?? []}
       />
 
       <StatStrip
@@ -545,6 +546,7 @@ export default async function PartDetailPage({
         activeLocationIds={activeLocationIds}
         hideLocations={hideLocations}
         primaryLocationId={primaryLocationId}
+        currencies={currenciesRes.data ?? []}
       />
 
       <MovementsSection rows={movementRows} hideLocations={hideLocations} />
