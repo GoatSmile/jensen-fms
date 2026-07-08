@@ -60,7 +60,7 @@ the **snapshotted `tariff_pct` (and `anti_dumping_pct`) to 0** on the PO line �
 same mechanism as today, the GENERATED `landed_cost_dkk_per_unit` recomputes
 automatically. The HS code stays on the line for records.
 
-- `parts.origin` — `'eu' | 'non_eu'`, nullable (unclassified). Migration 53.
+- `parts.origin` — `'eu' | 'non_eu'`, nullable (unclassified). Migration 54.
 - `suppliers.import_duty_prepaid_default boolean not null default false`. Mig 52.
 - PO line dialog gains one **"Apply import tax"** checkbox. Initial state:
   `origin = 'non_eu'  AND NOT supplier.import_duty_prepaid_default`.
@@ -72,7 +72,7 @@ automatically. The HS code stays on the line for records.
   tariff, click to add") and nudge to classify.
 
 **Files**
-- `migrations/53_part_origin_and_supplier_duty.sql` — add the two columns
+- `migrations/54_part_origin_and_supplier_duty.sql` — add the two columns
   (+ optional backfill: parts with an HS code but EU-made stay unclassified;
   leave data entry to the owner).
 - `src/app/parts/_components/part-form.tsx` — origin picker (EU / rest of world
@@ -84,7 +84,7 @@ automatically. The HS code stays on the line for records.
   (currently `:193-208` FX area / tariff snapshot) so the live landed-cost
   preview + the persisted `tariff_pct`/`anti_dumping_pct` both honor it.
 
-**Schema:** migration 52 (2 columns).
+**Schema:** migration 54 (2 columns).
 **Effort:** ~90 min (35 min wait).
 **Open Q (confirm):** (a) store an explicit `import_tax_applied`/reason flag on
 the line for audit, or is `tariff_pct = 0` enough? (rec: 0 is enough, add a
@@ -113,7 +113,7 @@ category display-number Dennis liked). Decided direction, owner-confirmed.
   historical templates grouped — standard controlled-vocab convention.
 
 **Files**
-- `migrations/52_bike_families.sql` — table + backfill + FK + drop old column.
+- `migrations/52_bike_families.sql` (additive) + `migrations/53_drop_bike_template_family.sql` (drop, after deploy).
 - `src/app/admin/families/…` — CRUD page (copy `/admin/colors`), with a
   `sort_order` field like category admin.
 - `src/app/admin/page.tsx` — add a "Families" tile under *Catalog & inventory*.
@@ -124,7 +124,7 @@ category display-number Dennis liked). Decided direction, owner-confirmed.
   the family's `sort_order` (not alphabetical, `:94`), label from the joined
   family `name` (not `r.family`).
 
-**Schema:** migration 52 (new table + FK + drop `family` text).
+**Schema:** migrations 52 (additive) + 53 (drop `family` text, expand/contract).
 **Effort:** ~75 min (30 min wait).
 **Note:** batch with Items 2+3 — both are migrations touching the same build.
 
@@ -206,8 +206,8 @@ Fast no-schema wins first, then batch the two migrations at the end:
 2. **Item 6 v1** (back-date stock) — no schema.
 3. **Item 5** (duplicate template) — no schema.
 4. **Item 1** (supplier on part-create) — no schema.
-5. **Item 7** (family controlled vocab) — migration 52.
-6. **Items 2+3** (origin model) — migration 53; most surface area, do last.
+5. ✅ **Item 7** (family controlled vocab) — SHIPPED (migrations 52 + 53).
+6. **Items 2+3** (origin model) — migration 54; most surface area, do last.
 
 Each is independently shippable (commit + push per repo convention). Total for
 all seven ≈ **5.5–6.5 human-dev-hours**; phase-2 FX on item 6 optional on top.

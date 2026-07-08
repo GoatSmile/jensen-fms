@@ -685,12 +685,14 @@ Build order (no-schema wins first, then two batched migrations):
 4. **Supplier + supplier-SKU on the new-part screen** — optional preferred
    `part_supplier_offerings` row written at create; extra suppliers still added
    on the detail page.
-5. **Family as controlled vocab** (migration 52) — new `bike_families`
-   (`name` unique, `sort_order`, `is_active`) + `bike_templates.family_id` FK;
-   backfill from distinct `family` strings then **drop the text column**; admin
-   CRUD at `/admin/families`; template form gets a family `<Select>`; list
-   groups/orders by `sort_order`. Owner-confirmed: single `name` (not bilingual).
-6. **Import-tax origin model** (migration 53) — `parts.origin` (`eu`/`non_eu`,
+5. ✅ **Family as controlled vocab** (migrations 52 + 53) — SHIPPED. New
+   `bike_families` (`name` unique, `sort_order`, `is_active`) +
+   `bike_templates.family_id` FK; backfilled from distinct `family` strings,
+   then the text column dropped (expand/contract: mig 52 additive, mig 53 drop
+   after deploy). Admin CRUD at `/admin/families` + tile; template form family
+   `<Select>`; list groups/orders by `sort_order`. ~37 read sites moved to the
+   `family:bike_families(name)` embed. Single `name` (not bilingual).
+6. **Import-tax origin model** (migration 54) — `parts.origin` (`eu`/`non_eu`,
    nullable) + `suppliers.import_duty_prepaid_default`; a per-PO-line "Apply
    import tax" checkbox defaulting from `origin='non_eu' AND NOT supplier
    prepaid`, driving the snapshotted `tariff_pct`/`anti_dumping_pct` to 0 (fits
