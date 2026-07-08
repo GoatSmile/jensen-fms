@@ -56,7 +56,7 @@ export default async function PurchaseOrderDetailPage({
       .select(
         `
           id, po_number, status, order_date, expected_date, received_date,
-          total_amount, total_currency, notes,
+          total_amount, total_currency, notes, emailed_at, emailed_to,
           suppliers(id, name, import_duty_prepaid_default)
         `,
       )
@@ -101,7 +101,9 @@ export default async function PurchaseOrderDetailPage({
       .order("rate_date", { ascending: false }),
     supabase
       .from("app_settings")
-      .select("default_transport_pct, hide_location_info, primary_location_id")
+      .select(
+        "default_transport_pct, hide_location_info, primary_location_id, outbound_test_mode, outbound_test_email",
+      )
       .eq("id", 1)
       .maybeSingle(),
   ]);
@@ -250,6 +252,10 @@ export default async function PurchaseOrderDetailPage({
         status={status}
         supplierName={po.suppliers?.name ?? null}
         supplierId={po.suppliers?.id ?? null}
+        emailedAt={po.emailed_at ?? null}
+        emailedTo={po.emailed_to ?? null}
+        emailTestMode={settingsRes.data?.outbound_test_mode ?? true}
+        emailTestRecipients={settingsRes.data?.outbound_test_email ?? null}
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">

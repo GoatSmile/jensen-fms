@@ -294,7 +294,9 @@ cross-cutting. Original SQL files live in `/migrations/`.
 ## Local environment
 - Env file is `.env.local` (with the leading dot — Next.js won't auto-load
   any other name). Variables: `NEXT_PUBLIC_SUPABASE_URL`,
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and
+  `RESEND_API_KEY` (outbound email — not set yet; the send action returns a
+  clear error until it is; also needed on Vercel).
   Restart the dev server after editing — `.env.local` is read at startup,
   not via HMR.
 
@@ -607,8 +609,26 @@ the card can fetch records + live status instead of manual upkeep.
 **Config-vs-secrets rule (owner, 2026-07-08): operational identifiers
 (emails, phone numbers, domains, DNS values — public data) live in admin
 config; only real secrets (Resend/Twilio API keys) live in env vars.**
-Remaining for Tier 3: the printable PO layout, Resend API integration,
-actual DNS verification at the host, real supplier emails.
+**Code side SHIPPED 2026-07-08 (migration 57):**
+- `/purchase-orders/[id]/print` — supplier-facing trade document (English;
+  suppliers span HK/DE/NL/FI/BE/SE): supplier block, "Your ref." column from
+  `part_supplier_offerings.supplier_sku`, per-currency totals, "price
+  pending" markers, DRAFT watermark. **Deliberately excludes the internal
+  cost basis AND all PO/line notes** (machine-drafted notes like "set price
+  before placing" must never reach a supplier) — enforced in the shared
+  loader `src/lib/purchasing/po-document.ts`, which the email body renders
+  from too (`po-email-html.ts`), so paper and mail always match.
+- "Email supplier" on the PO header: dialog with an optional
+  message-to-supplier (the ONLY free text that reaches them), send via
+  `src/lib/email/send.ts` (thin Resend fetch wrapper, no SDK; needs
+  `RESEND_API_KEY` in `.env.local`/Vercel), recipients through
+  `resolveRecipients` (test mode reroutes + banners the intended
+  recipients + subject gets "[TEST]"), last-send stamp on
+  `purchase_orders.emailed_at/emailed_to` ("test:"-prefixed when rerouted)
+  shown under the PO header. Blocked for cancelled/empty POs.
+Remaining for Tier 3 (all owner-side): Resend account + API key, DNS
+records at the host (tracked in the admin DNS card), real supplier emails,
+then untick test mode.
 
 **Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
 6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*
