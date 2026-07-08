@@ -95,7 +95,7 @@ export default async function SODetailPage({
            vat_code, vat_rate, line_subtotal, line_vat_amount, line_total,
            color_id, description_en, description_da,
            part:parts!part_id(id, internal_sku, name_en),
-           template:bike_templates!bike_template_id(id, name_en, family, frame_size),
+           template:bike_templates!bike_template_id(id, name_en, family:bike_families(name), frame_size),
            color:colors!color_id(name_en)`,
         )
         .eq("sales_order_id", id)
@@ -105,7 +105,7 @@ export default async function SODetailPage({
         .select(
           `id, mo_number, status, target_quantity, completed_quantity,
            planned_completion_date,
-           bike_template:bike_templates!bike_template_id(name_en, family, frame_size)`,
+           bike_template:bike_templates!bike_template_id(name_en, family:bike_families(name), frame_size)`,
         )
         .eq("sales_order_id", id)
         .order("created_at", { ascending: true }),
@@ -128,9 +128,8 @@ export default async function SODetailPage({
       // deleted_at column on this table — that's a parts/orgs convention).
       supabase
         .from("bike_templates")
-        .select("id, name_en, family, frame_size, is_current")
+        .select("id, name_en, family:bike_families(name), frame_size, is_current")
         .eq("is_current", true)
-        .order("family", { ascending: true })
         .order("frame_size", { ascending: true }),
       supabase
         .from("vat_codes")
@@ -183,7 +182,7 @@ export default async function SODetailPage({
     partName: l.part?.name_en ?? null,
     bikeTemplateId: l.bike_template_id ?? null,
     templateLabel: l.template
-      ? [l.template.family, l.template.frame_size, l.template.name_en]
+      ? [l.template.family?.name, l.template.frame_size, l.template.name_en]
           .filter(Boolean)
           .join(" · ")
       : null,
@@ -210,7 +209,7 @@ export default async function SODetailPage({
     planned_completion_date: m.planned_completion_date,
     templateLabel: m.bike_template
       ? [
-          m.bike_template.family,
+          m.bike_template.family?.name,
           m.bike_template.frame_size,
           m.bike_template.name_en,
         ]
@@ -270,7 +269,7 @@ export default async function SODetailPage({
   const templates: TemplateChoice[] = (templatesRes.data ?? []).map((t) => ({
     id: t.id,
     name_en: t.name_en,
-    family: t.family,
+    family: t.family?.name ?? null,
     frame_size: t.frame_size,
   }));
   const vatCodes: VatCodeChoice[] = (vatRes.data ?? []).map((v) => ({

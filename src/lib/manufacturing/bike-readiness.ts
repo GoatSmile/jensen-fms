@@ -72,7 +72,7 @@ export async function loadBuildQueue(
     .select(
       `id, frame_number, frame_number_confirmed, status,
        color:colors(name_en, hex),
-       bike_template:bike_templates(family, frame_size),
+       bike_template:bike_templates(family:bike_families(name), frame_size),
        owner_organization:organizations!owner_organization_id(
          legal_name, display_name_da, display_name_en
        ),
@@ -199,7 +199,7 @@ export async function loadBuildQueue(
       colorName: color?.name_en ?? null,
       colorHex: color?.hex ?? null,
       templateLabel: tpl
-        ? [tpl.family, tpl.frame_size].filter(Boolean).join(" · ")
+        ? [tpl.family?.name, tpl.frame_size].filter(Boolean).join(" · ")
         : null,
       ownerName:
         owner?.display_name_da ??

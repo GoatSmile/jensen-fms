@@ -73,7 +73,7 @@ export default async function BikeDetailPage({
             manufacturing_order_id, build_cost_dkk,
             owner_organization_id, owner_unit_id, assigned_at,
             bike_type:bike_types(id, name_en),
-            template:bike_templates(id, name_en, family, frame_size, version),
+            template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
             color:colors(id, slug, name_en, hex),
             manufacturing_order:manufacturing_orders(
               id, mo_number, status,
@@ -224,7 +224,7 @@ export default async function BikeDetailPage({
   }));
 
   const templateLabel = b.template
-    ? [b.template.family, b.template.frame_size, b.template.name_en]
+    ? [b.template.family?.name, b.template.frame_size, b.template.name_en]
         .filter(Boolean)
         .join(" · ")
     : null;

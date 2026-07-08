@@ -59,7 +59,7 @@ export default async function ManufacturingOrdersPage() {
         id, mo_number, status, target_quantity, completed_quantity,
         planned_start_date, planned_completion_date, planned_completion_precision, notes,
         bike_type:bike_types(id, name_en),
-        bike_template:bike_templates(id, name_en, family, frame_size, version),
+        bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
         color:colors(id, name_en, hex)
       `,
     )
@@ -134,7 +134,7 @@ export default async function ManufacturingOrdersPage() {
               {rows.map((mo) => {
                 const tplLabel = mo.bike_template
                   ? [
-                      mo.bike_template.family,
+                      mo.bike_template.family?.name,
                       mo.bike_template.frame_size,
                       mo.bike_template.name_en,
                     ]

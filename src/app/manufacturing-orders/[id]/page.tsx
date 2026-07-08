@@ -54,7 +54,7 @@ export default async function ManufacturingOrderDetailPage({
         notes, created_at,
         bike_template_id, bike_type_id, color_id,
         bike_type:bike_types(id, name_en, slug),
-        bike_template:bike_templates(id, name_en, family, frame_size, version, is_current),
+        bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size, version, is_current),
         color:colors(id, slug, name_en, hex)
       `,
     )
@@ -301,7 +301,7 @@ export default async function ManufacturingOrderDetailPage({
 
   const templateLabel = mo.bike_template
     ? [
-        mo.bike_template.family,
+        mo.bike_template.family?.name,
         mo.bike_template.frame_size,
         mo.bike_template.name_en,
       ]

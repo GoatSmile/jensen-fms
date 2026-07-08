@@ -170,7 +170,7 @@ export default async function BikesPage({
         deleted_at,
         built_at,
         bike_type:bike_types(id, name_en),
-        template:bike_templates(id, name_en, family, frame_size, version),
+        template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
         color:colors(id, name_en, hex, ral_code, coating),
         manufacturing_order:manufacturing_orders(
           id,
@@ -248,7 +248,7 @@ export default async function BikesPage({
       .in("id", ownerIds.length ? ownerIds : ["00000000-0000-0000-0000-000000000000"]),
     supabase
       .from("bike_templates")
-      .select("id, name_en, family, frame_size, version")
+      .select("id, name_en, family:bike_families(name), frame_size, version")
       .in("id", templateIds.length ? templateIds : ["00000000-0000-0000-0000-000000000000"]),
   ]);
 
@@ -262,7 +262,7 @@ export default async function BikesPage({
   const templateOptions = (templateOptsRes.data ?? [])
     .map((t) => ({
       id: t.id,
-      label: `${[t.family, t.frame_size, t.name_en].filter(Boolean).join(" · ")} (v${t.version})`,
+      label: `${[t.family?.name, t.frame_size, t.name_en].filter(Boolean).join(" · ")} (v${t.version})`,
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -590,7 +590,7 @@ export default async function BikesPage({
                       {b.template ? (
                         <>
                           <div className="font-medium">
-                            {[b.template.family, b.template.frame_size, b.template.name_en]
+                            {[b.template.family?.name, b.template.frame_size, b.template.name_en]
                               .filter(Boolean)
                               .join(" · ")}
                           </div>

@@ -12,7 +12,7 @@ export type SaveTemplateResult =
 
 type ParsedShell = {
   bike_type_id: string;
-  family: string | null;
+  family_id: string | null;
   frame_size: string;
   name_en: string;
   name_da: string | null;
@@ -53,7 +53,7 @@ function parseShell(
 
   return {
     bike_type_id,
-    family: nullable(formData.get("family")),
+    family_id: nullable(formData.get("family_id")),
     frame_size,
     name_en,
     name_da: nullable(formData.get("name_da")),
@@ -78,7 +78,7 @@ export async function createTemplate(
     .from("bike_templates")
     .insert({
       bike_type_id: parsed.bike_type_id,
-      family: parsed.family,
+      family_id: parsed.family_id,
       frame_size: parsed.frame_size,
       name_en: parsed.name_en,
       name_da: parsed.name_da,
@@ -135,7 +135,7 @@ export async function updateTemplate(
   const { error } = await supabase
     .from("bike_templates")
     .update({
-      family: nullable(formData.get("family")),
+      family_id: nullable(formData.get("family_id")),
       frame_size,
       name_en,
       name_da: nullable(formData.get("name_da")),

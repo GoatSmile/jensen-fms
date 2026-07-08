@@ -53,7 +53,7 @@ export default async function TicketDetailPage({
         bike:bikes!bike_id(
           id, frame_number,
           bike_type:bike_types(name_en),
-          bike_template:bike_templates(family, frame_size, name_en, version),
+          bike_template:bike_templates(family:bike_families(name), frame_size, name_en, version),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         ),
         contact:contacts!reported_by_contact_id(
@@ -132,7 +132,7 @@ export default async function TicketDetailPage({
   const reporterFallback = ticket.reported_by_text;
   const templateLabel = bike?.bike_template
     ? [
-        bike.bike_template.family,
+        bike.bike_template.family?.name,
         bike.bike_template.frame_size,
         bike.bike_template.name_en,
       ]

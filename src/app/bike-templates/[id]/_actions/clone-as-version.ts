@@ -14,9 +14,9 @@ export type CloneResult =
  * the current parts list as the starting point, demote the previous version's
  * is_current flag.
  *
- * The version chain is templates with the same (family, frame_size) pair,
- * or — when family is NULL — same (name_en, frame_size). That's loose enough
- * to handle templates without a family label, while still keeping size-based
+ * The version chain is templates with the same (family_id, frame_size) pair,
+ * or — when family_id is NULL — same (name_en, frame_size). That's loose enough
+ * to handle templates without a family, while still keeping size-based
  * variants (e.g. Norma S vs Norma L) as separate chains.
  */
 export async function cloneAsNewVersion(
@@ -35,7 +35,7 @@ export async function cloneAsNewVersion(
   const { data: src, error: srcErr } = await supabase
     .from("bike_templates")
     .select(
-      `id, bike_type_id, family, frame_size, name_en, name_da, version,
+      `id, bike_type_id, family_id, frame_size, name_en, name_da, version,
        notes, default_retail_price, default_retail_currency`,
     )
     .eq("id", templateId)
@@ -52,9 +52,9 @@ export async function cloneAsNewVersion(
     .from("bike_templates")
     .select("version")
     .eq("frame_size", src.frame_size);
-  const maxQueryScoped = src.family
-    ? maxQuery.eq("family", src.family)
-    : maxQuery.is("family", null).eq("name_en", src.name_en);
+  const maxQueryScoped = src.family_id
+    ? maxQuery.eq("family_id", src.family_id)
+    : maxQuery.is("family_id", null).eq("name_en", src.name_en);
 
   const { data: maxRow, error: maxErr } = await maxQueryScoped
     .order("version", { ascending: false })
@@ -73,7 +73,7 @@ export async function cloneAsNewVersion(
     .from("bike_templates")
     .insert({
       bike_type_id: src.bike_type_id,
-      family: src.family,
+      family_id: src.family_id,
       frame_size: src.frame_size,
       name_en: src.name_en,
       name_da: src.name_da,
@@ -98,9 +98,9 @@ export async function cloneAsNewVersion(
     .update({ is_current: false })
     .eq("frame_size", src.frame_size)
     .neq("id", created.id);
-  const demoteScoped = src.family
-    ? demoteQuery.eq("family", src.family)
-    : demoteQuery.is("family", null).eq("name_en", src.name_en);
+  const demoteScoped = src.family_id
+    ? demoteQuery.eq("family_id", src.family_id)
+    : demoteQuery.is("family_id", null).eq("name_en", src.name_en);
 
   const { error: demoteErr } = await demoteScoped;
   if (demoteErr) {

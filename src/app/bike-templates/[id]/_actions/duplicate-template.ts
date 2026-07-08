@@ -31,7 +31,7 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
   const { data: src, error: srcErr } = await supabase
     .from("bike_templates")
     .select(
-      `bike_type_id, family, frame_size, name_en, name_da,
+      `bike_type_id, family_id, frame_size, name_en, name_da,
        notes, default_retail_price, default_retail_currency`,
     )
     .eq("id", templateId)
@@ -47,7 +47,7 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
     .from("bike_templates")
     .insert({
       bike_type_id: src.bike_type_id,
-      family: src.family,
+      family_id: src.family_id,
       frame_size: src.frame_size,
       name_en: `${src.name_en} (copy)`,
       name_da: src.name_da ? `${src.name_da} (kopi)` : null,

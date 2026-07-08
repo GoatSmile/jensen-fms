@@ -43,7 +43,7 @@ export default async function WorkQueuePage({
         bike:bikes!bike_id(
           id, frame_number,
           color:colors(name_en, hex),
-          bike_template:bike_templates(family, frame_size, name_en),
+          bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(
             id, legal_name, display_name_da, display_name_en
           )
@@ -129,7 +129,7 @@ export default async function WorkQueuePage({
             const status = wo.status as WorkOrderStatus;
             const inProgress = status === "in_progress";
             const templateLabel = wo.bike?.bike_template
-              ? [wo.bike.bike_template.family, wo.bike.bike_template.frame_size]
+              ? [wo.bike.bike_template.family?.name, wo.bike.bike_template.frame_size]
                   .filter(Boolean)
                   .join(" · ")
               : null;

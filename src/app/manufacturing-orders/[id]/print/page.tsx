@@ -36,7 +36,7 @@ export default async function MOPartsPrintPage({
       `id, mo_number, target_quantity, completed_quantity, status,
        planned_completion_date,
        bike_type:bike_types(name_en),
-       bike_template:bike_templates(name_en, family, frame_size, version),
+       bike_template:bike_templates(name_en, family:bike_families(name), frame_size, version),
        color:colors(name_en)`,
     )
     .eq("id", id)
@@ -123,7 +123,7 @@ export default async function MOPartsPrintPage({
 
   const templateLabel = mo.bike_template
     ? [
-        mo.bike_template.family,
+        mo.bike_template.family?.name,
         mo.bike_template.frame_size,
         mo.bike_template.name_en,
       ]

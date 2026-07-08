@@ -44,7 +44,7 @@ export default async function WorkOrderDetailPage({
         bike:bikes!bike_id(
           id, frame_number,
           bike_type:bike_types(name_en),
-          bike_template:bike_templates(family, frame_size, name_en),
+          bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         ),
         service_agreement:service_agreements!covered_by_service_agreement_id(id, name_en, name_da)
@@ -215,7 +215,7 @@ export default async function WorkOrderDetailPage({
                   {bike.bike_template ? (
                     <span className="text-sm">
                       {[
-                        bike.bike_template.family,
+                        bike.bike_template.family?.name,
                         bike.bike_template.frame_size,
                         bike.bike_template.name_en,
                       ]

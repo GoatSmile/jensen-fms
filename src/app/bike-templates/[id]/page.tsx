@@ -41,7 +41,7 @@ export default async function BikeTemplateDetailPage({
     .select(
       `
         id, name_en, name_da, notes, version, is_current, created_at,
-        bike_type_id, family, frame_size,
+        bike_type_id, family_id, family:bike_families(name), frame_size,
         default_retail_price, default_retail_currency,
         bike_type:bike_types(id, name_en)
       `,
@@ -57,18 +57,18 @@ export default async function BikeTemplateDetailPage({
   const t = tplRes.data;
 
   // Fetch parts in this template, the catalog of pickable parts, and the full
-  // version chain. Version chain is templates with the same family + frame_size
-  // (or just same name_en if family is unset).
-  const chainFilters = t.family
+  // version chain. Version chain is templates with the same family_id +
+  // frame_size (or just same name_en if family_id is unset).
+  const chainFilters = t.family_id
     ? supabase
         .from("bike_templates")
         .select("id, version, is_current, created_at")
-        .eq("family", t.family)
+        .eq("family_id", t.family_id)
         .eq("frame_size", t.frame_size)
     : supabase
         .from("bike_templates")
         .select("id, version, is_current, created_at")
-        .is("family", null)
+        .is("family_id", null)
         .eq("name_en", t.name_en);
 
   const [
@@ -234,9 +234,9 @@ export default async function BikeTemplateDetailPage({
             <Badge variant="outline" className="font-normal">
               {t.bike_type?.name_en ?? "—"}
             </Badge>
-            {t.family ? (
+            {t.family?.name ? (
               <span className="text-muted-foreground text-xs">
-                {t.family} · {t.frame_size}
+                {t.family.name} · {t.frame_size}
               </span>
             ) : (
               <span className="text-muted-foreground text-xs">

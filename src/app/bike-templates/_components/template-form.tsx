@@ -31,9 +31,15 @@ export type CurrencyOption = {
   symbol: string | null;
 };
 
+export type FamilyOption = {
+  id: string;
+  name: string;
+};
+
 export type TemplateShellValues = {
   bike_type_id: string;
-  family: string;
+  /** FK to bike_families; "" = no family. */
+  family_id: string;
   frame_size: string;
   name_en: string;
   name_da: string;
@@ -44,7 +50,7 @@ export type TemplateShellValues = {
 
 export const EMPTY_TEMPLATE_SHELL: TemplateShellValues = {
   bike_type_id: "",
-  family: "",
+  family_id: "",
   frame_size: "",
   name_en: "",
   name_da: "",
@@ -53,12 +59,16 @@ export const EMPTY_TEMPLATE_SHELL: TemplateShellValues = {
   notes: "",
 };
 
+/** Sentinel — Select needs a non-empty value for the "no family" option. */
+const NO_FAMILY = "__none__";
+
 type Props = {
   mode: "create" | "edit";
   templateId?: string;
   initial: TemplateShellValues;
   bikeTypes: BikeTypeOption[];
   currencies: CurrencyOption[];
+  families: FamilyOption[];
 };
 
 export function TemplateForm({
@@ -67,6 +77,7 @@ export function TemplateForm({
   initial,
   bikeTypes,
   currencies,
+  families,
 }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<TemplateShellValues>(initial);
@@ -88,7 +99,7 @@ export function TemplateForm({
   function buildFormData(): FormData {
     const fd = new FormData();
     appendField(fd, "bike_type_id", values.bike_type_id);
-    appendField(fd, "family", values.family);
+    appendField(fd, "family_id", values.family_id);
     appendField(fd, "frame_size", values.frame_size);
     appendField(fd, "name_en", values.name_en);
     appendField(fd, "name_da", values.name_da);
@@ -164,14 +175,30 @@ export function TemplateForm({
         <Field
           label="Family"
           htmlFor="tpl-family"
-          error={errorField === "family" ? error : null}
+          error={errorField === "family_id" ? error : null}
         >
-          <Input
-            id="tpl-family"
-            value={values.family}
-            onChange={(e) => update("family", e.target.value)}
-            placeholder="e.g. Norma — groups sizes together in the UI."
-          />
+          <Select
+            value={values.family_id === "" ? NO_FAMILY : values.family_id}
+            onValueChange={(v) =>
+              update("family_id", v === NO_FAMILY ? "" : v)
+            }
+          >
+            <SelectTrigger id="tpl-family">
+              <SelectValue placeholder="No family" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_FAMILY}>No family</SelectItem>
+              {families.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-xs">
+            Groups sizes together in the UI. Manage the list in Admin →
+            Families.
+          </p>
         </Field>
         <Field
           label="Frame size"

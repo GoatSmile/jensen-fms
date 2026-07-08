@@ -29,7 +29,7 @@ export default async function BuildBatchPage({
     .from("manufacturing_orders")
     .select(
       `id, mo_number, status,
-       bike_template:bike_templates(name_en, family, frame_size)`,
+       bike_template:bike_templates(name_en, family:bike_families(name), frame_size)`,
     )
     .eq("id", moId)
     .maybeSingle();
@@ -86,7 +86,7 @@ export default async function BuildBatchPage({
   }));
 
   const templateLabel = mo.bike_template
-    ? [mo.bike_template.family, mo.bike_template.frame_size, mo.bike_template.name_en]
+    ? [mo.bike_template.family?.name, mo.bike_template.frame_size, mo.bike_template.name_en]
         .filter(Boolean)
         .join(" · ")
     : null;

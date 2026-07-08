@@ -15,12 +15,13 @@ import {
   TemplateForm,
   type BikeTypeOption,
   type CurrencyOption,
+  type FamilyOption,
 } from "../_components/template-form";
 
 export default async function NewBikeTemplatePage() {
   const supabase = await createClient();
 
-  const [typesRes, currenciesRes] = await Promise.all([
+  const [typesRes, currenciesRes, familiesRes] = await Promise.all([
     supabase
       .from("bike_types")
       .select("id, slug, name_en")
@@ -32,6 +33,11 @@ export default async function NewBikeTemplatePage() {
       .select("code, symbol")
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
+    supabase
+      .from("bike_families")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const typeRows = typesRes.data ?? [];
@@ -42,6 +48,7 @@ export default async function NewBikeTemplatePage() {
   const defaultBikeTypeId =
     typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];
+  const families: FamilyOption[] = familiesRes.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -75,6 +82,7 @@ export default async function NewBikeTemplatePage() {
         initial={{ ...EMPTY_TEMPLATE_SHELL, bike_type_id: defaultBikeTypeId }}
         bikeTypes={bikeTypes}
         currencies={currencies}
+        families={families}
       />
     </div>
   );

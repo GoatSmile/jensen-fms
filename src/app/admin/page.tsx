@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Coins,
   FolderTree,
+  Layers,
   Map as MapIcon,
   Package,
   Palette,
@@ -42,6 +43,7 @@ export default async function AdminLandingPage() {
     kitsRes,
     categoriesRes,
     locationsRes,
+    familiesRes,
     orgsRes,
   ] = await Promise.all([
     supabase
@@ -86,6 +88,10 @@ export default async function AdminLandingPage() {
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
     supabase
+      .from("bike_families")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabase
       .from("organizations")
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null),
@@ -102,6 +108,7 @@ export default async function AdminLandingPage() {
   const activeKitCount = kitsRes.count ?? 0;
   const activeCategoryCount = categoriesRes.count ?? 0;
   const activeLocationCount = locationsRes.count ?? 0;
+  const activeFamilyCount = familiesRes.count ?? 0;
   const customerCount = orgsRes.count ?? 0;
 
   return (
@@ -146,6 +153,13 @@ export default async function AdminLandingPage() {
             title="Colours"
             description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
             stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
+          />
+          <Tile
+            href="/admin/families"
+            icon={Layers}
+            title="Families"
+            description="Product families that group bike templates (e.g. Norma over its sizes) on the templates list."
+            stat={`${activeFamilyCount} active famil${activeFamilyCount === 1 ? "y" : "ies"}`}
           />
           <Tile
             href="/admin/kits"

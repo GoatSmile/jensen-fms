@@ -60,7 +60,7 @@ export default async function PaintFromSOPage({
         .select(
           `id, frame_number, status,
            color:colors(name_en, hex),
-           template:bike_templates(family, frame_size, name_en)`,
+           template:bike_templates(family:bike_families(name), frame_size, name_en)`,
         )
         .in("manufacturing_order_id", moIds)
         .is("deleted_at", null)
@@ -85,7 +85,7 @@ export default async function PaintFromSOPage({
           colorName: b.color?.name_en ?? null,
           colorHex: b.color?.hex ?? null,
           templateLabel: tpl
-            ? [tpl.family, tpl.frame_size, tpl.name_en]
+            ? [tpl.family?.name, tpl.frame_size, tpl.name_en]
                 .filter(Boolean)
                 .join(" · ")
             : null,

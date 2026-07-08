@@ -40,7 +40,7 @@ export default async function BikeQRPage({
     .from("bikes")
     .select(
       `id, frame_number, status,
-       template:bike_templates(id, name_en, family, frame_size),
+       template:bike_templates(id, name_en, family:bike_families(name), frame_size),
        bike_type:bike_types(id, name_en),
        owner_organization:organizations!owner_organization_id(
          id, legal_name, display_name_en, display_name_da
@@ -56,7 +56,7 @@ export default async function BikeQRPage({
   const svg = await qrSvg(url, { width: 512, margin: 2 });
 
   const templateLabel = bike.template
-    ? [bike.template.family, bike.template.frame_size, bike.template.name_en]
+    ? [bike.template.family?.name, bike.template.frame_size, bike.template.name_en]
         .filter(Boolean)
         .join(" · ")
     : null;

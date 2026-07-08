@@ -28,9 +28,10 @@ export default async function NewBikePage() {
       .order("sort_order", { ascending: true }),
     supabase
       .from("bike_templates")
-      .select("id, name_en, family, frame_size, version, bike_type_id")
+      .select(
+        "id, name_en, family:bike_families(name), frame_size, version, bike_type_id",
+      )
       .eq("is_current", true)
-      .order("family", { ascending: true, nullsFirst: false })
       .order("frame_size", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase
@@ -47,7 +48,10 @@ export default async function NewBikePage() {
   }));
   const defaultBikeTypeId =
     typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
-  const templates: TemplateOption[] = templatesRes.data ?? [];
+  const templates: TemplateOption[] = (templatesRes.data ?? []).map((t) => ({
+    ...t,
+    family: t.family?.name ?? null,
+  }));
   const colors: ColorOption[] = colorsRes.data ?? [];
 
   return (

@@ -51,7 +51,7 @@ export default async function PickListPrintPage({
     .from("manufacturing_orders")
     .select(
       `id, mo_number, target_quantity,
-       bike_template:bike_templates(name_en, family, frame_size),
+       bike_template:bike_templates(name_en, family:bike_families(name), frame_size),
        color:colors(name_en)`,
     )
     .eq("id", moId)
@@ -187,7 +187,7 @@ export default async function PickListPrintPage({
   }
 
   const templateLabel = mo.bike_template
-    ? [mo.bike_template.family, mo.bike_template.frame_size, mo.bike_template.name_en]
+    ? [mo.bike_template.family?.name, mo.bike_template.frame_size, mo.bike_template.name_en]
         .filter(Boolean)
         .join(" · ")
     : null;

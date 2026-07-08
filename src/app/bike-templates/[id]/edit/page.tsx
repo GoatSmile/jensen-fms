@@ -15,6 +15,7 @@ import {
   TemplateForm,
   type BikeTypeOption,
   type CurrencyOption,
+  type FamilyOption,
   type TemplateShellValues,
 } from "../../_components/template-form";
 
@@ -26,13 +27,13 @@ export default async function EditBikeTemplatePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [tplRes, typesRes, currenciesRes] = await Promise.all([
+  const [tplRes, typesRes, currenciesRes, familiesRes] = await Promise.all([
     supabase
       .from("bike_templates")
       .select(
         `
           id, name_en, name_da, notes, version, is_current,
-          bike_type_id, family, frame_size,
+          bike_type_id, family_id, frame_size,
           default_retail_price, default_retail_currency
         `,
       )
@@ -49,6 +50,11 @@ export default async function EditBikeTemplatePage({
       .select("code, symbol")
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
+    supabase
+      .from("bike_families")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (tplRes.error) {
@@ -59,7 +65,7 @@ export default async function EditBikeTemplatePage({
   const t = tplRes.data;
   const initial: TemplateShellValues = {
     bike_type_id: t.bike_type_id,
-    family: t.family ?? "",
+    family_id: t.family_id ?? "",
     frame_size: t.frame_size,
     name_en: t.name_en,
     name_da: t.name_da ?? "",
@@ -70,6 +76,7 @@ export default async function EditBikeTemplatePage({
   };
   const bikeTypes: BikeTypeOption[] = typesRes.data ?? [];
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];
+  const families: FamilyOption[] = familiesRes.data ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -113,6 +120,7 @@ export default async function EditBikeTemplatePage({
         initial={initial}
         bikeTypes={bikeTypes}
         currencies={currencies}
+        families={families}
       />
     </div>
   );

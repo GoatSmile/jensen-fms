@@ -23,7 +23,7 @@ export async function loadWOPickables(): Promise<{
         `
           id, frame_number, owner_organization_id,
           bike_type:bike_types(name_en),
-          bike_template:bike_templates(family, frame_size, name_en),
+          bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         `,
       )
@@ -46,7 +46,7 @@ export async function loadWOPickables(): Promise<{
 
   const bikes: BikeOption[] = (bikesRes.data ?? []).map((b) => {
     const templateLabel = b.bike_template
-      ? [b.bike_template.family, b.bike_template.frame_size]
+      ? [b.bike_template.family?.name, b.bike_template.frame_size]
           .filter(Boolean)
           .join(" · ")
       : null;

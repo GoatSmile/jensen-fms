@@ -76,7 +76,7 @@ export default async function PaintOrderDetailPage({
             color:colors(id, name_en, hex, ral_code, coating),
             bike:bikes(
               id, frame_number, status,
-              template:bike_templates(id, name_en, family, frame_size, version)
+              template:bike_templates(id, name_en, family:bike_families(name), frame_size, version)
             )
           `,
         )
@@ -87,7 +87,7 @@ export default async function PaintOrderDetailPage({
         .select(
           `
             id, frame_number,
-            template:bike_templates(id, name_en, family, frame_size)
+            template:bike_templates(id, name_en, family:bike_families(name), frame_size)
           `,
         )
         .is("deleted_at", null)
@@ -135,7 +135,7 @@ export default async function PaintOrderDetailPage({
   const bikeRows: PaintOrderBikeRow[] = linkData.map((r) => {
     const tpl = r.bike?.template;
     const templateLabel = tpl
-      ? [tpl.family, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
+      ? [tpl.family?.name, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
       : null;
     // svaj is an add-on SKU, so a line's cost can span several SKUs — sum
     // them per currency, and flag with "+ ?" if a component SKU is unpriced
@@ -194,7 +194,7 @@ export default async function PaintOrderDetailPage({
     .map((b) => {
       const tpl = b.template;
       const templateLabel = tpl
-        ? [tpl.family, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
+        ? [tpl.family?.name, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
         : null;
       return {
         id: b.id,

@@ -49,7 +49,7 @@ export default async function BikeBuildWorkbenchPage({
       .from("manufacturing_orders")
       .select(
         `id, mo_number, status,
-         bike_template:bike_templates(id, name_en, family, frame_size),
+         bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size),
          color:colors(name_en, hex),
          sales_order:sales_orders!sales_order_id(production_note)`,
       )
@@ -304,7 +304,7 @@ export default async function BikeBuildWorkbenchPage({
 
   const templateLabel = mo.bike_template
     ? [
-        mo.bike_template.family,
+        mo.bike_template.family?.name,
         mo.bike_template.frame_size,
         mo.bike_template.name_en,
       ]

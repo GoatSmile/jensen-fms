@@ -38,12 +38,11 @@ export default async function NewManufacturingOrderPage({
       .from("bike_templates")
       .select(
         `
-          id, name_en, family, frame_size, version, is_current, bike_type_id,
+          id, name_en, family:bike_families(name), frame_size, version, is_current, bike_type_id,
           bike_type:bike_types(name_en)
         `,
       )
       .eq("is_current", true)
-      .order("family", { ascending: true, nullsFirst: false })
       .order("frame_size", { ascending: true })
       .order("name_en", { ascending: true }),
     supabase
@@ -74,7 +73,7 @@ export default async function NewManufacturingOrderPage({
   const templates: TemplateOption[] = (templatesRes.data ?? []).map((t) => ({
     id: t.id,
     name_en: t.name_en,
-    family: t.family,
+    family: t.family?.name ?? null,
     frame_size: t.frame_size,
     version: t.version,
     is_current: t.is_current,

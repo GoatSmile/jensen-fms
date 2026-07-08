@@ -89,7 +89,7 @@ export default async function MaintenanceTicketsPage({
         description,
         bike:bikes!bike_id(
           id, frame_number,
-          bike_template:bike_templates(family, frame_size, name_en),
+          bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         )
       `,
@@ -185,7 +185,7 @@ export default async function MaintenanceTicketsPage({
                 const bike = t.bike;
                 const templateLabel = bike?.bike_template
                   ? [
-                      bike.bike_template.family,
+                      bike.bike_template.family?.name,
                       bike.bike_template.frame_size,
                     ]
                       .filter(Boolean)

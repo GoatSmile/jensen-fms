@@ -43,7 +43,7 @@ export async function AssignedBikesSection({ organizationId }: Props) {
     .select(
       `
         id, frame_number, status, assigned_at,
-        template:bike_templates(id, name_en, family, frame_size)
+        template:bike_templates(id, name_en, family:bike_families(name), frame_size)
       `,
     )
     .eq("owner_organization_id", organizationId)
@@ -120,7 +120,7 @@ export async function AssignedBikesSection({ organizationId }: Props) {
                       {b.template ? (
                         <span>
                           {[
-                            b.template.family,
+                            b.template.family?.name,
                             b.template.frame_size,
                             b.template.name_en,
                           ]

@@ -36,7 +36,7 @@ export default async function PublicBikePage({
     .from("bikes")
     .select(
       `id, frame_number, status,
-       template:bike_templates(id, name_en, family, frame_size),
+       template:bike_templates(id, name_en, family:bike_families(name), frame_size),
        bike_type:bike_types(name_en),
        color:colors(name_en, hex),
        owner_organization:organizations!owner_organization_id(
@@ -51,7 +51,7 @@ export default async function PublicBikePage({
   if (!bike) notFound();
 
   const templateLabel = bike.template
-    ? [bike.template.family, bike.template.frame_size, bike.template.name_en]
+    ? [bike.template.family?.name, bike.template.frame_size, bike.template.name_en]
         .filter(Boolean)
         .join(" · ")
     : null;

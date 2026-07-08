@@ -48,7 +48,7 @@ export default async function QRPrintPage({
     .from("bikes")
     .select(
       `id, frame_number,
-       template:bike_templates(family, frame_size, name_en)`,
+       template:bike_templates(family:bike_families(name), frame_size, name_en)`,
     )
     .is("deleted_at", null)
     .order("frame_number", { ascending: true })
@@ -113,7 +113,7 @@ export default async function QRPrintPage({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 print:grid-cols-3 print:gap-2">
           {qrs.map(({ bike, svg }) => {
             const tplLabel = bike.template
-              ? [bike.template.family, bike.template.frame_size]
+              ? [bike.template.family?.name, bike.template.frame_size]
                   .filter(Boolean)
                   .join(" · ")
               : "";

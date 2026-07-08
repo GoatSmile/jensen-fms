@@ -72,7 +72,7 @@ export default async function WorkOrdersPage({
         id, wo_number, status, is_billable, started_at, completed_at, created_at,
         bike:bikes!bike_id(
           id, frame_number,
-          bike_template:bike_templates(family, frame_size),
+          bike_template:bike_templates(family:bike_families(name), frame_size),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         )
       `,
@@ -187,7 +187,7 @@ export default async function WorkOrdersPage({
               {rows.map((wo) => {
                 const bike = wo.bike;
                 const templateLabel = bike?.bike_template
-                  ? [bike.bike_template.family, bike.bike_template.frame_size]
+                  ? [bike.bike_template.family?.name, bike.bike_template.frame_size]
                       .filter(Boolean)
                       .join(" · ")
                   : null;

@@ -46,7 +46,8 @@ export default async function BikeTemplatesPage({
         id,
         name_en,
         name_da,
-        family,
+        family_id,
+        family:bike_families(name, sort_order),
         frame_size,
         version,
         is_current,
@@ -56,7 +57,6 @@ export default async function BikeTemplatesPage({
         bike_type:bike_types(id, name_en)
       `,
     )
-    .order("family", { ascending: true, nullsFirst: false })
     .order("frame_size", { ascending: true })
     .order("version", { ascending: false });
 
@@ -81,19 +81,28 @@ export default async function BikeTemplatesPage({
     );
   }
 
-  // Group rows by family — null family lands in an "Ungrouped" bucket at the end.
+  // Group rows by family — templates with no family land in an "Ungrouped"
+  // bucket at the end. Families order by their admin-set sort_order.
   type Row = (typeof rows)[number];
-  const groups = new Map<string, { label: string; rows: Row[] }>();
+  const groups = new Map<
+    string,
+    { label: string; sortOrder: number; rows: Row[] }
+  >();
   for (const r of rows) {
-    const key = r.family ? r.family : UNGROUPED_KEY;
-    const label = r.family ?? UNGROUPED_LABEL;
-    const entry = groups.get(key) ?? { label, rows: [] };
+    const key = r.family_id ?? UNGROUPED_KEY;
+    const label = r.family?.name ?? UNGROUPED_LABEL;
+    const sortOrder = r.family?.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const entry = groups.get(key) ?? { label, sortOrder, rows: [] };
     entry.rows.push(r);
     groups.set(key, entry);
   }
   const orderedGroupKeys = [...groups.keys()]
     .filter((k) => k !== UNGROUPED_KEY)
-    .sort((a, b) => groups.get(a)!.label.localeCompare(groups.get(b)!.label));
+    .sort((a, b) => {
+      const ga = groups.get(a)!;
+      const gb = groups.get(b)!;
+      return ga.sortOrder - gb.sortOrder || ga.label.localeCompare(gb.label);
+    });
   if (groups.has(UNGROUPED_KEY)) orderedGroupKeys.push(UNGROUPED_KEY);
 
   return (

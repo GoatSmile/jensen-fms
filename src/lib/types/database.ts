@@ -388,7 +388,7 @@ export type Database = {
           created_by: string | null
           default_retail_currency: string | null
           default_retail_price: number | null
-          family: string | null
+          family_id: string | null
           frame_size: string
           id: string
           is_current: boolean
@@ -403,7 +403,7 @@ export type Database = {
           created_by?: string | null
           default_retail_currency?: string | null
           default_retail_price?: number | null
-          family?: string | null
+          family_id?: string | null
           frame_size: string
           id?: string
           is_current?: boolean
@@ -418,7 +418,7 @@ export type Database = {
           created_by?: string | null
           default_retail_currency?: string | null
           default_retail_price?: number | null
-          family?: string | null
+          family_id?: string | null
           frame_size?: string
           id?: string
           is_current?: boolean
@@ -442,7 +442,38 @@ export type Database = {
             referencedRelation: "currencies"
             referencedColumns: ["code"]
           },
+          {
+            foreignKeyName: "bike_templates_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "bike_families"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      bike_families: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       bike_type_required_identifiers: {
         Row: {
