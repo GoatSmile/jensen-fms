@@ -860,18 +860,42 @@ the live write test, same pattern as Resend was).
   numbers instead of guessing). Seeded/pre-filled: U25, group 1, zone 1,
   journal 1, account 1010 (standard DK chart) — **confirm journal +
   revenue account with the revisor before the first real push**;
-  payment terms deliberately unset.
+  payment terms set to 3 (Netto 14 dage) 2026-07-09 from the trial's
+  vocabulary — re-verify the number on the production agreement.
 - Files: `src/lib/economic/{client,settings,push-invoice}.ts` (thin fetch
   wrapper, no SDK), action `src/app/invoices/_actions/push-economic.ts`,
   `EconomicSyncCard` on the invoice detail (shows for non-draft/cancelled
   invoices once enabled; push button blocked-with-reason on config/env
   gaps; e-conomic errors surfaced verbatim).
-- **Remaining for 3E**: owner creates the API tokens (e-conomic developer
-  agreement + grant on the production agreement), set payment terms,
-  revisor confirms journal/account, first live push against a real issued
-  invoice. Phase 2: payment-status pull (booked-entry remainder →
-  `paid_date`, feeds the dashboard receivables card) and the EAN/OIOUBL
-  e-invoicing transmission question.
+- **Live write test PASSED (2026-07-09, against a TRIAL agreement).**
+  Owner created the developer-agreement tokens; the grant is on a fresh
+  e-conomic **trial** agreement 2446940 ("Din virksomhed") — access to
+  the real production Jensen agreement isn't expected until **end of
+  July 2026**. Tokens in `.env.local`; `economic_enabled = true`,
+  `economic_payment_terms = 3` (Netto 14 dage — trial vocabulary; re-check
+  on the production agreement). Full path verified end-to-end via the
+  invoice-detail push button on a temporary fixture invoice (mixed
+  25% + 0% export lines): draft voucher `2026 J1 V1` landed in the trial's
+  kassekladde with two `manualCustomerInvoice` entries (1.250 kr w/ U25,
+  500 kr export w/o VAT code, contra 1010, due date carried), customer
+  auto-created (#1) with CVR/address/terms/zone, `economic_voucher_id` +
+  `economic_synced_at` + `economic_customer_number` all stamped locally.
+  FMS fixture deleted after; the voucher + customer #1 were left in the
+  trial for inspection (Regnskab → Kassekladde "Daglig").
+- **⚠️ Before switching tokens to the production agreement**: any
+  `organizations.economic_customer_number` and
+  `invoices.economic_voucher_id`/`economic_synced_at` stamped while
+  pointing at the trial refer to TRIAL entities and must be cleared, or
+  pushes will silently reference wrong/missing customers. Currently none
+  exist (test fixture cleaned) — keep it that way by not pushing real
+  invoices to the trial, or expect to re-clear.
+- **Remaining for 3E**: swap the grant token to the production agreement
+  (~end of July), re-run Test connection + confirm the config numbers
+  against the real books (journal / account 1010 / U25 / payment terms)
+  with the revisor, then the first push of a real issued invoice.
+  Phase 2: payment-status pull (booked-entry remainder → `paid_date`,
+  feeds the dashboard receivables card) and the EAN/OIOUBL e-invoicing
+  transmission question.
 
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
