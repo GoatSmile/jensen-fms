@@ -22,6 +22,7 @@ import {
   type PartInCategory,
   type RecipeRow,
 } from "./_components/parts-recipe-section";
+import { DeleteTemplateButton } from "./_components/delete-template-button";
 import { DuplicateTemplateButton } from "./_components/duplicate-template-button";
 import { LabelBomKit } from "./_components/label-bom-kit";
 import {
@@ -270,6 +271,7 @@ export default async function BikeTemplateDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
+          <DeleteTemplateButton templateId={t.id} />
           <DuplicateTemplateButton templateId={t.id} />
           <Button variant="outline" asChild>
             <Link href={`/bike-templates/${t.id}/edit`}>

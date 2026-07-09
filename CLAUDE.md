@@ -195,7 +195,12 @@ cross-cutting. Original SQL files live in `/migrations/`.
     `.eq("is_active", true)`.
   - **`is_current` (versioned)** — **only** `bike_templates`. Many
     versions; one is current. Past versions stay queryable so old MOs
-    keep their recipe. Query with `.eq("is_current", true)`.
+    keep their recipe. Query with `.eq("is_current", true)`. Unreferenced
+    templates (no bikes/MOs/SO/offer/invoice lines) can be HARD deleted
+    from the template detail (`delete-template.ts`, 2026-07-09 — deleting
+    a current version promotes the newest surviving sibling). Retiring a
+    referenced-but-discontinued product would be an `is_active` archive
+    flag — designed, not built; add it when the first real case appears.
   - Some tables (`organizations`, `suppliers`, `part_categories`) carry
     BOTH `deleted_at` and `is_active` — "archived" vs "deleted" are
     distinct lifecycles there. Pickers read `is_active = true`; the
