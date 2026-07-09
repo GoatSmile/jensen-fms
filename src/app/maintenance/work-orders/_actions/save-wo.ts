@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { findActiveAgreementForBike } from "@/lib/agreements/coverage";
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import type { TicketStatus } from "@/lib/maintenance/ticket-status";
@@ -18,51 +19,23 @@ export type SaveWOResult =
 const VALID_LANGUAGES = new Set(["da", "en"]);
 
 /**
- * Look up an active service agreement covering the bike's owner organization,
- * if any. Returns the agreement plus an inferred is_billable flag:
+ * Coverage stamp for a new work order, resolved through the shared
+ * bike-coverage rule (`src/lib/agreements/coverage.ts`):
  *   is_billable = NOT (covers_parts AND covers_labor)
  *
- * "Active" = status='active' AND start_date <= today AND
- *            (end_date IS NULL OR end_date >= today).
- *
- * This is a stub for M3c — the full coverage UX (per-part toggle, labor
- * coverage override on the WO) lands in that push.
+ * Per-bucket coverage (parts vs labor) is applied at invoicing; a partially
+ * covered WO stays billable here.
  */
 async function findActiveCoverageForBike(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bikeId: string,
 ): Promise<{ agreementId: string | null; isBillable: boolean }> {
-  const { data: bike } = await supabase
-    .from("bikes")
-    .select("owner_organization_id, owner_unit_id")
-    .eq("id", bikeId)
-    .maybeSingle();
-  const orgId = bike?.owner_organization_id ?? null;
-  if (!orgId) return { agreementId: null, isBillable: true };
-  const unitId = bike?.owner_unit_id ?? null;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: agreements } = await supabase
-    .from("service_agreements")
-    .select("id, covers_parts, covers_labor, organization_unit_id")
-    .eq("organization_id", orgId)
-    .eq("status", "active")
-    .lte("start_date", today)
-    .or(`end_date.is.null,end_date.gte.${today}`)
-    .order("start_date", { ascending: false });
-
-  // Prefer an agreement scoped to the bike's own unit; otherwise fall back to
-  // an org-wide one (organization_unit_id IS NULL). A unit-scoped agreement
-  // for a *different* unit does NOT cover this bike.
-  const list = agreements ?? [];
-  const agreement =
-    (unitId && list.find((a) => a.organization_unit_id === unitId)) ||
-    list.find((a) => a.organization_unit_id == null) ||
-    null;
-
+  const agreement = await findActiveAgreementForBike(supabase, bikeId);
   if (!agreement) return { agreementId: null, isBillable: true };
-  const isBillable = !(agreement.covers_parts && agreement.covers_labor);
-  return { agreementId: agreement.id, isBillable };
+  return {
+    agreementId: agreement.id,
+    isBillable: !(agreement.covers_parts && agreement.covers_labor),
+  };
 }
 
 type CreateWOPayload = {

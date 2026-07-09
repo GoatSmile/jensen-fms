@@ -3,6 +3,14 @@ import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
 
 import {
+  coverageScopeLabel,
+  daysUntilEnd,
+  EXPIRY_WARNING_DAYS,
+  loadActiveAgreements,
+  resolveCoverage,
+} from "@/lib/agreements/coverage";
+
+import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -151,6 +159,17 @@ export default async function BikeDetailPage({
   if (!bikeRes.data) notFound();
 
   const b = bikeRes.data;
+
+  // Derived agreement coverage — follows the bike's current owner (see
+  // src/lib/agreements/coverage.ts). null = no owner or no active agreement.
+  const coverage = b.owner_organization_id
+    ? resolveCoverage(
+        await loadActiveAgreements(supabase, b.owner_organization_id),
+        b.owner_organization_id,
+        b.owner_unit_id,
+      )
+    : null;
+  const coverageDaysLeft = coverage ? daysUntilEnd(coverage) : null;
 
   // Required identifiers for this bike type — used to compute "X of Y registered".
   const requiredRes = await supabase
@@ -405,6 +424,42 @@ export default async function BikeDetailPage({
               </div>
             ) : (
               <Muted>Not assigned to a customer.</Muted>
+            )}
+          </Field>
+          <Field label="Service agreement">
+            {coverage ? (
+              <div className="flex flex-col gap-0.5">
+                <Link
+                  href={`/service-agreements/${coverage.id}`}
+                  className="hover:underline"
+                >
+                  {coverage.name_da ?? coverage.name_en}
+                </Link>
+                <span className="text-muted-foreground text-xs">
+                  {coverageScopeLabel(coverage)}
+                </span>
+                {coverage.end_date == null ? (
+                  <span className="text-muted-foreground text-xs">
+                    Runs until cancelled
+                  </span>
+                ) : (
+                  <span
+                    className={
+                      coverageDaysLeft != null &&
+                      coverageDaysLeft <= EXPIRY_WARNING_DAYS
+                        ? "text-xs font-medium text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground text-xs"
+                    }
+                  >
+                    Ends {formatDateDa(coverage.end_date)}
+                    {coverageDaysLeft != null
+                      ? ` · ${coverageDaysLeft} day${coverageDaysLeft === 1 ? "" : "s"} left`
+                      : ""}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <Muted>No active service agreement.</Muted>
             )}
           </Field>
           <Field label="Build cost">

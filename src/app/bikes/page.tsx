@@ -21,6 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ColorSwatch } from "@/components/color-swatch";
+import {
+  daysUntilEnd,
+  EXPIRY_WARNING_DAYS,
+  loadActiveAgreements,
+  resolveCoverage,
+  type ActiveAgreement,
+} from "@/lib/agreements/coverage";
 import { colorFinishLabel } from "@/lib/colors/coating";
 import { formatDate } from "@/lib/parts/format";
 import { EmptyState } from "@/components/empty-state";
@@ -117,17 +124,15 @@ export default async function BikesPage({
     builtLt = d.toISOString();
   }
 
-  // Maintenance fleet = bikes whose owner has an active service agreement.
-  // PostgREST can't join the agreement onto the bike's owner, so resolve the
-  // org ids first (same shape as the has-part pre-resolution below).
+  // Active agreements (status + date-bounded, unit-aware) power both the
+  // per-row coverage line and the maintenance-fleet filter. PostgREST can't
+  // join the agreement onto the bike's owner, so for the filter we pre-cut
+  // by org id in SQL and refine unit scoping in memory after the fetch.
+  const activeAgreements = await loadActiveAgreements(supabase);
   let fleetOrgIds: string[] | null = null;
   if (fleetFilter) {
-    const { data: ag } = await supabase
-      .from("service_agreements")
-      .select("organization_id")
-      .eq("status", "active");
     fleetOrgIds = Array.from(
-      new Set((ag ?? []).map((a) => a.organization_id).filter(Boolean)),
+      new Set(activeAgreements.map((a) => a.organization_id)),
     );
     if (fleetOrgIds.length === 0)
       fleetOrgIds = ["00000000-0000-0000-0000-000000000000"];
@@ -169,6 +174,7 @@ export default async function BikesPage({
         notes,
         deleted_at,
         built_at,
+        owner_unit_id,
         bike_type:bike_types(id, name_en),
         template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
         color:colors(id, name_en, hex, ral_code, coating),
@@ -270,8 +276,27 @@ export default async function BikesPage({
     throw new Error(`Failed to load bikes: ${bikesRes.error.message}`);
   }
 
-  const rows = bikesRes.data ?? [];
-  const totalCount = bikesRes.count ?? rows.length;
+  // Per-bike coverage (unit-scoped agreements beat org-wide; a different
+  // unit's agreement does not cover). Also the refinement pass for the fleet
+  // filter, whose SQL pre-cut is org-level only.
+  const allRows = bikesRes.data ?? [];
+  const coverageByBikeId = new Map<string, ActiveAgreement | null>();
+  for (const r of allRows) {
+    coverageByBikeId.set(
+      r.id,
+      resolveCoverage(
+        activeAgreements,
+        r.owner_organization?.id ?? null,
+        r.owner_unit_id,
+      ),
+    );
+  }
+  const rows = fleetFilter
+    ? allRows.filter((r) => coverageByBikeId.get(r.id))
+    : allRows;
+  const totalCount = fleetFilter
+    ? rows.length
+    : (bikesRes.count ?? rows.length);
 
   // Active-filter chips, each removable (link to the same URL minus that param).
   function hrefWithout(key: string): string {
@@ -657,11 +682,36 @@ export default async function BikesPage({
                     {b.owner_organization ? (
                       <Link
                         href={`/organizations/${b.owner_organization.id}`}
-                        className="block px-4 py-2.5 text-sm hover:underline"
+                        className="block px-4 py-2.5 text-sm"
                       >
-                        {b.owner_organization.display_name_da ??
-                          b.owner_organization.display_name_en ??
-                          b.owner_organization.legal_name}
+                        <span className="hover:underline">
+                          {b.owner_organization.display_name_da ??
+                            b.owner_organization.display_name_en ??
+                            b.owner_organization.legal_name}
+                        </span>
+                        {(() => {
+                          const cov = coverageByBikeId.get(b.id);
+                          if (!cov) return null;
+                          const days = daysUntilEnd(cov);
+                          const expiring =
+                            days != null && days <= EXPIRY_WARNING_DAYS;
+                          return (
+                            <span
+                              className={cn(
+                                "block text-xs",
+                                expiring
+                                  ? "font-medium text-amber-600 dark:text-amber-500"
+                                  : "text-muted-foreground",
+                              )}
+                            >
+                              {cov.end_date == null
+                                ? "Agreement · no end date"
+                                : expiring
+                                  ? `Agreement ends ${formatDate(cov.end_date)}`
+                                  : `Agreement until ${formatDate(cov.end_date)}`}
+                            </span>
+                          );
+                        })()}
                       </Link>
                     ) : (
                       <Link
