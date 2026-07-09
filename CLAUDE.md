@@ -634,9 +634,15 @@ config; only real secrets (Resend/Twilio API keys) live in env vars.**
   recipients + subject gets "[TEST]"), last-send stamp on
   `purchase_orders.emailed_at/emailed_to` ("test:"-prefixed when rerouted)
   shown under the PO header. Blocked for cancelled/empty POs.
-Remaining for Tier 3 (all owner-side): Resend account + API key, DNS
-records at the host (tracked in the admin DNS card), real supplier emails,
-then untick test mode.
+**Tier 3 go-live progress (2026-07-08/09):** Resend account created,
+domain `valent.dk` VERIFIED in Resend (EU region; DKIM + send-subdomain
+MX/SPF live at Dynadot, reference copy in the admin DNS card),
+`RESEND_API_KEY` in `.env.local` AND Vercel. First real test send
+delivered 2026-07-09 (PO-2026-0059, stamp `test:nicholas.nazar@gmail.com`)
+— the pipeline is verified end to end. Remaining: fill real supplier
+emails (18 missing — surfaced on the dashboard housekeeping card), create
+the `orders@valent.dk` alias in Google Workspace (from/reply-to both point
+there; direct replies bounce until it exists), then untick test mode.
 
 **Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
 6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*
@@ -768,7 +774,7 @@ Build order (no-schema wins first, then two batched migrations).
 
 (Numbered by build order, not the plan doc's item numbers.)
 
-### Dashboard overhaul (2026-07-08, phases 1–2 of 4 shipped — owner green-lit)
+### Dashboard overhaul (2026-07-08/09, ALL 4 phases + backfill SHIPPED)
 
 Redesign around three bands: act (money/commitments) / watch (pipelines) /
 learn (trends). **Owner's hard requirement: no busy screen — sections whose
@@ -791,10 +797,30 @@ data is too thin to be useful must fold away.** Shipped:
   keeps a one-line text summary so folding hides detail, not signal) with a
   per-device localStorage override (`dashboard.fold.<id>`) that always wins.
   Children only mount while open (Recharts can't measure hidden containers).
-Parked phases: 3 = pipeline strips replacing the 7 flat KPI cards; 4 =
-purchasing spend chart (real PO history back to 2021) + data-housekeeping
-card. Charts start nearly empty post test-data-cleanup — an optional
-Excel/e-conomic sales-history backfill is an open owner decision.
+- **Phases 3–4 (2026-07-09):** three `PipelineCard` strips (Build:
+  planning→building→at painter→in stock, using `loadAtPainterBikeIds`;
+  Repair: tickets→WOs→done-7d; Orders in flight: SOs w/ DKK value→MOs→POs)
+  replaced the 7 flat KPI cards — parts/customers counts moved to the
+  footer reference strip beside cost basis. Purchasing trend chart
+  (landed DKK by PO order_date, aggregated app-side in
+  `loadPurchasingTrend` — no migration needed) + a "Data housekeeping"
+  fold (always default-collapsed): parts w/o origin, w/o HS code,
+  offerings w/o price, suppliers w/o email — the CLAUDE.md data-entry
+  backlog, now self-serve in-app.
+- **History backfill (2026-07-09, owner said "yes, backfill"):** migration
+  59 adds `legacy_monthly_stats` (month PK + the chart measures + source
+  text) which the RPC ADDS onto live numbers — rows must only cover
+  pre-system months (backfill ends 2026-04, live capture starts 2026-05;
+  clean boundary). Also fixed the RPC to exclude soft-deleted bikes from
+  sold/serviced (test remnants were counting). Imported: 836 bikes / 132
+  months (2012-04 → 2026-04) extracted from the owner's Excel
+  service-agreement register ("Bikes and customers.xlsx", 12
+  anniversary-month sheets, per-bike `Købt` dates; 93% sheet-month
+  consistency check). KNOWN LIMITS: agreement bikes only (undercounts
+  one-off sales); serviced + revenue columns left 0 — fillable later by
+  hand or via 3E/e-conomic. JSX gotcha hit here: multi-line text after an
+  `{expr}` can lose its leading space — write row copy as one template
+  literal.
 
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the

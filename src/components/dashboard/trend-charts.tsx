@@ -22,6 +22,7 @@ export type TrendMonth = {
   sales: number;
   service: number;
   fees: number;
+  purchasing: number;
 };
 
 const COLORS = {
@@ -31,6 +32,7 @@ const COLORS = {
   sales: "#2a78d6",
   service: "#1baf7a",
   fees: "#eda100",
+  purchasing: "#2a78d6",
 } as const;
 
 function Legend({ items }: { items: { color: string; label: string; line?: boolean }[] }) {
@@ -115,6 +117,38 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
               stroke={COLORS.underAgreement}
               strokeWidth={2}
               dot={{ r: 2.5, fill: COLORS.underAgreement, strokeWidth: 0 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+/** Single-series bars: landed DKK committed per month (by PO order date). */
+export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
+  return (
+    <div className="text-muted-foreground">
+      <div className="h-[200px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={months} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="currentColor" strokeOpacity={0.12} />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tick={AXIS_TICK}
+              tickFormatter={(v: number) =>
+                Math.abs(v) >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
+              }
+            />
+            <Tooltip content={<ChartTooltip money />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
+            <Bar
+              dataKey="purchasing"
+              name="Landed cost ordered"
+              fill={COLORS.purchasing}
+              maxBarSize={18}
+              radius={[3, 3, 0, 0]}
             />
           </ComposedChart>
         </ResponsiveContainer>

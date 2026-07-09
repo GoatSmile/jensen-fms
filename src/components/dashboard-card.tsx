@@ -61,6 +61,63 @@ export function StatCard({
   );
 }
 
+type PipelineStage = {
+  label: string;
+  value: string | number;
+  href: string;
+  /** Small line under the value, e.g. a DKK sum. */
+  hint?: string | null;
+};
+
+/**
+ * Pipeline strip — a titled card showing a left-to-right flow of stage
+ * counts (build: planning → building → …). Zeros stay visible: "nothing in
+ * build" is daily signal, unlike an empty attention list.
+ */
+export function PipelineCard({
+  title,
+  stages,
+}: {
+  title: string;
+  stages: PipelineStage[];
+}) {
+  return (
+    <section className="flex h-full flex-col gap-3 rounded-lg border p-4">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <div className="flex flex-1 items-start">
+        {stages.map((stage, i) => (
+          <React.Fragment key={stage.label}>
+            {i > 0 ? (
+              <span
+                className="text-muted-foreground/60 mt-1.5 shrink-0 px-1 text-sm"
+                aria-hidden
+              >
+                →
+              </span>
+            ) : null}
+            <Link
+              href={stage.href}
+              className="hover:bg-muted/50 -my-1 flex min-w-0 flex-1 flex-col rounded px-1.5 py-1 transition-colors"
+            >
+              <span className="text-2xl font-semibold tabular-nums">
+                {stage.value}
+              </span>
+              <span className="text-muted-foreground text-xs leading-tight">
+                {stage.label}
+              </span>
+              {stage.hint ? (
+                <span className="text-muted-foreground/80 text-[11px] tabular-nums">
+                  {stage.hint}
+                </span>
+              ) : null}
+            </Link>
+          </React.Fragment>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 type AttentionProps = {
   title: string;
   emptyMessage: string;

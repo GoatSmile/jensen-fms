@@ -2,41 +2,36 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  Bike,
-  Boxes,
-  Building2,
   CalendarClock,
   CircleCheck,
-  Hammer,
-  Paintbrush,
   TrendingUp,
-  Wrench,
 } from "lucide-react";
 
 import {
   AttentionCard,
-  StatCard,
+  PipelineCard,
 } from "@/components/dashboard-card";
 import { FoldSection } from "@/components/dashboard/fold-section";
 import {
   BikesTrendChart,
   InvoicedTrendChart,
+  PurchasingTrendChart,
   type TrendMonth,
 } from "@/components/dashboard/trend-charts";
 import { Badge } from "@/components/ui/badge";
 import {
+  loadHousekeeping,
   loadMoneyBand,
   loadMonthlyStats,
+  loadPipelines,
+  loadPurchasingTrend,
 } from "@/lib/dashboard/queries";
 import { cn } from "@/lib/utils";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
-import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
-import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 import { createClient } from "@/lib/supabase/server";
 
-const OPEN_PAINT_STATUSES = ["planned", "sent_to_painter", "at_painter"] as const;
 const AGING_PAINT_STATUSES = ["sent_to_painter", "at_painter"] as const;
 const PAINT_AGING_DAYS = 14;
 const ATTENTION_LIMIT = 5;
@@ -110,49 +105,26 @@ export default async function DashboardPage() {
 
   const [
     partsCount,
-    bikesCount,
-    openMOsCount,
-    openPaintCount,
     customersCount,
-    openTicketsCount,
-    openWOsCount,
     lowStockRes,
     overdueMOsRes,
     paintAgingRes,
     costBasisRes,
     moneyBand,
     monthlyStats,
+    pipelines,
+    purchasing,
+    housekeeping,
   ] = await Promise.all([
     supabase
       .from("parts")
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null),
     supabase
-      .from("bikes")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null)
-      .not("status", "in", "(retired,lost_or_stolen)"),
-    supabase
-      .from("manufacturing_orders")
-      .select("id", { count: "exact", head: true })
-      .in("status", OPEN_MO_STATUSES),
-    supabase
-      .from("paint_orders")
-      .select("id", { count: "exact", head: true })
-      .in("status", OPEN_PAINT_STATUSES),
-    supabase
       .from("organizations")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
       .is("deleted_at", null),
-    supabase
-      .from("maintenance_tickets")
-      .select("id", { count: "exact", head: true })
-      .in("status", OPEN_TICKET_STATUSES),
-    supabase
-      .from("work_orders")
-      .select("id", { count: "exact", head: true })
-      .in("status", OPEN_WO_STATUSES),
     // Top short parts. v_parts_dashboard already classifies stock_status.
     supabase
       .from("v_parts_dashboard")
@@ -191,6 +163,9 @@ export default async function DashboardPage() {
       .not("last_cost_dkk", "is", null),
     loadMoneyBand(supabase),
     loadMonthlyStats(supabase),
+    loadPipelines(supabase),
+    loadPurchasingTrend(supabase),
+    loadHousekeeping(supabase),
   ]);
 
   let costBasisDkk = 0;
@@ -228,6 +203,7 @@ export default async function DashboardPage() {
     sales: m.invoicedSales,
     service: m.invoicedService,
     fees: m.invoicedFees,
+    purchasing: purchasing.months.get(m.monthStart.slice(0, 7)) ?? 0,
   }));
   const totalSold = monthlyStats.reduce((s, m) => s + m.bikesSold, 0);
   const totalServiced = monthlyStats.reduce((s, m) => s + m.bikesServiced, 0);
@@ -251,6 +227,13 @@ export default async function DashboardPage() {
     invoicedTotal !== 0
       ? `${formatPrice(invoicedTotal, "DKK")} invoiced (ex VAT) in the last 12 months`
       : "No invoices issued yet";
+  const purchasingActiveMonths = trendMonths.filter(
+    (m) => m.purchasing > 0,
+  ).length;
+  const purchasingSummary =
+    purchasing.totalDkk > 0
+      ? `${formatPrice(purchasing.totalDkk, "DKK")} landed across ${purchasing.poCount} POs in the last 12 months`
+      : "No purchase orders in the last 12 months";
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-10">
@@ -428,50 +411,77 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* KPI strip — bumped to xl:grid-cols-7 to fit "Open work orders"
-          alongside the existing six cards on wide screens. */}
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
-        <StatCard
-          label="Parts in catalog"
-          value={partsCount.count ?? 0}
-          icon={Boxes}
-          href="/parts"
+      {/* Pipelines — how work is flowing. Zeros stay visible here:
+          "nothing in build" is daily signal, unlike an empty attention list. */}
+      <section className="grid gap-3 lg:grid-cols-3">
+        <PipelineCard
+          title="Build"
+          stages={[
+            {
+              label: "planning",
+              value: pipelines.build.planning,
+              href: "/bikes?status=planning",
+            },
+            {
+              label: "building",
+              value: pipelines.build.building,
+              href: "/work?tab=build",
+            },
+            {
+              label: "at painter",
+              value: pipelines.build.atPainter,
+              href: "/paint-orders",
+            },
+            {
+              label: "in stock",
+              value: pipelines.build.inStock,
+              href: "/bikes?status=in_stock",
+            },
+          ]}
         />
-        <StatCard
-          label="Active bikes"
-          value={bikesCount.count ?? 0}
-          icon={Bike}
-          href="/bikes"
+        <PipelineCard
+          title="Repair"
+          stages={[
+            {
+              label: "open tickets",
+              value: pipelines.repair.openTickets,
+              href: "/maintenance/tickets",
+            },
+            {
+              label: "work orders",
+              value: pipelines.repair.openWOs,
+              href: "/maintenance/work-orders",
+            },
+            {
+              label: "done, 7 days",
+              value: pipelines.repair.doneLast7,
+              href: "/maintenance/work-orders",
+            },
+          ]}
         />
-        <StatCard
-          label="Customers"
-          value={customersCount.count ?? 0}
-          icon={Building2}
-          href="/organizations"
-        />
-        <StatCard
-          label="Open tickets"
-          value={openTicketsCount.count ?? 0}
-          icon={Wrench}
-          href="/maintenance/tickets"
-        />
-        <StatCard
-          label="Open work orders"
-          value={openWOsCount.count ?? 0}
-          icon={Wrench}
-          href="/maintenance/work-orders"
-        />
-        <StatCard
-          label="Open manufacturing orders"
-          value={openMOsCount.count ?? 0}
-          icon={Hammer}
-          href="/manufacturing-orders"
-        />
-        <StatCard
-          label="Open paint orders"
-          value={openPaintCount.count ?? 0}
-          icon={Paintbrush}
-          href="/paint-orders"
+        <PipelineCard
+          title="Orders in flight"
+          stages={[
+            {
+              label: "sales orders",
+              value: pipelines.orders.openSOs,
+              href: "/sales-orders",
+              hint:
+                pipelines.orders.soValueDkk > 0
+                  ? formatPrice(pipelines.orders.soValueDkk, "DKK")
+                  : null,
+            },
+            {
+              label: "manufacturing",
+              value: pipelines.orders.openMOs,
+              href: "/manufacturing-orders",
+            },
+            {
+              label: "purchase orders",
+              value: pipelines.orders.openPOs,
+              href: "/purchase-orders",
+            },
+          ]}
         />
       </section>
 
@@ -609,17 +619,86 @@ export default async function DashboardPage() {
         >
           <InvoicedTrendChart months={trendMonths} />
         </FoldSection>
+        <FoldSection
+          storageId="purchasing-trend"
+          title="Purchasing — last 12 months"
+          summary={purchasingSummary}
+          defaultOpen={purchasingActiveMonths >= 2}
+        >
+          <PurchasingTrendChart months={trendMonths} />
+        </FoldSection>
+        <FoldSection
+          storageId="housekeeping"
+          title="Data housekeeping"
+          summary={
+            housekeeping.total > 0
+              ? `${housekeeping.total} gaps — origins, HS codes, prices, supplier emails`
+              : "No data gaps"
+          }
+          defaultOpen={false}
+        >
+          <ul className="flex flex-col gap-1.5">
+            {housekeeping.partsNoOrigin > 0 ? (
+              <BandRow href="/parts">
+                <span className="truncate">
+                  {`${plural(housekeeping.partsNoOrigin, "part")} without origin — new PO lines default to no import tax`}
+                </span>
+              </BandRow>
+            ) : null}
+            {housekeeping.partsNoHs > 0 ? (
+              <BandRow href="/parts">
+                <span className="truncate">
+                  {`${plural(housekeeping.partsNoHs, "part")} without an HS code`}
+                </span>
+              </BandRow>
+            ) : null}
+            {housekeeping.offeringsNoPrice > 0 ? (
+              <BandRow href="/parts">
+                <span className="truncate">
+                  {`${plural(housekeeping.offeringsNoPrice, "supplier offering")} without a purchase price — drafted POs come out at 0 kr.`}
+                </span>
+              </BandRow>
+            ) : null}
+            {housekeeping.suppliersNoEmail > 0 ? (
+              <BandRow href="/suppliers">
+                <span className="truncate">
+                  {`${plural(housekeeping.suppliersNoEmail, "supplier")} without an email — blocks "Email supplier"`}
+                </span>
+              </BandRow>
+            ) : null}
+          </ul>
+        </FoldSection>
       </section>
 
-      {/* Catalog cost basis — one-line headline stat */}
-      <section className="flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3">
+      {/* Reference line — slow-moving numbers that used to be KPI cards. */}
+      <section className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-lg border bg-muted/30 px-4 py-3">
         <div className="flex items-center gap-2 text-sm">
           <TrendingUp className="text-muted-foreground size-4" aria-hidden />
           <span className="text-muted-foreground">Catalog cost basis</span>
+          <span className="text-base font-semibold tabular-nums">
+            {formatPrice(costBasisDkk, "DKK")}
+          </span>
         </div>
-        <span className="text-base font-semibold tabular-nums">
-          {formatPrice(costBasisDkk, "DKK")}
-        </span>
+        <div className="text-muted-foreground flex items-center gap-4 text-sm">
+          <Link
+            href="/parts"
+            className="hover:text-foreground transition-colors"
+          >
+            <span className="text-foreground font-semibold tabular-nums">
+              {partsCount.count ?? 0}
+            </span>{" "}
+            parts in catalog
+          </Link>
+          <Link
+            href="/organizations"
+            className="hover:text-foreground transition-colors"
+          >
+            <span className="text-foreground font-semibold tabular-nums">
+              {customersCount.count ?? 0}
+            </span>{" "}
+            customers
+          </Link>
+        </div>
       </section>
     </div>
   );

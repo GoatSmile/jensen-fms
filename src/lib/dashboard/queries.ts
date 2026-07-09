@@ -17,6 +17,10 @@ import {
   findUninvoicedWOs,
 } from "@/lib/invoicing/uninvoiced";
 import { round2 } from "@/lib/invoicing/status";
+import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { OPEN_MO_STATUSES } from "@/lib/mo/status";
+import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
+import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
 
 type OrgRef = {
   legal_name: string;
@@ -224,6 +228,206 @@ export async function loadMoneyBand(
     expiringAgreements,
     latePOs,
     draftPOCount: draftPORes.count ?? 0,
+  };
+}
+
+export type Pipelines = {
+  build: {
+    planning: number;
+    building: number;
+    atPainter: number;
+    inStock: number;
+  };
+  repair: { openTickets: number; openWOs: number; doneLast7: number };
+  orders: {
+    openSOs: number;
+    soValueDkk: number;
+    openMOs: number;
+    openPOs: number;
+  };
+};
+
+const OPEN_SO_STATUSES = ["confirmed", "in_production", "ready"] as const;
+
+export async function loadPipelines(
+  supabase: SupabaseClient,
+): Promise<Pipelines> {
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const [
+    planningRes,
+    buildingRes,
+    inStockRes,
+    unbuiltIdsRes,
+    ticketsRes,
+    wosRes,
+    doneRes,
+    sosRes,
+    mosRes,
+    posRes,
+  ] = await Promise.all([
+    supabase
+      .from("bikes")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("status", "planning"),
+    supabase
+      .from("bikes")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("status", "building"),
+    supabase
+      .from("bikes")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("status", "in_stock"),
+    supabase
+      .from("bikes")
+      .select("id")
+      .is("deleted_at", null)
+      .in("status", ["planning", "building"]),
+    supabase
+      .from("maintenance_tickets")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_TICKET_STATUSES),
+    supabase
+      .from("work_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_WO_STATUSES),
+    supabase
+      .from("work_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "completed")
+      .gte("completed_at", weekAgo),
+    supabase
+      .from("sales_orders")
+      .select("total_amount, currency")
+      .in("status", [...OPEN_SO_STATUSES]),
+    supabase
+      .from("manufacturing_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", OPEN_MO_STATUSES),
+    supabase
+      .from("purchase_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["placed", "partially_received"]),
+  ]);
+
+  const unbuiltIds = (unbuiltIdsRes.data ?? []).map((b) => b.id as string);
+  const atPainter = (await loadAtPainterBikeIds(supabase, unbuiltIds)).size;
+
+  const soRows = sosRes.data ?? [];
+  const soValueDkk = round2(
+    soRows
+      .filter((r) => ((r.currency as string | null)?.trim() || "DKK") === "DKK")
+      .reduce((s, r) => s + Number(r.total_amount ?? 0), 0),
+  );
+
+  return {
+    build: {
+      planning: planningRes.count ?? 0,
+      building: buildingRes.count ?? 0,
+      atPainter,
+      inStock: inStockRes.count ?? 0,
+    },
+    repair: {
+      openTickets: ticketsRes.count ?? 0,
+      openWOs: wosRes.count ?? 0,
+      doneLast7: doneRes.count ?? 0,
+    },
+    orders: {
+      openSOs: soRows.length,
+      soValueDkk,
+      openMOs: mosRes.count ?? 0,
+      openPOs: posRes.count ?? 0,
+    },
+  };
+}
+
+export type PurchasingMonth = { monthKey: string; landedDkk: number };
+
+/**
+ * Landed DKK committed per month (by PO order_date), last 12 months.
+ * Aggregated app-side — a shop-scale line count, and it saves a migration.
+ */
+export async function loadPurchasingTrend(
+  supabase: SupabaseClient,
+): Promise<{ months: Map<string, number>; poCount: number; totalDkk: number }> {
+  const from = new Date();
+  from.setUTCMonth(from.getUTCMonth() - 11, 1);
+  const fromISO = from.toISOString().slice(0, 10);
+
+  const { data } = await supabase
+    .from("purchase_order_lines")
+    .select(
+      "quantity, landed_cost_dkk_per_unit, po:purchase_orders!purchase_order_id!inner(id, order_date, status)",
+    )
+    .in("po.status", ["placed", "partially_received", "received"])
+    .gte("po.order_date", fromISO);
+
+  const months = new Map<string, number>();
+  const poIds = new Set<string>();
+  let totalDkk = 0;
+  for (const row of data ?? []) {
+    const po = one(row.po);
+    if (!po?.order_date) continue;
+    const landed =
+      Number(row.quantity ?? 0) * Number(row.landed_cost_dkk_per_unit ?? 0);
+    if (!Number.isFinite(landed) || landed === 0) continue;
+    const key = String(po.order_date).slice(0, 7);
+    months.set(key, round2((months.get(key) ?? 0) + landed));
+    poIds.add(po.id as string);
+    totalDkk += landed;
+  }
+  return { months, poCount: poIds.size, totalDkk: round2(totalDkk) };
+}
+
+export type Housekeeping = {
+  partsNoOrigin: number;
+  partsNoHs: number;
+  offeringsNoPrice: number;
+  suppliersNoEmail: number;
+  total: number;
+};
+
+export async function loadHousekeeping(
+  supabase: SupabaseClient,
+): Promise<Housekeeping> {
+  const [originRes, hsRes, priceRes, emailRes] = await Promise.all([
+    supabase
+      .from("parts")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .is("origin", null),
+    supabase
+      .from("parts")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .is("hs_code_id", null),
+    supabase
+      .from("part_supplier_offerings")
+      .select("id, part:parts!part_id!inner(id)", {
+        count: "exact",
+        head: true,
+      })
+      .is("default_purchase_price", null)
+      .is("part.deleted_at", null),
+    supabase
+      .from("suppliers")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
+      .eq("is_active", true)
+      .or("email_primary.is.null,email_primary.eq."),
+  ]);
+  const partsNoOrigin = originRes.count ?? 0;
+  const partsNoHs = hsRes.count ?? 0;
+  const offeringsNoPrice = priceRes.count ?? 0;
+  const suppliersNoEmail = emailRes.count ?? 0;
+  return {
+    partsNoOrigin,
+    partsNoHs,
+    offeringsNoPrice,
+    suppliersNoEmail,
+    total: partsNoOrigin + partsNoHs + offeringsNoPrice + suppliersNoEmail,
   };
 }
 
