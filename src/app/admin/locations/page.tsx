@@ -83,12 +83,8 @@ export default async function AdminLocationsPage() {
         <h1 className="text-2xl font-semibold">Locations</h1>
         <p className="text-muted-foreground text-sm">
           The physical sites stock lives at. Most shops run one. The primary
-          location is where parts are received into and consumed from by default;
-          set it in{" "}
-          <Link href="/admin/settings" className="underline">
-            Settings
-          </Link>
-          .
+          location is where parts are received into and consumed from by
+          default — mark it on its row below.
         </p>
       </header>
 

@@ -15,41 +15,25 @@ import { SettingsForm } from "./_components/settings-form";
 import { CommunicationSettingsForm } from "./_components/communication-settings-form";
 import { EmailDnsCard } from "./_components/email-dns-card";
 import type { EmailDnsRecord } from "./_actions/save-settings";
-import {
-  LocationSettingsForm,
-  type LocationChoice,
-} from "./_components/location-settings-form";
 import { LanguageSettingsForm } from "./_components/language-settings-form";
 import { EconomicSettingsForm } from "./_components/economic-settings-form";
 import { economicEnvReady } from "@/lib/economic/client";
 
 export default async function AdminSettingsPage() {
   const supabase = await createClient();
-  const [settingsRes, locationsRes] = await Promise.all([
-    supabase
-      .from("app_settings")
-      .select(
-        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone, email_domain, email_dns_records, economic_enabled, economic_journal_number, economic_revenue_account, economic_vat_code, economic_customer_group, economic_vat_zone, economic_payment_terms",
-      )
-      .eq("id", 1)
-      .maybeSingle(),
-    supabase
-      .from("inventory_locations")
-      .select("id, code, name_en")
-      .eq("is_active", true)
-      .order("code", { ascending: true }),
-  ]);
+  const settingsRes = await supabase
+    .from("app_settings")
+    .select(
+      "default_transport_pct, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone, email_domain, email_dns_records, economic_enabled, economic_journal_number, economic_revenue_account, economic_vat_code, economic_customer_group, economic_vat_zone, economic_payment_terms",
+    )
+    .eq("id", 1)
+    .maybeSingle();
   const data = settingsRes.data;
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
-  const primaryLocationId = data?.primary_location_id ?? "";
-  const hideLocationInfo = data?.hide_location_info ?? false;
   const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
   const workerLanguage = (
     data?.worker_language === "da" ? "da" : "en"
   ) as "en" | "da";
-  const locationChoices: LocationChoice[] = (locationsRes.data ?? []).map(
-    (l) => ({ id: l.id, label: `${l.name_en} (${l.code})` }),
-  );
 
   // The jsonb rows were validated on write (saveEmailDnsSettings), but read
   // defensively — a hand-edited row shouldn't crash the settings page.
@@ -215,26 +199,6 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Locations</h2>
-          <p className="text-muted-foreground text-xs">
-            The primary site for stock, and whether to show location detail
-            app-wide. Manage the list of locations under{" "}
-            <Link href="/admin/locations" className="underline">
-              Locations
-            </Link>
-            .
-          </p>
-        </header>
-        <div className="p-4">
-          <LocationSettingsForm
-            locations={locationChoices}
-            initialPrimaryId={primaryLocationId}
-            initialHide={hideLocationInfo}
-          />
-        </div>
-      </section>
     </div>
   );
 }

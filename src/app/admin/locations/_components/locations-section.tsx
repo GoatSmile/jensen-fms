@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { MakePrimaryButton } from "./make-primary-button";
+
 export type LocationRow = {
   id: string;
   code: string;
@@ -62,6 +64,7 @@ export function LocationsSection({ rows }: { rows: LocationRow[] }) {
                   Movements
                 </TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]" />
                 <TableHead className="w-[36px]" />
               </TableRow>
             </TableHeader>
@@ -113,6 +116,11 @@ export function LocationsSection({ rows }: { rows: LocationRow[] }) {
                           <Badge variant="outline">Archived</Badge>
                         )}
                       </Link>
+                    </TableCell>
+                    <TableCell className="py-1.5 pr-0 pl-2 text-right">
+                      {row.isActive && !row.isPrimary ? (
+                        <MakePrimaryButton locationId={row.id} />
+                      ) : null}
                     </TableCell>
                     <TableCell className="p-0 text-right">
                       <Link

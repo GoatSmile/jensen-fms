@@ -91,11 +91,10 @@ export async function updateLocation(
 }
 
 /**
- * Flip the app-wide "hide location info" flag straight from the Locations
- * screen (the same setting lives on /admin/settings alongside the primary
- * picker; this is the one-click shortcut). Touches only hide_location_info, so
- * it never disturbs primary_location_id. Revalidates the surfaces whose layout
- * flexes on the flag.
+ * Flip the app-wide "hide location info" flag from the Locations screen —
+ * the flag's only control since location config moved off /admin/settings.
+ * Touches only hide_location_info, so it never disturbs primary_location_id.
+ * Revalidates the surfaces whose layout flexes on the flag.
  */
 export async function setLocationVisibility(
   hide: boolean,
@@ -111,6 +110,47 @@ export async function setLocationVisibility(
   revalidatePath("/admin/locations");
   revalidatePath("/admin");
   revalidatePath("/admin/settings");
+  revalidatePath("/parts/[id]", "page");
+  revalidatePath("/purchase-orders/[id]", "page");
+  return { ok: true };
+}
+
+/**
+ * Point app_settings.primary_location_id at a location, straight from its
+ * row on the Locations screen (location config lives here, not on
+ * /admin/settings). The primary is where receiving/consumption default to
+ * and what the hidden-location forms target — so only active locations
+ * qualify. Revalidates the surfaces that read the primary.
+ */
+export async function setPrimaryLocation(id: string): Promise<LocationResult> {
+  if (!id) return { ok: false, error: "Missing id." };
+
+  const supabase = await createClient();
+  const { data: loc } = await supabase
+    .from("inventory_locations")
+    .select("id, is_active")
+    .eq("id", id)
+    .maybeSingle();
+  if (!loc) return { ok: false, error: "Location not found." };
+  if (!loc.is_active) {
+    return {
+      ok: false,
+      error: "An archived location can't be primary — restore it first.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      primary_location_id: id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) {
+    return { ok: false, error: `Could not save: ${error.message}` };
+  }
+  revalidatePath("/admin/locations");
+  revalidatePath("/admin");
   revalidatePath("/parts/[id]", "page");
   revalidatePath("/purchase-orders/[id]", "page");
   return { ok: true };
@@ -140,7 +180,7 @@ export async function setLocationActive(
       return {
         ok: false,
         error:
-          "This is the primary shop location. Set a different primary in Settings before archiving it.",
+          "This is the primary shop location. Mark another location as primary before archiving it.",
       };
     }
   }

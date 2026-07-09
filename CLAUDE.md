@@ -75,9 +75,12 @@ cross-cutting. Original SQL files live in `/migrations/`.
     column, and receive / stock-adjust forms hide the location picker and target
     the primary location. Driven by a `hideLocations` / `primaryLocationId` prop
     pair threaded from the server pages — not a query-time filter.
-  - Admin CRUD at `/admin/locations` (mirrors `/admin/colors`); one-click
-    hide/reveal toggle there (flips only `hide_location_info`), and a "Locations"
-    section in `/admin/settings` (primary picker + toggle).
+  - **All location config lives at `/admin/locations`** (moved off
+    `/admin/settings` 2026-07-09): admin CRUD (mirrors `/admin/colors`),
+    the one-click hide/reveal toggle card (flips only
+    `hide_location_info`), and a per-row "Make primary" action on the list
+    (writes `primary_location_id`; active locations only). Settings has no
+    Locations section anymore.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).
