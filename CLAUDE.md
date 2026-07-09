@@ -279,13 +279,22 @@ cross-cutting. Original SQL files live in `/migrations/`.
   dark:bg-{hue}-950/20` (shared `Section` takes `className`); inner
   tables/chips sit on `bg-background` cards. Do NOT tint homogeneous
   entity-detail pages (bike/PO/MO/SO/org facets) or single-list pages —
-  color is meaningful only while it's scarce. **Part detail is the one
-  entity page with a partial tint** (July 2026): it stacks four domains, so
-  the foreign-domain sections tint (Stock + Movements sky; Supplier
-  offerings + Purchase history amber) while identity sections (Photos,
-  Details, Kit labels — whose sticker-colour chips ARE data) and same-domain
-  tail (Where used, Pricing history) stay neutral. Section order tells the
-  story: identity → availability → sourcing → usage → selling. Exception: the "Push to
+  color is meaningful only while it's scarce. **Two entity pages carry a
+  partial tint** (July 2026) because they genuinely stack foreign domains;
+  on both, section order = descending question frequency, which makes the
+  tint bands contiguous:
+  - **Part detail**: identity → availability → sourcing → usage → selling.
+    Stock + Movements sky; Supplier offerings + Purchase history amber;
+    identity (Photos, Details, Kit labels — whose sticker-colour chips ARE
+    data) and tail (Where used, Pricing history) neutral.
+  - **SO detail**: order content → production → settlement. Production note
+    (moved below Lines; restyled amber→sky — it's an instruction TO the
+    workshop, and amber now means money on this page) + Linked MOs + Paint
+    orders sky; Payments amber; Lines/notes neutral. The workbench build-note
+    banner stays amber (tech screens don't use the tint vocabulary).
+  Checked and deliberately NOT reordered/tinted: PO (homogeneous
+  purchasing), MO (homogeneous ops), ticket (two-column workspace, rail
+  cards already tinted), agreement (already identity → scope → history). Exception: the "Push to
   e-conomic" button wears e-conomic brand orange `#ef7d00` (hover `#e86807`)
   plus their "spark" logo mark inlined as `EconomicMark` in
   `economic-sync-card.tsx` (destination branding, not vocabulary; owner

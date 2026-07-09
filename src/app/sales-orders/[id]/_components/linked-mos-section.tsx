@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -28,20 +29,17 @@ export type LinkedMORow = {
 
 export function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Manufacturing orders</h2>
-        <p className="text-muted-foreground text-xs">
-          MOs spawned from this SO's bike-template lines. Open each to follow
-          build progress.
-        </p>
-      </header>
+    <Section
+      title="Manufacturing orders"
+      description="MOs spawned from this SO's bike-template lines. Open each to follow build progress."
+      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+    >
       {rows.length === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm italic">
+        <p className="text-muted-foreground text-sm italic">
           No MOs yet — spawn one from a template line above.
         </p>
       ) : (
-        <div className="overflow-x-auto md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -100,6 +98,6 @@ export function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
           </Table>
         </div>
       )}
-    </section>
+    </Section>
   );
 }

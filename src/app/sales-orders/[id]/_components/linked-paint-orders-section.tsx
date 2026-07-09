@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ColorChip } from "@/components/color-swatch";
@@ -37,28 +38,25 @@ export function LinkedPaintOrdersSection({
   canCreate: boolean;
 }) {
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Paint orders</h2>
-          <p className="text-muted-foreground text-xs">
-            Paint batches created from this SO&apos;s frames. A frame at the
-            painter can&apos;t be built until it&apos;s received back.
-          </p>
-        </div>
-        {canCreate ? (
+    <Section
+      title="Paint orders"
+      description="Paint batches created from this SO's frames. A frame at the painter can't be built until it's received back."
+      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+      action={
+        canCreate ? (
           <Button asChild size="sm" variant="outline">
             <Link href={`/sales-orders/${soId}/paint/new`}>New paint order</Link>
           </Button>
-        ) : null}
-      </header>
+        ) : undefined
+      }
+    >
       {rows.length === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm italic">
+        <p className="text-muted-foreground text-sm italic">
           No paint orders yet
           {canCreate ? " — send a batch of frames to the painter above." : "."}
         </p>
       ) : (
-        <div className="overflow-x-auto md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -108,6 +106,6 @@ export function LinkedPaintOrdersSection({
           </Table>
         </div>
       )}
-    </section>
+    </Section>
   );
 }

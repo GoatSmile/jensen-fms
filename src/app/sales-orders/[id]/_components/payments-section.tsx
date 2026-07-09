@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,26 +59,23 @@ export function PaymentsSection({
   const remaining = Math.max(0, soTotal - invoicedTotal);
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Payments</h2>
-          <p className="text-muted-foreground text-xs">
-            Deposits and the final invoice for this order. Down payments are taken
-            before delivery; the final bills the remaining balance.
-          </p>
-        </div>
-        {canDeposit ? (
+    <Section
+      title="Payments"
+      description="Deposits and the final invoice for this order. Down payments are taken before delivery; the final bills the remaining balance."
+      className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+      contentClassName="flex flex-col gap-3"
+      action={
+        canDeposit ? (
           <Button asChild size="sm" variant="outline">
             <Link href={`/sales-orders/${soId}/deposit/new`}>
               New deposit invoice
             </Link>
           </Button>
-        ) : null}
-      </header>
-
+        ) : undefined
+      }
+    >
       {soTotal > 0 ? (
-        <div className="flex flex-col gap-1.5 border-b px-4 py-3">
+        <div className="bg-background flex flex-col gap-1.5 rounded-md border px-4 py-3">
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="text-muted-foreground text-xs tracking-wide uppercase">
               {pct.toFixed(0)}% invoiced
@@ -103,12 +101,12 @@ export function PaymentsSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm italic">
+        <p className="text-muted-foreground text-sm italic">
           No invoices yet
           {canDeposit ? " — take a deposit above, or invoice in full at delivery." : "."}
         </p>
       ) : (
-        <div className="overflow-x-auto md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -144,6 +142,6 @@ export function PaymentsSection({
           </Table>
         </div>
       )}
-    </section>
+    </Section>
   );
 }

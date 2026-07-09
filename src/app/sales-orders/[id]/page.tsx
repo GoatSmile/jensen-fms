@@ -373,12 +373,6 @@ export default async function SODetailPage({
         </p>
       ) : null}
 
-      <ProductionNoteCard
-        soId={so.id}
-        initialNote={so.production_note}
-        editable={status !== "cancelled" && status !== "delivered"}
-      />
-
       <LinesSection
         soId={so.id}
         currency={so.currency}
@@ -392,7 +386,22 @@ export default async function SODetailPage({
         colors={colors}
       />
 
+      {/* Lifecycle order with contiguous tint bands: the order itself
+          (neutral) → production (sky: note + MOs + paint) → settlement
+          (amber). The production note heads the band it instructs. */}
+      <ProductionNoteCard
+        soId={so.id}
+        initialNote={so.production_note}
+        editable={status !== "cancelled" && status !== "delivered"}
+      />
+
       <LinkedMOsSection rows={moRows} />
+
+      <LinkedPaintOrdersSection
+        soId={so.id}
+        rows={paintRows}
+        canCreate={canCreatePaint}
+      />
 
       <PaymentsSection
         soId={so.id}
@@ -401,12 +410,6 @@ export default async function SODetailPage({
         soTotal={so.total_amount != null ? Number(so.total_amount) : 0}
         currency={so.currency}
         canDeposit={canDeposit}
-      />
-
-      <LinkedPaintOrdersSection
-        soId={so.id}
-        rows={paintRows}
-        canCreate={canCreatePaint}
       />
     </div>
   );
