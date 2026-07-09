@@ -170,6 +170,14 @@ cross-cutting. Original SQL files live in `/migrations/`.
     count: 1/10/20). Treating svaj as all-inclusive is the misread that once
     cost ~60.000 kr on a 200-frame order. `resolveLakSkus()` encodes this; do
     not "simplify" it back to one SKU per line.
+  - **⚠ Remodel decided 2026-07-09 (call): per-part itemized pricing.** The
+    painter scrapped package/scope pricing — every paintable part (frame,
+    fork, mudguards, chain guard, basket, sign, carrier…) gets its own item
+    number + price with quantity tiers (1–9 / 10–19 / …), and the painter's
+    numbers become our item numbers. Planned for July (see
+    `docs/plan-july9-vacation-month.md`, blocked on Dennis forwarding the
+    price list). The std/svaj model above stays authoritative until the
+    remodel ships — replace in one cut, don't rip it out first.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
@@ -944,6 +952,25 @@ the live write test, same pattern as Resend was).
   feeds the dashboard receivables card) and the EAN/OIOUBL e-invoicing
   transmission question.
 
+### July 2026 plan — vacation month (owner call 2026-07-09)
+
+Full plan in **`docs/plan-july9-vacation-month.md`** (tracks, sequence,
+pipeline deep-dive, provider decisions). The frame: Dennis is away until
+Aug 3, Nazar leaves Aug 4 — July output must be self-serve for Dennis's
+solo August onboarding. July tracks in order: housekeeping drill-down
+links + mobile photo verify (W1) · **paint per-part price remodel** (W1,
+blocked on Dennis forwarding the painter's list) · **i18n whole-app
+Danish** (next-intl, worker screens first, `de` scaffolded untranslated)
+· **phone→ticket pipeline v1** (harness-first: upload-a-voicemail test
+UI + Azure Speech EU + Claude extraction + deterministic matching in
+shadow mode; Twilio wired last with fetch-and-delete recordings) ·
+**device-role cookie** (owner/workshop, `can()` helper shaped for M1) ·
+**global identifier search** · maintenance/workshop-floor polish pass.
+Explicitly deferred to mid-August with Dennis: old-system data migration
+(owner-of-record lookups), invoicing-parity workshop + "paid" remark on
+the e-conomic voucher, role matrix refinement, e-conomic production
+cutover, supplier-email go-live.
+
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
   new origin model, unclassified origin means new PO lines default to **no
@@ -990,20 +1017,24 @@ The durable home for ideas parked mid-session (session "chips" die with the
 app). Add new ones here with enough context to act cold; delete the entry
 when the work ships or the idea is rejected.
 
-- **Full UI internationalisation (parked 2026-06-21, owner's call).** The app
-  UI is English-only — no i18n framework. The two **working-language settings**
-  exist (`app_settings.app_language` + `worker_language`, en/da, default en,
-  edited at `/admin/settings`; migration 49) but currently only **capture the
-  preference** — nothing re-renders in Danish yet. Customer-facing documents
-  (invoices, SO, public report) already honour their own `language`. To make it
-  real: add an i18n library (e.g. `next-intl`), extract every UI string to
-  translation files, translate to Danish, thread the active language through.
-  Recommended first slice: the **workshop/tech screens** (`/work`, work orders,
-  tickets) keyed off `worker_language` (where Danish-speaking build workers
-  need it), to prove the setup before an app-wide rollout. `worker_language`
-  becomes per-user when auth (M1) lands.
+- **Full UI internationalisation — UNPARKED 2026-07-09, July track.** Scope
+  decided: **whole app to Danish** (not just worker screens), `de` locale
+  scaffolded but untranslated (German ops is strategic, no user yet — from
+  the Jul-9 call). Build order: next-intl foundation → worker screens keyed
+  off `worker_language` (the employee who can't work in English) → app-wide
+  sweep keyed off `app_language`. The two settings exist (migration 49) and
+  currently only capture the preference. Customer-facing documents keep
+  their own per-document `language`. `worker_language` becomes per-user at
+  M1. See `docs/plan-july9-vacation-month.md`.
 
-- **Phone-call → ticket AI pipeline** (parked June 2026, designed in-session).
+- **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
+  Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
+  Speech EU, not plain OpenAI Whisper; Claude haiku extraction; GatewayAPI
+  SMS unchanged) and the build is **harness-first**: upload-a-voicemail
+  test UI + processing pipeline + shadow-mode tickets before any telephony
+  is wired. Full deep-dive in `docs/plan-july9-vacation-month.md`; the
+  design below remains the reference.
+  Original design (parked June 2026, designed in-session).
   Workshop calls become maintenance tickets automatically:
   - Telephony: Twilio (conditional forwarding from the existing number),
     dual-channel recording (tech leg / caller leg — speaker attribution for
@@ -1034,3 +1065,17 @@ when the work ships or the idea is rejected.
   - GDPR non-negotiables: recording announcement, retention policy (audio
     ~90 days, transcript/summary kept on ticket), DPAs with providers, EU
     residency. Cost ≈ under 2 kr. per 5-min call + ~50 kr./mo for the number.
+
+- **Sales track: website bike-configurator + AI lead-gen agent (parked
+  2026-07-09, by the owner's own call — "lay the bottom first").** Two ideas
+  from the Jul-9 call, both explicitly after the system is the daily
+  workhorse (his framing: earliest next year, debt down first):
+  - Homepage configurator that talks to the app: customer designs a bike on
+    jensenproduction.dk (phone-first), colour input → closest RAL from the
+    `colors` vocab, pick paintable parts with live pricing (the per-part
+    paint catalog makes this priceable), "send me an offer" → offer/quote in
+    the FMS.
+  - Lead-gen agent: monitor for prospect signals (e.g. companies relocating
+    to nearby business parks — his DXC/Nordhavn example), identify the right
+    contact, auto-draft outreach with the configurator link. Both belong
+    with the offers/quotes module (Tier 5).
