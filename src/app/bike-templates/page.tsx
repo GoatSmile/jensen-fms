@@ -196,7 +196,9 @@ export default async function BikeTemplatesPage({
                         <TableHead className="hidden sm:table-cell">
                           Type
                         </TableHead>
-                        <TableHead className="text-right">Retail</TableHead>
+                        <TableHead className="text-right">
+                          Retail (excl. VAT)
+                        </TableHead>
                         <TableHead className="hidden text-right md:table-cell">
                           Version
                         </TableHead>

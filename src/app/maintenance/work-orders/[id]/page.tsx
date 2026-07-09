@@ -268,8 +268,8 @@ export default async function WorkOrderDetailPage({
             title="Cost summary"
             description={
               wo.is_billable
-                ? "Parts at retail price + labour — the customer-facing total. Invoicing wires in M4."
-                : "Parts at retail price + labour — this work is covered by a service agreement and won't be invoiced."
+                ? "Parts at retail price + labour, excl. VAT — the invoice adds VAT on top."
+                : "Parts at retail price + labour, excl. VAT — this work is covered by a service agreement and won't be invoiced."
             }
           >
             <dl className="flex flex-col gap-2 text-sm">
@@ -303,7 +303,7 @@ export default async function WorkOrderDetailPage({
               />
               <div className="my-1 border-t" />
               <SummaryRow
-                label="Total"
+                label="Total (excl. VAT)"
                 value={<Money amount={total} currency="DKK" />}
                 strong
               />

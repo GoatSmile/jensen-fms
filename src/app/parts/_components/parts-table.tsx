@@ -102,7 +102,7 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
             />
             <SortableHeader
               column="default_retail_price"
-              label="Retail (DKK)"
+              label="Retail (DKK, excl. VAT)"
               align="right"
               className="hidden text-right md:table-cell"
             />

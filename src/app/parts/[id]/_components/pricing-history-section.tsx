@@ -25,7 +25,7 @@ export function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
   return (
     <Section
       title="Retail price history"
-      description="Time-bounded retail prices. The current row is the price applied to new orders today."
+      description="Time-bounded retail prices, excl. VAT. The current row is the price applied to new orders today."
     >
       {rows.length === 0 ? (
         <EmptyRow>No retail price history yet.</EmptyRow>

@@ -252,7 +252,7 @@ export function TemplateForm({
 
       <FormSection
         title="Default retail price"
-        description="The starting price for this template — can be overridden per quote line."
+        description="The starting price for this template, excl. VAT — can be overridden per quote line."
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field

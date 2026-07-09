@@ -223,7 +223,9 @@ export function WOPartDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="wo-part-unit-price">Unit price (DKK)</Label>
+              <Label htmlFor="wo-part-unit-price">
+                Unit price (DKK, excl. VAT)
+              </Label>
               <Input
                 id="wo-part-unit-price"
                 inputMode="decimal"

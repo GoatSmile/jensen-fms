@@ -631,7 +631,7 @@ export function PartsRecipeSection({
                   ) : null}
                   <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1">
                     <span>
-                      Parts retail total
+                      Parts retail total (excl. VAT)
                       {retailTotal.unpriced > 0 ? (
                         <span className="text-muted-foreground text-xs">
                           {" "}

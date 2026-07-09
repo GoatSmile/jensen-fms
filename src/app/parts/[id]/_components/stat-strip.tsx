@@ -41,7 +41,7 @@ export function StatStrip({
           </Badge>
         </div>
       </Stat>
-      <Stat label="Default retail price">
+      <Stat label="Default retail price (excl. VAT)">
         <Money
           amount={retailPrice}
           currency={retailCurrency ?? "DKK"}
@@ -49,7 +49,7 @@ export function StatStrip({
         />
         {retailPrice != null ? (
           <span className="text-muted-foreground text-xs">
-            customer-facing price
+            customer price — VAT added at invoicing
           </span>
         ) : null}
       </Stat>

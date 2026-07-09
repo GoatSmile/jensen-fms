@@ -707,7 +707,7 @@ export function BuildWorkbench({
                 </span>
                 {rows.length > 0 ? (
                   <span className="text-xs tabular-nums">
-                    Retail total:{" "}
+                    Retail total (excl. VAT):{" "}
                     <span className="font-semibold">
                       {formatDkk(retailTotal.sum)}
                     </span>

@@ -267,7 +267,7 @@ export function AddPartsWorkspace({
             </h2>
             {tray.length > 0 ? (
               <span className="text-xs tabular-nums">
-                Total:{" "}
+                Total (excl. VAT):{" "}
                 <span className="font-semibold">
                   <Money amount={retailTotal} currency="DKK" bold={false} />
                 </span>

@@ -452,7 +452,7 @@ export function PartForm({
             />
           </Field>
           <Field
-            label="Default retail price"
+            label="Default retail price (excl. VAT)"
             htmlFor="default_retail_price"
             error={errorField === "default_retail_price" ? error : null}
           >
