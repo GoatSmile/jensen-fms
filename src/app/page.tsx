@@ -197,6 +197,12 @@ export default async function DashboardPage() {
   // manual toggle (stored per device in FoldSection) always wins.
   const trendMonths: TrendMonth[] = monthlyStats.map((m) => ({
     label: trendLabel(m.monthStart),
+    month: m.monthStart,
+    monthTitle: new Date(`${m.monthStart}T00:00:00Z`).toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }),
     sold: m.bikesSold,
     serviced: m.bikesServiced,
     underAgreement: m.bikesUnderAgreement,

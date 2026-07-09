@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -13,9 +14,18 @@ import {
 
 import { formatPrice } from "@/lib/format";
 
+import {
+  MonthDetailSheet,
+  type MonthSelection,
+} from "./month-detail-sheet";
+
 /** One chart-ready month; labels are pre-formatted server-side. */
 export type TrendMonth = {
   label: string;
+  /** Month start (YYYY-MM-01) — the drill-down key. */
+  month: string;
+  /** Full label for the drill-down sheet title, e.g. "March 2026". */
+  monthTitle: string;
   sold: number;
   serviced: number;
   underAgreement: number;
@@ -24,6 +34,13 @@ export type TrendMonth = {
   fees: number;
   purchasing: number;
 };
+
+/** Recharts click payloads wrap the datum; unwrap defensively. */
+function datumOf(e: unknown): TrendMonth | null {
+  if (!e || typeof e !== "object") return null;
+  const wrapped = (e as { payload?: TrendMonth }).payload;
+  return wrapped ?? (e as TrendMonth);
+}
 
 const COLORS = {
   sold: "#2a78d6",
@@ -92,6 +109,16 @@ const AXIS_TICK = { fontSize: 11, fill: "currentColor" } as const;
 
 /** Bars for bikes sold + serviced per month, line for the fleet under agreement. */
 export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
+  const [sel, setSel] = useState<MonthSelection | null>(null);
+  const open = (kind: "sold" | "serviced") => (e: unknown) => {
+    const m = datumOf(e);
+    if (!m) return;
+    setSel({
+      kind,
+      monthStart: m.month,
+      title: `${kind === "sold" ? "Bikes sold" : "Bikes serviced"} — ${m.monthTitle}`,
+    });
+  };
   return (
     <div className="text-muted-foreground">
       <Legend
@@ -108,8 +135,8 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
             <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
-            <Bar dataKey="sold" name="Sold" fill={COLORS.sold} maxBarSize={14} radius={[3, 3, 0, 0]} />
-            <Bar dataKey="serviced" name="Serviced" fill={COLORS.serviced} maxBarSize={14} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="sold" name="Sold" fill={COLORS.sold} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("sold")} />
+            <Bar dataKey="serviced" name="Serviced" fill={COLORS.serviced} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("serviced")} />
             <Line
               dataKey="underAgreement"
               name="Under agreement"
@@ -121,12 +148,23 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <MonthDetailSheet selection={sel} onClose={() => setSel(null)} />
     </div>
   );
 }
 
 /** Single-series bars: landed DKK committed per month (by PO order date). */
 export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
+  const [sel, setSel] = useState<MonthSelection | null>(null);
+  const open = (e: unknown) => {
+    const m = datumOf(e);
+    if (!m) return;
+    setSel({
+      kind: "purchasing",
+      monthStart: m.month,
+      title: `Purchasing — ${m.monthTitle}`,
+    });
+  };
   return (
     <div className="text-muted-foreground">
       <div className="h-[200px] w-full">
@@ -149,16 +187,32 @@ export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
               fill={COLORS.purchasing}
               maxBarSize={18}
               radius={[3, 3, 0, 0]}
+              cursor="pointer"
+              onClick={open}
             />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <MonthDetailSheet selection={sel} onClose={() => setSel(null)} />
     </div>
   );
 }
 
 /** Stacked bars of invoiced DKK per month, split by source. */
 export function InvoicedTrendChart({ months }: { months: TrendMonth[] }) {
+  const [sel, setSel] = useState<MonthSelection | null>(null);
+  // All three stack segments open the same month view — the interesting
+  // unit is the month's invoices; the split is shown in the description.
+  const open = (e: unknown) => {
+    const m = datumOf(e);
+    if (!m) return;
+    setSel({
+      kind: "invoiced",
+      monthStart: m.month,
+      title: `Invoiced — ${m.monthTitle}`,
+      description: `Bike sales ${formatPrice(m.sales, "DKK")} · Service ${formatPrice(m.service, "DKK")} · Fees ${formatPrice(m.fees, "DKK")}`,
+    });
+  };
   return (
     <div className="text-muted-foreground">
       <Legend
@@ -182,12 +236,13 @@ export function InvoicedTrendChart({ months }: { months: TrendMonth[] }) {
               }
             />
             <Tooltip content={<ChartTooltip money />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
-            <Bar dataKey="sales" name="Bike sales" stackId="inv" fill={COLORS.sales} maxBarSize={18} />
-            <Bar dataKey="service" name="Service" stackId="inv" fill={COLORS.service} maxBarSize={18} />
-            <Bar dataKey="fees" name="Agreement fees" stackId="inv" fill={COLORS.fees} maxBarSize={18} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="sales" name="Bike sales" stackId="inv" fill={COLORS.sales} maxBarSize={18} cursor="pointer" onClick={open} />
+            <Bar dataKey="service" name="Service" stackId="inv" fill={COLORS.service} maxBarSize={18} cursor="pointer" onClick={open} />
+            <Bar dataKey="fees" name="Agreement fees" stackId="inv" fill={COLORS.fees} maxBarSize={18} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <MonthDetailSheet selection={sel} onClose={() => setSel(null)} />
     </div>
   );
 }

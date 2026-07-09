@@ -824,6 +824,16 @@ data is too thin to be useful must fold away.** Shipped:
   owner projected back, no ownership history exists); invoiced DKK ex VAT
   split sales/service/fees via line `service_agreement_id` + invoice
   `sales_order_id`, DKK-only (non-DKK excluded, not mixed).
+- **Chart drill-down (2026-07-09):** clicking a trend-chart bar opens a
+  side sheet with the records behind that month's number (sold → bike
+  roster, serviced → completed WOs, invoiced → the month's DKK invoices
+  ex VAT, purchasing → POs w/ landed totals), loaded on demand via
+  `loadMonthDetailAction` → `src/lib/dashboard/month-detail.ts` (semantics
+  mirror the RPC incl. soft-delete + Copenhagen month buckets). Months
+  covered by the Excel backfill have no per-record history — the sheet
+  shows the legacy row's count + source note instead of an empty list.
+  The under-agreement line is deliberately not clickable (a level, not a
+  flow — no month roster exists).
 - **FoldSection** (`src/components/dashboard/fold-section.tsx`): fold state
   has DATA-AWARE defaults (charts collapse while history is thin; the header
   keeps a one-line text summary so folding hides detail, not signal) with a
