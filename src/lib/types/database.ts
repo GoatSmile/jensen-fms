@@ -18,6 +18,13 @@ export type Database = {
         Row: {
           app_language: string
           default_transport_pct: number
+          economic_customer_group: number | null
+          economic_enabled: boolean
+          economic_journal_number: number | null
+          economic_payment_terms: number | null
+          economic_revenue_account: number | null
+          economic_vat_code: string | null
+          economic_vat_zone: number | null
           email_dns_records: Json
           email_domain: string | null
           hide_location_info: boolean
@@ -34,6 +41,13 @@ export type Database = {
         Insert: {
           app_language?: string
           default_transport_pct?: number
+          economic_customer_group?: number | null
+          economic_enabled?: boolean
+          economic_journal_number?: number | null
+          economic_payment_terms?: number | null
+          economic_revenue_account?: number | null
+          economic_vat_code?: string | null
+          economic_vat_zone?: number | null
           email_dns_records?: Json
           email_domain?: string | null
           hide_location_info?: boolean
@@ -50,6 +64,13 @@ export type Database = {
         Update: {
           app_language?: string
           default_transport_pct?: number
+          economic_customer_group?: number | null
+          economic_enabled?: boolean
+          economic_journal_number?: number | null
+          economic_payment_terms?: number | null
+          economic_revenue_account?: number | null
+          economic_vat_code?: string | null
+          economic_vat_zone?: number | null
           email_dns_records?: Json
           email_domain?: string | null
           hide_location_info?: boolean
@@ -1409,6 +1430,42 @@ export type Database = {
         }
         Relationships: []
       }
+      legacy_monthly_stats: {
+        Row: {
+          bikes_serviced: number
+          bikes_sold: number
+          created_at: string
+          invoiced_fees_dkk: number
+          invoiced_sales_dkk: number
+          invoiced_service_dkk: number
+          month_start: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          bikes_serviced?: number
+          bikes_sold?: number
+          created_at?: string
+          invoiced_fees_dkk?: number
+          invoiced_sales_dkk?: number
+          invoiced_service_dkk?: number
+          month_start: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bikes_serviced?: number
+          bikes_sold?: number
+          created_at?: string
+          invoiced_fees_dkk?: number
+          invoiced_sales_dkk?: number
+          invoiced_service_dkk?: number
+          month_start?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maintenance_tickets: {
         Row: {
           bike_id: string | null
@@ -1989,6 +2046,7 @@ export type Database = {
           display_name_da: string | null
           display_name_en: string | null
           ean_number: string | null
+          economic_customer_number: number | null
           email: string | null
           external_customer_no: number | null
           geocoded_at: string | null
@@ -2024,6 +2082,7 @@ export type Database = {
           display_name_da?: string | null
           display_name_en?: string | null
           ean_number?: string | null
+          economic_customer_number?: number | null
           email?: string | null
           external_customer_no?: number | null
           geocoded_at?: string | null
@@ -2059,6 +2118,7 @@ export type Database = {
           display_name_da?: string | null
           display_name_en?: string | null
           ean_number?: string | null
+          economic_customer_number?: number | null
           email?: string | null
           external_customer_no?: number | null
           geocoded_at?: string | null

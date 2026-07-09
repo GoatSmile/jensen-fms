@@ -263,3 +263,63 @@ export async function saveLanguageSettings(
   revalidatePath("/admin");
   return { ok: true };
 }
+
+/**
+ * Save the e-conomic accounting integration config. Numbers reference the
+ * owner's e-conomic agreement (journal, chart-of-accounts, vocabularies) —
+ * the "Test connection" action lists them so they can be copied here. The
+ * API tokens are secrets and live in env vars, never here.
+ */
+export async function saveEconomicSettings(
+  formData: FormData,
+): Promise<SettingsResult> {
+  const enabled = formData.get("economic_enabled") === "on";
+
+  const intField = (
+    name: string,
+    label: string,
+  ): { value: number | null } | { error: string } => {
+    const raw = nullable(formData.get(name));
+    if (!raw || raw.trim() === "") return { value: null };
+    const n = Number(raw.trim());
+    if (!Number.isInteger(n) || n < 0) {
+      return { error: `${label} must be a whole number.` };
+    }
+    return { value: n };
+  };
+
+  const journal = intField("economic_journal_number", "Journal number");
+  if ("error" in journal) return { ok: false, error: journal.error };
+  const revenue = intField("economic_revenue_account", "Revenue account");
+  if ("error" in revenue) return { ok: false, error: revenue.error };
+  const group = intField("economic_customer_group", "Customer group");
+  if ("error" in group) return { ok: false, error: group.error };
+  const zone = intField("economic_vat_zone", "VAT zone");
+  if ("error" in zone) return { ok: false, error: zone.error };
+  const terms = intField("economic_payment_terms", "Payment terms");
+  if ("error" in terms) return { ok: false, error: terms.error };
+
+  const vatCodeRaw = nullable(formData.get("economic_vat_code"));
+  const vatCode = vatCodeRaw && vatCodeRaw.trim() !== "" ? vatCodeRaw.trim() : null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      economic_enabled: enabled,
+      economic_journal_number: journal.value,
+      economic_revenue_account: revenue.value,
+      economic_vat_code: vatCode,
+      economic_customer_group: group.value,
+      economic_vat_zone: zone.value,
+      economic_payment_terms: terms.value,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) {
+    return { ok: false, error: `Could not save settings: ${error.message}` };
+  }
+
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}

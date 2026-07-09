@@ -294,9 +294,12 @@ cross-cutting. Original SQL files live in `/migrations/`.
 ## Local environment
 - Env file is `.env.local` (with the leading dot — Next.js won't auto-load
   any other name). Variables: `NEXT_PUBLIC_SUPABASE_URL`,
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, and
-  `RESEND_API_KEY` (outbound email — not set yet; the send action returns a
-  clear error until it is; also needed on Vercel).
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
+  `RESEND_API_KEY` (outbound email — set locally + on Vercel 2026-07-09),
+  and `ECONOMIC_APP_SECRET_TOKEN` + `ECONOMIC_AGREEMENT_GRANT_TOKEN`
+  (e-conomic — not set yet; push/test actions return a clear error until
+  they are; also needed on Vercel. The public demo/demo pair is read-only
+  — never default to it silently).
   Restart the dev server after editing — `.env.local` is read at startup,
   not via HMR.
 
@@ -821,6 +824,54 @@ data is too thin to be useful must fold away.** Shipped:
   hand or via 3E/e-conomic. JSX gotcha hit here: multi-line text after an
   `{expr}` can lose its leading space — write row copy as one template
   literal.
+
+### 3E — e-conomic push (STARTED 2026-07-09, slice 1 code side SHIPPED)
+
+Design verified against the live REST API (restapi.e-conomic.com; the
+public demo/demo tokens are READ-ONLY — writes fail E02002 — so the write
+path is contract-verified from the POST schemas; the first real push is
+the live write test, same pattern as Resend was).
+- **Issued invoices push as DRAFT JOURNAL VOUCHERS** (manualCustomerInvoice
+  entries: debit customer, contra revenue account + VAT code), NOT as
+  e-conomic invoices — the FMS owns the INV number series; e-conomic
+  issuing its own numbers would fork it. The bookkeeper reviews + books
+  the voucher in e-conomic (kassekladden). One entry per distinct VAT rate
+  on the invoice; 0%-rated entries (export / reverse charge) carry no VAT
+  code; the VAT amount is deliberately NOT passed (e-conomic derives it
+  from the code — avoids sign-convention bugs). Credit notes push as
+  negative entries without the `customerInvoice` int (the INT is derived
+  from the INV number digits, e.g. INV-2026-0007 → 20260007; CRE would
+  collide). Accounting year resolved by issued_date range from
+  `/accounting-years` (fiscal-straddle safe). Idempotent via
+  `invoices.economic_voucher_id` (format "2026 J1 V123") +
+  `economic_synced_at`.
+- **Customer auto-create on first push** — e-conomic assigns the number
+  (omitted on POST) → stored in `organizations.economic_customer_number`
+  (migration 60, unique partial index). Payload uses org CVR/EAN/address/
+  email + config vocabularies. If the remote create succeeds but the local
+  mapping save fails, the error says to set the column manually (avoids a
+  duplicate customer on retry).
+- **Config vs secrets**: tokens = env (`ECONOMIC_APP_SECRET_TOKEN`,
+  `ECONOMIC_AGREEMENT_GRANT_TOKEN`); operational numbers = migration 60
+  `app_settings.economic_*`, edited at Admin → Settings → "Accounting
+  (e-conomic)" — enable toggle, journal, revenue account, outgoing VAT
+  code, customer group / VAT zone / payment terms, plus **Test connection**
+  (reads /self + journals + open accounting years so the owner copies real
+  numbers instead of guessing). Seeded/pre-filled: U25, group 1, zone 1,
+  journal 1, account 1010 (standard DK chart) — **confirm journal +
+  revenue account with the revisor before the first real push**;
+  payment terms deliberately unset.
+- Files: `src/lib/economic/{client,settings,push-invoice}.ts` (thin fetch
+  wrapper, no SDK), action `src/app/invoices/_actions/push-economic.ts`,
+  `EconomicSyncCard` on the invoice detail (shows for non-draft/cancelled
+  invoices once enabled; push button blocked-with-reason on config/env
+  gaps; e-conomic errors surfaced verbatim).
+- **Remaining for 3E**: owner creates the API tokens (e-conomic developer
+  agreement + grant on the production agreement), set payment terms,
+  revisor confirms journal/account, first live push against a real issued
+  invoice. Phase 2: payment-status pull (booked-entry remainder →
+  `paid_date`, feeds the dashboard receivables card) and the EAN/OIOUBL
+  e-invoicing transmission question.
 
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the

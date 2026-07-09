@@ -20,6 +20,8 @@ import {
   type LocationChoice,
 } from "./_components/location-settings-form";
 import { LanguageSettingsForm } from "./_components/language-settings-form";
+import { EconomicSettingsForm } from "./_components/economic-settings-form";
+import { economicEnvReady } from "@/lib/economic/client";
 
 export default async function AdminSettingsPage() {
   const supabase = await createClient();
@@ -27,7 +29,7 @@ export default async function AdminSettingsPage() {
     supabase
       .from("app_settings")
       .select(
-        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone, email_domain, email_dns_records",
+        "default_transport_pct, primary_location_id, hide_location_info, app_language, worker_language, outbound_from_email, outbound_reply_to_email, outbound_test_mode, outbound_test_email, workshop_phone, email_domain, email_dns_records, economic_enabled, economic_journal_number, economic_revenue_account, economic_vat_code, economic_customer_group, economic_vat_zone, economic_payment_terms",
       )
       .eq("id", 1)
       .maybeSingle(),
@@ -153,6 +155,50 @@ export default async function AdminSettingsPage() {
           <EmailDnsCard
             initialDomain={data?.email_domain ?? ""}
             initialRecords={dnsRecords}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-md border">
+        <header className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Accounting (e-conomic)</h2>
+          <p className="text-muted-foreground text-xs">
+            Issued invoices push to e-conomic as draft journal vouchers — the
+            bookkeeper reviews and books them there. API tokens live in env
+            vars; this card holds the agreement numbers. Confirm the journal
+            and revenue account with the revisor before the first real push.
+          </p>
+        </header>
+        <div className="p-4">
+          <EconomicSettingsForm
+            initialEnabled={data?.economic_enabled === true}
+            initialJournalNumber={
+              data?.economic_journal_number != null
+                ? String(data.economic_journal_number)
+                : ""
+            }
+            initialRevenueAccount={
+              data?.economic_revenue_account != null
+                ? String(data.economic_revenue_account)
+                : ""
+            }
+            initialVatCode={data?.economic_vat_code ?? ""}
+            initialCustomerGroup={
+              data?.economic_customer_group != null
+                ? String(data.economic_customer_group)
+                : ""
+            }
+            initialVatZone={
+              data?.economic_vat_zone != null
+                ? String(data.economic_vat_zone)
+                : ""
+            }
+            initialPaymentTerms={
+              data?.economic_payment_terms != null
+                ? String(data.economic_payment_terms)
+                : ""
+            }
+            tokensReady={economicEnvReady()}
           />
         </div>
       </section>

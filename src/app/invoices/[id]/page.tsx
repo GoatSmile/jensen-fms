@@ -32,6 +32,12 @@ import {
 } from "@/lib/invoicing/status";
 
 import { InvoiceActions } from "../_components/invoice-actions";
+import { EconomicSyncCard } from "../_components/economic-sync-card";
+import { economicEnvReady } from "@/lib/economic/client";
+import {
+  economicConfigGaps,
+  loadEconomicSettings,
+} from "@/lib/economic/settings";
 
 export default async function InvoiceDetailPage({
   params,
@@ -50,6 +56,7 @@ export default async function InvoiceDetailPage({
           issued_date, due_date, paid_date, issued_locked_at, created_at,
           subtotal_amount, total_vat_amount, total_amount,
           ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
+          economic_voucher_id, economic_synced_at,
           organization:organizations!organization_id(
             id, legal_name, display_name_da, display_name_en
           )
@@ -105,6 +112,21 @@ export default async function InvoiceDetailPage({
     org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? "—";
   const status = invoice.status as InvoiceStatus;
   const danish = invoice.language?.trim() === "da";
+
+  // e-conomic sync strip — shown for issued invoices once the integration
+  // is switched on (Admin → Settings → Accounting).
+  const economicSettings = await loadEconomicSettings(supabase);
+  const showEconomic =
+    economicSettings.enabled && !["draft", "cancelled"].includes(status);
+  const economicGaps = economicConfigGaps(economicSettings);
+  const economicBlockedReason = !economicEnvReady()
+    ? "e-conomic tokens are not set — add ECONOMIC_APP_SECRET_TOKEN and ECONOMIC_AGREEMENT_GRANT_TOKEN to .env.local (and Vercel)."
+    : economicGaps.length > 0
+      ? `Config incomplete: ${economicGaps.join(", ")} — see Admin → Settings.`
+      : null;
+  const economicSyncedLabel = invoice.economic_voucher_id
+    ? `${invoice.economic_voucher_id}${invoice.economic_synced_at ? ` · ${formatDate(invoice.economic_synced_at.slice(0, 10))}` : ""}`
+    : null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -226,6 +248,14 @@ export default async function InvoiceDetailPage({
         <Meta label="Paid" value={formatDate(invoice.paid_date)} />
         <Meta label="Currency" value={invoice.currency?.trim() || "DKK"} />
       </div>
+
+      {showEconomic ? (
+        <EconomicSyncCard
+          invoiceId={invoice.id}
+          syncedLabel={economicSyncedLabel}
+          blockedReason={economicBlockedReason}
+        />
+      ) : null}
 
       <Section
         title="Lines"
