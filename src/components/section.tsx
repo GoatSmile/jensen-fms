@@ -11,17 +11,20 @@ export function Section({
   title,
   description,
   action,
+  className,
   contentClassName,
   children,
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  /** Extra classes on the card, e.g. an admin-style section tint. */
+  className?: string;
   contentClassName?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border">
+    <section className={cn("rounded-md border", className)}>
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-sm font-semibold">{title}</h2>

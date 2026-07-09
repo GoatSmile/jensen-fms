@@ -128,13 +128,14 @@ export default async function InvoicesPage() {
       <Section
         title="Work orders ready to invoice"
         description="Completed, billable, not yet on an invoice. Value is parts at retail plus labor, minus what the customer's agreement covers."
+        className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
         {wos.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             Nothing waiting — completed billable work orders land here.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -200,13 +201,14 @@ export default async function InvoicesPage() {
       <Section
         title="Delivered sales orders"
         description="Delivered with no invoice yet. Lines copy from the SO; frame numbers of the delivered bikes land in the descriptions."
+        className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
       >
         {sos.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             No delivered sales orders are waiting for an invoice.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -252,6 +254,7 @@ export default async function InvoicesPage() {
       <Section
         title="Agreement fees"
         description="Billed in arrears, one invoice per customer, one line per agreement-month. Partial months are pro-rated by days."
+        className="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
       >
         {fees.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -260,7 +263,7 @@ export default async function InvoicesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             <DraftFeeInvoicesButton />
-            <div className="overflow-hidden rounded-md border">
+            <div className="bg-background overflow-hidden rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -312,7 +315,11 @@ export default async function InvoicesPage() {
         )}
       </Section>
 
-      <Section title="Invoices" description="Drafts, issued and paid.">
+      <Section
+        title="Invoices"
+        description="Drafts, issued and paid."
+        className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+      >
         {invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -320,7 +327,7 @@ export default async function InvoicesPage() {
             description="Create the first one from a completed work order above."
           />
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
