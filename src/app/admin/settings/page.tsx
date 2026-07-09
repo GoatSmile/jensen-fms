@@ -105,7 +105,7 @@ export default async function AdminSettingsPage() {
 
       <ReportUrlCard />
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Language</h2>
           <p className="text-muted-foreground text-xs">
@@ -121,7 +121,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Communication</h2>
           <p className="text-muted-foreground text-xs">
@@ -141,7 +141,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Sending domain (DNS)</h2>
           <p className="text-muted-foreground text-xs">
@@ -159,7 +159,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Accounting (e-conomic)</h2>
           <p className="text-muted-foreground text-xs">
@@ -203,7 +203,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Purchasing</h2>
           <p className="text-muted-foreground text-xs">
@@ -215,7 +215,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border">
+      <section className="rounded-md border border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Locations</h2>
           <p className="text-muted-foreground text-xs">

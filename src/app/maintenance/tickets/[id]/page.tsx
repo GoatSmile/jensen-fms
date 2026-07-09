@@ -271,7 +271,10 @@ export default async function TicketDetailPage({
         </div>
 
         <div className="flex flex-col gap-6">
-          <Section title="Bike">
+          <Section
+            title="Bike"
+            className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+          >
             <dl className="flex flex-col gap-3">
               <Field label="Frame number">
                 {bike ? (
@@ -309,7 +312,10 @@ export default async function TicketDetailPage({
             </dl>
           </Section>
 
-          <Section title="Reporter">
+          <Section
+            title="Reporter"
+            className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+          >
             {contact ? (
               <dl className="flex flex-col gap-3">
                 <Field label="Contact">

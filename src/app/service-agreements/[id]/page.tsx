@@ -136,7 +136,10 @@ export default async function ServiceAgreementDetailPage({
         </Button>
       </div>
 
-      <Section title="Details">
+      <Section
+        title="Details"
+        className="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
+      >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <ReadField label="Customer" value={orgName} />
           <ReadField
@@ -170,6 +173,7 @@ export default async function ServiceAgreementDetailPage({
             ? "In-service bikes owned by this unit."
             : "In-service bikes owned by this organisation."
         }
+        className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
       >
         {!bikes || bikes.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -182,7 +186,7 @@ export default async function ServiceAgreementDetailPage({
               <Link
                 key={b.id}
                 href={`/bikes/${b.id}`}
-                className="rounded-md border px-2 py-1 font-mono text-xs hover:bg-muted"
+                className="bg-background hover:bg-muted rounded-md border px-2 py-1 font-mono text-xs"
               >
                 {b.frame_number}
               </Link>
@@ -194,6 +198,7 @@ export default async function ServiceAgreementDetailPage({
       <Section
         title={`Covered work orders (${workOrders?.length ?? 0})`}
         description="Work orders this agreement has covered."
+        className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
         {!workOrders || workOrders.length === 0 ? (
           <p className="text-muted-foreground text-sm">No work orders yet.</p>

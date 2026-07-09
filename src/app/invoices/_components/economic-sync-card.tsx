@@ -47,9 +47,11 @@ export function EconomicSyncCard({
         <span className="text-muted-foreground text-sm">
           e-conomic: not pushed yet
         </span>
+        {/* Visma brand purple (--visma-purple on visma.com) — e-conomic is a
+            Visma product, so the push button wears the destination's colour. */}
         <Button
           size="sm"
-          variant="outline"
+          className="bg-[#7f56fa] text-white hover:bg-[#6a45e6]"
           disabled={pending || blockedReason != null}
           onClick={() => {
             setError(null);

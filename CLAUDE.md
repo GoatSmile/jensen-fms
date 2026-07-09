@@ -269,7 +269,19 @@ cross-cutting. Original SQL files live in `/migrations/`.
     colours, kits, locations) · *Purchasing & landed cost* (suppliers, HS/TARIC
     codes, FX rates) · *Customers* (customer segments, **Map**) · *System*
     (settings). The Map page itself is unchanged.
-- Display DKK as `1.234,56 kr.` (Danish locale).
+- **Section-tint hue vocabulary** (July 2026). Pages that stack *different
+  kinds* of sections (dispatch surfaces: `/invoices`, `/admin`,
+  `/admin/settings`, ticket + agreement details) tint each section card;
+  hues carry stable meaning app-wide — **sky = workshop/ops · emerald =
+  customers/sales/communication · violet = agreements/system · amber =
+  money/purchasing**. Class pattern:
+  `border-{hue}-200/70 bg-{hue}-50/70 dark:border-{hue}-900/40
+  dark:bg-{hue}-950/20` (shared `Section` takes `className`); inner
+  tables/chips sit on `bg-background` cards. Do NOT tint homogeneous
+  entity-detail pages (bike/part/PO/MO/SO/org facets) or single-list pages —
+  color is meaningful only while it's scarce. Exception: the "Push to
+  e-conomic" button wears Visma brand purple `#7f56fa` (destination
+  branding, not vocabulary).
 - Plan-then-build: before writing code, list files you intend to create/modify
   and wait for confirmation.
 - Time estimates are quoted as `~X human-dev-min (Y min wait)` — X is the
