@@ -280,8 +280,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
   tables/chips sit on `bg-background` cards. Do NOT tint homogeneous
   entity-detail pages (bike/part/PO/MO/SO/org facets) or single-list pages —
   color is meaningful only while it's scarce. Exception: the "Push to
-  e-conomic" button wears Visma brand purple `#7f56fa` (destination
-  branding, not vocabulary).
+  e-conomic" button wears e-conomic brand orange `#ef7d00` (hover `#e86807`)
+  plus their "spark" logo mark inlined as `EconomicMark` in
+  `economic-sync-card.tsx` (destination branding, not vocabulary; owner
+  chose e-conomic.com's identity over parent-brand Visma purple).
 - Plan-then-build: before writing code, list files you intend to create/modify
   and wait for confirmation.
 - Time estimates are quoted as `~X human-dev-min (Y min wait)` — X is the
