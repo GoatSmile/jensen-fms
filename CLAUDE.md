@@ -278,8 +278,14 @@ cross-cutting. Original SQL files live in `/migrations/`.
   `border-{hue}-200/70 bg-{hue}-50/70 dark:border-{hue}-900/40
   dark:bg-{hue}-950/20` (shared `Section` takes `className`); inner
   tables/chips sit on `bg-background` cards. Do NOT tint homogeneous
-  entity-detail pages (bike/part/PO/MO/SO/org facets) or single-list pages —
-  color is meaningful only while it's scarce. Exception: the "Push to
+  entity-detail pages (bike/PO/MO/SO/org facets) or single-list pages —
+  color is meaningful only while it's scarce. **Part detail is the one
+  entity page with a partial tint** (July 2026): it stacks four domains, so
+  the foreign-domain sections tint (Stock + Movements sky; Supplier
+  offerings + Purchase history amber) while identity sections (Photos,
+  Details, Kit labels — whose sticker-colour chips ARE data) and same-domain
+  tail (Where used, Pricing history) stay neutral. Section order tells the
+  story: identity → availability → sourcing → usage → selling. Exception: the "Push to
   e-conomic" button wears e-conomic brand orange `#ef7d00` (hover `#e86807`)
   plus their "spark" logo mark inlined as `EconomicMark` in
   `economic-sync-card.tsx` (destination branding, not vocabulary; owner

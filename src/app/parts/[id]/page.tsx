@@ -527,17 +527,8 @@ export default async function PartDetailPage({
 
       <KitsSection partId={part.id} chips={kitChips} options={kitOptions} />
 
-      <OfferingsSection
-        partId={part.id}
-        rows={offeringRows}
-        suppliers={(suppliersRes.data ?? []).map((s) => ({
-          id: s.id,
-          name: s.name,
-          defaultCurrency: s.default_currency,
-        }))}
-        currencies={currenciesRes.data ?? []}
-      />
-
+      {/* Section order tells a story: identity (neutral) → availability
+          (sky) → sourcing (amber) → usage/selling (neutral tail). */}
       <StockSection
         rows={stockRows}
         partId={part.id}
@@ -551,6 +542,17 @@ export default async function PartDetailPage({
 
       <MovementsSection rows={movementRows} hideLocations={hideLocations} />
 
+      <OfferingsSection
+        partId={part.id}
+        rows={offeringRows}
+        suppliers={(suppliersRes.data ?? []).map((s) => ({
+          id: s.id,
+          name: s.name,
+          defaultCurrency: s.default_currency,
+        }))}
+        currencies={currenciesRes.data ?? []}
+      />
+
       <PurchaseHistorySection
         rows={purchaseRows}
         internalSku={part.internal_sku}
@@ -559,14 +561,14 @@ export default async function PartDetailPage({
         }
       />
 
-      <PricingHistorySection rows={pricingRows} />
-
       <WhereUsedSection
         partId={part.id}
         templates={templateUsageRows}
         mos={moUsageRows}
         installedBikeCount={installedBikeCount}
       />
+
+      <PricingHistorySection rows={pricingRows} />
     </div>
   );
 }

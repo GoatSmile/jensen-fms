@@ -102,6 +102,7 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
     <Section
       title="Supplier offerings"
       description="Each supplier that offers this part, with their price, MOQ, and lead time."
+      className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
       action={
         <Button
           size="sm"
@@ -127,7 +128,7 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
       {rows.length === 0 ? (
         <EmptyRow>No suppliers offer this part yet.</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

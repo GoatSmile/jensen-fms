@@ -51,11 +51,12 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
     <Section
       title="Purchase history"
       description="Last 10 purchase order lines. Landed DKK/unit = unit price × FX rate × (1 + transport % + import duty % + anti-dumping %), frozen at the moment of purchase."
+      className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
     >
       {rows.length === 0 ? (
         <EmptyRow>No purchases recorded for this part yet.</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

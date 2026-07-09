@@ -53,11 +53,12 @@ export function MovementsSection({
     <Section
       title="Recent movements"
       description="Last 50 inventory movements affecting this part. Each row is an immutable ledger entry."
+      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
     >
       {rows.length === 0 ? (
         <EmptyRow>No inventory movements yet.</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

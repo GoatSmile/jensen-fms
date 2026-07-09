@@ -63,8 +63,9 @@ export function StockSection({
       <Section
         title="Stock"
         description="Live count from the inventory ledger."
+        className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
-        <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+        <div className="bg-background flex items-center justify-between gap-4 rounded-md border p-4">
           <div className="flex flex-col">
             <span className="text-muted-foreground text-xs">On hand</span>
             <span className="text-2xl font-semibold tabular-nums">
@@ -93,11 +94,12 @@ export function StockSection({
     <Section
       title="Stock by location"
       description="Live count from the inventory ledger. Locations with zero stock are still shown if they have any movement history."
+      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
     >
       {rows.length === 0 ? (
         <EmptyRow>No stock recorded at any location yet.</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
