@@ -4,6 +4,10 @@ Source: owner call 2026-07-09 (transcript in `~/Documents/1-Projects/Jensen/
 Misc - Transcripts/`), processed same day. Decisions below marked **[dev]**
 were made by Nazar 2026-07-09 when this plan was drawn up.
 
+*Dennis: this doc is for both of us. The prose says what's being built
+and why; the grey `code blocks` and file paths are developer blueprints —
+skip them freely, nothing in them changes the story around them.*
+
 ## The calendar constraint that shapes everything
 
 - Dennis is on vacation now, **back August 3**.
@@ -35,8 +39,8 @@ Most of the call was demo/confirmation of shipped work. New substance:
 | # | Item | Status |
 |---|------|--------|
 | 1 | **Paint pricing remodel** — painter scrapped packages; every part (frame, fork, mudguards, chain guard, basket, sign, carrier…) priced individually with qty tiers; painter's numbers become item numbers | New decision, supersedes the Jul-2 std/svaj model **once shipped** |
-| 2 | **i18n unparked** — Danish is a hard requirement (a workshop employee can't work in English); German is strategic for future sales | Was parked 2026-06-21, now active |
-| 3 | **Roles requested** — "a login that says I can see everything, they can work on this and this and not into this" | Interim no-auth answer in July; real auth still M1-deferred |
+| 2 | **i18n (translations) unparked** — Danish is a hard requirement (a workshop employee can't work in English); German is strategic for future sales | Was parked 2026-06-21, now active |
+| 3 | **Roles requested** — "a login that says I can see everything, they can work on this and this and not into this" | Interim no-login answer in July; real login is a later milestone (M1) |
 | 4 | **Old-data migration** — the daily "whose frame/battery is this?" lookup lives in the old system | **[dev] Skipped for July** — needs export + Dennis's knowledge; whole track lands mid-August |
 | 5 | **Global identifier search** — battery/frame number → bike → invoices, old-system parity | July, small |
 | 6 | Housekeeping card rows should open the actual offending items | July, small |
@@ -246,9 +250,16 @@ and means the paint routes never need a rename at all.
 
 ## Deep dive: phone-call → ticket pipeline
 
+**What this is, in one sentence:** a customer calls the workshop, nobody
+can pick up, they leave a voicemail — and the system turns that
+voicemail into a draft maintenance ticket (transcribed, customer and
+bike identified where possible) waiting for review. Nothing auto-sends
+to customers in v1; it just saves the "who called about what" typing.
+
 The parked design (CLAUDE.md → Parked ideas) survives review with three
 adjustments: build order, transcription provider, and an explicit
-"harness-first" v1 so telephony risk lands last.
+"harness-first" v1 — we build and tune it by uploading hand-recorded
+voicemails first, and connect a real phone number only at the very end.
 
 ### Build order — harness first, telco last
 
@@ -319,6 +330,11 @@ until out of shadow mode.
 < 2 kr per 5-minute call end-to-end + ~50 kr/month for the number.
 
 ## Interim roles — device-role cookie **[dev decision: no PIN]**
+
+**What you'll experience:** the workshop tablet shows only workshop
+screens (floor, maintenance, bikes, parts); your own devices see
+everything. No passwords, no accounts yet — each *device* is marked once
+as "owner" or "workshop", and that's it until real login arrives.
 
 Dennis's ask, minus the login nobody wants to build twice:
 
