@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Camera, ImageOff, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { resizeImageForUpload } from "@/lib/parts/image";
+import { resizeImageForUpload, toUploadFile } from "@/lib/parts/image";
 
 import { uploadWorkOrderImage } from "../_actions/upload-wo-image";
 import { deleteWorkOrderImage } from "../_actions/delete-wo-image";
@@ -45,12 +45,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
     setError(null);
     setUploading(true);
     try {
-      const { blob } = await resizeImageForUpload(file);
-      const resized = new File(
-        [blob],
-        replaceExt(file.name || "photo.webp", "webp"),
-        { type: "image/webp" },
-      );
+      const resized = toUploadFile(file.name, await resizeImageForUpload(file));
       const fd = new FormData();
       fd.set("woId", woId);
       fd.set("file", resized);
@@ -116,15 +111,13 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
             )}
           </Button>
         ) : null}
-        {/* `capture` triggers the rear camera on mobile, falls back to
-            file picker on desktop. accept="image/*" so the OS picker also
-            permits gallery selection if the tech wants to attach an old
-            photo. */}
+        {/* No `capture` attr — with it, iOS forces the camera and blocks
+            the photo library; without it the OS sheet offers both "Take
+            photo" and gallery, which is what the tech actually needs. */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={onFile}
         />
@@ -175,10 +168,4 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
       )}
     </section>
   );
-}
-
-function replaceExt(name: string, ext: string): string {
-  const i = name.lastIndexOf(".");
-  if (i <= 0) return `${name}.${ext}`;
-  return `${name.slice(0, i)}.${ext}`;
 }

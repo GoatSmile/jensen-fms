@@ -66,7 +66,8 @@ export async function uploadPartImage(
   }
   const purpose = (existingCount ?? 0) === 0 ? "hero" : "gallery";
 
-  const objectPath = `${partId}/${crypto.randomUUID()}.webp`;
+  const ext = file.type === "image/jpeg" ? "jpg" : "webp";
+  const objectPath = `${partId}/${crypto.randomUUID()}.${ext}`;
   const {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
@@ -98,7 +99,7 @@ export async function uploadPartImage(
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
     .upload(objectPath, file, {
-      contentType: "image/webp",
+      contentType: file.type === "image/jpeg" ? "image/jpeg" : "image/webp",
       upsert: false,
     });
   if (uploadErr) {

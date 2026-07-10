@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   isAcceptedImageType,
   resizeImageForUpload,
+  toUploadFile,
 } from "@/lib/parts/image";
 
 import { submitPublicTicketReport } from "../_actions/submit-report";
@@ -50,19 +51,15 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
     if (!isAcceptedImageType(file)) {
       setPhase({
         kind: "error",
-        message: "Photo must be JPEG, PNG, WebP, or GIF.",
+        message: "Photo must be an image (JPEG, PNG, WebP, GIF, or HEIC).",
       });
       return;
     }
     try {
-      const { blob } = await resizeImageForUpload(file);
-      const resized = new File(
-        [blob],
-        replaceExt(file.name, "webp"),
-        { type: "image/webp" },
-      );
+      const result = await resizeImageForUpload(file);
+      const resized = toUploadFile(file.name, result);
       setPhotoFile(resized);
-      setPhotoPreview(URL.createObjectURL(blob));
+      setPhotoPreview(URL.createObjectURL(result.blob));
       setPhase({ kind: "idle" });
     } catch (err) {
       setPhase({
@@ -148,7 +145,6 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
           id="report-photo"
           type="file"
           accept="image/*"
-          capture="environment"
           className="sr-only"
           onChange={onPhotoPicked}
           disabled={pending}
@@ -226,9 +222,4 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
       </p>
     </form>
   );
-}
-
-function replaceExt(name: string, newExt: string): string {
-  const dot = name.lastIndexOf(".");
-  return dot > 0 ? `${name.slice(0, dot)}.${newExt}` : `${name}.${newExt}`;
 }

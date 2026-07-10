@@ -6,8 +6,10 @@ import { Camera, ImagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  IMAGE_TYPE_ERROR,
   isAcceptedImageType,
   resizeImageForUpload,
+  toUploadFile,
 } from "@/lib/parts/image";
 
 import { uploadBikeImage } from "../_actions/upload-image";
@@ -48,15 +50,15 @@ export function PhotosSection({ bikeId, photos }: Props) {
       if (!isAcceptedImageType(file)) {
         setStatus({
           kind: "error",
-          message: `${file.name}: only JPEG, PNG, WebP, or GIF are accepted.`,
+          message: `${file.name}: ${IMAGE_TYPE_ERROR}`,
         });
         return;
       }
 
-      let blob: Blob;
+      let upload: File;
       try {
         const result = await resizeImageForUpload(file);
-        blob = result.blob;
+        upload = toUploadFile(file.name, result);
       } catch (err) {
         setStatus({
           kind: "error",
@@ -67,12 +69,7 @@ export function PhotosSection({ bikeId, photos }: Props) {
 
       const fd = new FormData();
       fd.append("bikeId", bikeId);
-      fd.append(
-        "file",
-        new File([blob], replaceExt(file.name, "webp"), {
-          type: "image/webp",
-        }),
-      );
+      fd.append("file", upload);
 
       const res = await uploadBikeImage(fd);
       if (!res.ok) {
@@ -109,11 +106,12 @@ export function PhotosSection({ bikeId, photos }: Props) {
         </Button>
       }
     >
+      {/* No `capture` attr — it would force the camera and disable the
+          photo library + multi-select on mobile. */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         multiple
         className="sr-only"
         onChange={onFilesPicked}
@@ -151,9 +149,4 @@ export function PhotosSection({ bikeId, photos }: Props) {
       )}
     </Section>
   );
-}
-
-function replaceExt(name: string, newExt: string): string {
-  const dot = name.lastIndexOf(".");
-  return dot > 0 ? `${name.slice(0, dot)}.${newExt}` : `${name}.${newExt}`;
 }

@@ -40,7 +40,8 @@ export async function uploadWorkOrderImage(
 
   const supabase = createServiceClient();
 
-  const objectPath = `work-orders/${woId}/${crypto.randomUUID()}.webp`;
+  const ext = file.type === "image/jpeg" ? "jpg" : "webp";
+  const objectPath = `work-orders/${woId}/${crypto.randomUUID()}.${ext}`;
   const {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
@@ -68,7 +69,7 @@ export async function uploadWorkOrderImage(
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
     .upload(objectPath, file, {
-      contentType: "image/webp",
+      contentType: file.type === "image/jpeg" ? "image/jpeg" : "image/webp",
       upsert: false,
     });
   if (uploadErr) {

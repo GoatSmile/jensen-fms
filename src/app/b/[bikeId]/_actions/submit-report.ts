@@ -165,7 +165,8 @@ export async function submitPublicTicketReport(
       photoWarning =
         "Photo was too large to attach (over 5 MB). Try a smaller one or email us directly.";
     } else {
-      const objectPath = `${bikeId}/ticket/${ticket.id}/${crypto.randomUUID()}.webp`;
+      const ext = file.type === "image/jpeg" ? "jpg" : "webp";
+  const objectPath = `${bikeId}/ticket/${ticket.id}/${crypto.randomUUID()}.${ext}`;
       const {
         data: { publicUrl },
       } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
@@ -198,7 +199,7 @@ export async function submitPublicTicketReport(
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
           .upload(objectPath, file, {
-            contentType: "image/webp",
+            contentType: file.type === "image/jpeg" ? "image/jpeg" : "image/webp",
             upsert: false,
           });
         if (upErr) {

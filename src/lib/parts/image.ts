@@ -2,8 +2,9 @@
  * Client-side image helpers for the Parts feature.
  *
  * `resizeImageForUpload` decodes the file via the browser's Image API,
- * downscales it on a 2D canvas, and re-encodes it as WebP. Three side-effects
- * worth knowing about:
+ * downscales it on a 2D canvas, and re-encodes it as WebP (JPEG on engines
+ * that can't encode WebP — older Safari). Three side-effects worth knowing
+ * about:
  *   - EXIF (incl. GPS) is dropped automatically — re-encoding through canvas
  *     does not carry it forward.
  *   - The output is roughly an order of magnitude smaller than a phone-shot
@@ -17,21 +18,62 @@ export const ACCEPTED_IMAGE_MIME = [
   "image/png",
   "image/webp",
   "image/gif",
+  // iPhone camera-roll originals. iOS usually transcodes to JPEG when
+  // picking through <input type=file>, but files picked via the Files app
+  // arrive as HEIC — iOS Safari can decode them in the canvas step, and the
+  // output is webp/jpeg anyway, so the server never sees HEIC bytes.
+  "image/heic",
+  "image/heif",
 ] as const;
+
+export const IMAGE_TYPE_ERROR =
+  "only photos are accepted (JPEG, PNG, WebP, GIF, or HEIC).";
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const RESIZE_MAX_EDGE = 1600;
 export const RESIZE_QUALITY = 0.85;
 
 export function isAcceptedImageType(file: File): boolean {
+  // Empty type happens for some Files-app picks — let the decoder decide;
+  // it throws a clear error for anything that isn't actually an image.
+  if (!file.type) return true;
   return (ACCEPTED_IMAGE_MIME as readonly string[]).includes(file.type);
+}
+
+type ResizedImage = {
+  blob: Blob;
+  mime: "image/webp" | "image/jpeg";
+  ext: "webp" | "jpg";
+  width: number;
+  height: number;
+};
+
+/** The resized image as an upload-ready File (correct name/mime for the
+ * encoding that actually happened — see the Safari note in resize). */
+export function toUploadFile(originalName: string, r: ResizedImage): File {
+  return new File([r.blob], replaceExt(originalName || `photo.${r.ext}`, r.ext), {
+    type: r.mime,
+  });
+}
+
+function replaceExt(name: string, newExt: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? `${name.slice(0, dot)}.${newExt}` : `${name}.${newExt}`;
+}
+
+function toBlobAsync(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
 export async function resizeImageForUpload(
   file: File,
   maxEdge = RESIZE_MAX_EDGE,
   quality = RESIZE_QUALITY,
-): Promise<{ blob: Blob; width: number; height: number }> {
+): Promise<ResizedImage> {
   const objectUrl = URL.createObjectURL(file);
   let img: HTMLImageElement;
   try {
@@ -60,11 +102,17 @@ export async function resizeImageForUpload(
   }
   ctx.drawImage(img, 0, 0, width, height);
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", quality),
-  );
-  if (!blob) {
-    throw new Error("Could not encode the resized image as WebP.");
+  // Ask for WebP, but VERIFY we got it: Safari before 17 silently ignores
+  // the webp request and hands back PNG (~10× heavier for photos) while the
+  // caller would still label the file .webp. Fall back to JPEG, which every
+  // engine encodes at a comparable size.
+  let blob = await toBlobAsync(canvas, "image/webp", quality);
+  if (blob && blob.type === "image/webp") {
+    return { blob, mime: "image/webp", ext: "webp", width, height };
   }
-  return { blob, width, height };
+  blob = await toBlobAsync(canvas, "image/jpeg", quality);
+  if (!blob || blob.type !== "image/jpeg") {
+    throw new Error("Could not encode the resized image.");
+  }
+  return { blob, mime: "image/jpeg", ext: "jpg", width, height };
 }
