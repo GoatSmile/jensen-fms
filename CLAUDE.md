@@ -148,51 +148,56 @@ cross-cutting. Original SQL files live in `/migrations/`.
     - `/manufacturing-orders/<mo>/pick-list/print?n=N` — a printable shelf-pick
       sheet: MO recipe × N, grouped by kit bucket (mirrors the per-bike
       pick-list grouping), checkbox + per-bike × batch total per line,
-      "whole bucket" vs "pick X of M" badge, loose parts separate, `JP-lak*`
-      excluded.
+      "whole bucket" vs "pick X of M" badge, loose parts separate,
+      soft-deleted parts excluded (they aren't physically picked).
   - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are
     frozen (qty / removal disallowed); pre-consumption rows are
     editable.
-- **Paint is a separate workflow**, not a BOM line. `paint_orders` is a batch
-  header (one supplier visit covers N bikes via `paint_order_bikes`), with
-  status `planned → sent_to_painter → at_painter → received_back`. Default
-  supplier is Metacoat A/S. The `Lakering` catalog SKUs (`JP-lak*`) stay in
-  `parts` as service SKUs that paint orders reference for costing — they
-  never accumulate inventory_movements.
-  - **Colour + scope are PER LINE** (migration 51, 2026-07-02):
-    `paint_order_bikes.color_id` + `.scope` (`std` = frame+fork, `svaj` = +
-    front carrier, mudguards, sign, stays). The header `color_id` is only an
-    optional batch default that pre-fills new lines. Lines are editable while
-    `planned`, frozen once sent. Vocabulary + labels in `src/lib/paint/scope.ts`.
-  - **JP-lak pricing is ADDITIVE for svaj** (owner decision 2026-07-03, from
-    the painter's own quoting): the svaj SKU prices ONLY the extras — a svaj
-    frame costs `JP-lakN std` + `JP-lakN svaj` (tier N from the order's bike
-    count: 1/10/20). Treating svaj as all-inclusive is the misread that once
-    cost ~60.000 kr on a 200-frame order. `resolveLakSkus()` encodes this; do
-    not "simplify" it back to one SKU per line.
-  - **⚠ Remodel decided 2026-07-09 (call + design session): paint becomes
-    the first SERVICE TYPE in a generic external-services model** — owner
-    approved "go all the way to service_orders". Painting, washing,
-    priming etc. share one machine: `service_types` (w/ `blocks_build`) ·
-    `service_part_types` (stel, forgaffel… 8 today) ·
-    `service_price_lists` (PER SUPPLIER — suppliers span countries, each
-    list revision carries its own CURRENCY; versioned like
-    bike_templates) · `service_price_items` (tiered rows, painter's item
-    numbers e.g. `J.Jensen Stel10`) · `paint_orders`/`paint_order_bikes`
-    RENAMED to `service_orders`/`service_order_bikes` + new
-    `service_order_items` (part type × qty × nullable color_id; snapshot
-    at send = supplier_item_no + unit_price + currency + fx_rate_to_dkk,
-    the purchase_order_lines pattern). Nav/routes are PER SERVICE TYPE,
-    permanently — "Paint orders" stays at /paint-orders; a future
-    washing/sandblasting gets its own nav item; shared components
-    parameterized by service_type, no unified list page. Price changes =
-    new list revision w/ xlsx-import + diff preview at `/admin/services`,
-    never edit-in-place.
-    Full design + cutover mechanics in `docs/plan-july9-vacation-month.md`
-    (source list: `SIK_Jensen Priser 2026.xlsx`, 8 part types × 3 tiers,
-    column "pr. 1. juni 2026" authoritative). Planned July W1 (~3.5–4 d).
-    The std/svaj model above stays authoritative until the remodel ships —
-    replace in one cut, don't rip it out first.
+- **Paint is the first SERVICE TYPE in a generic external-services model**
+  (remodel SHIPPED 2026-07-10, migrations 61+62; owner approved "go all the
+  way to service_orders" 2026-07-09). Not a BOM line. One machine shared by
+  painting / future washing / priming etc.:
+  - **Vocabulary + pricing layer**: `service_types` (w/ `blocks_build` —
+    paint TRUE: bikes on a sent order are physically away and gate the build
+    floor) · `service_part_types` (stel, forgaffel… 8 today) ·
+    `service_price_lists` (PER SUPPLIER, one row per REVISION with its own
+    CURRENCY, `is_current` flip like bike_templates — never edit-in-place) ·
+    `service_price_items` (qty-tiered rows 1–9/10–19/20+, painter's item
+    numbers e.g. `J.Jensen Stel10`; seeded "SIK priser 2026" on Metacoat).
+    Pricing brain in `src/lib/services/pricing.ts`: tier basis = the part
+    type's TOTAL qty on the order, colours share a tier.
+  - **Order layer**: `service_orders`/`service_order_bikes` (renamed from
+    paint_orders; PNT number series unbroken via service_types.document_type)
+    + `service_order_items` (part type × qty × nullable color_id). Status
+    `planned → sent → at_supplier → received_back / cancelled`. Item lines
+    editable while `planned` with LIVE estimates from the supplier's current
+    list; **send freezes** supplier_item_no + unit_price + currency +
+    fx_rate_to_dkk onto each line (the purchase_order_lines pattern) and is
+    blocked while any line is unpriced. Libs: `src/lib/services/{vocab,
+    status,at-supplier,pricing,template-paint}.ts`; the at-supplier gate is
+    `blocks_build`-aware and backs every build gate.
+  - **Nav/routes are PER SERVICE TYPE, permanently** — "Paint orders" stays
+    at /paint-orders; a future washing/sandblasting gets its own nav item;
+    shared components parameterized by service type, no unified list page.
+    Known gap: the dashboard aging card + the detail page don't filter by
+    service type yet — fix when type #2 becomes real.
+  - **JP-lak SKUs are RETIRED** (soft-deleted; recipes cleaned, ledger
+    zeroed additively in migration 62). The old `isServiceSku` SKU-prefix
+    exclusion convention is gone — demand/pick surfaces skip soft-deleted
+    parts instead. Legacy `service_order_bikes.color_id`/`.scope` (std/svaj,
+    migration 51) are read-only history on old orders.
+  - **Template cost-to-paint** (migration 63, 2026-07-10):
+    `bike_template_service_parts` declares what one bike of a template sends
+    to the painter (part type × per-bike qty; copied forward by
+    clone-as-version + duplicate, editable only on the current version). A
+    "Paintwork" section on the template detail prices it live against the
+    DEFAULT painter's current list (`DEFAULT_PAINTER_NAME` in vocab.ts,
+    Metacoat) at per-bike quantities (singles tier); the DKK total joins the
+    recipe box: parts + paint → cost to produce → margin.
+  - Still to build from the design: `/admin/services` price-list grid with
+    xlsx-import + diff preview (a new revision is a 5-min clerical task;
+    until then a price change is a SQL job). Add tier-overlap validation
+    there. Full design in `docs/plan-july9-vacation-month.md`.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
@@ -354,8 +359,9 @@ cross-cutting. Original SQL files live in `/migrations/`.
   two open MOs needing the same part each compare against the full on-hand
   figure; cross-MO competition for stock isn't modelled. Fine while the
   planner can see all open MOs at once; revisit if parallel batches grow.
-  Coverage also excludes `JP-lak*` paint service SKUs by SKU-prefix
-  convention (paint is the paint-order workflow's concern).
+  Coverage, /work readiness, pick lists, and the build-time recipe copy all
+  skip SOFT-DELETED parts (frozen history rows, e.g. the retired JP-lak
+  lines, must not read as demand or get consumed).
 
 ## Local environment
 - Env file is `.env.local` (with the leading dot — Next.js won't auto-load

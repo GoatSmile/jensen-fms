@@ -67,17 +67,25 @@ Rough capacity: ~15 dev-days at vacation-adjacent pace.
   reject. Verified end-to-end in emulated mobile (pick → resize → storage
   → thumb → delete). *Remaining: a 2-minute real-iPhone pass against the
   Vercel deploy.*
-- **External-services remodel — service_orders + generic price lists**
-  (~3.5–4 d, list in hand — analysis + full design below). **[owner
-  decision 2026-07-09: "go all the way to service_orders"]** — painting
-  is the first *service type*, not a special case. Washing, priming,
-  galvanizing, wheel building etc. reuse the same machine when they
-  become real.
-  - Template link: a template knows which of its parts are paintable →
-    "cost to paint this bike" feeds cost-to-produce + margin (the
-    310→710 kr lesson: bad paint estimates ate the hotel-project margin).
-  - The shipped std/svaj model (`resolveLakSkus`) stays authoritative
-    until this ships — don't rip it out first, replace it in one cut.
+- ✅ **External-services remodel — service_orders + generic price lists**
+  — SHIPPED 2026-07-10 (migrations 61+62, commit de70a25; post-ship review
+  fixes b0b5152). **[owner decision 2026-07-09: "go all the way to
+  service_orders"]** — painting is the first *service type*, not a special
+  case. Washing, priming, galvanizing, wheel building etc. reuse the same
+  machine when they become real. Browser-verified end to end (live tier
+  estimates, snapshot-at-send freeze, received_back, all surfaces).
+  - ✅ Template link — SHIPPED 2026-07-10 (migration 63, commit dc47aca):
+    `bike_template_service_parts` + "Paintwork" section on the template
+    detail; "cost to paint this bike" (per-bike qty, singles tier, default
+    painter's current list) feeds cost-to-produce + margin (the 310→710 kr
+    lesson: bad paint estimates ate the hotel-project margin).
+  - The std/svaj model (`resolveLakSkus`) was replaced in one cut as
+    planned; legacy per-bike colour/scope stays read-only on old orders.
+  - **Remaining from the design:** the `/admin/services` price-list grid
+    with xlsx-import + diff preview (until then a price revision is a SQL
+    job); add tier-overlap validation there. Deferred with it: service-type
+    filters on the dashboard aging card + order detail (needed when service
+    type #2 becomes real).
 
 #### The painter's list, analyzed (SIK_Jensen Priser 2026.xlsx, read 2026-07-09)
 
