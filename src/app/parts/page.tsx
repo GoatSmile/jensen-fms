@@ -46,7 +46,30 @@ type SearchParams = {
   stock?: string;
   page?: string;
   sort?: string;
+  gap?: string;
 };
+
+/** Data-housekeeping filters the dashboard drills into. */
+const GAP_FILTERS = {
+  origin: {
+    label: "parts without an origin",
+    hint: "New PO lines for these default to no import tax until the origin is set (part edit form).",
+  },
+  hs: {
+    label: "parts without an HS code",
+    hint: "These snapshot 0% tariff on new PO lines until classified.",
+  },
+  "offer-price": {
+    label: "parts with a supplier offering missing a purchase price",
+    hint: "Drafted POs for these come out at 0 kr. — fill the price on the part's supplier offerings.",
+  },
+} as const;
+
+type GapFilter = keyof typeof GAP_FILTERS;
+
+function parseGapFilter(value: string | undefined): GapFilter | null {
+  return value && value in GAP_FILTERS ? (value as GapFilter) : null;
+}
 
 function escapeOrValue(raw: string): string {
   if (/[,()"]/.test(raw)) {
@@ -89,6 +112,7 @@ export default async function PartsPage({
   const supplierId = sp.supplier && sp.supplier !== "all" ? sp.supplier : null;
   const kitId = sp.kit && sp.kit !== "all" ? sp.kit : null;
   const stockFilter = parseStockFilter(sp.stock);
+  const gap = parseGapFilter(sp.gap);
   const page = parsePage(sp.page);
   const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
 
@@ -120,6 +144,28 @@ export default async function PartsPage({
     );
     // Empty supplier match short-circuits to zero results.
     if (supplierFilteredIds.length === 0) supplierFilteredIds = ["__none__"];
+  }
+
+  // Pre-step 2b: housekeeping gap filter — id.in() like the supplier filter.
+  // The dashboard view doesn't carry origin/hs_code_id, so match on parts /
+  // offerings directly.
+  let gapFilteredIds: string[] | null = null;
+  if (gap) {
+    if (gap === "offer-price") {
+      const { data } = await supabase
+        .from("part_supplier_offerings")
+        .select("part_id")
+        .is("default_purchase_price", null);
+      gapFilteredIds = Array.from(new Set((data ?? []).map((r) => r.part_id)));
+    } else {
+      const { data } = await supabase
+        .from("parts")
+        .select("id")
+        .is("deleted_at", null)
+        .is(gap === "origin" ? "origin" : "hs_code_id", null);
+      gapFilteredIds = (data ?? []).map((r) => r.id);
+    }
+    if (gapFilteredIds.length === 0) gapFilteredIds = ["__none__"];
   }
 
   // Pre-step 3: kit filter — same id.in() pattern as the supplier filter.
@@ -165,6 +211,9 @@ export default async function PartsPage({
   }
   if (kitFilteredIds) {
     viewQuery = viewQuery.in("id", kitFilteredIds);
+  }
+  if (gapFilteredIds) {
+    viewQuery = viewQuery.in("id", gapFilteredIds);
   }
   if (q) {
     const escaped = escapeOrValue(`%${q}%`);
@@ -346,6 +395,22 @@ export default async function PartsPage({
 
       <ReorderBanner rows={reorderRows} />
 
+      {gap ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/20">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium">
+              Housekeeping filter: {totalCount} {GAP_FILTERS[gap].label}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              {GAP_FILTERS[gap].hint}
+            </span>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/parts">Clear filter</Link>
+          </Button>
+        </div>
+      ) : null}
+
       <PartsFilters
         categories={categoriesRes.data ?? []}
         categoryCounts={categoryCounts}
@@ -353,7 +418,7 @@ export default async function PartsPage({
         kits={kitsRes.data ?? []}
       />
 
-      {totalCount === 0 && !q && !categoryId && !supplierId && !kitId && stockFilter === "all" ? (
+      {totalCount === 0 && !q && !categoryId && !supplierId && !kitId && !gap && stockFilter === "all" ? (
         <EmptyState
           icon={Boxes}
           title="No parts yet"

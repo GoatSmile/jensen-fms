@@ -645,28 +645,28 @@ export default async function DashboardPage() {
         >
           <ul className="flex flex-col gap-1.5">
             {housekeeping.partsNoOrigin > 0 ? (
-              <BandRow href="/parts">
+              <BandRow href="/parts?gap=origin">
                 <span className="truncate">
                   {`${plural(housekeeping.partsNoOrigin, "part")} without origin — new PO lines default to no import tax`}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.partsNoHs > 0 ? (
-              <BandRow href="/parts">
+              <BandRow href="/parts?gap=hs">
                 <span className="truncate">
                   {`${plural(housekeeping.partsNoHs, "part")} without an HS code`}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.offeringsNoPrice > 0 ? (
-              <BandRow href="/parts">
+              <BandRow href="/parts?gap=offer-price">
                 <span className="truncate">
                   {`${plural(housekeeping.offeringsNoPrice, "supplier offering")} without a purchase price — drafted POs come out at 0 kr.`}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.suppliersNoEmail > 0 ? (
-              <BandRow href="/suppliers">
+              <BandRow href="/admin/suppliers?gap=email">
                 <span className="truncate">
                   {`${plural(housekeeping.suppliersNoEmail, "supplier")} without an email — blocks "Email supplier"`}
                 </span>
