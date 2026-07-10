@@ -17,11 +17,14 @@ were made by Nazar 2026-07-09 when this plan was drawn up.
 
 1. ~~Forward the painter's price list~~ **RESOLVED 2026-07-09** — already
    in the shared folder (`Misc files from D/SIK_Jensen Priser 2026.xlsx`),
-   analyzed below. Two email-sized confirmations remain:
+   analyzed below. Three email-sized confirmations remain:
    - Prices are **ex moms**, right? (Assumed yes — B2B convention.)
    - Tier basis on mixed batches: 4 frames + 12 forks → frames at the
      1–9 price and forks at the 10–19 price (**per part type**, assumed),
      or everything at the tier of the total piece count?
+   - The list is from **SIK** — is SIK the painter going forward (the
+     system's current default is Metacoat A/S)? Same painter renamed, a
+     second painter, or a switch?
 2. Nothing else blocks July. (Old-system export, role matrix details,
    invoicing walkthrough are all August items.)
 
@@ -53,13 +56,12 @@ Rough capacity: ~15 dev-days at vacation-adjacent pace.
 - **Mobile photo upload** (~0.5 d): verify on a real phone (camera →
   upload on part/bike), fix what's broken. Unblocks Dennis's August
   photo-cleanup habit.
-- **Paint per-part price catalog** (~2 d, list in hand — analysis below):
-  - New model: a paint price catalog keyed by the **painter's item
-    numbers**, one row per paintable part type × quantity tier.
-  - Paint order lines move from (colour, scope) to (colour, part type,
-    qty) — itemized like the painter's own invoice. Cost estimate on the
-    paint order = Σ line × tier price; survives partial sends (4 frames,
-    5 forks).
+- **External-services remodel — service_orders + generic price lists**
+  (~3.5–4 d, list in hand — analysis + full design below). **[owner
+  decision 2026-07-09: "go all the way to service_orders"]** — painting
+  is the first *service type*, not a special case. Washing, priming,
+  galvanizing, wheel building etc. reuse the same machine when they
+  become real.
   - Template link: a template knows which of its parts are paintable →
     "cost to paint this bike" feeds cost-to-produce + margin (the
     310→710 kr lesson: bad paint estimates ate the hotel-project margin).
@@ -96,25 +98,101 @@ increases hide elsewhere: Kurv 20+ 95→140, Bag 10–19 130→165, Lad 20+
 95→110 — per-part itemization is exactly where the old model under-quoted
 (the 310→710 margin hit).
 
-**Model implications (refines the sketch above):**
-- `paint_price_items`: one row per sheet row — `painter_item_no` (unique,
-  normalized), `part_type` (slug vocab: stel, forgaffel, lad,
-  skaerm_stivere, kaedeskaerm, kurv, skilt, bagagebaerer), `tier_min` /
-  `tier_max` (1–9, 10–19, 20–null), `price_dkk`, `effective_from`
-  (2026-06-01), `is_active`. Seeded by migration straight from this file.
-- **Two-level paint order**: keep `paint_order_bikes` (which frames — the
-  at-painter gate + traceability needs bike linkage) and add
-  `paint_order_items` (part type × qty × colour) as the commercial lines
-  — Dennis sends baskets alone, 4 frames + 5 forks, etc., so items can't
-  be strictly per-bike. Estimate = per part type, pick tier by that part
-  type's total qty (pending Dennis's confirmation), Σ qty × price.
-- **Scope → items mapping** for the cutover: `std` = Stel + FG; `svaj`
-  extras = S + Skilt + Bag (or Lad where fitted). Open orders keep their
-  frozen scope lines; new orders are itemized — replace in one cut.
-- JP-lak service SKUs retire with the cutover; costing reads
-  `paint_price_items`. Template "cost to paint" needs a template-parts →
-  part-type mapping (explicit flags on parts or categories — decide at
-  build time).
+#### The service model (final design, owner-approved 2026-07-09)
+
+Painting generalizes to **outsourced per-part services**: a supplier
+takes a batch of part-units, prices from a supplier-issued tiered price
+list, the list gets revised every year or two, and the parts are
+physically away until received back. Washing, sandblasting/priming,
+galvanizing, powder-coat-vs-wet-paint, wheel building, external motor
+service all share the shape. Dennis also compares DK vs DE painters —
+so price lists hang off **suppliers**, enabling side-by-side estimates
+later. The parked website configurator prices paintable parts from this
+same layer.
+
+**Pricing + vocab layer (all new):**
+
+```
+service_types          -- WHAT kinds of work exist (controlled vocab)
+  slug, name_da/en, is_active, sort_order,
+  blocks_build bool    -- paint TRUE: parts physically away gate the
+                       -- build floor; wash would be TRUE too
+service_part_types     -- WHAT units work is done on (shared across types)
+  slug, name_da/en, sort_order, is_active   -- stel, forgaffel… (8 today)
+service_price_lists    -- WHOSE prices, from WHEN — one row per REVISION
+  supplier_id → suppliers, service_type_id,
+  name ("SIK priser 2026"), currency, effective_from, is_current
+service_price_items    -- the numbers — one row per list line (24 today)
+  price_list_id, service_part_type_id,
+  supplier_item_no ("J.Jensen Stel10"), tier_min, tier_max (NULL=open),
+  price
+```
+
+**Order layer — `paint_orders` PROMOTED to `service_orders`** (owner:
+"go all the way"):
+
+```
+service_orders         -- rename of paint_orders
+  order_no             -- next_document_number per type: paint keeps
+                       -- 'paint_order' → PNT-YYYY-NNNN; wash gets its own
+  service_type_id, supplier_id, status (planned → sent → at_supplier →
+  received_back / cancelled), sales_order_id?, notes, dates
+service_order_items    -- NEW: the commercial lines
+  service_order_id, service_part_type_id, qty,
+  color_id (nullable FK colors — paint uses it, wash ignores; a real
+  column, NOT jsonb — FK integrity + pickers),
+  snapshot at send: supplier_item_no, unit_price, currency
+service_order_bikes    -- rename of paint_order_bikes: bike linkage for
+                       -- the at-supplier gate + traceability. Existing
+                       -- per-line colour/scope columns stay as LEGACY
+                       -- (read-only) so sent/received history keeps its
+                       -- frozen cost basis; new orders use items.
+```
+
+**Rules carried over from the app's conventions:**
+- Tier resolution is live while `planned` (estimates track the current
+  list), **frozen at send** — snapshot `supplier_item_no` + unit price
+  onto the item, same rule as `fx_rate_to_dkk`. A new price list never
+  rewrites a sent order.
+- Tier basis: per part type's total qty on the order (4 frames + 12
+  forks → frames tier 1–9, forks tier 10–19) — pending Dennis's email
+  confirmation.
+- At-supplier gate generalizes: bike blocked iff on an open service
+  order whose `service_types.blocks_build` — `at-painter.ts` becomes
+  `src/lib/services/at-supplier.ts`, same call sites.
+- One pricing brain: `src/lib/services/pricing.ts` →
+  `resolvePrice(supplierId, serviceTypeId, partTypeId, qty, date)` —
+  used by the order estimator, template cost-to-paint, and later the
+  configurator/quotes.
+
+**Price changes (the "very updatable" requirement):** `/admin/services`
+— per supplier × service type, the current list renders as a part-type ×
+tier grid with revision history. A change is never edit-in-place: **new
+revision** via duplicate-and-edit or **upload the supplier's next xlsx**
+→ parsed → **diff preview** ("Stel 10–19: 250 → 265") → confirm with
+effective date; old revision archives (`is_current` flip, the
+bike_templates versioning pattern). Yearly price bump = 5-minute
+clerical task.
+
+**Cutover mechanics:**
+- Routes + nav keep `/paint-orders` / "Paint orders" for July (tables
+  and code go generic; the URL is cosmetic and Dennis returns to a nav
+  he recognizes). Route rename lands with service #2.
+- Scope → items mapping for open `planned` orders: `std` = Stel + FG;
+  `svaj` extras = S + Skilt + Bag (or Lad where fitted). Sent/received
+  orders keep legacy lines untouched.
+- JP-lak service SKUs retire; 7 files reference them (coverage,
+  readiness, pick-list, reorder draft-PO, scope.ts + 2 paint UI files) —
+  each either drops its exclusion hack or switches to the pricing lib.
+- 14 files reference the old table names; 14 route files under
+  `/paint-orders` — bounded rename, one cut, browser-verified per the
+  discipline.
+- Seed migration: service_types (lakering, blocks_build), 8 part types,
+  the SIK 2026 list (24 items, currency DKK, effective 2026-06-01).
+  ⚠ Confirm supplier identity: the file says **SIK**, CLAUDE.md's
+  default painter is **Metacoat A/S** — create/link the right supplier
+  row and set the paint default accordingly (ask Dennis alongside the
+  VAT/tier questions).
 - VAT: prices assumed **ex moms** (confirm with Dennis, see asks).
 
 ### Weeks 2–3 — the two big tracks

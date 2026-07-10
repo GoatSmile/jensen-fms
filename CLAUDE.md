@@ -170,17 +170,24 @@ cross-cutting. Original SQL files live in `/migrations/`.
     count: 1/10/20). Treating svaj as all-inclusive is the misread that once
     cost ~60.000 kr on a 200-frame order. `resolveLakSkus()` encodes this; do
     not "simplify" it back to one SKU per line.
-  - **⚠ Remodel decided 2026-07-09 (call): per-part itemized pricing.** The
-    painter scrapped package/scope pricing — every paintable part (frame,
-    fork, mudguards, chain guard, basket, sign, carrier…) gets its own item
-    number + price with quantity tiers (1–9 / 10–19 / 20+), and the painter's
-    numbers become our item numbers (`J.Jensen Stel10` etc.). The list is in
-    hand and analyzed — 8 part types × 3 tiers, catalog table + model sketch
-    in `docs/plan-july9-vacation-month.md` (source:
-    `SIK_Jensen Priser 2026.xlsx`, column "pr. 1. juni 2026" is
-    authoritative). Planned for July W1. The std/svaj model above stays
-    authoritative until the remodel ships — replace in one cut, don't rip
-    it out first.
+  - **⚠ Remodel decided 2026-07-09 (call + design session): paint becomes
+    the first SERVICE TYPE in a generic external-services model** — owner
+    approved "go all the way to service_orders". Painting, washing,
+    priming etc. share one machine: `service_types` (w/ `blocks_build`) ·
+    `service_part_types` (stel, forgaffel… 8 today) ·
+    `service_price_lists` (PER SUPPLIER, versioned revisions like
+    bike_templates) · `service_price_items` (tiered rows, painter's item
+    numbers e.g. `J.Jensen Stel10`) · `paint_orders`/`paint_order_bikes`
+    RENAMED to `service_orders`/`service_order_bikes` + new
+    `service_order_items` (part type × qty × nullable color_id; price
+    snapshotted at send, frozen-at-purchase rule). Routes/nav keep
+    /paint-orders until service #2. Price changes = new list revision w/
+    xlsx-import + diff preview at `/admin/services`, never edit-in-place.
+    Full design + cutover mechanics in `docs/plan-july9-vacation-month.md`
+    (source list: `SIK_Jensen Priser 2026.xlsx`, 8 part types × 3 tiers,
+    column "pr. 1. juni 2026" authoritative). Planned July W1 (~3.5–4 d).
+    The std/svaj model above stays authoritative until the remodel ships —
+    replace in one cut, don't rip it out first.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
@@ -961,9 +968,10 @@ Full plan in **`docs/plan-july9-vacation-month.md`** (tracks, sequence,
 pipeline deep-dive, provider decisions). The frame: Dennis is away until
 Aug 3, Nazar leaves Aug 4 — July output must be self-serve for Dennis's
 solo August onboarding. July tracks in order: housekeeping drill-down
-links + mobile photo verify (W1) · **paint per-part price remodel** (W1,
-painter's list analyzed in the plan doc — 8 part types × 3 qty tiers,
-his item numbers become ours) · **i18n whole-app
+links + mobile photo verify (W1) · **external-services remodel** (W1,
+~3.5–4 d: generic service_types/part-types/price-lists +
+paint_orders→service_orders promotion; painter's SIK list analyzed in
+the plan doc, 8 part types × 3 qty tiers) · **i18n whole-app
 Danish** (next-intl, worker screens first, `de` scaffolded untranslated)
 · **phone→ticket pipeline v1** (harness-first: upload-a-voicemail test
 UI + Azure Speech EU + Claude extraction + deterministic matching in
