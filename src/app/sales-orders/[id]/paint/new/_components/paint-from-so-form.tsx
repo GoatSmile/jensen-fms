@@ -24,15 +24,8 @@ import {
 } from "@/lib/bikes/status";
 import type {
   ColorOption,
-  CurrencyOption,
-  PaintPartOption,
   SupplierOption,
 } from "@/app/paint-orders/_components/paint-order-form";
-import {
-  PAINT_SCOPES,
-  paintScopeLabel,
-  paintScopeParts,
-} from "@/lib/paint/scope";
 
 import { createPaintOrderFromSO } from "@/app/sales-orders/_actions/paint-from-so";
 
@@ -51,8 +44,6 @@ type Props = {
   eligibleBikes: EligibleSOBike[];
   suppliers: SupplierOption[];
   colors: ColorOption[];
-  paintParts: PaintPartOption[];
-  currencies: CurrencyOption[];
   defaultSupplierId: string;
 };
 
@@ -62,8 +53,6 @@ export function PaintFromSOForm({
   eligibleBikes,
   suppliers,
   colors,
-  paintParts,
-  currencies,
   defaultSupplierId,
 }: Props) {
   const router = useRouter();
@@ -73,10 +62,6 @@ export function PaintFromSOForm({
   );
   const [supplierId, setSupplierId] = useState(defaultSupplierId);
   const [colorId, setColorId] = useState("");
-  const [scope, setScope] = useState<string>("std");
-  const [paintPartId, setPaintPartId] = useState("");
-  const [unitCost, setUnitCost] = useState("");
-  const [currency, setCurrency] = useState("DKK");
   const [plannedSendDate, setPlannedSendDate] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -122,10 +107,6 @@ export function PaintFromSOForm({
         bikeIds: [...selected],
         supplierId,
         colorId,
-        scope,
-        paintPartId: paintPartId || null,
-        unitCost: unitCost || null,
-        unitCostCurrency: currency,
         plannedSendDate: plannedSendDate || null,
         notes: notes || null,
       });
@@ -210,8 +191,10 @@ export function PaintFromSOForm({
         <header className="flex flex-col gap-0.5 border-b px-4 py-3">
           <h2 className="text-sm font-semibold">Painter and colour</h2>
           <p className="text-muted-foreground text-xs">
-            Pick the painter (typically Metacoat A/S) and the colour for this
-            batch.
+            Frame + fork item lines are seeded automatically in this colour, one
+            per selected frame — adjust them or add mudguards, signs and
+            carriers on the order page. Prices come from the painter&apos;s
+            price list.
           </p>
         </header>
         <div className="flex flex-col gap-3 p-4">
@@ -272,99 +255,18 @@ export function PaintFromSOForm({
               </SelectContent>
             </Select>
           </Field>
-
-          <Field label="Paints (scope)" htmlFor="paint-scope">
-            <Select value={scope} onValueChange={(v) => setScope(v)}>
-              <SelectTrigger id="paint-scope">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAINT_SCOPES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {paintScopeLabel(s)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-muted-foreground mt-1 text-xs">
-              {paintScopeParts(scope)} · applied to every selected frame (change
-              per frame later).
-            </p>
-          </Field>
-
-          <Field label="Paint catalog part (optional)" htmlFor="paint-part">
-            <Select
-              value={paintPartId}
-              onValueChange={(v) => setPaintPartId(v)}
-            >
-              <SelectTrigger id="paint-part">
-                <SelectValue placeholder="None — costed direct on this order" />
-              </SelectTrigger>
-              <SelectContent>
-                {paintParts.length === 0 ? (
-                  <div className="text-muted-foreground p-2 text-xs">
-                    No Lakering parts found in the catalog.
-                  </div>
-                ) : (
-                  paintParts.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name_en}{" "}
-                      <span className="text-muted-foreground ml-1.5 font-mono text-xs">
-                        ({p.internal_sku})
-                      </span>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </Field>
         </div>
       </section>
 
       <section className="rounded-md border">
         <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Cost and schedule</h2>
+          <h2 className="text-sm font-semibold">Schedule</h2>
           <p className="text-muted-foreground text-xs">
-            Cost is per bike charged by the painter. Sent / received timestamps
-            are stamped on status transitions.
+            Advisory only; actual sent / received timestamps are stamped on
+            status transitions.
           </p>
         </header>
         <div className="flex flex-col gap-3 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field
-              label="Unit cost (per bike)"
-              htmlFor="paint-cost"
-              error={errorField === "unit_cost" ? error : null}
-            >
-              <Input
-                id="paint-cost"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                value={unitCost}
-                onChange={(e) => {
-                  setUnitCost(e.target.value);
-                  clearFieldError("unit_cost");
-                }}
-                placeholder="0,00"
-              />
-            </Field>
-            <Field label="Currency" htmlFor="paint-currency">
-              <Select value={currency} onValueChange={(v) => setCurrency(v)}>
-                <SelectTrigger id="paint-currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
           <Field label="Planned send date" htmlFor="paint-send-date">
             <Input
               id="paint-send-date"

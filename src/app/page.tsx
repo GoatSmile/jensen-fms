@@ -28,11 +28,11 @@ import {
 } from "@/lib/dashboard/queries";
 import { cn } from "@/lib/utils";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
+import { AT_SUPPLIER_STATUSES } from "@/lib/services/status";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 import { createClient } from "@/lib/supabase/server";
 
-const AGING_PAINT_STATUSES = ["sent_to_painter", "at_painter"] as const;
 const PAINT_AGING_DAYS = 14;
 const ATTENTION_LIMIT = 5;
 
@@ -144,11 +144,11 @@ export default async function DashboardPage() {
       .order("planned_completion_date", { ascending: true })
       .limit(ATTENTION_LIMIT),
     supabase
-      .from("paint_orders")
+      .from("service_orders")
       .select(
-        "id, paint_order_number, sent_at, status, supplier:suppliers(id, name)",
+        "id, order_number, sent_at, status, supplier:suppliers(id, name)",
       )
-      .in("status", AGING_PAINT_STATUSES)
+      .in("status", AT_SUPPLIER_STATUSES)
       .not("sent_at", "is", null)
       .lt("sent_at", paintCutoff)
       .order("sent_at", { ascending: true })
@@ -588,7 +588,7 @@ export default async function DashboardPage() {
                       aria-hidden
                     />
                     <span className="truncate font-mono text-xs">
-                      {po.paint_order_number}
+                      {po.order_number}
                     </span>
                     <span className="text-muted-foreground truncate text-xs">
                       {po.supplier?.name ?? "—"}

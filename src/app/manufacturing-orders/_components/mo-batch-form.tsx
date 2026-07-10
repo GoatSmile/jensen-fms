@@ -21,7 +21,6 @@ import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { appendField } from "@/lib/forms";
 import { familyTint } from "@/lib/bike-templates/family-colors";
 
-import { isServiceSku } from "@/lib/manufacturing/coverage";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
 
 import {
@@ -175,8 +174,6 @@ export function MOBatchForm({
     let unpriced = 0;
     for (const [partId, need] of demand) {
       const info = partsInfo[partId];
-      // Paint service SKUs never hold stock — excluded, same as the lib.
-      if (info && isServiceSku(info.sku)) continue;
       const have = info?.onHand ?? 0;
       if (need > have) {
         shortfall.push({

@@ -12,8 +12,7 @@
  * requirement: a row with an `inventory_movement_id` is already in the bike
  * and already deducted from `v_current_stock`, so re-checking it against stock
  * would invent a false shortage (and that's exactly the set `finishBikeBuild`
- * still has left to pull). Paint service SKUs (`JP-lak*`) are excluded — same
- * convention as MO coverage.
+ * still has left to pull).
  *
  * Like MO coverage, readiness is computed per bike against the FULL on-hand
  * figure — it does NOT model two bikes competing for the same scarce part.
@@ -31,9 +30,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/database";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
-
-import { isServiceSku } from "./coverage";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 export type BuildQueueBike = {
   bikeId: string;
@@ -57,7 +54,7 @@ export type BuildQueueBike = {
 
 const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
 
-type Req = { partId: string; qty: number; sku: string };
+type Req = { partId: string; qty: number };
 
 function one<T>(v: T | T[] | null | undefined): T | null {
   if (v == null) return null;
@@ -103,18 +100,14 @@ export async function loadBuildQueue(
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
     supabase
       .from("bike_parts")
-      .select(
-        "bike_id, part_id, quantity, inventory_movement_id, part:parts!part_id(internal_sku)",
-      )
+      .select("bike_id, part_id, quantity, inventory_movement_id")
       .in("bike_id", bikeIds)
       .is("removed_at", null),
     supabase
       .from("manufacturing_order_parts")
-      .select(
-        "manufacturing_order_id, part_id, quantity_per_bike, part:parts!part_id(internal_sku)",
-      )
+      .select("manufacturing_order_id, part_id, quantity_per_bike")
       .in("manufacturing_order_id", moIds),
-    loadAtPainterBikeIds(supabase, bikeIds),
+    loadAtSupplierBikeIds(supabase, bikeIds),
   ]);
 
   const stockByPart = new Map<string, number>();
@@ -136,26 +129,16 @@ export async function loadBuildQueue(
     if (!r.part_id) continue;
     startedBikes.add(r.bike_id);
     if (r.inventory_movement_id != null) continue; // already consumed
-    const part = one(r.part);
     const list = reqByBike.get(r.bike_id) ?? [];
-    list.push({
-      partId: r.part_id,
-      qty: Number(r.quantity),
-      sku: part?.internal_sku ?? "",
-    });
+    list.push({ partId: r.part_id, qty: Number(r.quantity) });
     reqByBike.set(r.bike_id, list);
   }
 
   const reqByMo = new Map<string, Req[]>();
   for (const r of recipeRes.data ?? []) {
     if (!r.part_id) continue;
-    const part = one(r.part);
     const list = reqByMo.get(r.manufacturing_order_id) ?? [];
-    list.push({
-      partId: r.part_id,
-      qty: Number(r.quantity_per_bike),
-      sku: part?.internal_sku ?? "",
-    });
+    list.push({ partId: r.part_id, qty: Number(r.quantity_per_bike) });
     reqByMo.set(r.manufacturing_order_id, list);
   }
 
@@ -171,11 +154,9 @@ export async function loadBuildQueue(
     // startedBikes — not reqByBike's presence — is the "started?" signal, so a
     // bike whose parts are all already consumed reads as ready (empty req)
     // instead of wrongly re-checking the full recipe against stock.
-    const req = (
-      startedBikes.has(b.id)
-        ? (reqByBike.get(b.id) ?? [])
-        : (reqByMo.get(moId) ?? [])
-    ).filter((r) => !isServiceSku(r.sku));
+    const req = startedBikes.has(b.id)
+      ? (reqByBike.get(b.id) ?? [])
+      : (reqByMo.get(moId) ?? []);
     let shortfallCount = 0;
     for (const r of req) {
       if ((stockByPart.get(r.partId) ?? 0) < r.qty) shortfallCount += 1;

@@ -31,23 +31,24 @@ export type MOCoverage = {
 const PRE_BUILD_STATUSES = ["planning", "building"];
 
 /**
- * Paint ("Lakering") service SKUs — `JP-lak*` by convention (see CLAUDE.md).
- * They live in `parts` for paint-order costing but never accumulate
- * inventory movements, so stock coverage would flag them as perpetually
- * short and draft POs would try to "buy paint". Excluded from coverage;
- * paint capacity is the paint-order workflow's concern.
+ * Soft-deleted parts are skipped: they can't be stocked or ordered, so
+ * counting them would show a phantom, unactionable shortage. Historical MO
+ * recipes keep such rows (frozen history — e.g. the retired JP-lak paint
+ * SKUs); the parts list still shows them, only the demand math ignores them.
  */
-export function isServiceSku(sku: string): boolean {
-  return sku.toLowerCase().startsWith("jp-lak");
-}
-
 export function computeCoverageRows(
-  recipe: { partId: string; sku: string; name: string; perBike: number }[],
+  recipe: {
+    partId: string;
+    sku: string;
+    name: string;
+    perBike: number;
+    deleted?: boolean;
+  }[],
   remainingToBuild: number,
   stockByPart: Map<string, number>,
 ): CoverageRow[] {
   return recipe
-    .filter((r) => !isServiceSku(r.sku))
+    .filter((r) => !r.deleted)
     .map((r) => {
       const demand = r.perBike * remainingToBuild;
       const onHand = stockByPart.get(r.partId) ?? 0;
@@ -96,7 +97,7 @@ export async function loadMOCoverage(
     supabase
       .from("manufacturing_order_parts")
       .select(
-        "part_id, quantity_per_bike, part:parts!part_id(internal_sku, name_en)",
+        "part_id, quantity_per_bike, part:parts!part_id(internal_sku, name_en, deleted_at)",
       )
       .eq("manufacturing_order_id", moId),
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
@@ -127,6 +128,7 @@ export async function loadMOCoverage(
       sku: (part?.internal_sku as string) ?? "—",
       name: (part?.name_en as string) ?? "—",
       perBike: Number(r.quantity_per_bike),
+      deleted: part?.deleted_at != null,
     };
   });
 

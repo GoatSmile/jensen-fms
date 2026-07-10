@@ -25,21 +25,22 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  PAINT_ORDER_STATUS_VARIANT,
-  paintOrderStatusLabel,
-  paintOrderTransitionRequiresReason,
-  validNextPaintOrderStatuses,
-  type PaintOrderStatus,
-} from "@/lib/paint/status";
+  SERVICE_ORDER_STATUS_VARIANT,
+  serviceOrderStatusLabel,
+  serviceOrderTransitionRequiresReason,
+  validNextServiceOrderStatuses,
+  type ServiceOrderStatus,
+} from "@/lib/services/status";
+import { PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
 
-import { transitionPaintOrderStatus } from "../_actions/transition-status";
+import { transitionServiceOrderStatus } from "../_actions/transition-status";
 
-type PendingTransition = { to: PaintOrderStatus } | null;
+type PendingTransition = { to: ServiceOrderStatus } | null;
 
 type Props = {
-  paintOrderId: string;
-  paintOrderNumber: string;
-  status: PaintOrderStatus;
+  serviceOrderId: string;
+  orderNumber: string;
+  status: ServiceOrderStatus;
   supplierName: string | null;
   colorName: string | null;
   colorHex: string | null;
@@ -47,8 +48,8 @@ type Props = {
 };
 
 export function PaintOrderHeader({
-  paintOrderId,
-  paintOrderNumber,
+  serviceOrderId,
+  orderNumber,
   status,
   supplierName,
   colorName,
@@ -61,20 +62,20 @@ export function PaintOrderHeader({
   const [transitionDialog, setTransitionDialog] =
     useState<PendingTransition>(null);
 
-  const nextStatuses = validNextPaintOrderStatuses(status);
+  const nextStatuses = validNextServiceOrderStatuses(status);
 
-  function startTransition(to: PaintOrderStatus) {
-    if (paintOrderTransitionRequiresReason(to)) {
+  function startTransition(to: ServiceOrderStatus) {
+    if (serviceOrderTransitionRequiresReason(to)) {
       setTransitionDialog({ to });
     } else {
       runTransition(to, null);
     }
   }
 
-  function runTransition(to: PaintOrderStatus, reason: string | null) {
+  function runTransition(to: ServiceOrderStatus, reason: string | null) {
     setError(null);
     start(async () => {
-      const r = await transitionPaintOrderStatus(paintOrderId, to, reason);
+      const r = await transitionServiceOrderStatus(serviceOrderId, to, reason);
       if (!r.ok) {
         setError(r.error);
         return;
@@ -95,10 +96,10 @@ export function PaintOrderHeader({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground font-mono text-xs">
-              {paintOrderNumber}
+              {orderNumber}
             </span>
-            <Badge variant={PAINT_ORDER_STATUS_VARIANT[status] ?? "outline"}>
-              {paintOrderStatusLabel(status)}
+            <Badge variant={SERVICE_ORDER_STATUS_VARIANT[status] ?? "outline"}>
+              {serviceOrderStatusLabel(status, PAINT_SUPPLIER_NOUN)}
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -123,7 +124,7 @@ export function PaintOrderHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {nextStatuses.map((to, i) => {
-                  const isTerminal = paintOrderTransitionRequiresReason(to);
+                  const isTerminal = serviceOrderTransitionRequiresReason(to);
                   return (
                     <div key={to}>
                       {i > 0 && isTerminal ? <DropdownMenuSeparator /> : null}
@@ -135,7 +136,7 @@ export function PaintOrderHeader({
                           startTransition(to);
                         }}
                       >
-                        {paintOrderStatusLabel(to)}
+                        {serviceOrderStatusLabel(to, PAINT_SUPPLIER_NOUN)}
                       </DropdownMenuItem>
                     </div>
                   );

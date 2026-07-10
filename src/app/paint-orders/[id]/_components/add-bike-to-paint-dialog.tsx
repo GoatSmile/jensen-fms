@@ -24,10 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ColorSwatch } from "@/components/color-swatch";
-import { colorFinishLabel } from "@/lib/colors/coating";
-import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
-import { PAINT_SCOPES, paintScopeLabel, paintScopeParts } from "@/lib/paint/scope";
 
 import { addBikeToPaintOrder } from "../_actions/add-bike-to-paint";
 
@@ -38,20 +34,15 @@ export type EligibleBikeOption = {
 };
 
 type Props = {
-  paintOrderId: string;
+  serviceOrderId: string;
   bikes: EligibleBikeOption[];
-  colors: ColorOption[];
-  /** Order's batch-default colour, pre-selected for each new frame. */
-  defaultColorId: string | null;
   disabled?: boolean;
   disabledReason?: string;
 };
 
 export function AddBikeToPaintDialog({
-  paintOrderId,
+  serviceOrderId,
   bikes,
-  colors,
-  defaultColorId,
   disabled,
   disabledReason,
 }: Props) {
@@ -59,8 +50,6 @@ export function AddBikeToPaintDialog({
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [bikeId, setBikeId] = useState("");
-  const [colorId, setColorId] = useState(defaultColorId ?? "");
-  const [scope, setScope] = useState<string>("std");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
@@ -80,8 +69,6 @@ export function AddBikeToPaintDialog({
   function reset() {
     setQ("");
     setBikeId("");
-    setColorId(defaultColorId ?? "");
-    setScope("std");
     setNotes("");
     setError(null);
   }
@@ -99,11 +86,7 @@ export function AddBikeToPaintDialog({
       return;
     }
     start(async () => {
-      const r = await addBikeToPaintOrder(paintOrderId, bikeId, {
-        colorId: colorId || null,
-        scope,
-        notes,
-      });
+      const r = await addBikeToPaintOrder(serviceOrderId, bikeId, { notes });
       if (!r.ok) {
         setError(r.error);
         return;
@@ -128,10 +111,11 @@ export function AddBikeToPaintDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add bike to this paint order</DialogTitle>
+            <DialogTitle>Add bike to this order</DialogTitle>
             <DialogDescription>
-              Pick the frame, its colour and what gets painted. Bikes already in
-              an open paint order are not shown.
+              The bike ships with this batch and is blocked from building
+              while the order is out. Bikes already in an open order are not
+              shown. What gets painted is set on the item lines.
             </DialogDescription>
           </DialogHeader>
 
@@ -174,48 +158,6 @@ export function AddBikeToPaintDialog({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="paint-bike-color">Colour</Label>
-              <Select value={colorId} onValueChange={setColorId}>
-                <SelectTrigger id="paint-bike-color">
-                  <SelectValue placeholder="Batch default" />
-                </SelectTrigger>
-                <SelectContent>
-                  {colors.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      <ColorSwatch hex={c.hex} label={c.name_en} />
-                      {c.name_en}
-                      {colorFinishLabel(c.ral_code, c.coating) ? (
-                        <span className="text-muted-foreground ml-1.5 text-xs">
-                          {colorFinishLabel(c.ral_code, c.coating)}
-                        </span>
-                      ) : null}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="paint-bike-scope">Paints</Label>
-              <Select value={scope} onValueChange={setScope}>
-                <SelectTrigger id="paint-bike-scope">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAINT_SCOPES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {paintScopeLabel(s)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <p className="text-muted-foreground -mt-1 text-xs">
-            {paintScopeParts(scope)}
-          </p>
-
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="paint-bike-notes">Notes</Label>
             <Textarea
@@ -223,7 +165,7 @@ export function AddBikeToPaintDialog({
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional — anything specific to this bike's paint job."
+              placeholder="Optional — anything specific to this bike."
             />
           </div>
 

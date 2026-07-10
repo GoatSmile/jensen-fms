@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { markBikeBuilt } from "./mark-bike-built";
 
@@ -82,7 +82,7 @@ export async function bulkMarkBikesBuilt(
 
   // And a bike physically at the painter can't be built (Tier 2 Phase C) —
   // skipped and reported, just like an unconfirmed frame.
-  const atPainterIds = await loadAtPainterBikeIds(
+  const atPainterIds = await loadAtSupplierBikeIds(
     supabase,
     frameConfirmed.map((b) => b.id),
   );

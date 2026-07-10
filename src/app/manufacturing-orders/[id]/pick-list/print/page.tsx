@@ -72,7 +72,6 @@ export default async function PickListPrintPage({
       ? Math.floor(requested)
       : Math.max(1, unbuiltCount ?? mo.target_quantity ?? 1);
 
-  // Recipe parts (excluding paint service SKUs — those aren't physically picked).
   const { data: recipe } = await supabase
     .from("manufacturing_order_parts")
     .select(
@@ -86,12 +85,7 @@ export default async function PickListPrintPage({
       perBike: Number(r.quantity_per_bike ?? 0),
       part: one(r.part),
     }))
-    .filter(
-      (r) =>
-        r.part &&
-        r.perBike > 0 &&
-        !(r.part.internal_sku ?? "").startsWith("JP-lak"),
-    );
+    .filter((r) => r.part && r.perBike > 0);
 
   // Kit grouping (mirrors the per-bike pick list): each part lands under its
   // first kit (by code); a part with more labels lists the others as "also".

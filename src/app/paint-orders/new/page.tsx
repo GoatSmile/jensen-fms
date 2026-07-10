@@ -14,8 +14,6 @@ import {
   EMPTY_PAINT_ORDER_FORM,
   PaintOrderForm,
   type ColorOption,
-  type CurrencyOption,
-  type PaintPartOption,
   type SupplierOption,
 } from "../_components/paint-order-form";
 
@@ -24,48 +22,22 @@ const METACOAT_NAME = "Metacoat A/S";
 export default async function NewPaintOrderPage() {
   const supabase = await createClient();
 
-  // Paint parts: filter to parts whose category is "Painting Service" (was
-  // "Lakering" in the old Danish-first taxonomy). We lookup the category id
-  // separately so we can use a clean .eq() on parts.
-  const [suppliersRes, colorsRes, currenciesRes, lakeringCategoryRes] =
-    await Promise.all([
-      supabase
-        .from("suppliers")
-        .select("id, name")
-        .is("deleted_at", null)
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
-      supabase
-        .from("colors")
-        .select("id, name_en, hex, ral_code, coating")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("currencies")
-        .select("code")
-        .order("sort_order", { ascending: true })
-        .order("code", { ascending: true }),
-      supabase
-        .from("part_categories")
-        .select("id")
-        .eq("name_en", "Painting Service")
-        .maybeSingle(),
-    ]);
-
-  let paintParts: PaintPartOption[] = [];
-  if (lakeringCategoryRes.data?.id) {
-    const { data } = await supabase
-      .from("parts")
-      .select("id, internal_sku, name_en")
-      .eq("category_id", lakeringCategoryRes.data.id)
+  const [suppliersRes, colorsRes] = await Promise.all([
+    supabase
+      .from("suppliers")
+      .select("id, name")
       .is("deleted_at", null)
-      .order("internal_sku", { ascending: true });
-    paintParts = data ?? [];
-  }
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("colors")
+      .select("id, name_en, hex, ral_code, coating")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
 
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
-  const currencies: CurrencyOption[] = currenciesRes.data ?? [];
 
   // Default supplier_id: Metacoat A/S if found, otherwise blank.
   const metacoat = suppliers.find((s) => s.name === METACOAT_NAME);
@@ -100,17 +72,11 @@ export default async function NewPaintOrderPage() {
           New paint order
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          One round trip with the painter. Add the bikes that ship with this
-          batch on the next screen.
+          One round trip with the painter. Add the item lines (what gets
+          painted) and the bikes that ship with the batch on the next screen.
         </p>
       </div>
-      <PaintOrderForm
-        initial={initial}
-        suppliers={suppliers}
-        colors={colors}
-        paintParts={paintParts}
-        currencies={currencies}
-      />
+      <PaintOrderForm initial={initial} suppliers={suppliers} colors={colors} />
     </div>
   );
 }

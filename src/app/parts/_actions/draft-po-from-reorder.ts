@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { isServiceSku } from "@/lib/manufacturing/coverage";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
 
 export type ReorderDraftResult =
@@ -30,9 +29,9 @@ export type ReorderRow = {
 };
 
 /**
- * Parts whose on-hand stock sits below their reorder point. Service SKUs
- * (JP-lak*) are excluded — they never hold stock. Quantity to order is the
- * part's `reorder_quantity` when set, else a top-up to the reorder point.
+ * Parts whose on-hand stock sits below their reorder point. Quantity to
+ * order is the part's `reorder_quantity` when set, else a top-up to the
+ * reorder point.
  */
 export async function findPartsBelowReorderPoint(): Promise<
   ReorderRow[] | { error: string }
@@ -61,7 +60,6 @@ export async function findPartsBelowReorderPoint(): Promise<
 
   const rows: ReorderRow[] = [];
   for (const p of partsRes.data ?? []) {
-    if (isServiceSku(p.internal_sku)) continue;
     const point = Number(p.reorder_point);
     if (!Number.isFinite(point) || point <= 0) continue;
     const onHand = onHandByPart.get(p.id) ?? 0;

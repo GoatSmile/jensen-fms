@@ -2170,158 +2170,6 @@ export type Database = {
           },
         ]
       }
-      paint_order_bikes: {
-        Row: {
-          added_at: string
-          bike_id: string
-          color_id: string | null
-          notes: string | null
-          paint_order_id: string
-          scope: string | null
-        }
-        Insert: {
-          added_at?: string
-          bike_id: string
-          color_id?: string | null
-          notes?: string | null
-          paint_order_id: string
-          scope?: string | null
-        }
-        Update: {
-          added_at?: string
-          bike_id?: string
-          color_id?: string | null
-          notes?: string | null
-          paint_order_id?: string
-          scope?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "paint_order_bikes_bike_id_fkey"
-            columns: ["bike_id"]
-            isOneToOne: false
-            referencedRelation: "bikes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_order_bikes_color_id_fkey"
-            columns: ["color_id"]
-            isOneToOne: false
-            referencedRelation: "colors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_order_bikes_paint_order_id_fkey"
-            columns: ["paint_order_id"]
-            isOneToOne: false
-            referencedRelation: "paint_orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      paint_orders: {
-        Row: {
-          color_id: string | null
-          created_at: string
-          created_by: string | null
-          expected_return_at: string | null
-          id: string
-          notes: string | null
-          paint_order_number: string
-          paint_part_id: string | null
-          planned_send_date: string | null
-          received_at: string | null
-          sales_order_id: string | null
-          sent_at: string | null
-          status: Database["public"]["Enums"]["paint_order_status"]
-          supplier_id: string
-          unit_cost: number | null
-          unit_cost_currency: string | null
-          updated_at: string
-        }
-        Insert: {
-          color_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          expected_return_at?: string | null
-          id?: string
-          notes?: string | null
-          paint_order_number: string
-          paint_part_id?: string | null
-          planned_send_date?: string | null
-          received_at?: string | null
-          sales_order_id?: string | null
-          sent_at?: string | null
-          status?: Database["public"]["Enums"]["paint_order_status"]
-          supplier_id: string
-          unit_cost?: number | null
-          unit_cost_currency?: string | null
-          updated_at?: string
-        }
-        Update: {
-          color_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          expected_return_at?: string | null
-          id?: string
-          notes?: string | null
-          paint_order_number?: string
-          paint_part_id?: string | null
-          planned_send_date?: string | null
-          received_at?: string | null
-          sales_order_id?: string | null
-          sent_at?: string | null
-          status?: Database["public"]["Enums"]["paint_order_status"]
-          supplier_id?: string
-          unit_cost?: number | null
-          unit_cost_currency?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "paint_orders_color_id_fkey"
-            columns: ["color_id"]
-            isOneToOne: false
-            referencedRelation: "colors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_orders_paint_part_id_fkey"
-            columns: ["paint_part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_orders_paint_part_id_fkey"
-            columns: ["paint_part_id"]
-            isOneToOne: false
-            referencedRelation: "v_parts_dashboard"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_orders_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "sales_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_orders_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "paint_orders_unit_cost_currency_fkey"
-            columns: ["unit_cost_currency"]
-            isOneToOne: false
-            referencedRelation: "currencies"
-            referencedColumns: ["code"]
-          },
-        ]
-      }
       part_categories: {
         Row: {
           created_at: string
@@ -3146,6 +2994,381 @@ export type Database = {
           },
         ]
       }
+      service_order_bikes: {
+        Row: {
+          added_at: string
+          bike_id: string
+          color_id: string | null
+          notes: string | null
+          scope: string | null
+          service_order_id: string
+        }
+        Insert: {
+          added_at?: string
+          bike_id: string
+          color_id?: string | null
+          notes?: string | null
+          scope?: string | null
+          service_order_id: string
+        }
+        Update: {
+          added_at?: string
+          bike_id?: string
+          color_id?: string | null
+          notes?: string | null
+          scope?: string | null
+          service_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_bikes_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_bikes_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_bikes_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_order_items: {
+        Row: {
+          color_id: string | null
+          created_at: string
+          currency: string | null
+          fx_rate_to_dkk: number | null
+          id: string
+          notes: string | null
+          quantity: number
+          service_order_id: string
+          service_part_type_id: string
+          supplier_item_no: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          color_id?: string | null
+          created_at?: string
+          currency?: string | null
+          fx_rate_to_dkk?: number | null
+          id?: string
+          notes?: string | null
+          quantity: number
+          service_order_id: string
+          service_part_type_id: string
+          supplier_item_no?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          color_id?: string | null
+          created_at?: string
+          currency?: string | null
+          fx_rate_to_dkk?: number | null
+          id?: string
+          notes?: string | null
+          quantity?: number
+          service_order_id?: string
+          service_part_type_id?: string
+          supplier_item_no?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_order_items_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_items_currency_fkey"
+            columns: ["currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "service_order_items_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_items_service_part_type_id_fkey"
+            columns: ["service_part_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_part_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_orders: {
+        Row: {
+          color_id: string | null
+          created_at: string
+          created_by: string | null
+          expected_return_at: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          planned_send_date: string | null
+          received_at: string | null
+          sales_order_id: string | null
+          sent_at: string | null
+          service_type_id: string
+          status: Database["public"]["Enums"]["service_order_status"]
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          color_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_return_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number: string
+          planned_send_date?: string | null
+          received_at?: string | null
+          sales_order_id?: string | null
+          sent_at?: string | null
+          service_type_id: string
+          status?: Database["public"]["Enums"]["service_order_status"]
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          color_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_return_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          planned_send_date?: string | null
+          received_at?: string | null
+          sales_order_id?: string | null
+          sent_at?: string | null
+          service_type_id?: string
+          status?: Database["public"]["Enums"]["service_order_status"]
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_orders_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_part_types: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name_da: string
+          name_en: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_da: string
+          name_en: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name_da?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      service_price_items: {
+        Row: {
+          id: string
+          price_list_id: string
+          service_part_type_id: string
+          supplier_item_no: string | null
+          tier_max: number | null
+          tier_min: number
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          price_list_id: string
+          service_part_type_id: string
+          supplier_item_no?: string | null
+          tier_max?: number | null
+          tier_min?: number
+          unit_price: number
+        }
+        Update: {
+          id?: string
+          price_list_id?: string
+          service_part_type_id?: string
+          supplier_item_no?: string | null
+          tier_max?: number | null
+          tier_min?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_price_items_price_list_id_fkey"
+            columns: ["price_list_id"]
+            isOneToOne: false
+            referencedRelation: "service_price_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_price_items_service_part_type_id_fkey"
+            columns: ["service_part_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_part_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_price_lists: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          effective_from: string | null
+          id: string
+          is_current: boolean
+          name: string
+          service_type_id: string
+          supplier_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          effective_from?: string | null
+          id?: string
+          is_current?: boolean
+          name: string
+          service_type_id: string
+          supplier_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          effective_from?: string | null
+          id?: string
+          is_current?: boolean
+          name?: string
+          service_type_id?: string
+          supplier_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_price_lists_currency_fkey"
+            columns: ["currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "service_price_lists_service_type_id_fkey"
+            columns: ["service_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_price_lists_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_types: {
+        Row: {
+          blocks_build: boolean
+          created_at: string
+          document_type: string
+          id: string
+          is_active: boolean
+          name_da: string
+          name_en: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          blocks_build?: boolean
+          created_at?: string
+          document_type: string
+          id?: string
+          is_active?: boolean
+          name_da: string
+          name_en: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          blocks_build?: boolean
+          created_at?: string
+          document_type?: string
+          id?: string
+          is_active?: boolean
+          name_da?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       shipments: {
         Row: {
           actual_delivery_date: string | null
@@ -3940,12 +4163,6 @@ export type Database = {
         | "rejected"
         | "expired"
         | "converted"
-      paint_order_status:
-        | "planned"
-        | "sent_to_painter"
-        | "at_painter"
-        | "received_back"
-        | "cancelled"
       purchase_order_status:
         | "draft"
         | "placed"
@@ -3960,6 +4177,12 @@ export type Database = {
         | "delivered"
         | "cancelled"
       service_agreement_status: "active" | "expired" | "cancelled"
+      service_order_status:
+        | "planned"
+        | "sent"
+        | "at_supplier"
+        | "received_back"
+        | "cancelled"
       shipment_direction: "inbound" | "outbound"
       shipment_status:
         | "planned"
@@ -4154,13 +4377,6 @@ export const Constants = {
         "expired",
         "converted",
       ],
-      paint_order_status: [
-        "planned",
-        "sent_to_painter",
-        "at_painter",
-        "received_back",
-        "cancelled",
-      ],
       purchase_order_status: [
         "draft",
         "placed",
@@ -4177,6 +4393,13 @@ export const Constants = {
         "cancelled",
       ],
       service_agreement_status: ["active", "expired", "cancelled"],
+      service_order_status: [
+        "planned",
+        "sent",
+        "at_supplier",
+        "received_back",
+        "cancelled",
+      ],
       shipment_direction: ["inbound", "outbound"],
       shipment_status: [
         "planned",

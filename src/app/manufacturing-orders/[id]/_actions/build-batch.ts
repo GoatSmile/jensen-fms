@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { confirmBikeFrame } from "../bikes/[bikeId]/build/_actions/confirm-frame";
 import { markBikeBuilt } from "./mark-bike-built";
@@ -57,7 +57,7 @@ export async function bulkBuildBikesWithIds(
     return { ok: false, error: `Could not load bikes: ${bikesErr.message}` };
   }
   const bikeById = new Map((bikes ?? []).map((b) => [b.id, b]));
-  const atPainter = await loadAtPainterBikeIds(supabase, bikeIds);
+  const atPainter = await loadAtSupplierBikeIds(supabase, bikeIds);
 
   let built = 0;
   let skipped = 0;

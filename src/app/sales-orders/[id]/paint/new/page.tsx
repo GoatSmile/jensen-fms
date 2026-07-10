@@ -12,11 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
-import { OPEN_PAINT_ORDER_STATUSES } from "@/lib/paint/status";
+import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import type {
   ColorOption,
-  CurrencyOption,
-  PaintPartOption,
   SupplierOption,
 } from "@/app/paint-orders/_components/paint-order-form";
 
@@ -65,14 +63,35 @@ export default async function PaintFromSOPage({
         .in("manufacturing_order_id", moIds)
         .is("deleted_at", null)
         .order("frame_number", { ascending: true }),
+      // Same eligibility the createPaintOrderFromSO action enforces: a frame
+      // is unavailable while it sits on an OPEN order of a build-blocking
+      // service type (a non-blocking type wouldn't take the bike away).
       supabase
-        .from("paint_order_bikes")
-        .select("bike_id, paint_order:paint_orders!inner(status)")
-        .in("paint_order.status", OPEN_PAINT_ORDER_STATUSES),
+        .from("service_order_bikes")
+        .select(
+          `bike_id,
+           service_order:service_orders!inner(
+             status,
+             service_type:service_types!service_type_id(blocks_build)
+           )`,
+        )
+        .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES),
     ]);
 
     const inOpenOrder = new Set(
-      (openLinksRes.data ?? []).map((r) => r.bike_id),
+      (openLinksRes.data ?? [])
+        .filter((r) => {
+          const order = Array.isArray(r.service_order)
+            ? r.service_order[0]
+            : r.service_order;
+          const type = order
+            ? Array.isArray(order.service_type)
+              ? order.service_type[0]
+              : order.service_type
+            : null;
+          return type?.blocks_build === true;
+        })
+        .map((r) => r.bike_id),
     );
     eligibleBikes = (bikesRes.data ?? [])
       .filter((b) => !inOpenOrder.has(b.id))
@@ -94,45 +113,22 @@ export default async function PaintFromSOPage({
   }
 
   // Option lists for the header (same sources as /paint-orders/new).
-  const [suppliersRes, colorsRes, currenciesRes, lakeringCategoryRes] =
-    await Promise.all([
-      supabase
-        .from("suppliers")
-        .select("id, name")
-        .is("deleted_at", null)
-        .eq("is_active", true)
-        .order("name", { ascending: true }),
-      supabase
-        .from("colors")
-        .select("id, name_en, hex, ral_code, coating")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("currencies")
-        .select("code")
-        .order("sort_order", { ascending: true })
-        .order("code", { ascending: true }),
-      supabase
-        .from("part_categories")
-        .select("id")
-        .eq("name_en", "Painting Service")
-        .maybeSingle(),
-    ]);
-
-  let paintParts: PaintPartOption[] = [];
-  if (lakeringCategoryRes.data?.id) {
-    const { data } = await supabase
-      .from("parts")
-      .select("id, internal_sku, name_en")
-      .eq("category_id", lakeringCategoryRes.data.id)
+  const [suppliersRes, colorsRes] = await Promise.all([
+    supabase
+      .from("suppliers")
+      .select("id, name")
       .is("deleted_at", null)
-      .order("internal_sku", { ascending: true });
-    paintParts = data ?? [];
-  }
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("colors")
+      .select("id, name_en, hex, ral_code, coating")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
 
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
-  const currencies: CurrencyOption[] = currenciesRes.data ?? [];
   const metacoat = suppliers.find((s) => s.name === METACOAT_NAME);
 
   return (
@@ -195,8 +191,6 @@ export default async function PaintFromSOPage({
           eligibleBikes={eligibleBikes}
           suppliers={suppliers}
           colors={colors}
-          paintParts={paintParts}
-          currencies={currencies}
           defaultSupplierId={metacoat?.id ?? ""}
         />
       )}

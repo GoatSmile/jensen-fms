@@ -22,7 +22,7 @@ import {
   computeCoverageRows,
   remainingToBuildCount,
 } from "@/lib/manufacturing/coverage";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { CoverageSection } from "./_components/coverage-section";
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
@@ -90,7 +90,7 @@ export default async function ManufacturingOrderDetailPage({
         `
           id, part_id, quantity_per_bike, origin, substituted_part_id, notes,
           part:parts!part_id(
-            id, internal_sku, name_en,
+            id, internal_sku, name_en, deleted_at,
             category:part_categories(id, name_en)
           ),
           substituted_from:parts!substituted_part_id(id, internal_sku, name_en)
@@ -224,7 +224,7 @@ export default async function ManufacturingOrderDetailPage({
 
   const requiredIdCount = bikeTypeRequiredRes.data?.length ?? 0;
   // Paint gate (Tier 2 Phase C): which of this MO's bikes are at the painter.
-  const atPainterIds = await loadAtPainterBikeIds(
+  const atPainterIds = await loadAtSupplierBikeIds(
     supabase,
     (bikesRes.data ?? []).map((b) => b.id),
   );
@@ -279,11 +279,12 @@ export default async function ManufacturingOrderDetailPage({
   const projectedBuildCost = projectedPartsCostPerBike * outstandingBikes;
 
   const coverageRows = computeCoverageRows(
-    moPartRows.map((r) => ({
-      partId: r.partId,
-      sku: r.partSku,
-      name: r.partName,
-      perBike: r.quantityPerBike,
+    (moPartsRes.data ?? []).map((row) => ({
+      partId: row.part_id,
+      sku: row.part?.internal_sku ?? "—",
+      name: row.part?.name_en ?? "—",
+      perBike: Number(row.quantity_per_bike),
+      deleted: row.part?.deleted_at != null,
     })),
     outstandingBikes,
     stockByPart,

@@ -8,13 +8,6 @@ import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -22,18 +15,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ColorChip, ColorSwatch } from "@/components/color-swatch";
-import { colorFinishLabel } from "@/lib/colors/coating";
-import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
+import { ColorChip } from "@/components/color-swatch";
 import {
   BIKE_STATUS_VARIANT,
   bikeStatusLabel,
   type BikeStatus,
 } from "@/lib/bikes/status";
-import { PAINT_SCOPES, paintScopeLabel, paintScopeParts } from "@/lib/paint/scope";
 
 import { removeBikeFromPaintOrder } from "../_actions/remove-bike-from-paint";
-import { updatePaintLine } from "../_actions/update-paint-line";
 import {
   AddBikeToPaintDialog,
   type EligibleBikeOption,
@@ -47,58 +36,49 @@ export type PaintOrderBikeRow = {
   templateLabel: string | null;
   addedAt: string;
   notes: string | null;
-  colorId: string | null;
-  colorName: string | null;
-  colorHex: string | null;
-  colorFinish: string | null;
-  scope: string | null;
-  /** Resolved JP-lak service SKU + formatted per-bike price (auto-derived). */
-  lakSku: string | null;
-  lakPriceLabel: string | null;
+  /** LEGACY per-line colour/scope from the pre-items paint model (migration
+   * 51) — read-only history on old orders; new orders carry colour on the
+   * item lines. Null on anything created after the service remodel. */
+  legacyColorName: string | null;
+  legacyColorHex: string | null;
+  legacyScopeLabel: string | null;
 };
 
 type Props = {
-  paintOrderId: string;
-  paintOrderStatus: string;
+  serviceOrderId: string;
+  orderStatus: string;
   rows: PaintOrderBikeRow[];
   eligibleBikes: EligibleBikeOption[];
-  colors: ColorOption[];
-  defaultColorId: string | null;
-  /** Σ of auto-derived per-line prices, formatted; null when none priced. */
-  orderTotalLabel: string | null;
 };
 
 export function PaintOrderBikesSection({
-  paintOrderId,
-  paintOrderStatus,
+  serviceOrderId,
+  orderStatus,
   rows,
   eligibleBikes,
-  colors,
-  defaultColorId,
-  orderTotalLabel,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const canEdit = paintOrderStatus === "planned";
-  const canAdd =
-    paintOrderStatus !== "received_back" && paintOrderStatus !== "cancelled";
+  const canEdit = orderStatus === "planned";
+  const canAdd = orderStatus !== "received_back" && orderStatus !== "cancelled";
+  const hasLegacyColumns = rows.some(
+    (r) => r.legacyColorName || r.legacyScopeLabel,
+  );
 
   return (
     <Section
       title="Bikes in this batch"
       description={
         canEdit
-          ? "Add frames, then set each one's colour and what gets painted. Editable until the order is sent."
+          ? "The frames that physically ship with this batch — a bike here is blocked from building while the order is out. What gets painted (and the pricing) lives on the items above."
           : `${rows.length} ${rows.length === 1 ? "bike" : "bikes"} attached.`
       }
       action={
         <AddBikeToPaintDialog
-          paintOrderId={paintOrderId}
+          serviceOrderId={serviceOrderId}
           bikes={eligibleBikes}
-          colors={colors}
-          defaultColorId={defaultColorId}
           disabled={!canAdd}
-          disabledReason={!canAdd ? "Paint order is closed." : undefined}
+          disabledReason={!canAdd ? "Order is closed." : undefined}
         />
       }
     >
@@ -118,12 +98,15 @@ export function PaintOrderBikesSection({
             <TableHeader>
               <TableRow>
                 <TableHead>Frame number</TableHead>
-                <TableHead>Colour</TableHead>
-                <TableHead>Paints</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">
-                  Service / bike
+                <TableHead>Template</TableHead>
+                {hasLegacyColumns ? (
+                  <TableHead className="hidden sm:table-cell">
+                    Colour / scope (legacy)
+                  </TableHead>
+                ) : null}
+                <TableHead className="hidden md:table-cell">
+                  Bike status
                 </TableHead>
-                <TableHead className="hidden md:table-cell">Bike status</TableHead>
                 <TableHead className="w-[60px]" />
               </TableRow>
             </TableHeader>
@@ -131,9 +114,9 @@ export function PaintOrderBikesSection({
               {rows.map((r) => (
                 <BikeRow
                   key={r.bikeId}
-                  paintOrderId={paintOrderId}
+                  serviceOrderId={serviceOrderId}
                   row={r}
-                  colors={colors}
+                  showLegacy={hasLegacyColumns}
                   canEdit={canEdit}
                   onError={setError}
                   onChange={() => router.refresh()}
@@ -141,14 +124,6 @@ export function PaintOrderBikesSection({
               ))}
             </TableBody>
           </Table>
-          {orderTotalLabel ? (
-            <div className="text-muted-foreground flex justify-end gap-2 border-t px-4 py-2 text-sm">
-              <span>Auto paint cost (JP-lak):</span>
-              <span className="text-foreground tabular-nums">
-                {orderTotalLabel}
-              </span>
-            </div>
-          ) : null}
         </div>
       )}
     </Section>
@@ -156,16 +131,16 @@ export function PaintOrderBikesSection({
 }
 
 function BikeRow({
-  paintOrderId,
+  serviceOrderId,
   row,
-  colors,
+  showLegacy,
   canEdit,
   onError,
   onChange,
 }: {
-  paintOrderId: string;
+  serviceOrderId: string;
   row: PaintOrderBikeRow;
-  colors: ColorOption[];
+  showLegacy: boolean;
   canEdit: boolean;
   onError: (msg: string | null) => void;
   onChange: () => void;
@@ -175,16 +150,7 @@ function BikeRow({
   function runRemove() {
     onError(null);
     start(async () => {
-      const r = await removeBikeFromPaintOrder(paintOrderId, row.bikeId);
-      if (!r.ok) onError(r.error);
-      else onChange();
-    });
-  }
-
-  function patch(p: { colorId?: string | null; scope?: string | null }) {
-    onError(null);
-    start(async () => {
-      const r = await updatePaintLine(paintOrderId, row.bikeId, p);
+      const r = await removeBikeFromPaintOrder(serviceOrderId, row.bikeId);
       if (!r.ok) onError(r.error);
       else onChange();
     });
@@ -198,81 +164,32 @@ function BikeRow({
         </Link>
       </TableCell>
 
-      <TableCell>
-        {canEdit ? (
-          <Select
-            value={row.colorId ?? ""}
-            onValueChange={(v) => patch({ colorId: v })}
-            disabled={pending}
-          >
-            <SelectTrigger size="sm" className="w-[190px]">
-              <SelectValue placeholder="Batch default" />
-            </SelectTrigger>
-            <SelectContent>
-              {colors.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  <ColorSwatch hex={c.hex} label={c.name_en} />
-                  {c.name_en}
-                  {colorFinishLabel(c.ral_code, c.coating) ? (
-                    <span className="text-muted-foreground ml-1.5 text-xs">
-                      {colorFinishLabel(c.ral_code, c.coating)}
-                    </span>
-                  ) : null}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : row.colorName ? (
+      <TableCell className="text-sm">
+        {row.templateLabel ?? <span className="text-muted-foreground">—</span>}
+        {row.notes ? (
+          <span className="text-muted-foreground block text-xs">
+            {row.notes}
+          </span>
+        ) : null}
+      </TableCell>
+
+      {showLegacy ? (
+        <TableCell className="hidden sm:table-cell">
           <span className="flex flex-col gap-0.5">
-            <ColorChip hex={row.colorHex} label={row.colorName} />
-            {row.colorFinish ? (
+            {row.legacyColorName ? (
+              <ColorChip hex={row.legacyColorHex} label={row.legacyColorName} />
+            ) : null}
+            {row.legacyScopeLabel ? (
               <span className="text-muted-foreground text-xs">
-                {row.colorFinish}
+                {row.legacyScopeLabel}
               </span>
             ) : null}
+            {!row.legacyColorName && !row.legacyScopeLabel ? (
+              <span className="text-muted-foreground">—</span>
+            ) : null}
           </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-
-      <TableCell>
-        {canEdit ? (
-          <Select
-            value={row.scope ?? ""}
-            onValueChange={(v) => patch({ scope: v })}
-            disabled={pending}
-          >
-            <SelectTrigger size="sm" className="w-[130px]">
-              <SelectValue placeholder="Set…" />
-            </SelectTrigger>
-            <SelectContent>
-              {PAINT_SCOPES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {paintScopeLabel(s)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : paintScopeLabel(row.scope) ? (
-          <span
-            className="text-sm"
-            title={paintScopeParts(row.scope) ?? undefined}
-          >
-            {paintScopeLabel(row.scope)}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
-
-      <TableCell className="hidden text-right text-sm tabular-nums sm:table-cell">
-        {row.lakPriceLabel ? (
-          <span title={row.lakSku ?? undefined}>{row.lakPriceLabel}</span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </TableCell>
+        </TableCell>
+      ) : null}
 
       <TableCell className="hidden md:table-cell">
         <Badge variant={BIKE_STATUS_VARIANT[row.status] ?? "outline"}>
@@ -287,7 +204,7 @@ function BikeRow({
             variant="outline"
             onClick={runRemove}
             disabled={pending}
-            aria-label="Remove bike from paint order"
+            aria-label="Remove bike from this order"
           >
             <Trash2 aria-hidden />
           </Button>

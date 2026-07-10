@@ -27,17 +27,17 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { formatDate } from "@/lib/parts/format";
-import { formatPrice } from "@/lib/format";
 import {
-  PAINT_ORDER_STATUS_VARIANT,
-  paintOrderStatusLabel,
-  type PaintOrderStatus,
-} from "@/lib/paint/status";
+  SERVICE_ORDER_STATUS_VARIANT,
+  serviceOrderStatusLabel,
+  type ServiceOrderStatus,
+} from "@/lib/services/status";
+import { PAINT_SERVICE_SLUG, PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
 
-const STATUS_OPTIONS: PaintOrderStatus[] = [
+const STATUS_OPTIONS: ServiceOrderStatus[] = [
   "planned",
-  "sent_to_painter",
-  "at_painter",
+  "sent",
+  "at_supplier",
   "received_back",
   "cancelled",
 ];
@@ -53,21 +53,24 @@ export default async function PaintOrdersPage({
 }) {
   const sp = await searchParams;
   const statusFilter =
-    sp.status && STATUS_OPTIONS.includes(sp.status as PaintOrderStatus)
-      ? (sp.status as PaintOrderStatus)
+    sp.status && STATUS_OPTIONS.includes(sp.status as ServiceOrderStatus)
+      ? (sp.status as ServiceOrderStatus)
       : null;
 
   const supabase = await createClient();
+  // This surface is the PAINTING type's list (surfaces are per service type;
+  // a future washing/sandblasting gets its own route + nav item).
   let q = supabase
-    .from("paint_orders")
+    .from("service_orders")
     .select(
       `
-        id, paint_order_number, status, planned_send_date, sent_at,
-        received_at, unit_cost, unit_cost_currency,
+        id, order_number, status, planned_send_date, sent_at, received_at,
+        service_type:service_types!inner(slug),
         supplier:suppliers(id, name),
         color:colors(id, name_en, hex, ral_code, coating)
       `,
     )
+    .eq("service_type.slug", PAINT_SERVICE_SLUG)
     .order("created_at", { ascending: false });
 
   if (statusFilter) q = q.eq("status", statusFilter);
@@ -77,18 +80,18 @@ export default async function PaintOrdersPage({
     throw new Error(`Failed to load paint orders: ${error.message}`);
   }
 
-  // Count bikes per paint order in one round-trip, then bucket by id.
+  // Count bikes per order in one round-trip, then bucket by id.
   const orderIds = (rows ?? []).map((r) => r.id);
   const bikeCountByOrder = new Map<string, number>();
   if (orderIds.length > 0) {
     const { data: linkRows } = await supabase
-      .from("paint_order_bikes")
-      .select("paint_order_id")
-      .in("paint_order_id", orderIds);
+      .from("service_order_bikes")
+      .select("service_order_id")
+      .in("service_order_id", orderIds);
     for (const r of linkRows ?? []) {
       bikeCountByOrder.set(
-        r.paint_order_id,
-        (bikeCountByOrder.get(r.paint_order_id) ?? 0) + 1,
+        r.service_order_id,
+        (bikeCountByOrder.get(r.service_order_id) ?? 0) + 1,
       );
     }
   }
@@ -120,7 +123,10 @@ export default async function PaintOrdersPage({
               {statusFilter ? (
                 <>
                   {" · "}
-                  {paintOrderStatusLabel(statusFilter).toLowerCase()}
+                  {serviceOrderStatusLabel(
+                    statusFilter,
+                    PAINT_SUPPLIER_NOUN,
+                  ).toLowerCase()}
                   {" · "}
                   <Link
                     href="/paint-orders"
@@ -157,7 +163,7 @@ export default async function PaintOrdersPage({
             <option value="">All statuses</option>
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
-                {paintOrderStatusLabel(s)}
+                {serviceOrderStatusLabel(s, PAINT_SUPPLIER_NOUN)}
               </option>
             ))}
           </select>
@@ -194,9 +200,6 @@ export default async function PaintOrdersPage({
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">Sent</TableHead>
                 <TableHead className="hidden lg:table-cell">Returned</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">
-                  Unit cost
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -207,7 +210,7 @@ export default async function PaintOrdersPage({
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
                     >
-                      <SegmentedId value={r.paint_order_number} />
+                      <SegmentedId value={r.order_number} />
                     </Link>
                   </TableCell>
                   <TableCell className="p-0">
@@ -217,12 +220,12 @@ export default async function PaintOrdersPage({
                     >
                       <Badge
                         variant={
-                          PAINT_ORDER_STATUS_VARIANT[
-                            r.status as PaintOrderStatus
+                          SERVICE_ORDER_STATUS_VARIANT[
+                            r.status as ServiceOrderStatus
                           ] ?? "outline"
                         }
                       >
-                        {paintOrderStatusLabel(r.status)}
+                        {serviceOrderStatusLabel(r.status, PAINT_SUPPLIER_NOUN)}
                       </Badge>
                     </Link>
                   </TableCell>
@@ -284,17 +287,6 @@ export default async function PaintOrdersPage({
                       className="block px-4 py-2.5"
                     >
                       {formatDate(r.received_at)}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="hidden p-0 text-right text-sm tabular-nums lg:table-cell">
-                    <Link
-                      href={`/paint-orders/${r.id}`}
-                      className="block px-4 py-2.5"
-                    >
-                      {formatPrice(
-                        r.unit_cost == null ? null : Number(r.unit_cost),
-                        r.unit_cost_currency,
-                      )}
                     </Link>
                   </TableCell>
                 </TableRow>

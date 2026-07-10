@@ -17,7 +17,7 @@ import {
   findUninvoicedWOs,
 } from "@/lib/invoicing/uninvoiced";
 import { round2 } from "@/lib/invoicing/status";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
 import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
@@ -313,7 +313,7 @@ export async function loadPipelines(
   ]);
 
   const unbuiltIds = (unbuiltIdsRes.data ?? []).map((b) => b.id as string);
-  const atPainter = (await loadAtPainterBikeIds(supabase, unbuiltIds)).size;
+  const atPainter = (await loadAtSupplierBikeIds(supabase, unbuiltIds)).size;
 
   const soRows = sosRes.data ?? [];
   const soValueDkk = round2(

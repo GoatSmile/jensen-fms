@@ -16,7 +16,7 @@ import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
 import { canEditSOLines, type SOStatus } from "@/lib/so/status";
 import type { MOStatus } from "@/lib/mo/status";
-import type { PaintOrderStatus } from "@/lib/paint/status";
+import type { ServiceOrderStatus } from "@/lib/services/status";
 
 import { SOHeader } from "../_components/so-header";
 import {
@@ -110,12 +110,12 @@ export default async function SODetailPage({
         .eq("sales_order_id", id)
         .order("created_at", { ascending: true }),
       supabase
-        .from("paint_orders")
+        .from("service_orders")
         .select(
-          `id, paint_order_number, status,
+          `id, order_number, status,
            supplier:suppliers(name),
            color:colors(name_en, hex),
-           paint_order_bikes(count)`,
+           service_order_bikes(count)`,
         )
         .eq("sales_order_id", id)
         .order("created_at", { ascending: true }),
@@ -222,12 +222,12 @@ export default async function SODetailPage({
 
   const paintRows: LinkedPaintRow[] = (paintRes.data ?? []).map((p) => ({
     id: p.id,
-    paint_order_number: p.paint_order_number,
-    status: p.status as PaintOrderStatus,
+    order_number: p.order_number,
+    status: p.status as ServiceOrderStatus,
     supplierName: p.supplier?.name ?? null,
     colorName: p.color?.name_en ?? null,
     colorHex: p.color?.hex ?? null,
-    bikeCount: p.paint_order_bikes?.[0]?.count ?? 0,
+    bikeCount: p.service_order_bikes?.[0]?.count ?? 0,
   }));
   const canCreatePaint = status !== "cancelled" && status !== "delivered";
 

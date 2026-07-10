@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { autoAdvanceMOAfterBuild } from "../../../../_actions/transition-mo";
 
@@ -84,7 +84,7 @@ export async function finishBikeBuild(
   // built. Derived from the bike's open paint orders — receiving the order
   // back frees it automatically. This is the per-bike backstop; the floor,
   // workbench, and bulk action surface the same block earlier.
-  const atPainter = await loadAtPainterBikeIds(supabase, [bikeId]);
+  const atPainter = await loadAtSupplierBikeIds(supabase, [bikeId]);
   if (atPainter.has(bikeId)) {
     return {
       ok: false,

@@ -32,20 +32,9 @@ export type ColorOption = {
   coating?: string | null;
 };
 
-export type PaintPartOption = {
-  id: string;
-  internal_sku: string;
-  name_en: string;
-};
-
-export type CurrencyOption = { code: string };
-
 export type PaintOrderFormValues = {
   supplier_id: string;
   color_id: string;
-  paint_part_id: string;
-  unit_cost: string;
-  unit_cost_currency: string;
   planned_send_date: string;
   notes: string;
 };
@@ -53,9 +42,6 @@ export type PaintOrderFormValues = {
 export const EMPTY_PAINT_ORDER_FORM: PaintOrderFormValues = {
   supplier_id: "",
   color_id: "",
-  paint_part_id: "",
-  unit_cost: "",
-  unit_cost_currency: "DKK",
   planned_send_date: "",
   notes: "",
 };
@@ -64,17 +50,9 @@ type Props = {
   initial: PaintOrderFormValues;
   suppliers: SupplierOption[];
   colors: ColorOption[];
-  paintParts: PaintPartOption[];
-  currencies: CurrencyOption[];
 };
 
-export function PaintOrderForm({
-  initial,
-  suppliers,
-  colors,
-  paintParts,
-  currencies,
-}: Props) {
+export function PaintOrderForm({ initial, suppliers, colors }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<PaintOrderFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -96,9 +74,6 @@ export function PaintOrderForm({
     const fd = new FormData();
     appendField(fd, "supplier_id", values.supplier_id);
     appendField(fd, "color_id", values.color_id);
-    appendField(fd, "paint_part_id", values.paint_part_id);
-    appendField(fd, "unit_cost", values.unit_cost);
-    appendField(fd, "unit_cost_currency", values.unit_cost_currency);
     appendField(fd, "planned_send_date", values.planned_send_date);
     appendField(fd, "notes", values.notes);
     return fd;
@@ -125,7 +100,7 @@ export function PaintOrderForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
         title="Who and what"
-        description="Pick the painter (typically Metacoat A/S). The colour is an optional batch default — you set each frame's colour and scope as you add it."
+        description="Pick the painter (typically Metacoat A/S). The colour is an optional batch default — it pre-fills the item lines you add on the next screen, where the pricing comes from the painter's price list."
       >
         <Field
           label="Supplier"
@@ -166,7 +141,7 @@ export function PaintOrderForm({
             onValueChange={(v) => update("color_id", v)}
           >
             <SelectTrigger id="paint-color">
-              <SelectValue placeholder="No default — set per frame" />
+              <SelectValue placeholder="No default — set per item line" />
             </SelectTrigger>
             <SelectContent>
               {colors.map((c) => (
@@ -183,78 +158,12 @@ export function PaintOrderForm({
             </SelectContent>
           </Select>
         </Field>
-
-        <Field
-          label="Paint catalog part (optional)"
-          htmlFor="paint-part"
-          error={errorField === "paint_part_id" ? error : null}
-        >
-          <Select
-            value={values.paint_part_id}
-            onValueChange={(v) => update("paint_part_id", v)}
-          >
-            <SelectTrigger id="paint-part">
-              <SelectValue placeholder="None — costed direct on this order" />
-            </SelectTrigger>
-            <SelectContent>
-              {paintParts.length === 0 ? (
-                <div className="text-muted-foreground p-2 text-xs">
-                  No Lakering parts found in the catalog.
-                </div>
-              ) : (
-                paintParts.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name_en}{" "}
-                    <span className="text-muted-foreground ml-1.5 font-mono text-xs">
-                      ({p.internal_sku})
-                    </span>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </Field>
       </FormSection>
 
       <FormSection
-        title="Cost and schedule"
-        description="Cost is per bike charged by the painter. Schedule fields are advisory; actual sent / received timestamps are stamped on status transitions."
+        title="Schedule"
+        description="Advisory only; actual sent / received timestamps are stamped on status transitions. Cost is per item line, frozen from the price list when the order is sent."
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field
-            label="Unit cost (per bike)"
-            htmlFor="paint-cost"
-            error={errorField === "unit_cost" ? error : null}
-          >
-            <Input
-              id="paint-cost"
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              value={values.unit_cost}
-              onChange={(e) => update("unit_cost", e.target.value)}
-              placeholder="0,00"
-            />
-          </Field>
-          <Field label="Currency" htmlFor="paint-currency">
-            <Select
-              value={values.unit_cost_currency}
-              onValueChange={(v) => update("unit_cost_currency", v)}
-            >
-              <SelectTrigger id="paint-currency">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
         <Field label="Planned send date" htmlFor="paint-send-date">
           <Input
             id="paint-send-date"
@@ -318,4 +227,3 @@ function FormSection({
     </section>
   );
 }
-

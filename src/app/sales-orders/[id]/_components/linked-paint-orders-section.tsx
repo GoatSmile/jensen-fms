@@ -13,15 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  PAINT_ORDER_STATUS_VARIANT,
-  paintOrderStatusLabel,
-  type PaintOrderStatus,
-} from "@/lib/paint/status";
+  SERVICE_ORDER_STATUS_VARIANT,
+  serviceOrderStatusLabel,
+  type ServiceOrderStatus,
+} from "@/lib/services/status";
+import { PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
 
 export type LinkedPaintRow = {
   id: string;
-  paint_order_number: string;
-  status: PaintOrderStatus;
+  order_number: string;
+  status: ServiceOrderStatus;
   colorName: string | null;
   colorHex: string | null;
   supplierName: string | null;
@@ -75,7 +76,7 @@ export function LinkedPaintOrdersSection({
                       href={`/paint-orders/${po.id}`}
                       className="block px-4 py-2.5 hover:underline"
                     >
-                      {po.paint_order_number}
+                      {po.order_number}
                     </Link>
                   </TableCell>
                   <TableCell className="hidden text-sm md:table-cell">
@@ -92,9 +93,9 @@ export function LinkedPaintOrdersSection({
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={PAINT_ORDER_STATUS_VARIANT[po.status] ?? "outline"}
+                      variant={SERVICE_ORDER_STATUS_VARIANT[po.status] ?? "outline"}
                     >
-                      {paintOrderStatusLabel(po.status)}
+                      {serviceOrderStatusLabel(po.status, PAINT_SUPPLIER_NOUN)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">

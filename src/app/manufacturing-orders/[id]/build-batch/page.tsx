@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
-import { loadAtPainterBikeIds } from "@/lib/paint/at-painter";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { BatchBuildGrid, type BatchBikeRow } from "./_components/batch-build-grid";
 
@@ -73,7 +73,7 @@ export default async function BuildBatchPage({
     }
   }
 
-  const atPainter = await loadAtPainterBikeIds(
+  const atPainter = await loadAtSupplierBikeIds(
     supabase,
     candidates.map((b) => b.id),
   );

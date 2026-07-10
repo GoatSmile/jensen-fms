@@ -16,21 +16,33 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import type { BikeStatus } from "@/lib/bikes/status";
-import type { PaintOrderStatus } from "@/lib/paint/status";
-import { resolveLakSkus } from "@/lib/paint/scope";
+import {
+  OPEN_SERVICE_ORDER_STATUSES,
+  type ServiceOrderStatus,
+} from "@/lib/services/status";
+import {
+  loadCurrentPriceList,
+  priceOrderItems,
+  tierLabel,
+} from "@/lib/services/pricing";
+import { loadActiveServicePartTypes } from "@/lib/services/vocab";
 import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
 
 import type { EligibleBikeOption } from "./_components/add-bike-to-paint-dialog";
 import { PaintOrderBikesSection } from "./_components/paint-order-bikes-section";
 import type { PaintOrderBikeRow } from "./_components/paint-order-bikes-section";
 import { PaintOrderHeader } from "./_components/paint-order-header";
+import {
+  ServiceOrderItemsSection,
+  type ServiceOrderItemRow,
+} from "./_components/service-order-items-section";
 import { Section } from "./_components/section";
 
-const OPEN_STATUSES: PaintOrderStatus[] = [
-  "planned",
-  "sent_to_painter",
-  "at_painter",
-];
+/** Read-only labels for the pre-items paint model's per-bike scope. */
+const LEGACY_SCOPE_LABEL: Record<string, string> = {
+  std: "Frame + fork",
+  svaj: "Full (svajer)",
+};
 
 export default async function PaintOrderDetailPage({
   params,
@@ -41,15 +53,14 @@ export default async function PaintOrderDetailPage({
   const supabase = await createClient();
 
   const orderRes = await supabase
-    .from("paint_orders")
+    .from("service_orders")
     .select(
       `
-        id, paint_order_number, status,
+        id, order_number, status, supplier_id, service_type_id,
         planned_send_date, sent_at, expected_return_at, received_at,
-        unit_cost, unit_cost_currency, notes, created_at,
+        notes, created_at,
         supplier:suppliers(id, name),
         color:colors(id, slug, name_en, hex, ral_code, coating),
-        paint_part:parts(id, internal_sku, name_en),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
     )
@@ -57,108 +68,175 @@ export default async function PaintOrderDetailPage({
     .maybeSingle();
 
   if (orderRes.error) {
-    throw new Error(`Failed to load paint order: ${orderRes.error.message}`);
+    throw new Error(`Failed to load order: ${orderRes.error.message}`);
   }
   if (!orderRes.data) notFound();
   const order = orderRes.data;
+  const isPlanned = order.status === "planned";
 
-  // Bikes in this order (+ per-line colour/scope), the picker's eligible bikes,
-  // the colour list for the pickers, and JP-lak prices for auto-costing — one
-  // round-trip. Eligible = non-deleted bikes NOT in an open order (PostgREST
-  // can't NOT-IN a subquery, so we filter client-side).
-  const [linkRes, allBikesRes, openLinksRes, colorsRes, lakRes] =
-    await Promise.all([
-      supabase
-        .from("paint_order_bikes")
-        .select(
-          `
-            bike_id, added_at, notes, color_id, scope,
-            color:colors(id, name_en, hex, ral_code, coating),
-            bike:bikes(
-              id, frame_number, status,
-              template:bike_templates(id, name_en, family:bike_families(name), frame_size, version)
-            )
-          `,
-        )
-        .eq("paint_order_id", id)
-        .order("added_at", { ascending: true }),
-      supabase
-        .from("bikes")
-        .select(
-          `
-            id, frame_number,
-            template:bike_templates(id, name_en, family:bike_families(name), frame_size)
-          `,
-        )
-        .is("deleted_at", null)
-        .order("frame_number", { ascending: true }),
-      supabase
-        .from("paint_order_bikes")
-        .select(
-          `
-            bike_id,
-            paint_order:paint_orders!inner(status)
-          `,
-        )
-        .in("paint_order.status", OPEN_STATUSES),
-      supabase
-        .from("colors")
-        .select("id, name_en, hex, ral_code, coating")
-        .eq("is_active", true)
-        .order("name_en", { ascending: true }),
-      supabase
-        .from("parts")
-        .select("internal_sku, default_retail_price, default_retail_currency")
-        .like("internal_sku", "JP-lak%"),
-    ]);
+  // Items, bike links (+ legacy colour/scope), the picker's eligible bikes,
+  // colours, part types, and the supplier's current price list — one
+  // round-trip. Eligible = non-deleted bikes NOT in an open build-blocking
+  // service order (PostgREST can't NOT-IN a subquery, so we filter
+  // client-side).
+  const [
+    itemsRes,
+    linkRes,
+    allBikesRes,
+    openLinksRes,
+    colorsRes,
+    partTypes,
+    priceList,
+  ] = await Promise.all([
+    supabase
+      .from("service_order_items")
+      .select(
+        `
+          id, service_part_type_id, quantity, notes,
+          supplier_item_no, unit_price, currency,
+          part_type:service_part_types(id, name_en),
+          color:colors(id, name_en, hex, ral_code, coating)
+        `,
+      )
+      .eq("service_order_id", id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("service_order_bikes")
+      .select(
+        `
+          bike_id, added_at, notes, scope,
+          color:colors(id, name_en, hex),
+          bike:bikes(
+            id, frame_number, status,
+            template:bike_templates(id, name_en, family:bike_families(name), frame_size, version)
+          )
+        `,
+      )
+      .eq("service_order_id", id)
+      .order("added_at", { ascending: true }),
+    supabase
+      .from("bikes")
+      .select(
+        `
+          id, frame_number,
+          template:bike_templates(id, name_en, family:bike_families(name), frame_size)
+        `,
+      )
+      .is("deleted_at", null)
+      .order("frame_number", { ascending: true }),
+    supabase
+      .from("service_order_bikes")
+      .select(
+        `
+          bike_id,
+          service_order:service_orders!inner(
+            status,
+            service_type:service_types!service_type_id(blocks_build)
+          )
+        `,
+      )
+      .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES),
+    supabase
+      .from("colors")
+      .select("id, name_en, hex, ral_code, coating")
+      .eq("is_active", true)
+      .order("name_en", { ascending: true }),
+    loadActiveServicePartTypes(supabase),
+    loadCurrentPriceList(supabase, order.supplier_id, order.service_type_id),
+  ]);
 
-  // JP-lak per-bike price by SKU (auto-pricing lookup).
-  const lakMap = new Map<
-    string,
-    { price: number | null; currency: string | null }
-  >();
-  for (const p of lakRes.data ?? []) {
-    lakMap.set(p.internal_sku, {
-      price:
-        p.default_retail_price == null ? null : Number(p.default_retail_price),
-      currency: p.default_retail_currency,
-    });
+  const items = itemsRes.data ?? [];
+
+  // Pricing: live estimate from the current list while planned; frozen
+  // snapshots once sent.
+  const priced = isPlanned
+    ? priceOrderItems(
+        { items: priceList?.items ?? [] },
+        items.map((i) => ({
+          id: i.id,
+          service_part_type_id: i.service_part_type_id,
+          quantity: i.quantity,
+        })),
+      )
+    : null;
+
+  const itemRows: ServiceOrderItemRow[] = items.map((i) => {
+    const base = {
+      id: i.id,
+      partTypeId: i.service_part_type_id,
+      partTypeName: i.part_type?.name_en ?? "—",
+      quantity: i.quantity,
+      colorId: i.color?.id ?? null,
+      colorName: i.color?.name_en ?? null,
+      colorHex: i.color?.hex ?? null,
+      colorFinish: i.color
+        ? colorFinishLabel(i.color.ral_code, i.color.coating)
+        : null,
+      notes: i.notes,
+    };
+    if (isPlanned) {
+      const resolved = priced?.byItemId.get(i.id) ?? null;
+      return {
+        ...base,
+        unitPriceLabel: resolved
+          ? formatPrice(resolved.item.unit_price, priceList!.currency)
+          : null,
+        lineTotalLabel: resolved
+          ? formatPrice(resolved.lineTotal, priceList!.currency)
+          : null,
+        tierBadge: resolved ? tierLabel(resolved.item) : null,
+        supplierItemNo: resolved?.item.supplier_item_no ?? null,
+      };
+    }
+    const unitPrice = i.unit_price == null ? null : Number(i.unit_price);
+    return {
+      ...base,
+      unitPriceLabel:
+        unitPrice == null ? null : formatPrice(unitPrice, i.currency),
+      lineTotalLabel:
+        unitPrice == null
+          ? null
+          : formatPrice(unitPrice * i.quantity, i.currency),
+      tierBadge: null,
+      supplierItemNo: i.supplier_item_no,
+    };
+  });
+
+  // Footer total: single figure while planned (list currency); per-currency
+  // sum from snapshots after (never blend magnitudes across currencies).
+  let totalLabel: string | null = null;
+  let unpricedCount = 0;
+  if (isPlanned) {
+    unpricedCount = priced?.unpricedCount ?? 0;
+    if (priced && priced.total > 0 && priceList) {
+      totalLabel = formatPrice(priced.total, priceList.currency);
+    }
+  } else {
+    const byCurrency = new Map<string, number>();
+    for (const i of items) {
+      if (i.unit_price == null || !i.currency) continue;
+      const cur = i.currency;
+      byCurrency.set(
+        cur,
+        (byCurrency.get(cur) ?? 0) + Number(i.unit_price) * i.quantity,
+      );
+    }
+    totalLabel =
+      byCurrency.size === 0
+        ? null
+        : [...byCurrency.entries()]
+            .map(([cur, amt]) => formatPrice(amt, cur))
+            .join(" + ");
   }
 
   const linkData = (linkRes.data ?? []).filter((r) => r.bike != null);
-  const bikeCount = linkData.length;
-
-  // Sum per currency so a stray non-DKK JP-lak price never gets blended into a
-  // single mislabelled total (JP-lak should be DKK, but the price is free-form).
-  const totalsByCurrency = new Map<string, number>();
-
   const bikeRows: PaintOrderBikeRow[] = linkData.map((r) => {
     const tpl = r.bike?.template;
     const templateLabel = tpl
-      ? [tpl.family?.name, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
+      ? [tpl.family?.name, tpl.frame_size, tpl.name_en]
+          .filter(Boolean)
+          .join(" · ")
       : null;
-    // svaj is an add-on SKU, so a line's cost can span several SKUs — sum
-    // them per currency, and flag with "+ ?" if a component SKU is unpriced
-    // (a silently partial figure is exactly the historical 60.000 kr trap).
-    const lakSkus = resolveLakSkus(r.scope, bikeCount);
-    const lineByCurrency = new Map<string, number>();
-    let unpriced = false;
-    for (const sku of lakSkus ?? []) {
-      const lak = lakMap.get(sku);
-      if (lak?.price == null) {
-        unpriced = true;
-        continue;
-      }
-      const cur = lak.currency ?? "DKK";
-      lineByCurrency.set(cur, (lineByCurrency.get(cur) ?? 0) + lak.price);
-      totalsByCurrency.set(cur, (totalsByCurrency.get(cur) ?? 0) + lak.price);
-    }
-    const lakPriceLabel =
-      lineByCurrency.size === 0
-        ? null
-        : [...lineByCurrency.entries()]
-            .map(([cur, amt]) => formatPrice(amt, cur))
-            .join(" + ") + (unpriced ? " + ?" : "");
     return {
       bikeId: r.bike?.id ?? "",
       frameNumber: r.bike?.frame_number ?? "",
@@ -166,35 +244,39 @@ export default async function PaintOrderDetailPage({
       templateLabel,
       addedAt: r.added_at,
       notes: r.notes,
-      colorId: r.color_id ?? null,
-      colorName: r.color?.name_en ?? null,
-      colorHex: r.color?.hex ?? null,
-      colorFinish: r.color
-        ? colorFinishLabel(r.color.ral_code, r.color.coating)
-        : null,
-      scope: r.scope ?? null,
-      lakSku: lakSkus?.join(" + ") ?? null,
-      lakPriceLabel,
+      legacyColorName: r.color?.name_en ?? null,
+      legacyColorHex: r.color?.hex ?? null,
+      legacyScopeLabel: r.scope ? (LEGACY_SCOPE_LABEL[r.scope] ?? r.scope) : null,
     };
   });
 
-  // One currency → a plain total; multiple → a per-currency breakdown joined
-  // with " + " (never a single blended magnitude under one label).
-  const orderTotalLabel =
-    totalsByCurrency.size === 0
-      ? null
-      : [...totalsByCurrency.entries()]
-          .map(([cur, amt]) => formatPrice(amt, cur))
-          .join(" + ");
   const colors = (colorsRes.data ?? []) as ColorOption[];
 
-  const inOpenOrder = new Set((openLinksRes.data ?? []).map((r) => r.bike_id));
+  // A bike is ineligible while it's in an open order of a build-blocking
+  // type (same semantics as the at-supplier gate).
+  const inOpenOrder = new Set(
+    (openLinksRes.data ?? [])
+      .filter((r) => {
+        const so = Array.isArray(r.service_order)
+          ? r.service_order[0]
+          : r.service_order;
+        const type = so
+          ? Array.isArray(so.service_type)
+            ? so.service_type[0]
+            : so.service_type
+          : null;
+        return type?.blocks_build === true;
+      })
+      .map((r) => r.bike_id),
+  );
   const eligibleBikes: EligibleBikeOption[] = (allBikesRes.data ?? [])
     .filter((b) => !inOpenOrder.has(b.id))
     .map((b) => {
       const tpl = b.template;
       const templateLabel = tpl
-        ? [tpl.family?.name, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
+        ? [tpl.family?.name, tpl.frame_size, tpl.name_en]
+            .filter(Boolean)
+            .join(" · ")
         : null;
       return {
         id: b.id,
@@ -220,15 +302,17 @@ export default async function PaintOrderDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-mono">{order.paint_order_number}</BreadcrumbPage>
+            <BreadcrumbPage className="font-mono">
+              {order.order_number}
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <PaintOrderHeader
-        paintOrderId={order.id}
-        paintOrderNumber={order.paint_order_number}
-        status={order.status as PaintOrderStatus}
+        serviceOrderId={order.id}
+        orderNumber={order.order_number}
+        status={order.status as ServiceOrderStatus}
         supplierName={order.supplier?.name ?? null}
         colorName={order.color?.name_en ?? null}
         colorHex={order.color?.hex ?? null}
@@ -241,40 +325,22 @@ export default async function PaintOrderDetailPage({
 
       <Section
         title="Details"
-        description="Supplier, costing, and round-trip timestamps."
+        description="Supplier and round-trip timestamps."
       >
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <Field label="Supplier">
             {order.supplier?.name ?? <Muted>—</Muted>}
           </Field>
-          <Field label="Colour">
+          <Field label="Batch default colour">
             {order.color ? (
               <span className="flex flex-col gap-0.5">
                 <ColorChip hex={order.color.hex} label={order.color.name_en} />
-                {colorFinishLabel(
-                  order.color.ral_code,
-                  order.color.coating,
-                ) ? (
+                {colorFinishLabel(order.color.ral_code, order.color.coating) ? (
                   <span className="text-muted-foreground text-xs">
                     {colorFinishLabel(order.color.ral_code, order.color.coating)}
                   </span>
                 ) : null}
               </span>
-            ) : (
-              <Muted>—</Muted>
-            )}
-          </Field>
-          <Field label="Catalog part">
-            {order.paint_part ? (
-              <Link
-                href={`/parts/${order.paint_part.id}`}
-                className="hover:underline"
-              >
-                {order.paint_part.name_en}{" "}
-                <span className="text-muted-foreground font-mono text-xs">
-                  ({order.paint_part.internal_sku})
-                </span>
-              </Link>
             ) : (
               <Muted>—</Muted>
             )}
@@ -290,14 +356,6 @@ export default async function PaintOrderDetailPage({
             ) : (
               <Muted>—</Muted>
             )}
-          </Field>
-          <Field label="Unit cost (per bike)">
-            <span className="tabular-nums">
-              {formatPrice(
-                order.unit_cost == null ? null : Number(order.unit_cost),
-                order.unit_cost_currency,
-              )}
-            </span>
           </Field>
           <Field label="Planned send date">
             {order.planned_send_date ?? <Muted>—</Muted>}
@@ -333,14 +391,24 @@ export default async function PaintOrderDetailPage({
         </dl>
       </Section>
 
-      <PaintOrderBikesSection
-        paintOrderId={order.id}
-        paintOrderStatus={order.status}
-        rows={bikeRows}
-        eligibleBikes={eligibleBikes}
+      <ServiceOrderItemsSection
+        serviceOrderId={order.id}
+        orderStatus={order.status}
+        rows={itemRows}
+        partTypes={partTypes}
         colors={colors}
         defaultColorId={order.color?.id ?? null}
-        orderTotalLabel={orderTotalLabel}
+        totalLabel={totalLabel}
+        totalIsEstimate={isPlanned}
+        unpricedCount={unpricedCount}
+        priceListName={priceList?.name ?? null}
+      />
+
+      <PaintOrderBikesSection
+        serviceOrderId={order.id}
+        orderStatus={order.status}
+        rows={bikeRows}
+        eligibleBikes={eligibleBikes}
       />
     </div>
   );
