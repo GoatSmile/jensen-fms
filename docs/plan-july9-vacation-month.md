@@ -128,6 +128,19 @@ service_price_items    -- the numbers — one row per list line (24 today)
   price
 ```
 
+**Multi-country / multi-currency (owner requirement 2026-07-09):**
+service suppliers live anywhere (DK painter today, DE painter tomorrow,
+`suppliers.country_code` already exists) and each price-list revision
+carries its own `currency`. Handling mirrors purchasing exactly:
+estimates convert non-DKK lists to DKK via the shared `lookupFxRate`
+(ECB, same as stock-adjust foreign cost); at send, the item snapshot
+freezes `unit_price + currency + fx_rate_to_dkk` — the
+`purchase_order_lines` pattern — so a sent order's DKK cost basis never
+drifts with the exchange rate. Cross-supplier comparison ("paint this
+batch in DK vs DE") converts both sides to DKK at today's rate; the
+transport-cost leg of that comparison (Dennis: "logistics balance it
+out") is a future estimator refinement, noted not built.
+
 **Order layer — `paint_orders` PROMOTED to `service_orders`** (owner:
 "go all the way"):
 
@@ -141,7 +154,8 @@ service_order_items    -- NEW: the commercial lines
   service_order_id, service_part_type_id, qty,
   color_id (nullable FK colors — paint uses it, wash ignores; a real
   column, NOT jsonb — FK integrity + pickers),
-  snapshot at send: supplier_item_no, unit_price, currency
+  snapshot at send: supplier_item_no, unit_price, currency,
+  fx_rate_to_dkk (frozen, purchase_order_lines pattern)
 service_order_bikes    -- rename of paint_order_bikes: bike linkage for
                        -- the at-supplier gate + traceability. Existing
                        -- per-line colour/scope columns stay as LEGACY
@@ -174,10 +188,21 @@ effective date; old revision archives (`is_current` flip, the
 bike_templates versioning pattern). Yearly price bump = 5-minute
 clerical task.
 
+**Nav & routes — per-service-type surfaces (owner decision 2026-07-09):**
+there is deliberately NO unified "Service orders" page planned. Each
+service type gets its **own nav item and list route** when it becomes
+real — "Paint orders" at `/paint-orders` today; "Sandblasting" /
+"Washing" would each get their own entry later. All of them render the
+same shared components (list, detail, items editor, status flow)
+parameterized by `service_type`; only the surface is per-type, the
+machine underneath is one. This fits how the workshop thinks ("send
+frames to the painter", "send parts to washing" — different errands),
+keeps the two-nav sync rule manageable (add one item per real service),
+and means the paint routes never need a rename at all.
+
 **Cutover mechanics:**
-- Routes + nav keep `/paint-orders` / "Paint orders" for July (tables
-  and code go generic; the URL is cosmetic and Dennis returns to a nav
-  he recognizes). Route rename lands with service #2.
+- Routes + nav: `/paint-orders` / "Paint orders" stay, permanently —
+  per-type surfaces above. Tables and code go generic underneath.
 - Scope → items mapping for open `planned` orders: `std` = Stel + FG;
   `svaj` extras = S + Skilt + Bag (or Lad where fitted). Sent/received
   orders keep legacy lines untouched.

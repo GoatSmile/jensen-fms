@@ -175,14 +175,19 @@ cross-cutting. Original SQL files live in `/migrations/`.
     approved "go all the way to service_orders". Painting, washing,
     priming etc. share one machine: `service_types` (w/ `blocks_build`) ·
     `service_part_types` (stel, forgaffel… 8 today) ·
-    `service_price_lists` (PER SUPPLIER, versioned revisions like
+    `service_price_lists` (PER SUPPLIER — suppliers span countries, each
+    list revision carries its own CURRENCY; versioned like
     bike_templates) · `service_price_items` (tiered rows, painter's item
     numbers e.g. `J.Jensen Stel10`) · `paint_orders`/`paint_order_bikes`
     RENAMED to `service_orders`/`service_order_bikes` + new
-    `service_order_items` (part type × qty × nullable color_id; price
-    snapshotted at send, frozen-at-purchase rule). Routes/nav keep
-    /paint-orders until service #2. Price changes = new list revision w/
-    xlsx-import + diff preview at `/admin/services`, never edit-in-place.
+    `service_order_items` (part type × qty × nullable color_id; snapshot
+    at send = supplier_item_no + unit_price + currency + fx_rate_to_dkk,
+    the purchase_order_lines pattern). Nav/routes are PER SERVICE TYPE,
+    permanently — "Paint orders" stays at /paint-orders; a future
+    washing/sandblasting gets its own nav item; shared components
+    parameterized by service_type, no unified list page. Price changes =
+    new list revision w/ xlsx-import + diff preview at `/admin/services`,
+    never edit-in-place.
     Full design + cutover mechanics in `docs/plan-july9-vacation-month.md`
     (source list: `SIK_Jensen Priser 2026.xlsx`, 8 part types × 3 tiers,
     column "pr. 1. juni 2026" authoritative). Planned July W1 (~3.5–4 d).
