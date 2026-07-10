@@ -9,6 +9,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_PAINTER_NAME } from "@/lib/services/vocab";
 
 import {
   EMPTY_PAINT_ORDER_FORM,
@@ -16,8 +17,6 @@ import {
   type ColorOption,
   type SupplierOption,
 } from "../_components/paint-order-form";
-
-const METACOAT_NAME = "Metacoat A/S";
 
 export default async function NewPaintOrderPage() {
   const supabase = await createClient();
@@ -40,7 +39,7 @@ export default async function NewPaintOrderPage() {
   const colors: ColorOption[] = colorsRes.data ?? [];
 
   // Default supplier_id: Metacoat A/S if found, otherwise blank.
-  const metacoat = suppliers.find((s) => s.name === METACOAT_NAME);
+  const metacoat = suppliers.find((s) => s.name === DEFAULT_PAINTER_NAME);
   const initial = {
     ...EMPTY_PAINT_ORDER_FORM,
     supplier_id: metacoat?.id ?? "",

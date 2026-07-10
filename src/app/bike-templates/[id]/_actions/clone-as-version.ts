@@ -131,6 +131,30 @@ export async function cloneAsNewVersion(
     }
   }
 
+  // Carry the paintwork declaration forward (copied as-saved from the DB —
+  // it isn't part of the editor state the way the parts list is).
+  const { data: paintRows } = await supabase
+    .from("bike_template_service_parts")
+    .select("service_part_type_id, quantity")
+    .eq("template_id", templateId);
+  if (paintRows && paintRows.length > 0) {
+    const { error: paintErr } = await supabase
+      .from("bike_template_service_parts")
+      .insert(
+        paintRows.map((p) => ({
+          template_id: created.id,
+          service_part_type_id: p.service_part_type_id,
+          quantity: p.quantity,
+        })),
+      );
+    if (paintErr) {
+      return {
+        ok: false,
+        error: `New version created but its paintwork didn't copy: ${paintErr.message}. Open the new version and add it manually.`,
+      };
+    }
+  }
+
   revalidatePath("/bike-templates");
   revalidatePath(`/bike-templates/${templateId}`);
   revalidatePath(`/bike-templates/${created.id}`);

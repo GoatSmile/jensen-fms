@@ -447,6 +447,42 @@ export type Database = {
           },
         ]
       }
+      bike_template_service_parts: {
+        Row: {
+          id: string
+          quantity: number
+          service_part_type_id: string
+          template_id: string
+        }
+        Insert: {
+          id?: string
+          quantity?: number
+          service_part_type_id: string
+          template_id: string
+        }
+        Update: {
+          id?: string
+          quantity?: number
+          service_part_type_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bike_template_service_parts_service_part_type_id_fkey"
+            columns: ["service_part_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_part_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bike_template_service_parts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "bike_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bike_templates: {
         Row: {
           bike_type_id: string

@@ -15,6 +15,13 @@ export const PAINT_SERVICE_SLUG = "painting";
 /** The paint surface's supplier noun — "Sent to painter", "At painter". */
 export const PAINT_SUPPLIER_NOUN = "painter";
 
+/**
+ * The workshop's default painter (new-order forms pre-select it; the template
+ * cost-to-paint estimate prices against its current list). A supplier NAME,
+ * not an id — the seed data owns the row.
+ */
+export const DEFAULT_PAINTER_NAME = "Metacoat A/S";
+
 export type ServiceType = {
   id: string;
   slug: string;

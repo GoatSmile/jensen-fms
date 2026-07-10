@@ -74,6 +74,14 @@ type Props = {
   kitParts: Record<string, string[]>;
   /** The template's own sale price (DKK), for the margin sanity-check. */
   templateRetailDkk: number | null;
+  /** Paint-per-bike estimate from the paintwork declaration; null when no
+   * paintwork is declared. totalDkk null = declared but unpriceable (no
+   * list / FX gap) — the cost box then falls back to parts only. */
+  paintEstimate: {
+    totalDkk: number | null;
+    totalLabel: string | null;
+    listLabel: string | null;
+  } | null;
 };
 
 /**
@@ -104,6 +112,7 @@ export function PartsRecipeSection({
   kits,
   kitParts,
   templateRetailDkk,
+  paintEstimate,
 }: Props) {
   const router = useRouter();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
@@ -598,12 +607,15 @@ export function PartsRecipeSection({
                   })}
 
                 {/* Cost to produce + margin sanity-check, live while composing.
-                    Cost = last landed purchase cost; retail = parts' customer
-                    prices; margin compares the template sale price to cost. */}
+                    Cost = last landed purchase cost + the paintwork estimate
+                    (per-bike, default painter's current list); retail = parts'
+                    customer prices; margin compares the template sale price to
+                    the full produce cost. An unpriceable paint estimate falls
+                    back to parts only rather than mixing currencies. */}
                 <div className="bg-muted/20 flex flex-col gap-1 rounded-md border px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">
-                      Parts cost (to produce)
+                    <span className={paintEstimate ? "" : "font-medium"}>
+                      Parts cost
                       {costTotal.uncosted > 0 ? (
                         <span className="text-muted-foreground text-xs">
                           {" "}
@@ -611,21 +623,54 @@ export function PartsRecipeSection({
                         </span>
                       ) : null}
                     </span>
-                    <span className="font-semibold tabular-nums">
+                    <span
+                      className={`tabular-nums ${paintEstimate ? "" : "font-semibold"}`}
+                    >
                       {formatDkk(costTotal.sum)}
                     </span>
                   </div>
+                  {paintEstimate ? (
+                    <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
+                      <span>
+                        Paint (estimated
+                        {paintEstimate.listLabel
+                          ? `, ${paintEstimate.listLabel}`
+                          : ""}
+                        )
+                      </span>
+                      <span className="tabular-nums">
+                        {paintEstimate.totalDkk != null
+                          ? formatDkk(paintEstimate.totalDkk)
+                          : (paintEstimate.totalLabel ?? "—")}
+                      </span>
+                    </div>
+                  ) : null}
+                  {paintEstimate?.totalDkk != null ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">
+                        Cost to produce (parts + paint)
+                      </span>
+                      <span className="font-semibold tabular-nums">
+                        {formatDkk(costTotal.sum + paintEstimate.totalDkk)}
+                      </span>
+                    </div>
+                  ) : null}
                   {templateRetailDkk != null ? (
                     <div
                       className={`flex items-center justify-between gap-2 text-xs ${
-                        templateRetailDkk - costTotal.sum < 0
+                        templateRetailDkk -
+                          (costTotal.sum + (paintEstimate?.totalDkk ?? 0)) <
+                        0
                           ? "text-destructive font-medium"
                           : "text-emerald-700 dark:text-emerald-400"
                       }`}
                     >
                       <span>Margin (sale price − cost)</span>
                       <span className="tabular-nums">
-                        {formatDkk(templateRetailDkk - costTotal.sum)}
+                        {formatDkk(
+                          templateRetailDkk -
+                            (costTotal.sum + (paintEstimate?.totalDkk ?? 0)),
+                        )}
                       </span>
                     </div>
                   ) : null}

@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
+import { DEFAULT_PAINTER_NAME } from "@/lib/services/vocab";
 import type {
   ColorOption,
   SupplierOption,
@@ -23,8 +24,6 @@ import {
   PaintFromSOForm,
   type EligibleSOBike,
 } from "./_components/paint-from-so-form";
-
-const METACOAT_NAME = "Metacoat A/S";
 
 export default async function PaintFromSOPage({
   params,
@@ -123,7 +122,7 @@ export default async function PaintFromSOPage({
 
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
-  const metacoat = suppliers.find((s) => s.name === METACOAT_NAME);
+  const metacoat = suppliers.find((s) => s.name === DEFAULT_PAINTER_NAME);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">

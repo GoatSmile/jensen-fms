@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
+import { loadTemplatePaintEstimate } from "@/lib/services/template-paint";
+import { loadActiveServicePartTypes } from "@/lib/services/vocab";
 
 import {
   PartsRecipeSection,
@@ -22,6 +24,7 @@ import {
   type PartInCategory,
   type RecipeRow,
 } from "./_components/parts-recipe-section";
+import { PaintworkSection } from "./_components/paintwork-section";
 import { DeleteTemplateButton } from "./_components/delete-template-button";
 import { DuplicateTemplateButton } from "./_components/duplicate-template-button";
 import { LabelBomKit } from "./_components/label-bom-kit";
@@ -82,6 +85,8 @@ export default async function BikeTemplateDetailPage({
     kitsRes,
     kitMembershipsRes,
     lastCostRes,
+    paintEstimate,
+    servicePartTypes,
   ] = await Promise.all([
     supabase
       .from("bike_template_parts")
@@ -126,6 +131,10 @@ export default async function BikeTemplateDetailPage({
     // frozen at purchase) — the same figure the MO build-cost projection uses.
     // Drives the "cost to produce" total Dennis asked for.
     supabase.from("v_part_last_cost").select("part_id, last_cost_dkk"),
+    // Paintwork declaration priced against the default painter's current
+    // list — joins the parts cost in the cost-to-produce + margin box.
+    loadTemplatePaintEstimate(supabase, id),
+    loadActiveServicePartTypes(supabase),
   ]);
 
   // part_id → last landed cost (DKK/unit). Parts with no purchase history are
@@ -301,6 +310,25 @@ export default async function BikeTemplateDetailPage({
             ? Number(t.default_retail_price)
             : null
         }
+        paintEstimate={
+          paintEstimate.rows.length > 0
+            ? {
+                totalDkk: paintEstimate.totalDkk,
+                totalLabel: paintEstimate.totalLabel,
+                listLabel: paintEstimate.listLabel,
+              }
+            : null
+        }
+      />
+
+      <PaintworkSection
+        templateId={t.id}
+        isCurrent={t.is_current}
+        rows={paintEstimate.rows}
+        partTypes={servicePartTypes}
+        totalLabel={paintEstimate.totalLabel}
+        listLabel={paintEstimate.listLabel}
+        unpricedCount={paintEstimate.unpricedCount}
       />
 
       <LabelBomKit

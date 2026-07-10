@@ -98,6 +98,29 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
     }
   }
 
+  // Copy the paintwork declaration too — same as-saved semantics.
+  const { data: srcPaint } = await supabase
+    .from("bike_template_service_parts")
+    .select("service_part_type_id, quantity")
+    .eq("template_id", templateId);
+  if (srcPaint && srcPaint.length > 0) {
+    const { error: paintErr } = await supabase
+      .from("bike_template_service_parts")
+      .insert(
+        srcPaint.map((p) => ({
+          template_id: created.id,
+          service_part_type_id: p.service_part_type_id,
+          quantity: p.quantity,
+        })),
+      );
+    if (paintErr) {
+      return {
+        ok: false,
+        error: `Copy created but its paintwork didn't copy: ${paintErr.message}. Open the copy and add it manually.`,
+      };
+    }
+  }
+
   revalidatePath("/bike-templates");
   revalidatePath(`/bike-templates/${created.id}`);
   redirect(`/bike-templates/${created.id}`);
