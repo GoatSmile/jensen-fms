@@ -173,11 +173,14 @@ cross-cutting. Original SQL files live in `/migrations/`.
   - **⚠ Remodel decided 2026-07-09 (call): per-part itemized pricing.** The
     painter scrapped package/scope pricing — every paintable part (frame,
     fork, mudguards, chain guard, basket, sign, carrier…) gets its own item
-    number + price with quantity tiers (1–9 / 10–19 / …), and the painter's
-    numbers become our item numbers. Planned for July (see
-    `docs/plan-july9-vacation-month.md`, blocked on Dennis forwarding the
-    price list). The std/svaj model above stays authoritative until the
-    remodel ships — replace in one cut, don't rip it out first.
+    number + price with quantity tiers (1–9 / 10–19 / 20+), and the painter's
+    numbers become our item numbers (`J.Jensen Stel10` etc.). The list is in
+    hand and analyzed — 8 part types × 3 tiers, catalog table + model sketch
+    in `docs/plan-july9-vacation-month.md` (source:
+    `SIK_Jensen Priser 2026.xlsx`, column "pr. 1. juni 2026" is
+    authoritative). Planned for July W1. The std/svaj model above stays
+    authoritative until the remodel ships — replace in one cut, don't rip
+    it out first.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
@@ -959,7 +962,8 @@ pipeline deep-dive, provider decisions). The frame: Dennis is away until
 Aug 3, Nazar leaves Aug 4 — July output must be self-serve for Dennis's
 solo August onboarding. July tracks in order: housekeeping drill-down
 links + mobile photo verify (W1) · **paint per-part price remodel** (W1,
-blocked on Dennis forwarding the painter's list) · **i18n whole-app
+painter's list analyzed in the plan doc — 8 part types × 3 qty tiers,
+his item numbers become ours) · **i18n whole-app
 Danish** (next-intl, worker screens first, `de` scaffolded untranslated)
 · **phone→ticket pipeline v1** (harness-first: upload-a-voicemail test
 UI + Azure Speech EU + Claude extraction + deterministic matching in

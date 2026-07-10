@@ -15,9 +15,13 @@ were made by Nazar 2026-07-09 when this plan was drawn up.
 
 ## Asks sent to Dennis (can be answered from vacation, email-sized)
 
-1. **Forward the painter's price list** (he has it — "sent me yesterday":
-   per-part item numbers + prices with quantity tiers 1–9 / 10–19 / …).
-   Blocks the paint remodel, the one item with money actively bleeding.
+1. ~~Forward the painter's price list~~ **RESOLVED 2026-07-09** — already
+   in the shared folder (`Misc files from D/SIK_Jensen Priser 2026.xlsx`),
+   analyzed below. Two email-sized confirmations remain:
+   - Prices are **ex moms**, right? (Assumed yes — B2B convention.)
+   - Tier basis on mixed batches: 4 frames + 12 forks → frames at the
+     1–9 price and forks at the 10–19 price (**per part type**, assumed),
+     or everything at the tier of the total piece count?
 2. Nothing else blocks July. (Old-system export, role matrix details,
    invoicing walkthrough are all August items.)
 
@@ -49,7 +53,7 @@ Rough capacity: ~15 dev-days at vacation-adjacent pace.
 - **Mobile photo upload** (~0.5 d): verify on a real phone (camera →
   upload on part/bike), fix what's broken. Unblocks Dennis's August
   photo-cleanup habit.
-- **Paint per-part price catalog** (~2 d, needs the list from Dennis):
+- **Paint per-part price catalog** (~2 d, list in hand — analysis below):
   - New model: a paint price catalog keyed by the **painter's item
     numbers**, one row per paintable part type × quantity tier.
   - Paint order lines move from (colour, scope) to (colour, part type,
@@ -61,6 +65,57 @@ Rough capacity: ~15 dev-days at vacation-adjacent pace.
     310→710 kr lesson: bad paint estimates ate the hotel-project margin).
   - The shipped std/svaj model (`resolveLakSkus`) stays authoritative
     until this ships — don't rip it out first, replace it in one cut.
+
+#### The painter's list, analyzed (SIK_Jensen Priser 2026.xlsx, read 2026-07-09)
+
+Source: `~/Documents/1-Projects/Jensen/Misc files from D/`, one sheet
+(`Ark1`). Column E ("PRIS pr. 1. juni 2026") is the **authoritative new
+per-piece price**; C/D are the painter's 2025 system prices (set / per
+piece) and H is older still — reference only. Item numbers carry stray
+trailing spaces/nbsp in the sheet — normalize on import.
+
+**The catalog: 8 part types × 3 tiers (v/1–9, v/10–19, v/20 = 20+), 24
+rows, DKK per piece:**
+
+| Part (da) | English | Item nos (`J.Jensen …`) | 1–9 | 10–19 | 20+ |
+|---|---|---|---|---|---|
+| Stel | Frame | Stel1 / Stel10 / Stel20 | 365 | 250 | 175 |
+| Forgaffel | Fork | FG1 / FG10 / FG20 | 70 | 60 | 50 |
+| Lad | Cargo bed | Lad1 / Lad10 / Lad20 | 185 | 130 | 110 |
+| Skærm og stivere | Mudguards + stays | S1 / S10 / S20 | 130 | 125 | 120 |
+| Kædeskærm | Chain guard | KS1 / KS10 / KS20 | 90 | 80 | 75 |
+| Kurv | Basket | KU1 / KU10 / KU20 | 185 | 160 | 140 |
+| Skilt | Sign | Skilt1 / Skilt10 / Skilt20 | 90 | 80 | 75 |
+| Bagagebærer | Rear carrier | Bag1 / Bag10 / Bag20 | 185 | 165 | 150 |
+
+**Continuity check that validates the reading:** the old frame price
+included the fork. New Stel + FG reproduces the old package at every
+tier — 365+70 = 435 ("Gammel" 1–9) · 250+60 = 310 · 175+50 = 225. The
+painter split the package without moving the frame+fork total. Real
+increases hide elsewhere: Kurv 20+ 95→140, Bag 10–19 130→165, Lad 20+
+95→110 — per-part itemization is exactly where the old model under-quoted
+(the 310→710 margin hit).
+
+**Model implications (refines the sketch above):**
+- `paint_price_items`: one row per sheet row — `painter_item_no` (unique,
+  normalized), `part_type` (slug vocab: stel, forgaffel, lad,
+  skaerm_stivere, kaedeskaerm, kurv, skilt, bagagebaerer), `tier_min` /
+  `tier_max` (1–9, 10–19, 20–null), `price_dkk`, `effective_from`
+  (2026-06-01), `is_active`. Seeded by migration straight from this file.
+- **Two-level paint order**: keep `paint_order_bikes` (which frames — the
+  at-painter gate + traceability needs bike linkage) and add
+  `paint_order_items` (part type × qty × colour) as the commercial lines
+  — Dennis sends baskets alone, 4 frames + 5 forks, etc., so items can't
+  be strictly per-bike. Estimate = per part type, pick tier by that part
+  type's total qty (pending Dennis's confirmation), Σ qty × price.
+- **Scope → items mapping** for the cutover: `std` = Stel + FG; `svaj`
+  extras = S + Skilt + Bag (or Lad where fitted). Open orders keep their
+  frozen scope lines; new orders are itemized — replace in one cut.
+- JP-lak service SKUs retire with the cutover; costing reads
+  `paint_price_items`. Template "cost to paint" needs a template-parts →
+  part-type mapping (explicit flags on parts or categories — decide at
+  build time).
+- VAT: prices assumed **ex moms** (confirm with Dennis, see asks).
 
 ### Weeks 2–3 — the two big tracks
 - **i18n, whole app to Danish** (~4–5 d) **[dev decision: whole-app
