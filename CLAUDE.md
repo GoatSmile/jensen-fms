@@ -335,6 +335,12 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - Time estimates are quoted as `~X human-dev-min (Y min wait)` — X is the
   human-developer-equivalent for cross-comparison with design-review numbers,
   Y is the user's actual wall-clock waiting time while I work.
+- **Worklog ritual (`docs/WORKLOG.md`)**: on the first exchange of a new
+  working day, append today's row (date · hours · one-line work summary)
+  and reconcile the previous row's hours from commit timestamps (mark
+  estimates `~`; the user corrects with "log: Jul 9 was 7h"). Update the
+  monthly total. Days without a row = didn't work; never backfill gaps
+  unasked. Keep rows to one line — this is an hours ledger, not a diary.
 
 ## Known caveats / "good enough for now" decisions
 - **Parts list pagination + stock filter** are applied in-memory in
