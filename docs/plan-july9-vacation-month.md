@@ -53,13 +53,20 @@ Most of the call was demo/confirmation of shipped work. New substance:
 Rough capacity: ~15 dev-days at vacation-adjacent pace.
 
 ### Week 1 — quick wins + the money item
-- **Housekeeping drill-down** (~0.5 d): each row on the dashboard
-  housekeeping fold links to a *filtered* list showing exactly the
-  offending records (parts-without-origin filter etc.), per the
-  URL-driven-filters convention. Dennis asked for precisely this.
-- **Mobile photo upload** (~0.5 d): verify on a real phone (camera →
-  upload on part/bike), fix what's broken. Unblocks Dennis's August
-  photo-cleanup habit.
+- ✅ **Housekeeping drill-down** — SHIPPED 2026-07-10 (5ca28f4). Dashboard
+  gap rows open filtered lists: `/parts?gap=origin|hs|offer-price` +
+  `/admin/suppliers?gap=email`, amber banner w/ count + clear-filter on
+  both pages. Also fixed the suppliers row 404 (linked to a nonexistent
+  `/suppliers`).
+- ✅ **Mobile photo upload** — SHIPPED 2026-07-10 (538c0f6). Two iOS
+  foot-guns fixed across all four upload surfaces (parts, bikes, WO,
+  public report): `capture` attr removed (it forced the camera and
+  blocked the photo library + multi-select), and the WebP encode is now
+  verified with JPEG fallback (Safari <17 silently returned 10×-heavier
+  PNG labelled .webp); HEIC picks go to the decoder instead of a MIME
+  reject. Verified end-to-end in emulated mobile (pick → resize → storage
+  → thumb → delete). *Remaining: a 2-minute real-iPhone pass against the
+  Vercel deploy.*
 - **External-services remodel — service_orders + generic price lists**
   (~3.5–4 d, list in hand — analysis + full design below). **[owner
   decision 2026-07-09: "go all the way to service_orders"]** — painting
