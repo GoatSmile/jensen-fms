@@ -93,7 +93,10 @@ export async function transitionServiceOrderStatus(
       ? `[Cancelled ${today}: ${trimmedReason}]\n${order.notes ?? ""}`.trim()
       : order.notes;
 
-  const { error: updErr } = await supabase
+  // Guarded on the status we validated against, so a concurrent transition
+  // (e.g. a cancel in another tab racing a send) can't be overwritten — the
+  // stale write matches zero rows instead.
+  const { data: updated, error: updErr } = await supabase
     .from("service_orders")
     .update({
       status: toStatus,
@@ -102,9 +105,18 @@ export async function transitionServiceOrderStatus(
       notes: newNotes,
       updated_at: nowIso,
     })
-    .eq("id", serviceOrderId);
+    .eq("id", serviceOrderId)
+    .eq("status", fromStatus)
+    .select("id");
   if (updErr) {
     return { ok: false, error: `Could not update status: ${updErr.message}` };
+  }
+  if (!updated || updated.length === 0) {
+    return {
+      ok: false,
+      error:
+        "The order's status changed while you were looking at it — refresh and try again.",
+    };
   }
 
   revalidatePath("/paint-orders");

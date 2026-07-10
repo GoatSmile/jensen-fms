@@ -30,6 +30,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/database";
+import { one } from "@/lib/supabase/embed";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 export type BuildQueueBike = {
@@ -55,11 +56,6 @@ export type BuildQueueBike = {
 const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
 
 type Req = { partId: string; qty: number };
-
-function one<T>(v: T | T[] | null | undefined): T | null {
-  if (v == null) return null;
-  return Array.isArray(v) ? (v[0] ?? null) : v;
-}
 
 export async function loadBuildQueue(
   supabase: SupabaseClient<Database>,
@@ -100,12 +96,16 @@ export async function loadBuildQueue(
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
     supabase
       .from("bike_parts")
-      .select("bike_id, part_id, quantity, inventory_movement_id")
+      .select(
+        "bike_id, part_id, quantity, inventory_movement_id, part:parts!part_id(deleted_at)",
+      )
       .in("bike_id", bikeIds)
       .is("removed_at", null),
     supabase
       .from("manufacturing_order_parts")
-      .select("manufacturing_order_id, part_id, quantity_per_bike")
+      .select(
+        "manufacturing_order_id, part_id, quantity_per_bike, part:parts!part_id(deleted_at)",
+      )
       .in("manufacturing_order_id", moIds),
     loadAtSupplierBikeIds(supabase, bikeIds),
   ]);
@@ -123,12 +123,17 @@ export async function loadBuildQueue(
   // own list governs, not the recipe. But only not-yet-consumed rows still
   // need pulling from stock (consumed rows are already in the bike and already
   // out of v_current_stock), so they alone form the requirement.
+  // Soft-deleted parts are skipped from the requirement (same rule as MO
+  // coverage): they can't be stocked, so counting them would show a phantom
+  // shortage for frozen history rows (e.g. retired JP-lak lines on an open
+  // MO recipe). A deleted-part row still marks the build as started.
   const startedBikes = new Set<string>();
   const reqByBike = new Map<string, Req[]>();
   for (const r of bikePartsRes.data ?? []) {
     if (!r.part_id) continue;
     startedBikes.add(r.bike_id);
     if (r.inventory_movement_id != null) continue; // already consumed
+    if (one(r.part)?.deleted_at != null) continue;
     const list = reqByBike.get(r.bike_id) ?? [];
     list.push({ partId: r.part_id, qty: Number(r.quantity) });
     reqByBike.set(r.bike_id, list);
@@ -137,6 +142,7 @@ export async function loadBuildQueue(
   const reqByMo = new Map<string, Req[]>();
   for (const r of recipeRes.data ?? []) {
     if (!r.part_id) continue;
+    if (one(r.part)?.deleted_at != null) continue;
     const list = reqByMo.get(r.manufacturing_order_id) ?? [];
     list.push({ partId: r.part_id, qty: Number(r.quantity_per_bike) });
     reqByMo.set(r.manufacturing_order_id, list);

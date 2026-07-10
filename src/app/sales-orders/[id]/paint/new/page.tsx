@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import type {
@@ -80,17 +81,10 @@ export default async function PaintFromSOPage({
 
     const inOpenOrder = new Set(
       (openLinksRes.data ?? [])
-        .filter((r) => {
-          const order = Array.isArray(r.service_order)
-            ? r.service_order[0]
-            : r.service_order;
-          const type = order
-            ? Array.isArray(order.service_type)
-              ? order.service_type[0]
-              : order.service_type
-            : null;
-          return type?.blocks_build === true;
-        })
+        .filter(
+          (r) =>
+            one(one(r.service_order)?.service_type)?.blocks_build === true,
+        )
         .map((r) => r.bike_id),
     );
     eligibleBikes = (bikesRes.data ?? [])

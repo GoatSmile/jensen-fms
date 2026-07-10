@@ -17,6 +17,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/database";
+import { one } from "@/lib/supabase/embed";
 
 import { AT_SUPPLIER_STATUSES, type ServiceOrderStatus } from "./status";
 
@@ -48,13 +49,9 @@ export async function loadAtSupplierBikeIds(
   if (error || !data) return result;
 
   for (const row of data) {
-    const order = Array.isArray(row.service_order)
-      ? row.service_order[0]
-      : row.service_order;
+    const order = one(row.service_order);
     if (!order) continue;
-    const type = Array.isArray(order.service_type)
-      ? order.service_type[0]
-      : order.service_type;
+    const type = one(order.service_type);
     if (
       type?.blocks_build &&
       AT_SUPPLIER_STATUSES.includes(order.status as ServiceOrderStatus)

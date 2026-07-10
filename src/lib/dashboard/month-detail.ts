@@ -16,6 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 import { round2 } from "@/lib/invoicing/status";
+import { one } from "@/lib/supabase/embed";
 
 export type MonthDetailKind = "sold" | "serviced" | "invoiced" | "purchasing";
 
@@ -45,9 +46,6 @@ function orgName(org: OrgEmbed): string | null {
   return org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null;
 }
 
-function one<T>(v: T | T[] | null | undefined): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
-}
 
 /** Calendar date of a timestamptz in the shop's timezone (RPC buckets match). */
 function cphDate(iso: string): string {

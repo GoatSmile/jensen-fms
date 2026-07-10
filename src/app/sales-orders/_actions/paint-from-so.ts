@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import { PAINT_SERVICE_SLUG, loadServiceTypeBySlug } from "@/lib/services/vocab";
 
@@ -132,17 +133,9 @@ export async function createPaintOrderFromSO(
       error: `Could not check existing orders: ${linkErr.message}`,
     };
   }
-  const blockedCount = (openLinks ?? []).filter((r) => {
-    const order = Array.isArray(r.service_order)
-      ? r.service_order[0]
-      : r.service_order;
-    const type = order
-      ? Array.isArray(order.service_type)
-        ? order.service_type[0]
-        : order.service_type
-      : null;
-    return type?.blocks_build === true;
-  }).length;
+  const blockedCount = (openLinks ?? []).filter(
+    (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
+  ).length;
   if (blockedCount > 0) {
     return {
       ok: false,

@@ -79,11 +79,6 @@ export const OPEN_SERVICE_ORDER_STATUSES: ServiceOrderStatus[] = [
   "at_supplier",
 ];
 
-export function isServiceOrderOpen(s: string | null | undefined): boolean {
-  if (!s) return false;
-  return OPEN_SERVICE_ORDER_STATUSES.includes(s as ServiceOrderStatus);
-}
-
 /**
  * Statuses where the batch is physically AWAY at the supplier, so its bikes
  * can't be built (Tier 2 Phase C / D2, generalized). Narrower than

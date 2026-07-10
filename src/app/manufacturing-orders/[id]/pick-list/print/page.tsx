@@ -4,13 +4,11 @@ import { notFound } from "next/navigation";
 import { PrintButton } from "@/app/parts/print/_components/print-button";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import { compareKits, kitCode, stickerColor } from "@/lib/kits/colors";
 import { formatQuantity } from "@/lib/parts/stock";
 
 export const dynamic = "force-dynamic";
-
-const one = <T,>(v: T | T[] | null | undefined): T | null =>
-  Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
 type PickRow = {
   sku: string;
@@ -72,11 +70,13 @@ export default async function PickListPrintPage({
       ? Math.floor(requested)
       : Math.max(1, unbuiltCount ?? mo.target_quantity ?? 1);
 
+  // Soft-deleted parts are excluded — they aren't physically picked (frozen
+  // history rows on the recipe, e.g. the retired JP-lak service SKUs).
   const { data: recipe } = await supabase
     .from("manufacturing_order_parts")
     .select(
       `part_id, quantity_per_bike,
-       part:parts!part_id(id, internal_sku, name_en, name_da)`,
+       part:parts!part_id(id, internal_sku, name_en, name_da, deleted_at)`,
     )
     .eq("manufacturing_order_id", moId);
   const parts = (recipe ?? [])
@@ -85,7 +85,7 @@ export default async function PickListPrintPage({
       perBike: Number(r.quantity_per_bike ?? 0),
       part: one(r.part),
     }))
-    .filter((r) => r.part && r.perBike > 0);
+    .filter((r) => r.part && r.part.deleted_at == null && r.perBike > 0);
 
   // Kit grouping (mirrors the per-bike pick list): each part lands under its
   // first kit (by code); a part with more labels lists the others as "also".

@@ -13,6 +13,7 @@ import {
 import { ColorChip } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import { formatDateTime } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import type { BikeStatus } from "@/lib/bikes/status";
@@ -256,17 +257,9 @@ export default async function PaintOrderDetailPage({
   // type (same semantics as the at-supplier gate).
   const inOpenOrder = new Set(
     (openLinksRes.data ?? [])
-      .filter((r) => {
-        const so = Array.isArray(r.service_order)
-          ? r.service_order[0]
-          : r.service_order;
-        const type = so
-          ? Array.isArray(so.service_type)
-            ? so.service_type[0]
-            : so.service_type
-          : null;
-        return type?.blocks_build === true;
-      })
+      .filter(
+        (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
+      )
       .map((r) => r.bike_id),
   );
   const eligibleBikes: EligibleBikeOption[] = (allBikesRes.data ?? [])

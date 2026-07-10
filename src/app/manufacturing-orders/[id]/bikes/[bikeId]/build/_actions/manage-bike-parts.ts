@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 
 export type BikePartsResult = { ok: true } | { ok: false; error: string };
 
@@ -75,9 +76,12 @@ export async function copyMoRecipeToBike(
     return { ok: true };
   }
 
-  const { data: recipe, error: recipeErr } = await supabase
+  // Soft-deleted parts on the recipe are frozen history (e.g. retired JP-lak
+  // rows) — copying them would resurrect a retired part into bike_parts and
+  // finishBikeBuild would then consume it into the ledger.
+  const { data: recipeRows, error: recipeErr } = await supabase
     .from("manufacturing_order_parts")
-    .select("part_id, quantity_per_bike, notes")
+    .select("part_id, quantity_per_bike, notes, part:parts!part_id(deleted_at)")
     .eq("manufacturing_order_id", moId);
   if (recipeErr) {
     return {
@@ -85,7 +89,10 @@ export async function copyMoRecipeToBike(
       error: `Could not load MO recipe: ${recipeErr.message}`,
     };
   }
-  if (!recipe || recipe.length === 0) {
+  const recipe = (recipeRows ?? []).filter(
+    (r) => one(r.part)?.deleted_at == null,
+  );
+  if (recipe.length === 0) {
     return { ok: true }; // empty MO, nothing to copy
   }
 

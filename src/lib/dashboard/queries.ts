@@ -17,6 +17,7 @@ import {
   findUninvoicedWOs,
 } from "@/lib/invoicing/uninvoiced";
 import { round2 } from "@/lib/invoicing/status";
+import { one } from "@/lib/supabase/embed";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
@@ -30,10 +31,6 @@ type OrgRef = {
 
 function orgName(org: OrgRef): string | null {
   return org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null;
-}
-
-function one<T>(v: T | T[] | null): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 function todayISO(): string {

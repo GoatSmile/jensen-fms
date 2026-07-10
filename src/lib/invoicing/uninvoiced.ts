@@ -18,6 +18,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { round2 } from "@/lib/invoicing/status";
+import { one } from "@/lib/supabase/embed";
 
 type OrgRef = {
   id: string;
@@ -30,9 +31,6 @@ function orgName(org: OrgRef): string | null {
   return org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? null;
 }
 
-function one<T>(v: T | T[] | null): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : v;
-}
 
 export type UninvoicedWORow = {
   woId: string;
