@@ -1065,21 +1065,31 @@ when the work ships or the idea is rejected.
     English (a partial translation degrades gracefully, never crashes).
     Messages in `messages/{en,da,de}.json`, namespaced per surface;
     `NextIntlClientProvider` in the root layout serves client components.
-  - **Translated so far**: `/work` floor + `/scan`, and the WO workspace
+  - **Translated so far**: `/work` floor + `/scan`, the WO workspace
     cluster — `/work/[woId]` (notes, parts, photos), `/work/[woId]/parts`
-    add-parts screen, and the shared `DictateButton` (namespaces `wo` /
-    `woParts` / `dictate`). All browser-verified in both languages.
+    add-parts screen, the shared `DictateButton` (namespaces `wo` /
+    `woParts` / `dictate`) — and (2026-07-11, commit 6676278) the **build
+    workbench + batch build**: workbench, pick list, batch grid + both
+    pages (namespaces `build` / `batchBuild` / `bikeStatus`), plus the
+    shared recipe components (`src/components/recipe/`) and the
+    `IdentifierDialog` (`recipe` / `identifierDialog`) — those two are
+    shared with app surfaces (template/MO editors, bike detail), where
+    they render `app_language` per the normal per-surface resolution.
+    All browser-verified in both languages. **That completes the worker
+    surfaces** — every `WORKER_PATH` screen speaks Danish.
     Altitude fixes along the way: `loadBuildQueue` returns structured
     `atSupplier`/`shortfallCount` instead of an English `blockedReason`,
     and `src/lib/work/elapsed.ts` is word-free (`atTimeLabel` +
     `elapsedShort`; screens compose "Started {time} · {elapsed} ago" from
     messages). Both settings sit at `en` — flipping `worker_language` to
     `da` is the 1-click go-live for the Danish worker.
-  - **Remaining**: the build workbench (+ batch build), then the app-wide
-    sweep keyed off `app_language`.
+  - **Remaining**: the app-wide sweep keyed off `app_language`.
     Customer-facing documents keep their own per-document `language`.
     `worker_language` becomes per-user at M1. See
     `docs/plan-july9-vacation-month.md`.
+    Data-not-UI note: batch-grid identifier column headers render
+    `bike_identifier_types.name_en` (DB vocab) — bilingual vocab names
+    are a separate, unstarted concern.
 
 - **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
