@@ -194,10 +194,18 @@ cross-cutting. Original SQL files live in `/migrations/`.
     DEFAULT painter's current list (`DEFAULT_PAINTER_NAME` in vocab.ts,
     Metacoat) at per-bike quantities (singles tier); the DKK total joins the
     recipe box: parts + paint → cost to produce → margin.
-  - Still to build from the design: `/admin/services` price-list grid with
-    xlsx-import + diff preview (a new revision is a 5-min clerical task;
-    until then a price change is a SQL job). Add tier-overlap validation
-    there. Full design in `docs/plan-july9-vacation-month.md`.
+  - **`/admin/services` price-list grid SHIPPED 2026-07-11** (migration 64):
+    per supplier × type, the current revision as a part-type × tier grid +
+    revision history; "New revision" duplicates the current grid into an
+    editor with a live diff ("Frame 10–19: 250 → 265") and publishes via the
+    atomic `publish_service_price_list` RPC (insert non-current → seed items
+    → RPC flips is_current in one tx; the partial unique index forbids two
+    current lists). Tier overlaps now impossible: app-side validation + a
+    btree_gist EXCLUDE constraint on int4range(tier_min, tier_max). The
+    yearly price bump is the intended 5-min clerical task. Deliberately NOT
+    built: xlsx-import + parse (wait for the 2027 file to exist — the
+    editor covers the bump), editing tier boundaries in the UI (rare, SQL
+    job). Full design in `docs/plan-july9-vacation-month.md`.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:

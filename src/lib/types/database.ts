@@ -4156,6 +4156,10 @@ export type Database = {
       }
       mo_copy_template_parts: { Args: { p_mo_id: string }; Returns: number }
       next_document_number: { Args: { p_doc_type: string }; Returns: string }
+      publish_service_price_list: {
+        Args: { p_list_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

@@ -81,11 +81,14 @@ Rough capacity: ~15 dev-days at vacation-adjacent pace.
     lesson: bad paint estimates ate the hotel-project margin).
   - The std/svaj model (`resolveLakSkus`) was replaced in one cut as
     planned; legacy per-bike colour/scope stays read-only on old orders.
-  - **Remaining from the design:** the `/admin/services` price-list grid
-    with xlsx-import + diff preview (until then a price revision is a SQL
-    job); add tier-overlap validation there. Deferred with it: service-type
-    filters on the dashboard aging card + order detail (needed when service
-    type #2 becomes real).
+  - ✅ `/admin/services` price-list grid — SHIPPED 2026-07-11 (migration
+    64): current-revision grid per supplier × type, revision history,
+    duplicate-and-edit new revision with live diff preview, atomic publish
+    RPC, tier-overlap EXCLUDE constraint. **Still deferred:** xlsx-import
+    (build it against the real 2027 file when it arrives — the editor
+    already makes the yearly bump a 5-min task), and service-type filters
+    on the dashboard aging card + order detail (needed when service type
+    #2 becomes real).
 
 #### The painter's list, analyzed (SIK_Jensen Priser 2026.xlsx, read 2026-07-09)
 

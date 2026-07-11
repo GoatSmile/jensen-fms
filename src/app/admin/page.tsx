@@ -45,6 +45,7 @@ export default async function AdminLandingPage() {
     locationsRes,
     familiesRes,
     orgsRes,
+    priceListsRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -95,6 +96,10 @@ export default async function AdminLandingPage() {
       .from("organizations")
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null),
+    supabase
+      .from("service_price_lists")
+      .select("id", { count: "exact", head: true })
+      .eq("is_current", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -110,6 +115,7 @@ export default async function AdminLandingPage() {
   const activeLocationCount = locationsRes.count ?? 0;
   const activeFamilyCount = familiesRes.count ?? 0;
   const customerCount = orgsRes.count ?? 0;
+  const currentPriceListCount = priceListsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -203,6 +209,13 @@ export default async function AdminLandingPage() {
             stat={
               lastFxRefresh ? `Latest: ${lastFxRefresh}` : "No rates on file yet"
             }
+          />
+          <Tile
+            href="/admin/services"
+            icon={Percent}
+            title="Service price lists"
+            description="Supplier-issued tiered prices for outsourced work (painting). A change is a new revision; sent orders stay frozen."
+            stat={`${currentPriceListCount} current list${currentPriceListCount === 1 ? "" : "s"}`}
           />
         </AdminGroup>
 
