@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,6 +20,10 @@ import {
 } from "../_components/template-form";
 
 export default async function NewBikeTemplatePage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("templates"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [typesRes, currenciesRes, familiesRes] = await Promise.all([
@@ -56,26 +61,26 @@ export default async function NewBikeTemplatePage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bike-templates">Bike templates</Link>
+              <Link href="/bike-templates">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New template</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Add the parts recipe after the template shell is created.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("newTemplate")}
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t("newSubtitle")}</p>
       </div>
       <TemplateForm
         mode="create"

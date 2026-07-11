@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { deleteTemplate } from "../_actions/delete-template";
  * the templates list and never resolves here.
  */
 export function DeleteTemplateButton({ templateId }: { templateId: string }) {
+  const t = useTranslations("templateDetail");
+  const tCommon = useTranslations("common");
   const [isPending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +44,10 @@ export function DeleteTemplateButton({ templateId }: { templateId: string }) {
       >
         <Trash2 aria-hidden />{" "}
         {isPending
-          ? "Deleting…"
+          ? t("deleting")
           : confirming
-            ? "Click again to confirm"
-            : "Delete"}
+            ? tCommon("confirmRepeat")
+            : t("delete")}
       </Button>
       {error ? (
         <p className="text-destructive max-w-xs text-right text-xs" role="alert">

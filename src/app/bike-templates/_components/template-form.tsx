@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
@@ -80,6 +81,8 @@ export function TemplateForm({
   currencies,
   families,
 }: Props) {
+  const t = useTranslations("templates");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<TemplateShellValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -137,15 +140,15 @@ export function TemplateForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="What this template is for"
+        title={t("formSectionPurpose")}
         description={
           isEdit
-            ? "Bike type is locked to preserve history. To re-target, create a new template."
-            : "Pick the bike type. Frame size lives on the template — small and large of the same bike are two separate templates."
+            ? t("formSectionPurposeDescEdit")
+            : t("formSectionPurposeDescCreate")
         }
       >
         <Field
-          label="Bike type"
+          label={t("bikeType")}
           htmlFor="tpl-bike-type"
           required
           error={errorField === "bike_type_id" ? error : null}
@@ -161,7 +164,7 @@ export function TemplateForm({
               onValueChange={(v) => update("bike_type_id", v)}
             >
               <SelectTrigger id="tpl-bike-type">
-                <SelectValue placeholder="Pick a type…" />
+                <SelectValue placeholder={t("pickType")} />
               </SelectTrigger>
               <SelectContent>
                 {bikeTypes.map((t) => (
@@ -174,7 +177,7 @@ export function TemplateForm({
           )}
         </Field>
         <Field
-          label="Family"
+          label={t("family")}
           htmlFor="tpl-family"
           error={errorField === "family_id" ? error : null}
         >
@@ -185,10 +188,10 @@ export function TemplateForm({
             }
           >
             <SelectTrigger id="tpl-family">
-              <SelectValue placeholder="No family" />
+              <SelectValue placeholder={t("noFamily")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_FAMILY}>No family</SelectItem>
+              <SelectItem value={NO_FAMILY}>{t("noFamily")}</SelectItem>
               {families.map((f) => (
                 <SelectItem key={f.id} value={f.id}>
                   <span
@@ -200,13 +203,10 @@ export function TemplateForm({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-muted-foreground text-xs">
-            Groups sizes together in the UI. Manage the list in Admin →
-            Families.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("familyHint")}</p>
         </Field>
         <Field
-          label="Frame size"
+          label={t("frameSize")}
           htmlFor="tpl-frame-size"
           required
           error={errorField === "frame_size" ? error : null}
@@ -215,18 +215,18 @@ export function TemplateForm({
             id="tpl-frame-size"
             value={values.frame_size}
             onChange={(e) => update("frame_size", e.target.value)}
-            placeholder="e.g. 48cm, 53cm, S, L"
+            placeholder={t("frameSizePlaceholder")}
             required
           />
         </Field>
       </FormSection>
 
       <FormSection
-        title="Identification"
-        description="The template name shows in the catalog and on customer documents."
+        title={t("formSectionIdentification")}
+        description={t("formSectionIdentificationDesc")}
       >
         <Field
-          label="Name (English)"
+          label={t("nameEn")}
           htmlFor="tpl-name-en"
           required
           error={errorField === "name_en" ? error : null}
@@ -235,28 +235,28 @@ export function TemplateForm({
             id="tpl-name-en"
             value={values.name_en}
             onChange={(e) => update("name_en", e.target.value)}
-            placeholder="e.g. Norma 48cm — hospital build"
+            placeholder={t("nameEnPlaceholder")}
             required
             autoFocus={mode === "create"}
           />
         </Field>
-        <Field label="Navn (Dansk)" htmlFor="tpl-name-da">
+        <Field label={t("nameDa")} htmlFor="tpl-name-da">
           <Input
             id="tpl-name-da"
             value={values.name_da}
             onChange={(e) => update("name_da", e.target.value)}
-            placeholder="Optional"
+            placeholder={t("nameDaPlaceholder")}
           />
         </Field>
       </FormSection>
 
       <FormSection
-        title="Default retail price"
-        description="The starting price for this template, excl. VAT — can be overridden per quote line."
+        title={t("formSectionPrice")}
+        description={t("formSectionPriceDesc")}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field
-            label="Price"
+            label={t("price")}
             htmlFor="tpl-price"
             error={errorField === "default_retail_price" ? error : null}
           >
@@ -273,7 +273,7 @@ export function TemplateForm({
               placeholder="0,00"
             />
           </Field>
-          <Field label="Currency" htmlFor="tpl-currency">
+          <Field label={t("currency")} htmlFor="tpl-currency">
             <Select
               value={values.default_retail_currency}
               onValueChange={(v) => update("default_retail_currency", v)}
@@ -294,10 +294,10 @@ export function TemplateForm({
       </FormSection>
 
       <FormSection
-        title="Notes"
-        description="Internal notes about this template — not shown to customers."
+        title={t("formSectionNotes")}
+        description={t("formSectionNotesDesc")}
       >
-        <Field label="Notes" htmlFor="tpl-notes">
+        <Field label={t("notesLabel")} htmlFor="tpl-notes">
           <Textarea
             id="tpl-notes"
             rows={3}
@@ -320,14 +320,14 @@ export function TemplateForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
-            ? "Saving…"
+            ? tCommon("saving")
             : mode === "create"
-              ? "Create template"
-              : "Save changes"}
+              ? t("createTemplate")
+              : t("saveChanges")}
         </Button>
       </div>
     </form>

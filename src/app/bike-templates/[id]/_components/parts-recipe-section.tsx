@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -114,6 +115,8 @@ export function PartsRecipeSection({
   templateRetailDkk,
   paintEstimate,
 }: Props) {
+  const t = useTranslations("templateDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
   const [error, setError] = useState<string | null>(null);
@@ -215,10 +218,7 @@ export function PartsRecipeSection({
 
   // Staged picks live only in local state until "Save changes" — warn before
   // navigating away with unsaved edits (Dennis lost a whole recipe this way).
-  useUnsavedChangesGuard(
-    dirty,
-    "You have unsaved recipe changes. Leave this page and discard them?",
-  );
+  useUnsavedChangesGuard(dirty, t("unsavedGuard"));
 
   const totalUnitsPerBike = useMemo(
     () =>
@@ -365,7 +365,7 @@ export function PartsRecipeSection({
         setError(r.error);
         return;
       }
-      setSuccess("Recipe saved.");
+      setSuccess(t("recipeSaved"));
       router.refresh();
     });
   }
@@ -385,32 +385,35 @@ export function PartsRecipeSection({
     <section className="rounded-md border">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Parts recipe</h2>
+          <h2 className="text-sm font-semibold">{t("recipeTitle")}</h2>
           <p className="text-muted-foreground text-xs">
-            {rows.length} part{rows.length === 1 ? "" : "s"} ·{" "}
-            {totalUnitsPerBike} unit{totalUnitsPerBike === 1 ? "" : "s"} per
-            bike
+            {t("recipeParts", { count: rows.length })} ·{" "}
+            {t("recipeUnits", { count: totalUnitsPerBike })}
             {rows.length > 0 ? (
               <>
                 {" · "}
                 <span className="text-foreground font-medium tabular-nums">
-                  parts cost {formatDkk(costTotal.sum)}
+                  {t("partsCostInline", { amount: formatDkk(costTotal.sum) })}
                 </span>
                 {costTotal.uncosted > 0
-                  ? ` (${costTotal.uncosted} uncosted)`
+                  ? ` ${t("uncostedN", { count: costTotal.uncosted })}`
                   : null}
                 {" · "}
                 <span className="tabular-nums">
-                  parts retail {formatDkk(retailTotal.sum)}
+                  {t("partsRetailInline", {
+                    amount: formatDkk(retailTotal.sum),
+                  })}
                 </span>
                 {retailTotal.unpriced > 0
-                  ? ` (${retailTotal.unpriced} unpriced)`
+                  ? ` ${t("unpricedN", { count: retailTotal.unpriced })}`
                   : null}
                 {templateRetailDkk != null ? (
                   <>
                     {" · "}
                     <span className="tabular-nums">
-                      sale price {formatDkk(templateRetailDkk)}
+                      {t("salePriceInline", {
+                        amount: formatDkk(templateRetailDkk),
+                      })}
                     </span>
                     {" · "}
                     <span
@@ -420,8 +423,9 @@ export function PartsRecipeSection({
                           : ""
                       }`}
                     >
-                      retail difference{" "}
-                      {formatDkk(templateRetailDkk - retailTotal.sum)}
+                      {t("retailDifferenceInline", {
+                        amount: formatDkk(templateRetailDkk - retailTotal.sum),
+                      })}
                     </span>
                   </>
                 ) : null}
@@ -438,7 +442,7 @@ export function PartsRecipeSection({
               onClick={onDiscard}
               disabled={isPending || !dirty}
             >
-              Discard
+              {t("discard")}
             </Button>
             <Button
               type="button"
@@ -446,7 +450,7 @@ export function PartsRecipeSection({
               onClick={onSave}
               disabled={isPending || !dirty}
             >
-              {isPending ? "Saving…" : "Save changes"}
+              {isPending ? tCommon("saving") : t("saveChanges")}
             </Button>
           </div>
         ) : null}
@@ -455,8 +459,7 @@ export function PartsRecipeSection({
       <div className="p-4">
         {!canEdit ? (
           <p className="bg-muted text-muted-foreground mb-3 rounded-md border px-3 py-2 text-xs">
-            This is a past version. Read-only — open the current version to
-            edit.
+            {t("pastVersionNote")}
           </p>
         ) : null}
 
@@ -475,7 +478,7 @@ export function PartsRecipeSection({
           {/* LEFT: Categories */}
           <div className="flex flex-col gap-2">
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-              Parts by category
+              {t("partsByCategory")}
             </div>
 
             {canEdit ? (
@@ -528,8 +531,7 @@ export function PartsRecipeSection({
                     <ChevronRight className="size-3.5" aria-hidden />
                   )}
                   <span className="text-muted-foreground">
-                    {empty.length} empty categor
-                    {empty.length === 1 ? "y" : "ies"} (no parts in catalog yet)
+                    {t("emptyCategories", { count: empty.length })}
                   </span>
                 </button>
                 {showEmpty ? (
@@ -548,11 +550,11 @@ export function PartsRecipeSection({
           {/* RIGHT: Recipe */}
           <div className="flex flex-col gap-2">
             <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-              Selected parts in this template
+              {t("selectedParts")}
             </div>
             {rows.length === 0 ? (
               <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
-                Pick parts from the categories on the left.
+                {t("pickFromLeft")}
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
@@ -566,7 +568,7 @@ export function PartsRecipeSection({
                   })
                   .map(([catKey, catRows]) => {
                     const catName =
-                      catRows[0]?.categoryName ?? "Uncategorised";
+                      catRows[0]?.categoryName ?? t("uncategorised");
                     let subtotal = 0;
                     let hasPrice = false;
                     for (const r of catRows) {
@@ -615,11 +617,11 @@ export function PartsRecipeSection({
                 <div className="bg-muted/20 flex flex-col gap-1 rounded-md border px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className={paintEstimate ? "" : "font-medium"}>
-                      Parts cost
+                      {t("partsCostLabel")}
                       {costTotal.uncosted > 0 ? (
                         <span className="text-muted-foreground text-xs">
                           {" "}
-                          ({costTotal.uncosted} uncosted)
+                          {t("uncostedN", { count: costTotal.uncosted })}
                         </span>
                       ) : null}
                     </span>
@@ -632,11 +634,11 @@ export function PartsRecipeSection({
                   {paintEstimate ? (
                     <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
                       <span>
-                        Paint (estimated
                         {paintEstimate.listLabel
-                          ? `, ${paintEstimate.listLabel}`
-                          : ""}
-                        )
+                          ? t("paintEstimatedWithList", {
+                              list: paintEstimate.listLabel,
+                            })
+                          : t("paintEstimated")}
                       </span>
                       <span className="tabular-nums">
                         {paintEstimate.totalDkk != null
@@ -647,9 +649,7 @@ export function PartsRecipeSection({
                   ) : null}
                   {paintEstimate?.totalDkk != null ? (
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">
-                        Cost to produce (parts + paint)
-                      </span>
+                      <span className="font-medium">{t("costToProduce")}</span>
                       <span className="font-semibold tabular-nums">
                         {formatDkk(costTotal.sum + paintEstimate.totalDkk)}
                       </span>
@@ -665,7 +665,7 @@ export function PartsRecipeSection({
                           : "text-emerald-700 dark:text-emerald-400"
                       }`}
                     >
-                      <span>Margin (sale price − cost)</span>
+                      <span>{t("marginLabel")}</span>
                       <span className="tabular-nums">
                         {formatDkk(
                           templateRetailDkk -
@@ -676,11 +676,11 @@ export function PartsRecipeSection({
                   ) : null}
                   <div className="mt-1 flex items-center justify-between gap-2 border-t pt-1">
                     <span>
-                      Parts retail total (excl. VAT)
+                      {t("partsRetailTotal")}
                       {retailTotal.unpriced > 0 ? (
                         <span className="text-muted-foreground text-xs">
                           {" "}
-                          ({retailTotal.unpriced} unpriced)
+                          {t("unpricedN", { count: retailTotal.unpriced })}
                         </span>
                       ) : null}
                     </span>
@@ -691,7 +691,7 @@ export function PartsRecipeSection({
                   {templateRetailDkk != null ? (
                     <>
                       <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
-                        <span>Template sale price</span>
+                        <span>{t("templateSalePrice")}</span>
                         <span className="tabular-nums">
                           {formatDkk(templateRetailDkk)}
                         </span>
@@ -703,7 +703,7 @@ export function PartsRecipeSection({
                             : "text-muted-foreground"
                         }`}
                       >
-                        <span>Difference (price − parts)</span>
+                        <span>{t("differenceLabel")}</span>
                         <span className="tabular-nums">
                           {formatDkk(templateRetailDkk - retailTotal.sum)}
                         </span>
@@ -723,25 +723,25 @@ export function PartsRecipeSection({
               variant="outline"
               onClick={onDiscard}
               disabled={isPending || !dirty}
-              title="Throw away unsaved edits and go back to the recipe as last saved."
+              title={t("discardTitle")}
             >
-              Discard
+              {t("discard")}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={onSaveAsVersion}
               disabled={isPending || rows.length === 0}
-              title="Freeze this recipe as a new version. Past Manufacturing Orders keep referencing the old one."
+              title={t("saveAsVersionTitle")}
             >
-              <GitBranch aria-hidden /> Save as new version
+              <GitBranch aria-hidden /> {t("saveAsVersion")}
             </Button>
             <Button
               type="button"
               onClick={onSave}
               disabled={isPending || !dirty}
             >
-              {isPending ? "Saving…" : "Save changes"}
+              {isPending ? tCommon("saving") : t("saveChanges")}
             </Button>
           </div>
         ) : null}
@@ -765,6 +765,7 @@ function QtyStepper({
   partSku: string;
   onChange: (quantity: string) => void;
 }) {
+  const t = useTranslations("templateDetail");
   const n = Number(value);
   const qty = Number.isFinite(n) && n > 0 ? n : 1;
 
@@ -782,13 +783,13 @@ function QtyStepper({
         className="size-6 rounded-r-none"
         onClick={() => step(-1)}
         disabled={qty <= 1}
-        aria-label={`Decrease quantity for ${partSku}`}
+        aria-label={t("qtyDecreaseAria", { sku: partSku })}
       >
         <Minus className="size-3" aria-hidden />
       </Button>
       <span
         className="min-w-7 px-1 text-center tabular-nums"
-        aria-label={`Quantity for ${partSku}`}
+        aria-label={t("qtyAria", { sku: partSku })}
       >
         {value}
       </span>
@@ -798,7 +799,7 @@ function QtyStepper({
         variant="ghost"
         className="size-6 rounded-l-none"
         onClick={() => step(1)}
-        aria-label={`Increase quantity for ${partSku}`}
+        aria-label={t("qtyIncreaseAria", { sku: partSku })}
       >
         <Plus className="size-3" aria-hidden />
       </Button>
@@ -817,6 +818,7 @@ function RecipeLine({
   onChange: (patch: Partial<RecipeRow>) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations("templateDetail");
   const qty = Number(row.quantity);
   const lineTotal =
     row.retailDkk != null && Number.isFinite(qty) ? qty * row.retailDkk : null;
@@ -843,7 +845,7 @@ function RecipeLine({
               size="icon-sm"
               variant="ghost"
               onClick={onRemove}
-              aria-label={`Remove ${row.partSku}`}
+              aria-label={t("removeAria", { sku: row.partSku })}
             >
               <Trash2 aria-hidden />
             </Button>
@@ -852,7 +854,7 @@ function RecipeLine({
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">Qty</span>
+          <span className="text-muted-foreground">{t("qty")}</span>
           {canEdit ? (
             <QtyStepper
               value={row.quantity}
@@ -871,15 +873,15 @@ function RecipeLine({
             className="size-3.5"
             disabled={!canEdit}
           />
-          <span className="text-muted-foreground">Optional</span>
+          <span className="text-muted-foreground">{t("optional")}</span>
         </label>
         {canEdit ? (
           <Input
             value={row.notes}
             onChange={(e) => onChange({ notes: e.target.value })}
-            placeholder="Notes (optional)"
+            placeholder={t("notesPlaceholder")}
             className="h-7 flex-1 text-xs"
-            aria-label={`Notes for ${row.partSku}`}
+            aria-label={t("notesAria", { sku: row.partSku })}
           />
         ) : row.notes ? (
           <span className="text-muted-foreground text-xs italic">

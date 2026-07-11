@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { BookOpen, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,6 @@ type SearchParams = {
 };
 
 const UNGROUPED_KEY = "__ungrouped__";
-const UNGROUPED_LABEL = "Ungrouped";
 
 export default async function BikeTemplatesPage({
   searchParams,
@@ -38,6 +38,10 @@ export default async function BikeTemplatesPage({
 }) {
   const sp = await searchParams;
   const showAllVersions = sp.current === "all";
+  const [t, tCommon] = await Promise.all([
+    getTranslations("templates"),
+    getTranslations("common"),
+  ]);
 
   const supabase = await createClient();
   let q = supabase
@@ -91,7 +95,7 @@ export default async function BikeTemplatesPage({
   >();
   for (const r of rows) {
     const key = r.family_id ?? UNGROUPED_KEY;
-    const label = r.family?.name ?? UNGROUPED_LABEL;
+    const label = r.family?.name ?? t("ungrouped");
     const sortOrder = r.family?.sort_order ?? Number.MAX_SAFE_INTEGER;
     const entry = groups.get(key) ?? { label, sortOrder, rows: [] };
     entry.rows.push(r);
@@ -113,25 +117,24 @@ export default async function BikeTemplatesPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Bike templates</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Bike templates
+              {t("title")}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {rows.length}{" "}
               {showAllVersions
-                ? "templates (all versions)"
-                : "current templates"}
+                ? t("countAll", { count: rows.length })
+                : t("countCurrent", { count: rows.length })}
               {" · "}
               <Link
                 href={
@@ -141,13 +144,13 @@ export default async function BikeTemplatesPage({
                 }
                 className="hover:text-foreground underline-offset-4 hover:underline"
               >
-                {showAllVersions ? "current only" : "show all versions"}
+                {showAllVersions ? t("currentOnly") : t("showAllVersions")}
               </Link>
             </p>
           </div>
           <Button asChild>
             <Link href="/bike-templates/new">
-              <Plus aria-hidden /> New template
+              <Plus aria-hidden /> {t("newTemplate")}
             </Link>
           </Button>
         </div>
@@ -156,9 +159,9 @@ export default async function BikeTemplatesPage({
       {rows.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="No templates yet"
-          description="Templates are the product catalog. Create one for each frame size of each bike — color is picked at order time."
-          action={{ label: "New template", href: "/bike-templates/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
+          action={{ label: t("newTemplate"), href: "/bike-templates/new" }}
         />
       ) : (
         <div className="flex flex-col gap-6">
@@ -183,99 +186,98 @@ export default async function BikeTemplatesPage({
                   />
                   <h2 className="text-sm font-semibold">{group.label}</h2>
                   <span className="text-muted-foreground text-xs">
-                    {group.rows.length}{" "}
-                    {group.rows.length === 1 ? "template" : "templates"}
+                    {t("groupCount", { count: group.rows.length })}
                   </span>
                 </header>
                 <div className="overflow-x-auto md:overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Template</TableHead>
-                        <TableHead>Size</TableHead>
+                        <TableHead>{t("thTemplate")}</TableHead>
+                        <TableHead>{t("thSize")}</TableHead>
                         <TableHead className="hidden sm:table-cell">
-                          Type
+                          {t("thType")}
                         </TableHead>
                         <TableHead className="text-right">
-                          Retail (excl. VAT)
+                          {t("thRetail")}
                         </TableHead>
                         <TableHead className="hidden text-right md:table-cell">
-                          Version
+                          {t("thVersion")}
                         </TableHead>
                         <TableHead className="hidden text-right md:table-cell">
-                          Parts
+                          {t("thParts")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {group.rows.map((t) => (
+                      {group.rows.map((tpl) => (
                         <TableRow
-                          key={t.id}
+                          key={tpl.id}
                           className="hover:bg-muted/50 cursor-pointer"
                         >
                           <TableCell className="p-0">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
-                              <div className="font-medium">{t.name_en}</div>
-                              {t.name_da && t.name_da !== t.name_en ? (
+                              <div className="font-medium">{tpl.name_en}</div>
+                              {tpl.name_da && tpl.name_da !== tpl.name_en ? (
                                 <div className="text-muted-foreground text-xs">
-                                  {t.name_da}
+                                  {tpl.name_da}
                                 </div>
                               ) : null}
                             </Link>
                           </TableCell>
                           <TableCell className="p-0 text-sm tabular-nums">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
-                              {t.frame_size}
+                              {tpl.frame_size}
                             </Link>
                           </TableCell>
                           <TableCell className="hidden p-0 sm:table-cell">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
                               <Badge variant="outline" className="font-normal">
-                                {t.bike_type?.name_en ?? "—"}
+                                {tpl.bike_type?.name_en ?? "—"}
                               </Badge>
                             </Link>
                           </TableCell>
                           <TableCell className="p-0 text-right text-sm tabular-nums">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
                               {formatPrice(
-                                t.default_retail_price == null
+                                tpl.default_retail_price == null
                                   ? null
-                                  : Number(t.default_retail_price),
-                                t.default_retail_currency,
+                                  : Number(tpl.default_retail_price),
+                                tpl.default_retail_currency,
                               )}
                             </Link>
                           </TableCell>
                           <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
-                              v{t.version}
-                              {t.is_current ? (
+                              v{tpl.version}
+                              {tpl.is_current ? (
                                 <Badge variant="success" className="ml-2">
-                                  current
+                                  {t("currentBadge")}
                                 </Badge>
                               ) : null}
                             </Link>
                           </TableCell>
                           <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
                             <Link
-                              href={`/bike-templates/${t.id}`}
+                              href={`/bike-templates/${tpl.id}`}
                               className="block px-4 py-2.5"
                             >
-                              {partCountByTemplate.get(t.id) ?? 0}
+                              {partCountByTemplate.get(tpl.id) ?? 0}
                             </Link>
                           </TableCell>
                         </TableRow>

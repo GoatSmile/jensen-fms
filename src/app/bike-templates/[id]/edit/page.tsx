@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -25,6 +26,10 @@ export default async function EditBikeTemplatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("templates"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [tplRes, typesRes, currenciesRes, familiesRes] = await Promise.all([
@@ -62,17 +67,17 @@ export default async function EditBikeTemplatePage({
   }
   if (!tplRes.data) notFound();
 
-  const t = tplRes.data;
+  const tpl = tplRes.data;
   const initial: TemplateShellValues = {
-    bike_type_id: t.bike_type_id,
-    family_id: t.family_id ?? "",
-    frame_size: t.frame_size,
-    name_en: t.name_en,
-    name_da: t.name_da ?? "",
+    bike_type_id: tpl.bike_type_id,
+    family_id: tpl.family_id ?? "",
+    frame_size: tpl.frame_size,
+    name_en: tpl.name_en,
+    name_da: tpl.name_da ?? "",
     default_retail_price:
-      t.default_retail_price == null ? "" : String(t.default_retail_price),
-    default_retail_currency: t.default_retail_currency ?? "DKK",
-    notes: t.notes ?? "",
+      tpl.default_retail_price == null ? "" : String(tpl.default_retail_price),
+    default_retail_currency: tpl.default_retail_currency ?? "DKK",
+    notes: tpl.notes ?? "",
   };
   const bikeTypes: BikeTypeOption[] = typesRes.data ?? [];
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];
@@ -84,39 +89,39 @@ export default async function EditBikeTemplatePage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bike-templates">Bike templates</Link>
+              <Link href="/bike-templates">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href={`/bike-templates/${t.id}`}>{t.name_en}</Link>
+              <Link href={`/bike-templates/${tpl.id}`}>{tpl.name_en}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Edit {t.name_en}
+          {t("editTitle", { name: tpl.name_en })}
         </h1>
         <p className="text-muted-foreground mt-1 text-xs">
-          v{t.version}
-          {t.is_current ? " · current" : ""}
+          v{tpl.version}
+          {tpl.is_current ? t("currentSuffix") : ""}
         </p>
       </div>
       <TemplateForm
         mode="edit"
-        templateId={t.id}
+        templateId={tpl.id}
         initial={initial}
         bikeTypes={bikeTypes}
         currencies={currencies}

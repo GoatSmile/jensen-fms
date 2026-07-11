@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Copy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { duplicateTemplate } from "../_actions/duplicate-template";
  * only a failure returns here, which we surface inline.
  */
 export function DuplicateTemplateButton({ templateId }: { templateId: string }) {
+  const t = useTranslations("templateDetail");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +32,7 @@ export function DuplicateTemplateButton({ templateId }: { templateId: string }) 
           });
         }}
       >
-        <Copy aria-hidden /> {isPending ? "Duplicating…" : "Duplicate"}
+        <Copy aria-hidden /> {isPending ? t("duplicating") : t("duplicate")}
       </Button>
       {error ? (
         <p className="text-destructive max-w-xs text-right text-xs" role="alert">

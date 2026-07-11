@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -50,6 +51,7 @@ export function PaintworkSection({
   listLabel,
   unpricedCount,
 }: Props) {
+  const t = useTranslations("templateDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = isCurrent;
@@ -61,11 +63,9 @@ export function PaintworkSection({
     <section className="rounded-md border">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Paintwork</h2>
+          <h2 className="text-sm font-semibold">{t("paintworkTitle")}</h2>
           <p className="text-muted-foreground text-xs">
-            What one bike of this template sends to the painter. Estimated at
-            per-bike quantities (singles tier) from the painter&apos;s current
-            list — batch tiers apply on the paint order itself.
+            {t("paintworkDescription")}
           </p>
         </div>
         {canEdit ? (
@@ -87,21 +87,21 @@ export function PaintworkSection({
 
         {rows.length === 0 ? (
           <div className="text-muted-foreground flex h-16 items-center justify-center rounded-md border border-dashed text-sm">
-            {canEdit
-              ? "No paintwork declared — add the part types the painter handles for this bike."
-              : "No paintwork declared on this version."}
+            {canEdit ? t("paintworkEmptyEdit") : t("paintworkEmptyReadOnly")}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b text-left text-xs">
-                  <th className="px-4 py-2 font-medium">Part</th>
-                  <th className="px-4 py-2 font-medium">Qty / bike</th>
+                  <th className="px-4 py-2 font-medium">{t("thPart")}</th>
+                  <th className="px-4 py-2 font-medium">{t("thQtyPerBike")}</th>
                   <th className="hidden px-4 py-2 text-right font-medium sm:table-cell">
-                    Per piece
+                    {t("thPerPiece")}
                   </th>
-                  <th className="px-4 py-2 text-right font-medium">Line</th>
+                  <th className="px-4 py-2 text-right font-medium">
+                    {t("thLine")}
+                  </th>
                   {canEdit ? <th className="w-[60px] px-4 py-2" /> : null}
                 </tr>
               </thead>
@@ -122,8 +122,9 @@ export function PaintworkSection({
               {totalLabel ? (
                 <div className="text-muted-foreground flex justify-end gap-2 text-sm">
                   <span>
-                    Paint per bike (estimated
-                    {listLabel ? `, ${listLabel}` : ""}):
+                    {listLabel
+                      ? t("paintPerBikeWithList", { list: listLabel })
+                      : t("paintPerBike")}
                   </span>
                   <span className="text-foreground font-medium tabular-nums">
                     {totalLabel}
@@ -132,9 +133,7 @@ export function PaintworkSection({
               ) : null}
               {unpricedCount > 0 ? (
                 <p className="text-right text-xs text-amber-600 dark:text-amber-500">
-                  {unpricedCount}{" "}
-                  {unpricedCount === 1 ? "line has" : "lines have"} no price on
-                  the current list.
+                  {t("unpricedLines", { count: unpricedCount })}
                 </p>
               ) : null}
             </div>
@@ -143,8 +142,7 @@ export function PaintworkSection({
 
         {rows.length > 0 && listLabel == null ? (
           <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-            No current painting price list found — the paintwork can&apos;t be
-            priced, so the cost-to-produce box shows parts only.
+            {t("noPriceList")}
           </p>
         ) : null}
       </div>
@@ -165,6 +163,7 @@ function PaintworkRow({
   onError: (msg: string | null) => void;
   onChange: () => void;
 }) {
+  const t = useTranslations("templateDetail");
   const [pending, start] = useTransition();
   const [qty, setQty] = useState(String(row.quantity));
 
@@ -217,7 +216,7 @@ function PaintworkRow({
             }}
             disabled={pending}
             className="h-8 w-20 tabular-nums"
-            aria-label={`Quantity of ${row.partTypeName}`}
+            aria-label={t("paintQtyAria", { name: row.partTypeName })}
           />
         ) : (
           <span className="tabular-nums">{row.quantity}</span>
@@ -234,7 +233,9 @@ function PaintworkRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-amber-600 dark:text-amber-500">no price</span>
+          <span className="text-amber-600 dark:text-amber-500">
+            {t("noPrice")}
+          </span>
         )}
       </td>
       <td className="px-4 py-2.5 text-right tabular-nums">
@@ -247,7 +248,7 @@ function PaintworkRow({
             variant="outline"
             onClick={runRemove}
             disabled={pending}
-            aria-label={`Remove ${row.partTypeName} paintwork line`}
+            aria-label={t("paintRemoveAria", { name: row.partTypeName })}
           >
             <Trash2 aria-hidden />
           </Button>
@@ -268,6 +269,7 @@ function AddPaintworkRow({
   onError: (msg: string | null) => void;
   onChange: () => void;
 }) {
+  const t = useTranslations("templateDetail");
   const [partTypeId, setPartTypeId] = useState("");
   const [qty, setQty] = useState("1");
   const [isPending, start] = useTransition();
@@ -275,12 +277,12 @@ function AddPaintworkRow({
   function onAdd() {
     onError(null);
     if (!partTypeId) {
-      onError("Pick a part type to add.");
+      onError(t("pickPartTypeError"));
       return;
     }
     const n = Number(qty);
     if (!Number.isInteger(n) || n <= 0) {
-      onError("Quantity must be a whole number above zero.");
+      onError(t("qtyError"));
       return;
     }
     start(async () => {
@@ -301,13 +303,17 @@ function AddPaintworkRow({
   return (
     <div className="flex items-center gap-2">
       <Select value={partTypeId} onValueChange={setPartTypeId}>
-        <SelectTrigger size="sm" className="w-[160px]" aria-label="Part type">
-          <SelectValue placeholder="Part type…" />
+        <SelectTrigger
+          size="sm"
+          className="w-[160px]"
+          aria-label={t("partTypeAria")}
+        >
+          <SelectValue placeholder={t("partTypePlaceholder")} />
         </SelectTrigger>
         <SelectContent>
           {partTypes.length === 0 ? (
             <div className="text-muted-foreground p-2 text-xs">
-              Every part type is already declared.
+              {t("allDeclared")}
             </div>
           ) : (
             partTypes.map((pt) => (
@@ -327,7 +333,7 @@ function AddPaintworkRow({
         onChange={(e) => setQty(e.target.value)}
         disabled={isPending}
         className="h-8 w-16 tabular-nums"
-        aria-label="Quantity per bike"
+        aria-label={t("qtyPerBikeAria")}
       />
       <Button
         type="button"
@@ -336,7 +342,7 @@ function AddPaintworkRow({
         onClick={onAdd}
         disabled={isPending || partTypeId === ""}
       >
-        <Plus aria-hidden /> Add
+        <Plus aria-hidden /> {t("add")}
       </Button>
     </div>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,11 @@ export default async function BikeTemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tTpl, tCommon] = await Promise.all([
+    getTranslations("templateDetail"),
+    getTranslations("templates"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const tplRes = await supabase
@@ -59,22 +65,22 @@ export default async function BikeTemplateDetailPage({
   }
   if (!tplRes.data) notFound();
 
-  const t = tplRes.data;
+  const tpl = tplRes.data;
 
   // Fetch parts in this template, the catalog of pickable parts, and the full
   // version chain. Version chain is templates with the same family_id +
   // frame_size (or just same name_en if family_id is unset).
-  const chainFilters = t.family_id
+  const chainFilters = tpl.family_id
     ? supabase
         .from("bike_templates")
         .select("id, version, is_current, created_at")
-        .eq("family_id", t.family_id)
-        .eq("frame_size", t.frame_size)
+        .eq("family_id", tpl.family_id)
+        .eq("frame_size", tpl.frame_size)
     : supabase
         .from("bike_templates")
         .select("id, version, is_current, created_at")
         .is("family_id", null)
-        .eq("name_en", t.name_en);
+        .eq("name_en", tpl.name_en);
 
   const [
     recipeRes,
@@ -216,26 +222,25 @@ export default async function BikeTemplateDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bike-templates">Bike templates</Link>
+              <Link href="/bike-templates">{tTpl("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{t.name_en}</BreadcrumbPage>
+            <BreadcrumbPage>{tpl.name_en}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
-      {!t.is_current ? (
+      {!tpl.is_current ? (
         <div className="bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-300 rounded-md border border-amber-300 px-3 py-2 text-sm">
-          This is version {t.version} of the template. The current version may
-          have a different recipe.
+          {t("pastVersionBanner", { version: tpl.version })}
         </div>
       ) : null}
 
@@ -243,71 +248,71 @@ export default async function BikeTemplateDetailPage({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-normal">
-              {t.bike_type?.name_en ?? "—"}
+              {tpl.bike_type?.name_en ?? "—"}
             </Badge>
-            {t.family?.name && t.family_id ? (
+            {tpl.family?.name && tpl.family_id ? (
               // Family chip in the family's colour — links back to this
               // family's group on the templates list.
               <Link
-                href={`/bike-templates#family-${t.family_id}`}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${familyTint(t.family_id).chip}`}
+                href={`/bike-templates#family-${tpl.family_id}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${familyTint(tpl.family_id).chip}`}
               >
                 <span
-                  className={`size-1.5 rounded-full ${familyTint(t.family_id).dot}`}
+                  className={`size-1.5 rounded-full ${familyTint(tpl.family_id).dot}`}
                   aria-hidden
                 />
-                {t.family.name}
+                {tpl.family.name}
               </Link>
             ) : null}
             <span className="text-muted-foreground text-xs">
-              {t.frame_size}
+              {tpl.frame_size}
             </span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t.name_en}</h1>
-          {t.name_da && t.name_da !== t.name_en ? (
-            <p className="text-muted-foreground text-sm">{t.name_da}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{tpl.name_en}</h1>
+          {tpl.name_da && tpl.name_da !== tpl.name_en ? (
+            <p className="text-muted-foreground text-sm">{tpl.name_da}</p>
           ) : null}
           <p className="text-muted-foreground text-xs">
-            v{t.version}
-            {t.is_current ? " · current" : ""}
+            v{tpl.version}
+            {tpl.is_current ? tTpl("currentSuffix") : ""}
             {" · "}
             {formatPrice(
-              t.default_retail_price == null
+              tpl.default_retail_price == null
                 ? null
-                : Number(t.default_retail_price),
-              t.default_retail_currency,
+                : Number(tpl.default_retail_price),
+              tpl.default_retail_currency,
             )}
           </p>
         </div>
         <div className="flex gap-2">
-          <DeleteTemplateButton templateId={t.id} />
-          <DuplicateTemplateButton templateId={t.id} />
+          <DeleteTemplateButton templateId={tpl.id} />
+          <DuplicateTemplateButton templateId={tpl.id} />
           <Button variant="outline" asChild>
-            <Link href={`/bike-templates/${t.id}/edit`}>
-              <Pencil aria-hidden /> Edit
+            <Link href={`/bike-templates/${tpl.id}/edit`}>
+              <Pencil aria-hidden /> {t("edit")}
             </Link>
           </Button>
         </div>
       </div>
 
-      {t.notes ? (
+      {tpl.notes ? (
         <p className="text-muted-foreground bg-muted/30 rounded-md border p-3 text-sm">
-          {t.notes}
+          {tpl.notes}
         </p>
       ) : null}
 
       <PartsRecipeSection
-        templateId={t.id}
-        isCurrent={t.is_current}
+        templateId={tpl.id}
+        isCurrent={tpl.is_current}
         initialRows={initialRows}
         categories={categories}
         parts={parts}
         kits={kitsRes.data ?? []}
         kitParts={kitParts}
         templateRetailDkk={
-          t.default_retail_price != null &&
-          (t.default_retail_currency ?? "DKK") === "DKK"
-            ? Number(t.default_retail_price)
+          tpl.default_retail_price != null &&
+          (tpl.default_retail_currency ?? "DKK") === "DKK"
+            ? Number(tpl.default_retail_price)
             : null
         }
         paintEstimate={
@@ -322,8 +327,8 @@ export default async function BikeTemplateDetailPage({
       />
 
       <PaintworkSection
-        templateId={t.id}
-        isCurrent={t.is_current}
+        templateId={tpl.id}
+        isCurrent={tpl.is_current}
         rows={paintEstimate.rows}
         partTypes={servicePartTypes}
         totalLabel={paintEstimate.totalLabel}
@@ -332,12 +337,12 @@ export default async function BikeTemplateDetailPage({
       />
 
       <LabelBomKit
-        templateId={t.id}
+        templateId={tpl.id}
         kits={kitsRes.data ?? []}
         bomPartCount={initialRows.length}
       />
 
-      <VersionHistorySection rows={versionRows} thisTemplateId={t.id} />
+      <VersionHistorySection rows={versionRows} thisTemplateId={tpl.id} />
     </div>
   );
 }

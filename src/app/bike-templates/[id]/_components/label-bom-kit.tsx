@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Tags } from "lucide-react";
 
@@ -37,6 +38,7 @@ export function LabelBomKit({
   kits: KitChoice[];
   bomPartCount: number;
 }) {
+  const t = useTranslations("templateDetail");
   const router = useRouter();
   const [kitId, setKitId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -56,8 +58,10 @@ export function LabelBomKit({
       const kit = kits.find((k) => k.id === kitId);
       const code = kit ? kitCode(kit.sticker_color, kit.kit_number) : "kit";
       setSuccess(
-        `${code}: labelled ${r.labelled} part${r.labelled === 1 ? "" : "s"}` +
-          (r.already > 0 ? ` (${r.already} already had it)` : "") +
+        t("labelledResult", { code, count: r.labelled }) +
+          (r.already > 0
+            ? t("alreadyHadSuffix", { count: r.already })
+            : "") +
           ".",
       );
       router.refresh();
@@ -68,13 +72,13 @@ export function LabelBomKit({
 
   return (
     <Section
-      title="Kit labelling"
-      description="Stick one kit label on every part in this recipe — the floor then picks the whole build by sticker code."
+      title={t("kitLabellingTitle")}
+      description={t("kitLabellingDescription")}
     >
       <div className="flex flex-wrap items-center gap-2">
         <Select value={kitId} onValueChange={setKitId} disabled={pending}>
-          <SelectTrigger className="w-52" aria-label="Kit">
-            <SelectValue placeholder="Pick a kit…" />
+          <SelectTrigger className="w-52" aria-label={t("kitAria")}>
+            <SelectValue placeholder={t("pickKit")} />
           </SelectTrigger>
           <SelectContent>
             {kits.map((k) => {
@@ -101,9 +105,7 @@ export function LabelBomKit({
           disabled={pending || !kitId || bomPartCount === 0}
         >
           <Tags aria-hidden />{" "}
-          {pending
-            ? "Labelling…"
-            : `Label all ${bomPartCount} part${bomPartCount === 1 ? "" : "s"}`}
+          {pending ? t("labelling") : t("labelAll", { count: bomPartCount })}
         </Button>
       </div>
       {error ? (

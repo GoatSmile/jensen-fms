@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,15 +25,15 @@ type Props = {
   thisTemplateId: string;
 };
 
-export function VersionHistorySection({ rows, thisTemplateId }: Props) {
+export async function VersionHistorySection({ rows, thisTemplateId }: Props) {
   if (rows.length <= 1) return null;
+  const t = await getTranslations("templateDetail");
   return (
     <section className="rounded-md border">
       <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Version history</h2>
+        <h2 className="text-sm font-semibold">{t("versionHistoryTitle")}</h2>
         <p className="text-muted-foreground text-xs">
-          Past versions stay queryable so old Manufacturing Orders keep their
-          original recipe.
+          {t("versionHistoryDescription")}
         </p>
       </header>
       <div className="p-4">
@@ -40,10 +41,12 @@ export function VersionHistorySection({ rows, thisTemplateId }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px] text-right">Version</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Parts</TableHead>
-                <TableHead>State</TableHead>
+                <TableHead className="w-[80px] text-right">
+                  {t("thVersionCol")}
+                </TableHead>
+                <TableHead>{t("thCreated")}</TableHead>
+                <TableHead className="text-right">{t("thPartsCol")}</TableHead>
+                <TableHead>{t("thState")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -71,13 +74,13 @@ export function VersionHistorySection({ rows, thisTemplateId }: Props) {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {row.isCurrent ? (
-                          <Badge variant="success">current</Badge>
+                          <Badge variant="success">{t("currentBadge")}</Badge>
                         ) : (
-                          <Badge variant="outline">past</Badge>
+                          <Badge variant="outline">{t("pastBadge")}</Badge>
                         )}
                         {isThis ? (
                           <span className="text-muted-foreground text-xs">
-                            you are here
+                            {t("youAreHere")}
                           </span>
                         ) : null}
                       </div>
