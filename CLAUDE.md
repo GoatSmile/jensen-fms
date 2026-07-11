@@ -1083,13 +1083,34 @@ when the work ships or the idea is rejected.
     `elapsedShort`; screens compose "Started {time} · {elapsed} ago" from
     messages). Both settings sit at `en` — flipping `worker_language` to
     `da` is the 1-click go-live for the Danish worker.
-  - **Remaining**: the app-wide sweep keyed off `app_language`.
-    Customer-facing documents keep their own per-document `language`.
-    `worker_language` becomes per-user at M1. See
-    `docs/plan-july9-vacation-month.md`.
-    Data-not-UI note: batch-grid identifier column headers render
+  - **App-wide sweep (keyed off `app_language`) — IN PROGRESS
+    2026-07-11**, going down the nav in most-used order, one commit per
+    cluster. Done so far: **app chrome** (2d9f7a9 — both navs now render
+    from a shared `src/components/nav-items.ts`, so they can't drift;
+    `nav` namespace), **dashboard** (67d735c — `dashboard` namespace incl.
+    the month drill-down's server side: `loadMonthDetail` +
+    `loadMonthDetailAction` translate via `getTranslations`, and chart
+    month labels use the active locale), and the **bikes module**
+    (dab6c1a — `bikes` + `bikeDetail` namespaces, plus a shared `common`
+    namespace: Cancel/Saving…/Apply/Clear all/confirm-repeat/Dashboard
+    crumb — REUSE IT in later clusters). Status labels come from the
+    `bikeStatus` message namespace now; `bikeStatusLabel()` in
+    `src/lib/bikes/status.ts` still has 5 call sites (MO bikes section,
+    org assigned-bikes, customer map, paint-order bikes, paint-from-SO
+    form) to convert with their clusters, then delete the helper.
+  - **Remaining clusters**: bike templates · parts · maintenance
+    (tickets + WOs) · MOs · POs · SOs · paint orders · invoices ·
+    service agreements · customers/orgs · admin (+ QR page, global
+    chrome leftovers). Also a mop-up pass for server-action error
+    strings (bikes actions still return English; harmless fallback).
+    Customer-facing documents keep their own per-document `language`
+    (`/invoices/[id]/print` per-invoice, PO print deliberately English,
+    `/b/[bikeId]` public flow untouched). `worker_language` becomes
+    per-user at M1. See `docs/plan-july9-vacation-month.md`.
+    Data-not-UI notes: batch-grid identifier column headers render
     `bike_identifier_types.name_en` (DB vocab) — bilingual vocab names
-    are a separate, unstarted concern.
+    are a separate, unstarted concern; same for `bike_types.name_en`,
+    colour names, and category names surfaced in pickers.
 
 - **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
