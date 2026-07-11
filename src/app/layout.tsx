@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
@@ -54,32 +56,39 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Locale + messages resolved per request from app_settings (worker
+  // surfaces follow worker_language) — see src/i18n/request.ts.
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-background text-foreground min-h-full">
-        <div className="flex min-h-screen">
-          <AppSidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <MobileNav />
-            {/* pb-20 on small screens reserves space below scrollable
-                content so the floating Scan FAB never overlaps a card,
-                table row, or button at the page footer. md+ uses no
-                extra padding since the sidebar lives there instead. */}
-            <main className="flex flex-1 flex-col pb-20 md:pb-0">
-              {children}
-            </main>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <div className="flex min-h-screen">
+            <AppSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <MobileNav />
+              {/* pb-20 on small screens reserves space below scrollable
+                  content so the floating Scan FAB never overlaps a card,
+                  table row, or button at the page footer. md+ uses no
+                  extra padding since the sidebar lives there instead. */}
+              <main className="flex flex-1 flex-col pb-20 md:pb-0">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        <ScanFab />
-        <RegisterSW />
+          <ScanFab />
+          <RegisterSW />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

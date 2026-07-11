@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import withSerwistInit from "@serwist/next";
 
 /**
@@ -28,4 +29,7 @@ const nextConfig: NextConfig = {
   turbopack: {},
 };
 
-export default withSerwist(nextConfig);
+// Locale comes from app_settings (no URL routing) — see src/i18n/request.ts.
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withSerwist(withNextIntl(nextConfig));

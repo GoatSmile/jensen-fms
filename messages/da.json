@@ -1,0 +1,37 @@
+{
+  "work": {
+    "title": "Værkstedet",
+    "scan": "Scan",
+    "toBuild": "Skal bygges",
+    "toRepair": "Skal repareres",
+    "readySub": "{count} klar",
+    "inProgressSub": "{count} i gang",
+    "emptyRepairTitle": "Intet at reparere",
+    "emptyRepairBody": "Nye arbejdskort dukker automatisk op her. Scan en cykel for at oprette et fra en sag.",
+    "emptyBuildTitle": "Intet at bygge",
+    "emptyBuildBody": "Cykler på åbne produktionsordrer dukker op her. Opret en produktionsordre og tilføj cykler for at starte en batch.",
+    "chipInProgress": "I gang",
+    "chipOpen": "Åben",
+    "chipReady": "Klar",
+    "chipAtPainter": "Hos lakereren",
+    "chipPartsShort": "{count, plural, one {mangler 1 del} other {mangler # dele}}",
+    "chipFrameToConfirm": "bekræft stelnummer"
+  },
+  "scan": {
+    "back": "Tilbage",
+    "title": "Scan QR-mærkat",
+    "pageHint": "Peg bagkameraet mod en Jensen-cykelmærkat. Siden skifter, så snart koden er genkendt.",
+    "openingCamera": "Åbner kamera…",
+    "pointAtSticker": "Peg mod en QR-mærkat",
+    "cameraFailedTitle": "Kameraet kunne ikke startes.",
+    "cameraFailedBody": "{message}. Tjek browserens kameratilladelse, eller indtast et stelnummer / en cykel-URL nedenfor.",
+    "cameraDefaultError": "Kameraet kunne ikke startes",
+    "scannedLabel": "Scannet:",
+    "manualLabel": "Eller indtast et stelnummer / indsæt en URL",
+    "manualPlaceholder": "JP-2026-… eller indsæt en /b/…-URL",
+    "go": "Gå",
+    "installDismiss": "Skjul tip",
+    "installIos": "<b>Træt af at give kameraet lov hver gang?</b> Tryk på <share></share> del-knappen i Safari, og vælg <i>Føj til hjemmeskærm</i>. Når appen startes fra ikonet på hjemmeskærmen, huskes kameratilladelsen, og den føles som en rigtig app.",
+    "installAndroid": "<b>Træt af at give kameraet lov hver gang?</b> Åbn browserens menu og vælg <i>Installer app</i> (eller <i>Føj til hjemmeskærm</i>). Når appen startes fra ikonet på hjemmeskærmen, husker den kameratilladelsen."
+  }
+}

@@ -249,6 +249,15 @@ and means the paint routes never need a rename at all.
   then sweep every module keyed off `app_language`; **`de` locale
   scaffolded but untranslated** (German has no user yet). Customer-facing
   documents keep their own per-document `language` — unchanged.
+  - ✅ Foundation + first worker screens SHIPPED 2026-07-11: next-intl
+    without URL routing, locale per surface from app_settings (middleware
+    stamps x-pathname; worker paths → worker_language, rest →
+    app_language), en/da/de message files with English fallback merge;
+    `/work` floor + `/scan` fully translated and browser-verified in both
+    languages. Settings still `en` — flipping worker_language to `da` at
+    admin → settings is the go-live.
+  - Remaining: `/work/[woId]` workspace + parts add screen, build
+    workbench, then the app-wide sweep.
 - **Phone→ticket pipeline v1** (~4 d) — deep dive below. Built
   harness-first; Twilio wired last.
 

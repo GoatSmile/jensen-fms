@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Share, X } from "lucide-react";
 
 /**
@@ -17,6 +18,7 @@ import { Share, X } from "lucide-react";
 const DISMISS_KEY = "scan-install-hint-dismissed";
 
 export function InstallHint() {
+  const t = useTranslations("scan");
   const [state, setState] = useState<
     | { kind: "hidden" }
     | { kind: "ios" }
@@ -64,25 +66,27 @@ export function InstallHint() {
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dismiss hint"
+        aria-label={t("installDismiss")}
         className="hover:bg-muted absolute right-1.5 top-1.5 rounded p-1"
       >
         <X className="size-3.5" aria-hidden />
       </button>
       {state.kind === "ios" ? (
         <p>
-          <strong>Tired of allowing the camera every time?</strong> Tap the{" "}
-          <Share className="mx-0.5 inline size-3.5" aria-hidden /> share
-          button in Safari, then <em>Add to Home Screen</em>. Launching from
-          the home-screen icon remembers the camera permission and feels
-          like a native app.
+          {t.rich("installIos", {
+            b: (chunks) => <strong>{chunks}</strong>,
+            i: (chunks) => <em>{chunks}</em>,
+            share: () => (
+              <Share className="mx-0.5 inline size-3.5" aria-hidden />
+            ),
+          })}
         </p>
       ) : (
         <p>
-          <strong>Tired of allowing the camera every time?</strong> Open
-          your browser menu and pick <em>Install app</em> (or{" "}
-          <em>Add to Home Screen</em>). Launched from the home-screen icon
-          the camera permission sticks.
+          {t.rich("installAndroid", {
+            b: (chunks) => <strong>{chunks}</strong>,
+            i: (chunks) => <em>{chunks}</em>,
+          })}
         </p>
       )}
     </div>

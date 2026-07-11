@@ -49,8 +49,10 @@ export type BuildQueueBike = {
   ready: boolean;
   /** Count of distinct parts short of stock. */
   shortfallCount: number;
-  /** Human reason when not ready (null when ready). */
-  blockedReason: string | null;
+  /** Physically away on a build-blocking service order (takes precedence
+   * over a parts shortfall as the blocked reason — the frame isn't here).
+   * The consuming screen composes the human label, in its own language. */
+  atSupplier: boolean;
 };
 
 const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
@@ -168,15 +170,10 @@ export async function loadBuildQueue(
       if ((stockByPart.get(r.partId) ?? 0) < r.qty) shortfallCount += 1;
     }
 
-    // At-painter takes precedence over a parts shortfall: the frame isn't
+    // At-supplier takes precedence over a parts shortfall: the frame isn't
     // here to build, so that's the reason to surface no matter the stock.
-    const atPainter = atPainterIds.has(b.id);
-    const ready = !atPainter && shortfallCount === 0;
-    const blockedReason = atPainter
-      ? "At painter"
-      : shortfallCount > 0
-        ? `${shortfallCount} part${shortfallCount === 1 ? "" : "s"} short`
-        : null;
+    const atSupplier = atPainterIds.has(b.id);
+    const ready = !atSupplier && shortfallCount === 0;
 
     return {
       bikeId: b.id,
@@ -198,7 +195,7 @@ export async function loadBuildQueue(
       buildNote,
       ready,
       shortfallCount,
-      blockedReason,
+      atSupplier,
     };
   });
 

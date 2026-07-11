@@ -1,0 +1,37 @@
+{
+  "work": {
+    "title": "Workshop floor",
+    "scan": "Scan",
+    "toBuild": "To build",
+    "toRepair": "To repair",
+    "readySub": "{count} ready",
+    "inProgressSub": "{count} in progress",
+    "emptyRepairTitle": "Nothing to repair",
+    "emptyRepairBody": "New work orders show up here automatically. Scan a bike to create one from a ticket.",
+    "emptyBuildTitle": "Nothing to build",
+    "emptyBuildBody": "Bikes on open manufacturing orders show up here. Create an MO and add bikes to start a batch.",
+    "chipInProgress": "In progress",
+    "chipOpen": "Open",
+    "chipReady": "Ready",
+    "chipAtPainter": "At painter",
+    "chipPartsShort": "{count, plural, one {1 part short} other {# parts short}}",
+    "chipFrameToConfirm": "frame to confirm"
+  },
+  "scan": {
+    "back": "Back",
+    "title": "Scan QR sticker",
+    "pageHint": "Point the back camera at any Jensen bike sticker. The page will navigate as soon as the code is recognised.",
+    "openingCamera": "Opening camera…",
+    "pointAtSticker": "Point at a QR sticker",
+    "cameraFailedTitle": "Couldn't start the camera.",
+    "cameraFailedBody": "{message}. Check the browser permission, or paste a frame number / bike URL below.",
+    "cameraDefaultError": "Could not start the camera",
+    "scannedLabel": "Scanned:",
+    "manualLabel": "Or enter a frame number / paste a URL",
+    "manualPlaceholder": "JP-2026-… or paste a /b/… URL",
+    "go": "Go",
+    "installDismiss": "Dismiss hint",
+    "installIos": "<b>Tired of allowing the camera every time?</b> Tap the <share></share> share button in Safari, then <i>Add to Home Screen</i>. Launching from the home-screen icon remembers the camera permission and feels like a native app.",
+    "installAndroid": "<b>Tired of allowing the camera every time?</b> Open your browser menu and pick <i>Install app</i> (or <i>Add to Home Screen</i>). Launched from the home-screen icon the camera permission sticks."
+  }
+}

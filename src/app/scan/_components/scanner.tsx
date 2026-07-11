@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CameraOff, ScanLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
  */
 export function Scanner() {
   const router = useRouter();
+  const t = useTranslations("scan");
   const containerRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<unknown>(null); // Html5Qrcode instance
   const [status, setStatus] = useState<
@@ -76,9 +78,7 @@ export function Scanner() {
         setStatus({
           kind: "error",
           message:
-            err instanceof Error
-              ? err.message
-              : "Could not start the camera.",
+            err instanceof Error ? err.message : t("cameraDefaultError"),
         });
       }
     }
@@ -136,7 +136,7 @@ export function Scanner() {
           });
       }
     };
-  }, [router]);
+  }, [router, t]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -144,12 +144,12 @@ export function Scanner() {
         <div ref={containerRef} className="aspect-square w-full" />
         {status.kind === "starting" ? (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
-            Opening camera…
+            {t("openingCamera")}
           </div>
         ) : null}
         {status.kind === "scanning" ? (
           <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs text-white">
-            <ScanLine className="size-3.5" aria-hidden /> Point at a QR sticker
+            <ScanLine className="size-3.5" aria-hidden /> {t("pointAtSticker")}
           </div>
         ) : null}
       </div>
@@ -158,10 +158,9 @@ export function Scanner() {
         <div className="bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border border-destructive/30 p-3 text-sm">
           <CameraOff className="mt-0.5 size-4 shrink-0" aria-hidden />
           <div className="flex flex-col gap-1">
-            <p className="font-medium">Couldn&rsquo;t start the camera.</p>
+            <p className="font-medium">{t("cameraFailedTitle")}</p>
             <p className="text-xs">
-              {status.message}. Check the browser permission, or paste a
-              frame number / bike URL below.
+              {t("cameraFailedBody", { message: status.message })}
             </p>
           </div>
         </div>
@@ -169,7 +168,7 @@ export function Scanner() {
 
       {status.kind === "decoded" ? (
         <div className="bg-muted/40 rounded-md border p-3 text-sm">
-          <p className="font-medium">Scanned:</p>
+          <p className="font-medium">{t("scannedLabel")}</p>
           <p className="text-muted-foreground font-mono text-xs break-all">
             {status.value}
           </p>
@@ -183,6 +182,7 @@ export function Scanner() {
 
 function ManualEntry() {
   const router = useRouter();
+  const t = useTranslations("scan");
   const [value, setValue] = useState("");
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -219,7 +219,7 @@ function ManualEntry() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-1.5">
       <label className="text-muted-foreground text-xs" htmlFor="manual-entry">
-        Or enter a frame number / paste a URL
+        {t("manualLabel")}
       </label>
       <div className="flex gap-2">
         <input
@@ -227,10 +227,10 @@ function ManualEntry() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="border-input bg-background flex-1 rounded-md border px-3 py-2 text-sm font-mono"
-          placeholder="JP-2026-… or paste a /b/… URL"
+          placeholder={t("manualPlaceholder")}
         />
         <Button type="submit" disabled={!value.trim()}>
-          Go
+          {t("go")}
         </Button>
       </div>
     </form>

@@ -1054,15 +1054,27 @@ The durable home for ideas parked mid-session (session "chips" die with the
 app). Add new ones here with enough context to act cold; delete the entry
 when the work ships or the idea is rejected.
 
-- **Full UI internationalisation — UNPARKED 2026-07-09, July track.** Scope
-  decided: **whole app to Danish** (not just worker screens), `de` locale
-  scaffolded but untranslated (German ops is strategic, no user yet — from
-  the Jul-9 call). Build order: next-intl foundation → worker screens keyed
-  off `worker_language` (the employee who can't work in English) → app-wide
-  sweep keyed off `app_language`. The two settings exist (migration 49) and
-  currently only capture the preference. Customer-facing documents keep
-  their own per-document `language`. `worker_language` becomes per-user at
-  M1. See `docs/plan-july9-vacation-month.md`.
+- **Full UI internationalisation — IN PROGRESS (foundation SHIPPED
+  2026-07-11).** Scope: **whole app to Danish**, `de` scaffolded but
+  untranslated (German ops is strategic, no user yet). What's live:
+  - **Mechanism**: next-intl WITHOUT URL routing — locale comes from
+    `app_settings`, per surface. `src/middleware.ts` stamps `x-pathname`;
+    `src/i18n/request.ts` resolves worker surfaces (`/work`, `/scan`, the
+    build workbench + batch build, via `WORKER_PATH`) to `worker_language`
+    and everything else to `app_language`. Missing keys deep-merge back to
+    English (a partial translation degrades gracefully, never crashes).
+    Messages in `messages/{en,da,de}.json`, namespaced per surface;
+    `NextIntlClientProvider` in the root layout serves client components.
+  - **Translated so far**: `/work` floor + `/scan` (complete, browser-
+    verified in both languages; `loadBuildQueue` now returns a structured
+    `atSupplier`/`shortfallCount` instead of an English `blockedReason` —
+    screens own the words). Both settings sit at `en` — flipping
+    `worker_language` to `da` is the 1-click go-live for the Danish worker.
+  - **Remaining**: WO workspace cluster (`/work/[woId]` + parts add), the
+    build workbench, then the app-wide sweep keyed off `app_language`.
+    Customer-facing documents keep their own per-document `language`.
+    `worker_language` becomes per-user at M1. See
+    `docs/plan-july9-vacation-month.md`.
 
 - **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure

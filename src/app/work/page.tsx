@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, ScanLine, Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export default async function WorkQueuePage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
+  const t = await getTranslations("work");
   const supabase = await createClient();
 
   const [woRes, buildQueue] = await Promise.all([
@@ -88,10 +90,10 @@ export default async function WorkQueuePage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 p-4 sm:p-6">
       <header className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Workshop floor</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <Button asChild size="sm" variant="outline">
           <Link href="/scan">
-            <ScanLine className="mr-1 size-4" aria-hidden /> Scan
+            <ScanLine className="mr-1 size-4" aria-hidden /> {t("scan")}
           </Link>
         </Button>
       </header>
@@ -103,25 +105,25 @@ export default async function WorkQueuePage({
         <TabLink
           active={activeTab === "build"}
           href="/work?tab=build"
-          label="To build"
+          label={t("toBuild")}
           count={buildQueue.length}
-          sub={`${buildReadyCount} ready`}
+          sub={t("readySub", { count: buildReadyCount })}
         />
         <TabLink
           active={activeTab === "repair"}
           href="/work?tab=repair"
-          label="To repair"
+          label={t("toRepair")}
           count={repairRows.length}
-          sub={`${inProgressCount} in progress`}
+          sub={t("inProgressSub", { count: inProgressCount })}
         />
       </div>
 
       {activeTab === "build" ? (
-        <BuildStream bikes={buildQueue} />
+        <BuildStream bikes={buildQueue} t={t} />
       ) : repairRows.length === 0 ? (
         <EmptyState
-          title="Nothing to repair"
-          body="New work orders show up here automatically. Scan a bike to create one from a ticket."
+          title={t("emptyRepairTitle")}
+          body={t("emptyRepairBody")}
         />
       ) : (
         <ul className="flex flex-col gap-2.5">
@@ -168,11 +170,11 @@ export default async function WorkQueuePage({
                           </span>
                           {inProgress ? (
                             <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">
-                              In progress
+                              {t("chipInProgress")}
                             </span>
                           ) : (
                             <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                              Open
+                              {t("chipOpen")}
                             </span>
                           )}
                         </div>
@@ -254,13 +256,16 @@ function TabLink({
   );
 }
 
-function BuildStream({ bikes }: { bikes: BuildQueueBike[] }) {
+function BuildStream({
+  bikes,
+  t,
+}: {
+  bikes: BuildQueueBike[];
+  t: Awaited<ReturnType<typeof getTranslations<"work">>>;
+}) {
   if (bikes.length === 0) {
     return (
-      <EmptyState
-        title="Nothing to build"
-        body="Bikes on open manufacturing orders show up here. Create an MO and add bikes to start a batch."
-      />
+      <EmptyState title={t("emptyBuildTitle")} body={t("emptyBuildBody")} />
     );
   }
   return (
@@ -288,16 +293,18 @@ function BuildStream({ bikes }: { bikes: BuildQueueBike[] }) {
                     </span>
                     {b.ready ? (
                       <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                        Ready
+                        {t("chipReady")}
                       </span>
                     ) : (
                       <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                        {b.blockedReason}
+                        {b.atSupplier
+                          ? t("chipAtPainter")
+                          : t("chipPartsShort", { count: b.shortfallCount })}
                       </span>
                     )}
                     {!b.frameConfirmed ? (
                       <span className="text-muted-foreground rounded-full border px-1.5 py-0.5 text-[10px] font-medium">
-                        frame to confirm
+                        {t("chipFrameToConfirm")}
                       </span>
                     ) : null}
                   </div>
