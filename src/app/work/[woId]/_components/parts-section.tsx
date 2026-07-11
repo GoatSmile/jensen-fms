@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ type Props = {
  * full-screen add-parts page (kit shortcuts, multi-add, steppers).
  */
 export function PartsSection({ woId, rows, readOnly }: Props) {
+  const t = useTranslations("wo");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -59,10 +61,10 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Wrench className="size-4 text-indigo-600" aria-hidden />
-          <h2 className="text-sm font-semibold">Parts used</h2>
+          <h2 className="text-sm font-semibold">{t("partsTitle")}</h2>
           <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
             {rows.length === 0 ? (
-              "None yet"
+              t("noneYet")
             ) : (
               <>
                 {rows.length} ·{" "}
@@ -74,7 +76,7 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
         {!readOnly ? (
           <Button asChild size="sm" variant="outline">
             <Link href={`/work/${woId}/parts`}>
-              <Plus className="size-4" aria-hidden /> Add parts
+              <Plus className="size-4" aria-hidden /> {t("addParts")}
             </Link>
           </Button>
         ) : null}
@@ -88,8 +90,7 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground py-2 text-sm italic">
-          No parts consumed yet. Add the parts you actually used so the
-          bike&rsquo;s service history and the invoice match.
+          {t("partsEmpty")}
         </p>
       ) : (
         <ul className="divide-y">
@@ -133,7 +134,7 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
                       type="button"
                       size="icon-sm"
                       variant="ghost"
-                      aria-label={`Remove ${row.partName}`}
+                      aria-label={t("removePart", { name: row.partName })}
                       onClick={() => onRemove(row.id)}
                       disabled={pending && removingId === row.id}
                     >

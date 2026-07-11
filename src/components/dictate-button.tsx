@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Mic, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ export function DictateButton({
   label,
   className,
 }: Props) {
+  const t = useTranslations("dictate");
   const [supported, setSupported] = useState(true);
   const [language, setLanguage] = useState<DictateLanguage>(defaultLanguage);
   const [listening, setListening] = useState(false);
@@ -145,24 +147,18 @@ export function DictateButton({
       // technician can act on. "no-speech" / "aborted" are routine (nobody
       // talked, or we stopped/restarted) so we stay quiet on those.
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setErrorMessage(
-          "Microphone access was blocked. Check your browser permissions.",
-        );
+        setErrorMessage(t("errorBlocked"));
       } else if (e.error === "network") {
         // The browser couldn't reach its speech backend (Google's, on Chrome
         // desktop). Nothing app-side can fix the round-trip — point at the
         // reliable alternatives instead of showing raw "network".
-        setErrorMessage(
-          "Couldn't reach the browser's speech service. On a laptop this often fails — try again, type in the box above, or use your keyboard's mic key.",
-        );
+        setErrorMessage(t("errorNetwork"));
       } else if (e.error === "audio-capture") {
-        setErrorMessage(
-          "No microphone found. Plug one in, or type in the box above.",
-        );
+        setErrorMessage(t("errorNoMic"));
       } else if (e.error === "no-speech" || e.error === "aborted") {
         // ignore — common at the end of an utterance / on stop
       } else {
-        setErrorMessage(e.message || `Speech error: ${e.error}`);
+        setErrorMessage(e.message || t("errorGeneric", { code: e.error }));
       }
     };
 
@@ -185,9 +181,7 @@ export function DictateButton({
       recRef.current = r;
       setListening(true);
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Could not start the microphone.",
-      );
+      setErrorMessage(err instanceof Error ? err.message : t("errorStart"));
     }
   }
 
@@ -239,7 +233,7 @@ export function DictateButton({
             className="h-11 flex-1"
           >
             <Square className="size-4 fill-current" aria-hidden />
-            Listening… tap to stop
+            {t("listening")}
           </Button>
         ) : (
           <Button
@@ -251,7 +245,7 @@ export function DictateButton({
             className="h-11 flex-1"
           >
             <Mic className="size-4" aria-hidden />
-            {label ?? "Dictate"}
+            {label ?? t("dictate")}
           </Button>
         )}
 
@@ -267,17 +261,14 @@ export function DictateButton({
             "border-input hover:bg-muted shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-mono tabular-nums transition-colors",
             listening && "cursor-not-allowed opacity-50",
           )}
-          aria-label={`Dictation language: ${language}. Tap to switch.`}
+          aria-label={t("languageAria", { language })}
         >
           {language === "da-DK" ? "DA" : "EN"}
         </button>
       </div>
 
       {!supported ? (
-        <p className="text-muted-foreground text-xs">
-          Your browser doesn&rsquo;t support in-app dictation. Tap the mic
-          key on your keyboard instead.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("unsupported")}</p>
       ) : null}
 
       {/* Live interim transcript — italic so the tech can see speech is
@@ -301,7 +292,7 @@ export function DictateButton({
               onClick={acceptPending}
               className="flex-1"
             >
-              Append to notes
+              {t("append")}
             </Button>
             <Button
               type="button"
@@ -309,7 +300,7 @@ export function DictateButton({
               variant="ghost"
               onClick={discardPending}
             >
-              <X className="size-4" aria-hidden /> Discard
+              <X className="size-4" aria-hidden /> {t("discard")}
             </Button>
           </div>
         </div>
@@ -327,7 +318,7 @@ export function DictateButton({
           onClick={abort}
           className="text-muted-foreground hover:text-foreground self-start text-xs underline-offset-4 hover:underline"
         >
-          Cancel without saving
+          {t("cancel")}
         </button>
       ) : null}
     </div>

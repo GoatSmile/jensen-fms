@@ -1065,13 +1065,18 @@ when the work ships or the idea is rejected.
     English (a partial translation degrades gracefully, never crashes).
     Messages in `messages/{en,da,de}.json`, namespaced per surface;
     `NextIntlClientProvider` in the root layout serves client components.
-  - **Translated so far**: `/work` floor + `/scan` (complete, browser-
-    verified in both languages; `loadBuildQueue` now returns a structured
-    `atSupplier`/`shortfallCount` instead of an English `blockedReason` —
-    screens own the words). Both settings sit at `en` — flipping
-    `worker_language` to `da` is the 1-click go-live for the Danish worker.
-  - **Remaining**: WO workspace cluster (`/work/[woId]` + parts add), the
-    build workbench, then the app-wide sweep keyed off `app_language`.
+  - **Translated so far**: `/work` floor + `/scan`, and the WO workspace
+    cluster — `/work/[woId]` (notes, parts, photos), `/work/[woId]/parts`
+    add-parts screen, and the shared `DictateButton` (namespaces `wo` /
+    `woParts` / `dictate`). All browser-verified in both languages.
+    Altitude fixes along the way: `loadBuildQueue` returns structured
+    `atSupplier`/`shortfallCount` instead of an English `blockedReason`,
+    and `src/lib/work/elapsed.ts` is word-free (`atTimeLabel` +
+    `elapsedShort`; screens compose "Started {time} · {elapsed} ago" from
+    messages). Both settings sit at `en` — flipping `worker_language` to
+    `da` is the 1-click go-live for the Danish worker.
+  - **Remaining**: the build workbench (+ batch build), then the app-wide
+    sweep keyed off `app_language`.
     Customer-facing documents keep their own per-document `language`.
     `worker_language` becomes per-user at M1. See
     `docs/plan-july9-vacation-month.md`.

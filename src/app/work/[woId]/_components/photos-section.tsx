@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Camera, ImageOff, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ type Props = {
  * uploads so we keep one resize codepath.
  */
 export function PhotosSection({ woId, photos, readOnly }: Props) {
+  const t = useTranslations("wo");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -56,11 +58,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
       }
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Could not process the photo. Try again.",
-      );
+      setError(err instanceof Error ? err.message : t("photoProcessError"));
     } finally {
       setUploading(false);
     }
@@ -85,11 +83,11 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Camera className="size-4 text-slate-600" aria-hidden />
-          <h2 className="text-sm font-semibold">Photos</h2>
+          <h2 className="text-sm font-semibold">{t("photosTitle")}</h2>
           <span className="text-muted-foreground text-xs">
             {photos.length === 0
-              ? "None yet"
-              : `${photos.length} photo${photos.length === 1 ? "" : "s"}`}
+              ? t("noneYet")
+              : t("photoCount", { count: photos.length })}
           </span>
         </div>
         {!readOnly ? (
@@ -102,11 +100,12 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
           >
             {uploading ? (
               <>
-                <Loader2 className="size-4 animate-spin" aria-hidden /> Uploading…
+                <Loader2 className="size-4 animate-spin" aria-hidden />{" "}
+                {t("uploading")}
               </>
             ) : (
               <>
-                <Camera className="size-4" aria-hidden /> Take photo
+                <Camera className="size-4" aria-hidden /> {t("takePhoto")}
               </>
             )}
           </Button>
@@ -132,7 +131,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
       {photos.length === 0 ? (
         <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm italic">
           <ImageOff className="size-4" aria-hidden />
-          No photos yet. Snap one if a part needs explaining.
+          {t("photosEmpty")}
         </div>
       ) : (
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -147,7 +146,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
                 {/* eslint-disable-next-line @next/next/no-img-element -- Public Supabase storage URL; Next/Image not configured for that domain. */}
                 <img
                   src={p.fileUrl}
-                  alt={p.fileName ?? "Work order photo"}
+                  alt={p.fileName ?? t("photoAlt")}
                   className="aspect-square w-full object-cover"
                 />
               </a>
@@ -157,7 +156,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
                   onClick={() => onDelete(p.id)}
                   disabled={deletingId === p.id}
                   className="bg-background/90 hover:bg-background absolute right-1 top-1 rounded-md border p-1 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-50"
-                  aria-label="Remove photo"
+                  aria-label={t("removePhoto")}
                 >
                   <X className="size-3.5" aria-hidden />
                 </button>

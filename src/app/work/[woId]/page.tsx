@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ArrowLeft, Bike } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
-import {
-  WO_STATUS_LABEL,
-  type WorkOrderStatus,
-} from "@/lib/maintenance/work-order-status";
-import { startedFullLabel } from "@/lib/work/elapsed";
+import { type WorkOrderStatus } from "@/lib/maintenance/work-order-status";
+import { atTimeLabel, elapsedShort } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
 import type { WOPartRow } from "./_components/parts-section";
@@ -39,6 +37,7 @@ export default async function WorkspacePage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
+  const t = await getTranslations("wo");
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -140,11 +139,17 @@ export default async function WorkspacePage({
 
   const bannerSubtitle =
     status === "in_progress" && wo.started_at
-      ? startedFullLabel(wo.started_at)
+      ? t("startedSubtitle", {
+          time: atTimeLabel(wo.started_at),
+          elapsed: elapsedShort(wo.started_at),
+        })
       : status === "completed" && wo.completed_at
-        ? `Completed ${startedFullLabel(wo.completed_at, { includeElapsed: false })}`
+        ? t("completedSubtitle", { time: atTimeLabel(wo.completed_at) })
         : status === "open" && wo.created_at
-          ? `Created ${startedFullLabel(wo.created_at)}`
+          ? t("createdSubtitle", {
+              time: atTimeLabel(wo.created_at),
+              elapsed: elapsedShort(wo.created_at),
+            })
           : null;
 
   return (
@@ -152,7 +157,7 @@ export default async function WorkspacePage({
       <div className="flex items-center justify-between gap-2 pb-3">
         <Button asChild variant="ghost" size="sm">
           <Link href="/work">
-            <ArrowLeft className="mr-1 size-4" aria-hidden /> Queue
+            <ArrowLeft className="mr-1 size-4" aria-hidden /> {t("backToQueue")}
           </Link>
         </Button>
       </div>
@@ -172,7 +177,7 @@ export default async function WorkspacePage({
                 className="size-2 animate-pulse rounded-full bg-white/90"
               />
             ) : null}
-            {WO_STATUS_LABEL[status]}
+            {t(`status.${status}`)}
           </span>
           {bannerSubtitle ? (
             <span className="text-[11px] font-medium tabular-nums opacity-90 sm:text-xs">
@@ -213,7 +218,7 @@ export default async function WorkspacePage({
           ) : null}
           {wo.ticket ? (
             <p className="bg-muted/40 text-muted-foreground mt-2 rounded-md px-3 py-2 text-xs">
-              From ticket{" "}
+              {t("fromTicket")}{" "}
               <Link
                 href={`/maintenance/tickets/${wo.ticket.id}`}
                 className="hover:text-foreground underline-offset-4 hover:underline"

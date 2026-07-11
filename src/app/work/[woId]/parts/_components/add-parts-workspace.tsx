@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Check,
   ChevronLeft,
@@ -76,6 +77,7 @@ export function AddPartsWorkspace({
   catalog,
   kits,
 }: Props) {
+  const t = useTranslations("woParts");
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export function AddPartsWorkspace({
       const r = await fn();
       setBusyKey(null);
       if (!r.ok) {
-        setError(r.error ?? "Something went wrong.");
+        setError(r.error ?? t("genericError"));
         return;
       }
       if (successNotice) {
@@ -139,8 +141,8 @@ export function AddPartsWorkspace({
         const added = Number(r.added ?? 0);
         const skipped = Number(r.skipped ?? 0);
         return skipped > 0
-          ? `${code}: added ${added} part${added === 1 ? "" : "s"}, ${skipped} already on the work order.`
-          : `${code}: added ${added} part${added === 1 ? "" : "s"}.`;
+          ? t("kitNoticeSkipped", { code, added, skipped })
+          : t("kitNotice", { code, added });
       },
     );
   }
@@ -168,7 +170,7 @@ export function AddPartsWorkspace({
       <header className="bg-background sticky top-0 z-10 -mx-4 flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 sm:-mx-6 sm:px-6">
         <div className="flex min-w-0 flex-col">
           <span className="text-muted-foreground font-mono text-[10px] font-medium uppercase tracking-wider">
-            {woNumber} · add parts
+            {woNumber} · {t("headerSuffix")}
           </span>
           <span className="truncate font-mono text-lg font-bold tracking-tight">
             {frameNumber ?? "—"}
@@ -176,8 +178,7 @@ export function AddPartsWorkspace({
         </div>
         <Button asChild size="lg" className="h-11">
           <Link href={`/work/${woId}`}>
-            <ChevronLeft className="size-4" aria-hidden /> Done — back to work
-            order
+            <ChevronLeft className="size-4" aria-hidden /> {t("done")}
           </Link>
         </Button>
       </header>
@@ -204,7 +205,7 @@ export function AddPartsWorkspace({
         {kits.length > 0 ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              This bike&rsquo;s kits
+              {t("kitsTitle")}
             </h2>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {kits.map((kit) => {
@@ -225,9 +226,9 @@ export function AddPartsWorkspace({
                         {code}
                       </span>
                       <span className="text-xs font-medium opacity-90">
-                        {kit.totalParts} part{kit.totalParts === 1 ? "" : "s"}
+                        {t("kitPartCount", { count: kit.totalParts })}
                         {kit.alreadyAdded > 0
-                          ? ` · ${kit.alreadyAdded} added`
+                          ? ` · ${t("kitAddedSuffix", { count: kit.alreadyAdded })}`
                           : ""}
                       </span>
                     </div>
@@ -241,13 +242,13 @@ export function AddPartsWorkspace({
                       >
                         {allAdded ? (
                           <>
-                            <Check className="size-4" aria-hidden /> All on the
-                            work order
+                            <Check className="size-4" aria-hidden />{" "}
+                            {t("kitAllAdded")}
                           </>
                         ) : (
                           <>
                             <Package className="size-4" aria-hidden />
-                            {busy ? "Adding…" : "I grabbed this kit"}
+                            {busy ? t("adding") : t("kitGrab")}
                           </>
                         )}
                       </Button>
@@ -263,11 +264,11 @@ export function AddPartsWorkspace({
         <section className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              On this work order ({tray.length})
+              {t("trayTitle", { count: tray.length })}
             </h2>
             {tray.length > 0 ? (
               <span className="text-xs tabular-nums">
-                Total (excl. VAT):{" "}
+                {t("trayTotal")}{" "}
                 <span className="font-semibold">
                   <Money amount={retailTotal} currency="DKK" bold={false} />
                 </span>
@@ -276,7 +277,7 @@ export function AddPartsWorkspace({
           </div>
           {tray.length === 0 ? (
             <p className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm italic">
-              Nothing yet — grab a kit above or add parts below.
+              {t("trayEmpty")}
             </p>
           ) : (
             <ul className="divide-y rounded-md border">
@@ -301,7 +302,7 @@ export function AddPartsWorkspace({
                               currency="DKK"
                               bold={false}
                             />
-                            {" / pc"}
+                            {` ${t("perPiece")}`}
                           </span>
                         ) : null}
                       </span>
@@ -311,7 +312,7 @@ export function AddPartsWorkspace({
                         type="button"
                         size="icon"
                         variant="outline"
-                        aria-label={`One less ${row.name}`}
+                        aria-label={t("oneLess", { name: row.name })}
                         onClick={() => onChangeQty(row, row.quantity - 1)}
                         disabled={pending || row.quantity <= 1}
                       >
@@ -324,7 +325,7 @@ export function AddPartsWorkspace({
                         type="button"
                         size="icon"
                         variant="outline"
-                        aria-label={`One more ${row.name}`}
+                        aria-label={t("oneMore", { name: row.name })}
                         onClick={() => onChangeQty(row, row.quantity + 1)}
                         disabled={pending}
                       >
@@ -334,7 +335,7 @@ export function AddPartsWorkspace({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        aria-label={`Remove ${row.name}`}
+                        aria-label={t("remove", { name: row.name })}
                         onClick={() => onRemove(row)}
                         disabled={pending}
                         className="text-muted-foreground hover:text-destructive"
@@ -342,7 +343,9 @@ export function AddPartsWorkspace({
                         <Trash2 className="size-4" aria-hidden />
                       </Button>
                     </div>
-                    {rowBusy ? <span className="sr-only">Working…</span> : null}
+                    {rowBusy ? (
+                      <span className="sr-only">{t("working")}</span>
+                    ) : null}
                   </li>
                 );
               })}
@@ -353,7 +356,7 @@ export function AddPartsWorkspace({
         {/* Catalog — add stays on the page; repeat taps become +1. */}
         <section className="flex flex-col gap-2">
           <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            Add more parts
+            {t("addMoreTitle")}
           </h2>
           <div className="relative">
             <Search
@@ -363,13 +366,13 @@ export function AddPartsWorkspace({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by SKU, name, category…"
+              placeholder={t("searchPlaceholder")}
               className="h-11 pl-9"
             />
           </div>
           {filtered.length === 0 ? (
             <p className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm italic">
-              No parts match.
+              {t("noMatch")}
             </p>
           ) : (
             <ul className="divide-y rounded-md border">
@@ -435,10 +438,10 @@ export function AddPartsWorkspace({
                           disabled={pending}
                         >
                           {busy ? (
-                            "Adding…"
+                            t("adding")
                           ) : (
                             <>
-                              <Plus className="size-4" aria-hidden /> Add
+                              <Plus className="size-4" aria-hidden /> {t("add")}
                             </>
                           )}
                         </Button>

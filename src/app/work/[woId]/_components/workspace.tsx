@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2, Play, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ export function Workspace({
   partRows,
   photos,
 }: Props) {
+  const t = useTranslations("wo");
   const router = useRouter();
   const [diagnosis, setDiagnosis] = useState(initialDiagnosis);
   const [workPerformed, setWorkPerformed] = useState(initialWorkPerformed);
@@ -115,8 +117,8 @@ export function Workspace({
         {/* Diagnosis — amber accent (problem). */}
         <NotesField
           id={`diagnosis-${woId}`}
-          label="Diagnosis"
-          description="What's wrong with the bike?"
+          label={t("diagnosisLabel")}
+          description={t("diagnosisDescription")}
           icon={
             <AlertTriangle
               className="size-4 text-amber-600"
@@ -127,15 +129,15 @@ export function Workspace({
           value={diagnosis}
           onChange={setDiagnosis}
           dictateLang={defaultDictateLang}
-          dictateLabel="Dictate diagnosis"
+          dictateLabel={t("diagnosisDictate")}
           readOnly={readOnly}
         />
 
         {/* Work performed — emerald accent (solution). */}
         <NotesField
           id={`work-${woId}`}
-          label="Work performed"
-          description="What did you do? Parts replaced, adjustments, observations."
+          label={t("workPerformedLabel")}
+          description={t("workPerformedDescription")}
           icon={
             <CheckCircle2
               className="size-4 text-emerald-600"
@@ -146,7 +148,7 @@ export function Workspace({
           value={workPerformed}
           onChange={setWorkPerformed}
           dictateLang={defaultDictateLang}
-          dictateLabel="Dictate work performed"
+          dictateLabel={t("workPerformedDictate")}
           readOnly={readOnly}
         />
 
@@ -156,10 +158,12 @@ export function Workspace({
           <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
             <span className="text-muted-foreground text-xs">
               {dirty
-                ? "Unsaved changes"
+                ? t("unsavedChanges")
                 : savedAt
-                  ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
-                  : "Up to date"}
+                  ? t("savedAt", {
+                      time: new Date(savedAt).toLocaleTimeString("da-DK"),
+                    })
+                  : t("upToDate")}
             </span>
             <Button
               type="button"
@@ -169,7 +173,7 @@ export function Workspace({
               disabled={!dirty || saving}
             >
               <Save className="size-4" aria-hidden />
-              {saving ? "Saving…" : "Save notes"}
+              {saving ? t("saving") : t("saveNotes")}
             </Button>
           </div>
         ) : null}
@@ -185,8 +189,9 @@ export function Workspace({
 
         {readOnly ? (
           <div className="bg-muted/40 text-muted-foreground rounded-md border p-3 text-xs">
-            This work order is {status}. Notes are read-only — re-open via
-            the desktop view if you need to edit.
+            {t("readOnlyNote", {
+              status: t(`status.${status}`).toLowerCase(),
+            })}
           </div>
         ) : null}
 
@@ -210,7 +215,7 @@ export function Workspace({
                 className="h-14 flex-1 bg-blue-600 text-base font-semibold text-white hover:bg-blue-700"
               >
                 <Play className="size-5" aria-hidden />
-                {transitioning ? "Starting…" : "Start work"}
+                {transitioning ? t("starting") : t("startWork")}
               </Button>
             ) : null}
             {status === "in_progress" ? (
@@ -222,7 +227,7 @@ export function Workspace({
                 className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
               >
                 <CheckCircle2 className="size-5" aria-hidden />
-                {transitioning ? "Saving…" : "Mark done"}
+                {transitioning ? t("saving") : t("markDone")}
               </Button>
             ) : null}
           </div>
@@ -257,6 +262,7 @@ function NotesField({
   dictateLabel,
   readOnly,
 }: FieldProps) {
+  const t = useTranslations("wo");
   function appendDictated(text: string) {
     // Each dictation pass becomes its own timestamped block, so the
     // tech ends up with a chronological log instead of one smeared
@@ -286,9 +292,7 @@ function NotesField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         readOnly={readOnly}
-        placeholder={
-          readOnly ? undefined : "Type, or tap Dictate / your keyboard's mic key."
-        }
+        placeholder={readOnly ? undefined : t("notesPlaceholder")}
         className="font-sans text-sm"
       />
       {!readOnly ? (
@@ -298,9 +302,7 @@ function NotesField({
             onAppend={appendDictated}
             label={dictateLabel}
           />
-          <p className="text-muted-foreground text-xs">
-            💡 Tip: the mic key on your phone&rsquo;s keyboard also works.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("micTip")}</p>
         </>
       ) : null}
     </section>

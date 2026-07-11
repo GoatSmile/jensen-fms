@@ -53,10 +53,10 @@ treat the early totals as floors, not truth.
 | Tue 2026-07-08 | ~7 | Bike families vocab (mig 52+53); import-tax origin model (mig 54); FX stock adjust; communication settings + DNS card (mig 55+56); printable PO + email-to-supplier (mig 57); dashboard money band + trends (mig 58) |
 | Wed 2026-07-09 | ~6 | Dashboard drill-down + Excel backfill (mig 59); 3E e-conomic push live-tested (mig 60); section tints app-wide; part/SO domain bands; template hard delete; locations move; **owner call** (~40 min); July plan doc |
 | Thu 2026-07-10 | ~8 | Painter price list analyzed; service model designed + SHIPPED (migs 61+62: service_orders promotion, tiered price lists, snapshot-at-send, JP-lak retired); housekeeping drill-down + mobile photo iOS fixes; worklog set up; evening: post-ship review + fixes, template cost-to-paint (mig 63) |
-| Fri 2026-07-11 | ~4.5 | /admin/services price-list revision grid (mig 64: atomic publish RPC + tier-overlap EXCLUDE constraint); i18n foundation (next-intl, per-surface locale from app_settings) + /work floor + /scan in Danish |
+| Fri 2026-07-11 | ~5.5 | /admin/services price-list revision grid (mig 64: atomic publish RPC + tier-overlap EXCLUDE constraint); i18n foundation (next-intl, per-surface locale from app_settings) + /work floor + /scan in Danish; WO workspace cluster (/work/[woId] + add-parts + dictate button) in Danish |
 
-**July so far: ~32 h** (7 working days)
+**July so far: ~33 h** (7 working days)
 
 ---
 
-**Project total: ~115.5 h across 23 working days (2026-05-07 → 2026-07-11)**
+**Project total: ~116.5 h across 23 working days (2026-05-07 → 2026-07-11)**
