@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { MoreVertical, Star, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,8 @@ export function PhotoThumb({
   photo: PhotoRow;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("bikeDetail.photos");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -78,7 +81,7 @@ export function PhotoThumb({
           variant="default"
           className="absolute top-1.5 left-1.5 gap-1 bg-amber-500/90 text-white"
         >
-          <Star className="size-3 fill-current" /> Hero
+          <Star className="size-3 fill-current" /> {t("hero")}
         </Badge>
       ) : null}
       <div className="absolute top-1 right-1">
@@ -88,7 +91,7 @@ export function PhotoThumb({
               size="icon-sm"
               variant="secondary"
               className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
-              aria-label="Photo actions"
+              aria-label={t("photoActions")}
             >
               <MoreVertical aria-hidden />
             </Button>
@@ -101,7 +104,7 @@ export function PhotoThumb({
                 runSetHero();
               }}
             >
-              <Star aria-hidden /> Set as hero
+              <Star aria-hidden /> {t("setAsHero")}
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={pending}
@@ -116,7 +119,7 @@ export function PhotoThumb({
               }}
             >
               <Trash2 aria-hidden />{" "}
-              {confirmDelete ? "Click again to confirm" : "Delete"}
+              {confirmDelete ? tCommon("confirmRepeat") : t("delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

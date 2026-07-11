@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,6 +20,10 @@ import {
 } from "../_components/bike-form";
 
 export default async function NewBikePage() {
+  const [t, tc] = await Promise.all([
+    getTranslations("bikes"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const [bikeTypesRes, templatesRes, colorsRes] = await Promise.all([
     supabase
@@ -73,26 +78,27 @@ export default async function NewBikePage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tc("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bikes">Bikes</Link>
+              <Link href="/bikes">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("newCrumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New bike</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("newBike")}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          For one-off builds, demos, or refurb candidates. Production bikes
-          come through the manufacturing-order flow.
+          {t("newSubtitle")}
         </p>
       </div>
       <BikeForm

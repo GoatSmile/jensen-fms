@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import {
   Table,
@@ -24,23 +25,25 @@ export type InstalledPartRow = {
 };
 
 export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
+  const t = useTranslations("bikeDetail.parts");
   const active = rows.filter((r) => r.removedAt == null);
   return (
-    <Section
-      title="Parts installed"
-      description="Parts consumed when this bike was built. The build flow (Phase 2C) populates this; manually-created bikes start empty."
-    >
+    <Section title={t("title")} description={t("desc")}>
       {rows.length === 0 ? (
-        <EmptyRow>No parts on file. The build flow populates this.</EmptyRow>
+        <EmptyRow>{t("empty")}</EmptyRow>
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Part</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="hidden sm:table-cell">Installed</TableHead>
-                <TableHead className="hidden md:table-cell">Notes</TableHead>
+                <TableHead>{t("thPart")}</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("thInstalled")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thNotes")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,7 +67,7 @@ export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
                     {formatDateTime(r.installedAt)}
                     {r.removedAt ? (
                       <span className="ml-2">
-                        (removed {formatDateTime(r.removedAt)})
+                        {t("removed", { date: formatDateTime(r.removedAt) })}
                       </span>
                     ) : null}
                   </TableCell>
@@ -79,7 +82,10 @@ export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
       )}
       {rows.length > 0 && active.length !== rows.length ? (
         <p className="text-muted-foreground mt-2 text-xs">
-          {active.length} of {rows.length} parts currently installed.
+          {t("currentlyInstalled", {
+            active: active.length,
+            total: rows.length,
+          })}
         </p>
       ) : null}
     </Section>

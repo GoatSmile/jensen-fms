@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { UserCheck, UserMinus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,9 @@ export function AssignCustomerDialog({
   // statuses do the real assignment. The copy flexes so the user can tell
   // which one they're doing.
   const isSlating = bikeStatus === "planning" || bikeStatus === "building";
+  const t = useTranslations("bikeDetail.assign");
+  const tStatus = useTranslations("bikeStatus");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState(currentOwner?.organizationId ?? "");
@@ -115,7 +119,7 @@ export function AssignCustomerDialog({
     e.preventDefault();
     setError(null);
     if (!orgId) {
-      setError("Pick a customer.");
+      setError(t("pickACustomerError"));
       return;
     }
     start(async () => {
@@ -147,10 +151,10 @@ export function AssignCustomerDialog({
   }
 
   const triggerLabel = currentOwner
-    ? "Change customer"
+    ? t("changeCustomer")
     : isSlating
-      ? "Slate for customer"
-      : "Assign to customer";
+      ? t("slateFor")
+      : t("assignTo");
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -166,34 +170,21 @@ export function AssignCustomerDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>
-              {currentOwner
-                ? "Change customer"
-                : isSlating
-                  ? "Slate for customer"
-                  : "Assign to customer"}
-            </DialogTitle>
+            <DialogTitle>{triggerLabel}</DialogTitle>
             <DialogDescription>
-              {isSlating ? (
-                <>
-                  Earmark this bike for a customer so the build team knows who
-                  it&rsquo;s for. The bike stays in{" "}
-                  <em>{bikeStatus}</em> — status only flips to{" "}
-                  <em>assigned</em> at delivery (when it&rsquo;s in stock).
-                </>
-              ) : (
-                <>
-                  The bike moves to <em>assigned</em> status and its{" "}
-                  <span className="font-mono text-xs">assigned_at</span> stamp
-                  is refreshed. Use &ldquo;Unassign&rdquo; if the bike is being
-                  returned to stock.
-                </>
-              )}
+              {isSlating
+                ? t.rich("slateDesc", {
+                    status: tStatus(bikeStatus),
+                    em: (chunks) => <em>{chunks}</em>,
+                  })
+                : t.rich("assignDesc", {
+                    em: (chunks) => <em>{chunks}</em>,
+                  })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="assign-org">Customer</Label>
+            <Label htmlFor="assign-org">{t("customer")}</Label>
             <Combobox
               id="assign-org"
               value={orgId}
@@ -203,15 +194,15 @@ export function AssignCustomerDialog({
                 label: o.display_name ?? o.legal_name,
                 sublabel: o.segment_name,
               }))}
-              placeholder="Pick a customer…"
-              searchPlaceholder="Search customers…"
-              emptyMessage="No customers match."
-              emptyState="No active customers. Add one from the Customers page."
+              placeholder={t("pickCustomer")}
+              searchPlaceholder={t("searchCustomers")}
+              emptyMessage={t("noCustomersMatch")}
+              emptyState={t("noActiveCustomers")}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="assign-unit">Sub-unit (optional)</Label>
+            <Label htmlFor="assign-unit">{t("subUnitOptional")}</Label>
             <Select
               value={unitId}
               onValueChange={setUnitId}
@@ -221,15 +212,15 @@ export function AssignCustomerDialog({
                 <SelectValue
                   placeholder={
                     !orgId
-                      ? "Pick a customer first"
+                      ? t("pickCustomerFirst")
                       : unitsForOrg.length === 0
-                        ? "No sub-units"
-                        : "No sub-unit"
+                        ? t("noSubUnits")
+                        : t("noSubUnit")
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_UNIT}>No sub-unit</SelectItem>
+                <SelectItem value={NO_UNIT}>{t("noSubUnit")}</SelectItem>
                 {unitsForOrg.map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.name}
@@ -255,7 +246,7 @@ export function AssignCustomerDialog({
                 disabled={pending}
                 className="text-destructive hover:text-destructive sm:mr-auto"
               >
-                <UserMinus aria-hidden /> Unassign
+                <UserMinus aria-hidden /> {t("unassign")}
               </Button>
             ) : null}
             <Button
@@ -264,19 +255,19 @@ export function AssignCustomerDialog({
               onClick={() => handleOpenChange(false)}
               disabled={pending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={pending || !orgId}
             >
               {pending
-                ? "Saving…"
+                ? tCommon("saving")
                 : currentOwner && orgId === currentOwner.organizationId
-                  ? "Update unit"
+                  ? t("updateUnit")
                   : isSlating
-                    ? "Slate"
-                    : "Assign"}
+                    ? t("slate")
+                    : t("assign")}
             </Button>
           </DialogFooter>
         </form>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   ArchiveRestore,
   ChevronDown,
@@ -33,7 +34,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
   transitionRequiresReason,
   validNextStatuses,
   type BikeStatus,
@@ -72,6 +72,9 @@ export function BikeHeader({
   isDeleted,
   assignAction,
 }: Props) {
+  const t = useTranslations("bikeDetail");
+  const tStatus = useTranslations("bikeStatus");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -128,8 +131,7 @@ export function BikeHeader({
     <div className="flex flex-col gap-3">
       {isDeleted ? (
         <div className="bg-destructive/10 text-destructive rounded-md border border-destructive/30 px-3 py-2 text-sm">
-          This bike was soft-deleted. It is hidden from the bikes list but
-          history remains queryable. Use Restore to bring it back.
+          {t("deletedBanner")}
         </div>
       ) : null}
       {actionError ? (
@@ -151,11 +153,11 @@ export function BikeHeader({
             <Badge
               variant={BIKE_STATUS_VARIANT[status] ?? "outline"}
             >
-              {bikeStatusLabel(status)}
+              {tStatus(status)}
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {templateLabel ?? "Bike"}
+            {templateLabel ?? t("fallbackTitle")}
           </h1>
           {colorName ? (
             <p className="text-muted-foreground text-sm">
@@ -169,7 +171,7 @@ export function BikeHeader({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -186,7 +188,7 @@ export function BikeHeader({
                           startTransition(to);
                         }}
                       >
-                        {bikeStatusLabel(to)}
+                        {tStatus(to)}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -199,7 +201,7 @@ export function BikeHeader({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="More bike actions"
+                aria-label={t("moreActions")}
                 disabled={pending}
               >
                 <MoreHorizontal aria-hidden />
@@ -208,7 +210,7 @@ export function BikeHeader({
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link href={`/qr/${bikeId}`}>
-                  <QrCode aria-hidden /> QR sticker
+                  <QrCode aria-hidden /> {t("qrSticker")}
                 </Link>
               </DropdownMenuItem>
               {isDeleted ? (
@@ -219,7 +221,7 @@ export function BikeHeader({
                     runRestore();
                   }}
                 >
-                  <ArchiveRestore aria-hidden /> Restore bike
+                  <ArchiveRestore aria-hidden /> {t("restore")}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
@@ -232,7 +234,7 @@ export function BikeHeader({
                   }}
                 >
                   <Trash2 aria-hidden />{" "}
-                  {confirmDelete ? "Click again to confirm" : "Delete bike"}
+                  {confirmDelete ? tCommon("confirmRepeat") : t("deleteBike")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -263,6 +265,9 @@ function TransitionReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("bikeDetail");
+  const tStatus = useTranslations("bikeStatus");
+  const tCommon = useTranslations("common");
   const [reason, setReason] = useState("");
 
   // Reset reason whenever the dialog opens for a fresh transition.
@@ -288,20 +293,20 @@ function TransitionReasonDialog({
         >
           <UiDialogHeader>
             <DialogTitle>
-              {pending ? `Mark as ${bikeStatusLabel(pending.to)}` : "Transition"}
+              {pending
+                ? t("markAs", { status: tStatus(pending.to) })
+                : t("transition")}
             </DialogTitle>
-            <DialogDescription>
-              This is a terminal state. Add a short reason for the audit trail.
-            </DialogDescription>
+            <DialogDescription>{t("terminalReasonDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="transition-reason">Reason</Label>
+            <Label htmlFor="transition-reason">{t("reason")}</Label>
             <Textarea
               id="transition-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. End of service life — frame cracked at the head tube."
+              placeholder={t("reasonPlaceholder")}
               autoFocus
               required
             />
@@ -316,13 +321,13 @@ function TransitionReasonDialog({
               }}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Saving…" : "Confirm"}
+              {isPending ? tCommon("saving") : t("confirm")}
             </Button>
           </DialogFooter>
         </form>

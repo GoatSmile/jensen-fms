@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   coverageScopeLabel,
@@ -21,7 +22,7 @@ import {
 import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
-import { bikeStatusLabel, type BikeStatus } from "@/lib/bikes/status";
+import { type BikeStatus } from "@/lib/bikes/status";
 
 import {
   AssignCustomerDialog,
@@ -61,6 +62,11 @@ export default async function BikeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tc, tStatus] = await Promise.all([
+    getTranslations("bikeDetail"),
+    getTranslations("common"),
+    getTranslations("bikeStatus"),
+  ]);
   const supabase = await createClient();
 
   const [
@@ -288,9 +294,9 @@ export default async function BikeDetailPage({
     b.status === "lost_or_stolen";
   const assignBlockedReason =
     b.deleted_at != null
-      ? "Bike is archived."
+      ? t("assignBlockedArchived")
       : assignBlocked
-        ? `A "${bikeStatusLabel(b.status)}" bike is out of the active fleet.`
+        ? t("assignBlockedTerminal", { status: tStatus(b.status) })
         : undefined;
 
   return (
@@ -299,13 +305,13 @@ export default async function BikeDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tc("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bikes">Bikes</Link>
+              <Link href="/bikes">{t("crumbBikes")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -336,7 +342,7 @@ export default async function BikeDetailPage({
               b.owner_organization
                 ? {
                     organizationId: b.owner_organization.id,
-                    organizationName: ownerOrgDisplay ?? "Customer",
+                    organizationName: ownerOrgDisplay ?? t("customerFallback"),
                     unitId: b.owner_unit?.id ?? null,
                     unitName: b.owner_unit?.name ?? null,
                   }
@@ -349,14 +355,14 @@ export default async function BikeDetailPage({
       />
 
       <Section
-        title="Identification"
-        description="Catalog references — all optional. The frame number on the header is the primary identifier."
+        title={t("identSection")}
+        description={t("identSectionDesc")}
       >
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Field label="Bike type">
+          <Field label={t("bikeType")}>
             {b.bike_type?.name_en ?? <Muted>—</Muted>}
           </Field>
-          <Field label="Template">
+          <Field label={t("template")}>
             {b.template ? (
               <Link
                 href={`/bike-templates/${b.template.id}`}
@@ -371,14 +377,14 @@ export default async function BikeDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Colour">
+          <Field label={t("colour")}>
             {b.color ? (
               <ColorChip hex={b.color.hex} label={b.color.name_en} />
             ) : (
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Manufacturing order">
+          <Field label={t("mo")}>
             {b.manufacturing_order ? (
               <Link
                 href={`/manufacturing-orders/${b.manufacturing_order.id}`}
@@ -390,7 +396,7 @@ export default async function BikeDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Sales order">
+          <Field label={t("salesOrder")}>
             {b.manufacturing_order?.sales_order ? (
               <Link
                 href={`/sales-orders/${b.manufacturing_order.sales_order.id}`}
@@ -399,10 +405,10 @@ export default async function BikeDetailPage({
                 {b.manufacturing_order.sales_order.sales_order_number}
               </Link>
             ) : (
-              <Muted>Stock build</Muted>
+              <Muted>{t("stockBuild")}</Muted>
             )}
           </Field>
-          <Field label="Owner">
+          <Field label={t("owner")}>
             {b.owner_organization ? (
               <div className="flex flex-col gap-0.5">
                 <Link
@@ -413,20 +419,20 @@ export default async function BikeDetailPage({
                 </Link>
                 {b.owner_unit ? (
                   <span className="text-muted-foreground text-xs">
-                    Unit: {b.owner_unit.name}
+                    {t("unit", { name: b.owner_unit.name })}
                   </span>
                 ) : null}
                 {b.assigned_at ? (
                   <span className="text-muted-foreground text-xs">
-                    Since {formatDateDa(b.assigned_at)}
+                    {t("since", { date: formatDateDa(b.assigned_at) })}
                   </span>
                 ) : null}
               </div>
             ) : (
-              <Muted>Not assigned to a customer.</Muted>
+              <Muted>{t("notAssigned")}</Muted>
             )}
           </Field>
-          <Field label="Service agreement">
+          <Field label={t("agreement")}>
             {coverage ? (
               <div className="flex flex-col gap-0.5">
                 <Link
@@ -440,7 +446,7 @@ export default async function BikeDetailPage({
                 </span>
                 {coverage.end_date == null ? (
                   <span className="text-muted-foreground text-xs">
-                    Runs until cancelled
+                    {t("runsUntilCancelled")}
                   </span>
                 ) : (
                   <span
@@ -451,18 +457,18 @@ export default async function BikeDetailPage({
                         : "text-muted-foreground text-xs"
                     }
                   >
-                    Ends {formatDateDa(coverage.end_date)}
+                    {t("ends", { date: formatDateDa(coverage.end_date) })}
                     {coverageDaysLeft != null
-                      ? ` · ${coverageDaysLeft} day${coverageDaysLeft === 1 ? "" : "s"} left`
+                      ? t("daysLeft", { count: coverageDaysLeft })
                       : ""}
                   </span>
                 )}
               </div>
             ) : (
-              <Muted>No active service agreement.</Muted>
+              <Muted>{t("noAgreement")}</Muted>
             )}
           </Field>
-          <Field label="Build cost">
+          <Field label={t("buildCost")}>
             {b.build_cost_dkk != null ? (
               <span className="tabular-nums">
                 {new Intl.NumberFormat("da-DK", {
@@ -475,7 +481,7 @@ export default async function BikeDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Notes">
+          <Field label={t("notes")}>
             {b.notes ? b.notes : <Muted>—</Muted>}
           </Field>
         </dl>

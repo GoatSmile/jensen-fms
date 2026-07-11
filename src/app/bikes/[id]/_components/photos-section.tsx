@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Camera, ImagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ type Status =
  * gallery purposes, per-thumb actions for set-hero / delete.
  */
 export function PhotosSection({ bikeId, photos }: Props) {
+  const t = useTranslations("bikeDetail.photos");
   const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [thumbError, setThumbError] = useState<string | null>(null);
@@ -90,8 +92,8 @@ export function PhotosSection({ bikeId, photos }: Props) {
 
   return (
     <Section
-      title="Photos"
-      description="Snap a bike on the workbench, before shipping, on delivery. Hero shows on the bike list and detail header."
+      title={t("title")}
+      description={t("desc")}
       action={
         <Button
           size="sm"
@@ -101,8 +103,8 @@ export function PhotosSection({ bikeId, photos }: Props) {
         >
           <ImagePlus aria-hidden />
           {status.kind === "uploading"
-            ? `Uploading ${status.current} of ${status.total}…`
-            : "Upload photos"}
+            ? t("uploading", { current: status.current, total: status.total })
+            : t("uploadPhotos")}
         </Button>
       }
     >
@@ -132,7 +134,7 @@ export function PhotosSection({ bikeId, photos }: Props) {
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
           <span className="flex items-center gap-2">
             <Camera aria-hidden className="size-4" />
-            No photos yet — upload one to give this bike a face.
+            {t("noPhotos")}
           </span>
         </div>
       ) : (

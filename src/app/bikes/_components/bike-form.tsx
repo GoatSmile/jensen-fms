@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,8 @@ type Props = {
 };
 
 export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
+  const t = useTranslations("bikes");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<BikeFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -126,11 +129,11 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="What kind of bike"
-        description="The type drives which identifiers will be required. Pick a template if this bike was built against a known recipe; leave blank for one-offs."
+        title={t("kindTitle")}
+        description={t("kindDesc")}
       >
         <Field
-          label="Bike type"
+          label={t("bikeType")}
           htmlFor="bike-type"
           required
           error={errorField === "bike_type_id" ? error : null}
@@ -140,7 +143,7 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
             onValueChange={(v) => update("bike_type_id", v)}
           >
             <SelectTrigger id="bike-type">
-              <SelectValue placeholder="Pick a bike type…" />
+              <SelectValue placeholder={t("pickBikeType")} />
             </SelectTrigger>
             <SelectContent>
               {bikeTypes.map((t) => (
@@ -151,19 +154,20 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Template (optional)" htmlFor="bike-template">
+        <Field label={t("templateOptional")} htmlFor="bike-template">
           <Select
             value={values.template_id}
             onValueChange={(v) => update("template_id", v)}
           >
             <SelectTrigger id="bike-template">
-              <SelectValue placeholder="Pick a template…" />
+              <SelectValue placeholder={t("pickTemplate")} />
             </SelectTrigger>
             <SelectContent>
               {templatesForType.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No current templates
-                  {values.bike_type_id ? " for this type." : "."}
+                  {values.bike_type_id
+                    ? t("noTemplatesForType")
+                    : t("noTemplates")}
                 </div>
               ) : (
                 templatesForType.map((t) => (
@@ -180,7 +184,7 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Colour (optional)" htmlFor="bike-color">
+        <Field label={t("colourOptional")} htmlFor="bike-color">
           <Select
             value={values.color_id === "" ? "__none__" : values.color_id}
             onValueChange={(v) =>
@@ -188,17 +192,17 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
             }
           >
             <SelectTrigger id="bike-color">
-              <SelectValue placeholder="Unpainted / not decided yet" />
+              <SelectValue placeholder={t("unpaintedPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">
                 <span className="text-muted-foreground italic">
-                  Unpainted (no colour)
+                  {t("unpaintedOption")}
                 </span>
               </SelectItem>
               {colors.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No active colours.
+                  {t("noColours")}
                 </div>
               ) : (
                 colors.map((c) => (
@@ -214,11 +218,11 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
       </FormSection>
 
       <FormSection
-        title="Identification"
-        description="Frame number is the natural unique key. Other identifiers (lock, battery, charger, AirTag, etc.) get registered after creation."
+        title={t("identTitle")}
+        description={t("identDesc")}
       >
         <Field
-          label="Frame number"
+          label={t("frameNumber")}
           htmlFor="bike-frame-number"
           required
           error={errorField === "frame_number" ? error : null}
@@ -227,18 +231,18 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
             id="bike-frame-number"
             value={values.frame_number}
             onChange={(e) => update("frame_number", e.target.value)}
-            placeholder="e.g. JP-2026-HSB-001"
+            placeholder={t("framePlaceholder")}
             className="font-mono"
             required
           />
         </Field>
-        <Field label="Notes" htmlFor="bike-notes">
+        <Field label={t("notes")} htmlFor="bike-notes">
           <Textarea
             id="bike-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Internal notes — not shown to customers."
+            placeholder={t("notesPlaceholder")}
           />
         </Field>
       </FormSection>
@@ -256,10 +260,10 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : "Create bike"}
+          {isPending ? tCommon("saving") : t("createBike")}
         </Button>
       </div>
     </form>

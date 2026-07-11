@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Bike, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +36,7 @@ import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 
 type SearchParams = {
   q?: string;
@@ -53,17 +50,17 @@ type SearchParams = {
   sort?: string;
 };
 
-const BUILT_PRESETS: { value: string; label: string }[] = [
-  { value: "this-year", label: "Built this year" },
-  { value: "last-12m", label: "Built in last 12 months" },
-  { value: "over-1y", label: "Older than 1 year" },
-  { value: "over-2y", label: "Older than 2 years" },
+const BUILT_PRESETS: { value: string; labelKey: string }[] = [
+  { value: "this-year", labelKey: "builtThisYear" },
+  { value: "last-12m", labelKey: "builtLast12m" },
+  { value: "over-1y", labelKey: "builtOver1y" },
+  { value: "over-2y", labelKey: "builtOver2y" },
 ];
 
-const SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: "frame", label: "Frame number" },
-  { value: "built-desc", label: "Newest built" },
-  { value: "built-asc", label: "Oldest built" },
+const SORT_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: "frame", labelKey: "sortFrame" },
+  { value: "built-desc", labelKey: "sortNewest" },
+  { value: "built-asc", labelKey: "sortOldest" },
 ];
 
 const STATUS_OPTIONS: BikeStatus[] = [
@@ -82,6 +79,11 @@ export default async function BikesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const [t, tc, tStatus] = await Promise.all([
+    getTranslations("bikes"),
+    getTranslations("common"),
+    getTranslations("bikeStatus"),
+  ]);
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const statusFilter = sp.status && STATUS_OPTIONS.includes(sp.status as BikeStatus)
@@ -310,29 +312,38 @@ export default async function BikesPage({
   }
 
   const activeChips: { key: string; label: string }[] = [];
-  if (q) activeChips.push({ key: "q", label: `Frame: ${q}` });
+  if (q) activeChips.push({ key: "q", label: t("chipFrame", { q }) });
   if (statusFilter)
-    activeChips.push({ key: "status", label: bikeStatusLabel(statusFilter) });
+    activeChips.push({ key: "status", label: tStatus(statusFilter) });
   if (typeFilter) {
-    const t = typesRes.data?.find((x) => x.id === typeFilter);
-    if (t) activeChips.push({ key: "type", label: t.name_en });
+    const ty = typesRes.data?.find((x) => x.id === typeFilter);
+    if (ty) activeChips.push({ key: "type", label: ty.name_en });
   }
   if (ownerFilter) {
     const o = ownerOptions.find((x) => x.id === ownerFilter);
-    activeChips.push({ key: "owner", label: o ? o.label : "Customer" });
+    activeChips.push({
+      key: "owner",
+      label: o ? o.label : t("customerLabel"),
+    });
   }
   if (templateFilter) {
-    const t = templateOptions.find((x) => x.id === templateFilter);
-    activeChips.push({ key: "template", label: t ? t.label : "Template" });
+    const tpl = templateOptions.find((x) => x.id === templateFilter);
+    activeChips.push({
+      key: "template",
+      label: tpl ? tpl.label : t("templateLabel"),
+    });
   }
   if (builtFilter) {
     const b = BUILT_PRESETS.find((x) => x.value === builtFilter);
-    if (b) activeChips.push({ key: "built", label: b.label });
+    if (b) activeChips.push({ key: "built", label: t(b.labelKey) });
   }
   if (fleetFilter)
-    activeChips.push({ key: "fleet", label: "Maintenance fleet" });
+    activeChips.push({ key: "fleet", label: t("chipFleet") });
   if (hasPartName)
-    activeChips.push({ key: "has-part", label: `Has ${hasPartName}` });
+    activeChips.push({
+      key: "has-part",
+      label: t("chipHasPart", { part: hasPartName }),
+    });
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -341,28 +352,30 @@ export default async function BikesPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tc("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Bikes</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Bikes</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("title")}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              {totalCount} {totalCount === 1 ? "bike" : "bikes"}
+              {t("count", { count: totalCount })}
               {activeChips.length > 0
-                ? ` · ${activeChips.length} filter${activeChips.length === 1 ? "" : "s"} active`
+                ? t("filtersActive", { count: activeChips.length })
                 : ""}
             </p>
           </div>
           <Button asChild>
             <Link href="/bikes/new">
-              <Plus aria-hidden /> New bike
+              <Plus aria-hidden /> {t("newBike")}
             </Link>
           </Button>
         </div>
@@ -374,7 +387,7 @@ export default async function BikesPage({
       >
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-q">
-            Search frame number
+            {t("searchFrame")}
           </label>
           <Input
             id="bikes-q"
@@ -386,7 +399,7 @@ export default async function BikesPage({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-status">
-            Status
+            {t("statusLabel")}
           </label>
           <select
             id="bikes-status"
@@ -397,17 +410,17 @@ export default async function BikesPage({
               statusFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All statuses</option>
+            <option value="">{t("allStatuses")}</option>
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
-                {bikeStatusLabel(s)}
+                {tStatus(s)}
               </option>
             ))}
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-type">
-            Type
+            {t("typeLabel")}
           </label>
           <select
             id="bikes-type"
@@ -418,7 +431,7 @@ export default async function BikesPage({
               typeFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All types</option>
+            <option value="">{t("allTypes")}</option>
             {(typesRes.data ?? []).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name_en}
@@ -428,7 +441,7 @@ export default async function BikesPage({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-owner">
-            Customer
+            {t("customerLabel")}
           </label>
           <select
             id="bikes-owner"
@@ -439,7 +452,7 @@ export default async function BikesPage({
               ownerFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All customers</option>
+            <option value="">{t("allCustomers")}</option>
             {ownerOptions.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -449,7 +462,7 @@ export default async function BikesPage({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-template">
-            Template
+            {t("templateLabel")}
           </label>
           <select
             id="bikes-template"
@@ -460,7 +473,7 @@ export default async function BikesPage({
               templateFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All templates</option>
+            <option value="">{t("allTemplates")}</option>
             {templateOptions.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
@@ -470,7 +483,7 @@ export default async function BikesPage({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-built">
-            Built
+            {t("builtLabel")}
           </label>
           <select
             id="bikes-built"
@@ -481,17 +494,17 @@ export default async function BikesPage({
               builtFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">Any build date</option>
+            <option value="">{t("anyBuildDate")}</option>
             {BUILT_PRESETS.map((p) => (
               <option key={p.value} value={p.value}>
-                {p.label}
+                {t(p.labelKey)}
               </option>
             ))}
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="bikes-sort">
-            Sort by
+            {t("sortBy")}
           </label>
           <select
             id="bikes-sort"
@@ -501,7 +514,7 @@ export default async function BikesPage({
           >
             {SORT_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
-                {s.label}
+                {t(s.labelKey)}
               </option>
             ))}
           </select>
@@ -526,16 +539,16 @@ export default async function BikesPage({
               defaultChecked={fleetFilter}
               className="size-4"
             />
-            Maintenance fleet (owner has an active service agreement)
+            {t("fleetLabel")}
           </label>
           <div className="flex items-center gap-2">
             {activeChips.length > 0 ? (
               <Button asChild variant="ghost" size="sm">
-                <Link href="/bikes">Clear all</Link>
+                <Link href="/bikes">{tc("clearAll")}</Link>
               </Button>
             ) : null}
             <Button type="submit" size="sm" variant="outline">
-              Apply
+              {tc("apply")}
             </Button>
           </div>
         </div>
@@ -561,16 +574,16 @@ export default async function BikesPage({
       {rows.length === 0 ? (
         activeChips.length > 0 ? (
           <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-            No bikes match these filters.
+            {t("noMatch")}
           </div>
         ) : (
           <EmptyState
             icon={Bike}
-            title="No bikes yet"
-            description="Add a manual bike, or create one through a manufacturing order."
-            action={{ label: "New bike", href: "/bikes/new" }}
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
+            action={{ label: t("newBike"), href: "/bikes/new" }}
             secondaryAction={{
-              label: "Start a manufacturing order",
+              label: t("emptySecondary"),
               href: "/manufacturing-orders/new",
             }}
           />
@@ -581,15 +594,27 @@ export default async function BikesPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[160px] sm:w-[200px]">
-                  Frame number
+                  {t("thFrame")}
                 </TableHead>
-                <TableHead className="hidden md:table-cell">Type</TableHead>
-                <TableHead className="hidden md:table-cell">Template</TableHead>
-                <TableHead className="hidden lg:table-cell">Colour</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden xl:table-cell">Built</TableHead>
-                <TableHead className="hidden lg:table-cell">Owner</TableHead>
-                <TableHead className="hidden xl:table-cell">Sales order</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thType")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thTemplate")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thColour")}
+                </TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden xl:table-cell">
+                  {t("thBuilt")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thOwner")}
+                </TableHead>
+                <TableHead className="hidden xl:table-cell">
+                  {t("thSalesOrder")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -665,7 +690,7 @@ export default async function BikesPage({
                           "outline"
                         }
                       >
-                        {bikeStatusLabel(b.status)}
+                        {tStatus(b.status)}
                       </Badge>
                     </Link>
                   </TableCell>
@@ -705,10 +730,14 @@ export default async function BikesPage({
                               )}
                             >
                               {cov.end_date == null
-                                ? "Agreement · no end date"
+                                ? t("agreementNoEnd")
                                 : expiring
-                                  ? `Agreement ends ${formatDate(cov.end_date)}`
-                                  : `Agreement until ${formatDate(cov.end_date)}`}
+                                  ? t("agreementEnds", {
+                                      date: formatDate(cov.end_date),
+                                    })
+                                  : t("agreementUntil", {
+                                      date: formatDate(cov.end_date),
+                                    })}
                             </span>
                           );
                         })()}

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/parts/format";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 
 import { EmptyRow, Section } from "./section";
 
@@ -27,21 +24,24 @@ export type StateLogRow = {
 };
 
 export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
+  const t = useTranslations("bikeDetail.log");
+  const tStatus = useTranslations("bikeStatus");
   return (
-    <Section
-      title="State log"
-      description="Every lifecycle change with timestamp and reason. Append-only audit trail."
-    >
+    <Section title={t("title")} description={t("desc")}>
       {rows.length === 0 ? (
-        <EmptyRow>No state changes recorded yet.</EmptyRow>
+        <EmptyRow>{t("empty")}</EmptyRow>
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px] sm:w-[180px]">When</TableHead>
-                <TableHead>Transition</TableHead>
-                <TableHead className="hidden sm:table-cell">Reason</TableHead>
+                <TableHead className="w-[140px] sm:w-[180px]">
+                  {t("thWhen")}
+                </TableHead>
+                <TableHead>{t("thTransition")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("thReason")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -59,11 +59,11 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                             "outline"
                           }
                         >
-                          {bikeStatusLabel(row.fromStatus)}
+                          {tStatus(row.fromStatus)}
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground text-xs">
-                          (created)
+                          {t("created")}
                         </span>
                       )}
                       <ArrowRight aria-hidden className="size-3" />
@@ -73,7 +73,7 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                           "outline"
                         }
                       >
-                        {bikeStatusLabel(row.toStatus)}
+                        {tStatus(row.toStatus)}
                       </Badge>
                     </div>
                   </TableCell>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CircleCheck, MoreVertical, PowerOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -57,19 +58,23 @@ export function IdentifiersSection({
   requiredCount,
   requiredRegisteredCount,
 }: Props) {
+  const t = useTranslations("bikeDetail.ids");
   const [error, setError] = useState<string | null>(null);
   const completionLabel =
     requiredCount > 0
-      ? `${requiredRegisteredCount} of ${requiredCount} required registered`
+      ? t("completion", {
+          registered: requiredRegisteredCount,
+          required: requiredCount,
+        })
       : null;
 
   return (
     <Section
-      title="Identifiers"
+      title={t("title")}
       description={
         completionLabel
-          ? `${completionLabel}. Add or replace identifiers as they come in.`
-          : "Add identifiers as they come in."
+          ? t("descWithCompletion", { completion: completionLabel })
+          : t("desc")
       }
       action={
         <IdentifierDialog
@@ -86,17 +91,21 @@ export function IdentifiersSection({
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-          No identifiers registered yet.
+          {t("noneYet")}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead className="hidden md:table-cell">Registered</TableHead>
+                <TableHead>{t("thType")}</TableHead>
+                <TableHead>{t("thValue")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("thStatus")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thRegistered")}
+                </TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -126,6 +135,8 @@ function IdentifierTableRow({
   row: IdentifierRow;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("bikeDetail.ids");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
@@ -148,22 +159,24 @@ function IdentifierTableRow({
       <TableCell>
         {row.typeName}
         {row.isRequired ? (
-          <span className="text-muted-foreground ml-1.5 text-xs">required</span>
+          <span className="text-muted-foreground ml-1.5 text-xs">
+            {t("required")}
+          </span>
         ) : null}
       </TableCell>
       <TableCell className="font-mono text-xs">{row.value}</TableCell>
       <TableCell className="hidden sm:table-cell">
         {row.isActive ? (
-          <Badge variant="success">Active</Badge>
+          <Badge variant="success">{t("active")}</Badge>
         ) : (
-          <Badge variant="outline">Replaced</Badge>
+          <Badge variant="outline">{t("replaced")}</Badge>
         )}
       </TableCell>
       <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
         {formatDateTime(row.createdAt)}
         {!row.isActive && row.deactivatedAt ? (
           <span className="ml-2">
-            (deactivated {formatDateTime(row.deactivatedAt)})
+            {t("deactivatedAt", { date: formatDateTime(row.deactivatedAt) })}
           </span>
         ) : null}
       </TableCell>
@@ -174,7 +187,10 @@ function IdentifierTableRow({
               <Button
                 size="icon-sm"
                 variant="ghost"
-                aria-label={`Actions for ${row.typeName} ${row.value}`}
+                aria-label={t("rowActionsAria", {
+                  type: row.typeName,
+                  value: row.value,
+                })}
                 disabled={pending}
               >
                 <MoreVertical aria-hidden />
@@ -192,11 +208,11 @@ function IdentifierTableRow({
               >
                 {confirmDeactivate ? (
                   <>
-                    <CircleCheck aria-hidden /> Click again to confirm
+                    <CircleCheck aria-hidden /> {tCommon("confirmRepeat")}
                   </>
                 ) : (
                   <>
-                    <PowerOff aria-hidden /> Deactivate
+                    <PowerOff aria-hidden /> {t("deactivate")}
                   </>
                 )}
               </DropdownMenuItem>
