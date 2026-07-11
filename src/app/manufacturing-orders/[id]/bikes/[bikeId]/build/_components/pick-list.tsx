@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,15 +42,13 @@ export function PickList({
   /** When set, a "Print" link in the header opens the printable pick sheet. */
   printHref?: string;
 }) {
+  const t = useTranslations("build");
   return (
     <section className="rounded-md border">
       <header className="flex flex-wrap items-start justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Pick list by kit</h2>
-          <p className="text-muted-foreground text-xs">
-            Shop the shelves by sticker code, then assemble. Tap a bucket to
-            unfold its parts.
-          </p>
+          <h2 className="text-sm font-semibold">{t("pickListTitle")}</h2>
+          <p className="text-muted-foreground text-xs">{t("pickListHint")}</p>
         </div>
         {printHref ? (
           <Link
@@ -57,7 +56,7 @@ export function PickList({
             target="_blank"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs underline underline-offset-4"
           >
-            <Printer aria-hidden className="size-3.5" /> Print
+            <Printer aria-hidden className="size-3.5" /> {t("print")}
           </Link>
         ) : null}
       </header>
@@ -86,8 +85,11 @@ export function PickList({
                   className="shrink-0"
                 >
                   {g.complete
-                    ? `whole kit (${g.totalKitParts})`
-                    : `${g.presentKitParts} of ${g.totalKitParts} — pick by list`}
+                    ? t("wholeKit", { count: g.totalKitParts })
+                    : t("partialKit", {
+                        present: g.presentKitParts,
+                        total: g.totalKitParts,
+                      })}
                 </Badge>
               </summary>
               <ul className="divide-y border-t text-sm">
@@ -99,7 +101,11 @@ export function PickList({
                         {r.sku}
                         {r.also.length > 0 ? (
                           <span className="ml-1.5 font-sans">
-                            also {r.also.map((a) => kitCode(a.sticker_color, a.kit_number)).join(", ")}
+                            {t("alsoLabel", {
+                              codes: r.also
+                                .map((a) => kitCode(a.sticker_color, a.kit_number))
+                                .join(", "),
+                            })}
                           </span>
                         ) : null}
                       </span>
@@ -123,11 +129,11 @@ export function PickList({
                   className="size-4 shrink-0 transition-transform group-open:rotate-180"
                 />
                 <span className="text-sm font-bold tracking-wide">
-                  Loose parts
+                  {t("looseParts")}
                 </span>
               </span>
               <Badge variant="outline" className="shrink-0">
-                no sticker
+                {t("noSticker")}
               </Badge>
             </summary>
             <ul className="divide-y border-t text-sm">

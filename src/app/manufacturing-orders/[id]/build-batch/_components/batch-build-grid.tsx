@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Printer, ScanLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ export function BatchBuildGrid({
   bikes: BatchBikeRow[];
   identifierTypes: IdType[];
 }) {
+  const t = useTranslations("batchBuild");
   const router = useRouter();
   const [count, setCount] = useState(bikes.length);
   const [frames, setFrames] = useState<Record<string, string>>(() =>
@@ -71,9 +73,9 @@ export function BatchBuildGrid({
     const entries: BatchBuildEntry[] = active.map((b) => ({
       bikeId: b.id,
       frameNumber: frames[b.id] ?? "",
-      identifiers: identifierTypes.map((t) => ({
-        typeId: t.id,
-        value: ids[b.id]?.[t.id] ?? "",
+      identifiers: identifierTypes.map((idType) => ({
+        typeId: idType.id,
+        value: ids[b.id]?.[idType.id] ?? "",
       })),
     }));
     start(async () => {
@@ -95,7 +97,7 @@ export function BatchBuildGrid({
     <div className="flex flex-col gap-5">
       <div className="bg-muted/30 flex flex-wrap items-center gap-3 rounded-md border p-3">
         <label htmlFor="batch-count" className="text-sm font-medium">
-          How many are you building now?
+          {t("howMany")}
         </label>
         <Input
           id="batch-count"
@@ -107,7 +109,7 @@ export function BatchBuildGrid({
           className="h-9 w-20 text-center tabular-nums"
         />
         <span className="text-muted-foreground text-sm">
-          of {bikes.length} unbuilt
+          {t("ofUnbuilt", { count: bikes.length })}
         </span>
         {presets.length > 1 ? (
           <div className="flex flex-wrap gap-1">
@@ -122,7 +124,7 @@ export function BatchBuildGrid({
                     : "text-muted-foreground hover:bg-muted/50"
                 }`}
               >
-                {p === bikes.length ? `all ${p}` : p}
+                {p === bikes.length ? t("allPreset", { count: p }) : p}
               </button>
             ))}
           </div>
@@ -133,7 +135,8 @@ export function BatchBuildGrid({
           rel="noopener noreferrer"
           className="text-muted-foreground hover:text-foreground ml-auto inline-flex items-center gap-1.5 text-xs underline underline-offset-4"
         >
-          <Printer aria-hidden className="size-3.5" /> Print pick list ({n})
+          <Printer aria-hidden className="size-3.5" />{" "}
+          {t("printPickList", { count: n })}
         </a>
       </div>
 
@@ -145,11 +148,11 @@ export function BatchBuildGrid({
                 #
               </th>
               <th className="px-3 py-2 font-medium">
-                Frame no. <span className="text-destructive">*</span>
+                {t("frameHeader")} <span className="text-destructive">*</span>
               </th>
-              {identifierTypes.map((t) => (
-                <th key={t.id} className="px-3 py-2 font-medium">
-                  {t.name}
+              {identifierTypes.map((idType) => (
+                <th key={idType.id} className="px-3 py-2 font-medium">
+                  {idType.name}
                 </th>
               ))}
             </tr>
@@ -163,7 +166,7 @@ export function BatchBuildGrid({
                 <td className="px-3 py-1.5">
                   {b.atPainter ? (
                     <Badge variant="warning" className="text-[10px]">
-                      at painter — receive back first
+                      {t("atPainterBadge")}
                     </Badge>
                   ) : (
                     <div className="relative">
@@ -179,24 +182,27 @@ export function BatchBuildGrid({
                         placeholder={b.provisionalFrame}
                         autoFocus={i === 0}
                         disabled={pending}
-                        aria-label={`Frame number for bike ${i + 1}`}
+                        aria-label={t("frameAria", { index: i + 1 })}
                         className="h-8 w-56 pl-8 font-mono text-xs"
                       />
                     </div>
                   )}
                 </td>
-                {identifierTypes.map((t) => (
-                  <td key={t.id} className="px-3 py-1.5">
+                {identifierTypes.map((idType) => (
+                  <td key={idType.id} className="px-3 py-1.5">
                     <Input
-                      value={ids[b.id]?.[t.id] ?? ""}
+                      value={ids[b.id]?.[idType.id] ?? ""}
                       onChange={(e) =>
                         setIds((p) => ({
                           ...p,
-                          [b.id]: { ...(p[b.id] ?? {}), [t.id]: e.target.value },
+                          [b.id]: {
+                            ...(p[b.id] ?? {}),
+                            [idType.id]: e.target.value,
+                          },
                         }))
                       }
                       disabled={pending || b.atPainter}
-                      aria-label={`${t.name} for bike ${i + 1}`}
+                      aria-label={t("idAria", { type: idType.name, index: i + 1 })}
                       className="h-8 w-40 text-xs"
                     />
                   </td>
@@ -217,12 +223,11 @@ export function BatchBuildGrid({
         <div className="flex flex-col gap-1.5 rounded-md border p-3 text-sm">
           <p>
             <span className="font-medium text-emerald-700 dark:text-emerald-400">
-              {summary.built} built
+              {t("builtSummary", { count: summary.built })}
             </span>
             {summary.skipped > 0 ? (
               <span className="text-muted-foreground">
-                {" "}
-                · {summary.skipped} left (no frame entered)
+                {t("skippedSummary", { count: summary.skipped })}
               </span>
             ) : null}
           </p>
@@ -239,7 +244,7 @@ export function BatchBuildGrid({
             href={`/manufacturing-orders/${moId}`}
             className="text-sm underline underline-offset-4"
           >
-            Back to {moNumber}
+            {t("backTo", { mo: moNumber })}
           </Link>
         </div>
       ) : null}
@@ -247,8 +252,7 @@ export function BatchBuildGrid({
       <footer className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <ScanLine aria-hidden className="size-3.5" />
-          Enter a frame to build that bike; leave it blank to skip for now. Parts
-          come from the recipe.
+          {t("footerHint")}
         </p>
         <Button
           type="button"
@@ -256,9 +260,7 @@ export function BatchBuildGrid({
           onClick={onBuild}
           disabled={pending || readyCount === 0}
         >
-          {pending
-            ? "Building…"
-            : `Build ${readyCount} bike${readyCount === 1 ? "" : "s"}`}
+          {pending ? t("building") : t("buildN", { count: readyCount })}
         </Button>
       </footer>
     </div>

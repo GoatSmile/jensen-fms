@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ export function KitBulkAdd({
   onAdd,
   disabled,
 }: Props) {
+  const t = useTranslations("recipe");
   const [kitId, setKitId] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,9 +88,9 @@ export function KitBulkAdd({
       }
       const code = kitCode(kit.sticker_color, kit.kit_number);
       setNote(
-        `Added ${outcome.added} part${outcome.added === 1 ? "" : "s"} from ${code}` +
+        t("addedNote", { count: outcome.added, code }) +
           (outcome.alreadyIn > 0
-            ? ` · ${outcome.alreadyIn} already in recipe`
+            ? t("alreadyInSuffix", { count: outcome.alreadyIn })
             : ""),
       );
     });
@@ -98,7 +100,7 @@ export function KitBulkAdd({
     <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-muted-foreground shrink-0 text-xs">
-          Add a whole kit
+          {t("addWholeKit")}
         </span>
         <div className="flex items-center gap-2">
           <Select
@@ -111,7 +113,7 @@ export function KitBulkAdd({
             disabled={disabled || isPending}
           >
             <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue placeholder="Pick a kit…" />
+              <SelectValue placeholder={t("pickKit")} />
             </SelectTrigger>
             <SelectContent>
               {kits.map((k) => (
@@ -140,10 +142,10 @@ export function KitBulkAdd({
           >
             <Plus aria-hidden />
             {isPending
-              ? "Adding…"
+              ? t("adding")
               : kitId
-                ? `Add ${addable.length} part${addable.length === 1 ? "" : "s"}`
-                : "Add parts"}
+                ? t("addCount", { count: addable.length })
+                : t("addParts")}
           </Button>
         </div>
       </div>
@@ -160,7 +162,7 @@ export function KitBulkAdd({
         </p>
       ) : kitId && addable.length === 0 ? (
         <p className="text-muted-foreground mt-1.5 text-xs">
-          Every part in this kit is already in the recipe.
+          {t("allInRecipe")}
         </p>
       ) : null}
     </div>

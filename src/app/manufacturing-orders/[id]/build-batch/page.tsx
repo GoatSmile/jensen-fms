@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -23,6 +24,7 @@ export default async function BuildBatchPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: moId } = await params;
+  const t = await getTranslations("batchBuild");
   const supabase = await createClient();
 
   const { data: mo, error: moErr } = await supabase
@@ -97,7 +99,7 @@ export default async function BuildBatchPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/manufacturing-orders">Manufacturing orders</Link>
+              <Link href="/manufacturing-orders">{t("crumbMos")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -110,27 +112,26 @@ export default async function BuildBatchPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Bulk build</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Bulk build</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">
-          Build several identical bikes at once — the parts come from the recipe;
-          you only enter each bike&rsquo;s frame number and identifiers here.
+          {t("intro")}
           {templateLabel ? ` ${templateLabel}.` : ""}
         </p>
       </header>
 
       {moClosed ? (
         <p className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-          This MO is {mo.status} — nothing left to build.
+          {t("moClosed", { status: t(`moStatus.${mo.status}`) })}
         </p>
       ) : bikes.length === 0 ? (
         <p className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-          No unbuilt bikes on this MO. Add bikes from the MO page first.
+          {t("noUnbuilt")}
         </p>
       ) : (
         <BatchBuildGrid

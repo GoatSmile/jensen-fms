@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -33,6 +34,7 @@ export default async function BikeBuildWorkbenchPage({
   params: Promise<{ id: string; bikeId: string }>;
 }) {
   const { id: moId, bikeId } = await params;
+  const t = await getTranslations("build");
   const supabase = await createClient();
 
   const [
@@ -291,9 +293,7 @@ export default async function BikeBuildWorkbenchPage({
 
   // Paint gate (Tier 2 Phase C): block Finish while the frame is at the painter.
   const atPainterIds = await loadAtSupplierBikeIds(supabase, [bikeId]);
-  const atPainterReason = atPainterIds.has(bikeId)
-    ? "This frame is at the painter — receive it back on its paint order before finishing the build."
-    : null;
+  const atPainterReason = atPainterIds.has(bikeId) ? t("atPainter") : null;
   const otherRequiredTypes = identifierContext.types.filter(
     (t) => t.is_required && t.slug !== "frame_number",
   );
@@ -335,13 +335,13 @@ export default async function BikeBuildWorkbenchPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{t("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/manufacturing-orders">Manufacturing orders</Link>
+              <Link href="/manufacturing-orders">{t("crumbMos")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -358,7 +358,7 @@ export default async function BikeBuildWorkbenchPage({
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbPage>
-              Build{" "}
+              {t("crumbBuild")}{" "}
               <span className="font-mono">{bike.frame_number}</span>
             </BreadcrumbPage>
           </BreadcrumbItem>

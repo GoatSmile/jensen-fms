@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
   ChevronDown,
@@ -29,11 +30,7 @@ import { formatDkk, formatQuantity } from "@/lib/parts/stock";
 import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
 import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 import { IdentifierDialog } from "@/app/bikes/[id]/_components/identifier-dialog";
 import type { IdentifierTypeOption } from "@/app/bikes/[id]/_components/identifier-dialog";
 
@@ -150,6 +147,8 @@ export function BuildWorkbench({
   readOnly,
   pickListSlot,
 }: Props) {
+  const t = useTranslations("build");
+  const tStatus = useTranslations("bikeStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -263,7 +262,7 @@ export function BuildWorkbench({
         setError(r.error);
         return;
       }
-      setSuccess("Recipe copied. Edit any rows that need to differ for this bike.");
+      setSuccess(t("recipeCopied"));
       router.refresh();
     });
   }
@@ -321,10 +320,8 @@ export function BuildWorkbench({
         return;
       }
       setSuccess(
-        `Cleared ${r.removed} part${r.removed === 1 ? "" : "s"}` +
-          (r.kept > 0
-            ? ` · ${r.kept} consumed part${r.kept === 1 ? "" : "s"} kept`
-            : ""),
+        t("clearedParts", { count: r.removed }) +
+          (r.kept > 0 ? t("clearedKept", { count: r.kept }) : ""),
       );
       router.refresh();
     });
@@ -341,7 +338,7 @@ export function BuildWorkbench({
       }
       setFrameValue(r.frameNumber);
       setConfirmed(true);
-      setSuccess(`Frame number confirmed — ${r.frameNumber}.`);
+      setSuccess(t("frameConfirmedMsg", { frame: r.frameNumber }));
       router.refresh();
     });
   }
@@ -355,9 +352,7 @@ export function BuildWorkbench({
         setError(r.error);
         return;
       }
-      setSuccess(
-        `Build finished — ${r.partsConsumed} part${r.partsConsumed === 1 ? "" : "s"} consumed.`,
-      );
+      setSuccess(t("buildFinished", { count: r.partsConsumed }));
       router.refresh();
     });
   }
@@ -383,13 +378,13 @@ export function BuildWorkbench({
                   MO <Link href={`/manufacturing-orders/${moId}`} className="font-mono hover:underline">{moNumber}</Link>
                 </span>
                 <Badge variant={BIKE_STATUS_VARIANT[bikeStatus] ?? "outline"}>
-                  {bikeStatusLabel(bikeStatus)}
+                  {tStatus(bikeStatus)}
                 </Badge>
                 {colorName ? (
                   <ColorChip hex={colorHex} label={colorName} />
                 ) : (
                   <Badge variant="outline" className="font-normal italic">
-                    unpainted
+                    {t("unpainted")}
                   </Badge>
                 )}
               </div>
@@ -412,7 +407,7 @@ export function BuildWorkbench({
                 disabled={finishDisabled}
               >
                 <CheckCircle2 aria-hidden />
-                {isFinishing ? "Finishing…" : "Finish build"}
+                {isFinishing ? t("finishing") : t("finishBuild")}
               </Button>
             ) : null}
           </div>
@@ -429,7 +424,7 @@ export function BuildWorkbench({
             />
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                Production note
+                {t("productionNote")}
               </span>
               <p className="text-sm whitespace-pre-wrap text-amber-950 dark:text-amber-100">
                 {buildNote}
@@ -444,19 +439,18 @@ export function BuildWorkbench({
         <section className="rounded-md border">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-sm font-semibold">Frame &amp; identifiers</h2>
+              <h2 className="text-sm font-semibold">{t("frameSectionTitle")}</h2>
               <p className="text-muted-foreground text-xs">
-                {confirmed
-                  ? "Frame confirmed. Update it here if it was mistyped."
-                  : "Enter the real frame number stamped on this bike — required before you can finish the build."}
+                {confirmed ? t("frameConfirmedHint") : t("frameEnterHint")}
               </p>
             </div>
             {confirmed ? (
               <Badge variant="success">
-                <CheckCircle2 aria-hidden className="size-3.5" /> Frame confirmed
+                <CheckCircle2 aria-hidden className="size-3.5" />{" "}
+                {t("frameConfirmedBadge")}
               </Badge>
             ) : (
-              <Badge variant="warning">Provisional frame</Badge>
+              <Badge variant="warning">{t("provisionalBadge")}</Badge>
             )}
           </div>
           <div className="flex flex-col gap-4 p-4">
@@ -466,7 +460,7 @@ export function BuildWorkbench({
                   htmlFor="frame-confirm"
                   className="text-xs font-medium tracking-wide"
                 >
-                  Frame number
+                  {t("frameNumberLabel")}
                 </label>
                 <div className="relative">
                   <ScanLine
@@ -485,7 +479,7 @@ export function BuildWorkbench({
                     }}
                     disabled={isConfirming}
                     className="w-[240px] pl-8 font-mono"
-                    aria-label="Real frame number"
+                    aria-label={t("realFrameAria")}
                   />
                 </div>
               </div>
@@ -496,17 +490,17 @@ export function BuildWorkbench({
                 disabled={isConfirming || frameValue.trim() === ""}
               >
                 {isConfirming
-                  ? "Saving…"
+                  ? t("saving")
                   : confirmed
-                    ? "Update frame"
-                    : "Confirm frame"}
+                    ? t("updateFrame")
+                    : t("confirmFrame")}
               </Button>
             </div>
 
             <div className="flex flex-col gap-2">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                  Other identifiers ({otherIdentifiers.length})
+                  {t("otherIdentifiers", { count: otherIdentifiers.length })}
                 </span>
                 {requiredIdentifierCount > 0 ? (
                   <span
@@ -516,7 +510,10 @@ export function BuildWorkbench({
                         : "text-muted-foreground"
                     }`}
                   >
-                    {requiredRegisteredCount} / {requiredIdentifierCount} required
+                    {t("requiredCount", {
+                      registered: requiredRegisteredCount,
+                      required: requiredIdentifierCount,
+                    })}
                   </span>
                 ) : null}
               </div>
@@ -536,14 +533,13 @@ export function BuildWorkbench({
                 </ul>
               ) : (
                 <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs italic">
-                  No lock / battery / GPS identifiers registered yet.
+                  {t("noIdentifiers")}
                 </p>
               )}
               <div>
                 <IdentifierDialog
                   bikeId={bikeId}
                   identifierTypes={identifierTypes}
-                  triggerLabel="Add identifier"
                   extraRevalidatePaths={[
                     `/manufacturing-orders/${moId}/bikes/${bikeId}/build`,
                   ]}
@@ -571,11 +567,13 @@ export function BuildWorkbench({
       <section className="rounded-md border">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Parts on this bike</h2>
+            <h2 className="text-sm font-semibold">{t("partsTitle")}</h2>
             <p className="text-muted-foreground text-xs">
-              The MO recipe is the default; pick anything that differs for{" "}
-              <span className="font-mono">{bikeFrameNumber}</span>. Inventory is
-              consumed when you click <strong>Finish build</strong>.
+              {t.rich("partsHint", {
+                frame: bikeFrameNumber,
+                mono: (chunks) => <span className="font-mono">{chunks}</span>,
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}
             </p>
           </div>
           {!readOnly ? (
@@ -588,7 +586,8 @@ export function BuildWorkbench({
                   onClick={onCopyRecipe}
                   disabled={isSeeding}
                 >
-                  <Copy aria-hidden /> Copy MO recipe ({moRecipeRowCount} parts)
+                  <Copy aria-hidden />{" "}
+                  {t("copyRecipe", { count: moRecipeRowCount })}
                 </Button>
               ) : null}
               {removableCount > 0 ? (
@@ -606,8 +605,8 @@ export function BuildWorkbench({
                 >
                   <Trash2 aria-hidden />
                   {clearArmed
-                    ? `Confirm — clear ${removableCount}`
-                    : "Clear build"}
+                    ? t("clearArmed", { count: removableCount })
+                    : t("clearBuild")}
                 </Button>
               ) : null}
             </div>
@@ -620,12 +619,12 @@ export function BuildWorkbench({
             {readOnly ? (
               <div className="text-muted-foreground hidden flex-col items-center justify-center rounded-md border border-dashed p-6 text-sm italic lg:flex">
                 <Lock className="size-5" aria-hidden />
-                Build is finalised — picker locked.
+                {t("pickerLocked")}
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
                 <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-                  Parts by category
+                  {t("partsByCategory")}
                 </div>
                 <KitBulkAdd
                   kits={kits}
@@ -651,7 +650,7 @@ export function BuildWorkbench({
                       id: p.id,
                       sku: p.internal_sku,
                       name: p.name_en,
-                      meta: `(${formatQuantity(p.onHand)} on hand)`,
+                      meta: t("onHandMeta", { qty: formatQuantity(p.onHand) }),
                       metaDanger: p.onHand <= 0,
                     }))}
                     addedIds={inBikePartIds}
@@ -681,8 +680,7 @@ export function BuildWorkbench({
                         <ChevronRight className="size-3.5" aria-hidden />
                       )}
                       <span className="text-muted-foreground">
-                        {empty.length} empty categor
-                        {empty.length === 1 ? "y" : "ies"}
+                        {t("emptyCategories", { count: empty.length })}
                       </span>
                     </button>
                     {showEmpty ? (
@@ -703,18 +701,18 @@ export function BuildWorkbench({
             <div className={`flex flex-col gap-2 ${readOnly ? "lg:col-span-2" : ""}`}>
               <div className="mb-1 flex items-baseline justify-between gap-2">
                 <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                  Selected parts ({rows.length})
+                  {t("selectedParts", { count: rows.length })}
                 </span>
                 {rows.length > 0 ? (
                   <span className="text-xs tabular-nums">
-                    Retail total (excl. VAT):{" "}
+                    {t("retailTotal")}{" "}
                     <span className="font-semibold">
                       {formatDkk(retailTotal.sum)}
                     </span>
                     {retailTotal.unpriced > 0 ? (
                       <span className="text-muted-foreground">
                         {" "}
-                        ({retailTotal.unpriced} unpriced)
+                        {t("unpricedSuffix", { count: retailTotal.unpriced })}
                       </span>
                     ) : null}
                   </span>
@@ -723,10 +721,10 @@ export function BuildWorkbench({
               {isEmpty ? (
                 <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
                   {readOnly
-                    ? "No parts on this bike."
+                    ? t("emptyReadOnly")
                     : moRecipeRowCount > 0
-                      ? "Empty. Copy the MO recipe (above) or pick parts from the categories on the left."
-                      : "Pick parts from the categories on the left."}
+                      ? t("emptyWithRecipe")
+                      : t("emptyNoRecipe")}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -738,7 +736,7 @@ export function BuildWorkbench({
                     })
                     .map(([catKey, catRows]) => {
                       const catName =
-                        catRows[0]?.categoryName ?? "Uncategorised";
+                        catRows[0]?.categoryName ?? t("uncategorised");
                       return (
                         <div key={catKey} className="rounded-md border">
                           <div className="bg-muted/30 border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
@@ -773,10 +771,10 @@ export function BuildWorkbench({
               {atPainterReason
                 ? atPainterReason
                 : !confirmed
-                  ? "Confirm the frame number above before finishing."
+                  ? t("footerConfirmFirst")
                   : rows.length === 0
-                    ? "Add parts before finishing."
-                    : `${rows.length} part${rows.length === 1 ? "" : "s"} ready to consume.`}
+                    ? t("footerAddParts")
+                    : t("footerReady", { count: rows.length })}
             </p>
             <Button
               type="button"
@@ -785,7 +783,7 @@ export function BuildWorkbench({
               disabled={finishDisabled}
             >
               <CheckCircle2 aria-hidden />{" "}
-              {isFinishing ? "Finishing…" : "Finish build"}
+              {isFinishing ? t("finishing") : t("finishBuild")}
             </Button>
           </footer>
         ) : null}
@@ -815,6 +813,7 @@ function KitBulkRemove({
   ) => Promise<{ error: string } | { removed: number; kept: number }>;
   disabled?: boolean;
 }) {
+  const t = useTranslations("build");
   const [kitId, setKitId] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -845,8 +844,8 @@ function KitBulkRemove({
       }
       const code = kitCode(kit.sticker_color, kit.kit_number);
       setNote(
-        `Removed ${outcome.removed} part${outcome.removed === 1 ? "" : "s"} from ${code}` +
-          (outcome.kept > 0 ? ` · ${outcome.kept} consumed kept` : ""),
+        t("removedNote", { count: outcome.removed, code }) +
+          (outcome.kept > 0 ? t("removedKept", { count: outcome.kept }) : ""),
       );
       setKitId("");
     });
@@ -856,7 +855,7 @@ function KitBulkRemove({
     <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-muted-foreground shrink-0 text-xs">
-          Remove a whole kit
+          {t("removeKitLabel")}
         </span>
         <div className="flex items-center gap-2">
           <Select
@@ -869,7 +868,7 @@ function KitBulkRemove({
             disabled={disabled || isPending}
           >
             <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue placeholder="Pick a kit…" />
+              <SelectValue placeholder={t("pickKit")} />
             </SelectTrigger>
             <SelectContent>
               {applicableKits.map((k) => (
@@ -896,10 +895,10 @@ function KitBulkRemove({
           >
             <Trash2 aria-hidden />
             {isPending
-              ? "Removing…"
+              ? t("removing")
               : kitId
-                ? `Remove ${count} part${count === 1 ? "" : "s"}`
-                : "Remove parts"}
+                ? t("removeCount", { count })
+                : t("removeParts")}
           </Button>
         </div>
       </div>
@@ -932,6 +931,7 @@ function RecipeLine({
   readOnly: boolean;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("build");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [qty, setQty] = useState(String(row.quantity));
@@ -944,7 +944,7 @@ function RecipeLine({
     const next = Number(qty.replace(",", "."));
     if (!Number.isFinite(next) || next <= 0) {
       setQty(String(row.quantity));
-      onError("Quantity must be a positive number.");
+      onError(t("qtyPositive"));
       return;
     }
     if (next === row.quantity) return;
@@ -991,7 +991,7 @@ function RecipeLine({
         <div className="flex shrink-0 items-center gap-1.5">
           {row.consumed ? (
             <Badge variant="success" className="text-[10px]">
-              consumed
+              {t("consumedBadge")}
             </Badge>
           ) : null}
           {!frozen ? (
@@ -1000,8 +1000,8 @@ function RecipeLine({
               variant="ghost"
               onClick={runRemove}
               disabled={pending}
-              aria-label={`Remove ${row.partSku}`}
-              title="Remove from this bike"
+              aria-label={t("removeAria", { sku: row.partSku })}
+              title={t("removeTitle")}
             >
               <Trash2 aria-hidden />
             </Button>
@@ -1010,7 +1010,7 @@ function RecipeLine({
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
         <label className="flex items-center gap-1.5">
-          <span className="text-muted-foreground">Qty</span>
+          <span className="text-muted-foreground">{t("qtyLabel")}</span>
           {!frozen ? (
             <Input
               inputMode="decimal"
@@ -1025,14 +1025,14 @@ function RecipeLine({
               }}
               disabled={pending}
               className="h-7 w-[60px] text-right text-xs"
-              aria-label={`Quantity for ${row.partSku}`}
+              aria-label={t("qtyForAria", { sku: row.partSku })}
             />
           ) : (
             <span className="tabular-nums">{formatQuantity(row.quantity)}</span>
           )}
         </label>
         <span className="text-muted-foreground">
-          On hand:{" "}
+          {t("onHandLabel")}{" "}
           <span className="tabular-nums">{formatQuantity(row.onHand)}</span>
         </span>
         <span
@@ -1042,12 +1042,14 @@ function RecipeLine({
               : "text-emerald-700 dark:text-emerald-400"
           }`}
         >
-          {shortfall > 0 ? `Short by ${formatQuantity(shortfall)}` : "Stocked"}
+          {shortfall > 0
+            ? t("shortBy", { qty: formatQuantity(shortfall) })
+            : t("stocked")}
         </span>
         <span className="text-muted-foreground ml-auto tabular-nums">
           {row.retailDkk != null
             ? `${formatDkk(row.quantity * row.retailDkk)}`
-            : "no retail price"}
+            : t("noRetailPrice")}
         </span>
       </div>
     </li>

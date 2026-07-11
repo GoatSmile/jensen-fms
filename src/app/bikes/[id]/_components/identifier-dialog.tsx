@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,9 +51,10 @@ type Props = {
 export function IdentifierDialog({
   bikeId,
   identifierTypes,
-  triggerLabel = "Add identifier",
+  triggerLabel,
   extraRevalidatePaths,
 }: Props) {
+  const t = useTranslations("identifierDialog");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typeId, setTypeId] = useState("");
@@ -76,7 +78,7 @@ export function IdentifierDialog({
   }
 
   const selectedType = useMemo(
-    () => identifierTypes.find((t) => t.id === typeId),
+    () => identifierTypes.find((idType) => idType.id === typeId),
     [identifierTypes, typeId],
   );
 
@@ -87,12 +89,7 @@ export function IdentifierDialog({
     if (value === "") return null;
     try {
       const re = new RegExp(selectedType.format_regex);
-      return re.test(value)
-        ? { ok: true as const, message: "Format looks right." }
-        : {
-            ok: false as const,
-            message: `Does not match ${selectedType.format_regex}.`,
-          };
+      return { ok: re.test(value), regex: selectedType.format_regex };
     } catch {
       return null;
     }
@@ -122,41 +119,38 @@ export function IdentifierDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          {triggerLabel}
+          {triggerLabel ?? t("trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Register identifier</DialogTitle>
-            <DialogDescription>
-              Identifiers can be added at any point in the bike&rsquo;s
-              lifecycle &mdash; missing ones don&rsquo;t block status changes.
-            </DialogDescription>
+            <DialogTitle>{t("title")}</DialogTitle>
+            <DialogDescription>{t("description")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="id-type">Identifier type</Label>
+            <Label htmlFor="id-type">{t("typeLabel")}</Label>
             <Select value={typeId} onValueChange={setTypeId}>
               <SelectTrigger id="id-type">
-                <SelectValue placeholder="Pick an identifier type…" />
+                <SelectValue placeholder={t("typePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                {identifierTypes.map((t) => (
+                {identifierTypes.map((idType) => (
                   <SelectItem
-                    key={t.id}
-                    value={t.id}
-                    disabled={t.alreadyRegistered}
+                    key={idType.id}
+                    value={idType.id}
+                    disabled={idType.alreadyRegistered}
                   >
-                    {t.name_en}
-                    {t.is_required ? (
+                    {idType.name_en}
+                    {idType.is_required ? (
                       <span className="text-muted-foreground ml-1.5 text-xs">
-                        (required)
+                        {t("required")}
                       </span>
                     ) : null}
-                    {t.alreadyRegistered ? (
+                    {idType.alreadyRegistered ? (
                       <span className="text-muted-foreground ml-1.5 text-xs">
-                        — already registered
+                        {t("alreadyRegistered")}
                       </span>
                     ) : null}
                   </SelectItem>
@@ -171,15 +165,17 @@ export function IdentifierDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="id-value">Value</Label>
+            <Label htmlFor="id-value">{t("valueLabel")}</Label>
             <Input
               id="id-value"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={
                 selectedType?.format_regex
-                  ? `e.g. matching ${selectedType.format_regex}`
-                  : "Identifier value"
+                  ? t("valuePlaceholderRegex", {
+                      regex: selectedType.format_regex,
+                    })
+                  : t("valuePlaceholder")
               }
               className="font-mono"
               autoFocus
@@ -192,7 +188,9 @@ export function IdentifierDialog({
                     : "text-amber-700 dark:text-amber-300"
                 }`}
               >
-                {regexHint.message}
+                {regexHint.ok
+                  ? t("formatOk")
+                  : t("formatMismatch", { regex: regexHint.regex })}
               </p>
             ) : null}
             {errorField === "identifier_value" && error ? (
@@ -203,13 +201,13 @@ export function IdentifierDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="id-notes">Notes</Label>
+            <Label htmlFor="id-notes">{t("notesLabel")}</Label>
             <Textarea
               id="id-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional — internal."
+              placeholder={t("notesPlaceholder")}
             />
           </div>
 
@@ -226,13 +224,13 @@ export function IdentifierDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || !typeId || value.trim() === ""}
             >
-              {isPending ? "Registering…" : "Register"}
+              {isPending ? t("registering") : t("register")}
             </Button>
           </DialogFooter>
         </form>

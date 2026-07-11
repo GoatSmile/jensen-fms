@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ export function CategoryChecklistRow({
   onPick,
   disabled,
 }: Props) {
+  const t = useTranslations("recipe");
   const totalCount = parts.length;
   const remaining = parts.filter((p) => !addedIds.has(p.id)).length;
   const done = pickedCount > 0;
@@ -76,7 +78,7 @@ export function CategoryChecklistRow({
         {done ? (
           <Check
             className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-            aria-label="Category has parts in the recipe"
+            aria-label={t("doneAria")}
           />
         ) : (
           <span className="text-muted-foreground w-4 shrink-0 text-right text-xs tabular-nums">
@@ -93,7 +95,7 @@ export function CategoryChecklistRow({
               : "text-muted-foreground"
           }`}
         >
-          {pickedCount}/{totalCount} picked
+          {t("picked", { picked: pickedCount, total: totalCount })}
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
@@ -102,7 +104,7 @@ export function CategoryChecklistRow({
           min={1}
           step={1}
           inputMode="numeric"
-          aria-label="Quantity to add"
+          aria-label={t("qtyAria")}
           value={qtyText}
           onChange={(e) => setQtyText(e.target.value)}
           disabled={pickDisabled}
@@ -121,16 +123,16 @@ export function CategoryChecklistRow({
             <SelectValue
               placeholder={
                 totalCount === 0
-                  ? "None available"
+                  ? t("noneAvailable")
                   : remaining === 0
-                    ? "All added"
-                    : "Pick a part…"
+                    ? t("allAdded")
+                    : t("pickPart")
               }
             />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__placeholder__" disabled>
-              Pick a part…
+              {t("pickPart")}
             </SelectItem>
             {parts.map((p) => {
               const already = addedIds.has(p.id);
