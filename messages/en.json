@@ -257,5 +257,28 @@
     "installDismiss": "Dismiss hint",
     "installIos": "<b>Tired of allowing the camera every time?</b> Tap the <share></share> share button in Safari, then <i>Add to Home Screen</i>. Launching from the home-screen icon remembers the camera permission and feels like a native app.",
     "installAndroid": "<b>Tired of allowing the camera every time?</b> Open your browser menu and pick <i>Install app</i> (or <i>Add to Home Screen</i>). Launched from the home-screen icon the camera permission sticks."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "bikes": "Bikes",
+    "bikeTemplates": "Bike templates",
+    "parts": "Parts",
+    "maintenance": "Maintenance",
+    "workshopFloor": "Workshop floor",
+    "manufacturingOrders": "Manufacturing orders",
+    "purchaseOrders": "Purchase orders",
+    "salesOrders": "Sales orders",
+    "paintOrders": "Paint orders",
+    "invoices": "Invoices",
+    "serviceAgreements": "Service agreements",
+    "customers": "Customers",
+    "admin": "Admin",
+    "logoAria": "Jensen FMS — Dashboard",
+    "collapse": "Collapse",
+    "collapseAria": "Collapse navigation",
+    "expandAria": "Expand navigation",
+    "openAria": "Open navigation",
+    "closeAria": "Close navigation",
+    "title": "Navigation"
   }
 }

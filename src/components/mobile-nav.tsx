@@ -3,61 +3,14 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import {
-  Bike,
-  BookOpen,
-  Boxes,
-  Building2,
-  ClipboardList,
-  FileText,
-  Hammer,
-  HardHat,
-  Home,
-  Menu,
-  Paintbrush,
-  Receipt,
-  Settings,
-  ShieldCheck,
-  Wrench,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 import { Logo } from "@/components/logo";
+import { NAV_GROUPS, isNavItemActive } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  /** Match this route exactly (no prefix matching) — used for the root link. */
-  exact?: boolean;
-};
-
-// Grouped to match the desktop sidebar (separators between groups). Dashboard
-// sits alone at the top; the customer Map now lives under Admin, so it's not here.
-const NAV_GROUPS: NavItem[][] = [
-  [{ href: "/", label: "Dashboard", icon: Home, exact: true }],
-  [
-    { href: "/bikes", label: "Bikes", icon: Bike },
-    { href: "/bike-templates", label: "Bike templates", icon: BookOpen },
-    { href: "/parts", label: "Parts", icon: Boxes },
-    { href: "/maintenance/tickets", label: "Maintenance", icon: Wrench },
-    { href: "/work", label: "Workshop floor", icon: HardHat },
-  ],
-  [
-    { href: "/manufacturing-orders", label: "Manufacturing orders", icon: Hammer },
-    { href: "/purchase-orders", label: "Purchase orders", icon: ClipboardList },
-    { href: "/sales-orders", label: "Sales orders", icon: Receipt },
-    { href: "/paint-orders", label: "Paint orders", icon: Paintbrush },
-    { href: "/invoices", label: "Invoices", icon: FileText },
-    { href: "/service-agreements", label: "Service agreements", icon: ShieldCheck },
-    { href: "/organizations", label: "Customers", icon: Building2 },
-  ],
-  [{ href: "/admin", label: "Admin", icon: Settings }],
-];
 
 /**
  * Mobile top bar with a hamburger drawer — shown only below md. Desktop uses
@@ -67,6 +20,7 @@ const NAV_GROUPS: NavItem[][] = [
  * shadcn's DialogContent applies).
  */
 export function MobileNav() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -91,7 +45,7 @@ export function MobileNav() {
     <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between border-b px-3 md:hidden print:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Open navigation">
+          <Button variant="ghost" size="icon-sm" aria-label={t("openAria")}>
             <Menu aria-hidden />
           </Button>
         </DialogPrimitive.Trigger>
@@ -111,12 +65,12 @@ export function MobileNav() {
             )}
           >
             <DialogPrimitive.Title className="sr-only">
-              Navigation
+              {t("title")}
             </DialogPrimitive.Title>
             <div className="flex h-20 items-center justify-between border-b px-4">
               <Link
                 href="/"
-                aria-label="Jensen FMS — Dashboard"
+                aria-label={t("logoAria")}
                 className="flex items-center"
               >
                 <Logo heightClass="h-12" />
@@ -125,7 +79,7 @@ export function MobileNav() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Close navigation"
+                  aria-label={t("closeAria")}
                 >
                   <X aria-hidden />
                 </Button>
@@ -142,22 +96,7 @@ export function MobileNav() {
                   ) : null}
                   {group.map((item) => {
                     const Icon = item.icon;
-                    // The Maintenance entry links to tickets but also owns work
-                    // orders. Highlight it for both sub-routes.
-                    const isMaintenanceItem =
-                      item.href === "/maintenance/tickets";
-                    // Customers shouldn't claim the customer map (now under Admin).
-                    const isCustomerListItem = item.href === "/organizations";
-                    const active = item.exact
-                      ? pathname === item.href
-                      : isCustomerListItem
-                        ? pathname === item.href ||
-                          (pathname.startsWith(`${item.href}/`) &&
-                            pathname !== "/organizations/map")
-                        : pathname === item.href ||
-                          pathname.startsWith(`${item.href}/`) ||
-                          (isMaintenanceItem &&
-                            pathname.startsWith("/maintenance/work-orders"));
+                    const active = isNavItemActive(item, pathname);
                     return (
                       <DialogPrimitive.Close asChild key={item.href}>
                         <Link
@@ -170,7 +109,7 @@ export function MobileNav() {
                           )}
                         >
                           <Icon aria-hidden className="size-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <span className="truncate">{t(item.labelKey)}</span>
                         </Link>
                       </DialogPrimitive.Close>
                     );
@@ -183,7 +122,7 @@ export function MobileNav() {
       </DialogPrimitive.Root>
       <Link
         href="/"
-        aria-label="Jensen FMS — Dashboard"
+        aria-label={t("logoAria")}
         className="flex items-center"
       >
         <Logo heightClass="h-7" />

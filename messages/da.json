@@ -257,5 +257,28 @@
     "installDismiss": "Skjul tip",
     "installIos": "<b>Træt af at give kameraet lov hver gang?</b> Tryk på <share></share> del-knappen i Safari, og vælg <i>Føj til hjemmeskærm</i>. Når appen startes fra ikonet på hjemmeskærmen, huskes kameratilladelsen, og den føles som en rigtig app.",
     "installAndroid": "<b>Træt af at give kameraet lov hver gang?</b> Åbn browserens menu og vælg <i>Installer app</i> (eller <i>Føj til hjemmeskærm</i>). Når appen startes fra ikonet på hjemmeskærmen, husker den kameratilladelsen."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "bikes": "Cykler",
+    "bikeTemplates": "Cykelskabeloner",
+    "parts": "Dele",
+    "maintenance": "Vedligehold",
+    "workshopFloor": "Værkstedet",
+    "manufacturingOrders": "Produktionsordrer",
+    "purchaseOrders": "Indkøbsordrer",
+    "salesOrders": "Salgsordrer",
+    "paintOrders": "Lakordrer",
+    "invoices": "Fakturaer",
+    "serviceAgreements": "Serviceaftaler",
+    "customers": "Kunder",
+    "admin": "Admin",
+    "logoAria": "Jensen FMS — Dashboard",
+    "collapse": "Skjul",
+    "collapseAria": "Fold navigationen sammen",
+    "expandAria": "Udvid navigationen",
+    "openAria": "Åbn navigationen",
+    "closeAria": "Luk navigationen",
+    "title": "Navigation"
   }
 }
