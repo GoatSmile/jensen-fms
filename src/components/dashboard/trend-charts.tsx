@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Bar,
   CartesianGrid,
@@ -109,6 +110,7 @@ const AXIS_TICK = { fontSize: 11, fill: "currentColor" } as const;
 
 /** Bars for bikes sold + serviced per month, line for the fleet under agreement. */
 export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
+  const t = useTranslations("dashboard.charts");
   const [sel, setSel] = useState<MonthSelection | null>(null);
   const open = (kind: "sold" | "serviced") => (e: unknown) => {
     const m = datumOf(e);
@@ -116,16 +118,22 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
     setSel({
       kind,
       monthStart: m.month,
-      title: `${kind === "sold" ? "Bikes sold" : "Bikes serviced"} — ${m.monthTitle}`,
+      title: t(kind === "sold" ? "soldSheet" : "servicedSheet", {
+        month: m.monthTitle,
+      }),
     });
   };
   return (
     <div className="text-muted-foreground">
       <Legend
         items={[
-          { color: COLORS.sold, label: "Sold" },
-          { color: COLORS.serviced, label: "Serviced" },
-          { color: COLORS.underAgreement, label: "Under agreement", line: true },
+          { color: COLORS.sold, label: t("sold") },
+          { color: COLORS.serviced, label: t("serviced") },
+          {
+            color: COLORS.underAgreement,
+            label: t("underAgreement"),
+            line: true,
+          },
         ]}
       />
       <div className="h-[260px] w-full">
@@ -135,11 +143,11 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
             <XAxis dataKey="label" tickLine={false} axisLine={false} tick={AXIS_TICK} interval={0} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={AXIS_TICK} />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
-            <Bar dataKey="sold" name="Sold" fill={COLORS.sold} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("sold")} />
-            <Bar dataKey="serviced" name="Serviced" fill={COLORS.serviced} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("serviced")} />
+            <Bar dataKey="sold" name={t("sold")} fill={COLORS.sold} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("sold")} />
+            <Bar dataKey="serviced" name={t("serviced")} fill={COLORS.serviced} maxBarSize={14} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open("serviced")} />
             <Line
               dataKey="underAgreement"
-              name="Under agreement"
+              name={t("underAgreement")}
               type="monotone"
               stroke={COLORS.underAgreement}
               strokeWidth={2}
@@ -155,6 +163,7 @@ export function BikesTrendChart({ months }: { months: TrendMonth[] }) {
 
 /** Single-series bars: landed DKK committed per month (by PO order date). */
 export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
+  const t = useTranslations("dashboard.charts");
   const [sel, setSel] = useState<MonthSelection | null>(null);
   const open = (e: unknown) => {
     const m = datumOf(e);
@@ -162,7 +171,7 @@ export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
     setSel({
       kind: "purchasing",
       monthStart: m.month,
-      title: `Purchasing — ${m.monthTitle}`,
+      title: t("purchasingSheet", { month: m.monthTitle }),
     });
   };
   return (
@@ -183,7 +192,7 @@ export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
             <Tooltip content={<ChartTooltip money />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
             <Bar
               dataKey="purchasing"
-              name="Landed cost ordered"
+              name={t("landedCostOrdered")}
               fill={COLORS.purchasing}
               maxBarSize={18}
               radius={[3, 3, 0, 0]}
@@ -200,6 +209,7 @@ export function PurchasingTrendChart({ months }: { months: TrendMonth[] }) {
 
 /** Stacked bars of invoiced DKK per month, split by source. */
 export function InvoicedTrendChart({ months }: { months: TrendMonth[] }) {
+  const t = useTranslations("dashboard.charts");
   const [sel, setSel] = useState<MonthSelection | null>(null);
   // All three stack segments open the same month view — the interesting
   // unit is the month's invoices; the split is shown in the description.
@@ -209,17 +219,21 @@ export function InvoicedTrendChart({ months }: { months: TrendMonth[] }) {
     setSel({
       kind: "invoiced",
       monthStart: m.month,
-      title: `Invoiced — ${m.monthTitle}`,
-      description: `Bike sales ${formatPrice(m.sales, "DKK")} · Service ${formatPrice(m.service, "DKK")} · Fees ${formatPrice(m.fees, "DKK")}`,
+      title: t("invoicedSheet", { month: m.monthTitle }),
+      description: t("invoicedSplit", {
+        sales: formatPrice(m.sales, "DKK"),
+        service: formatPrice(m.service, "DKK"),
+        fees: formatPrice(m.fees, "DKK"),
+      }),
     });
   };
   return (
     <div className="text-muted-foreground">
       <Legend
         items={[
-          { color: COLORS.sales, label: "Bike sales" },
-          { color: COLORS.service, label: "Service" },
-          { color: COLORS.fees, label: "Agreement fees" },
+          { color: COLORS.sales, label: t("bikeSales") },
+          { color: COLORS.service, label: t("service") },
+          { color: COLORS.fees, label: t("agreementFees") },
         ]}
       />
       <div className="h-[220px] w-full">
@@ -236,9 +250,9 @@ export function InvoicedTrendChart({ months }: { months: TrendMonth[] }) {
               }
             />
             <Tooltip content={<ChartTooltip money />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
-            <Bar dataKey="sales" name="Bike sales" stackId="inv" fill={COLORS.sales} maxBarSize={18} cursor="pointer" onClick={open} />
-            <Bar dataKey="service" name="Service" stackId="inv" fill={COLORS.service} maxBarSize={18} cursor="pointer" onClick={open} />
-            <Bar dataKey="fees" name="Agreement fees" stackId="inv" fill={COLORS.fees} maxBarSize={18} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open} />
+            <Bar dataKey="sales" name={t("bikeSales")} stackId="inv" fill={COLORS.sales} maxBarSize={18} cursor="pointer" onClick={open} />
+            <Bar dataKey="service" name={t("service")} stackId="inv" fill={COLORS.service} maxBarSize={18} cursor="pointer" onClick={open} />
+            <Bar dataKey="fees" name={t("agreementFees")} stackId="inv" fill={COLORS.fees} maxBarSize={18} radius={[3, 3, 0, 0]} cursor="pointer" onClick={open} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

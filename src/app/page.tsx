@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
   CalendarClock,
@@ -52,16 +53,12 @@ function diffDays(fromISO: string): number {
 }
 
 /** "Aug" for most months, "Jan 26" where the year flips — chart tick labels. */
-function trendLabel(monthStart: string): string {
+function trendLabel(monthStart: string, locale: string): string {
   const d = new Date(`${monthStart}T00:00:00Z`);
-  const m = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  const m = d.toLocaleString(locale, { month: "short", timeZone: "UTC" });
   return d.getUTCMonth() === 0
     ? `${m} ${String(d.getUTCFullYear()).slice(2)}`
     : m;
-}
-
-function plural(n: number, singular: string, pluralForm?: string): string {
-  return `${n} ${n === 1 ? singular : (pluralForm ?? `${singular}s`)}`;
 }
 
 /** One clickable row inside a money-band card, matching the attention-list rows. */
@@ -99,6 +96,8 @@ function BandRow({
 }
 
 export default async function DashboardPage() {
+  const t = await getTranslations("dashboard");
+  const locale = await getLocale();
   const supabase = await createClient();
   const today = todayISODate();
   const paintCutoff = daysAgo(PAINT_AGING_DAYS);
@@ -196,9 +195,9 @@ export default async function DashboardPage() {
   // history is too thin to be worth screen space, open once it isn't. A
   // manual toggle (stored per device in FoldSection) always wins.
   const trendMonths: TrendMonth[] = monthlyStats.map((m) => ({
-    label: trendLabel(m.monthStart),
+    label: trendLabel(m.monthStart, locale),
     month: m.monthStart,
-    monthTitle: new Date(`${m.monthStart}T00:00:00Z`).toLocaleString("en-US", {
+    monthTitle: new Date(`${m.monthStart}T00:00:00Z`).toLocaleString(locale, {
       month: "long",
       year: "numeric",
       timeZone: "UTC",
@@ -220,8 +219,12 @@ export default async function DashboardPage() {
   ).length;
   const bikesSummary =
     totalSold + totalServiced > 0
-      ? `${totalSold} sold · ${totalServiced} serviced · ${underAgreementNow} under agreement now`
-      : "No bike activity in the last 12 months yet";
+      ? t("bikesSummary", {
+          sold: totalSold,
+          serviced: totalServiced,
+          under: underAgreementNow,
+        })
+      : t("bikesSummaryEmpty");
   const invoicedTotal = monthlyStats.reduce(
     (s, m) => s + m.invoicedSales + m.invoicedService + m.invoicedFees,
     0,
@@ -231,24 +234,24 @@ export default async function DashboardPage() {
   ).length;
   const invoicedSummary =
     invoicedTotal !== 0
-      ? `${formatPrice(invoicedTotal, "DKK")} invoiced (ex VAT) in the last 12 months`
-      : "No invoices issued yet";
+      ? t("invoicedSummary", { amount: formatPrice(invoicedTotal, "DKK") })
+      : t("invoicedSummaryEmpty");
   const purchasingActiveMonths = trendMonths.filter(
     (m) => m.purchasing > 0,
   ).length;
   const purchasingSummary =
     purchasing.totalDkk > 0
-      ? `${formatPrice(purchasing.totalDkk, "DKK")} landed across ${purchasing.poCount} POs in the last 12 months`
-      : "No purchase orders in the last 12 months";
+      ? t("purchasingSummary", {
+          amount: formatPrice(purchasing.totalDkk, "DKK"),
+          count: purchasing.poCount,
+        })
+      : t("purchasingSummaryEmpty");
 
   return (
     <div className="flex flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-10">
       <header className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Daily pulse — money on the table, counts, low stock, and anything
-          that has been sitting too long.
-        </p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       {/* Money band — only cards with something to report are rendered. */}
@@ -259,8 +262,7 @@ export default async function DashboardPage() {
             aria-hidden
           />
           <p className="text-muted-foreground text-sm">
-            Money side is clear — nothing uninvoiced, no overdue invoices, no
-            agreements expiring within 90 days, no late purchase orders.
+            {t("moneyAllClear")}
           </p>
         </section>
       ) : (
@@ -269,12 +271,14 @@ export default async function DashboardPage() {
             <AttentionCard
               title={
                 uninvoiced.total > 0
-                  ? `Uninvoiced work — ${formatPrice(uninvoiced.total, "DKK")}`
-                  : "Invoicing to finish"
+                  ? t("uninvoicedTitle", {
+                      amount: formatPrice(uninvoiced.total, "DKK"),
+                    })
+                  : t("invoicingToFinish")
               }
               emptyMessage=""
               viewAllHref="/invoices"
-              viewAllLabel="Go invoice"
+              viewAllLabel={t("goInvoice")}
               tone="warning"
             >
               {uninvoiced.woCount > 0 ? (
@@ -283,7 +287,7 @@ export default async function DashboardPage() {
                   right={formatPrice(uninvoiced.woTotal, "DKK")}
                 >
                   <span className="truncate">
-                    {plural(uninvoiced.woCount, "completed work order")}
+                    {t("completedWo", { count: uninvoiced.woCount })}
                   </span>
                 </BandRow>
               ) : null}
@@ -293,9 +297,9 @@ export default async function DashboardPage() {
                   right={formatPrice(uninvoiced.soTotalDkk, "DKK")}
                 >
                   <span className="truncate">
-                    {plural(uninvoiced.soCount, "delivered sales order")}
+                    {t("deliveredSo", { count: uninvoiced.soCount })}
                     {uninvoiced.soNonDkkCount > 0
-                      ? ` (${uninvoiced.soNonDkkCount} non-DKK)`
+                      ? t("soNonDkk", { count: uninvoiced.soNonDkkCount })
                       : ""}
                   </span>
                 </BandRow>
@@ -306,7 +310,7 @@ export default async function DashboardPage() {
                   right={formatPrice(uninvoiced.feeTotal, "DKK")}
                 >
                   <span className="truncate">
-                    {plural(uninvoiced.feeMonths, "agreement fee month")}
+                    {t("feeMonths", { count: uninvoiced.feeMonths })}
                   </span>
                 </BandRow>
               ) : null}
@@ -316,13 +320,14 @@ export default async function DashboardPage() {
                   right={
                     uninvoiced.draftOldestDays != null &&
                     uninvoiced.draftOldestDays > 0
-                      ? `oldest ${uninvoiced.draftOldestDays}d`
+                      ? t("oldestDays", { days: uninvoiced.draftOldestDays })
                       : undefined
                   }
                 >
                   <span className="truncate">
-                    {plural(uninvoiced.draftInvoiceCount, "draft invoice")}{" "}
-                    waiting to be issued
+                    {t("draftInvoices", {
+                      count: uninvoiced.draftInvoiceCount,
+                    })}
                   </span>
                 </BandRow>
               ) : null}
@@ -331,10 +336,9 @@ export default async function DashboardPage() {
 
           {hasOverdue ? (
             <AttentionCard
-              title={`Overdue invoices — ${formatPrice(
-                overdueInvoices.totalDkk,
-                "DKK",
-              )}`}
+              title={t("overdueTitle", {
+                amount: formatPrice(overdueInvoices.totalDkk, "DKK"),
+              })}
               emptyMessage=""
               viewAllHref="/invoices"
               tone="destructive"
@@ -343,7 +347,7 @@ export default async function DashboardPage() {
                 <BandRow
                   key={inv.id}
                   href={`/invoices/${inv.id}`}
-                  right={`${inv.daysOverdue}d late`}
+                  right={t("daysLate", { days: inv.daysOverdue })}
                   rightClassName="text-destructive"
                 >
                   <span className="truncate font-mono text-xs">
@@ -360,7 +364,7 @@ export default async function DashboardPage() {
 
           {hasExpiring ? (
             <AttentionCard
-              title="Agreements expiring"
+              title={t("agreementsExpiring")}
               emptyMessage=""
               viewAllHref="/service-agreements"
               tone="warning"
@@ -369,13 +373,17 @@ export default async function DashboardPage() {
                 <BandRow
                   key={a.id}
                   href={`/service-agreements/${a.id}`}
-                  right={`in ${a.daysLeft}d`}
+                  right={t("inDays", { days: a.daysLeft })}
                   rightClassName="text-amber-700 dark:text-amber-400"
                 >
-                  <span className="truncate">{a.orgName ?? a.name}</span>
+                  <span className="truncate">
+                    {a.orgName ?? a.name ?? t("agreementFallbackName")}
+                  </span>
                   {a.monthlyFee > 0 ? (
                     <span className="text-muted-foreground shrink-0 text-xs">
-                      {formatPrice(a.monthlyFee, a.feeCurrency)}/mo
+                      {t("perMonth", {
+                        amount: formatPrice(a.monthlyFee, a.feeCurrency),
+                      })}
                     </span>
                   ) : null}
                 </BandRow>
@@ -385,7 +393,7 @@ export default async function DashboardPage() {
 
           {hasPOChase ? (
             <AttentionCard
-              title="Purchase orders to chase"
+              title={t("poChase")}
               emptyMessage=""
               viewAllHref="/purchase-orders"
               tone="warning"
@@ -394,7 +402,7 @@ export default async function DashboardPage() {
                 <BandRow
                   key={po.id}
                   href={`/purchase-orders/${po.id}`}
-                  right={`${po.daysLate}d past expected`}
+                  right={t("daysPastExpected", { days: po.daysLate })}
                   rightClassName="text-amber-700 dark:text-amber-400"
                 >
                   <span className="truncate font-mono text-xs">
@@ -408,7 +416,7 @@ export default async function DashboardPage() {
               {draftPOCount > 0 ? (
                 <BandRow href="/purchase-orders">
                   <span className="text-muted-foreground truncate text-xs">
-                    {plural(draftPOCount, "draft PO")} waiting to be placed
+                    {t("draftPos", { count: draftPOCount })}
                   </span>
                 </BandRow>
               ) : null}
@@ -421,55 +429,55 @@ export default async function DashboardPage() {
           "nothing in build" is daily signal, unlike an empty attention list. */}
       <section className="grid gap-3 lg:grid-cols-3">
         <PipelineCard
-          title="Build"
+          title={t("pipeline.build")}
           stages={[
             {
-              label: "planning",
+              label: t("pipeline.planning"),
               value: pipelines.build.planning,
               href: "/bikes?status=planning",
             },
             {
-              label: "building",
+              label: t("pipeline.building"),
               value: pipelines.build.building,
               href: "/work?tab=build",
             },
             {
-              label: "at painter",
+              label: t("pipeline.atPainter"),
               value: pipelines.build.atPainter,
               href: "/paint-orders",
             },
             {
-              label: "in stock",
+              label: t("pipeline.inStock"),
               value: pipelines.build.inStock,
               href: "/bikes?status=in_stock",
             },
           ]}
         />
         <PipelineCard
-          title="Repair"
+          title={t("pipeline.repair")}
           stages={[
             {
-              label: "open tickets",
+              label: t("pipeline.openTickets"),
               value: pipelines.repair.openTickets,
               href: "/maintenance/tickets",
             },
             {
-              label: "work orders",
+              label: t("pipeline.workOrders"),
               value: pipelines.repair.openWOs,
               href: "/maintenance/work-orders",
             },
             {
-              label: "done, 7 days",
+              label: t("pipeline.done7"),
               value: pipelines.repair.doneLast7,
               href: "/maintenance/work-orders",
             },
           ]}
         />
         <PipelineCard
-          title="Orders in flight"
+          title={t("pipeline.ordersInFlight")}
           stages={[
             {
-              label: "sales orders",
+              label: t("pipeline.salesOrders"),
               value: pipelines.orders.openSOs,
               href: "/sales-orders",
               hint:
@@ -478,12 +486,12 @@ export default async function DashboardPage() {
                   : null,
             },
             {
-              label: "manufacturing",
+              label: t("pipeline.manufacturing"),
               value: pipelines.orders.openMOs,
               href: "/manufacturing-orders",
             },
             {
-              label: "purchase orders",
+              label: t("pipeline.purchaseOrders"),
               value: pipelines.orders.openPOs,
               href: "/purchase-orders",
             },
@@ -494,8 +502,8 @@ export default async function DashboardPage() {
       {/* Attention strip */}
       <section className="grid gap-3 lg:grid-cols-3">
         <AttentionCard
-          title="Low stock"
-          emptyMessage="All parts above reorder point. Nothing to chase."
+          title={t("lowStock")}
+          emptyMessage={t("lowStockEmpty")}
           viewAllHref="/parts?stock=low"
           tone="warning"
         >
@@ -514,7 +522,7 @@ export default async function DashboardPage() {
                       variant={p.stock_status === "out" ? "destructive" : "warning"}
                       className="shrink-0"
                     >
-                      {p.stock_status === "out" ? "Out" : "Low"}
+                      {p.stock_status === "out" ? t("stockOut") : t("stockLow")}
                     </Badge>
                     <span className="text-muted-foreground truncate font-mono text-xs">
                       {p.internal_sku}
@@ -532,8 +540,8 @@ export default async function DashboardPage() {
         </AttentionCard>
 
         <AttentionCard
-          title="Overdue MOs"
-          emptyMessage="Every open MO is on schedule."
+          title={t("overdueMos")}
+          emptyMessage={t("overdueMosEmpty")}
           viewAllHref="/manufacturing-orders"
           tone="destructive"
         >
@@ -556,11 +564,13 @@ export default async function DashboardPage() {
                       {mo.mo_number}
                     </span>
                     <span className="text-muted-foreground truncate text-xs">
-                      due {formatDate(mo.planned_completion_date)}
+                      {t("due", {
+                        date: formatDate(mo.planned_completion_date),
+                      })}
                     </span>
                   </div>
                   <span className="text-destructive shrink-0 text-xs tabular-nums">
-                    {overdueDays}d late
+                    {t("daysLate", { days: overdueDays })}
                   </span>
                 </Link>
               </li>
@@ -569,8 +579,8 @@ export default async function DashboardPage() {
         </AttentionCard>
 
         <AttentionCard
-          title={`Paint orders > ${PAINT_AGING_DAYS} days at painter`}
-          emptyMessage="No paint orders waiting longer than expected."
+          title={t("paintAging", { days: PAINT_AGING_DAYS })}
+          emptyMessage={t("paintAgingEmpty")}
           viewAllHref="/paint-orders"
           tone="warning"
         >
@@ -611,7 +621,7 @@ export default async function DashboardPage() {
       <section className="flex flex-col gap-3">
         <FoldSection
           storageId="bikes-trend"
-          title="Bikes — last 12 months"
+          title={t("bikesTrendTitle")}
           summary={bikesSummary}
           defaultOpen={bikesActiveMonths >= 3}
         >
@@ -619,7 +629,7 @@ export default async function DashboardPage() {
         </FoldSection>
         <FoldSection
           storageId="invoiced-trend"
-          title="Invoiced — last 12 months"
+          title={t("invoicedTrendTitle")}
           summary={invoicedSummary}
           defaultOpen={invoicedActiveMonths >= 2}
         >
@@ -627,7 +637,7 @@ export default async function DashboardPage() {
         </FoldSection>
         <FoldSection
           storageId="purchasing-trend"
-          title="Purchasing — last 12 months"
+          title={t("purchasingTrendTitle")}
           summary={purchasingSummary}
           defaultOpen={purchasingActiveMonths >= 2}
         >
@@ -635,11 +645,11 @@ export default async function DashboardPage() {
         </FoldSection>
         <FoldSection
           storageId="housekeeping"
-          title="Data housekeeping"
+          title={t("housekeepingTitle")}
           summary={
             housekeeping.total > 0
-              ? `${housekeeping.total} gaps — origins, HS codes, prices, supplier emails`
-              : "No data gaps"
+              ? t("housekeepingSummary", { count: housekeeping.total })
+              : t("housekeepingClear")
           }
           defaultOpen={false}
         >
@@ -647,28 +657,28 @@ export default async function DashboardPage() {
             {housekeeping.partsNoOrigin > 0 ? (
               <BandRow href="/parts?gap=origin">
                 <span className="truncate">
-                  {`${plural(housekeeping.partsNoOrigin, "part")} without origin — new PO lines default to no import tax`}
+                  {t("gapOrigin", { count: housekeeping.partsNoOrigin })}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.partsNoHs > 0 ? (
               <BandRow href="/parts?gap=hs">
                 <span className="truncate">
-                  {`${plural(housekeeping.partsNoHs, "part")} without an HS code`}
+                  {t("gapHs", { count: housekeeping.partsNoHs })}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.offeringsNoPrice > 0 ? (
               <BandRow href="/parts?gap=offer-price">
                 <span className="truncate">
-                  {`${plural(housekeeping.offeringsNoPrice, "supplier offering")} without a purchase price — drafted POs come out at 0 kr.`}
+                  {t("gapOfferPrice", { count: housekeeping.offeringsNoPrice })}
                 </span>
               </BandRow>
             ) : null}
             {housekeeping.suppliersNoEmail > 0 ? (
               <BandRow href="/admin/suppliers?gap=email">
                 <span className="truncate">
-                  {`${plural(housekeeping.suppliersNoEmail, "supplier")} without an email — blocks "Email supplier"`}
+                  {t("gapEmail", { count: housekeeping.suppliersNoEmail })}
                 </span>
               </BandRow>
             ) : null}
@@ -680,7 +690,7 @@ export default async function DashboardPage() {
       <section className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-lg border bg-muted/30 px-4 py-3">
         <div className="flex items-center gap-2 text-sm">
           <TrendingUp className="text-muted-foreground size-4" aria-hidden />
-          <span className="text-muted-foreground">Catalog cost basis</span>
+          <span className="text-muted-foreground">{t("costBasis")}</span>
           <span className="text-base font-semibold tabular-nums">
             {formatPrice(costBasisDkk, "DKK")}
           </span>
@@ -690,19 +700,27 @@ export default async function DashboardPage() {
             href="/parts"
             className="hover:text-foreground transition-colors"
           >
-            <span className="text-foreground font-semibold tabular-nums">
-              {partsCount.count ?? 0}
-            </span>{" "}
-            parts in catalog
+            {t.rich("partsInCatalog", {
+              count: partsCount.count ?? 0,
+              b: (chunks) => (
+                <span className="text-foreground font-semibold tabular-nums">
+                  {chunks}
+                </span>
+              ),
+            })}
           </Link>
           <Link
             href="/organizations"
             className="hover:text-foreground transition-colors"
           >
-            <span className="text-foreground font-semibold tabular-nums">
-              {customersCount.count ?? 0}
-            </span>{" "}
-            customers
+            {t.rich("customersRef", {
+              count: customersCount.count ?? 0,
+              b: (chunks) => (
+                <span className="text-foreground font-semibold tabular-nums">
+                  {chunks}
+                </span>
+              ),
+            })}
           </Link>
         </div>
       </section>

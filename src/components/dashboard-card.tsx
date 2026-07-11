@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowUpRight, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -140,6 +141,7 @@ export function AttentionCard({
   tone = "neutral",
   children,
 }: AttentionProps) {
+  const t = useTranslations("dashboard");
   const hasChildren = React.Children.count(children) > 0;
   return (
     <section className="flex h-full flex-col gap-3 rounded-lg border p-4">
@@ -150,7 +152,7 @@ export function AttentionCard({
             href={viewAllHref}
             className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
           >
-            {viewAllLabel ?? "View all"}
+            {viewAllLabel ?? t("viewAll")}
           </Link>
         ) : null}
       </header>

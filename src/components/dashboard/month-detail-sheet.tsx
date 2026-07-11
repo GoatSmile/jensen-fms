@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import {
   Sheet,
@@ -39,6 +40,7 @@ export function MonthDetailSheet({
   selection: MonthSelection | null;
   onClose: () => void;
 }) {
+  const t = useTranslations("dashboard.monthDetail");
   const [detail, setDetail] = useState<MonthDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,7 +114,7 @@ export function MonthDetailSheet({
                 </ul>
               ) : !detail.legacyNote ? (
                 <p className="text-muted-foreground text-sm">
-                  No records for this month.
+                  {t("noRecords")}
                 </p>
               ) : null}
               {detail.legacyNote ? (

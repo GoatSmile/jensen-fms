@@ -12,6 +12,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getTranslations } from "next-intl/server";
 
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
@@ -19,6 +20,11 @@ import { round2 } from "@/lib/invoicing/status";
 import { one } from "@/lib/supabase/embed";
 
 export type MonthDetailKind = "sold" | "serviced" | "invoiced" | "purchasing";
+
+/** Request-scoped translator for the `dashboard.monthDetail` namespace. */
+type Translator = Awaited<
+  ReturnType<typeof getTranslations<"dashboard.monthDetail">>
+>;
 
 export type MonthDetailRow = {
   id: string;
@@ -82,6 +88,7 @@ async function loadLegacyRow(supabase: SupabaseClient, monthStart: string) {
 }
 
 function legacyNoteFor(
+  t: Translator,
   kind: MonthDetailKind,
   leg: Awaited<ReturnType<typeof loadLegacyRow>>,
 ): string | null {
@@ -101,15 +108,17 @@ function legacyNoteFor(
   if (!n) return null;
   const what =
     kind === "invoiced"
-      ? `${formatPrice(n, "DKK")} of this month's total`
-      : `${n} of this month's count`;
-  return `${what} comes from the historical import (pre-system${
-    leg.source ? `: ${leg.source}` : ""
-  }) — those records predate the system, so there is no per-record list for them.`;
+      ? t("legacyInvoiced", { amount: formatPrice(n, "DKK") })
+      : t("legacyCount", { count: n });
+  const pre = leg.source
+    ? `${t("legacyPre")}: ${leg.source}`
+    : t("legacyPre");
+  return t("legacyNote", { what, pre });
 }
 
 async function loadSold(
   supabase: SupabaseClient,
+  t: Translator,
   monthStart: string,
 ): Promise<{ rows: MonthDetailRow[]; countLine: string | null }> {
   const monthKey = monthStart.slice(0, 7);
@@ -150,7 +159,7 @@ async function loadSold(
     rows.push({
       id: bike.id as string,
       href: `/bikes/${bike.id}`,
-      primary: (bike.frame_number as string | null) ?? "(no frame number)",
+      primary: (bike.frame_number as string | null) ?? t("noFrameNumber"),
       secondary: [templateLabel, owner].filter(Boolean).join(" → ") || null,
       right: formatDate(cphDate(r.occurred_at as string)),
     });
@@ -160,6 +169,7 @@ async function loadSold(
 
 async function loadServiced(
   supabase: SupabaseClient,
+  t: Translator,
   monthStart: string,
 ): Promise<{ rows: MonthDetailRow[]; countLine: string | null }> {
   const monthKey = monthStart.slice(0, 7);
@@ -203,13 +213,14 @@ async function loadServiced(
   }
   const countLine =
     rows.length > 0
-      ? `${rows.length} completed work order${rows.length === 1 ? "" : "s"} · ${bikeIds.size} bike${bikeIds.size === 1 ? "" : "s"}`
+      ? t("servicedCount", { wos: rows.length, bikes: bikeIds.size })
       : null;
   return { rows, countLine };
 }
 
 async function loadInvoiced(
   supabase: SupabaseClient,
+  t: Translator,
   monthStart: string,
 ): Promise<{ rows: MonthDetailRow[]; countLine: string | null }> {
   const { data } = await supabase
@@ -242,13 +253,13 @@ async function loadInvoiced(
       right: formatPrice(exVat, "DKK"),
     };
   });
-  const countLine =
-    rows.length > 0 ? "Amounts are ex VAT, matching the chart." : null;
+  const countLine = rows.length > 0 ? t("exVatNote") : null;
   return { rows, countLine };
 }
 
 async function loadPurchasing(
   supabase: SupabaseClient,
+  t: Translator,
   monthStart: string,
 ): Promise<{ rows: MonthDetailRow[]; countLine: string | null }> {
   const { data } = await supabase
@@ -293,7 +304,7 @@ async function loadPurchasing(
       secondary: po.supplier,
       right: formatPrice(po.landed, "DKK"),
     }));
-  return { rows, countLine: rows.length > 0 ? "Landed cost, DKK." : null };
+  return { rows, countLine: rows.length > 0 ? t("landedNote") : null };
 }
 
 export async function loadMonthDetail(
@@ -301,14 +312,15 @@ export async function loadMonthDetail(
   kind: MonthDetailKind,
   monthStart: string,
 ): Promise<MonthDetail> {
+  const t = await getTranslations("dashboard.monthDetail");
   const [detail, legacy] = await Promise.all([
     kind === "sold"
-      ? loadSold(supabase, monthStart)
+      ? loadSold(supabase, t, monthStart)
       : kind === "serviced"
-        ? loadServiced(supabase, monthStart)
+        ? loadServiced(supabase, t, monthStart)
         : kind === "invoiced"
-          ? loadInvoiced(supabase, monthStart)
-          : loadPurchasing(supabase, monthStart),
+          ? loadInvoiced(supabase, t, monthStart)
+          : loadPurchasing(supabase, t, monthStart),
     kind === "purchasing"
       ? Promise.resolve(null)
       : loadLegacyRow(supabase, monthStart),
@@ -316,6 +328,6 @@ export async function loadMonthDetail(
   return {
     rows: detail.rows,
     countLine: detail.countLine,
-    legacyNote: legacyNoteFor(kind, legacy),
+    legacyNote: legacyNoteFor(t, kind, legacy),
   };
 }

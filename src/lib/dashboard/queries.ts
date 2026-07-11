@@ -69,7 +69,7 @@ export type OverdueInvoiceRow = {
 
 export type ExpiringAgreementRow = {
   id: string;
-  name: string;
+  name: string | null;
   orgName: string | null;
   endDate: string;
   daysLeft: number;
@@ -204,7 +204,7 @@ export async function loadMoneyBand(
     expiringRes.data ?? []
   ).map((a) => ({
     id: a.id,
-    name: a.name_da ?? a.name_en ?? "Service agreement",
+    name: a.name_da ?? a.name_en ?? null,
     orgName: orgName(one(a.organization)),
     endDate: a.end_date as string,
     daysLeft: -daysSince(a.end_date as string),
