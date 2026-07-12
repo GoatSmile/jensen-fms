@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
 
@@ -30,17 +31,20 @@ function dlRow(label: string, value: React.ReactNode) {
   );
 }
 
-const LANGUAGE_LABEL: Record<string, string> = {
-  da: "Dansk",
-  en: "English",
-};
-
 export default async function OrganizationDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCustomers, tCommon, tLang] = await Promise.all([
+    getTranslations("customerDetail"),
+    getTranslations("customers"),
+    getTranslations("common"),
+    getTranslations("lang"),
+  ]);
+  const langLabel = (code: string | null) =>
+    code ? (tLang.has(code) ? tLang(code) : code) : null;
   const supabase = await createClient();
 
   // Parallel fetch: org, contacts, sub-units, and the per-unit bike counts.
@@ -165,13 +169,13 @@ export default async function OrganizationDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/organizations">Customers</Link>
+              <Link href="/organizations">{tCustomers("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -183,8 +187,7 @@ export default async function OrganizationDetailPage({
 
       {o.deleted_at ? (
         <div className="bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-300 rounded-md border border-amber-300 px-3 py-2 text-sm">
-          This customer is archived. Bikes still pointed here keep that link
-          for historical reference.
+          {t("archivedBanner")}
         </div>
       ) : null}
 
@@ -199,7 +202,7 @@ export default async function OrganizationDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
-          <Section title="Identification">
+          <Section title={t("secIdentification")}>
             <dl>
               {dlRow(
                 "CVR",
@@ -222,9 +225,9 @@ export default async function OrganizationDetailPage({
             </dl>
           </Section>
 
-          <Section title="Address">
+          <Section title={t("secAddress")}>
             {addressLines.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No address on file.</p>
+              <p className="text-muted-foreground text-sm">{t("noAddress")}</p>
             ) : (
               <address className="text-sm not-italic leading-6">
                 {addressLines.map((line, i) => (
@@ -234,10 +237,10 @@ export default async function OrganizationDetailPage({
             )}
           </Section>
 
-          <Section title="Contact">
+          <Section title={t("secContact")}>
             <dl>
               {dlRow(
-                "Email",
+                t("fldEmail"),
                 o.email ? (
                   <a
                     href={`mailto:${o.email}`}
@@ -248,7 +251,7 @@ export default async function OrganizationDetailPage({
                 ) : null,
               )}
               {dlRow(
-                "Phone",
+                t("fldPhone"),
                 o.phone ? (
                   <a href={`tel:${o.phone}`} className="text-sm hover:underline">
                     {o.phone}
@@ -256,7 +259,7 @@ export default async function OrganizationDetailPage({
                 ) : null,
               )}
               {dlRow(
-                "Website",
+                t("fldWebsite"),
                 o.website ? (
                   <a
                     href={o.website}
@@ -268,32 +271,27 @@ export default async function OrganizationDetailPage({
                   </a>
                 ) : null,
               )}
-              {dlRow(
-                "Language",
-                LANGUAGE_LABEL[o.preferred_language ?? ""] ??
-                  o.preferred_language ??
-                  null,
-              )}
+              {dlRow(t("fldLanguage"), langLabel(o.preferred_language))}
             </dl>
           </Section>
         </div>
 
         <div className="flex flex-col gap-4">
-          <Section title="Billing">
+          <Section title={t("secBilling")}>
             <dl>
-              {dlRow("Currency", o.billing_currency)}
+              {dlRow(t("fldCurrency"), o.billing_currency)}
               {dlRow(
-                "Payment terms",
+                t("fldPaymentTerms"),
                 o.payment_terms_days == null
                   ? null
-                  : `Net ${o.payment_terms_days} ${o.payment_terms_days === 1 ? "day" : "days"}`,
+                  : t("netDays", { count: o.payment_terms_days }),
               )}
-              {dlRow("Default VAT code", o.default_vat_code)}
+              {dlRow(t("fldDefaultVat"), o.default_vat_code)}
             </dl>
           </Section>
 
           {o.notes ? (
-            <Section title="Notes">
+            <Section title={t("secNotes")}>
               <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                 {o.notes}
               </p>

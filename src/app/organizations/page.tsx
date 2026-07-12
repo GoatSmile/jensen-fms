@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Building2, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,10 @@ export default async function OrganizationsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("customers"),
+    getTranslations("common"),
+  ]);
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const segmentSlug = sp.segment?.trim() ?? "";
@@ -113,7 +118,7 @@ export default async function OrganizationsPage({
 
   const filterDescriptors: string[] = [];
   if (selectedSegment) filterDescriptors.push(selectedSegment.name_en.toLowerCase());
-  if (q) filterDescriptors.push(`matching "${q}"`);
+  if (q) filterDescriptors.push(t("filterMatching", { q }));
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -122,20 +127,20 @@ export default async function OrganizationsPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Customers</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
             <p className="text-muted-foreground text-sm">
-              {totalCount} {totalCount === 1 ? "customer" : "customers"}
+              {t("subtitleCount", { count: totalCount })}
               {filterDescriptors.length > 0
                 ? ` · ${filterDescriptors.join(" · ")}`
                 : ""}
@@ -143,7 +148,7 @@ export default async function OrganizationsPage({
           </div>
           <Button asChild>
             <Link href="/organizations/new">
-              <Plus aria-hidden /> New customer
+              <Plus aria-hidden /> {t("newCustomer")}
             </Link>
           </Button>
         </div>
@@ -152,19 +157,19 @@ export default async function OrganizationsPage({
       <form method="get" className="grid gap-3 sm:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="org-q">
-            Search
+            {t("searchLabel")}
           </label>
           <Input
             id="org-q"
             name="q"
             defaultValue={q}
-            placeholder="Legal name or display name…"
+            placeholder={t("searchPlaceholder")}
             className={cn(q && FILTER_ACTIVE_CLASS)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="org-segment">
-            Segment
+            {t("segmentLabel")}
           </label>
           <select
             id="org-segment"
@@ -175,7 +180,7 @@ export default async function OrganizationsPage({
               segmentSlug && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All segments</option>
+            <option value="">{t("allSegments")}</option>
             {segments.map((s) => (
               <option key={s.id} value={s.slug}>
                 {s.name_en}
@@ -185,7 +190,7 @@ export default async function OrganizationsPage({
         </div>
         <div className="flex items-end justify-end sm:col-span-2">
           <Button type="submit" size="sm" variant="outline">
-            Apply
+            {tCommon("apply")}
           </Button>
         </div>
       </form>
@@ -193,14 +198,14 @@ export default async function OrganizationsPage({
       {rows.length === 0 ? (
         filterDescriptors.length > 0 ? (
           <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-            No customers match these filters.
+            {t("noMatch")}
           </div>
         ) : (
           <EmptyState
             icon={Building2}
-            title="No customers yet"
-            description="Add your first customer to start assigning bikes and tracking service."
-            action={{ label: "New customer", href: "/organizations/new" }}
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
+            action={{ label: t("newCustomer"), href: "/organizations/new" }}
           />
         )
       ) : (
@@ -208,15 +213,15 @@ export default async function OrganizationsPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Segment</TableHead>
-                <TableHead className="hidden sm:table-cell">Contact</TableHead>
-                <TableHead className="hidden md:table-cell">Country</TableHead>
+                <TableHead>{t("thName")}</TableHead>
+                <TableHead>{t("thSegment")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("thContact")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thCountry")}</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Bikes
+                  {t("thBikes")}
                 </TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Created
+                  {t("thCreated")}
                 </TableHead>
               </TableRow>
             </TableHeader>

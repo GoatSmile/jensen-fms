@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Archive, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +30,6 @@ type Props = {
   preferredLanguage: string | null;
 };
 
-const LANGUAGE_LABEL: Record<string, string> = {
-  da: "Dansk",
-  en: "English",
-};
-
 export function OrganizationHeader({
   organizationId,
   legalName,
@@ -42,6 +38,8 @@ export function OrganizationHeader({
   countryCode,
   preferredLanguage,
 }: Props) {
+  const t = useTranslations("customerDetail");
+  const tLang = useTranslations("lang");
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +64,9 @@ export function OrganizationHeader({
   if (segmentLabel) metaParts.push(segmentLabel);
   if (countryCode) metaParts.push(countryName(countryCode));
   if (preferredLanguage)
-    metaParts.push(LANGUAGE_LABEL[preferredLanguage] ?? preferredLanguage);
+    metaParts.push(
+      tLang.has(preferredLanguage) ? tLang(preferredLanguage) : preferredLanguage,
+    );
 
   return (
     <div className="flex flex-col gap-3">
@@ -97,7 +97,7 @@ export function OrganizationHeader({
         <div className="flex gap-2">
           <Button variant="outline" asChild>
             <Link href={`/organizations/${organizationId}/edit`}>
-              <Pencil aria-hidden /> Edit
+              <Pencil aria-hidden /> {t("edit")}
             </Link>
           </Button>
           <Button
@@ -105,7 +105,7 @@ export function OrganizationHeader({
             onClick={() => setArchiveOpen(true)}
             disabled={pending}
           >
-            <Archive aria-hidden /> Archive
+            <Archive aria-hidden /> {t("archive")}
           </Button>
         </div>
       </div>
@@ -129,25 +129,22 @@ export function OrganizationHeader({
             className="flex flex-col gap-4"
           >
             <DialogHeader>
-              <DialogTitle>Archive customer?</DialogTitle>
-              <DialogDescription>
-                The customer will be hidden from the list. Any bikes still
-                pointed at this customer keep that link so historical
-                assignments remain visible.
-              </DialogDescription>
+              <DialogTitle>{t("archiveTitle")}</DialogTitle>
+              <DialogDescription>{t("archiveDesc")}</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="org-archive-reason">Reason (optional)</Label>
+              <Label htmlFor="org-archive-reason">
+                {t("archiveReasonLabel")}
+              </Label>
               <Textarea
                 id="org-archive-reason"
                 rows={3}
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g. Contract ended; bikes returned."
+                placeholder={t("archiveReasonPlaceholder")}
               />
               <p className="text-muted-foreground text-xs">
-                If given, this is appended to the customer notes for the audit
-                trail.
+                {t("archiveReasonHint")}
               </p>
             </div>
             <DialogFooter>
@@ -161,10 +158,10 @@ export function OrganizationHeader({
                 }}
                 disabled={pending}
               >
-                Keep active
+                {t("keepActive")}
               </Button>
               <Button type="submit" variant="destructive" disabled={pending}>
-                {pending ? "Archiving…" : "Archive customer"}
+                {pending ? t("archiving") : t("archiveConfirm")}
               </Button>
             </DialogFooter>
           </form>

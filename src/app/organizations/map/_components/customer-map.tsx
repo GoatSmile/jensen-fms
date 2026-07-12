@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
 
 import { Button } from "@/components/ui/button";
-import { bikeStatusLabel } from "@/lib/bikes/status";
 import { countryName } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +85,10 @@ type View =
  * chip rail filters within the chosen view.
  */
 export default function CustomerMap({ pins, segments }: Props) {
+  const t = useTranslations("customerMap");
+  const tBikeStatus = useTranslations("bikeStatus");
+  const bikeStatusText = (status: string | null) =>
+    status && tBikeStatus.has(status) ? tBikeStatus(status) : (status ?? "—");
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerRef = useRef<LayerGroup | null>(null);
@@ -224,8 +228,8 @@ export default function CustomerMap({ pins, segments }: Props) {
           marker.bindPopup(
             `<div class="jp-pop">
                <div class="jp-pop__name">${escapeHtml(c.name)}</div>
-               <div class="jp-pop__sub">Bike · ${escapeHtml(bikeStatusLabel(c.status))}</div>
-               <div class="jp-pop__row"><span>Location</span><strong>${escapeHtml(c.parentName ?? "—")}</strong></div>
+               <div class="jp-pop__sub">${escapeHtml(t("popBike"))} · ${escapeHtml(bikeStatusText(c.status))}</div>
+               <div class="jp-pop__row"><span>${escapeHtml(t("popLocation"))}</span><strong>${escapeHtml(c.parentName ?? "—")}</strong></div>
              </div>`,
             { closeButton: true, className: "jp-popup", maxWidth: 280 },
           );
@@ -243,9 +247,9 @@ export default function CustomerMap({ pins, segments }: Props) {
           .join(", ");
         const kindLabel =
           c.kind === "prospect"
-            ? "Prospect"
+            ? t("popProspect")
             : c.kind === "unit"
-              ? `Department · ${c.parentName ?? "—"}`
+              ? `${t("popDepartment")} · ${c.parentName ?? "—"}`
               : null;
         const subParts = [kindLabel, cityLine, c.segmentLabel].filter(Boolean);
         marker.bindPopup(
@@ -258,19 +262,19 @@ export default function CustomerMap({ pins, segments }: Props) {
              }
              ${
                c.kind === "unit"
-                 ? `<div class="jp-pop__row"><span>Bikes in service</span><strong class="jp-tabular">${c.bikes}</strong></div>`
+                 ? `<div class="jp-pop__row"><span>${escapeHtml(t("popBikesInService"))}</span><strong class="jp-tabular">${c.bikes}</strong></div>`
                  : `<div class="jp-pop__row">
-                      <span>Bikes in service</span>
+                      <span>${escapeHtml(t("popBikesInService"))}</span>
                       <strong class="jp-tabular">${c.bikes}</strong>
                     </div>
                     <div class="jp-pop__row">
-                      <span>Under service agreement</span>
+                      <span>${escapeHtml(t("popUnderAgreement"))}</span>
                       <strong class="jp-tabular">${c.saBikes} <span class="jp-pop__pct">(${saPct}%)</span></strong>
                     </div>`
              }
              ${
                c.expiringSoon
-                 ? `<div class="jp-pop__row"><span style="color:${EXPIRING_RED}">Agreement expiring ≤90 days</span></div>`
+                 ? `<div class="jp-pop__row"><span style="color:${EXPIRING_RED}">${escapeHtml(t("popExpiring"))}</span></div>`
                  : ""
              }
            </div>`,
@@ -303,12 +307,12 @@ export default function CustomerMap({ pins, segments }: Props) {
 
   const viewChips: { id: View; label: string; count: number; color?: string }[] =
     [
-      { id: "all", label: "All", count: viewCounts.all },
-      { id: "customers", label: "Customers", count: viewCounts.customers, color: BRAND_BLUE },
-      { id: "prospects", label: "Prospects", count: viewCounts.prospects, color: PROSPECT_AMBER },
-      { id: "departments", label: "Departments", count: viewCounts.departments, color: UNIT_TEAL },
-      { id: "bikes", label: "Bikes", count: viewCounts.bikes, color: BIKE_NEUTRAL },
-      { id: "expiring", label: "Expiring ≤90d", count: viewCounts.expiring, color: EXPIRING_RED },
+      { id: "all", label: t("viewAll"), count: viewCounts.all },
+      { id: "customers", label: t("viewCustomers"), count: viewCounts.customers, color: BRAND_BLUE },
+      { id: "prospects", label: t("viewProspects"), count: viewCounts.prospects, color: PROSPECT_AMBER },
+      { id: "departments", label: t("viewDepartments"), count: viewCounts.departments, color: UNIT_TEAL },
+      { id: "bikes", label: t("viewBikes"), count: viewCounts.bikes, color: BIKE_NEUTRAL },
+      { id: "expiring", label: t("viewExpiring"), count: viewCounts.expiring, color: EXPIRING_RED },
     ];
 
   const showBikeLegend = view === "all" || view === "bikes";
@@ -317,16 +321,16 @@ export default function CustomerMap({ pins, segments }: Props) {
     <div className="flex flex-1 flex-col">
       <header className="flex items-start justify-between gap-4 border-b px-4 py-3 sm:px-6">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Map</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground text-sm">
-            <span className="tabular-nums">{totals.pins}</span> pins ·{" "}
-            <span className="tabular-nums">{totals.bikes}</span> bikes ·{" "}
-            <span className="tabular-nums">{totals.prospects}</span> prospects ·{" "}
-            <span className="tabular-nums">{totals.expiring}</span> expiring
+            <span className="tabular-nums">{totals.pins}</span> {t("wPins")} ·{" "}
+            <span className="tabular-nums">{totals.bikes}</span> {t("wBikes")} ·{" "}
+            <span className="tabular-nums">{totals.prospects}</span> {t("wProspects")} ·{" "}
+            <span className="tabular-nums">{totals.expiring}</span> {t("wExpiring")}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={resetView}>
-          Reset view
+          {t("resetView")}
         </Button>
       </header>
 
@@ -389,7 +393,7 @@ export default function CustomerMap({ pins, segments }: Props) {
           {view !== "bikes" ? (
             <>
               <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
-                Pin scale · bikes in service
+                {t("legendPinScale")}
               </div>
               <div className="flex items-center gap-2">
                 <Dot size={12} />
@@ -400,14 +404,14 @@ export default function CustomerMap({ pins, segments }: Props) {
                 <span className="text-muted-foreground text-xs">300+</span>
               </div>
               <div className="mt-3 flex flex-col gap-1.5">
-                <LegendRow color={BRAND_BLUE} label="Customer · has agreement" />
-                <LegendRow color={MUTED_GREY} label="Customer · no agreement" />
-                <LegendRow color={PROSPECT_AMBER} label="Prospect (sales lead)" />
-                <LegendRow color={UNIT_TEAL} label="Department / unit" />
+                <LegendRow color={BRAND_BLUE} label={t("legendCustomerHas")} />
+                <LegendRow color={MUTED_GREY} label={t("legendCustomerNo")} />
+                <LegendRow color={PROSPECT_AMBER} label={t("legendProspect")} />
+                <LegendRow color={UNIT_TEAL} label={t("legendDepartment")} />
                 <LegendRow
                   color={BRAND_BLUE}
                   ring={EXPIRING_RED}
-                  label="Agreement expiring ≤90d"
+                  label={t("legendExpiring")}
                 />
               </div>
             </>
@@ -415,10 +419,10 @@ export default function CustomerMap({ pins, segments }: Props) {
           {showBikeLegend ? (
             <div className={cn("flex flex-col gap-1.5", view !== "bikes" && "mt-3 border-t pt-3")}>
               <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
-                Bikes by status
+                {t("legendBikesByStatus")}
               </div>
               {BIKE_LEGEND_STATUSES.map((s) => (
-                <LegendRow key={s} color={BIKE_STATUS_COLOR[s]} label={bikeStatusLabel(s)} />
+                <LegendRow key={s} color={BIKE_STATUS_COLOR[s]} label={bikeStatusText(s)} />
               ))}
             </div>
           ) : null}
@@ -427,17 +431,13 @@ export default function CustomerMap({ pins, segments }: Props) {
         {pins.length === 0 ? (
           <div className="bg-background/85 absolute inset-0 z-[300] flex items-center justify-center p-6 text-center">
             <div className="flex max-w-md flex-col gap-2 rounded-lg border bg-card p-6 shadow-sm">
-              <h2 className="text-sm font-semibold">Nothing on the map yet</h2>
-              <p className="text-muted-foreground text-sm">
-                Customers, prospects, and bikes appear here once they have a
-                location. Add a postal address (or assign a bike) and it shows
-                up.
-              </p>
+              <h2 className="text-sm font-semibold">{t("emptyTitle")}</h2>
+              <p className="text-muted-foreground text-sm">{t("emptyDesc")}</p>
             </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-background/85 absolute left-1/2 top-4 z-[300] -translate-x-1/2 rounded-md border bg-card px-4 py-2 text-center text-sm shadow-sm">
-            No pins match the current view / segment.
+            {t("noPinsMatch")}
           </div>
         ) : null}
       </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,6 +20,11 @@ import {
 } from "../_components/organization-form";
 
 export default async function NewOrganizationPage() {
+  const [t, tCustomers, tCommon] = await Promise.all([
+    getTranslations("customerForm"),
+    getTranslations("customers"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [segmentsRes, currenciesRes, vatCodesRes] = await Promise.all([
@@ -57,27 +63,24 @@ export default async function NewOrganizationPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/organizations">Customers</Link>
+              <Link href="/organizations">{tCustomers("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New customer</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Capture the basics now — billing and contact details can be filled in
-          later from the edit screen.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("newTitle")}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t("newSubtitle")}</p>
       </div>
       <OrganizationForm
         mode="create"

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { MoreVertical, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -46,17 +47,13 @@ type Props = {
   rows: ContactRow[];
 };
 
-const LANGUAGE_LABEL: Record<string, string> = {
-  da: "Dansk",
-  en: "English",
-};
-
 function fullName(row: ContactRow): string {
   const parts = [row.first_name, row.last_name].filter(Boolean) as string[];
   return parts.join(" ").trim();
 }
 
 export function ContactsSection({ organizationId, rows }: Props) {
+  const t = useTranslations("contacts");
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -75,13 +72,13 @@ export function ContactsSection({ organizationId, rows }: Props) {
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Contacts</h2>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
           <span className="text-muted-foreground text-xs">
-            {rows.length} {rows.length === 1 ? "contact" : "contacts"}
+            {t("count", { count: rows.length })}
           </span>
         </div>
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-          Add contact
+          {t("addContact")}
         </Button>
       </header>
 
@@ -95,8 +92,8 @@ export function ContactsSection({ organizationId, rows }: Props) {
         <div className="p-4">
           <EmptyState
             icon={UserRound}
-            title="No contacts yet"
-            description="Add the people you talk to at this customer — facilities, reception, billing."
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
           />
         </div>
       ) : (
@@ -104,12 +101,12 @@ export function ContactsSection({ organizationId, rows }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Role</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="hidden lg:table-cell">Phone</TableHead>
-                <TableHead className="hidden md:table-cell">Language</TableHead>
-                <TableHead className="w-[80px]">Primary</TableHead>
+                <TableHead>{t("thName")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thRole")}</TableHead>
+                <TableHead>{t("thEmail")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("thPhone")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thLanguage")}</TableHead>
+                <TableHead className="w-[80px]">{t("thPrimary")}</TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -170,6 +167,9 @@ function ContactTableRow({
   onEdit: () => void;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("contacts");
+  const tCommon = useTranslations("common");
+  const tLang = useTranslations("lang");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -193,7 +193,7 @@ function ContactTableRow({
     <TableRow>
       <TableCell className="text-sm">
         {name || (
-          <span className="text-muted-foreground italic">No name</span>
+          <span className="text-muted-foreground italic">{t("noName")}</span>
         )}
       </TableCell>
       <TableCell className="hidden text-sm md:table-cell">
@@ -221,12 +221,18 @@ function ContactTableRow({
         )}
       </TableCell>
       <TableCell className="hidden text-sm md:table-cell">
-        {row.preferred_language
-          ? (LANGUAGE_LABEL[row.preferred_language] ?? row.preferred_language)
-          : <span className="text-muted-foreground">—</span>}
+        {row.preferred_language ? (
+          tLang.has(row.preferred_language) ? (
+            tLang(row.preferred_language)
+          ) : (
+            row.preferred_language
+          )
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
       </TableCell>
       <TableCell>
-        {row.is_primary ? <Badge variant="success">Primary</Badge> : null}
+        {row.is_primary ? <Badge variant="success">{t("primary")}</Badge> : null}
       </TableCell>
       <TableCell className="text-right">
         <DropdownMenu>
@@ -234,7 +240,7 @@ function ContactTableRow({
             <Button
               size="icon-sm"
               variant="ghost"
-              aria-label={`Actions for ${name || "contact"}`}
+              aria-label={t("actionsFor", { name: name || t("contactFallback") })}
               disabled={pending}
             >
               <MoreVertical aria-hidden />
@@ -247,7 +253,7 @@ function ContactTableRow({
                 onEdit();
               }}
             >
-              Edit
+              {t("edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
@@ -258,7 +264,7 @@ function ContactTableRow({
                 else setConfirmArchive(true);
               }}
             >
-              {confirmArchive ? "Click again to confirm" : "Archive"}
+              {confirmArchive ? tCommon("confirmRepeat") : t("archive")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

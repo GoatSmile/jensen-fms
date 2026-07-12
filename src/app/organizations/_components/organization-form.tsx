@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,6 +111,9 @@ export function OrganizationForm({
   currencies,
   vatCodes,
 }: Props) {
+  const t = useTranslations("customerForm");
+  const tCommon = useTranslations("common");
+  const tLang = useTranslations("lang");
   const router = useRouter();
   const [values, setValues] = useState<OrganizationFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -183,11 +187,11 @@ export function OrganizationForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="Identification"
-        description="The legal name is what appears on invoices. Display names are friendlier labels we can show on documents and the customer detail page."
+        title={t("secIdentification")}
+        description={t("secIdentificationDesc")}
       >
         <Field
-          label="Legal name"
+          label={t("fldLegalName")}
           htmlFor="org-legal-name"
           required
           error={errorField === "legal_name" ? error : null}
@@ -196,31 +200,31 @@ export function OrganizationForm({
             id="org-legal-name"
             value={values.legal_name}
             onChange={(e) => update("legal_name", e.target.value)}
-            placeholder="e.g. Rigshospitalet"
+            placeholder={t("legalNamePlaceholder")}
             required
             autoFocus={mode === "create"}
           />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Display name (English)" htmlFor="org-display-en">
+          <Field label={t("fldDisplayEn")} htmlFor="org-display-en">
             <Input
               id="org-display-en"
               value={values.display_name_en}
               onChange={(e) => update("display_name_en", e.target.value)}
-              placeholder="Optional"
+              placeholder={t("displayEnPlaceholder")}
             />
           </Field>
-          <Field label="Visningsnavn (dansk)" htmlFor="org-display-da">
+          <Field label={t("fldDisplayDa")} htmlFor="org-display-da">
             <Input
               id="org-display-da"
               value={values.display_name_da}
               onChange={(e) => update("display_name_da", e.target.value)}
-              placeholder="Valgfrit"
+              placeholder={t("displayDaPlaceholder")}
             />
           </Field>
         </div>
         <Field
-          label="Segment"
+          label={t("fldSegment")}
           htmlFor="org-segment"
           required
           error={errorField === "customer_segment_id" ? error : null}
@@ -230,7 +234,7 @@ export function OrganizationForm({
             onValueChange={(v) => update("customer_segment_id", v)}
           >
             <SelectTrigger id="org-segment">
-              <SelectValue placeholder="Pick a segment…" />
+              <SelectValue placeholder={t("pickSegment")} />
             </SelectTrigger>
             <SelectContent>
               {segments.map((s) => (
@@ -242,7 +246,7 @@ export function OrganizationForm({
           </Select>
         </Field>
         <Field
-          label="Lifecycle stage"
+          label={t("fldLifecycle")}
           htmlFor="org-stage"
           error={errorField === "lifecycle_stage" ? error : null}
         >
@@ -254,42 +258,42 @@ export function OrganizationForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="customer">Customer</SelectItem>
-              <SelectItem value="prospect">Prospect (sales lead)</SelectItem>
+              <SelectItem value="customer">{t("lifecycleCustomer")}</SelectItem>
+              <SelectItem value="prospect">{t("lifecycleProspect")}</SelectItem>
             </SelectContent>
           </Select>
         </Field>
       </FormSection>
 
       <FormSection
-        title="Tax & business"
-        description="Identifiers used on Danish invoicing and EAN-based public-sector billing."
+        title={t("secTax")}
+        description={t("secTaxDesc")}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="CVR number" htmlFor="org-cvr">
+          <Field label={t("fldCvr")} htmlFor="org-cvr">
             <Input
               id="org-cvr"
               value={values.cvr_number}
               onChange={(e) => update("cvr_number", e.target.value)}
-              placeholder="e.g. 12345678"
+              placeholder={t("cvrPlaceholder")}
               className="font-mono"
             />
           </Field>
-          <Field label="EAN number" htmlFor="org-ean">
+          <Field label={t("fldEan")} htmlFor="org-ean">
             <Input
               id="org-ean"
               value={values.ean_number}
               onChange={(e) => update("ean_number", e.target.value)}
-              placeholder="13-digit GLN"
+              placeholder={t("eanPlaceholder")}
               className="font-mono"
             />
           </Field>
-          <Field label="VAT number" htmlFor="org-vat">
+          <Field label={t("fldVat")} htmlFor="org-vat">
             <Input
               id="org-vat"
               value={values.vat_number}
               onChange={(e) => update("vat_number", e.target.value)}
-              placeholder="e.g. DK12345678"
+              placeholder={t("vatPlaceholder")}
               className="font-mono"
             />
           </Field>
@@ -297,12 +301,12 @@ export function OrganizationForm({
       </FormSection>
 
       <FormSection
-        title="Contact"
-        description="Primary point of contact. Used for service updates and invoices."
+        title={t("secContact")}
+        description={t("secContactDesc")}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
-            label="Email"
+            label={t("fldEmail")}
             htmlFor="org-email"
             error={errorField === "email" ? error : null}
           >
@@ -311,29 +315,29 @@ export function OrganizationForm({
               type="email"
               value={values.email}
               onChange={(e) => update("email", e.target.value)}
-              placeholder="indkob@example.dk"
+              placeholder={t("emailPlaceholder")}
               className="font-mono"
             />
           </Field>
-          <Field label="Phone" htmlFor="org-phone">
+          <Field label={t("fldPhone")} htmlFor="org-phone">
             <Input
               id="org-phone"
               type="tel"
               value={values.phone}
               onChange={(e) => update("phone", e.target.value)}
-              placeholder="+45 12 34 56 78"
+              placeholder={t("phonePlaceholder")}
             />
           </Field>
-          <Field label="Website" htmlFor="org-website">
+          <Field label={t("fldWebsite")} htmlFor="org-website">
             <Input
               id="org-website"
               type="url"
               value={values.website}
               onChange={(e) => update("website", e.target.value)}
-              placeholder="https://example.dk"
+              placeholder={t("websitePlaceholder")}
             />
           </Field>
-          <Field label="Preferred language" htmlFor="org-lang">
+          <Field label={t("fldPreferredLang")} htmlFor="org-lang">
             <Select
               value={values.preferred_language}
               onValueChange={(v) => update("preferred_language", v)}
@@ -342,8 +346,8 @@ export function OrganizationForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="da">Dansk</SelectItem>
-                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="da">{tLang("da")}</SelectItem>
+                <SelectItem value="en">{tLang("en")}</SelectItem>
               </SelectContent>
             </Select>
           </Field>
@@ -351,56 +355,56 @@ export function OrganizationForm({
       </FormSection>
 
       <FormSection
-        title="Address"
-        description="Where bikes get delivered and invoices land. Public sector usually uses EAN billing anyway, but a fallback postal address is useful."
+        title={t("secAddress")}
+        description={t("secAddressDesc")}
       >
-        <Field label="Address line 1" htmlFor="org-addr1">
+        <Field label={t("fldAddr1")} htmlFor="org-addr1">
           <Input
             id="org-addr1"
             value={values.address_line1}
             onChange={(e) => update("address_line1", e.target.value)}
-            placeholder="Street and number"
+            placeholder={t("addr1Placeholder")}
           />
         </Field>
-        <Field label="Address line 2" htmlFor="org-addr2">
+        <Field label={t("fldAddr2")} htmlFor="org-addr2">
           <Input
             id="org-addr2"
             value={values.address_line2}
             onChange={(e) => update("address_line2", e.target.value)}
-            placeholder="Att., department, floor — optional"
+            placeholder={t("addr2Placeholder")}
           />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_2fr]">
-          <Field label="Postal code" htmlFor="org-zip">
+          <Field label={t("fldZip")} htmlFor="org-zip">
             <Input
               id="org-zip"
               value={values.zip_code}
               onChange={(e) => update("zip_code", e.target.value)}
-              placeholder="e.g. 2100"
+              placeholder={t("zipPlaceholder")}
               className="font-mono"
             />
           </Field>
-          <Field label="City" htmlFor="org-city">
+          <Field label={t("fldCity")} htmlFor="org-city">
             <Input
               id="org-city"
               value={values.city}
               onChange={(e) => update("city", e.target.value)}
-              placeholder="e.g. København Ø"
+              placeholder={t("cityPlaceholder")}
             />
           </Field>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Country" htmlFor="org-country">
+          <Field label={t("fldCountry")} htmlFor="org-country">
             <Select
               value={values.country_code || DEFAULT_COUNTRY_CODE}
               onValueChange={(v) => update("country_code", v)}
             >
               <SelectTrigger id="org-country">
-                <SelectValue placeholder="Pick a country" />
+                <SelectValue placeholder={t("pickCountry")} />
               </SelectTrigger>
               <SelectContent className="max-h-72">
                 <SelectGroup>
-                  <SelectLabel>Common</SelectLabel>
+                  <SelectLabel>{t("countryCommon")}</SelectLabel>
                   {groupedCountries().popular.map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.name}
@@ -409,7 +413,7 @@ export function OrganizationForm({
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
-                  <SelectLabel>All countries</SelectLabel>
+                  <SelectLabel>{t("countryAll")}</SelectLabel>
                   {groupedCountries().rest.map((c) => (
                     <SelectItem key={c.code} value={c.code}>
                       {c.name}
@@ -419,23 +423,23 @@ export function OrganizationForm({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="State / region" htmlFor="org-state">
+          <Field label={t("fldState")} htmlFor="org-state">
             <Input
               id="org-state"
               value={values.state_province}
               onChange={(e) => update("state_province", e.target.value)}
-              placeholder="Optional"
+              placeholder={t("statePlaceholder")}
             />
           </Field>
         </div>
       </FormSection>
 
       <FormSection
-        title="Billing"
-        description="Currency the customer is invoiced in. Payment terms default to net 30 — adjust per contract."
+        title={t("secBilling")}
+        description={t("secBillingDesc")}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label="Billing currency" htmlFor="org-currency">
+          <Field label={t("fldBillingCurrency")} htmlFor="org-currency">
             <Select
               value={values.billing_currency}
               onValueChange={(v) => update("billing_currency", v)}
@@ -453,7 +457,7 @@ export function OrganizationForm({
             </Select>
           </Field>
           <Field
-            label="Payment terms (days)"
+            label={t("fldPaymentTerms")}
             htmlFor="org-terms"
             error={errorField === "payment_terms_days" ? error : null}
           >
@@ -465,10 +469,10 @@ export function OrganizationForm({
               step="1"
               value={values.payment_terms_days}
               onChange={(e) => update("payment_terms_days", e.target.value)}
-              placeholder="30"
+              placeholder={t("paymentTermsPlaceholder")}
             />
           </Field>
-          <Field label="Default VAT code" htmlFor="org-vatcode">
+          <Field label={t("fldDefaultVat")} htmlFor="org-vatcode">
             <Select
               value={
                 values.default_vat_code === "" ? NO_VAT_CODE : values.default_vat_code
@@ -479,7 +483,7 @@ export function OrganizationForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_VAT_CODE}>None</SelectItem>
+                <SelectItem value={NO_VAT_CODE}>{t("vatNone")}</SelectItem>
                 {vatCodes.map((v) => (
                   <SelectItem key={v.code} value={v.code}>
                     {v.code} — {v.name_en}
@@ -492,10 +496,10 @@ export function OrganizationForm({
       </FormSection>
 
       <FormSection
-        title="Notes"
-        description="Internal notes about this customer — not shown to them."
+        title={t("secNotes")}
+        description={t("secNotesDesc")}
       >
-        <Field label="Notes" htmlFor="org-notes">
+        <Field label={t("fldNotes")} htmlFor="org-notes">
           <Textarea
             id="org-notes"
             rows={3}
@@ -518,14 +522,14 @@ export function OrganizationForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
-            ? "Saving…"
+            ? tCommon("saving")
             : mode === "create"
-              ? "Create customer"
-              : "Save changes"}
+              ? t("createCustomer")
+              : t("saveChanges")}
         </Button>
       </div>
     </form>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +51,8 @@ export function UnitDialog({
   unitId,
   initial,
 }: Props) {
+  const t = useTranslations("units");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<UnitDialogValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -110,16 +113,13 @@ export function UnitDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>
-              {mode === "create" ? "Add sub-unit" : "Edit sub-unit"}
+              {mode === "create" ? t("addSubUnit") : t("editSubUnit")}
             </DialogTitle>
-            <DialogDescription>
-              Sub-units are departments, sites, or wings within the customer
-              that bikes can be assigned to.
-            </DialogDescription>
+            <DialogDescription>{t("dialogDesc")}</DialogDescription>
           </DialogHeader>
 
           <Field
-            label="Name"
+            label={t("fldName")}
             htmlFor="unit-name"
             required
             error={errorField === "name" ? error : null}
@@ -128,39 +128,39 @@ export function UnitDialog({
               id="unit-name"
               value={values.name}
               onChange={(e) => update("name", e.target.value)}
-              placeholder="e.g. Emergency department"
+              placeholder={t("namePlaceholder")}
               required
               autoFocus
             />
           </Field>
 
-          <Field label="Code" htmlFor="unit-code">
+          <Field label={t("fldCode")} htmlFor="unit-code">
             <Input
               id="unit-code"
               value={values.code}
               onChange={(e) => update("code", e.target.value)}
-              placeholder="Optional internal code"
+              placeholder={t("codePlaceholder")}
               className="font-mono"
             />
           </Field>
 
-          <Field label="Address" htmlFor="unit-address">
+          <Field label={t("fldAddress")} htmlFor="unit-address">
             <Textarea
               id="unit-address"
               rows={2}
               value={values.address}
               onChange={(e) => update("address", e.target.value)}
-              placeholder="Optional — if different from the main customer address."
+              placeholder={t("addressPlaceholder")}
             />
           </Field>
 
-          <Field label="Notes" htmlFor="unit-notes">
+          <Field label={t("fldNotes")} htmlFor="unit-notes">
             <Textarea
               id="unit-notes"
               rows={2}
               value={values.notes}
               onChange={(e) => update("notes", e.target.value)}
-              placeholder="Optional — internal."
+              placeholder={t("notesPlaceholder")}
             />
           </Field>
 
@@ -177,14 +177,14 @@ export function UnitDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending
-                ? "Saving…"
+                ? tCommon("saving")
                 : mode === "create"
-                  ? "Add sub-unit"
-                  : "Save changes"}
+                  ? t("addSubUnit")
+                  : t("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

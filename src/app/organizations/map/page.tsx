@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -36,6 +37,10 @@ const WORKSHOP = { lat: 55.7203944, lng: 12.4268145 };
  * UI just renders whatever count comes back.
  */
 export default async function CustomerMapPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("customerMap"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
   // Agreements ending within 90 days count as "expiring soon" — the
@@ -285,9 +290,7 @@ export default async function CustomerMapPage() {
         id: `bike:${r.id}`,
         kind: "bike",
         name: r.frame,
-        parentName: r.atWorkshop
-          ? "In build / stock — at workshop"
-          : r.owner,
+        parentName: r.atWorkshop ? t("atWorkshop") : r.owner,
         status: r.status,
         city: null,
         countryCode: "DK",
@@ -307,7 +310,7 @@ export default async function CustomerMapPage() {
   // Build the segment filter chips from the segments that are actually
   // represented in the pin set. The "All" chip is always first.
   const segmentChips = [
-    { id: "all", label: "All" },
+    { id: "all", label: t("segmentAll") },
     ...Array.from(
       new Map(
         pins
@@ -327,12 +330,12 @@ export default async function CustomerMapPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Map</BreadcrumbPage>
+              <BreadcrumbPage>{t("crumbMap")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Bike } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,6 @@ import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import {
   BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
   type BikeStatus,
 } from "@/lib/bikes/status";
 
@@ -37,6 +37,10 @@ function formatDateDa(iso: string | null): string {
  * filters. Sorted by `assigned_at desc` so newest assignments lead.
  */
 export async function AssignedBikesSection({ organizationId }: Props) {
+  const [t, tBikeStatus] = await Promise.all([
+    getTranslations("assignedBikes"),
+    getTranslations("bikeStatus"),
+  ]);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("bikes")
@@ -54,11 +58,11 @@ export async function AssignedBikesSection({ organizationId }: Props) {
     return (
       <section className="rounded-md border">
         <header className="flex items-baseline gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Assigned bikes</h2>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
         </header>
         <div className="p-4">
           <p className="text-destructive text-sm" role="alert">
-            Could not load bikes: {error.message}
+            {t("loadError", { msg: error.message })}
           </p>
         </div>
       </section>
@@ -70,17 +74,17 @@ export async function AssignedBikesSection({ organizationId }: Props) {
   return (
     <section className="rounded-md border">
       <header className="flex items-baseline gap-2 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Assigned bikes</h2>
+        <h2 className="text-sm font-semibold">{t("title")}</h2>
         <span className="text-muted-foreground text-xs">
-          {rows.length} {rows.length === 1 ? "bike" : "bikes"}
+          {t("count", { count: rows.length })}
         </span>
       </header>
       {rows.length === 0 ? (
         <div className="p-4">
           <EmptyState
             icon={Bike}
-            title="No bikes assigned yet"
-            description="Once bikes are assigned to this customer, they appear here."
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
           />
         </div>
       ) : (
@@ -89,12 +93,12 @@ export async function AssignedBikesSection({ organizationId }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[180px] sm:w-[220px]">
-                  Frame number
+                  {t("thFrame")}
                 </TableHead>
-                <TableHead className="hidden md:table-cell">Template</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thTemplate")}</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Assigned
+                  {t("thAssigned")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -143,7 +147,9 @@ export async function AssignedBikesSection({ organizationId }: Props) {
                           "outline"
                         }
                       >
-                        {bikeStatusLabel(b.status)}
+                        {tBikeStatus.has(b.status)
+                          ? tBikeStatus(b.status)
+                          : b.status}
                       </Badge>
                     </Link>
                   </TableCell>

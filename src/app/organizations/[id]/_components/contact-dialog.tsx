@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +73,9 @@ export function ContactDialog({
   contactId,
   initial,
 }: Props) {
+  const t = useTranslations("contacts");
+  const tCommon = useTranslations("common");
+  const tLang = useTranslations("lang");
   const router = useRouter();
   const [values, setValues] = useState<ContactDialogValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -142,16 +146,14 @@ export function ContactDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>
-              {mode === "create" ? "Add contact" : "Edit contact"}
+              {mode === "create" ? t("addContact") : t("editContact")}
             </DialogTitle>
-            <DialogDescription>
-              At least a name or email is required so the entry is identifiable.
-            </DialogDescription>
+            <DialogDescription>{t("dialogDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field
-              label="First name"
+              label={t("fldFirst")}
               htmlFor="contact-first"
               error={errorField === "first_name" ? error : null}
             >
@@ -162,7 +164,7 @@ export function ContactDialog({
                 autoFocus
               />
             </Field>
-            <Field label="Last name" htmlFor="contact-last">
+            <Field label={t("fldLast")} htmlFor="contact-last">
               <Input
                 id="contact-last"
                 value={values.last_name}
@@ -171,39 +173,39 @@ export function ContactDialog({
             </Field>
           </div>
 
-          <Field label="Role" htmlFor="contact-role">
+          <Field label={t("fldRole")} htmlFor="contact-role">
             <Input
               id="contact-role"
               value={values.role}
               onChange={(e) => update("role", e.target.value)}
-              placeholder="e.g. Facilities manager"
+              placeholder={t("rolePlaceholder")}
             />
           </Field>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Email" htmlFor="contact-email">
+            <Field label={t("fldEmail")} htmlFor="contact-email">
               <Input
                 id="contact-email"
                 type="email"
                 value={values.email}
                 onChange={(e) => update("email", e.target.value)}
-                placeholder="name@example.dk"
+                placeholder={t("emailPlaceholder")}
                 className="font-mono"
               />
             </Field>
-            <Field label="Phone" htmlFor="contact-phone">
+            <Field label={t("fldPhone")} htmlFor="contact-phone">
               <Input
                 id="contact-phone"
                 type="tel"
                 value={values.phone}
                 onChange={(e) => update("phone", e.target.value)}
-                placeholder="+45 12 34 56 78"
+                placeholder={t("phonePlaceholder")}
               />
             </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Preferred language" htmlFor="contact-lang">
+            <Field label={t("fldLanguage")} htmlFor="contact-lang">
               <Select
                 value={
                   values.preferred_language === ""
@@ -216,9 +218,9 @@ export function ContactDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_LANG}>Unspecified</SelectItem>
-                  <SelectItem value="da">Dansk</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value={NO_LANG}>{t("langUnspecified")}</SelectItem>
+                  <SelectItem value="da">{tLang("da")}</SelectItem>
+                  <SelectItem value="en">{tLang("en")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -230,18 +232,18 @@ export function ContactDialog({
                   checked={values.is_primary}
                   onChange={(e) => update("is_primary", e.target.checked)}
                 />
-                Primary contact
+                {t("primaryContact")}
               </label>
             </div>
           </div>
 
-          <Field label="Notes" htmlFor="contact-notes">
+          <Field label={t("fldNotes")} htmlFor="contact-notes">
             <Textarea
               id="contact-notes"
               rows={2}
               value={values.notes}
               onChange={(e) => update("notes", e.target.value)}
-              placeholder="Optional — internal."
+              placeholder={t("notesPlaceholder")}
             />
           </Field>
 
@@ -258,14 +260,14 @@ export function ContactDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
               {isPending
-                ? "Saving…"
+                ? tCommon("saving")
                 : mode === "create"
-                  ? "Add contact"
-                  : "Save changes"}
+                  ? t("addContact")
+                  : t("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

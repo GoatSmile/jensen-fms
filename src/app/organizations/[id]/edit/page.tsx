@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import {
@@ -25,6 +26,11 @@ export default async function EditOrganizationPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCustomers, tCommon] = await Promise.all([
+    getTranslations("customerForm"),
+    getTranslations("customers"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [orgRes, segmentsRes, currenciesRes, vatCodesRes] = await Promise.all([
@@ -103,13 +109,13 @@ export default async function EditOrganizationPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/organizations">Customers</Link>
+              <Link href="/organizations">{tCustomers("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -120,13 +126,13 @@ export default async function EditOrganizationPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Edit {o.legal_name}
+          {t("editTitle", { name: o.legal_name })}
         </h1>
       </div>
       <OrganizationForm

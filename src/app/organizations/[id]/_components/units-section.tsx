@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Building2, MoreVertical } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ type Props = {
 };
 
 export function UnitsSection({ organizationId, rows }: Props) {
+  const t = useTranslations("units");
   const [error, setError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,13 +58,13 @@ export function UnitsSection({ organizationId, rows }: Props) {
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Sub-units</h2>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
           <span className="text-muted-foreground text-xs">
-            {rows.length} {rows.length === 1 ? "sub-unit" : "sub-units"}
+            {t("count", { count: rows.length })}
           </span>
         </div>
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-          Add sub-unit
+          {t("addSubUnit")}
         </Button>
       </header>
 
@@ -76,8 +78,8 @@ export function UnitsSection({ organizationId, rows }: Props) {
         <div className="p-4">
           <EmptyState
             icon={Building2}
-            title="No sub-units yet"
-            description="Add departments, sites, or wings if bikes need to be assigned more granularly than the whole customer."
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
           />
         </div>
       ) : (
@@ -85,10 +87,10 @@ export function UnitsSection({ organizationId, rows }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden lg:table-cell">Code</TableHead>
-                <TableHead className="hidden md:table-cell">Address</TableHead>
-                <TableHead className="w-[80px] text-right">Bikes</TableHead>
+                <TableHead>{t("thName")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("thCode")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thAddress")}</TableHead>
+                <TableHead className="w-[80px] text-right">{t("thBikes")}</TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -145,6 +147,8 @@ function UnitTableRow({
   onEdit: () => void;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("units");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -186,7 +190,7 @@ function UnitTableRow({
             <Button
               size="icon-sm"
               variant="ghost"
-              aria-label={`Actions for ${row.name}`}
+              aria-label={t("actionsFor", { name: row.name })}
               disabled={pending}
             >
               <MoreVertical aria-hidden />
@@ -199,7 +203,7 @@ function UnitTableRow({
                 onEdit();
               }}
             >
-              Edit
+              {t("edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
@@ -210,7 +214,7 @@ function UnitTableRow({
                 else setConfirmArchive(true);
               }}
             >
-              {confirmArchive ? "Click again to confirm" : "Archive"}
+              {confirmArchive ? tCommon("confirmRepeat") : t("archive")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
