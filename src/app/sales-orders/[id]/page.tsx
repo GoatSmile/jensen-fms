@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -50,6 +51,11 @@ export default async function SODetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tSo, tCommon] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("so"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const { data: so, error } = await supabase
@@ -260,7 +266,7 @@ export default async function SODetailPage({
   const customerId = so.organization?.id ?? "";
   const unitName = so.organization_unit?.name ?? null;
   const contactName = so.contact
-    ? `${[so.contact.first_name, so.contact.last_name].filter(Boolean).join(" ").trim() || "(no name)"}${so.contact.role ? ` · ${so.contact.role}` : ""}`
+    ? `${[so.contact.first_name, so.contact.last_name].filter(Boolean).join(" ").trim() || tSo("noName")}${so.contact.role ? ` · ${so.contact.role}` : ""}`
     : null;
 
   const parts: PartChoice[] = (partsRes.data ?? []).map((p) => ({
@@ -302,13 +308,13 @@ export default async function SODetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/sales-orders">Sales orders</Link>
+              <Link href="/sales-orders">{tSo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -330,36 +336,36 @@ export default async function SODetailPage({
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-        <Stat label="Order date">{formatDate(so.order_date)}</Stat>
-        <Stat label="Expected delivery">
+        <Stat label={t("statOrderDate")}>{formatDate(so.order_date)}</Stat>
+        <Stat label={t("statExpectedDelivery")}>
           {formatDeliveryTarget(
             so.requested_delivery_date,
             so.requested_delivery_precision,
             so.language === "da" ? "da" : "en",
           ) ?? "—"}
         </Stat>
-        <Stat label="Actual delivery">
+        <Stat label={t("statActualDelivery")}>
           {formatDate(so.actual_delivery_date)}
         </Stat>
-        <Stat label="Contact">
+        <Stat label={t("statContact")}>
           {contactName ?? <Muted>—</Muted>}
         </Stat>
-        <Stat label="Language">
+        <Stat label={t("statLanguage")}>
           {so.language === "da" ? "Dansk" : "English"}
         </Stat>
-        <Stat label="Subtotal" className="tabular-nums">
+        <Stat label={t("statSubtotal")} className="tabular-nums">
           {formatPrice(
             so.subtotal_amount != null ? Number(so.subtotal_amount) : null,
             so.currency,
           )}
         </Stat>
-        <Stat label="VAT" className="tabular-nums">
+        <Stat label={t("statVat")} className="tabular-nums">
           {formatPrice(
             so.total_vat_amount != null ? Number(so.total_vat_amount) : null,
             so.currency,
           )}
         </Stat>
-        <Stat label="Total" className="tabular-nums font-medium">
+        <Stat label={t("statTotal")} className="tabular-nums font-medium">
           {formatPrice(
             so.total_amount != null ? Number(so.total_amount) : null,
             so.currency,

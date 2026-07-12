@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -89,6 +90,8 @@ export function SOForm({
   contacts,
   currencies,
 }: Props) {
+  const t = useTranslations("so");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<SOFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -170,14 +173,14 @@ export function SOForm({
     });
   }
 
-  const submitLabel = mode === "create" ? "Create draft" : "Save changes";
+  const submitLabel = mode === "create" ? t("createDraft") : t("saveChanges");
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="so-org">
-            Customer <span className="text-destructive">*</span>
+            {t("customer")} <span className="text-destructive">*</span>
           </Label>
           <Combobox
             id="so-org"
@@ -188,13 +191,13 @@ export function SOForm({
               label: o.name,
               sublabel: o.default_vat_code,
             }))}
-            placeholder="Pick a customer…"
-            searchPlaceholder="Search customers…"
-            emptyMessage="No customers match."
+            placeholder={t("pickCustomerPlaceholder")}
+            searchPlaceholder={t("searchCustomers")}
+            emptyMessage={t("noCustomersMatch")}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-unit">Sub-unit (optional)</Label>
+          <Label htmlFor="so-unit">{t("subUnitOptional")}</Label>
           <Select
             value={
               values.organization_unit_id === "" ? NO_UNIT : values.organization_unit_id
@@ -208,15 +211,15 @@ export function SOForm({
               <SelectValue
                 placeholder={
                   !values.organization_id
-                    ? "Pick a customer first"
+                    ? t("pickCustomerFirst")
                     : unitsForOrg.length === 0
-                      ? "No sub-units"
-                      : "No sub-unit"
+                      ? t("noSubUnits")
+                      : t("noSubUnit")
                 }
               />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_UNIT}>No sub-unit</SelectItem>
+              <SelectItem value={NO_UNIT}>{t("noSubUnit")}</SelectItem>
               {unitsForOrg.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
@@ -229,7 +232,7 @@ export function SOForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-contact">Contact (optional)</Label>
+          <Label htmlFor="so-contact">{t("contactOptional")}</Label>
           <Select
             value={values.contact_id === "" ? NO_CONTACT : values.contact_id}
             onValueChange={(v) =>
@@ -241,15 +244,15 @@ export function SOForm({
               <SelectValue
                 placeholder={
                   !values.organization_id
-                    ? "Pick a customer first"
+                    ? t("pickCustomerFirst")
                     : contactsForOrg.length === 0
-                      ? "No contacts on file"
-                      : "No contact"
+                      ? t("noContactsOnFile")
+                      : t("noContact")
                 }
               />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_CONTACT}>No contact</SelectItem>
+              <SelectItem value={NO_CONTACT}>{t("noContact")}</SelectItem>
               {contactsForOrg.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.label}
@@ -259,7 +262,7 @@ export function SOForm({
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-language">Language</Label>
+          <Label htmlFor="so-language">{t("language")}</Label>
           <Select
             value={values.language}
             onValueChange={(v) => update("language", v as "da" | "en")}
@@ -278,7 +281,7 @@ export function SOForm({
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="so-order-date">
-            Order date <span className="text-destructive">*</span>
+            {t("orderDate")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="so-order-date"
@@ -289,7 +292,7 @@ export function SOForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-delivery-date">Expected delivery</Label>
+          <Label htmlFor="so-delivery-date">{t("expectedDelivery")}</Label>
           <DeliveryWeekDateField
             id="so-delivery-date"
             date={values.requested_delivery_date}
@@ -301,7 +304,7 @@ export function SOForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="so-currency">Currency</Label>
+          <Label htmlFor="so-currency">{t("currency")}</Label>
           <Select
             value={values.currency}
             onValueChange={(v) => update("currency", v)}
@@ -321,13 +324,13 @@ export function SOForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="so-notes">Notes</Label>
+        <Label htmlFor="so-notes">{t("notes")}</Label>
         <Textarea
           id="so-notes"
           rows={3}
           value={values.notes}
           onChange={(e) => update("notes", e.target.value)}
-          placeholder="Internal notes — not on the customer-facing documents."
+          placeholder={t("notesPlaceholder")}
         />
       </div>
 
@@ -347,10 +350,10 @@ export function SOForm({
           }}
           disabled={pending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={pending || !values.organization_id}>
-          {pending ? "Saving…" : submitLabel}
+          {pending ? tCommon("saving") : submitLabel}
         </Button>
       </div>
     </form>

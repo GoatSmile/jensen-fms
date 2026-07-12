@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -20,6 +21,10 @@ import {
 } from "../_components/so-form";
 
 export default async function NewSOPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("so"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const [orgsRes, unitsRes, contactsRes, currenciesRes] = await Promise.all([
     supabase
@@ -59,7 +64,7 @@ export default async function NewSOPage() {
     id: c.id,
     organization_id: c.organization_id,
     label:
-      `${[c.first_name, c.last_name].filter(Boolean).join(" ").trim() || "(no name)"}${c.role ? ` · ${c.role}` : ""}`,
+      `${[c.first_name, c.last_name].filter(Boolean).join(" ").trim() || t("noName")}${c.role ? ` · ${c.role}` : ""}`,
   }));
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];
 
@@ -69,27 +74,26 @@ export default async function NewSOPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/sales-orders">Sales orders</Link>
+              <Link href="/sales-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
-        <h1 className="text-2xl font-semibold">New sales order</h1>
+        <h1 className="text-2xl font-semibold">{t("newTitle")}</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Create a draft. You'll add lines and spawn MOs from the detail
-          page after.
+          {t("newSubtitle")}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,7 @@ export type LinkedPaintRow = {
   bikeCount: number;
 };
 
-export function LinkedPaintOrdersSection({
+export async function LinkedPaintOrdersSection({
   soId,
   rows,
   canCreate,
@@ -38,34 +39,39 @@ export function LinkedPaintOrdersSection({
   rows: LinkedPaintRow[];
   canCreate: boolean;
 }) {
+  const t = await getTranslations("soDetail");
   return (
     <Section
-      title="Paint orders"
-      description="Paint batches created from this SO's frames. A frame at the painter can't be built until it's received back."
+      title={t("linkedPaintTitle")}
+      description={t("linkedPaintDesc")}
       className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       action={
         canCreate ? (
           <Button asChild size="sm" variant="outline">
-            <Link href={`/sales-orders/${soId}/paint/new`}>New paint order</Link>
+            <Link href={`/sales-orders/${soId}/paint/new`}>
+              {t("newPaintOrder")}
+            </Link>
           </Button>
         ) : undefined
       }
     >
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm italic">
-          No paint orders yet
-          {canCreate ? " — send a batch of frames to the painter above." : "."}
+          {t("noPaintOrders")}
+          {canCreate ? t("noPaintOrdersCta") : "."}
         </p>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Paint order</TableHead>
-                <TableHead className="hidden md:table-cell">Supplier</TableHead>
-                <TableHead>Colour</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Frames</TableHead>
+                <TableHead>{t("thPaintOrder")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thSupplier")}
+                </TableHead>
+                <TableHead>{t("thColour")}</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="text-right">{t("thFrames")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

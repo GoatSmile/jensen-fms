@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -31,6 +32,12 @@ export default async function PaintFromSOPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tSo, tSoStatus, tCommon] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("so"),
+    getTranslations("soStatus"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const { data: so, error } = await supabase
@@ -130,13 +137,13 @@ export default async function PaintFromSOPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/sales-orders">Sales orders</Link>
+              <Link href="/sales-orders">{tSo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -149,32 +156,32 @@ export default async function PaintFromSOPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Paint frames</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbPaintFrames")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Paint frames from {so.sales_order_number}
+          {t("paintFramesTitle", { so: so.sales_order_number })}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Pick the frames to send to the painter as one batch. The paint order
-          links back to this sales order.
+          {t("paintFramesSubtitle")}
         </p>
       </div>
 
       {blocked ? (
         <div className="bg-muted/30 flex flex-col items-center gap-2 rounded-md border p-8 text-center">
           <p className="text-sm font-medium">
-            Can&apos;t paint a {so.status} sales order
+            {t("cantPaintStatus", {
+              status: tSoStatus.has(so.status)
+                ? tSoStatus(so.status)
+                : so.status,
+            })}
           </p>
-          <p className="text-muted-foreground text-xs">
-            Paint orders are part of the build pipeline, so they can only be
-            created while the SO is still in production.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("cantPaintDesc")}</p>
           <Button asChild variant="outline" className="mt-2">
-            <Link href={`/sales-orders/${so.id}`}>Back to sales order</Link>
+            <Link href={`/sales-orders/${so.id}`}>{t("backToSo")}</Link>
           </Button>
         </div>
       ) : (

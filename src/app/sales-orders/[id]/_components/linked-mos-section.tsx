@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  MO_STATUS_VARIANT,
-  moStatusLabel,
-  type MOStatus,
-} from "@/lib/mo/status";
+import { MO_STATUS_VARIANT, type MOStatus } from "@/lib/mo/status";
 import { formatDate } from "@/lib/parts/format";
 
 export type LinkedMORow = {
@@ -27,28 +24,32 @@ export type LinkedMORow = {
   templateLabel: string | null;
 };
 
-export function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
+export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
+  const [t, tMoStatus] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("moStatus"),
+  ]);
   return (
     <Section
-      title="Manufacturing orders"
-      description="MOs spawned from this SO's bike-template lines. Open each to follow build progress."
+      title={t("linkedMosTitle")}
+      description={t("linkedMosDesc")}
       className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
     >
       {rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm italic">
-          No MOs yet — spawn one from a template line above.
-        </p>
+        <p className="text-muted-foreground text-sm italic">{t("noMos")}</p>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>MO</TableHead>
-                <TableHead className="hidden md:table-cell">Template</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Progress</TableHead>
+                <TableHead>{t("thMo")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thTemplate")}
+                </TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="text-right">{t("thProgress")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Planned completion
+                  {t("thPlannedCompletion")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -79,7 +80,7 @@ export function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
                       <Badge
                         variant={MO_STATUS_VARIANT[mo.status] ?? "outline"}
                       >
-                        {moStatusLabel(mo.status)}
+                        {tMoStatus.has(mo.status) ? tMoStatus(mo.status) : mo.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">

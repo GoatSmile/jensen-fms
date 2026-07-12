@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ColorSwatch } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 import type {
   ColorOption,
   SupplierOption,
@@ -55,6 +52,9 @@ export function PaintFromSOForm({
   colors,
   defaultSupplierId,
 }: Props) {
+  const t = useTranslations("soDetail");
+  const tCommon = useTranslations("common");
+  const tBikeStatus = useTranslations("bikeStatus");
   const router = useRouter();
   // Default: every eligible frame selected.
   const [selected, setSelected] = useState<Set<string>>(
@@ -98,7 +98,7 @@ export function PaintFromSOForm({
     setError(null);
     setErrorField(null);
     if (selected.size === 0) {
-      setError("Pick at least one frame to paint.");
+      setError(t("errPickFrame"));
       return;
     }
     startTransition(async () => {
@@ -120,10 +120,9 @@ export function PaintFromSOForm({
   if (eligibleBikes.length === 0) {
     return (
       <div className="bg-muted/30 flex flex-col items-center gap-2 rounded-md border p-8 text-center">
-        <p className="text-sm font-medium">No frames available to paint</p>
+        <p className="text-sm font-medium">{t("noFramesTitle")}</p>
         <p className="text-muted-foreground text-xs">
-          Every bike on {soNumber} is either already in an open paint order or
-          this SO has no bikes yet. Spawn an MO and add bikes first.
+          {t("noFramesDesc", { so: soNumber })}
         </p>
         <Button
           type="button"
@@ -131,7 +130,7 @@ export function PaintFromSOForm({
           className="mt-2"
           onClick={() => router.push(`/sales-orders/${soId}`)}
         >
-          Back to sales order
+          {t("backToSo")}
         </Button>
       </div>
     );
@@ -142,14 +141,16 @@ export function PaintFromSOForm({
       <section className="rounded-md border">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Frames to paint</h2>
+            <h2 className="text-sm font-semibold">{t("framesToPaint")}</h2>
             <p className="text-muted-foreground text-xs">
-              {selectedCount} of {eligibleBikes.length} selected. Only frames not
-              already in an open paint order are shown.
+              {t("framesSelected", {
+                selected: selectedCount,
+                total: eligibleBikes.length,
+              })}
             </p>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
-            {allSelected ? "Clear all" : "Select all"}
+            {allSelected ? tCommon("clearAll") : t("selectAll")}
           </Button>
         </header>
         <ul className="max-h-80 divide-y overflow-y-auto">
@@ -178,7 +179,7 @@ export function PaintFromSOForm({
                     </span>
                   ) : null}
                   <Badge variant={BIKE_STATUS_VARIANT[b.status] ?? "outline"}>
-                    {bikeStatusLabel(b.status)}
+                    {tBikeStatus.has(b.status) ? tBikeStatus(b.status) : b.status}
                   </Badge>
                 </label>
               </li>
@@ -189,17 +190,14 @@ export function PaintFromSOForm({
 
       <section className="rounded-md border">
         <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Painter and colour</h2>
+          <h2 className="text-sm font-semibold">{t("painterAndColour")}</h2>
           <p className="text-muted-foreground text-xs">
-            Frame + fork item lines are seeded automatically in this colour, one
-            per selected frame — adjust them or add mudguards, signs and
-            carriers on the order page. Prices come from the painter&apos;s
-            price list.
+            {t("painterColourDesc")}
           </p>
         </header>
         <div className="flex flex-col gap-3 p-4">
           <Field
-            label="Supplier"
+            label={t("supplier")}
             htmlFor="paint-supplier"
             required
             error={errorField === "supplier_id" ? error : null}
@@ -212,7 +210,7 @@ export function PaintFromSOForm({
               }}
             >
               <SelectTrigger id="paint-supplier">
-                <SelectValue placeholder="Pick a supplier…" />
+                <SelectValue placeholder={t("pickSupplierPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {suppliers.map((s) => (
@@ -225,7 +223,7 @@ export function PaintFromSOForm({
           </Field>
 
           <Field
-            label="Colour"
+            label={t("colour")}
             htmlFor="paint-color"
             required
             error={errorField === "color_id" ? error : null}
@@ -238,7 +236,7 @@ export function PaintFromSOForm({
               }}
             >
               <SelectTrigger id="paint-color">
-                <SelectValue placeholder="Pick a colour…" />
+                <SelectValue placeholder={t("pickColourPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {colors.map((c) => (
@@ -260,14 +258,11 @@ export function PaintFromSOForm({
 
       <section className="rounded-md border">
         <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Schedule</h2>
-          <p className="text-muted-foreground text-xs">
-            Advisory only; actual sent / received timestamps are stamped on
-            status transitions.
-          </p>
+          <h2 className="text-sm font-semibold">{t("schedule")}</h2>
+          <p className="text-muted-foreground text-xs">{t("scheduleDesc")}</p>
         </header>
         <div className="flex flex-col gap-3 p-4">
-          <Field label="Planned send date" htmlFor="paint-send-date">
+          <Field label={t("plannedSendDate")} htmlFor="paint-send-date">
             <Input
               id="paint-send-date"
               type="date"
@@ -275,13 +270,13 @@ export function PaintFromSOForm({
               onChange={(e) => setPlannedSendDate(e.target.value)}
             />
           </Field>
-          <Field label="Notes" htmlFor="paint-notes">
+          <Field label={t("notes")} htmlFor="paint-notes">
             <Textarea
               id="paint-notes"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Internal notes about this batch."
+              placeholder={t("paintNotesPlaceholder")}
             />
           </Field>
         </div>
@@ -300,12 +295,12 @@ export function PaintFromSOForm({
           onClick={() => router.push(`/sales-orders/${soId}`)}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending || selectedCount === 0}>
           {isPending
-            ? "Creating…"
-            : `Create paint order (${selectedCount} frame${selectedCount === 1 ? "" : "s"})`}
+            ? t("creating")
+            : t("createPaintOrder", { count: selectedCount })}
         </Button>
       </div>
     </form>

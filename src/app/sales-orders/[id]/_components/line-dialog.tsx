@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { ColorSwatch } from "@/components/color-swatch";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,8 @@ export function LineDialog({
   vatCodes,
   colors,
 }: Props) {
+  const t = useTranslations("soDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const initial = mode.kind === "edit" ? mode.initial : null;
   const defaultVatCode =
@@ -189,11 +192,11 @@ export function LineDialog({
     setError(null);
 
     if (kind === "part" && !partId) {
-      setError("Pick a part.");
+      setError(t("errPickPart"));
       return;
     }
     if (kind === "template" && !templateId) {
-      setError("Pick a bike template.");
+      setError(t("errPickTemplate"));
       return;
     }
 
@@ -212,8 +215,8 @@ export function LineDialog({
     });
   }
 
-  const title = mode.kind === "add" ? "Add line" : "Edit line";
-  const submitLabel = mode.kind === "add" ? "Add line" : "Save changes";
+  const title = mode.kind === "add" ? t("addLine") : t("editLineTitle");
+  const submitLabel = mode.kind === "add" ? t("addLine") : t("saveChanges");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -221,17 +224,14 @@ export function LineDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              Bike templates spawn an MO when the SO is confirmed; parts are
-              priced on the invoice but don&apos;t trigger production.
-            </DialogDescription>
+            <DialogDescription>{t("lineDialogDesc")}</DialogDescription>
           </DialogHeader>
 
           {/* Kind toggle — locked in edit mode (changes are subtle and the
               spawn-MO action depends on this). */}
           {!partLocked ? (
             <div className="flex flex-col gap-1.5">
-              <Label>Line type</Label>
+              <Label>{t("lineType")}</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -239,7 +239,7 @@ export function LineDialog({
                   size="sm"
                   onClick={() => setKind("template")}
                 >
-                  Bike template
+                  {t("bikeTemplate")}
                 </Button>
                 <Button
                   type="button"
@@ -247,7 +247,7 @@ export function LineDialog({
                   size="sm"
                   onClick={() => setKind("part")}
                 >
-                  Part / accessory
+                  {t("partAccessory")}
                 </Button>
               </div>
             </div>
@@ -256,11 +256,11 @@ export function LineDialog({
           {/* Picker */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="line-filter">
-              {kind === "template" ? "Bike template" : "Part"}
+              {kind === "template" ? t("bikeTemplate") : t("part")}
             </Label>
             {partLocked ? (
               <div className="bg-muted/40 rounded-md border px-3 py-2 text-sm italic">
-                Locked in edit mode.
+                {t("lockedEditMode")}
               </div>
             ) : (
               <>
@@ -268,40 +268,40 @@ export function LineDialog({
                   id="line-filter"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filter…"
+                  placeholder={t("filterPlaceholder")}
                 />
                 <div className="max-h-56 overflow-y-auto rounded-md border">
                   {kind === "template" ? (
                     filteredTemplates.length === 0 ? (
                       <p className="text-muted-foreground p-3 text-center text-sm">
-                        No templates match.
+                        {t("noTemplatesMatch")}
                       </p>
                     ) : (
                       <ul className="divide-y">
-                        {filteredTemplates.map((t) => {
-                          const isPicked = templateId === t.id;
+                        {filteredTemplates.map((tpl) => {
+                          const isPicked = templateId === tpl.id;
                           return (
-                            <li key={t.id}>
+                            <li key={tpl.id}>
                               <button
                                 type="button"
-                                onClick={() => setTemplateId(t.id)}
+                                onClick={() => setTemplateId(tpl.id)}
                                 className={`hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
                                   isPicked ? "bg-muted" : ""
                                 }`}
                               >
                                 <div className="flex flex-col">
                                   <span className="font-medium">
-                                    {t.name_en}
+                                    {tpl.name_en}
                                   </span>
-                                  {t.family || t.frame_size ? (
+                                  {tpl.family || tpl.frame_size ? (
                                     <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                                      {t.family ? (
+                                      {tpl.family ? (
                                         <span
-                                          className={`size-1.5 shrink-0 rounded-full ${familyTint(t.family_id).dot}`}
+                                          className={`size-1.5 shrink-0 rounded-full ${familyTint(tpl.family_id).dot}`}
                                           aria-hidden
                                         />
                                       ) : null}
-                                      {[t.family, t.frame_size]
+                                      {[tpl.family, tpl.frame_size]
                                         .filter(Boolean)
                                         .join(" · ")}
                                     </span>
@@ -309,7 +309,7 @@ export function LineDialog({
                                 </div>
                                 {isPicked ? (
                                   <span className="text-xs text-emerald-700 dark:text-emerald-400">
-                                    selected
+                                    {t("selected")}
                                   </span>
                                 ) : null}
                               </button>
@@ -320,7 +320,7 @@ export function LineDialog({
                     )
                   ) : filteredParts.length === 0 ? (
                     <p className="text-muted-foreground p-3 text-center text-sm">
-                      No parts match.
+                      {t("noPartsMatch")}
                     </p>
                   ) : (
                     <ul className="divide-y">
@@ -343,7 +343,7 @@ export function LineDialog({
                               </div>
                               {isPicked ? (
                                 <span className="text-xs text-emerald-700 dark:text-emerald-400">
-                                  selected
+                                  {t("selected")}
                                 </span>
                               ) : null}
                             </button>
@@ -359,7 +359,7 @@ export function LineDialog({
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-qty">Quantity</Label>
+              <Label htmlFor="line-qty">{t("quantity")}</Label>
               <Input
                 id="line-qty"
                 inputMode="decimal"
@@ -369,7 +369,9 @@ export function LineDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-price">Unit price ({soCurrency})</Label>
+              <Label htmlFor="line-price">
+                {t("unitPriceCurrency", { currency: soCurrency })}
+              </Label>
               <Input
                 id="line-price"
                 inputMode="decimal"
@@ -379,7 +381,7 @@ export function LineDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-vat">VAT code</Label>
+              <Label htmlFor="line-vat">{t("vatCode")}</Label>
               <Select
                 value={vatCode === "" ? NO_VAT : vatCode}
                 onValueChange={(v) =>
@@ -387,10 +389,10 @@ export function LineDialog({
                 }
               >
                 <SelectTrigger id="line-vat">
-                  <SelectValue placeholder="Customer default" />
+                  <SelectValue placeholder={t("customerDefault")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_VAT}>No VAT code</SelectItem>
+                  <SelectItem value={NO_VAT}>{t("noVatCode")}</SelectItem>
                   {vatCodes.map((v) => (
                     <SelectItem key={v.code} value={v.code}>
                       <span className="font-mono text-xs">{v.code}</span>
@@ -406,7 +408,7 @@ export function LineDialog({
 
           {kind === "template" ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-color">Colour (optional)</Label>
+              <Label htmlFor="line-color">{t("colourOptional")}</Label>
               <Select
                 value={colorId === "" ? NO_COLOR : colorId}
                 onValueChange={(v) =>
@@ -414,12 +416,12 @@ export function LineDialog({
                 }
               >
                 <SelectTrigger id="line-color">
-                  <SelectValue placeholder="Customer hasn't picked one yet" />
+                  <SelectValue placeholder={t("colourNotPicked")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_COLOR}>
                     <span className="text-muted-foreground italic">
-                      No colour (decide later)
+                      {t("noColour")}
                     </span>
                   </SelectItem>
                   {colors.map((c) => {
@@ -448,17 +450,17 @@ export function LineDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-desc-en">Description (English, optional)</Label>
+              <Label htmlFor="line-desc-en">{t("descEnLabel")}</Label>
               <Textarea
                 id="line-desc-en"
                 rows={2}
                 value={descEn}
                 onChange={(e) => setDescEn(e.target.value)}
-                placeholder="Override or extend the catalog description."
+                placeholder={t("descEnPlaceholder")}
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-desc-da">Beskrivelse (Dansk, valgfri)</Label>
+              <Label htmlFor="line-desc-da">{t("descDaLabel")}</Label>
               <Textarea
                 id="line-desc-da"
                 rows={2}
@@ -470,14 +472,14 @@ export function LineDialog({
 
           <div className="bg-muted/30 flex flex-col gap-1.5 rounded-md border px-3 py-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("subtotal")}</span>
               <span className="tabular-nums">
                 {formatPrice(preview?.subtotal ?? null, soCurrency)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                VAT{" "}
+                {t("vat")}{" "}
                 {selectedVat ? (
                   <span className="font-mono">({selectedVat.default_rate}%)</span>
                 ) : null}
@@ -487,7 +489,7 @@ export function LineDialog({
               </span>
             </div>
             <div className="flex justify-between border-t pt-1.5">
-              <span className="text-muted-foreground">Line total</span>
+              <span className="text-muted-foreground">{t("lineTotal")}</span>
               <span className="font-semibold tabular-nums">
                 {formatPrice(preview?.total ?? null, soCurrency)}
               </span>
@@ -507,10 +509,10 @@ export function LineDialog({
               onClick={() => onOpenChange(false)}
               disabled={pending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : submitLabel}
+              {pending ? tCommon("saving") : submitLabel}
             </Button>
           </DialogFooter>
         </form>

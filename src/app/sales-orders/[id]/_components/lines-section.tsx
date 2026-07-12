@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Hammer, MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,7 @@ export function LinesSection({
   vatCodes,
   colors,
 }: Props) {
+  const t = useTranslations("soDetail");
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const [error, setError] = useState<string | null>(null);
@@ -100,11 +102,9 @@ export function LinesSection({
     <section className="rounded-md border">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Lines</h2>
+          <h2 className="text-sm font-semibold">{t("linesTitle")}</h2>
           <p className="text-muted-foreground text-xs">
-            {editable
-              ? "Editable while draft. Lines lock when the SO is confirmed."
-              : "Lines are locked — the SO is past draft."}
+            {editable ? t("linesDescEditable") : t("linesDescLocked")}
           </p>
         </div>
         {editable ? (
@@ -113,7 +113,7 @@ export function LinesSection({
             variant="outline"
             onClick={() => setDialog({ kind: "add" })}
           >
-            <Plus aria-hidden /> Add line
+            <Plus aria-hidden /> {t("addLine")}
           </Button>
         ) : null}
       </header>
@@ -126,9 +126,7 @@ export function LinesSection({
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          {editable
-            ? "No lines yet — add the first one to get started."
-            : "No lines on this SO."}
+          {editable ? t("noLinesEditable") : t("noLines")}
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
@@ -136,15 +134,15 @@ export function LinesSection({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[36px]">#</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead>{t("thItem")}</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Unit price
+                  {t("thUnitPrice")}
                 </TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  VAT
+                  {t("thVat")}
                 </TableHead>
-                <TableHead className="text-right">Line total</TableHead>
+                <TableHead className="text-right">{t("thLineTotal")}</TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -238,6 +236,7 @@ function SOLineTableRow({
   onError: (msg: string | null) => void;
   onAfterAction: () => void;
 }) {
+  const t = useTranslations("soDetail");
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -281,7 +280,8 @@ function SOLineTableRow({
               {row.templateLabel ?? "—"}
             </Link>
             <div className="text-muted-foreground text-[10px]">
-              Bike template{row.colorName ? ` · ${row.colorName}` : ""}
+              {t("bikeTemplate")}
+              {row.colorName ? ` · ${row.colorName}` : ""}
             </div>
           </>
         ) : (
@@ -299,7 +299,7 @@ function SOLineTableRow({
         )}
         {row.linkedMoCount > 0 ? (
           <Badge variant="secondary" className="mt-1 text-[10px]">
-            {row.linkedMoCount} MO{row.linkedMoCount === 1 ? "" : "s"}
+            {t("moBadge", { count: row.linkedMoCount })}
           </Badge>
         ) : null}
       </TableCell>
@@ -331,7 +331,7 @@ function SOLineTableRow({
               <Button
                 size="icon-sm"
                 variant="ghost"
-                aria-label="Line actions"
+                aria-label={t("lineActionsAria")}
                 disabled={pending}
               >
                 <MoreVertical aria-hidden />
@@ -346,7 +346,7 @@ function SOLineTableRow({
                   }}
                   disabled={pending}
                 >
-                  <Hammer aria-hidden /> Spawn MO
+                  <Hammer aria-hidden /> {t("spawnMo")}
                 </DropdownMenuItem>
               ) : null}
               {editable ? (
@@ -357,7 +357,7 @@ function SOLineTableRow({
                       onEdit();
                     }}
                   >
-                    <Pencil aria-hidden /> Edit
+                    <Pencil aria-hidden /> {t("edit")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
@@ -369,7 +369,7 @@ function SOLineTableRow({
                     }}
                   >
                     <Trash2 aria-hidden />{" "}
-                    {confirmDelete ? "Click again to confirm" : "Delete"}
+                    {confirmDelete ? t("clickAgainConfirm") : t("delete")}
                   </DropdownMenuItem>
                 </>
               ) : null}

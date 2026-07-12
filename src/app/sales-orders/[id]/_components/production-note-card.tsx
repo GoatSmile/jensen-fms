@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Tag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ export function ProductionNoteCard({
   initialNote: string | null;
   editable: boolean;
 }) {
+  const t = useTranslations("soDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [note, setNote] = useState(initialNote ?? "");
   const [editing, setEditing] = useState(false);
@@ -60,11 +63,11 @@ export function ProductionNoteCard({
       <header className="flex items-center justify-between gap-2 border-b border-sky-300/40 px-4 py-2.5 dark:border-sky-900/40">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-sky-900 dark:text-sky-200">
           <Tag className="size-3.5" aria-hidden />
-          Production note
+          {t("productionNoteTitle")}
         </h2>
         {editable && !editing ? (
           <Button size="xs" variant="outline" onClick={startEdit}>
-            {hasNote ? "Edit" : "Add note"}
+            {hasNote ? t("edit") : t("addNote")}
           </Button>
         ) : null}
       </header>
@@ -75,7 +78,7 @@ export function ProductionNoteCard({
               rows={3}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Labeling / production instructions for the build floor — e.g. apply Copenhagen kommune asset stickers, fleet numbers 100–150."
+              placeholder={t("productionNotePlaceholder")}
               autoFocus
             />
             {error ? (
@@ -93,10 +96,10 @@ export function ProductionNoteCard({
                 }}
                 disabled={isPending}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button size="sm" onClick={onSave} disabled={isPending}>
-                {isPending ? "Saving…" : "Save"}
+                {isPending ? tCommon("saving") : t("save")}
               </Button>
             </div>
           </div>
@@ -106,7 +109,7 @@ export function ProductionNoteCard({
           </p>
         ) : (
           <p className="text-muted-foreground text-sm italic">
-            No labeling note. Add one so the build floor sees it on every bike.
+            {t("noProductionNote")}
           </p>
         )}
       </div>

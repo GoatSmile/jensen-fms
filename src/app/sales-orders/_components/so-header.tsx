@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   SO_STATUS_VARIANT,
-  soStatusLabel,
   soTransitionRequiresReason,
   validNextSOStatuses,
   type SOStatus,
@@ -53,6 +53,8 @@ export function SOHeader({
   customerId,
   unitName,
 }: Props) {
+  const t = useTranslations("so");
+  const tStatus = useTranslations("soStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -95,7 +97,7 @@ export function SOHeader({
               {soNumber}
             </span>
             <Badge variant={SO_STATUS_VARIANT[status] ?? "outline"}>
-              {soStatusLabel(status)}
+              {tStatus.has(status) ? tStatus(status) : status}
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -114,7 +116,7 @@ export function SOHeader({
           {status === "draft" ? (
             <Button asChild variant="outline">
               <Link href={`/sales-orders/${soId}/edit`}>
-                <Pencil aria-hidden /> Edit
+                <Pencil aria-hidden /> {t("edit")}
               </Link>
             </Button>
           ) : null}
@@ -122,7 +124,7 @@ export function SOHeader({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -139,7 +141,7 @@ export function SOHeader({
                           beginTransition(to);
                         }}
                       >
-                        {soStatusLabel(to)}
+                        {tStatus.has(to) ? tStatus(to) : to}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -173,6 +175,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("so");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -193,22 +196,17 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>Cancel sales order?</DialogTitle>
-            <DialogDescription>
-              The SO will be cancelled and any unbuilt bikes linked to it
-              get unslated (their owner pointer cleared). Built bikes stay
-              slated — the workshop unpacks the orphan by hand. The reason
-              is appended to the SO notes for the audit trail.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="so-cancel-reason">Reason</Label>
+            <Label htmlFor="so-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="so-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer cancelled the order before any bikes were built."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -223,14 +221,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel SO"}
+              {isPending ? t("cancelling") : t("cancelSo")}
             </Button>
           </DialogFooter>
         </form>

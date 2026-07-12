@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Plus, Receipt } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,13 +28,17 @@ import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
 import {
   SO_STATUS_VARIANT,
-  soStatusLabel,
   type SOStatus,
 } from "@/lib/so/status";
 
 export const dynamic = "force-dynamic";
 
 export default async function SalesOrdersListPage() {
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("so"),
+    getTranslations("common"),
+    getTranslations("soStatus"),
+  ]);
   const supabase = await createClient();
 
   const { data: rows, error } = await supabase
@@ -55,27 +60,24 @@ export default async function SalesOrdersListPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Sales orders</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">Sales orders</h1>
-          <p className="text-muted-foreground text-sm">
-            Customer commitments. A confirmed SO slates bikes in linked MOs to
-            the customer; delivery flips them to assigned.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <Button asChild>
           <Link href="/sales-orders/new">
-            <Plus aria-hidden /> New sales order
+            <Plus aria-hidden /> {t("newSo")}
           </Link>
         </Button>
       </div>
@@ -83,25 +85,25 @@ export default async function SalesOrdersListPage() {
       {!rows || rows.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="No sales orders yet"
-          description="Create a sales order to quote, build, and deliver bikes for a customer."
-          action={{ label: "New sales order", href: "/sales-orders/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+          action={{ label: t("newSo"), href: "/sales-orders/new" }}
         />
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>SO</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("thSo")}</TableHead>
+                <TableHead>{t("thCustomer")}</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Order date
+                  {t("thOrderDate")}
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">
-                  Expected delivery
+                  {t("thExpectedDelivery")}
                 </TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">{t("thTotal")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -135,7 +137,7 @@ export default async function SalesOrdersListPage() {
                           SO_STATUS_VARIANT[so.status as SOStatus] ?? "outline"
                         }
                       >
-                        {soStatusLabel(so.status)}
+                        {tStatus.has(so.status) ? tStatus(so.status) : so.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden text-xs md:table-cell">

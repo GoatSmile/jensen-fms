@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -23,6 +24,11 @@ export default async function NewDepositPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tSo, tSoStatus] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("so"),
+    getTranslations("soStatus"),
+  ]);
   const supabase = await createClient();
 
   const { data: so, error } = await supabase
@@ -94,7 +100,7 @@ export default async function NewDepositPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/sales-orders">Sales orders</Link>
+              <Link href="/sales-orders">{tSo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -107,18 +113,18 @@ export default async function NewDepositPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New deposit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNewDeposit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">New deposit invoice</h1>
+        <h1 className="text-2xl font-semibold">{t("newDepositTitle")}</h1>
         <p className="text-muted-foreground text-sm">
-          A down payment on{" "}
-          <span className="font-mono">{so.sales_order_number}</span>, taken before
-          delivery. VAT is recognised when you issue it. The final invoice will
-          bill only the remaining balance.
+          {t.rich("newDepositSubtitle", {
+            so: so.sales_order_number,
+            mono: (chunks) => <span className="font-mono">{chunks}</span>,
+          })}
         </p>
       </header>
 
@@ -135,8 +141,12 @@ export default async function NewDepositPage({
       ) : (
         <p className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
           {soSubtotal <= 0
-            ? "This order has no value to take a deposit on — add priced lines first."
-            : `Deposits can be taken on a confirmed–ready order. This one is ${so.status}.`}
+            ? t("depositNoValue")
+            : t("depositWrongStatus", {
+                status: tSoStatus.has(so.status)
+                  ? tSoStatus(so.status)
+                  : so.status,
+              })}
         </p>
       )}
     </div>

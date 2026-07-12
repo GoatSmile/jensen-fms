@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ type Props = {
  * keeps the underlying date so nothing is lost.
  */
 export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) {
+  const t = useTranslations("deliveryWeek");
   const thisYear = new Date().getUTCFullYear();
   // Seed the week/year inputs from the current date if we have one.
   const seed = date ? isoWeekOf(date) : null;
@@ -98,7 +100,7 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
           variant={precision !== "week" ? "default" : "outline"}
           onClick={() => switchTo("exact")}
         >
-          Exact date
+          {t("exactDate")}
         </Button>
         <Button
           type="button"
@@ -106,7 +108,7 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
           variant={precision === "week" ? "default" : "outline"}
           onClick={() => switchTo("week")}
         >
-          Week
+          {t("week")}
         </Button>
       </div>
 
@@ -115,7 +117,7 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
           <div className="flex items-end gap-2">
             <div className="flex flex-col gap-1">
               <label htmlFor={id ? `${id}-week` : undefined} className="text-muted-foreground text-xs">
-                Week
+                {t("week")}
               </label>
               <Input
                 id={id ? `${id}-week` : undefined}
@@ -131,7 +133,7 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor={id ? `${id}-year` : undefined} className="text-muted-foreground text-xs">
-                Year
+                {t("year")}
               </label>
               <Input
                 id={id ? `${id}-year` : undefined}
@@ -146,7 +148,7 @@ export function DeliveryWeekDateField({ id, date, precision, onChange }: Props) 
             </div>
           </div>
           <p className="text-muted-foreground text-xs">
-            Week 1–{maxWeekNow} · {effYearNow}
+            {t("weekRange", { max: maxWeekNow, year: effYearNow })}
           </p>
         </div>
       ) : (

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,8 @@ export function DepositForm({
   priorDepositSubtotal,
   parts,
 }: Props) {
+  const t = useTranslations("soDetail");
+  const tCommon = useTranslations("common");
   const [mode, setMode] = useState<Mode>("percent");
   const [value, setValue] = useState("");
   const [partRows, setPartRows] = useState<PartRow[]>([]);
@@ -152,13 +155,13 @@ export function DepositForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Deposit basis</span>
+        <span className="text-sm font-medium">{t("depositBasis")}</span>
         <div className="flex w-fit flex-wrap rounded-md border p-0.5 text-sm">
           {(
             [
-              ["percent", "Percentage"],
-              ["amount", "Amount (ex-VAT)"],
-              ["parts", "Specific parts"],
+              ["percent", t("depositModePercent")],
+              ["amount", t("depositModeAmount")],
+              ["parts", t("depositModeParts")],
             ] as [Mode, string][]
           ).map(([m, label]) => (
             <button
@@ -176,11 +179,11 @@ export function DepositForm({
       {mode === "parts" ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Parts the customer prepays</span>
+            <span className="text-sm font-medium">{t("partsPrepay")}</span>
             <div className="flex items-center gap-2">
               <Select value={pickPartId} onValueChange={addPart}>
                 <SelectTrigger className="max-w-sm text-sm">
-                  <SelectValue placeholder="Add a part…" />
+                  <SelectValue placeholder={t("addPartPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {parts
@@ -200,7 +203,7 @@ export function DepositForm({
 
           {partRows.length === 0 ? (
             <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm italic">
-              Pick the parts the customer is paying for up front (e.g. the frames).
+              {t("pickPrepayParts")}
             </p>
           ) : (
             <ul className="divide-y rounded-md border">
@@ -221,7 +224,7 @@ export function DepositForm({
                       </span>
                     </div>
                     <label className="flex items-center gap-1 text-xs">
-                      <span className="text-muted-foreground">Qty</span>
+                      <span className="text-muted-foreground">{t("qty")}</span>
                       <Input
                         value={r.quantity}
                         onChange={(e) =>
@@ -239,7 +242,7 @@ export function DepositForm({
                           updateRow(r.partId, { unitPrice: e.target.value })
                         }
                         inputMode="decimal"
-                        placeholder="unit price"
+                        placeholder={t("depositUnitPricePlaceholder")}
                         className="h-8 w-24 text-right text-xs"
                       />
                     </label>
@@ -251,7 +254,7 @@ export function DepositForm({
                       size="icon-sm"
                       variant="ghost"
                       onClick={() => removeRow(r.partId)}
-                      aria-label={`Remove ${r.sku}`}
+                      aria-label={t("removeAria", { sku: r.sku })}
                     >
                       <Trash2 aria-hidden />
                     </Button>
@@ -264,7 +267,7 @@ export function DepositForm({
       ) : (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="deposit-value" className="text-sm font-medium">
-            {mode === "percent" ? "Percentage of order" : "Amount (ex-VAT)"}
+            {mode === "percent" ? t("percentageOfOrder") : t("depositModeAmount")}
           </label>
           <div className="flex items-center gap-2">
             <Input
@@ -272,7 +275,7 @@ export function DepositForm({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               inputMode="decimal"
-              placeholder={mode === "percent" ? "e.g. 50" : "e.g. 5000"}
+              placeholder={mode === "percent" ? t("egPercent") : t("egAmount")}
               autoFocus
               className="max-w-[180px]"
             />
@@ -281,28 +284,26 @@ export function DepositForm({
             </span>
           </div>
           {pctTooBig ? (
-            <p className="text-destructive text-xs">
-              Percentage can&rsquo;t exceed 100.
-            </p>
+            <p className="text-destructive text-xs">{t("pctTooBig")}</p>
           ) : null}
         </div>
       )}
 
       <div className="bg-muted/30 flex flex-col gap-1 rounded-md border p-3 text-sm">
-        <Row label="Order subtotal" value={formatDkk(soSubtotal)} />
+        <Row label={t("orderSubtotal")} value={formatDkk(soSubtotal)} />
         {priorDepositSubtotal > 0 ? (
           <Row
-            label="Deposits already taken"
+            label={t("depositsAlreadyTaken")}
             value={`− ${formatDkk(priorDepositSubtotal)}`}
           />
         ) : null}
         <div className="my-1 border-t" />
-        <Row label="This deposit (ex-VAT)" value={formatDkk(depositSubtotal)} strong />
-        <Row label={`VAT (${vatRate} %)`} value={formatDkk(depositVat)} />
-        <Row label="Deposit total" value={formatDkk(depositTotal)} strong />
+        <Row label={t("thisDeposit")} value={formatDkk(depositSubtotal)} strong />
+        <Row label={t("vatWithRate", { rate: vatRate })} value={formatDkk(depositVat)} />
+        <Row label={t("depositTotal")} value={formatDkk(depositTotal)} strong />
         {over ? (
           <p className="text-destructive mt-1 text-xs">
-            Exceeds the {formatDkk(remaining)} still un-deposited on this order.
+            {t("exceedsRemaining", { remaining: formatDkk(remaining) })}
           </p>
         ) : null}
       </div>
@@ -315,10 +316,12 @@ export function DepositForm({
 
       <div className="flex items-center justify-end gap-2">
         <Button asChild variant="outline" type="button" disabled={pending}>
-          <Link href={`/sales-orders/${soId}`}>Cancel</Link>
+          <Link href={`/sales-orders/${soId}`}>{tCommon("cancel")}</Link>
         </Button>
         <Button type="submit" disabled={!canSubmit}>
-          {pending ? "Creating…" : `Create deposit invoice for ${soNumber}`}
+          {pending
+            ? t("creating")
+            : t("createDepositFor", { so: soNumber })}
         </Button>
       </div>
     </form>
