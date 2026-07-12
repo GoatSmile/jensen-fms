@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -31,12 +32,7 @@ type Props = {
   kits: Array<{ id: string; sticker_color: string; kit_number: number | null }>;
 };
 
-const STOCK_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "all", label: "All stock" },
-  { value: "ok", label: "In stock" },
-  { value: "low", label: "Low" },
-  { value: "out", label: "Out" },
-];
+const STOCK_VALUES = ["ok", "low", "out"] as const;
 
 /**
  * URL search-params are the source of truth. The `q` input has local state
@@ -50,6 +46,8 @@ export function PartsFilters({
   suppliers,
   kits,
 }: Props) {
+  const t = useTranslations("parts");
+  const tStock = useTranslations("stockStatus");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -107,11 +105,11 @@ export function PartsFilters({
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="parts-search">Search</Label>
+        <Label htmlFor="parts-search">{t("searchLabel")}</Label>
         <Input
           id="parts-search"
           type="search"
-          placeholder="Search SKU, name, description, supplier SKU…"
+          placeholder={t("searchPlaceholder")}
           value={qDraft}
           onChange={(e) => setQDraft(e.target.value)}
           className={cn(qDraft.trim() && FILTER_ACTIVE_CLASS)}
@@ -119,7 +117,7 @@ export function PartsFilters({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="parts-category">Category</Label>
+        <Label htmlFor="parts-category">{t("categoryLabel")}</Label>
         <CategoryDrawer
           id="parts-category"
           nodes={categoryNodes}
@@ -130,23 +128,23 @@ export function PartsFilters({
       </div>
 
       <FilterSelect
-        label="Supplier"
+        label={t("supplierLabel")}
         id="parts-supplier"
         value={currentSupplier}
         onChange={(value) => pushParams({ supplier: value, page: null })}
         options={[
-          { value: "all", label: "All suppliers" },
+          { value: "all", label: t("allSuppliers") },
           ...suppliers.map((s) => ({ value: s.id, label: s.name })),
         ]}
       />
 
       <FilterSelect
-        label="Kit"
+        label={t("kitLabel")}
         id="parts-kit"
         value={currentKit}
         onChange={(value) => pushParams({ kit: value, page: null })}
         options={[
-          { value: "all", label: "All kits" },
+          { value: "all", label: t("allKits") },
           ...kits.map((k) => ({
             value: k.id,
             label: kitCode(k.sticker_color, k.kit_number),
@@ -155,11 +153,14 @@ export function PartsFilters({
       />
 
       <FilterSelect
-        label="Stock"
+        label={t("stockLabel")}
         id="parts-stock"
         value={currentStock}
         onChange={(value) => pushParams({ stock: value, page: null })}
-        options={STOCK_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        options={[
+          { value: "all", label: t("allStock") },
+          ...STOCK_VALUES.map((v) => ({ value: v, label: tStock(v) })),
+        ]}
       />
     </div>
   );

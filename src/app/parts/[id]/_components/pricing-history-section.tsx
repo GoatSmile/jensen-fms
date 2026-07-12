@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -21,23 +23,24 @@ export type PricingRow = {
   isCurrent: boolean;
 };
 
-export function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
+export async function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
+  const t = await getTranslations("partDetail");
   return (
     <Section
-      title="Retail price history"
-      description="Time-bounded retail prices, excl. VAT. The current row is the price applied to new orders today."
+      title={t("pricingTitle")}
+      description={t("pricingDescription")}
     >
       {rows.length === 0 ? (
-        <EmptyRow>No retail price history yet.</EmptyRow>
+        <EmptyRow>{t("noPricing")}</EmptyRow>
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[120px]" />
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
+                <TableHead className="text-right">{t("thPrice")}</TableHead>
+                <TableHead>{t("thFrom")}</TableHead>
+                <TableHead>{t("thTo")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -45,7 +48,7 @@ export function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
                 <TableRow key={row.id}>
                   <TableCell>
                     {row.isCurrent ? (
-                      <Badge variant="success">Current</Badge>
+                      <Badge variant="success">{t("currentBadge")}</Badge>
                     ) : null}
                   </TableCell>
                   <TableCell className="text-right tabular-nums font-medium">

@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -7,11 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  formatDateTime,
-  formatSignedQuantity,
-  movementTypeLabel,
-} from "@/lib/parts/format";
+import { formatDateTime, formatSignedQuantity } from "@/lib/parts/format";
 import { formatDkk } from "@/lib/parts/stock";
 
 import { EmptyRow, Section } from "./section";
@@ -42,39 +40,45 @@ const MOVEMENT_BADGE_VARIANT: Record<
   disposed: "destructive",
 };
 
-export function MovementsSection({
+export async function MovementsSection({
   rows,
   hideLocations = false,
 }: {
   rows: MovementRow[];
   hideLocations?: boolean;
 }) {
+  const [t, tType] = await Promise.all([
+    getTranslations("partDetail"),
+    getTranslations("movementType"),
+  ]);
   return (
     <Section
-      title="Recent movements"
-      description="Last 50 inventory movements affecting this part. Each row is an immutable ledger entry."
+      title={t("movementsTitle")}
+      description={t("movementsDescription")}
       className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
     >
       {rows.length === 0 ? (
-        <EmptyRow>No inventory movements yet.</EmptyRow>
+        <EmptyRow>{t("noMovements")}</EmptyRow>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px] sm:w-[160px]">When</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead className="w-[140px] sm:w-[160px]">
+                  {t("thWhen")}
+                </TableHead>
+                <TableHead>{t("thType")}</TableHead>
                 {hideLocations ? null : (
                   <TableHead className="hidden sm:table-cell">
-                    Location
+                    {t("thLocation")}
                   </TableHead>
                 )}
-                <TableHead className="text-right">Δ qty</TableHead>
+                <TableHead className="text-right">{t("thDeltaQty")}</TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Unit cost (DKK)
+                  {t("thUnitCost")}
                 </TableHead>
                 <TableHead className="hidden lg:table-cell">
-                  Reason / source
+                  {t("thReasonSource")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -90,7 +94,9 @@ export function MovementsSection({
                         MOVEMENT_BADGE_VARIANT[row.movementType] ?? "outline"
                       }
                     >
-                      {movementTypeLabel(row.movementType)}
+                      {tType.has(row.movementType)
+                        ? tType(row.movementType)
+                        : row.movementType}
                     </Badge>
                   </TableCell>
                   {hideLocations ? null : (
@@ -115,7 +121,7 @@ export function MovementsSection({
                   <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs lg:table-cell">
                     {row.reason ??
                       (row.sourceEntityType
-                        ? `(via ${row.sourceEntityType})`
+                        ? t("viaSource", { source: row.sourceEntityType })
                         : "—")}
                   </TableCell>
                 </TableRow>

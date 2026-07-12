@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,11 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  MO_STATUS_VARIANT,
-  moStatusLabel,
-  type MOStatus,
-} from "@/lib/mo/status";
+import { MO_STATUS_VARIANT, type MOStatus } from "@/lib/mo/status";
 
 import { EmptyRow, Section } from "./section";
 
@@ -42,36 +39,44 @@ type Props = {
   installedBikeCount: number;
 };
 
-export function WhereUsedSection({
+export async function WhereUsedSection({
   partId,
   templates,
   mos,
   installedBikeCount,
 }: Props) {
+  const [t, tMoStatus] = await Promise.all([
+    getTranslations("partDetail"),
+    getTranslations("moStatus"),
+  ]);
   const nothing =
     templates.length === 0 && mos.length === 0 && installedBikeCount === 0;
 
   return (
     <Section
-      title="Where used"
-      description="Current templates referencing this part, open MOs that need it, and bikes that have it installed."
+      title={t("whereUsedTitle")}
+      description={t("whereUsedDescription")}
     >
       {nothing ? (
-        <EmptyRow>Not used in any template, MO, or bike yet.</EmptyRow>
+        <EmptyRow>{t("notUsed")}</EmptyRow>
       ) : (
         <div className="flex flex-col gap-4">
           {templates.length > 0 ? (
             <div>
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-                Current templates
+                {t("currentTemplates")}
               </h3>
               <div className="overflow-x-auto rounded-md border md:overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Template</TableHead>
-                      <TableHead className="hidden sm:table-cell">Type</TableHead>
-                      <TableHead className="text-right">Qty / bike</TableHead>
+                      <TableHead>{t("thTemplate")}</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        {t("thTemplateType")}
+                      </TableHead>
+                      <TableHead className="text-right">
+                        {t("thQtyPerBike")}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -107,22 +112,22 @@ export function WhereUsedSection({
           {mos.length > 0 ? (
             <div>
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-                Open manufacturing orders
+                {t("openMos")}
               </h3>
               <div className="overflow-x-auto rounded-md border md:overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>MO number</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("thMoNumber")}</TableHead>
+                      <TableHead>{t("thStatus")}</TableHead>
                       <TableHead className="hidden text-right md:table-cell">
-                        Qty / bike
+                        {t("thQtyPerBike")}
                       </TableHead>
                       <TableHead className="hidden text-right md:table-cell">
-                        Outstanding bikes
+                        {t("thOutstanding")}
                       </TableHead>
                       <TableHead className="text-right">
-                        Total still needed
+                        {t("thTotalNeeded")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -139,7 +144,7 @@ export function WhereUsedSection({
                         </TableCell>
                         <TableCell>
                           <Badge variant={MO_STATUS_VARIANT[mo.status] ?? "outline"}>
-                            {moStatusLabel(mo.status)}
+                            {tMoStatus(mo.status)}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden text-right tabular-nums md:table-cell">
@@ -162,18 +167,20 @@ export function WhereUsedSection({
           {installedBikeCount > 0 ? (
             <div>
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-                Installed on bikes
+                {t("installedOnBikes")}
               </h3>
               <p className="text-sm">
-                Currently installed on{" "}
-                <Link
-                  href={`/bikes?has-part=${partId}`}
-                  className="font-medium hover:underline"
-                >
-                  {installedBikeCount}{" "}
-                  {installedBikeCount === 1 ? "bike" : "bikes"}
-                </Link>
-                .
+                {t.rich("currentlyInstalled", {
+                  link: (chunks) => (
+                    <Link
+                      href={`/bikes?has-part=${partId}`}
+                      className="font-medium hover:underline"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                  count: installedBikeCount,
+                })}
               </p>
             </div>
           ) : null}

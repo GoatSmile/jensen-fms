@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Table,
@@ -46,37 +47,46 @@ type Props = {
   hsCode: string | null;
 };
 
-export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
+export async function PurchaseHistorySection({
+  rows,
+  internalSku,
+  hsCode,
+}: Props) {
+  const t = await getTranslations("partDetail");
   return (
     <Section
-      title="Purchase history"
-      description="Last 10 purchase order lines. Landed DKK/unit = unit price × FX rate × (1 + transport % + import duty % + anti-dumping %), frozen at the moment of purchase."
+      title={t("purchaseHistoryTitle")}
+      description={t("purchaseHistoryDescription")}
       className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
     >
       {rows.length === 0 ? (
-        <EmptyRow>No purchases recorded for this part yet.</EmptyRow>
+        <EmptyRow>{t("noPurchases")}</EmptyRow>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Parts number</TableHead>
+                <TableHead>{t("thPartsNumber")}</TableHead>
                 <TableHead className="hidden w-[110px] sm:table-cell">
-                  Order date
+                  {t("thOrderDate")}
                 </TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Unit price
+                  {t("thUnitPrice")}
                 </TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Conversion
+                  {t("thConversion")}
                 </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Transport
+                  {t("thTransport")}
                 </TableHead>
-                <TableHead className="text-right">Import tax</TableHead>
-                <TableHead className="text-right">Anti-dumping</TableHead>
-                <TableHead className="text-right">Landed DKK / unit</TableHead>
+                <TableHead className="text-right">{t("thImportTax")}</TableHead>
+                <TableHead className="text-right">
+                  {t("thAntiDumping")}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t("thLandedPerUnit")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -94,7 +104,7 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                       <Link
                         href={`/purchase-orders/${row.poId}`}
                         className="hover:underline"
-                        title={`PO ${row.poNumber}`}
+                        title={t("poTooltip", { number: row.poNumber })}
                       >
                         {internalSku}
                       </Link>
@@ -141,7 +151,7 @@ export function PurchaseHistorySection({ rows, internalSku, hsCode }: Props) {
                         <>
                           <span className="text-muted-foreground">—</span>
                           <div className="text-muted-foreground text-[10px] italic">
-                            no HS code
+                            {t("noHsCode")}
                           </div>
                         </>
                       )}

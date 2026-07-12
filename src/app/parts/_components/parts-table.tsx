@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ImageIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,6 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
-  STOCK_BADGE_LABEL,
   STOCK_BADGE_VARIANT,
   formatDkk,
   formatQuantity,
@@ -58,11 +58,15 @@ export type PartRow = {
   kits: PartRowKit[];
 };
 
-export function PartsTable({ rows }: { rows: PartRow[] }) {
+export async function PartsTable({ rows }: { rows: PartRow[] }) {
+  const [t, tStock] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("stockStatus"),
+  ]);
   if (rows.length === 0) {
     return (
       <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-        No parts match these filters.
+        {t("noMatch")}
       </div>
     );
   }
@@ -79,30 +83,32 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
             <TableHead className="hidden w-[44px] sm:table-cell" />
             <SortableHeader
               column="internal_sku"
-              label="SKU"
+              label={t("thSku")}
               className="w-[110px] sm:w-[140px]"
             />
-            <SortableHeader column="name_en" label="Name" />
+            <SortableHeader column="name_en" label={t("thName")} />
             <SortableHeader
               column="category_name"
-              label="Category"
+              label={t("thCategory")}
               className="hidden md:table-cell"
             />
             <SortableHeader
               column="primary_supplier_name"
-              label="Supplier"
+              label={t("thSupplier")}
               className="hidden lg:table-cell"
             />
-            <TableHead className="hidden xl:table-cell">Kits</TableHead>
+            <TableHead className="hidden xl:table-cell">
+              {t("thKits")}
+            </TableHead>
             <SortableHeader
               column="stock_on_hand"
-              label="Stock"
+              label={t("thStock")}
               align="right"
               className="text-right"
             />
             <SortableHeader
               column="default_retail_price"
-              label="Retail (DKK, excl. VAT)"
+              label={t("thRetail")}
               align="right"
               className="hidden text-right md:table-cell"
             />
@@ -219,10 +225,14 @@ export function PartsTable({ rows }: { rows: PartRow[] }) {
                       carries the meaning. */}
                   <Badge variant={STOCK_BADGE_VARIANT[row.stockStatus]}>
                     <span className="sm:hidden">
-                      {row.stockStatus === "ok" ? "In" : row.stockStatus === "low" ? "Low" : "Out"}
+                      {row.stockStatus === "ok"
+                        ? tStock("shortOk")
+                        : row.stockStatus === "low"
+                          ? tStock("shortLow")
+                          : tStock("shortOut")}
                     </span>
                     <span className="hidden sm:inline">
-                      {STOCK_BADGE_LABEL[row.stockStatus]}
+                      {tStock(row.stockStatus)}
                     </span>
                   </Badge>
                 </Link>

@@ -1,7 +1,8 @@
+import { getTranslations } from "next-intl/server";
+
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/money";
 import {
-  STOCK_BADGE_LABEL,
   STOCK_BADGE_VARIANT,
   formatDkk,
   formatQuantity,
@@ -18,7 +19,7 @@ type Props = {
   supplierCount: number;
 };
 
-export function StatStrip({
+export async function StatStrip({
   stockOnHand,
   stockStatus,
   lastCostDkk,
@@ -26,22 +27,26 @@ export function StatStrip({
   retailCurrency,
   supplierCount,
 }: Props) {
+  const [t, tStock] = await Promise.all([
+    getTranslations("partDetail"),
+    getTranslations("stockStatus"),
+  ]);
   const stockValue =
     lastCostDkk != null ? lastCostDkk * stockOnHand : null;
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Stat label="Stock on hand">
+      <Stat label={t("statStock")}>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-semibold tabular-nums">
             {formatQuantity(stockOnHand)}
           </span>
           <Badge variant={STOCK_BADGE_VARIANT[stockStatus]}>
-            {STOCK_BADGE_LABEL[stockStatus]}
+            {tStock(stockStatus)}
           </Badge>
         </div>
       </Stat>
-      <Stat label="Default retail price (excl. VAT)">
+      <Stat label={t("statRetail")}>
         <Money
           amount={retailPrice}
           currency={retailCurrency ?? "DKK"}
@@ -49,26 +54,26 @@ export function StatStrip({
         />
         {retailPrice != null ? (
           <span className="text-muted-foreground text-xs">
-            customer price — VAT added at invoicing
+            {t("customerPriceNote")}
           </span>
         ) : null}
       </Stat>
-      <Stat label="Stock value">
+      <Stat label={t("statStockValue")}>
         <span className="text-2xl font-semibold tabular-nums">
           {formatDkk(stockValue)}
         </span>
         {stockValue != null ? (
           <span className="text-muted-foreground text-xs">
-            on-hand × last cost
+            {t("stockValueNote")}
           </span>
         ) : null}
       </Stat>
-      <Stat label="Suppliers">
+      <Stat label={t("statSuppliers")}>
         <span className="text-2xl font-semibold tabular-nums">
           {supplierCount}
         </span>
         <span className="text-muted-foreground text-xs">
-          {supplierCount === 1 ? "offering on file" : "offerings on file"}
+          {t("offeringsOnFile", { count: supplierCount })}
         </span>
       </Stat>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
@@ -45,6 +46,7 @@ export function KitsSection({
   chips: PartKitChip[];
   options: KitOption[];
 }) {
+  const t = useTranslations("partDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -81,8 +83,8 @@ export function KitsSection({
 
   return (
     <Section
-      title="Kit labels"
-      description="Box stickers the assembly floor picks by — a part can carry several, or none."
+      title={t("kitLabelsTitle")}
+      description={t("kitLabelsDescription")}
       action={
         addable.length > 0 ? (
           <Select
@@ -93,12 +95,15 @@ export function KitsSection({
             }}
             disabled={pending}
           >
-            <SelectTrigger className="h-8 w-44 text-xs" aria-label="Add kit label">
-              <SelectValue placeholder="Add label…" />
+            <SelectTrigger
+              className="h-8 w-44 text-xs"
+              aria-label={t("addLabelAria")}
+            >
+              <SelectValue placeholder={t("addLabelPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={PLACEHOLDER} className="hidden">
-                Add label…
+                {t("addLabelPlaceholder")}
               </SelectItem>
               {addable.map((o) => {
                 const colour = stickerColor(o.sticker_color);
@@ -121,9 +126,7 @@ export function KitsSection({
       }
     >
       {chips.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No kit labels on this part.
-        </p>
+        <p className="text-muted-foreground text-sm">{t("noKitLabels")}</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {chips.map((c) => {
@@ -142,13 +145,17 @@ export function KitsSection({
                 />
                 {kitCode(c.sticker_color, c.kit_number)}
                 {!c.is_active ? (
-                  <span className="text-muted-foreground">(archived)</span>
+                  <span className="text-muted-foreground">
+                    {t("archivedSuffix")}
+                  </span>
                 ) : null}
                 <button
                   type="button"
                   onClick={() => onRemove(c.kitId)}
                   disabled={pending}
-                  aria-label={`Remove ${kitCode(c.sticker_color, c.kit_number)}`}
+                  aria-label={t("removeKitAria", {
+                    code: kitCode(c.sticker_color, c.kit_number),
+                  })}
                   className="text-muted-foreground hover:text-destructive -mr-0.5"
                 >
                   <X className="size-3" aria-hidden />

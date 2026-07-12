@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Plus, Star, Trash2 } from "lucide-react";
 
@@ -65,6 +66,7 @@ type Props = {
 };
 
 export function OfferingsSection({ partId, rows, suppliers, currencies }: Props) {
+  const t = useTranslations("partDetail");
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const [error, setError] = useState<string | null>(null);
@@ -100,8 +102,8 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
 
   return (
     <Section
-      title="Supplier offerings"
-      description="Each supplier that offers this part, with their price, MOQ, and lead time."
+      title={t("offeringsTitle")}
+      description={t("offeringsDescription")}
       className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
       action={
         <Button
@@ -111,11 +113,11 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
           disabled={availableSuppliers.length === 0 && rows.length > 0}
           title={
             availableSuppliers.length === 0 && rows.length > 0
-              ? "Every active supplier already has an offering for this part."
+              ? t("allSuppliersHaveOffering")
               : undefined
           }
         >
-          <Plus aria-hidden /> Add offering
+          <Plus aria-hidden /> {t("addOffering")}
         </Button>
       }
     >
@@ -126,25 +128,29 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
       ) : null}
 
       {rows.length === 0 ? (
-        <EmptyRow>No suppliers offer this part yet.</EmptyRow>
+        <EmptyRow>{t("noOfferings")}</EmptyRow>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[32px]" />
-                <TableHead>Supplier</TableHead>
+                <TableHead>{t("thSupplier")}</TableHead>
                 <TableHead className="hidden sm:table-cell">
-                  Supplier SKU
+                  {t("thSupplierSku")}
                 </TableHead>
-                <TableHead className="text-right">Supplier price</TableHead>
+                <TableHead className="text-right">
+                  {t("thSupplierPrice")}
+                </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  MOQ
+                  {t("thMoq")}
                 </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Lead time
+                  {t("thLeadTime")}
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">Notes</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thNotes")}
+                </TableHead>
                 <TableHead className="w-[40px]" />
               </TableRow>
             </TableHeader>
@@ -206,6 +212,8 @@ function OfferingTableRow({
   onError: (msg: string | null) => void;
   onAfterAction: () => void;
 }) {
+  const t = useTranslations("partDetail");
+  const tCommon = useTranslations("common");
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -236,7 +244,7 @@ function OfferingTableRow({
       <TableCell>
         {row.isPreferred ? (
           <Star
-            aria-label="Preferred supplier"
+            aria-label={t("preferredAria")}
             className="size-4 fill-amber-400 text-amber-500"
           />
         ) : null}
@@ -275,7 +283,7 @@ function OfferingTableRow({
       </TableCell>
       <TableCell className="hidden text-right tabular-nums md:table-cell">
         {row.leadTimeDays != null ? (
-          `${row.leadTimeDays} d`
+          t("daysShort", { count: row.leadTimeDays })
         ) : (
           <span className="text-muted-foreground">—</span>
         )}
@@ -293,7 +301,7 @@ function OfferingTableRow({
             <Button
               size="icon-sm"
               variant="ghost"
-              aria-label={`Actions for ${row.supplierName}`}
+              aria-label={t("rowActionsAria", { name: row.supplierName })}
               disabled={pending}
             >
               <MoreVertical aria-hidden />
@@ -306,7 +314,7 @@ function OfferingTableRow({
                 onEdit();
               }}
             >
-              <Pencil aria-hidden /> Edit
+              <Pencil aria-hidden /> {t("edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={row.isPreferred || pending}
@@ -315,7 +323,7 @@ function OfferingTableRow({
                 runSetPreferred();
               }}
             >
-              <Star aria-hidden /> Set as preferred
+              <Star aria-hidden /> {t("setPreferred")}
             </DropdownMenuItem>
             <DropdownMenuItem
               variant="destructive"
@@ -327,7 +335,7 @@ function OfferingTableRow({
               }}
             >
               <Trash2 aria-hidden />{" "}
-              {confirmDelete ? "Click again to confirm" : "Remove"}
+              {confirmDelete ? tCommon("confirmRepeat") : t("remove")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

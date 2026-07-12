@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { Field } from "@/components/field";
 import { CollapsibleSection } from "@/components/collapsible-section";
 import { formatDkk } from "@/lib/parts/stock";
@@ -18,7 +20,7 @@ type Props = {
   templateUsageCount?: number;
 };
 
-export function DetailsSection({
+export async function DetailsSection({
   descriptionEn,
   descriptionDa,
   unitOfMeasure,
@@ -31,41 +33,41 @@ export function DetailsSection({
   attributes,
   templateUsageCount,
 }: Props) {
+  const t = await getTranslations("partDetail");
   const attributeEntries = Object.entries(attributes ?? {});
 
   return (
     // Folded by default — reference data, not daily-flow data. The
     // open/closed choice sticks per browser via localStorage.
     <CollapsibleSection
-      title="Details"
-      description="Descriptions, specs, reorder settings, attributes"
+      title={t("detailsTitle")}
+      description={t("detailsDescription")}
       storageKey="collapse:parts-details"
     >
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        <Field label="Description (English)">
+        <Field label={t("descriptionEn")}>
           {descriptionEn ?? <Muted>—</Muted>}
         </Field>
-        <Field label="Beskrivelse (Dansk)">
+        <Field label={t("descriptionDa")}>
           {descriptionDa ?? <Muted>—</Muted>}
         </Field>
-        <Field label="Unit of measure">
+        <Field label={t("unitOfMeasure")}>
           <span className="font-mono text-xs">{unitOfMeasure}</span>
         </Field>
-        <Field label="Weight">
+        <Field label={t("weight")}>
           {weightGrams != null ? (
             <span className="tabular-nums">{weightGrams} g</span>
           ) : (
             <Muted>—</Muted>
           )}
         </Field>
-        <Field label="Last landed cost">
+        <Field label={t("lastLandedCost")}>
           {lastCostDkk != null ? (
             <span className="tabular-nums">
               {formatDkk(lastCostDkk)}
               {lastCostDate ? (
                 <span className="text-muted-foreground">
-                  {" "}
-                  · as of {formatDate(lastCostDate)}
+                  {t("asOf", { date: formatDate(lastCostDate) })}
                 </span>
               ) : null}
             </span>
@@ -73,36 +75,35 @@ export function DetailsSection({
             <Muted>—</Muted>
           )}
         </Field>
-        <Field label="Reorder point">
+        <Field label={t("reorderPoint")}>
           {reorderPoint != null ? (
             <span className="tabular-nums">{reorderPoint}</span>
           ) : (
             <Muted>—</Muted>
           )}
         </Field>
-        <Field label="Reorder quantity">
+        <Field label={t("reorderQuantity")}>
           {reorderQuantity != null ? (
             <span className="tabular-nums">{reorderQuantity}</span>
           ) : (
             <Muted>—</Muted>
           )}
         </Field>
-        <Field label="Notes">{notes ? notes : <Muted>—</Muted>}</Field>
-        <Field label="Used in templates">
+        <Field label={t("notes")}>{notes ? notes : <Muted>—</Muted>}</Field>
+        <Field label={t("usedInTemplates")}>
           {templateUsageCount != null && templateUsageCount > 0 ? (
             <span className="tabular-nums">
-              {templateUsageCount} current version
-              {templateUsageCount === 1 ? "" : "s"}
+              {t("templateVersions", { count: templateUsageCount })}
             </span>
           ) : (
-            <Muted>None</Muted>
+            <Muted>{t("none")}</Muted>
           )}
         </Field>
       </dl>
       {attributeEntries.length > 0 ? (
         <div className="mt-4 border-t pt-3">
           <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-            Attributes
+            {t("attributesTitle")}
           </h3>
           <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
             {attributeEntries.map(([key, value]) => (

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -46,6 +47,10 @@ export default async function PartDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [tParts, tCommon] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [
@@ -460,13 +465,13 @@ export default async function PartDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/parts">Parts</Link>
+              <Link href="/parts">{tParts("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

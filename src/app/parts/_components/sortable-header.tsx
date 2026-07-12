@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
@@ -30,6 +31,7 @@ type Props = {
  * an empty page after the row order changes.
  */
 export function SortableHeader({ column, label, align = "left", className }: Props) {
+  const t = useTranslations("parts");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -80,7 +82,14 @@ export function SortableHeader({ column, label, align = "left", className }: Pro
           align === "right" ? "ml-auto" : "",
           isActive ? "text-foreground" : "text-muted-foreground",
         )}
-        aria-label={`Sort by ${label}${direction ? `, currently ${direction}` : ""}`}
+        aria-label={
+          direction
+            ? t("sortAriaDir", {
+                label,
+                direction: direction === "asc" ? t("dirAsc") : t("dirDesc"),
+              })
+            : t("sortAria", { label })
+        }
       >
         {align === "right" ? (
           <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
@@ -84,6 +85,8 @@ export function OfferingDialog({
   currencies,
   initial,
 }: Props) {
+  const t = useTranslations("partDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   // Parent re-keys this component per Add/Edit click, so each open is a fresh
   // mount — no need to reset state on `open` changes.
@@ -134,7 +137,7 @@ export function OfferingDialog({
     });
   }
 
-  const submitLabel = isEdit ? "Save changes" : "Add offering";
+  const submitLabel = isEdit ? t("saveChanges") : t("addOffering");
   const supplierName =
     suppliers.find((s) => s.id === supplierId)?.name ?? "—";
 
@@ -144,16 +147,15 @@ export function OfferingDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>
-              {isEdit ? "Edit offering" : "Add supplier offering"}
+              {isEdit ? t("editOffering") : t("addSupplierOffering")}
             </DialogTitle>
             <DialogDescription>
-              Each part-and-supplier pair has at most one offering. Edit the
-              price, MOQ, lead time, and supplier-side SKU.
+              {t("offeringDialogDescription")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="offering-supplier">Supplier</Label>
+            <Label htmlFor="offering-supplier">{t("supplier")}</Label>
             {lockSupplier ? (
               <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
                 {supplierName}
@@ -161,12 +163,12 @@ export function OfferingDialog({
             ) : (
               <Select value={supplierId} onValueChange={setSupplierId}>
                 <SelectTrigger id="offering-supplier">
-                  <SelectValue placeholder="Pick a supplier…" />
+                  <SelectValue placeholder={t("pickSupplier")} />
                 </SelectTrigger>
                 <SelectContent>
                   {suppliers.length === 0 ? (
                     <div className="text-muted-foreground p-2 text-xs">
-                      Every active supplier already has an offering for this part.
+                      {t("allSuppliersHaveOffering")}
                     </div>
                   ) : (
                     suppliers.map((s) => (
@@ -186,7 +188,7 @@ export function OfferingDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="offering-sku">Supplier SKU</Label>
+            <Label htmlFor="offering-sku">{t("supplierSku")}</Label>
             <Input
               id="offering-sku"
               value={values.supplierSku}
@@ -197,7 +199,7 @@ export function OfferingDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
-              label="Purchase price"
+              label={t("purchasePrice")}
               htmlFor="offering-price"
               error={errorField === "default_purchase_price" ? error : null}
             >
@@ -213,7 +215,7 @@ export function OfferingDialog({
                 }
               />
             </Field>
-            <Field label="Currency" htmlFor="offering-currency">
+            <Field label={t("currency")} htmlFor="offering-currency">
               <Select
                 value={values.defaultPurchaseCurrency}
                 onValueChange={(v) => update("defaultPurchaseCurrency", v)}
@@ -231,7 +233,7 @@ export function OfferingDialog({
               </Select>
             </Field>
             <Field
-              label="MOQ"
+              label={t("moq")}
               htmlFor="offering-moq"
               error={
                 errorField === "minimum_order_quantity" ? error : null
@@ -250,7 +252,7 @@ export function OfferingDialog({
               />
             </Field>
             <Field
-              label="Lead time (days)"
+              label={t("leadTimeDays")}
               htmlFor="offering-lead"
               error={errorField === "lead_time_days" ? error : null}
             >
@@ -273,17 +275,17 @@ export function OfferingDialog({
               onChange={(e) => update("isPreferred", e.target.checked)}
               className="size-4"
             />
-            Mark as preferred supplier (auto-demotes any other preferred)
+            {t("markPreferred")}
           </label>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="offering-notes">Notes</Label>
+            <Label htmlFor="offering-notes">{t("thNotes")}</Label>
             <Textarea
               id="offering-notes"
               rows={2}
               value={values.notes}
               onChange={(e) => update("notes", e.target.value)}
-              placeholder="Internal — e.g. 'order in batches of 100', 'CAD-style invoice'"
+              placeholder={t("offeringNotesPlaceholder")}
             />
           </div>
 
@@ -300,7 +302,7 @@ export function OfferingDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
@@ -309,7 +311,7 @@ export function OfferingDialog({
                 (!isEdit && !supplierId)
               }
             >
-              {isPending ? "Saving…" : submitLabel}
+              {isPending ? tCommon("saving") : submitLabel}
             </Button>
           </DialogFooter>
         </form>

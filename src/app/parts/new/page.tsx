@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -13,6 +14,10 @@ import { createClient } from "@/lib/supabase/server";
 import { EMPTY_PART_FORM, PartForm } from "../_components/part-form";
 
 export default async function NewPartPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const [categoriesRes, currenciesRes, hsCodesRes, suppliersRes] =
     await Promise.all([
@@ -56,26 +61,28 @@ export default async function NewPartPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/parts">Parts</Link>
+              <Link href="/parts">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New part</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("newPart")}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Attach a supplier below; photos are added after the part is created.
+          {t("newSubtitle")}
         </p>
       </div>
 

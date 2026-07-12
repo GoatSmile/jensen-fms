@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Boxes, Coins, Plus, Printer, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,17 +52,11 @@ type SearchParams = {
 
 /** Data-housekeeping filters the dashboard drills into. */
 const GAP_FILTERS = {
-  origin: {
-    label: "parts without an origin",
-    hint: "New PO lines for these default to no import tax until the origin is set (part edit form).",
-  },
-  hs: {
-    label: "parts without an HS code",
-    hint: "These snapshot 0% tariff on new PO lines until classified.",
-  },
+  origin: { titleKey: "gapOriginTitle", hintKey: "gapOriginHint" },
+  hs: { titleKey: "gapHsTitle", hintKey: "gapHsHint" },
   "offer-price": {
-    label: "parts with a supplier offering missing a purchase price",
-    hint: "Drafted POs for these come out at 0 kr. — fill the price on the part's supplier offerings.",
+    titleKey: "gapOfferPriceTitle",
+    hintKey: "gapOfferPriceHint",
   },
 } as const;
 
@@ -116,6 +111,11 @@ export default async function PartsPage({
   const page = parsePage(sp.page);
   const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
 
+  const [t, tCommon, tStock] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("common"),
+    getTranslations("stockStatus"),
+  ]);
   const supabase = await createClient();
 
   // Pre-step 1: search match against supplier_sku — PostgREST `or()` can't
@@ -342,27 +342,31 @@ export default async function PartsPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Parts</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Parts</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("title")}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              {totalCount} {totalCount === 1 ? "part" : "parts"}
-              {stockFilter !== "all" ? ` · filtered by ${stockFilter}` : ""}
+              {t("count", { count: totalCount })}
+              {stockFilter !== "all"
+                ? t("filteredBy", { status: tStock(stockFilter) })
+                : ""}
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" asChild>
               <Link href="/parts/stock-value">
-                <Coins aria-hidden /> Stock value
+                <Coins aria-hidden /> {t("stockValue")}
               </Link>
             </Button>
             <Button variant="outline" asChild>
@@ -376,17 +380,17 @@ export default async function PartsPage({
                     : ""
                 }`}
               >
-                <Printer aria-hidden /> Print
+                <Printer aria-hidden /> {t("print")}
               </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/parts/import">
-                <Upload aria-hidden /> Import CSV
+                <Upload aria-hidden /> {t("importCsv")}
               </Link>
             </Button>
             <Button asChild>
               <Link href="/parts/new">
-                <Plus aria-hidden /> New part
+                <Plus aria-hidden /> {t("newPart")}
               </Link>
             </Button>
           </div>
@@ -399,14 +403,14 @@ export default async function PartsPage({
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/20">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">
-              Housekeeping filter: {totalCount} {GAP_FILTERS[gap].label}
+              {t(GAP_FILTERS[gap].titleKey, { count: totalCount })}
             </span>
             <span className="text-muted-foreground text-xs">
-              {GAP_FILTERS[gap].hint}
+              {t(GAP_FILTERS[gap].hintKey)}
             </span>
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/parts">Clear filter</Link>
+            <Link href="/parts">{t("clearFilter")}</Link>
           </Button>
         </div>
       ) : null}
@@ -421,10 +425,10 @@ export default async function PartsPage({
       {totalCount === 0 && !q && !categoryId && !supplierId && !kitId && !gap && stockFilter === "all" ? (
         <EmptyState
           icon={Boxes}
-          title="No parts yet"
-          description="Add parts to the catalog or import from a supplier order."
-          action={{ label: "New part", href: "/parts/new" }}
-          secondaryAction={{ label: "Import CSV", href: "/parts/import" }}
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
+          action={{ label: t("newPart"), href: "/parts/new" }}
+          secondaryAction={{ label: t("importCsv"), href: "/parts/import" }}
         />
       ) : (
         <>

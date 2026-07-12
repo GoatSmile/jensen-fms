@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
@@ -67,6 +68,8 @@ export function PartHeader({
   heroUrl,
   currencies = [],
 }: Props) {
+  const t = useTranslations("partDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -98,8 +101,7 @@ export function PartHeader({
     <div className="flex flex-col gap-3">
       {isDeleted ? (
         <div className="bg-destructive/10 text-destructive rounded-md border border-destructive/30 px-3 py-2 text-sm">
-          This part is retired. It is hidden from the parts list and cannot be
-          ordered or consumed.
+          {t("retiredBanner")}
         </div>
       ) : null}
       {actionError ? (
@@ -130,7 +132,7 @@ export function PartHeader({
         <div className="flex gap-2">
           <Button variant="outline" asChild disabled={isPending}>
             <Link href={`/parts/${partId}/edit`}>
-              <Pencil aria-hidden /> Edit
+              <Pencil aria-hidden /> {t("edit")}
             </Link>
           </Button>
           {isDeleted ? null : (
@@ -148,7 +150,7 @@ export function PartHeader({
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="More part actions"
+                aria-label={t("moreActionsAria")}
                 disabled={isPending}
               >
                 <MoreHorizontal aria-hidden />
@@ -163,7 +165,7 @@ export function PartHeader({
                     runRestore();
                   }}
                 >
-                  <ArchiveRestore aria-hidden /> Restore part
+                  <ArchiveRestore aria-hidden /> {t("restorePart")}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
@@ -179,7 +181,7 @@ export function PartHeader({
                   }}
                 >
                   <ArchiveX aria-hidden />{" "}
-                  {confirmRetire ? "Click again to confirm" : "Retire part"}
+                  {confirmRetire ? tCommon("confirmRepeat") : t("retirePart")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -191,11 +193,12 @@ export function PartHeader({
 }
 
 function HeroThumb({ heroUrl }: { heroUrl: string | null }) {
+  const t = useTranslations("partDetail");
   if (!heroUrl) {
     return (
       <div className="bg-muted flex size-16 shrink-0 items-center justify-center rounded-md border border-dashed">
         <ImageIcon
-          aria-label="No photo"
+          aria-label={t("noPhotoAria")}
           className="text-muted-foreground size-5"
         />
       </div>

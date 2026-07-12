@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -32,6 +33,10 @@ export const dynamic = "force-dynamic";
  * alternative).
  */
 export default async function StockValuePage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   // On-hand per part, summed across locations.
@@ -143,67 +148,61 @@ export default async function StockValuePage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/parts">Parts</Link>
+              <Link href="/parts">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Stock value</BreadcrumbPage>
+            <BreadcrumbPage>{t("svTitle")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Stock value</h1>
-        <p className="text-muted-foreground text-sm">
-          On-hand parts at weighted-average purchase cost, excluding stock a
-          customer has already paid for. Parts with no recorded purchase cost
-          count as 0.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("svTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("svDescription")}</p>
       </header>
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-        <Stat label="Stock value" big>
+        <Stat label={t("svStatValue")} big>
           {formatDkk(netTotal)}
         </Stat>
-        <Stat label="Gross (incl. paid)">{formatDkk(grossTotal)}</Stat>
-        <Stat label="Customer-paid excl.">
+        <Stat label={t("svGross")}>{formatDkk(grossTotal)}</Stat>
+        <Stat label={t("svCustomerPaid")}>
           {prepaidExcluded > 0 ? `− ${formatDkk(prepaidExcluded)}` : formatDkk(0)}
         </Stat>
-        <Stat label="Parts in stock">{rows.length}</Stat>
+        <Stat label={t("svPartsInStock")}>{rows.length}</Stat>
       </dl>
 
       {(unpriced > 0 || prepaidParts > 0) && (
         <p className="text-muted-foreground text-xs">
-          {prepaidParts > 0
-            ? `${prepaidParts} part${prepaidParts === 1 ? "" : "s"} partly/fully customer-paid (excluded). `
-            : ""}
-          {unpriced > 0
-            ? `${unpriced} part${unpriced === 1 ? "" : "s"} have no purchase-cost history yet — valued at 0.`
-            : ""}
+          {prepaidParts > 0 ? t("svPrepaidNote", { count: prepaidParts }) : ""}
+          {unpriced > 0 ? t("svUnpricedNote", { count: unpriced }) : ""}
         </p>
       )}
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground rounded-md border border-dashed p-6 text-sm italic">
-          Nothing in stock.
+          {t("svNothing")}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Part</TableHead>
-                <TableHead className="text-right">On hand</TableHead>
-                <TableHead className="text-right">Customer-paid</TableHead>
-                <TableHead className="text-right">Avg unit cost</TableHead>
-                <TableHead className="text-right">Stock value</TableHead>
+                <TableHead>{t("svThPart")}</TableHead>
+                <TableHead className="text-right">{t("svThOnHand")}</TableHead>
+                <TableHead className="text-right">
+                  {t("svThCustomerPaid")}
+                </TableHead>
+                <TableHead className="text-right">{t("svThAvgCost")}</TableHead>
+                <TableHead className="text-right">{t("svThValue")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,7 +235,9 @@ export default async function StockValuePage() {
                     {r.priced ? (
                       formatDkk(r.avgCost)
                     ) : (
-                      <span className="text-muted-foreground">no cost</span>
+                      <span className="text-muted-foreground">
+                        {t("svNoCost")}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums font-medium">

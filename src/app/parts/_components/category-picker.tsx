@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,14 +32,16 @@ export function CategoryPicker({
   options,
   value,
   onChange,
-  placeholder = "Pick a category…",
+  placeholder,
   allOption,
   id,
   className,
   disabled,
 }: Props) {
+  const t = useTranslations("parts");
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  const effectivePlaceholder = placeholder ?? t("pickCategoryPlaceholder");
 
   const selected = useMemo(
     () => options.find((o) => o.id === value),
@@ -47,8 +50,8 @@ export function CategoryPicker({
   const triggerLabel = useMemo(() => {
     if (allOption && value === allOption.value) return allOption.label;
     if (selected) return selected.path.join(" › ");
-    return placeholder;
-  }, [allOption, selected, value, placeholder]);
+    return effectivePlaceholder;
+  }, [allOption, selected, value, effectivePlaceholder]);
 
   // Filter on the precomputed path so "drive cas" matches a deep "Drivetrain
   // > Cassettes" leaf even if the user types parts of two different ancestors.
@@ -100,7 +103,7 @@ export function CategoryPicker({
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter…"
+            placeholder={t("filterPlaceholder")}
             className="h-8 pl-8"
             autoFocus
           />
@@ -116,7 +119,7 @@ export function CategoryPicker({
           ) : null}
           {filtered.length === 0 ? (
             <p className="text-muted-foreground px-3 py-3 text-center text-xs">
-              No matches
+              {t("noMatches")}
             </p>
           ) : (
             filtered.map((opt) => (

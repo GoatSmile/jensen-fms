@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -22,6 +23,10 @@ export default async function EditPartPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [partRes, categoriesRes, currenciesRes, hsCodesRes] = await Promise.all([
@@ -119,13 +124,13 @@ export default async function EditPartPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/parts">Parts</Link>
+              <Link href="/parts">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -136,14 +141,14 @@ export default async function EditPartPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Edit {part.name_en}
+          {t("editTitle", { name: part.name_en })}
         </h1>
         <p className="text-muted-foreground mt-1 font-mono text-xs">
           {part.internal_sku}

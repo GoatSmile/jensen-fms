@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +18,7 @@ type Props = {
  * Server component pagination. The page passes `searchParams` through so
  * prev/next links carry every active filter and the sort param along.
  */
-export function PartsPagination({
+export async function PartsPagination({
   page,
   pageCount,
   totalCount,
@@ -26,6 +27,7 @@ export function PartsPagination({
   basePath = "/parts",
 }: Props) {
   if (totalCount === 0) return null;
+  const t = await getTranslations("parts");
 
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCount);
@@ -50,23 +52,28 @@ export function PartsPagination({
   return (
     <div className="flex items-center justify-between text-sm">
       <p className="text-muted-foreground">
-        Showing <span className="text-foreground font-medium">{start}</span>–
-        <span className="text-foreground font-medium">{end}</span> of{" "}
-        <span className="text-foreground font-medium">{totalCount}</span>
+        {t.rich("showing", {
+          b: (chunks) => (
+            <span className="text-foreground font-medium">{chunks}</span>
+          ),
+          start,
+          end,
+          total: totalCount,
+        })}
       </p>
       <div className="flex gap-2">
         <Button variant="outline" size="sm" disabled={!hasPrev} asChild={hasPrev}>
           {hasPrev ? (
-            <Link href={buildHref(page - 1)}>Previous</Link>
+            <Link href={buildHref(page - 1)}>{t("previous")}</Link>
           ) : (
-            <span>Previous</span>
+            <span>{t("previous")}</span>
           )}
         </Button>
         <Button variant="outline" size="sm" disabled={!hasNext} asChild={hasNext}>
           {hasNext ? (
-            <Link href={buildHref(page + 1)}>Next</Link>
+            <Link href={buildHref(page + 1)}>{t("next")}</Link>
           ) : (
-            <span>Next</span>
+            <span>{t("next")}</span>
           )}
         </Button>
       </div>

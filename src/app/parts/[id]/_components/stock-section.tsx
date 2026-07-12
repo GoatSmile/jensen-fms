@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import {
   Table,
   TableBody,
@@ -40,7 +42,7 @@ type Props = {
   currencies?: CurrencyOption[];
 };
 
-export function StockSection({
+export async function StockSection({
   rows,
   partId,
   partName,
@@ -50,6 +52,7 @@ export function StockSection({
   primaryLocationId = null,
   currencies = [],
 }: Props) {
+  const t = await getTranslations("partDetail");
   if (hideLocations) {
     const total = rows.reduce((sum, r) => sum + r.quantityOnHand, 0);
     const lastMovementAt = rows.reduce<string | null>(
@@ -61,19 +64,23 @@ export function StockSection({
     );
     return (
       <Section
-        title="Stock"
-        description="Live count from the inventory ledger."
+        title={t("stockTitle")}
+        description={t("stockDescriptionSingle")}
         className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
         <div className="bg-background flex items-center justify-between gap-4 rounded-md border p-4">
           <div className="flex flex-col">
-            <span className="text-muted-foreground text-xs">On hand</span>
+            <span className="text-muted-foreground text-xs">
+              {t("onHand")}
+            </span>
             <span className="text-2xl font-semibold tabular-nums">
               {formatQuantity(total)}
             </span>
             {lastMovementAt ? (
               <span className="text-muted-foreground text-xs">
-                Last movement {formatDateTime(lastMovementAt)}
+                {t("lastMovementAt", {
+                  date: formatDateTime(lastMovementAt),
+                })}
               </span>
             ) : null}
           </div>
@@ -92,21 +99,21 @@ export function StockSection({
 
   return (
     <Section
-      title="Stock by location"
-      description="Live count from the inventory ledger. Locations with zero stock are still shown if they have any movement history."
+      title={t("stockByLocation")}
+      description={t("stockByLocationDescription")}
       className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
     >
       {rows.length === 0 ? (
-        <EmptyRow>No stock recorded at any location yet.</EmptyRow>
+        <EmptyRow>{t("noStock")}</EmptyRow>
       ) : (
         <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Location</TableHead>
-                <TableHead className="text-right">On hand</TableHead>
+                <TableHead>{t("thLocation")}</TableHead>
+                <TableHead className="text-right">{t("thOnHand")}</TableHead>
                 <TableHead className="hidden sm:table-cell">
-                  Last movement
+                  {t("thLastMovement")}
                 </TableHead>
                 <TableHead className="w-[90px] text-right sm:w-[120px]" />
               </TableRow>
@@ -145,9 +152,9 @@ export function StockSection({
                         size="xs"
                         variant="ghost"
                         disabled
-                        title="Location is no longer active."
+                        title={t("locationInactive")}
                       >
-                        Adjust
+                        {t("adjust")}
                       </Button>
                     )}
                   </TableCell>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
@@ -111,6 +112,8 @@ export function PartForm({
   hsCodes,
   suppliers = [],
 }: Props) {
+  const t = useTranslations("parts");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<PartFormValues>(initial);
   const categoryNodes = useMemo(
@@ -122,14 +125,14 @@ export function PartForm({
   // both code and description (the combobox matches label + sublabel).
   const hsOptions = useMemo<ComboboxOption[]>(
     () => [
-      { value: NO_HS_CODE, label: "Unclassified — no import duty applied" },
+      { value: NO_HS_CODE, label: t("hsUnclassified") },
       ...hsCodes.map((hs) => ({
         value: hs.id,
         label: hs.code,
         sublabel: `${hs.description} · ${(hs.tariffPct * 100).toFixed(2)}%`,
       })),
     ],
-    [hsCodes],
+    [hsCodes, t],
   );
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -214,16 +217,16 @@ export function PartForm({
     else router.push("/parts");
   }
 
-  const submitLabel = mode === "create" ? "Create part" : "Save changes";
+  const submitLabel = mode === "create" ? t("createPart") : t("saveChanges");
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="Identification"
-        description="What this part is and where it lives in the catalogue."
+        title={t("formIdentification")}
+        description={t("formIdentificationDesc")}
       >
         <Field
-          label="Internal SKU"
+          label={t("internalSku")}
           htmlFor="internal_sku"
           required
           error={errorField === "internal_sku" ? error : null}
@@ -238,7 +241,7 @@ export function PartForm({
           />
         </Field>
         <Field
-          label="Name (English)"
+          label={t("nameEn")}
           htmlFor="name_en"
           required
           error={errorField === "name_en" ? error : null}
@@ -250,16 +253,16 @@ export function PartForm({
             required
           />
         </Field>
-        <Field label="Navn (Dansk)" htmlFor="name_da">
+        <Field label={t("nameDa")} htmlFor="name_da">
           <Input
             id="name_da"
             value={values.name_da}
             onChange={(e) => update("name_da", e.target.value)}
-            placeholder="Optional — falls back to English when empty"
+            placeholder={t("nameDaPlaceholder")}
           />
         </Field>
         <Field
-          label="Category"
+          label={t("category")}
           htmlFor="category_id"
           required
           error={errorField === "category_id" ? error : null}
@@ -272,7 +275,7 @@ export function PartForm({
           />
         </Field>
         <Field
-          label="HS / TARIC code"
+          label={t("hsCodeLabel")}
           htmlFor="hs_code_id"
           error={errorField === "hs_code_id" ? error : null}
         >
@@ -283,14 +286,14 @@ export function PartForm({
               update("hs_code_id", v === NO_HS_CODE ? "" : v)
             }
             options={hsOptions}
-            placeholder="Unclassified"
-            searchPlaceholder="Search code or description…"
-            emptyMessage="No matching HS code."
+            placeholder={t("hsPlaceholder")}
+            searchPlaceholder={t("hsSearchPlaceholder")}
+            emptyMessage={t("hsEmpty")}
             className="h-9 w-full"
           />
         </Field>
         <Field
-          label="Origin"
+          label={t("origin")}
           htmlFor="origin"
           error={errorField === "origin" ? error : null}
         >
@@ -299,25 +302,22 @@ export function PartForm({
             onValueChange={(v) => update("origin", v === NO_ORIGIN ? "" : v)}
           >
             <SelectTrigger id="origin">
-              <SelectValue placeholder="Unclassified" />
+              <SelectValue placeholder={t("originUnclassified")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NO_ORIGIN}>
                 <span className="text-muted-foreground italic">
-                  Unclassified
+                  {t("originUnclassified")}
                 </span>
               </SelectItem>
-              <SelectItem value="eu">EU</SelectItem>
-              <SelectItem value="non_eu">Outside EU</SelectItem>
+              <SelectItem value="eu">{t("originEu")}</SelectItem>
+              <SelectItem value="non_eu">{t("originNonEu")}</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-muted-foreground text-xs">
-            Sets the default of &ldquo;Apply import tax&rdquo; on new PO
-            lines — EU-origin parts skip it. Existing PO lines stay frozen.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("originHint")}</p>
         </Field>
         <Field
-          label="Tariff override (%)"
+          label={t("tariffOverride")}
           htmlFor="tariff_pct_override"
           error={errorField === "tariff_pct_override" ? error : null}
         >
@@ -329,27 +329,24 @@ export function PartForm({
               onChange={(e) =>
                 update("tariff_pct_override", e.target.value)
               }
-              placeholder="Leave blank to use HS code"
+              placeholder={t("tariffOverridePlaceholder")}
               className="max-w-[160px]"
             />
             <span className="text-muted-foreground text-sm">%</span>
           </div>
           <p className="text-muted-foreground text-xs">
-            Optional. When set, this rate is snapshotted onto new PO lines
-            for this part instead of the HS code&rsquo;s rate. Use only
-            when the standard classification is wrong for this specific
-            part. Existing PO lines stay frozen.
+            {t("tariffOverrideHint")}
           </p>
         </Field>
       </FormSection>
 
       {mode === "create" && suppliers.length > 0 ? (
         <FormSection
-          title="Supplier (optional)"
-          description="Attach one supplier and their article number now — you can add more on the part page later."
+          title={t("formSupplier")}
+          description={t("formSupplierDesc")}
         >
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Supplier" htmlFor="supplier_id">
+            <Field label={t("supplier")} htmlFor="supplier_id">
               <Select
                 value={values.supplier_id === "" ? NO_SUPPLIER : values.supplier_id}
                 onValueChange={(v) =>
@@ -357,10 +354,10 @@ export function PartForm({
                 }
               >
                 <SelectTrigger id="supplier_id">
-                  <SelectValue placeholder="No supplier" />
+                  <SelectValue placeholder={t("noSupplier")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_SUPPLIER}>No supplier</SelectItem>
+                  <SelectItem value={NO_SUPPLIER}>{t("noSupplier")}</SelectItem>
                   {suppliers.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
@@ -369,7 +366,7 @@ export function PartForm({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Supplier article no." htmlFor="supplier_sku">
+            <Field label={t("supplierArticleNo")} htmlFor="supplier_sku">
               <Input
                 id="supplier_sku"
                 value={values.supplier_sku}
@@ -379,18 +376,15 @@ export function PartForm({
               />
             </Field>
           </div>
-          <p className="text-muted-foreground text-xs">
-            Saved as this part&rsquo;s preferred offering. Prices and lead time
-            are added on the part page.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("supplierHint")}</p>
         </FormSection>
       ) : null}
 
       <FormSection
-        title="Description"
-        description="Bilingual descriptions ride to customer documents; notes stay internal."
+        title={t("formDescription")}
+        description={t("formDescriptionDesc")}
       >
-        <Field label="Description (English)" htmlFor="description_en">
+        <Field label={t("descriptionEn")} htmlFor="description_en">
           <Textarea
             id="description_en"
             rows={3}
@@ -398,7 +392,7 @@ export function PartForm({
             onChange={(e) => update("description_en", e.target.value)}
           />
         </Field>
-        <Field label="Beskrivelse (Dansk)" htmlFor="description_da">
+        <Field label={t("descriptionDa")} htmlFor="description_da">
           <Textarea
             id="description_da"
             rows={3}
@@ -406,24 +400,24 @@ export function PartForm({
             onChange={(e) => update("description_da", e.target.value)}
           />
         </Field>
-        <Field label="Internal notes" htmlFor="notes">
+        <Field label={t("internalNotes")} htmlFor="notes">
           <Textarea
             id="notes"
             rows={2}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Visible to staff only — never on customer documents."
+            placeholder={t("internalNotesPlaceholder")}
           />
         </Field>
       </FormSection>
 
       <FormSection
-        title="Specifications"
-        description="Operational fields used by stock, pricing, and downstream documents."
+        title={t("formSpecs")}
+        description={t("formSpecsDesc")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
-            label="Unit of measure"
+            label={t("unitOfMeasure")}
             htmlFor="unit_of_measure"
             required
             error={errorField === "unit_of_measure" ? error : null}
@@ -437,7 +431,7 @@ export function PartForm({
             />
           </Field>
           <Field
-            label="Weight (grams)"
+            label={t("weightGrams")}
             htmlFor="weight_grams"
             error={errorField === "weight_grams" ? error : null}
           >
@@ -452,7 +446,7 @@ export function PartForm({
             />
           </Field>
           <Field
-            label="Default retail price (excl. VAT)"
+            label={t("retailPriceLabel")}
             htmlFor="default_retail_price"
             error={errorField === "default_retail_price" ? error : null}
           >
@@ -466,7 +460,7 @@ export function PartForm({
               onChange={(e) => update("default_retail_price", e.target.value)}
             />
           </Field>
-          <Field label="Currency" htmlFor="default_retail_currency">
+          <Field label={t("currency")} htmlFor="default_retail_currency">
             <Select
               value={values.default_retail_currency}
               onValueChange={(v) => update("default_retail_currency", v)}
@@ -484,7 +478,7 @@ export function PartForm({
             </Select>
           </Field>
           <Field
-            label="Reorder point"
+            label={t("reorderPoint")}
             htmlFor="reorder_point"
             error={errorField === "reorder_point" ? error : null}
           >
@@ -496,11 +490,11 @@ export function PartForm({
               step="0.001"
               value={values.reorder_point}
               onChange={(e) => update("reorder_point", e.target.value)}
-              placeholder="On-hand at-or-below this is 'low'"
+              placeholder={t("reorderPointPlaceholder")}
             />
           </Field>
           <Field
-            label="Reorder quantity"
+            label={t("reorderQuantity")}
             htmlFor="reorder_quantity"
             error={errorField === "reorder_quantity" ? error : null}
           >
@@ -512,45 +506,46 @@ export function PartForm({
               step="0.001"
               value={values.reorder_quantity}
               onChange={(e) => update("reorder_quantity", e.target.value)}
-              placeholder="Suggested order quantity"
+              placeholder={t("reorderQtyPlaceholder")}
             />
           </Field>
         </div>
 
         <div className="flex flex-col gap-2 border-t pt-4">
           <div className="flex items-center justify-between">
-            <Label className="text-sm">Attributes</Label>
+            <Label className="text-sm">{t("attributes")}</Label>
             <Button
               type="button"
               size="xs"
               variant="ghost"
               onClick={addAttribute}
             >
-              <Plus aria-hidden /> Add attribute
+              <Plus aria-hidden /> {t("addAttribute")}
             </Button>
           </div>
           <p className="text-muted-foreground text-xs">
-            Free-form key/value pairs (e.g. <code>color</code> = <code>black</code>,{" "}
-            <code>diameter_mm</code> = <code>32</code>). Saved as JSON.
+            {t.rich("attributesHint", {
+              code: (chunks) => <code>{chunks}</code>,
+            })}
           </p>
           {values.attributes.length === 0 ? (
             <p className="text-muted-foreground rounded-md border border-dashed p-3 text-center text-xs">
-              No attributes yet.
+              {t("noAttributes")}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
               {values.attributes.map((a, i) => (
                 <div key={i} className="flex gap-2">
                   <Input
-                    aria-label={`Attribute ${i + 1} key`}
-                    placeholder="key"
+                    aria-label={t("attrKeyAria", { n: i + 1 })}
+                    placeholder={t("keyPlaceholder")}
                     value={a.key}
                     onChange={(e) => updateAttribute(i, { key: e.target.value })}
                     className="flex-1"
                   />
                   <Input
-                    aria-label={`Attribute ${i + 1} value`}
-                    placeholder="value"
+                    aria-label={t("attrValueAria", { n: i + 1 })}
+                    placeholder={t("valuePlaceholder")}
                     value={a.value}
                     onChange={(e) => updateAttribute(i, { value: e.target.value })}
                     className="flex-[2]"
@@ -560,7 +555,7 @@ export function PartForm({
                     size="icon-sm"
                     variant="ghost"
                     onClick={() => removeAttribute(i)}
-                    aria-label={`Remove attribute ${i + 1}`}
+                    aria-label={t("attrRemoveAria", { n: i + 1 })}
                   >
                     <Trash2 aria-hidden />
                   </Button>
@@ -584,10 +579,10 @@ export function PartForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : submitLabel}
+          {isPending ? tCommon("saving") : submitLabel}
         </Button>
       </div>
     </form>

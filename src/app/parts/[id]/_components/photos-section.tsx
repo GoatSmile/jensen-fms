@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Camera, ImagePlus } from "lucide-react";
 
@@ -27,6 +28,7 @@ type Status =
   | { kind: "error"; message: string };
 
 export function PhotosSection({ partId, photos }: Props) {
+  const t = useTranslations("partDetail");
   const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // Surface mid-flight errors from PhotoThumb actions in the same banner area.
@@ -90,8 +92,8 @@ export function PhotosSection({ partId, photos }: Props) {
 
   return (
     <Section
-      title="Photos"
-      description="Drop on the workbench, point at it with your phone, hit upload. Hero shows in the header and on the parts list."
+      title={t("photosTitle")}
+      description={t("photosDescription")}
       action={
         <Button
           size="sm"
@@ -101,8 +103,11 @@ export function PhotosSection({ partId, photos }: Props) {
         >
           <ImagePlus aria-hidden />
           {status.kind === "uploading"
-            ? `Uploading ${status.current} of ${status.total}…`
-            : "Upload photos"}
+            ? t("uploadingProgress", {
+                current: status.current,
+                total: status.total,
+              })
+            : t("uploadPhotos")}
         </Button>
       }
     >
@@ -133,7 +138,7 @@ export function PhotosSection({ partId, photos }: Props) {
         <EmptyRow>
           <span className="flex items-center gap-2">
             <Camera aria-hidden className="size-4" />
-            No photos yet — upload one to give this part a face.
+            {t("noPhotos")}
           </span>
         </EmptyRow>
       ) : (

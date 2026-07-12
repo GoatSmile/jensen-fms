@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { PackagePlus } from "lucide-react";
 
@@ -71,6 +72,7 @@ export function AdjustStockDialog({
   hideLocation = false,
   currencies = [],
 }: Props) {
+  const t = useTranslations("partDetail");
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -82,10 +84,10 @@ export function AdjustStockDialog({
         variant={triggerVariant === "row" ? "ghost" : "default"}
         size={triggerVariant === "row" ? "xs" : "default"}
         disabled
-        title="No active inventory locations on file."
+        title={t("noActiveLocations")}
       >
         {triggerVariant === "row" ? null : <PackagePlus aria-hidden />}
-        Adjust stock
+        {t("adjustStock")}
       </Button>
     );
   }
@@ -95,11 +97,11 @@ export function AdjustStockDialog({
       <DialogTrigger asChild>
         {triggerVariant === "row" ? (
           <Button size="xs" variant="ghost">
-            Adjust
+            {t("adjust")}
           </Button>
         ) : (
           <Button>
-            <PackagePlus aria-hidden /> Adjust stock
+            <PackagePlus aria-hidden /> {t("adjustStock")}
           </Button>
         )}
       </DialogTrigger>
@@ -145,6 +147,8 @@ function AdjustStockForm({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("partDetail");
+  const tCommon = useTranslations("common");
   const [locationId, setLocationId] = useState(
     defaultLocationId ?? locations[0]!.id,
   );
@@ -237,7 +241,7 @@ function AdjustStockForm({
 
     const value = Number(valueText);
     if (!Number.isFinite(value)) {
-      setError("Enter a number for the quantity.");
+      setError(t("qtyNumberError"));
       return;
     }
 
@@ -252,7 +256,7 @@ function AdjustStockForm({
     if (trimmedCost !== "") {
       const parsed = Number(trimmedCost.replace(",", "."));
       if (!Number.isFinite(parsed) || parsed < 0) {
-        setError("Unit cost must be a non-negative number, or empty.");
+        setError(t("costNumberError"));
         return;
       }
       if (costCurrency === "DKK") {
@@ -260,9 +264,7 @@ function AdjustStockForm({
       } else {
         const rate = Number(fxRateText.trim().replace(",", "."));
         if (!Number.isFinite(rate) || rate <= 0) {
-          setError(
-            `Enter the ${costCurrency} → DKK rate (the lookup may have failed).`,
-          );
+          setError(t("fxRateError", { currency: costCurrency }));
           return;
         }
         unitCostForeign = {
@@ -296,20 +298,21 @@ function AdjustStockForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>Adjust stock</DialogTitle>
+        <DialogTitle>{t("adjustStock")}</DialogTitle>
         <DialogDescription>
-          {partName} — appends one entry to the inventory ledger. Past entries
-          are never modified.
+          {t("adjustDialogDescription", { name: partName })}
         </DialogDescription>
       </DialogHeader>
 
       {hideLocation ? (
         <p className="text-muted-foreground text-xs">
-          Currently {formatQuantity(selectedLocation.currentOnHand)} on hand.
+          {t("currentlyOnHand", {
+            qty: formatQuantity(selectedLocation.currentOnHand),
+          })}
         </p>
       ) : (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="adjust-location">Location</Label>
+          <Label htmlFor="adjust-location">{t("location")}</Label>
           <Select value={locationId} onValueChange={setLocationId}>
             <SelectTrigger id="adjust-location">
               <SelectValue />
@@ -319,21 +322,25 @@ function AdjustStockForm({
                 <SelectItem key={loc.id} value={loc.id}>
                   {loc.name}{" "}
                   <span className="text-muted-foreground">
-                    ({loc.code} · {formatQuantity(loc.currentOnHand)} on hand)
+                    {t("locationOptionMeta", {
+                      code: loc.code,
+                      qty: formatQuantity(loc.currentOnHand),
+                    })}
                   </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">
-            Currently {formatQuantity(selectedLocation.currentOnHand)} at this
-            location.
+            {t("currentlyAtLocation", {
+              qty: formatQuantity(selectedLocation.currentOnHand),
+            })}
           </p>
         </div>
       )}
 
       <div className="flex flex-col gap-2">
-        <Label>Mode</Label>
+        <Label>{t("mode")}</Label>
         <RadioGroup
           value={mode}
           onValueChange={(v) => setMode(v as Mode)}
@@ -345,13 +352,13 @@ function AdjustStockForm({
           <div className="flex items-center gap-2">
             <RadioGroupItem value="delta" id="mode-delta" />
             <Label htmlFor="mode-delta" className="text-sm font-normal">
-              Adjust by Δ
+              {t("adjustByDelta")}
             </Label>
           </div>
           <div className="flex items-center gap-2">
             <RadioGroupItem value="set" id="mode-set" />
             <Label htmlFor="mode-set" className="text-sm font-normal">
-              Set on-hand to…
+              {t("setOnHandTo")}
             </Label>
           </div>
         </RadioGroup>
@@ -359,7 +366,7 @@ function AdjustStockForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="adjust-value">
-          {mode === "delta" ? "Δ quantity" : "New on-hand"}
+          {mode === "delta" ? t("deltaQty") : t("newOnHand")}
         </Label>
         <Input
           id="adjust-value"
@@ -367,7 +374,7 @@ function AdjustStockForm({
           autoFocus
           value={valueText}
           onChange={(e) => setValueText(e.target.value)}
-          placeholder={mode === "delta" ? "-2 or +5" : "10"}
+          placeholder={mode === "delta" ? t("deltaPlaceholder") : "10"}
         />
         {preview != null ? (
           <p
@@ -377,33 +384,34 @@ function AdjustStockForm({
                 : "text-muted-foreground"
             }`}
           >
-            {mode === "delta" ? (
-              <>Resulting on-hand: {formatQuantity(preview.resulting)}</>
-            ) : (
-              <>
-                Δ to be written: {preview.delta > 0 ? "+" : ""}
-                {formatQuantity(preview.delta)}
-              </>
-            )}
-            {previewIsNegative ? " — cannot go below zero" : null}
+            {mode === "delta"
+              ? t("resultingOnHand", {
+                  qty: formatQuantity(preview.resulting),
+                })
+              : t("deltaToBeWritten", {
+                  qty:
+                    (preview.delta > 0 ? "+" : "") +
+                    formatQuantity(preview.delta),
+                })}
+            {previewIsNegative ? t("cannotGoBelowZero") : null}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="adjust-reason">Reason</Label>
+        <Label htmlFor="adjust-reason">{t("reasonLabel")}</Label>
         <Textarea
           id="adjust-reason"
           rows={2}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. physical count 2026-05-08, found in another box"
+          placeholder={t("reasonPlaceholder")}
           required
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="adjust-date">Purchase date (optional)</Label>
+        <Label htmlFor="adjust-date">{t("purchaseDate")}</Label>
         <Input
           id="adjust-date"
           type="date"
@@ -412,29 +420,26 @@ function AdjustStockForm({
           onChange={(e) => setDateText(e.target.value)}
         />
         <p className="text-muted-foreground text-xs">
-          When this stock actually arrived — back-date for historical entries.
-          Leave blank for today.
-          {costCurrency !== "DKK"
-            ? " The FX rate below follows this date."
-            : null}
+          {t("purchaseDateHint")}
+          {costCurrency !== "DKK" ? t("fxFollowsDate") : null}
         </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="adjust-cost">Unit cost (optional)</Label>
+        <Label htmlFor="adjust-cost">{t("unitCostOptional")}</Label>
         <div className="flex gap-2">
           <Input
             id="adjust-cost"
             inputMode="decimal"
             value={unitCostText}
             onChange={(e) => setUnitCostText(e.target.value)}
-            placeholder="Leave blank when removing stock"
+            placeholder={t("unitCostPlaceholder")}
             className="flex-1"
           />
           {currencies.length > 0 ? (
             <Select value={costCurrency} onValueChange={setCostCurrency}>
               <SelectTrigger
-                aria-label="Cost currency"
+                aria-label={t("costCurrencyAria")}
                 className="w-[92px] shrink-0"
               >
                 <SelectValue />
@@ -451,30 +456,35 @@ function AdjustStockForm({
         </div>
         {costCurrency !== "DKK" ? (
           <div className="flex flex-col gap-1.5 pt-1">
-            <Label htmlFor="adjust-fx">FX rate to DKK</Label>
+            <Label htmlFor="adjust-fx">{t("fxRateLabel")}</Label>
             <Input
               id="adjust-fx"
               inputMode="decimal"
               value={fxRateText}
               onChange={(e) => setFxRateText(e.target.value)}
-              placeholder="e.g. 6.91"
+              placeholder={t("fxRatePlaceholder")}
             />
             <p className="text-muted-foreground text-xs">
               {fxLookup.kind === "loading"
-                ? `Looking up ${costCurrency} → DKK for ${fxDate}…`
+                ? t("fxLoading", { currency: costCurrency, date: fxDate })
                 : fxLookup.kind === "ok"
-                  ? `ECB rate for ${fxLookup.actualDate}${fxLookup.actualDate !== fxDate ? ` (closest business day to ${fxDate})` : ""}. Override if your invoice quotes a different rate.`
+                  ? fxLookup.actualDate !== fxDate
+                    ? t("fxOkClosest", {
+                        date: fxLookup.actualDate,
+                        requested: fxDate,
+                      })
+                    : t("fxOk", { date: fxLookup.actualDate })
                   : fxLookup.kind === "missing"
-                    ? `Could not auto-look-up: ${fxLookup.message}. Enter manually.`
-                    : "Pick a purchase date to fetch its historical rate."}
+                    ? t("fxMissing", { message: fxLookup.message })
+                    : t("fxIdle")}
             </p>
             {foreignCostDkk != null ? (
               <p className="text-xs tabular-nums">
-                = {formatDkk(foreignCostDkk)} per unit
+                {t("foreignCostPerUnit", {
+                  amount: formatDkk(foreignCostDkk),
+                })}
                 <span className="text-muted-foreground">
-                  {" "}
-                  — stored in DKK; the original amount and rate are kept on
-                  the ledger entry.
+                  {t("foreignCostNote")}
                 </span>
               </p>
             ) : null}
@@ -495,7 +505,7 @@ function AdjustStockForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button
           type="submit"
@@ -506,7 +516,7 @@ function AdjustStockForm({
             previewIsNegative
           }
         >
-          {isPending ? "Saving…" : "Save adjustment"}
+          {isPending ? tCommon("saving") : t("saveAdjustment")}
         </Button>
       </DialogFooter>
     </form>

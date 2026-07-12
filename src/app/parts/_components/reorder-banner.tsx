@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, ShoppingCart, TriangleAlert } from "lucide-react";
 
@@ -26,6 +27,7 @@ type Props = {
  * it entirely when no part has a reorder point set.
  */
 export function ReorderBanner({ rows }: Props) {
+  const t = useTranslations("parts");
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [result, setResult] = useState<ReorderDraftResult | null>(null);
@@ -56,11 +58,11 @@ export function ReorderBanner({ rows }: Props) {
             <ChevronRight className="size-4 shrink-0" aria-hidden />
           )}
           <TriangleAlert className="size-4 shrink-0" aria-hidden />
-          {rows.length} part{rows.length === 1 ? "" : "s"} below reorder point
+          {t("reorderCount", { count: rows.length })}
         </button>
         <Button type="button" size="sm" onClick={onDraft} disabled={isPending}>
           <ShoppingCart className="size-4" aria-hidden />
-          {isPending ? "Drafting…" : "Draft POs"}
+          {isPending ? t("drafting") : t("draftPos")}
         </Button>
       </div>
 
@@ -70,7 +72,7 @@ export function ReorderBanner({ rows }: Props) {
             className="border-t border-amber-200 px-4 py-2.5 text-sm text-emerald-800 dark:border-amber-900 dark:text-emerald-300"
             role="status"
           >
-            Drafted{" "}
+            {t("draftedPrefix")}
             {result.pos.map((po, i) => (
               <span key={po.id}>
                 {i > 0 ? ", " : ""}
@@ -80,13 +82,16 @@ export function ReorderBanner({ rows }: Props) {
                 >
                   {po.poNumber}
                 </Link>{" "}
-                ({po.supplierName}, {po.lines} line{po.lines === 1 ? "" : "s"})
+                {t("draftedLineMeta", {
+                  supplier: po.supplierName,
+                  count: po.lines,
+                })}
               </span>
             ))}
-            . Review and place from there.
+            {t("draftedSuffix")}
             {result.skipped.length > 0 ? (
               <span className="text-muted-foreground block text-xs">
-                Skipped:{" "}
+                {t("skippedPrefix")}
                 {result.skipped.map((s) => `${s.sku} (${s.reason})`).join(", ")}
               </span>
             ) : null}
@@ -125,8 +130,10 @@ export function ReorderBanner({ rows }: Props) {
                 </span>
                 <span className="text-muted-foreground">
                   {" "}
-                  / point {formatQuantity(r.reorderPoint)} · order{" "}
-                  {formatQuantity(r.orderQty)}
+                  {t("pointOrder", {
+                    point: formatQuantity(r.reorderPoint),
+                    qty: formatQuantity(r.orderQty),
+                  })}
                 </span>
               </span>
             </li>

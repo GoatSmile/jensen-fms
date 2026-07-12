@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import {
   Table,
   TableBody,
@@ -44,6 +46,10 @@ export default async function PartsPrintPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tStock] = await Promise.all([
+    getTranslations("parts"),
+    getTranslations("stockStatus"),
+  ]);
   const supabase = await createClient();
 
   let q = supabase
@@ -78,9 +84,9 @@ export default async function PartsPrintPage({
   const rows = data ?? [];
 
   const filterDescription = [
-    sp.q ? `matching "${sp.q}"` : null,
-    sp.category ? `in ${sp.category}` : null,
-    sp.stock ? `stock status: ${sp.stock}` : null,
+    sp.q ? t("matching", { q: sp.q }) : null,
+    sp.category ? t("inCategory", { category: sp.category }) : null,
+    sp.stock ? t("stockStatusDesc", { status: tStock(sp.stock) }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -90,13 +96,13 @@ export default async function PartsPrintPage({
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Parts catalog
+            {t("printTitle")}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            {rows.length} {rows.length === 1 ? "part" : "parts"}
+            {t("count", { count: rows.length })}
             {filterDescription ? ` · ${filterDescription}` : null}
             {" · "}
-            Printed {todayDa()}
+            {t("printedOn", { date: todayDa() })}
           </p>
         </div>
         <PrintButton />
@@ -106,13 +112,13 @@ export default async function PartsPrintPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[140px]">SKU</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="text-right">Reorder</TableHead>
-              <TableHead className="text-right">Last cost</TableHead>
+              <TableHead className="w-[140px]">{t("thSku")}</TableHead>
+              <TableHead>{t("thName")}</TableHead>
+              <TableHead>{t("thCategory")}</TableHead>
+              <TableHead>{t("thSupplier")}</TableHead>
+              <TableHead className="text-right">{t("thStock")}</TableHead>
+              <TableHead className="text-right">{t("thReorder")}</TableHead>
+              <TableHead className="text-right">{t("thLastCost")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -150,12 +156,12 @@ export default async function PartsPrintPage({
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-center text-sm">
-          No parts match the current filters.
+          {t("printEmpty")}
         </p>
       ) : null}
 
       <footer className="text-muted-foreground mt-4 text-xs print-only">
-        Jensen Production — Kvalitetscykler · Generated {todayDa()}
+        {t("generatedFooter", { date: todayDa() })}
       </footer>
     </div>
   );

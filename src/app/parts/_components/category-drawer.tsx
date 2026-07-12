@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export function CategoryDrawer({
   value,
   onChange,
 }: Props) {
+  const t = useTranslations("parts");
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
 
@@ -83,7 +85,7 @@ export function CategoryDrawer({
         )}
       >
         <span className="line-clamp-1 text-left">
-          {selected ? selected.name : "All categories"}
+          {selected ? selected.name : t("allCategories")}
         </span>
         <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0" />
       </SheetTrigger>
@@ -92,11 +94,8 @@ export function CategoryDrawer({
         aria-describedby={undefined}
       >
         <SheetHeader className="pb-2">
-          <SheetTitle>Pick a category</SheetTitle>
-          <SheetDescription>
-            Build order, with catalog-wide part counts. One click filters the
-            list.
-          </SheetDescription>
+          <SheetTitle>{t("pickCategory")}</SheetTitle>
+          <SheetDescription>{t("drawerDescription")}</SheetDescription>
         </SheetHeader>
         <div className="px-4 pb-3">
           <div className="border-input/50 bg-input/30 flex h-8 items-center gap-2 rounded-lg border px-2">
@@ -105,8 +104,8 @@ export function CategoryDrawer({
               type="search"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter categories…"
-              aria-label="Filter categories"
+              placeholder={t("filterCategories")}
+              aria-label={t("filterCategories")}
               className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-hidden"
             />
           </div>
@@ -115,7 +114,7 @@ export function CategoryDrawer({
           <div className="columns-2 gap-1 sm:columns-3">
             {!filter.trim() && (
               <CategoryCell
-                label="All categories"
+                label={t("allCategories")}
                 count={totalCount}
                 active={value === "all"}
                 onClick={() => pick("all")}
@@ -135,7 +134,7 @@ export function CategoryDrawer({
           {empty.length > 0 ? (
             <>
               <p className="text-muted-foreground mt-4 mb-1 text-xs">
-                Empty categories
+                {t("emptyCategoriesLabel")}
               </p>
               <div className="columns-2 gap-1 sm:columns-3">
                 {empty.map((n) => (
@@ -154,7 +153,7 @@ export function CategoryDrawer({
           ) : null}
           {populated.length === 0 && empty.length === 0 ? (
             <p className="text-muted-foreground py-6 text-center text-sm">
-              No categories match.
+              {t("noCategoriesMatch")}
             </p>
           ) : null}
         </div>
