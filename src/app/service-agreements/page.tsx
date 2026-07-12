@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Plus, ShieldCheck } from "lucide-react";
 
 import {
@@ -26,27 +27,28 @@ import { createClient } from "@/lib/supabase/server";
 import {
   SA_STATUS_VARIANT,
   type ServiceAgreementStatus,
-  saStatusLabel,
   isExpiringSoon,
   daysUntil,
 } from "@/lib/service-agreements/status";
 
 export const dynamic = "force-dynamic";
 
-const FILTERS = [
-  { id: "all", label: "All" },
-  { id: "active", label: "Active" },
-  { id: "expired", label: "Expired" },
-  { id: "cancelled", label: "Cancelled" },
-];
+const FILTER_IDS = ["all", "active", "expired", "cancelled"] as const;
 
 export default async function ServiceAgreementsListPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  const [t, tCommon, tSaStatus] = await Promise.all([
+    getTranslations("serviceAgreements"),
+    getTranslations("common"),
+    getTranslations("saStatus"),
+  ]);
   const { status } = await searchParams;
-  const filter = FILTERS.some((f) => f.id === status) ? status! : "all";
+  const filter = FILTER_IDS.some((id) => id === status) ? status! : "all";
+  const filterLabel = (id: string) =>
+    id === "all" ? t("filterAll") : tSaStatus(id);
   const today = new Date().toISOString().slice(0, 10);
 
   const supabase = await createClient();
@@ -71,41 +73,38 @@ export default async function ServiceAgreementsListPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Service agreements</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">Service agreements</h1>
-          <p className="text-muted-foreground text-sm">
-            Coverage agreements per customer or unit. Drives work-order
-            coverage and the map&rsquo;s renewal layer.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <Button asChild>
           <Link href="/service-agreements/new">
-            <Plus aria-hidden /> New agreement
+            <Plus aria-hidden /> {t("newAgreement")}
           </Link>
         </Button>
       </div>
 
       <div className="flex gap-1.5">
-        {FILTERS.map((f) => (
+        {FILTER_IDS.map((id) => (
           <Button
-            key={f.id}
+            key={id}
             asChild
             size="sm"
-            variant={filter === f.id ? "default" : "outline"}
+            variant={filter === id ? "default" : "outline"}
           >
-            <Link href={f.id === "all" ? "/service-agreements" : `?status=${f.id}`}>
-              {f.label}
+            <Link href={id === "all" ? "/service-agreements" : `?status=${id}`}>
+              {filterLabel(id)}
             </Link>
           </Button>
         ))}
@@ -114,24 +113,20 @@ export default async function ServiceAgreementsListPage({
       {!rows || rows.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title={
-            filter === "all"
-              ? "No agreements yet"
-              : `No ${filter} agreements`
-          }
-          description="Coverage agreements drive work-order billing and the map's renewal layer."
-          action={{ label: "New agreement", href: "/service-agreements/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+          action={{ label: t("newAgreement"), href: "/service-agreements/new" }}
         />
       ) : (
         <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Agreement</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Period</TableHead>
-                <TableHead className="text-right">Monthly fee</TableHead>
+                <TableHead>{t("thAgreement")}</TableHead>
+                <TableHead>{t("thCustomer")}</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("thPeriod")}</TableHead>
+                <TableHead className="text-right">{t("thMonthlyFee")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -156,7 +151,7 @@ export default async function ServiceAgreementsListPage({
                         {sa.name_da ?? sa.name_en}
                         {sa.has_gps ? (
                           <span className="text-muted-foreground ml-2 text-xs">
-                            + GPS
+                            {t("gpsSuffix")}
                           </span>
                         ) : null}
                       </Link>
@@ -174,13 +169,15 @@ export default async function ServiceAgreementsListPage({
                             "outline"
                           }
                         >
-                          {saStatusLabel(sa.status)}
+                          {tSaStatus.has(sa.status)
+                            ? tSaStatus(sa.status)
+                            : sa.status}
                         </Badge>
                         {expiring ? (
                           <Badge variant="warning">
                             {days === 0
-                              ? "ends today"
-                              : `${days}d left`}
+                              ? t("endsToday")
+                              : t("daysLeft", { days: days ?? 0 })}
                           </Badge>
                         ) : null}
                       </div>
@@ -193,7 +190,7 @@ export default async function ServiceAgreementsListPage({
                     >
                       {sa.start_date}
                       {" – "}
-                      {sa.end_date ?? "open"}
+                      {sa.end_date ?? t("periodOpen")}
                     </TableCell>
                     <TableCell className="text-right text-sm tabular-nums">
                       {sa.monthly_fee != null

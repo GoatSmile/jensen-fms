@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ReadField } from "@/components/field";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
@@ -16,11 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
-import { woStatusLabel } from "@/lib/maintenance/work-order-status";
 import {
   SA_STATUS_VARIANT,
   type ServiceAgreementStatus,
-  saStatusLabel,
   isExpiringSoon,
   daysUntil,
 } from "@/lib/service-agreements/status";
@@ -33,6 +32,13 @@ export default async function ServiceAgreementDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tSaList, tCommon, tSaStatus, tWoStatus] = await Promise.all([
+    getTranslations("serviceAgreementDetail"),
+    getTranslations("serviceAgreements"),
+    getTranslations("common"),
+    getTranslations("saStatus"),
+    getTranslations("woStatus"),
+  ]);
   const today = new Date().toISOString().slice(0, 10);
   const supabase = await createClient();
 
@@ -78,12 +84,12 @@ export default async function ServiceAgreementDetailPage({
   const days = daysUntil(sa.end_date, today);
   const coverageLabel =
     sa.covers_parts && sa.covers_labor
-      ? "Parts + labour"
+      ? t("coveragePartsLabour")
       : sa.covers_parts
-        ? "Parts only"
+        ? t("coveragePartsOnly")
         : sa.covers_labor
-          ? "Labour only"
-          : "Nothing flagged";
+          ? t("coverageLabourOnly")
+          : t("coverageNothing");
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -91,13 +97,13 @@ export default async function ServiceAgreementDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/service-agreements">Service agreements</Link>
+              <Link href="/service-agreements">{tSaList("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -116,69 +122,75 @@ export default async function ServiceAgreementDetailPage({
                 SA_STATUS_VARIANT[sa.status as ServiceAgreementStatus] ?? "outline"
               }
             >
-              {saStatusLabel(sa.status)}
+              {tSaStatus.has(sa.status) ? tSaStatus(sa.status) : sa.status}
             </Badge>
             {expiring ? (
               <Badge variant="warning">
-                {days === 0 ? "ends today" : `${days}d left`}
+                {days === 0
+                  ? tSaList("endsToday")
+                  : tSaList("daysLeft", { days: days ?? 0 })}
               </Badge>
             ) : null}
           </div>
           <p className="text-muted-foreground text-sm">
             {orgName}
-            {unit?.name ? ` · ${unit.name}` : " · whole organisation"}
+            {unit?.name ? ` · ${unit.name}` : ` · ${t("wholeOrg")}`}
           </p>
         </div>
         <Button asChild variant="outline">
           <Link href={`/service-agreements/${id}/edit`}>
-            <Pencil aria-hidden /> Edit
+            <Pencil aria-hidden /> {t("edit")}
           </Link>
         </Button>
       </div>
 
       <Section
-        title="Details"
+        title={t("detailsTitle")}
         className="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
       >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <ReadField label="Customer" value={orgName} />
+          <ReadField label={t("fldCustomer")} value={orgName} />
           <ReadField
-            label="Unit"
-            value={unit?.name ?? "Whole organisation"}
+            label={t("fldUnit")}
+            value={unit?.name ?? t("wholeOrgCap")}
           />
-          <ReadField label="Coverage" value={coverageLabel} />
-          <ReadField label="Start" value={sa.start_date} />
-          <ReadField label="End" value={sa.end_date ?? "Open-ended"} />
+          <ReadField label={t("fldCoverage")} value={coverageLabel} />
+          <ReadField label={t("fldStart")} value={sa.start_date} />
+          <ReadField label={t("fldEnd")} value={sa.end_date ?? t("openEnded")} />
           <ReadField
-            label="Monthly fee"
+            label={t("fldMonthlyFee")}
             value={
               sa.monthly_fee != null
                 ? formatPrice(Number(sa.monthly_fee), sa.fee_currency ?? "DKK")
                 : null
             }
           />
-          <ReadField label="GPS add-on" value={sa.has_gps ? "Yes" : "No"} />
+          <ReadField
+            label={t("fldGpsAddon")}
+            value={sa.has_gps ? t("yes") : t("no")}
+          />
         </dl>
         {sa.notes ? (
           <div className="mt-4">
-            <ReadField label="Notes" value={sa.notes} multiline />
+            <ReadField label={t("fldNotes")} value={sa.notes} multiline />
           </div>
         ) : null}
       </Section>
 
       <Section
-        title={`Bikes in scope (${bikes?.length ?? 0})`}
+        title={t("bikesInScope", { count: bikes?.length ?? 0 })}
         description={
           sa.organization_unit_id
-            ? "In-service bikes owned by this unit."
-            : "In-service bikes owned by this organisation."
+            ? t("bikesDescUnit")
+            : t("bikesDescOrg")
         }
         className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
       >
         {!bikes || bikes.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No in-service bikes are currently owned by this{" "}
-            {sa.organization_unit_id ? "unit" : "organisation"}.
+            {sa.organization_unit_id
+              ? t("bikesEmptyUnit")
+              : t("bikesEmptyOrg")}
           </p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
@@ -196,12 +208,12 @@ export default async function ServiceAgreementDetailPage({
       </Section>
 
       <Section
-        title={`Covered work orders (${workOrders?.length ?? 0})`}
-        description="Work orders this agreement has covered."
+        title={t("coveredWos", { count: workOrders?.length ?? 0 })}
+        description={t("coveredWosDesc")}
         className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
         {!workOrders || workOrders.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No work orders yet.</p>
+          <p className="text-muted-foreground text-sm">{t("noWos")}</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {workOrders.map((wo) => (
@@ -213,7 +225,9 @@ export default async function ServiceAgreementDetailPage({
                   {wo.wo_number}
                 </Link>{" "}
                 <span className="text-muted-foreground">
-                  · {woStatusLabel(wo.status)} · {wo.is_billable ? "billable" : "covered"}
+                  ·{" "}
+                  {tWoStatus.has(wo.status) ? tWoStatus(wo.status) : wo.status} ·{" "}
+                  {wo.is_billable ? t("woBillable") : t("woCovered")}
                 </span>
               </li>
             ))}

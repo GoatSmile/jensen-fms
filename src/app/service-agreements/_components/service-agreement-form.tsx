@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -72,6 +73,9 @@ export function ServiceAgreementForm({
   organizations,
   units,
 }: Props) {
+  const t = useTranslations("serviceAgreementForm");
+  const tCommon = useTranslations("common");
+  const tSaStatus = useTranslations("saStatus");
   const router = useRouter();
   const [values, setValues] = useState<ServiceAgreementFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -144,11 +148,11 @@ export function ServiceAgreementForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <Section
-        title="Customer & coverage scope"
-        description="Pick the customer. Optionally narrow the agreement to one of their units (e.g. a kommune department) — otherwise it covers the whole organisation."
+        title={t("sectionScopeTitle")}
+        description={t("sectionScopeDesc")}
       >
         <Field
-          label="Customer"
+          label={t("fldCustomer")}
           htmlFor="sa-org"
           required
           error={errorField === "organization_id" ? error : null}
@@ -161,12 +165,12 @@ export function ServiceAgreementForm({
               value: o.id,
               label: o.name,
             }))}
-            placeholder="Pick a customer…"
-            searchPlaceholder="Search customers…"
-            emptyMessage="No customers match."
+            placeholder={t("pickCustomer")}
+            searchPlaceholder={t("searchCustomers")}
+            emptyMessage={t("noCustomersMatch")}
           />
         </Field>
-        <Field label="Unit (optional)" htmlFor="sa-unit">
+        <Field label={t("fldUnit")} htmlFor="sa-unit">
           <Select
             value={values.organization_unit_id || NO_UNIT}
             onValueChange={(v) =>
@@ -175,16 +179,10 @@ export function ServiceAgreementForm({
             disabled={!values.organization_id || orgUnits.length === 0}
           >
             <SelectTrigger id="sa-unit">
-              <SelectValue
-                placeholder={
-                  orgUnits.length === 0
-                    ? "Whole organisation"
-                    : "Whole organisation"
-                }
-              />
+              <SelectValue placeholder={t("wholeOrg")} />
             </SelectTrigger>
             <SelectContent className="max-h-72">
-              <SelectItem value={NO_UNIT}>Whole organisation</SelectItem>
+              <SelectItem value={NO_UNIT}>{t("wholeOrg")}</SelectItem>
               {orgUnits.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
@@ -195,9 +193,9 @@ export function ServiceAgreementForm({
         </Field>
       </Section>
 
-      <Section title="Agreement">
+      <Section title={t("sectionAgreement")}>
         <Field
-          label="Name"
+          label={t("fldName")}
           htmlFor="sa-name"
           required
           error={errorField === "name" ? error : null}
@@ -206,12 +204,12 @@ export function ServiceAgreementForm({
             id="sa-name"
             value={values.name}
             onChange={(e) => update("name", e.target.value)}
-            placeholder="e.g. Serviceaftale – Herlev Hjemmepleje"
+            placeholder={t("namePlaceholder")}
             autoFocus={mode === "create"}
           />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label="Status" htmlFor="sa-status">
+          <Field label={t("fldStatus")} htmlFor="sa-status">
             <Select
               value={values.status}
               onValueChange={(v) => update("status", v)}
@@ -220,14 +218,16 @@ export function ServiceAgreementForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="active">{tSaStatus("active")}</SelectItem>
+                <SelectItem value="expired">{tSaStatus("expired")}</SelectItem>
+                <SelectItem value="cancelled">
+                  {tSaStatus("cancelled")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </Field>
           <Field
-            label="Start date"
+            label={t("fldStart")}
             htmlFor="sa-start"
             required
             error={errorField === "start_date" ? error : null}
@@ -240,7 +240,7 @@ export function ServiceAgreementForm({
             />
           </Field>
           <Field
-            label="End date"
+            label={t("fldEnd")}
             htmlFor="sa-end"
             error={errorField === "end_date" ? error : null}
           >
@@ -255,36 +255,33 @@ export function ServiceAgreementForm({
       </Section>
 
       <Section
-        title="Coverage & pricing"
-        description="What the agreement covers, and the recurring fee. Tiered per-bike pricing comes later — this is a single monthly fee for now."
+        title={t("sectionCoverageTitle")}
+        description={t("sectionCoverageDesc")}
       >
         <div className="flex flex-col gap-2">
           <Check
             id="sa-parts"
-            label="Covers parts"
+            label={t("checkParts")}
             checked={values.covers_parts}
             onChange={(v) => update("covers_parts", v)}
           />
           <Check
             id="sa-labor"
-            label="Covers labour"
+            label={t("checkLabour")}
             checked={values.covers_labor}
             onChange={(v) => update("covers_labor", v)}
           />
           <Check
             id="sa-gps"
-            label="GPS add-on (3-year min binding)"
+            label={t("checkGps")}
             checked={values.has_gps}
             onChange={(v) => update("has_gps", v)}
           />
         </div>
-        <p className="text-muted-foreground text-xs">
-          A work order on a covered bike is non-billable only when both parts
-          and labour are covered.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("coverageHint")}</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
-            label="Monthly fee"
+            label={t("fldMonthlyFee")}
             htmlFor="sa-fee"
             error={errorField === "monthly_fee" ? error : null}
           >
@@ -293,10 +290,10 @@ export function ServiceAgreementForm({
               inputMode="decimal"
               value={values.monthly_fee}
               onChange={(e) => update("monthly_fee", e.target.value)}
-              placeholder="e.g. 142"
+              placeholder={t("feePlaceholder")}
             />
           </Field>
-          <Field label="Currency" htmlFor="sa-currency">
+          <Field label={t("fldCurrency")} htmlFor="sa-currency">
             <Input
               id="sa-currency"
               value={values.fee_currency}
@@ -310,8 +307,8 @@ export function ServiceAgreementForm({
         </div>
       </Section>
 
-      <Section title="Notes" description="Internal — not shown to the customer.">
-        <Field label="Notes" htmlFor="sa-notes">
+      <Section title={t("sectionNotesTitle")} description={t("sectionNotesDesc")}>
+        <Field label={t("fldNotes")} htmlFor="sa-notes">
           <Textarea
             id="sa-notes"
             rows={3}
@@ -334,14 +331,14 @@ export function ServiceAgreementForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
-            ? "Saving…"
+            ? tCommon("saving")
             : mode === "create"
-              ? "Create agreement"
-              : "Save changes"}
+              ? t("createAgreement")
+              : t("saveChanges")}
         </Button>
       </div>
     </form>

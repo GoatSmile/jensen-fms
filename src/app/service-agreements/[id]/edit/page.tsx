@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import {
@@ -27,6 +28,11 @@ export default async function EditServiceAgreementPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tList, tCommon] = await Promise.all([
+    getTranslations("serviceAgreementForm"),
+    getTranslations("serviceAgreements"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [saRes, pickers] = await Promise.all([
@@ -67,13 +73,13 @@ export default async function EditServiceAgreementPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/service-agreements">Service agreements</Link>
+              <Link href="/service-agreements">{tList("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -86,13 +92,13 @@ export default async function EditServiceAgreementPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Edit agreement</h1>
+        <h1 className="text-2xl font-semibold">{t("editTitle")}</h1>
       </div>
 
       <div className="max-w-3xl">
