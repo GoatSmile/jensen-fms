@@ -1108,25 +1108,33 @@ when the work ships or the idea is rejected.
     plan, stock coverage + draft-PO, bikes section, parts recipe +
     substitute/add dialogs, and both print pages (parts list + batch pick
     sheet); the worker-facing build workbench + batch build were already
-    Danish). **Enum labels are message namespaces now**,
-    replacing the
+    Danish), and the **purchase-orders module** (b58b0fb — `po` namespace
+    for list/new/edit/form, `poDetail` for the detail cluster: header +
+    status transitions + email-supplier dialog + cancel dialog, stat tiles,
+    lines section, line dialog (FX-lookup hints, additive landed-cost
+    breakdown, import-tax toggle hints), receive form; the supplier-facing
+    PO print stays English by design). **Enum labels are message namespaces
+    now**, replacing the
     English `*_LABEL` constant lookups at translated call sites: `bikeStatus`
     (from the bikes cluster), `stockStatus` / `movementType` / `moStatus`
-    (parts cluster), plus `ticketStatus` / `ticketPriority` / `ticketSource`
-    / `woStatus` (maintenance cluster). Pattern: `getTranslations("moStatus")`
+    (parts cluster), `ticketStatus` / `ticketPriority` / `ticketSource`
+    / `woStatus` (maintenance cluster), plus `poStatus` / `importTaxBasis`
+    (PO cluster). Pattern: `getTranslations("moStatus")`
     then `t(status)`, with `t.has(status)` guarding open-ended enums before
     falling back to the raw value. The old lib helpers still stand for
     untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
     has 4 call sites left (org assigned-bikes, customer map, paint-order
     bikes, paint-from-SO form — MO bikes section converted in the MO
     cluster); `moStatusLabel()` is down to 1 (SO linked-MOs section);
+    `poStatusLabel()` / `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app
+    (PO cluster took the last call sites — safe to delete when convenient);
     `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain for
     not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
-  - **Remaining clusters**: POs · SOs · paint orders · invoices ·
+  - **Remaining clusters**: SOs · paint orders · invoices ·
     service agreements · customers/orgs · admin (+ QR page, global chrome
     leftovers). Also a mop-up pass for server-action error strings
-    (bikes/templates/parts/maintenance/MO actions still return English;
+    (bikes/templates/parts/maintenance/MO/PO actions still return English;
     harmless fallback).
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
