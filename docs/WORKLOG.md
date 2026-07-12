@@ -54,10 +54,10 @@ treat the early totals as floors, not truth.
 | Wed 2026-07-09 | ~6 | Dashboard drill-down + Excel backfill (mig 59); 3E e-conomic push live-tested (mig 60); section tints app-wide; part/SO domain bands; template hard delete; locations move; **owner call** (~40 min); July plan doc |
 | Thu 2026-07-10 | ~8 | Painter price list analyzed; service model designed + SHIPPED (migs 61+62: service_orders promotion, tiered price lists, snapshot-at-send, JP-lak retired); housekeeping drill-down + mobile photo iOS fixes; worklog set up; evening: post-ship review + fixes, template cost-to-paint (mig 63) |
 | Fri 2026-07-11 | ~8 | /admin/services price-list revision grid (mig 64: atomic publish RPC + tier-overlap EXCLUDE constraint); **i18n sweep launched** — foundation (next-intl, per-surface locale from app_settings), then Danish for /work + /scan, WO workspace, build workbench + batch build (worker surfaces done), app chrome, dashboard, bikes, bike templates |
-| Sun 2026-07-12 | ~8.5 | i18n Danish sweep continued: parts, maintenance (tickets + work orders), manufacturing-orders (list/forms/detail/print), and purchase-orders (list/new/edit/form + detail: header, email + cancel dialogs, lines, line dialog, receive form) modules |
+| Sun 2026-07-12 | ~11 | i18n Danish sweep — five modules in one long day: parts, maintenance (tickets + WOs), manufacturing-orders (+ print), purchase-orders (+ receive/line dialogs), and sales-orders (+ deposit + paint-from-SO flows); shared DeliveryWeekDateField also translated |
 
-**July so far: ~44 h** (8 working days)
+**July so far: ~46.5 h** (8 working days)
 
 ---
 
-**Project total: ~127.5 h across 24 working days (2026-05-07 → 2026-07-12)**
+**Project total: ~130 h across 24 working days (2026-05-07 → 2026-07-12)**
