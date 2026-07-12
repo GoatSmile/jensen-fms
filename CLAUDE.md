@@ -1102,7 +1102,13 @@ when the work ships or the idea is rejected.
     `workOrders` + `maintenance` namespaces: tickets list/detail/new/edit +
     form + header + WO-for-ticket section; work-orders list/detail/new +
     header + details/parts sections + add-part dialog (price preview via
-    `formatMoney`) + form). **Enum labels are message namespaces now**,
+    `formatMoney`) + form), and the **manufacturing-orders module**
+    (b1ea040 — `mo` namespace for the list + batch/one-off creation forms,
+    `moDetail` for the detail page: header/status transitions, stat tiles,
+    plan, stock coverage + draft-PO, bikes section, parts recipe +
+    substitute/add dialogs, and both print pages (parts list + batch pick
+    sheet); the worker-facing build workbench + batch build were already
+    Danish). **Enum labels are message namespaces now**,
     replacing the
     English `*_LABEL` constant lookups at translated call sites: `bikeStatus`
     (from the bikes cluster), `stockStatus` / `movementType` / `moStatus`
@@ -1111,15 +1117,16 @@ when the work ships or the idea is rejected.
     then `t(status)`, with `t.has(status)` guarding open-ended enums before
     falling back to the raw value. The old lib helpers still stand for
     untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
-    has 5 call sites left (MO bikes section, org assigned-bikes, customer
-    map, paint-order bikes, paint-from-SO form); `moStatusLabel()` and
+    has 4 call sites left (org assigned-bikes, customer map, paint-order
+    bikes, paint-from-SO form — MO bikes section converted in the MO
+    cluster); `moStatusLabel()` is down to 1 (SO linked-MOs section);
     `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain for
     not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
-  - **Remaining clusters**: MOs · POs · SOs · paint orders · invoices ·
+  - **Remaining clusters**: POs · SOs · paint orders · invoices ·
     service agreements · customers/orgs · admin (+ QR page, global chrome
     leftovers). Also a mop-up pass for server-action error strings
-    (bikes/templates/parts/maintenance actions still return English;
+    (bikes/templates/parts/maintenance/MO actions still return English;
     harmless fallback).
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
