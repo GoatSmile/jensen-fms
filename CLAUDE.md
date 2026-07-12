@@ -1133,7 +1133,13 @@ when the work ships or the idea is rejected.
     `InvoiceActions` (issue/credit-note/mark-paid armed states, issue
     warning) + `EconomicSyncCard`; new `invoiceStatus` enum namespace).
     That closed the last cross-cluster island — `invoiceStatusLabel` on the
-    SO payments section is now Danish too. `colorFinishLabel` (RAL/finish
+    SO payments section is now Danish too. And the **service-agreements
+    module** (71688b7 — `serviceAgreements` namespace for the list (status
+    filters, table, expiring badges, empty state); `serviceAgreementDetail`
+    for the detail (coverage labels, fields, bikes-in-scope + covered-WO
+    sections); `serviceAgreementForm` for the new/edit pages + shared form;
+    new `saStatus` enum namespace; covered-WO status reuses `woStatus`).
+    `colorFinishLabel` (RAL/finish
     strings like "Glossy") stays English — a colours-vocab concern.
     **Enum labels are message namespaces
     now**, replacing the
@@ -1142,22 +1148,24 @@ when the work ships or the idea is rejected.
     (parts cluster), `ticketStatus` / `ticketPriority` / `ticketSource`
     / `woStatus` (maintenance cluster), `poStatus` / `importTaxBasis`
     (PO cluster), `soStatus` (SO cluster), `serviceOrderStatus`
-    (paint cluster), plus `invoiceStatus` (invoices cluster). Pattern:
+    (paint cluster), `invoiceStatus` (invoices cluster), plus `saStatus`
+    (service-agreements cluster). Pattern:
     `getTranslations("moStatus")`
     then `t(status)`, with `t.has(status)` guarding open-ended enums before
     falling back to the raw value. The old lib helpers still stand for
     untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
     has 2 call sites left (org assigned-bikes, customer map); `moStatusLabel()`
     / `soStatusLabel()` / `poStatusLabel()` / `serviceOrderStatusLabel()` /
-    `invoiceStatusLabel()` / `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app (safe to delete when
+    `invoiceStatusLabel()` / `saStatusLabel()` / `woStatusLabel()` /
+    `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app (safe to delete when
     convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
     for not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
   - **Remaining clusters**:
-    service agreements · customers/orgs · admin (+ QR page, global chrome
+    customers/orgs · admin (+ QR page, global chrome
     leftovers). Also a mop-up pass for server-action error strings
-    (bikes/templates/parts/maintenance/MO/PO/SO/paint/invoices actions still
-    return English; harmless fallback).
+    (bikes/templates/parts/maintenance/MO/PO/SO/paint/invoices/service-
+    agreements actions still return English; harmless fallback).
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes
