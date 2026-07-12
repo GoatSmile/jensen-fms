@@ -1119,31 +1119,40 @@ when the work ships or the idea is rejected.
     + linked-paint + payments + production-note sections, the deposit flow
     and paint-from-SO flow; new `soStatus` enum namespace + a shared
     `deliveryWeek` namespace for `DeliveryWeekDateField` week/year, used by
-    MO/SO/template forms). Cross-cluster status helpers left English on the
-    SO detail until their home clusters: `invoiceStatusLabel` (payments
-    section → invoices) and `serviceOrderStatusLabel` (linked-paint →
-    paint). **Enum labels are message namespaces
+    MO/SO/template forms), and the **paint-orders module** (dc0e3d1 —
+    `paintOrders` namespace for list/new/form, `paintOrderDetail` for the
+    detail cluster: header + status transitions + cancel dialog, details,
+    service-order items section + add-item dialog, bikes section + add-bike
+    dialog; new `serviceOrderStatus` enum namespace bakes in the painter
+    noun — paint is the only service type so far, so it always passes
+    `PAINT_SUPPLIER_NOUN` [revisit if a second service type lands]).
+    Converting it cleared the SO detail's linked-paint island too (now
+    Danish). Remaining cross-cluster island: `invoiceStatusLabel` on the SO
+    payments section (→ invoices cluster). `colorFinishLabel` (RAL/finish
+    strings like "Glossy") stays English — a colours-vocab concern.
+    **Enum labels are message namespaces
     now**, replacing the
     English `*_LABEL` constant lookups at translated call sites: `bikeStatus`
     (from the bikes cluster), `stockStatus` / `movementType` / `moStatus`
     (parts cluster), `ticketStatus` / `ticketPriority` / `ticketSource`
     / `woStatus` (maintenance cluster), `poStatus` / `importTaxBasis`
-    (PO cluster), plus `soStatus` (SO cluster). Pattern:
+    (PO cluster), `soStatus` (SO cluster), plus `serviceOrderStatus`
+    (paint cluster). Pattern:
     `getTranslations("moStatus")`
     then `t(status)`, with `t.has(status)` guarding open-ended enums before
     falling back to the raw value. The old lib helpers still stand for
     untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
-    has 3 call sites left (org assigned-bikes, customer map, paint-order
-    bikes); `moStatusLabel()` / `soStatusLabel()` / `poStatusLabel()` /
+    has 2 call sites left (org assigned-bikes, customer map); `moStatusLabel()`
+    / `soStatusLabel()` / `poStatusLabel()` / `serviceOrderStatusLabel()` /
     `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app (safe to delete when
     convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
     for not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
-  - **Remaining clusters**: paint orders · invoices ·
+  - **Remaining clusters**: invoices ·
     service agreements · customers/orgs · admin (+ QR page, global chrome
     leftovers). Also a mop-up pass for server-action error strings
-    (bikes/templates/parts/maintenance/MO/PO/SO actions still return English;
-    harmless fallback).
+    (bikes/templates/parts/maintenance/MO/PO/SO/paint actions still return
+    English; harmless fallback).
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes
