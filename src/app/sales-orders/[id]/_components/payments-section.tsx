@@ -15,7 +15,6 @@ import {
 import { formatPrice } from "@/lib/format";
 import {
   INVOICE_STATUS_VARIANT,
-  invoiceStatusLabel,
   type InvoiceStatus,
 } from "@/lib/invoicing/status";
 
@@ -49,7 +48,10 @@ export async function PaymentsSection({
   currency: string;
   canDeposit: boolean;
 }) {
-  const t = await getTranslations("soDetail");
+  const [t, tInvoiceStatus] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("invoiceStatus"),
+  ]);
   const kindLabel: Record<SOInvoiceRow["kind"], string> = {
     standard: t("kindStandard"),
     deposit: t("kindDeposit"),
@@ -134,7 +136,9 @@ export async function PaymentsSection({
                   <TableCell className="text-sm">{kindLabel[inv.kind]}</TableCell>
                   <TableCell>
                     <Badge variant={INVOICE_STATUS_VARIANT[inv.status] ?? "outline"}>
-                      {invoiceStatusLabel(inv.status)}
+                      {tInvoiceStatus.has(inv.status)
+                        ? tInvoiceStatus(inv.status)
+                        : inv.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">

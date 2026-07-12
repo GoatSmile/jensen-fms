@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ type Props = {
  * is the pending spinner and an error line.
  */
 export function CreateInvoiceButton({ source, disabledReason }: Props) {
+  const t = useTranslations("invoices");
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
 
@@ -48,7 +50,7 @@ export function CreateInvoiceButton({ source, disabledReason }: Props) {
     <div className="flex flex-col items-end gap-1">
       <Button type="button" size="sm" onClick={onCreate} disabled={isPending}>
         <FileText aria-hidden />
-        {isPending ? "Creating…" : "Create invoice"}
+        {isPending ? t("creating") : t("createInvoice")}
       </Button>
       {error ? (
         <p className="text-destructive max-w-[260px] text-right text-xs" role="alert">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,6 @@ import {
 } from "@/lib/invoicing/uninvoiced";
 import {
   INVOICE_STATUS_VARIANT,
-  invoiceStatusLabel,
   round2,
   type InvoiceStatus,
 } from "@/lib/invoicing/status";
@@ -41,6 +41,11 @@ import { CreateInvoiceButton } from "./_components/create-invoice-button";
 import { DraftFeeInvoicesButton } from "./_components/draft-fee-invoices-button";
 
 export default async function InvoicesPage() {
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("invoices"),
+    getTranslations("common"),
+    getTranslations("invoiceStatus"),
+  ]);
   const supabase = await createClient();
 
   const [wosRes, sosRes, feesRes, unbilledRes, invoicesRes] = await Promise.all([
@@ -95,20 +100,18 @@ export default async function InvoicesPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Invoices</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground text-sm">
-            Uninvoiced work first — then everything already drafted or issued.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
       </header>
 
@@ -119,32 +122,32 @@ export default async function InvoicesPage() {
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Uninvoiced work orders" value={formatDkk(woTotal)} sub={`${wos.length} ready`} />
-        <Kpi label="Delivered sales orders" value={formatDkk(soTotal)} sub={`${sos.length} uninvoiced`} />
-        <Kpi label="Agreement fees" value={`${formatDkk(feeTotal)}/md.`} sub={`${formatDkk(feesDue)} unbilled`} />
-        <Kpi label="Invoices" value={String(invoices.length)} sub="all time" />
+        <Kpi label={t("kpiUninvoicedWos")} value={formatDkk(woTotal)} sub={t("kpiReady", { count: wos.length })} />
+        <Kpi label={t("kpiDeliveredSos")} value={formatDkk(soTotal)} sub={t("kpiUninvoiced", { count: sos.length })} />
+        <Kpi label={t("kpiAgreementFees")} value={`${formatDkk(feeTotal)}${t("perMonthSuffix")}`} sub={t("kpiUnbilled", { amount: formatDkk(feesDue) })} />
+        <Kpi label={t("kpiInvoices")} value={String(invoices.length)} sub={t("kpiAllTime")} />
       </div>
 
       <Section
-        title="Work orders ready to invoice"
-        description="Completed, billable, not yet on an invoice. Value is parts at retail plus labor, minus what the customer's agreement covers."
+        title={t("woSectionTitle")}
+        description={t("woSectionDesc")}
         className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
       >
         {wos.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Nothing waiting — completed billable work orders land here.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("woEmpty")}</p>
         ) : (
           <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Work order</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Completed</TableHead>
-                  <TableHead className="text-right">Parts</TableHead>
-                  <TableHead className="text-right">Labor</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>{t("thWorkOrder")}</TableHead>
+                  <TableHead>{t("thCustomer")}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thCompleted")}
+                  </TableHead>
+                  <TableHead className="text-right">{t("thParts")}</TableHead>
+                  <TableHead className="text-right">{t("thLabor")}</TableHead>
+                  <TableHead className="text-right">{t("thTotal")}</TableHead>
                   <TableHead className="w-[150px]" />
                 </TableRow>
               </TableHeader>
@@ -164,7 +167,9 @@ export default async function InvoicesPage() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {wo.orgName ?? (
-                        <span className="text-muted-foreground italic">No owner</span>
+                        <span className="text-muted-foreground italic">
+                          {t("noOwner")}
+                        </span>
                       )}
                       {wo.coverageNote ? (
                         <div className="text-muted-foreground text-xs">
@@ -187,7 +192,7 @@ export default async function InvoicesPage() {
                     <TableCell className="text-right">
                       <CreateInvoiceButton
                         source={{ kind: "wo", woId: wo.woId }}
-                        disabledReason={wo.orgId ? null : "Assign an owner first"}
+                        disabledReason={wo.orgId ? null : t("assignOwnerFirst")}
                       />
                     </TableCell>
                   </TableRow>
@@ -199,23 +204,23 @@ export default async function InvoicesPage() {
       </Section>
 
       <Section
-        title="Delivered sales orders"
-        description="Delivered with no invoice yet. Lines copy from the SO; frame numbers of the delivered bikes land in the descriptions."
+        title={t("soSectionTitle")}
+        description={t("soSectionDesc")}
         className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
       >
         {sos.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No delivered sales orders are waiting for an invoice.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("soEmpty")}</p>
         ) : (
           <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Sales order</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Delivered</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>{t("thSalesOrder")}</TableHead>
+                  <TableHead>{t("thCustomer")}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thDelivered")}
+                  </TableHead>
+                  <TableHead className="text-right">{t("thTotal")}</TableHead>
                   <TableHead className="w-[150px]" />
                 </TableRow>
               </TableHeader>
@@ -252,14 +257,12 @@ export default async function InvoicesPage() {
       </Section>
 
       <Section
-        title="Agreement fees"
-        description="Billed in arrears, one invoice per customer, one line per agreement-month. Partial months are pro-rated by days."
+        title={t("feeSectionTitle")}
+        description={t("feeSectionDesc")}
         className="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
       >
         {fees.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No active service agreements carry a monthly fee.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("feeEmpty")}</p>
         ) : (
           <div className="flex flex-col gap-3">
             <DraftFeeInvoicesButton />
@@ -267,10 +270,14 @@ export default async function InvoicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Agreement</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Fee / month</TableHead>
-                    <TableHead className="text-right">Unbilled</TableHead>
+                    <TableHead>{t("thAgreement")}</TableHead>
+                    <TableHead>{t("thCustomer")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("thFeePerMonth")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("thUnbilled")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -301,7 +308,7 @@ export default async function InvoicesPage() {
                             formatDkk(due)
                           ) : (
                             <span className="text-muted-foreground font-normal">
-                              up to date
+                              {t("upToDate")}
                             </span>
                           )}
                         </TableCell>
@@ -316,27 +323,31 @@ export default async function InvoicesPage() {
       </Section>
 
       <Section
-        title="Invoices"
-        description="Drafts, issued and paid."
+        title={t("invoicesSectionTitle")}
+        description={t("invoicesSectionDesc")}
         className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
       >
         {invoices.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No invoices yet"
-            description="Create the first one from a completed work order above."
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
           />
         ) : (
           <div className="bg-background overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Issued</TableHead>
-                  <TableHead className="hidden md:table-cell">Due</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>{t("thInvoice")}</TableHead>
+                  <TableHead>{t("thCustomer")}</TableHead>
+                  <TableHead>{t("thStatus")}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thIssued")}
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thDue")}
+                  </TableHead>
+                  <TableHead className="text-right">{t("thTotal")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -367,7 +378,7 @@ export default async function InvoicesPage() {
                               "outline"
                             }
                           >
-                            {invoiceStatusLabel(inv.status)}
+                            {tStatus.has(inv.status) ? tStatus(inv.status) : inv.status}
                           </Badge>
                         </Link>
                       </TableCell>

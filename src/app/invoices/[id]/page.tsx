@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,6 @@ import { formatDate } from "@/lib/parts/format";
 import { formatDkk } from "@/lib/parts/stock";
 import {
   INVOICE_STATUS_VARIANT,
-  invoiceStatusLabel,
   type InvoiceStatus,
 } from "@/lib/invoicing/status";
 
@@ -45,6 +45,12 @@ export default async function InvoiceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tInvoices, tCommon, tStatus] = await Promise.all([
+    getTranslations("invoiceDetail"),
+    getTranslations("invoices"),
+    getTranslations("common"),
+    getTranslations("invoiceStatus"),
+  ]);
   const supabase = await createClient();
 
   const [invoiceRes, linesRes, wosRes, creditNoteRes] = await Promise.all([
@@ -120,9 +126,9 @@ export default async function InvoiceDetailPage({
     economicSettings.enabled && !["draft", "cancelled"].includes(status);
   const economicGaps = economicConfigGaps(economicSettings);
   const economicBlockedReason = !economicEnvReady()
-    ? "e-conomic tokens are not set — add ECONOMIC_APP_SECRET_TOKEN and ECONOMIC_AGREEMENT_GRANT_TOKEN to .env.local (and Vercel)."
+    ? t("economicNoTokens")
     : economicGaps.length > 0
-      ? `Config incomplete: ${economicGaps.join(", ")} — see Admin → Settings.`
+      ? t("economicConfigIncomplete", { gaps: economicGaps.join(", ") })
       : null;
   const economicSyncedLabel = invoice.economic_voucher_id
     ? `${invoice.economic_voucher_id}${invoice.economic_synced_at ? ` · ${formatDate(invoice.economic_synced_at.slice(0, 10))}` : ""}`
@@ -135,13 +141,13 @@ export default async function InvoiceDetailPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/invoices">Invoices</Link>
+                <Link href="/invoices">{tInvoices("title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -158,20 +164,20 @@ export default async function InvoiceDetailPage({
                 <SegmentedId value={invoice.invoice_number} />
               </span>
               <Badge variant={INVOICE_STATUS_VARIANT[status] ?? "outline"}>
-                {invoiceStatusLabel(status)}
+                {tStatus.has(status) ? tStatus(status) : status}
               </Badge>
               {invoice.kind === "deposit" ? (
                 <Badge variant="secondary" className="font-normal">
-                  Deposit
+                  {t("kindDeposit")}
                 </Badge>
               ) : invoice.kind === "final" ? (
                 <Badge variant="secondary" className="font-normal">
-                  Final
+                  {t("kindFinal")}
                 </Badge>
               ) : null}
               {creditedOriginal ? (
                 <Badge variant="secondary" className="font-normal">
-                  Credit note
+                  {t("creditNoteBadge")}
                 </Badge>
               ) : null}
               <Badge variant="outline" className="font-normal">
@@ -189,7 +195,7 @@ export default async function InvoiceDetailPage({
             </h1>
             {linkedWOs.length > 0 ? (
               <p className="text-muted-foreground text-sm">
-                From{" "}
+                {t("fromWos")}
                 {linkedWOs.map((wo, i) => (
                   <span key={wo.id}>
                     {i > 0 ? ", " : ""}
@@ -205,7 +211,7 @@ export default async function InvoiceDetailPage({
             ) : null}
             {creditedOriginal ? (
               <p className="text-muted-foreground text-sm">
-                Credits{" "}
+                {t("credits")}
                 <Link
                   href={`/invoices/${creditedOriginal.id}`}
                   className="underline-offset-4 hover:underline"
@@ -216,7 +222,7 @@ export default async function InvoiceDetailPage({
             ) : null}
             {creditNote ? (
               <p className="text-muted-foreground text-sm">
-                Credited by{" "}
+                {t("creditedBy")}
                 <Link
                   href={`/invoices/${creditNote.id}`}
                   className="underline-offset-4 hover:underline"
@@ -229,7 +235,7 @@ export default async function InvoiceDetailPage({
           <div className="flex flex-col items-end gap-2">
             <Button asChild variant="outline" size="sm">
               <Link href={`/invoices/${invoice.id}/print`}>
-                <Printer aria-hidden /> Print
+                <Printer aria-hidden /> {t("print")}
               </Link>
             </Button>
             <InvoiceActions
@@ -243,10 +249,10 @@ export default async function InvoiceDetailPage({
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Meta label="Issued" value={formatDate(invoice.issued_date)} />
-        <Meta label="Due" value={formatDate(invoice.due_date)} />
-        <Meta label="Paid" value={formatDate(invoice.paid_date)} />
-        <Meta label="Currency" value={invoice.currency?.trim() || "DKK"} />
+        <Meta label={t("metaIssued")} value={formatDate(invoice.issued_date)} />
+        <Meta label={t("metaDue")} value={formatDate(invoice.due_date)} />
+        <Meta label={t("metaPaid")} value={formatDate(invoice.paid_date)} />
+        <Meta label={t("metaCurrency")} value={invoice.currency?.trim() || "DKK"} />
       </div>
 
       {showEconomic ? (
@@ -258,15 +264,15 @@ export default async function InvoiceDetailPage({
       ) : null}
 
       <Section
-        title="Lines"
+        title={t("linesTitle")}
         description={
           status !== "draft"
-            ? "Locked at issue."
+            ? t("linesDescLocked")
             : invoice.kind === "deposit"
-              ? "Deposit draft — issuing assigns the invoice number and locks these lines."
+              ? t("linesDescDeposit")
               : invoice.kind === "final"
-                ? "Final draft — issuing assigns the invoice number and locks these lines."
-                : "Draft — issuing assigns the invoice number and locks these lines."
+                ? t("linesDescFinal")
+                : t("linesDescDraft")
         }
       >
         <div className="overflow-hidden rounded-md border">
@@ -274,11 +280,11 @@ export default async function InvoiceDetailPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Unit price</TableHead>
-                <TableHead className="text-right">VAT</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead>{t("thDescription")}</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
+                <TableHead className="text-right">{t("thUnitPrice")}</TableHead>
+                <TableHead className="text-right">{t("thVat")}</TableHead>
+                <TableHead className="text-right">{t("thTotal")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -313,19 +319,19 @@ export default async function InvoiceDetailPage({
 
         <dl className="ml-auto mt-3 flex w-full max-w-xs flex-col gap-1 text-sm">
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">Subtotal</dt>
+            <dt className="text-muted-foreground">{t("subtotal")}</dt>
             <dd className="tabular-nums">
               {formatDkk(Number(invoice.subtotal_amount))}
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-muted-foreground">VAT</dt>
+            <dt className="text-muted-foreground">{t("vat")}</dt>
             <dd className="tabular-nums">
               {formatDkk(Number(invoice.total_vat_amount))}
             </dd>
           </div>
           <div className="flex justify-between border-t pt-1 font-medium">
-            <dt>Total</dt>
+            <dt>{t("total")}</dt>
             <dd className="tabular-nums">
               {formatDkk(Number(invoice.total_amount))}
             </dd>
@@ -334,7 +340,7 @@ export default async function InvoiceDetailPage({
       </Section>
 
       {invoice.notes ? (
-        <Section title="Notes" description="Internal — not printed on the invoice.">
+        <Section title={t("notesTitle")} description={t("notesDesc")}>
           <p className="text-sm whitespace-pre-wrap">{invoice.notes}</p>
         </Section>
       ) : null}

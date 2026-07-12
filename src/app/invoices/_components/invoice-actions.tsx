@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { BadgeCheck, Banknote, Trash2, Undo2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ export function InvoiceActions({
   isCreditNote = false,
   hasLiveCreditNote = false,
 }: Props) {
+  const t = useTranslations("invoiceDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [armedIssue, setArmedIssue] = useState(false);
@@ -73,7 +76,7 @@ export function InvoiceActions({
               disabled={isPending}
               onClick={() => run(() => cancelDraftInvoice(invoiceId))}
             >
-              <Trash2 aria-hidden /> Cancel draft
+              <Trash2 aria-hidden /> {t("cancelDraft")}
             </Button>
             {armedIssue ? (
               <>
@@ -84,7 +87,7 @@ export function InvoiceActions({
                   disabled={isPending}
                   onClick={() => setArmedIssue(false)}
                 >
-                  Keep as draft
+                  {t("keepDraft")}
                 </Button>
                 <Button
                   type="button"
@@ -94,8 +97,10 @@ export function InvoiceActions({
                 >
                   <BadgeCheck aria-hidden />
                   {isPending
-                    ? "Issuing…"
-                    : `Confirm — issue ${isCreditNote ? "credit note" : "and lock"}`}
+                    ? t("issuing")
+                    : isCreditNote
+                      ? t("confirmIssueCreditNote")
+                      : t("confirmIssueLock")}
                 </Button>
               </>
             ) : (
@@ -106,7 +111,7 @@ export function InvoiceActions({
                 onClick={() => setArmedIssue(true)}
               >
                 <BadgeCheck aria-hidden />{" "}
-                {isCreditNote ? "Issue credit note" : "Issue invoice"}
+                {isCreditNote ? t("issueCreditNote") : t("issueInvoice")}
               </Button>
             )}
           </>
@@ -119,7 +124,7 @@ export function InvoiceActions({
             onClick={() => run(() => markInvoicePaid(invoiceId))}
           >
             <Banknote aria-hidden />
-            {isPending ? "Saving…" : "Mark paid"}
+            {isPending ? tCommon("saving") : t("markPaid")}
           </Button>
         ) : null}
         {["issued", "overdue", "paid"].includes(status) &&
@@ -133,14 +138,13 @@ export function InvoiceActions({
             onClick={onCreditNote}
           >
             <Undo2 aria-hidden />
-            {isPending ? "Creating…" : "Create credit note"}
+            {isPending ? t("creating") : t("createCreditNote")}
           </Button>
         ) : null}
       </div>
       {armedIssue && status === "draft" ? (
         <p className="text-muted-foreground max-w-[340px] text-right text-xs">
-          Issuing assigns the next sequential invoice number and locks the
-          invoice — it can&apos;t be edited or cancelled afterwards.
+          {t("issueWarning")}
         </p>
       ) : null}
       {error ? (

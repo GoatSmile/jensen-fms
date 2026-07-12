@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CalendarClock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
  * Mirrors the reorder-banner UX: success lists the drafts with links.
  */
 export function DraftFeeInvoicesButton() {
+  const t = useTranslations("invoices");
   const router = useRouter();
   const [result, setResult] = useState<FeeInvoicesResult | null>(null);
   const [isPending, start] = useTransition();
@@ -37,13 +39,13 @@ export function DraftFeeInvoicesButton() {
       <div>
         <Button type="button" size="sm" onClick={onDraft} disabled={isPending}>
           <CalendarClock aria-hidden />
-          {isPending ? "Drafting…" : "Draft fee invoices"}
+          {isPending ? t("drafting") : t("draftFeeInvoices")}
         </Button>
       </div>
       {result ? (
         result.ok ? (
           <p className="text-sm text-emerald-800 dark:text-emerald-300" role="status">
-            Drafted{" "}
+            {t("draftedPrefix")}
             {result.invoices.map((inv, i) => (
               <span key={inv.id}>
                 {i > 0 ? ", " : ""}
@@ -53,13 +55,17 @@ export function DraftFeeInvoicesButton() {
                 >
                   {inv.orgName}
                 </Link>{" "}
-                ({inv.lines} line{inv.lines === 1 ? "" : "s"}, {formatDkk(inv.total)})
+                {t("feeInvoiceSummary", {
+                  count: inv.lines,
+                  total: formatDkk(inv.total),
+                })}
               </span>
             ))}
-            . Review and issue from there.
+            {t("draftedSuffix")}
             {result.skipped.length > 0 ? (
               <span className="text-muted-foreground block text-xs">
-                Skipped: {result.skipped.map((s) => `${s.name} (${s.reason})`).join(", ")}
+                {t("skippedPrefix")}
+                {result.skipped.map((s) => `${s.name} (${s.reason})`).join(", ")}
               </span>
             ) : null}
           </p>

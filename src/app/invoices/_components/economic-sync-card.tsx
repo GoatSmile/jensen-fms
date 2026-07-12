@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -47,6 +48,7 @@ export function EconomicSyncCard({
   syncedLabel,
   blockedReason,
 }: Props) {
+  const t = useTranslations("invoiceDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -55,7 +57,7 @@ export function EconomicSyncCard({
     return (
       <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-4 py-3 text-sm">
         <span className="text-muted-foreground">
-          e-conomic: pushed as draft voucher
+          {t("economicPushedAs")}
         </span>
         <span className="font-medium tabular-nums">{syncedLabel}</span>
       </div>
@@ -66,7 +68,7 @@ export function EconomicSyncCard({
     <div className="flex flex-col gap-2 rounded-md border px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-muted-foreground text-sm">
-          e-conomic: not pushed yet
+          {t("economicNotPushed")}
         </span>
         {/* e-conomic brand orange (#ef7d00 CTA / #e86807 hover on
             e-conomic.com) — the push button wears the destination's colour. */}
@@ -87,7 +89,7 @@ export function EconomicSyncCard({
           }}
         >
           <EconomicMark className="size-3.5" />
-          {pending ? "Pushing…" : "Push to e-conomic"}
+          {pending ? t("pushing") : t("pushToEconomic")}
         </Button>
       </div>
       {blockedReason ? (
