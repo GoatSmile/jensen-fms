@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Field, ReadField } from "@/components/field";
 import { useState, useTransition } from "react";
 
@@ -39,6 +40,7 @@ type Props = {
 };
 
 export function WODetailsSection({ woId, initial, readOnly }: Props) {
+  const t = useTranslations("workOrders");
   const router = useRouter();
   const [values, setValues] = useState<WODetailsValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -86,35 +88,39 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
   if (readOnly) {
     return (
       <Section
-        title="Details"
-        description="Read-only — this work order is closed."
+        title={t("detailsTitle")}
+        description={t("detailsReadOnlyDesc")}
       >
         <dl className="flex flex-col gap-3">
-          <ReadField label="Diagnosis" value={initial.diagnosis} multiline />
           <ReadField
-            label="Work performed"
+            label={t("diagnosis")}
+            value={initial.diagnosis}
+            multiline
+          />
+          <ReadField
+            label={t("workPerformed")}
             value={initial.work_performed}
             multiline
           />
           <ReadField
-            label="Customer summary (EN)"
+            label={t("readCustomerSummaryEn")}
             value={initial.customer_summary_en}
             multiline
           />
           <ReadField
-            label="Customer summary (DA)"
+            label={t("readCustomerSummaryDa")}
             value={initial.customer_summary_da}
             multiline
           />
           <ReadField
-            label="Language"
-            value={initial.language === "da" ? "Dansk" : "English"}
+            label={t("language")}
+            value={initial.language === "da" ? t("langDa") : t("langEn")}
           />
-          <ReadField label="Labor minutes" value={initial.labor_minutes} />
-          <ReadField label="Labor rate (DKK/h)" value={initial.labor_rate_dkk} />
+          <ReadField label={t("laborMinutes")} value={initial.labor_minutes} />
+          <ReadField label={t("laborRate")} value={initial.labor_rate_dkk} />
           <ReadField
-            label="Billable"
-            value={initial.is_billable ? "Yes" : "Covered"}
+            label={t("billableCheckbox")}
+            value={initial.is_billable ? t("readYes") : t("readCovered")}
           />
         </dl>
       </Section>
@@ -122,51 +128,48 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
   }
 
   return (
-    <Section
-      title="Details"
-      description="Diagnosis and what the workshop actually did. Customer summary is what shows on the printed receipt — bilingual."
-    >
+    <Section title={t("detailsTitle")} description={t("detailsDesc")}>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
-        <Field label="Diagnosis" htmlFor="wo-diagnosis">
+        <Field label={t("diagnosis")} htmlFor="wo-diagnosis">
           <Textarea
             id="wo-diagnosis"
             rows={3}
             value={values.diagnosis}
             onChange={(e) => update("diagnosis", e.target.value)}
-            placeholder="Technician notes — what's wrong with the bike."
+            placeholder={t("diagnosisPlaceholder")}
           />
         </Field>
-        <Field label="Work performed" htmlFor="wo-work-performed">
+        <Field label={t("workPerformed")} htmlFor="wo-work-performed">
           <Textarea
             id="wo-work-performed"
             rows={3}
             value={values.work_performed}
             onChange={(e) => update("work_performed", e.target.value)}
-            placeholder="What was actually done — for the workshop log."
+            placeholder={t("workPerformedPlaceholder")}
           />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Customer summary (English)" htmlFor="wo-summary-en">
+          <Field label={t("customerSummaryEn")} htmlFor="wo-summary-en">
             <Textarea
               id="wo-summary-en"
               rows={3}
               value={values.customer_summary_en}
               onChange={(e) => update("customer_summary_en", e.target.value)}
-              placeholder="Plain-language summary the customer will see."
+              placeholder={t("customerSummaryEnPlaceholder")}
             />
           </Field>
-          <Field label="Customer summary (Dansk)" htmlFor="wo-summary-da">
+          <Field label={t("customerSummaryDa")} htmlFor="wo-summary-da">
             <Textarea
               id="wo-summary-da"
               rows={3}
               value={values.customer_summary_da}
               onChange={(e) => update("customer_summary_da", e.target.value)}
-              placeholder="Dansk-resumé til kunden."
+              placeholder={t("customerSummaryDaPlaceholder")}
             />
           </Field>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Language" htmlFor="wo-language">
+          <Field label={t("language")} htmlFor="wo-language">
             <Select
               value={values.language}
               onValueChange={(v) => update("language", v)}
@@ -180,7 +183,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Labor minutes" htmlFor="wo-labor-minutes">
+          <Field label={t("laborMinutes")} htmlFor="wo-labor-minutes">
             <Input
               id="wo-labor-minutes"
               type="number"
@@ -189,10 +192,10 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
               inputMode="numeric"
               value={values.labor_minutes}
               onChange={(e) => update("labor_minutes", e.target.value)}
-              placeholder="e.g. 45"
+              placeholder={t("laborMinutesPlaceholder")}
             />
           </Field>
-          <Field label="Labor rate (DKK/h)" htmlFor="wo-labor-rate">
+          <Field label={t("laborRate")} htmlFor="wo-labor-rate">
             <Input
               id="wo-labor-rate"
               type="number"
@@ -213,9 +216,9 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
             className="size-4 rounded border-input"
           />
           <span>
-            Billable
+            {t("billableCheckbox")}
             <span className="text-muted-foreground ml-1.5 text-xs">
-              (uncheck if a service agreement covers this repair)
+              {t("billableHint")}
             </span>
           </span>
         </label>
@@ -233,7 +236,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving…" : "Save details"}
+            {isPending ? t("saving") : t("saveDetails")}
           </Button>
         </div>
       </form>

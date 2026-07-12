@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Plus, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,6 @@ import { formatDate } from "@/lib/parts/format";
 import {
   WO_STATUS_LABEL,
   WO_STATUS_VARIANT,
-  woStatusLabel,
   type WorkOrderStatus,
 } from "@/lib/maintenance/work-order-status";
 import { cn } from "@/lib/utils";
@@ -102,6 +102,13 @@ export default async function WorkOrdersPage({
   const filtersActive =
     statusFilter !== "all" || billableFilter !== "all" || bikeFilter !== "";
 
+  const [t, tCommon, tMaint, tWoStatus] = await Promise.all([
+    getTranslations("workOrders"),
+    getTranslations("common"),
+    getTranslations("maintenance"),
+    getTranslations("woStatus"),
+  ]);
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
@@ -109,34 +116,34 @@ export default async function WorkOrdersPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/maintenance/tickets">Maintenance</Link>
+                <Link href="/maintenance/tickets">{tMaint("crumb")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Work orders</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Work orders
+              {t("title")}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {rows.length} {rows.length === 1 ? "work order" : "work orders"}
-              {filtersActive ? " match these filters" : ""}
+              {t("count", { count: rows.length })}
+              {filtersActive ? t("matchFilters") : ""}
             </p>
           </div>
           <Button asChild>
             <Link href="/maintenance/work-orders/new">
-              <Plus aria-hidden /> New work order
+              <Plus aria-hidden /> {t("newWorkOrder")}
             </Link>
           </Button>
         </div>
@@ -152,19 +159,19 @@ export default async function WorkOrdersPage({
         filtersActive ? (
           <EmptyState
             icon={Wrench}
-            title="No work orders match these filters"
-            description="Try clearing one of the filter chips above."
+            title={t("emptyFilteredTitle")}
+            description={t("emptyFilteredDesc")}
             secondaryAction={{
-              label: "Clear filters",
+              label: t("clearFilters"),
               href: "/maintenance/work-orders",
             }}
           />
         ) : (
           <EmptyState
             icon={Wrench}
-            title="No work orders yet"
-            description="When a technician starts working a ticket, log the work order here so parts consumption and labor are tracked."
-            action={{ label: "New work order", href: "/maintenance/work-orders/new" }}
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
+            action={{ label: t("newWorkOrder"), href: "/maintenance/work-orders/new" }}
           />
         )
       ) : (
@@ -173,14 +180,20 @@ export default async function WorkOrdersPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[140px] sm:w-[180px]">
-                  Work order
+                  {t("thWorkOrder")}
                 </TableHead>
-                <TableHead>Bike</TableHead>
-                <TableHead className="hidden lg:table-cell">Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Billing</TableHead>
-                <TableHead className="hidden md:table-cell">Started</TableHead>
-                <TableHead className="hidden md:table-cell">Completed</TableHead>
+                <TableHead>{t("thBike")}</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thCustomer")}
+                </TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead>{t("thBilling")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thStarted")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thCompleted")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -226,7 +239,7 @@ export default async function WorkOrdersPage({
                           <span>{ownerName}</span>
                         ) : (
                           <span className="text-muted-foreground italic">
-                            No owner
+                            {t("noOwner")}
                           </span>
                         )}
                       </Link>
@@ -239,7 +252,7 @@ export default async function WorkOrdersPage({
                             "outline"
                           }
                         >
-                          {woStatusLabel(wo.status)}
+                          {tWoStatus(wo.status)}
                         </Badge>
                       </Link>
                     </TableCell>
@@ -247,11 +260,11 @@ export default async function WorkOrdersPage({
                       <Link href={href} className="block px-4 py-2.5">
                         {wo.is_billable ? (
                           <Badge variant="outline" className="font-normal">
-                            Billable
+                            {t("billable")}
                           </Badge>
                         ) : (
                           <Badge variant="secondary" className="font-normal">
-                            Covered
+                            {t("covered")}
                           </Badge>
                         )}
                       </Link>
@@ -277,7 +290,7 @@ export default async function WorkOrdersPage({
   );
 }
 
-function FilterBar({
+async function FilterBar({
   status,
   billable,
   bike,
@@ -286,41 +299,51 @@ function FilterBar({
   billable: BillableFilter;
   bike: string;
 }) {
+  const [t, tWoStatus] = await Promise.all([
+    getTranslations("workOrders"),
+    getTranslations("woStatus"),
+  ]);
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
-      <FilterGroup label="Status">
+      <FilterGroup label={t("filterStatus")}>
         <FilterChip
           href={buildHref({ status: undefined, billable, bike })}
           active={status === "all"}
-          label="All"
+          label={t("filterAll")}
         />
         {STATUS_KEYS.map((s) => (
           <FilterChip
             key={s}
             href={buildHref({ status: s, billable, bike })}
             active={status === s}
-            label={woStatusLabel(s)}
+            label={tWoStatus(s)}
           />
         ))}
       </FilterGroup>
-      <FilterGroup label="Billing">
+      <FilterGroup label={t("filterBilling")}>
         <FilterChip
           href={buildHref({ status, billable: "all", bike })}
           active={billable === "all"}
-          label="All"
+          label={t("filterAll")}
         />
         <FilterChip
           href={buildHref({ status, billable: "only-billable", bike })}
           active={billable === "only-billable"}
-          label="Billable"
+          label={t("billable")}
         />
         <FilterChip
           href={buildHref({ status, billable: "only-covered", bike })}
           active={billable === "only-covered"}
-          label="Covered"
+          label={t("covered")}
         />
       </FilterGroup>
-      <BikeFilterForm status={status} billable={billable} bike={bike} />
+      <BikeFilterForm
+        status={status}
+        billable={billable}
+        bike={bike}
+        frameLabel={t("filterFrame")}
+        framePlaceholder={t("framePlaceholder")}
+      />
     </div>
   );
 }
@@ -329,10 +352,14 @@ function BikeFilterForm({
   status,
   billable,
   bike,
+  frameLabel,
+  framePlaceholder,
 }: {
   status: WorkOrderStatus | "all";
   billable: BillableFilter;
   bike: string;
+  frameLabel: string;
+  framePlaceholder: string;
 }) {
   return (
     <form
@@ -347,13 +374,13 @@ function BikeFilterForm({
         <input type="hidden" name="billable" value={billable} />
       ) : null}
       <span className="text-muted-foreground text-[11px] uppercase tracking-wide">
-        Frame
+        {frameLabel}
       </span>
       <Input
         type="search"
         name="bike"
         defaultValue={bike}
-        placeholder="e.g. NB-2025"
+        placeholder={framePlaceholder}
         className="h-7 w-[140px] font-mono text-xs"
       />
     </form>

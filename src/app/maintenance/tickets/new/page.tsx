@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -22,6 +23,10 @@ export default async function NewTicketPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("tickets"),
+    getTranslations("common"),
+  ]);
   const { bikes, contacts } = await loadTicketPickables();
 
   return (
@@ -30,26 +35,27 @@ export default async function NewTicketPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/tickets">Maintenance</Link>
+              <Link href="/maintenance/tickets">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">New ticket</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("newTicket")}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Capture an issue against a specific bike. Work orders come in the
-          next push — for now this just logs the report.
+          {t("newSubtitle")}
         </p>
       </div>
       <TicketForm

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Plus, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +30,7 @@ import {
   TICKET_SOURCES,
   TICKET_STATUS_LABEL,
   TICKET_STATUS_VARIANT,
-  ticketPriorityLabel,
   ticketPriorityVariant,
-  ticketSourceLabel,
-  ticketStatusLabel,
   type TicketPriority,
   type TicketSource,
   type TicketStatus,
@@ -111,6 +109,13 @@ export default async function MaintenanceTicketsPage({
     priorityFilter !== "all" ||
     sourceFilter !== "all";
 
+  const [t, tCommon, tStatus, tPriority] = await Promise.all([
+    getTranslations("tickets"),
+    getTranslations("common"),
+    getTranslations("ticketStatus"),
+    getTranslations("ticketPriority"),
+  ]);
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-3">
@@ -118,26 +123,28 @@ export default async function MaintenanceTicketsPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Maintenance</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Tickets</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("title")}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              {rows.length} {rows.length === 1 ? "ticket" : "tickets"}
-              {filtersActive ? " match these filters" : ""}
+              {t("count", { count: rows.length })}
+              {filtersActive ? t("matchFilters") : ""}
             </p>
           </div>
           <Button asChild>
             <Link href="/maintenance/tickets/new">
-              <Plus aria-hidden /> New ticket
+              <Plus aria-hidden /> {t("newTicket")}
             </Link>
           </Button>
         </div>
@@ -153,16 +160,16 @@ export default async function MaintenanceTicketsPage({
         filtersActive ? (
           <EmptyState
             icon={Wrench}
-            title="No tickets match these filters"
-            description="Try clearing one of the filter chips above."
-            secondaryAction={{ label: "Clear filters", href: "/maintenance/tickets" }}
+            title={t("emptyFilteredTitle")}
+            description={t("emptyFilteredDesc")}
+            secondaryAction={{ label: t("clearFilters"), href: "/maintenance/tickets" }}
           />
         ) : (
           <EmptyState
             icon={Wrench}
-            title="No tickets yet"
-            description="When a customer reports an issue with a bike, log it here so it doesn't get lost between sticky notes."
-            action={{ label: "New ticket", href: "/maintenance/tickets/new" }}
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
+            action={{ label: t("newTicket"), href: "/maintenance/tickets/new" }}
           />
         )
       ) : (
@@ -171,18 +178,24 @@ export default async function MaintenanceTicketsPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[140px] sm:w-[180px]">
-                  Ticket
+                  {t("thTicket")}
                 </TableHead>
-                <TableHead>Bike</TableHead>
-                <TableHead className="hidden lg:table-cell">Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Priority</TableHead>
-                <TableHead className="hidden md:table-cell">Reported</TableHead>
+                <TableHead>{t("thBike")}</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thCustomer")}
+                </TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thPriority")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thReported")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((t) => {
-                const bike = t.bike;
+              {rows.map((ticket) => {
+                const bike = ticket.bike;
                 const templateLabel = bike?.bike_template
                   ? [
                       bike.bike_template.family?.name,
@@ -197,12 +210,12 @@ export default async function MaintenanceTicketsPage({
                   bike?.owner_organization?.legal_name ??
                   null;
                 const isUrgentOpen =
-                  t.priority === 1 &&
-                  OPEN_TICKET_STATUSES.includes(t.status as TicketStatus);
-                const href = `/maintenance/tickets/${t.id}`;
+                  ticket.priority === 1 &&
+                  OPEN_TICKET_STATUSES.includes(ticket.status as TicketStatus);
+                const href = `/maintenance/tickets/${ticket.id}`;
                 return (
                   <TableRow
-                    key={t.id}
+                    key={ticket.id}
                     className={cn(
                       "hover:bg-muted/50 cursor-pointer",
                       isUrgentOpen && URGENT_BORDER,
@@ -210,7 +223,7 @@ export default async function MaintenanceTicketsPage({
                   >
                     <TableCell className="p-0 text-xs">
                       <Link href={href} className="block px-4 py-2.5">
-                        <SegmentedId value={t.ticket_number} />
+                        <SegmentedId value={ticket.ticket_number} />
                       </Link>
                     </TableCell>
                     <TableCell className="p-0">
@@ -231,7 +244,7 @@ export default async function MaintenanceTicketsPage({
                           // Customer report via /report/help — no bike id
                           // yet; staff triages from here.
                           <div className="text-amber-700 dark:text-amber-400 text-xs italic">
-                            Needs triage — no bike specified
+                            {t("needsTriage")}
                           </div>
                         )}
                       </Link>
@@ -242,7 +255,7 @@ export default async function MaintenanceTicketsPage({
                           <span>{ownerName}</span>
                         ) : (
                           <span className="text-muted-foreground italic">
-                            No owner
+                            {t("noOwner")}
                           </span>
                         )}
                       </Link>
@@ -251,24 +264,24 @@ export default async function MaintenanceTicketsPage({
                       <Link href={href} className="block px-4 py-2.5">
                         <Badge
                           variant={
-                            TICKET_STATUS_VARIANT[t.status as TicketStatus] ??
+                            TICKET_STATUS_VARIANT[ticket.status as TicketStatus] ??
                             "outline"
                           }
                         >
-                          {ticketStatusLabel(t.status)}
+                          {tStatus(ticket.status)}
                         </Badge>
                       </Link>
                     </TableCell>
                     <TableCell className="hidden p-0 md:table-cell">
                       <Link href={href} className="block px-4 py-2.5">
-                        <Badge variant={ticketPriorityVariant(t.priority)}>
-                          {ticketPriorityLabel(t.priority)}
+                        <Badge variant={ticketPriorityVariant(ticket.priority)}>
+                          {tPriority(String(ticket.priority))}
                         </Badge>
                       </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
                       <Link href={href} className="block px-4 py-2.5">
-                        {formatDate(t.reported_at)}
+                        {formatDate(ticket.reported_at)}
                       </Link>
                     </TableCell>
                   </TableRow>
@@ -282,7 +295,7 @@ export default async function MaintenanceTicketsPage({
   );
 }
 
-function FilterBar({
+async function FilterBar({
   status,
   priority,
   source,
@@ -291,50 +304,56 @@ function FilterBar({
   priority: TicketPriority | "all";
   source: TicketSource | "all";
 }) {
+  const [t, tStatus, tPriority, tSource] = await Promise.all([
+    getTranslations("tickets"),
+    getTranslations("ticketStatus"),
+    getTranslations("ticketPriority"),
+    getTranslations("ticketSource"),
+  ]);
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
-      <FilterGroup label="Status">
+      <FilterGroup label={t("filterStatus")}>
         <FilterChip
           href={buildHref({ status: undefined, priority, source })}
           active={status === "all"}
-          label="All"
+          label={t("filterAll")}
         />
         {STATUS_KEYS.map((s) => (
           <FilterChip
             key={s}
             href={buildHref({ status: s, priority, source })}
             active={status === s}
-            label={ticketStatusLabel(s)}
+            label={tStatus(s)}
           />
         ))}
       </FilterGroup>
-      <FilterGroup label="Priority">
+      <FilterGroup label={t("filterPriority")}>
         <FilterChip
           href={buildHref({ status, priority: undefined, source })}
           active={priority === "all"}
-          label="All"
+          label={t("filterAll")}
         />
         {TICKET_PRIORITIES.map((p) => (
           <FilterChip
             key={p}
             href={buildHref({ status, priority: p, source })}
             active={priority === p}
-            label={ticketPriorityLabel(p)}
+            label={tPriority(String(p))}
           />
         ))}
       </FilterGroup>
-      <FilterGroup label="Source">
+      <FilterGroup label={t("filterSource")}>
         <FilterChip
           href={buildHref({ status, priority, source: undefined })}
           active={source === "all"}
-          label="All"
+          label={t("filterAll")}
         />
         {TICKET_SOURCES.map((s) => (
           <FilterChip
             key={s}
             href={buildHref({ status, priority, source: s })}
             active={source === s}
-            label={ticketSourceLabel(s)}
+            label={tSource(s)}
           />
         ))}
       </FilterGroup>

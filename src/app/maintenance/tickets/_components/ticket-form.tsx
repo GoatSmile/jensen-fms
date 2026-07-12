@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
@@ -18,8 +19,6 @@ import { appendField } from "@/lib/forms";
 import {
   TICKET_PRIORITIES,
   TICKET_SOURCES,
-  ticketPriorityLabel,
-  ticketSourceLabel,
 } from "@/lib/maintenance/ticket-status";
 
 import { createTicket, updateTicket } from "../_actions/save-ticket";
@@ -76,6 +75,10 @@ type Props = {
 };
 
 export function TicketForm({ initial, bikes, contacts, mode }: Props) {
+  const t = useTranslations("tickets");
+  const tCommon = useTranslations("common");
+  const tSource = useTranslations("ticketSource");
+  const tPriority = useTranslations("ticketPriority");
   const router = useRouter();
   const [values, setValues] = useState<TicketFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -171,23 +174,23 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="Bike & reporter"
-        description="Tickets always attach to a specific bike. Pick a contact from the owner's roster, or just type the reporter's name freely."
+        title={t("formBikeReporter")}
+        description={t("formBikeReporterDesc")}
       >
         <Field
-          label="Bike"
+          label={t("bike")}
           htmlFor="ticket-bike"
           required
           error={errorField === "bike_id" ? error : null}
         >
           <Select value={values.bike_id} onValueChange={onBikeChange}>
             <SelectTrigger id="ticket-bike">
-              <SelectValue placeholder="Pick a bike…" />
+              <SelectValue placeholder={t("pickBike")} />
             </SelectTrigger>
             <SelectContent>
               {bikes.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No bikes available.
+                  {t("noBikes")}
                 </div>
               ) : (
                 bikes.map((b) => {
@@ -211,21 +214,21 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
         </Field>
 
         {selectedBike?.owner_organization_id ? (
-          <Field label="Contact (owner roster)" htmlFor="ticket-contact">
+          <Field label={t("contactRoster")} htmlFor="ticket-contact">
             <Select
               value={values.reported_by_contact_id || CONTACT_NONE}
               onValueChange={(v) => update("reported_by_contact_id", v)}
             >
               <SelectTrigger id="ticket-contact">
-                <SelectValue placeholder="Pick a contact…" />
+                <SelectValue placeholder={t("pickContact")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={CONTACT_NONE}>
-                  (No contact — use free text below)
+                  {t("noContactOption")}
                 </SelectItem>
                 {ownerContacts.length === 0 ? (
                   <div className="text-muted-foreground p-2 text-xs">
-                    No contacts on file for this customer.
+                    {t("noContacts")}
                   </div>
                 ) : (
                   ownerContacts.map((c) => (
@@ -245,7 +248,7 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
         ) : null}
 
         <Field
-          label="Or enter reporter name"
+          label={t("orEnterReporter")}
           htmlFor="ticket-reporter-text"
           error={errorField === "reported_by_text" ? error : null}
         >
@@ -253,21 +256,18 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
             id="ticket-reporter-text"
             value={values.reported_by_text}
             onChange={(e) => update("reported_by_text", e.target.value)}
-            placeholder="e.g. Mette from front desk"
+            placeholder={t("reporterPlaceholder")}
           />
-          <p className="text-muted-foreground text-xs">
-            If both a contact and a free-text name are filled, the contact
-            takes precedence.
-          </p>
+          <p className="text-muted-foreground text-xs">{t("reporterHint")}</p>
         </Field>
       </FormSection>
 
       <FormSection
-        title="Description"
-        description="What's wrong, in the customer's own words where possible."
+        title={t("formDescriptionTitle")}
+        description={t("formDescriptionDesc")}
       >
         <Field
-          label="Description"
+          label={t("description")}
           htmlFor="ticket-description"
           required
           error={errorField === "description" ? error : null}
@@ -277,12 +277,12 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
             rows={4}
             value={values.description}
             onChange={(e) => update("description", e.target.value)}
-            placeholder="e.g. Front brake squeals; rider says it started after the last rainy week."
+            placeholder={t("descriptionPlaceholder")}
             required
           />
         </Field>
         <Field
-          label="Reported language"
+          label={t("reportedLanguage")}
           htmlFor="ticket-language"
           error={errorField === "reported_language" ? error : null}
         >
@@ -291,10 +291,10 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
             onValueChange={(v) => update("reported_language", v)}
           >
             <SelectTrigger id="ticket-language">
-              <SelectValue placeholder="Unspecified" />
+              <SelectValue placeholder={t("unspecified")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={LANGUAGE_NONE}>Unspecified</SelectItem>
+              <SelectItem value={LANGUAGE_NONE}>{t("unspecified")}</SelectItem>
               <SelectItem value="da">Dansk</SelectItem>
               <SelectItem value="en">English</SelectItem>
             </SelectContent>
@@ -303,12 +303,12 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
       </FormSection>
 
       <FormSection
-        title="Classification"
-        description="How the ticket came in and how urgent it is."
+        title={t("formClassificationTitle")}
+        description={t("formClassificationDesc")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
-            label="Source"
+            label={t("source")}
             htmlFor="ticket-source"
             required
             error={errorField === "source" ? error : null}
@@ -323,14 +323,14 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
               <SelectContent>
                 {TICKET_SOURCES.map((s) => (
                   <SelectItem key={s} value={s}>
-                    {ticketSourceLabel(s)}
+                    {tSource(s)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </Field>
           <Field
-            label="Priority"
+            label={t("priority")}
             htmlFor="ticket-priority"
             required
             error={errorField === "priority" ? error : null}
@@ -345,7 +345,7 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
               <SelectContent>
                 {TICKET_PRIORITIES.map((p) => (
                   <SelectItem key={p} value={String(p)}>
-                    {p} — {ticketPriorityLabel(p)}
+                    {p} — {tPriority(String(p))}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -355,16 +355,16 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
       </FormSection>
 
       <FormSection
-        title="Notes"
-        description="Internal — not shared with the customer."
+        title={t("formNotesTitle")}
+        description={t("formNotesDesc")}
       >
-        <Field label="Notes" htmlFor="ticket-notes">
+        <Field label={t("notes")} htmlFor="ticket-notes">
           <Textarea
             id="ticket-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="e.g. Customer agreed to drop the bike off Tuesday morning."
+            placeholder={t("notesPlaceholder")}
           />
         </Field>
       </FormSection>
@@ -382,16 +382,16 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
             ? mode.kind === "edit"
-              ? "Saving…"
-              : "Creating…"
+              ? tCommon("saving")
+              : t("creating")
             : mode.kind === "edit"
-              ? "Save changes"
-              : "Create ticket"}
+              ? t("saveChanges")
+              : t("createTicket")}
         </Button>
       </div>
     </form>

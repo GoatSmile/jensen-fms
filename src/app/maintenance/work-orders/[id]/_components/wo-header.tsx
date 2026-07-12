@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/parts/format";
 import {
   WO_STATUS_VARIANT,
-  woStatusLabel,
   woTransitionRequiresReason,
   validNextWOStatuses,
   type WorkOrderStatus,
@@ -68,6 +68,8 @@ export function WOHeader({
   startedAt,
   completedAt,
 }: Props) {
+  const t = useTranslations("workOrders");
+  const tWoStatus = useTranslations("woStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -111,11 +113,11 @@ export function WOHeader({
               {woNumber}
             </span>
             <Badge variant={WO_STATUS_VARIANT[status] ?? "outline"}>
-              {woStatusLabel(status)}
+              {tWoStatus(status)}
             </Badge>
             {isBillable ? (
               <Badge variant="outline" className="font-normal">
-                Billable
+                {t("billable")}
               </Badge>
             ) : (
               <Badge
@@ -123,11 +125,11 @@ export function WOHeader({
                 className="font-normal"
                 title={
                   coveredByAgreementName
-                    ? `Covered by service agreement: ${coveredByAgreementName}`
-                    : "Covered by service agreement"
+                    ? t("coveredByAgreement", { name: coveredByAgreementName })
+                    : t("coveredByAgreementBare")
                 }
               >
-                Covered
+                {t("covered")}
               </Badge>
             )}
             {bikeTypeName ? (
@@ -140,12 +142,12 @@ export function WOHeader({
             {headline && headline.trim() !== "" ? (
               headline
             ) : (
-              <span className="italic">Work order</span>
+              <span className="italic">{t("woFallback")}</span>
             )}
           </h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span>
-              Bike{" "}
+              {t("bikeLabel")}{" "}
               <Link
                 href={`/bikes/${bikeId}`}
                 className="hover:text-foreground font-mono underline-offset-4 hover:underline"
@@ -155,7 +157,7 @@ export function WOHeader({
             </span>
             {ticketId && ticketNumber ? (
               <span>
-                Ticket{" "}
+                {t("ticketLabel")}{" "}
                 <Link
                   href={`/maintenance/tickets/${ticketId}`}
                   className="hover:text-foreground font-mono underline-offset-4 hover:underline"
@@ -164,9 +166,13 @@ export function WOHeader({
                 </Link>
               </span>
             ) : null}
-            {startedAt ? <span>Started {formatDateTime(startedAt)}</span> : null}
+            {startedAt ? (
+              <span>{t("startedAt", { date: formatDateTime(startedAt) })}</span>
+            ) : null}
             {completedAt ? (
-              <span>Completed {formatDateTime(completedAt)}</span>
+              <span>
+                {t("completedAt", { date: formatDateTime(completedAt) })}
+              </span>
             ) : null}
           </div>
         </div>
@@ -175,7 +181,7 @@ export function WOHeader({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -192,7 +198,7 @@ export function WOHeader({
                           startTransition(to);
                         }}
                       >
-                        {woStatusLabel(to)}
+                        {tWoStatus(to)}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -226,6 +232,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("workOrders");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -246,22 +253,17 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>Cancel work order?</DialogTitle>
-            <DialogDescription>
-              The work order will be cancelled and the reason appended to its
-              work-performed log. Any parts consumed against this work order
-              stay on the inventory ledger — remove them individually first if
-              you need to reverse the consumption.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="wo-cancel-reason">Reason</Label>
+            <Label htmlFor="wo-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="wo-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer changed their mind; bike returned as-is."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -276,14 +278,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel work order"}
+              {isPending ? t("cancelling") : t("cancelWorkOrder")}
             </Button>
           </DialogFooter>
         </form>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appendField } from "@/lib/forms";
 import { Money } from "@/components/money";
+import { formatMoney } from "@/lib/parts/format";
 
 import { addPartToWO } from "../_actions/manage-wo-parts";
 
@@ -45,6 +47,8 @@ export function WOPartDialog({
   excludeIds,
   retailByPartId,
 }: Props) {
+  const t = useTranslations("workOrders");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [filter, setFilter] = useState("");
   const [partId, setPartId] = useState<string>("");
@@ -102,15 +106,15 @@ export function WOPartDialog({
     e.preventDefault();
     setError(null);
     if (!partId) {
-      setError("Pick a part.");
+      setError(t("pickPartError"));
       return;
     }
     if (!Number.isFinite(qtyN) || qtyN <= 0) {
-      setError("Quantity must be a positive number.");
+      setError(t("qtyError"));
       return;
     }
     if (unitPrice.trim() !== "" && (!Number.isFinite(unitPriceN!) || unitPriceN! < 0)) {
-      setError("Unit price must be a non-negative number.");
+      setError(t("unitPriceError"));
       return;
     }
     start(async () => {
@@ -132,7 +136,9 @@ export function WOPartDialog({
       setQty("1");
       setUnitPrice("");
       setUnitPriceTouched(false);
-      setAddedNote(added ? `Added ${added.name_en}.` : "Part added.");
+      setAddedNote(
+        added ? t("addedNote", { name: added.name_en }) : t("partAdded"),
+      );
       router.refresh();
     });
   }
@@ -142,23 +148,20 @@ export function WOPartDialog({
       <DialogContent className="sm:max-w-xl">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add parts to work order</DialogTitle>
-            <DialogDescription>
-              Each part is consumed from inventory immediately. The dialog
-              stays open so you can add several in one go.
-            </DialogDescription>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
+            <DialogDescription>{t("dialogDesc")}</DialogDescription>
           </DialogHeader>
 
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter parts by SKU, name, category…"
+            placeholder={t("filterParts")}
           />
 
           <div className="max-h-60 overflow-y-auto rounded-md border">
             {filtered.length === 0 ? (
               <p className="text-muted-foreground p-3 text-center text-sm">
-                No parts match.
+                {t("noPartsMatch")}
               </p>
             ) : (
               <ul className="divide-y">
@@ -191,11 +194,11 @@ export function WOPartDialog({
                         <div className="text-right">
                           {disabled ? (
                             <span className="text-muted-foreground text-xs">
-                              already on WO
+                              {t("alreadyOnWo")}
                             </span>
                           ) : last != null ? (
                             <span className="text-muted-foreground text-xs">
-                              retail{" "}
+                              {t("retail")}{" "}
                               <Money
                                 amount={last}
                                 currency="DKK"
@@ -214,7 +217,7 @@ export function WOPartDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="wo-part-qty">Quantity</Label>
+              <Label htmlFor="wo-part-qty">{t("quantity")}</Label>
               <Input
                 id="wo-part-qty"
                 inputMode="decimal"
@@ -223,9 +226,7 @@ export function WOPartDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="wo-part-unit-price">
-                Unit price (DKK, excl. VAT)
-              </Label>
+              <Label htmlFor="wo-part-unit-price">{t("unitPriceLabel")}</Label>
               <Input
                 id="wo-part-unit-price"
                 inputMode="decimal"
@@ -234,23 +235,18 @@ export function WOPartDialog({
                   setUnitPrice(e.target.value);
                   setUnitPriceTouched(true);
                 }}
-                placeholder="Prefilled from retail price"
+                placeholder={t("unitPricePlaceholder")}
               />
             </div>
           </div>
 
           {previewTotal != null ? (
             <p className="text-muted-foreground text-xs">
-              Price: {qtyN} ×{" "}
-              <Money
-                amount={unitPriceN!}
-                currency="DKK"
-                bold={false}
-              />{" "}
-              ={" "}
-              <span className="text-foreground">
-                <Money amount={previewTotal} currency="DKK" />
-              </span>
+              {t("pricePreview", {
+                qty: qtyN,
+                unit: formatMoney(unitPriceN!, "DKK"),
+                total: formatMoney(previewTotal, "DKK"),
+              })}
             </p>
           ) : null}
 
@@ -275,13 +271,13 @@ export function WOPartDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              {addedNote ? "Done" : "Cancel"}
+              {addedNote ? t("done") : tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || !partId || qty.trim() === ""}
             >
-              {isPending ? "Adding…" : "Add part"}
+              {isPending ? t("adding") : t("addPart")}
             </Button>
           </DialogFooter>
         </form>

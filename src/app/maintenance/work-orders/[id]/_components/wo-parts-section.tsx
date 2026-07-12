@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -46,6 +47,7 @@ export function WOPartsSection({
   partsCatalog,
   retailByPartId,
 }: Props) {
+  const t = useTranslations("workOrders");
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -53,12 +55,8 @@ export function WOPartsSection({
 
   return (
     <Section
-      title="Parts"
-      description={
-        readOnly
-          ? "Work order is closed — parts list is read-only."
-          : "Parts added here are consumed from inventory immediately. Removing reverses the consumption."
-      }
+      title={t("partsTitle")}
+      description={readOnly ? t("partsReadOnlyDesc") : t("partsDesc")}
       action={
         readOnly ? null : (
           <Button
@@ -66,7 +64,7 @@ export function WOPartsSection({
             variant="outline"
             onClick={() => setDialogOpen(true)}
           >
-            <Plus aria-hidden /> Add part
+            <Plus aria-hidden /> {t("addPart")}
           </Button>
         )
       }
@@ -79,22 +77,24 @@ export function WOPartsSection({
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-          No parts on this work order yet.
+          {t("noParts")}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Part</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead>{t("thPart")}</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
                 {/* On phones, the Total column is most useful; hide the
                     per-unit price and installed-at date. */}
                 <TableHead className="hidden text-right sm:table-cell">
-                  Unit price
+                  {t("thUnitPrice")}
                 </TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="hidden md:table-cell">Installed</TableHead>
+                <TableHead className="text-right">{t("thTotal")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thInstalled")}
+                </TableHead>
                 {readOnly ? null : <TableHead className="w-[40px]" />}
               </TableRow>
             </TableHeader>
@@ -171,6 +171,7 @@ function RemoveButton({
   rowId: string;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("workOrders");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirm, setConfirm] = useState(false);
@@ -193,8 +194,8 @@ function RemoveButton({
       size="icon-sm"
       variant="ghost"
       disabled={pending}
-      aria-label={confirm ? "Confirm remove" : "Remove part"}
-      title={confirm ? "Click again to confirm" : "Remove (reverses consumption)"}
+      aria-label={confirm ? t("confirmRemove") : t("removePart")}
+      title={confirm ? t("removeConfirmTitle") : t("removeTitle")}
       onClick={() => {
         if (confirm) runRemove();
         else setConfirm(true);

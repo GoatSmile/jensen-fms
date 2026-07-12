@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,6 @@ import {
 import {
   OPEN_WO_STATUSES,
   WO_STATUS_VARIANT,
-  woStatusLabel,
   type WorkOrderStatus,
 } from "@/lib/maintenance/work-order-status";
 
@@ -52,6 +52,8 @@ export function WorkOrdersForTicketSection({
   ticketStatus,
   rows,
 }: Props) {
+  const t = useTranslations("tickets");
+  const tWoStatus = useTranslations("woStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, start] = useTransition();
@@ -81,15 +83,15 @@ export function WorkOrdersForTicketSection({
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Work orders</h2>
+          <h2 className="text-sm font-semibold">{t("workOrdersTitle")}</h2>
           <p className="text-muted-foreground text-xs">
-            Work orders that execute the work this ticket asks for. Completing
-            one auto-resolves the ticket.
+            {t("workOrdersDesc")}
           </p>
         </div>
         {showStart ? (
           <Button size="sm" onClick={onStart} disabled={isPending}>
-            <Plus aria-hidden /> {isPending ? "Starting…" : "Start work order"}
+            <Plus aria-hidden />{" "}
+            {isPending ? t("starting") : t("startWorkOrder")}
           </Button>
         ) : null}
       </header>
@@ -102,18 +104,24 @@ export function WorkOrdersForTicketSection({
 
         {rows.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-            No work orders linked to this ticket yet.
+            {t("noWorkOrders")}
           </div>
         ) : (
           <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Work order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Started</TableHead>
-                  <TableHead className="hidden md:table-cell">Completed</TableHead>
-                  <TableHead className="text-right">Parts total</TableHead>
+                  <TableHead>{t("thWorkOrder")}</TableHead>
+                  <TableHead>{t("thStatus")}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thStarted")}
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("thCompleted")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("thPartsTotal")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -131,14 +139,14 @@ export function WorkOrdersForTicketSection({
                           <Badge
                             variant={WO_STATUS_VARIANT[wo.status] ?? "outline"}
                           >
-                            {woStatusLabel(wo.status)}
+                            {tWoStatus(wo.status)}
                           </Badge>
                           {!wo.is_billable ? (
                             <Badge
                               variant="secondary"
                               className="ml-1.5 font-normal"
                             >
-                              Covered
+                              {t("covered")}
                             </Badge>
                           ) : null}
                         </Link>

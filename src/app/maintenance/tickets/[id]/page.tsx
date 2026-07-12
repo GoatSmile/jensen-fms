@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Field } from "@/components/field";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import { SegmentedId } from "@/components/segmented-id";
@@ -16,9 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatDateTime } from "@/lib/parts/format";
 import {
-  ticketPriorityLabel,
   ticketPriorityVariant,
-  ticketSourceLabel,
   type TicketStatus,
 } from "@/lib/maintenance/ticket-status";
 
@@ -29,17 +28,22 @@ import {
 } from "./_components/work-orders-for-ticket-section";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
 
-const LANGUAGE_LABEL: Record<string, string> = {
-  da: "Dansk",
-  en: "English",
-};
-
 export default async function TicketDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon, tSource, tPriority] = await Promise.all([
+    getTranslations("tickets"),
+    getTranslations("common"),
+    getTranslations("ticketSource"),
+    getTranslations("ticketPriority"),
+  ]);
+  const languageLabelMap: Record<string, string> = {
+    da: t("langDa"),
+    en: t("langEn"),
+  };
   const supabase = await createClient();
 
   const { data: ticket, error } = await supabase
@@ -140,7 +144,7 @@ export default async function TicketDetailPage({
         .join(" · ")
     : null;
   const languageLabel = ticket.reported_language
-    ? (LANGUAGE_LABEL[ticket.reported_language] ?? ticket.reported_language)
+    ? (languageLabelMap[ticket.reported_language] ?? ticket.reported_language)
     : null;
 
   return (
@@ -149,13 +153,13 @@ export default async function TicketDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/tickets">Maintenance</Link>
+              <Link href="/maintenance/tickets">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -192,31 +196,31 @@ export default async function TicketDetailPage({
           {ticket.description.trim().length > 60 ||
           ticket.description.includes("\n") ? (
             <Section
-              title="Description"
-              description="What the reporter told us."
+              title={t("descriptionTitle")}
+              description={t("descriptionDesc")}
             >
               <pre className="text-foreground whitespace-pre-wrap font-sans text-sm">
                 {ticket.description}
               </pre>
               {languageLabel ? (
                 <p className="text-muted-foreground mt-3 text-xs">
-                  Reported in {languageLabel}.
+                  {t("reportedIn", { language: languageLabel })}
                 </p>
               ) : null}
             </Section>
           ) : languageLabel ? (
             <p className="text-muted-foreground text-xs">
-              Reported in {languageLabel}.
+              {t("reportedIn", { language: languageLabel })}
             </p>
           ) : null}
 
           {attachments.length > 0 ? (
             <Section
-              title="Photos & attachments"
+              title={t("photosTitle")}
               description={
                 ticket.source === "app"
-                  ? "Uploaded by the reporter from the bike sticker form."
-                  : "Files attached to this ticket."
+                  ? t("photosDescApp")
+                  : t("photosDescOther")
               }
             >
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -227,18 +231,18 @@ export default async function TicketDetailPage({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:border-foreground/40 block overflow-hidden rounded-md border"
-                      title={att.fileName ?? "Open file"}
+                      title={att.fileName ?? t("openFile")}
                     >
                       {att.isImage ? (
                         // eslint-disable-next-line @next/next/no-img-element -- Public Supabase storage URL; Next/Image not configured for that domain.
                         <img
                           src={att.fileUrl}
-                          alt={att.fileName ?? "Ticket attachment"}
+                          alt={att.fileName ?? t("ticketAttachment")}
                           className="aspect-square w-full object-cover"
                         />
                       ) : (
                         <div className="bg-muted text-muted-foreground flex aspect-square w-full items-center justify-center p-3 text-center text-xs break-all">
-                          {att.fileName ?? "File"}
+                          {att.fileName ?? t("fileFallback")}
                         </div>
                       )}
                     </a>
@@ -248,17 +252,14 @@ export default async function TicketDetailPage({
             </Section>
           ) : null}
 
-          <Section
-            title="Notes"
-            description="Internal — for the workshop, not shared with the customer."
-          >
+          <Section title={t("notesTitle")} description={t("notesDesc")}>
             {ticket.notes ? (
               <pre className="text-foreground whitespace-pre-wrap font-sans text-sm">
                 {ticket.notes}
               </pre>
             ) : (
               <p className="text-muted-foreground text-sm italic">
-                No notes yet.
+                {t("noNotes")}
               </p>
             )}
           </Section>
@@ -272,11 +273,11 @@ export default async function TicketDetailPage({
 
         <div className="flex flex-col gap-6">
           <Section
-            title="Bike"
+            title={t("bikeTitle")}
             className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
           >
             <dl className="flex flex-col gap-3">
-              <Field label="Frame number">
+              <Field label={t("frameNumber")}>
                 {bike ? (
                   <Link
                     href={`/bikes/${bike.id}`}
@@ -288,7 +289,7 @@ export default async function TicketDetailPage({
                   <Muted>—</Muted>
                 )}
               </Field>
-              <Field label="Template / type">
+              <Field label={t("templateType")}>
                 {templateLabel ? (
                   <span className="text-sm">{templateLabel}</span>
                 ) : bike?.bike_type?.name_en ? (
@@ -297,7 +298,7 @@ export default async function TicketDetailPage({
                   <Muted>—</Muted>
                 )}
               </Field>
-              <Field label="Owner">
+              <Field label={t("owner")}>
                 {owner && ownerName ? (
                   <Link
                     href={`/organizations/${owner.id}`}
@@ -306,19 +307,19 @@ export default async function TicketDetailPage({
                     {ownerName}
                   </Link>
                 ) : (
-                  <Muted>No owner on file</Muted>
+                  <Muted>{t("noOwnerOnFile")}</Muted>
                 )}
               </Field>
             </dl>
           </Section>
 
           <Section
-            title="Reporter"
+            title={t("reporterTitle")}
             className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
           >
             {contact ? (
               <dl className="flex flex-col gap-3">
-                <Field label="Contact">
+                <Field label={t("contact")}>
                   <span className="text-sm">{contactName}</span>
                   {contact.role ? (
                     <span className="text-muted-foreground ml-1.5 text-xs">
@@ -327,7 +328,7 @@ export default async function TicketDetailPage({
                   ) : null}
                 </Field>
                 {contact.organization ? (
-                  <Field label="Organization">
+                  <Field label={t("organization")}>
                     <Link
                       href={`/organizations/${contact.organization.id}`}
                       className="hover:text-foreground text-sm underline-offset-4 hover:underline"
@@ -339,7 +340,7 @@ export default async function TicketDetailPage({
                   </Field>
                 ) : null}
                 {contact.email ? (
-                  <Field label="Email">
+                  <Field label={t("email")}>
                     <a
                       href={`mailto:${contact.email}`}
                       className="hover:text-foreground text-sm underline-offset-4 hover:underline"
@@ -349,18 +350,18 @@ export default async function TicketDetailPage({
                   </Field>
                 ) : null}
                 {contact.phone ? (
-                  <Field label="Phone">
+                  <Field label={t("phone")}>
                     <span className="text-sm">{contact.phone}</span>
                   </Field>
                 ) : null}
               </dl>
             ) : reporterFallback ? (
               <dl className="flex flex-col gap-3">
-                <Field label="From">
+                <Field label={t("from")}>
                   <span className="text-sm">{reporterFallback}</span>
                 </Field>
                 {ticket.reported_by_phone ? (
-                  <Field label="Phone">
+                  <Field label={t("phone")}>
                     <a
                       href={`tel:${ticket.reported_by_phone}`}
                       className="hover:text-foreground text-sm underline-offset-4 hover:underline"
@@ -375,31 +376,31 @@ export default async function TicketDetailPage({
             )}
           </Section>
 
-          <Section title="Classification">
+          <Section title={t("classificationTitle")}>
             <dl className="flex flex-col gap-3">
-              <Field label="Source">
+              <Field label={t("source")}>
                 <Badge variant="outline" className="font-normal">
-                  {ticketSourceLabel(ticket.source)}
+                  {tSource(ticket.source)}
                 </Badge>
               </Field>
-              <Field label="Priority">
+              <Field label={t("priority")}>
                 <Badge variant={ticketPriorityVariant(ticket.priority)}>
-                  {ticketPriorityLabel(ticket.priority)}
+                  {tPriority(String(ticket.priority))}
                 </Badge>
               </Field>
-              <Field label="Reported">
+              <Field label={t("reported")}>
                 <span className="text-sm">
                   {formatDateTime(ticket.reported_at)}
                 </span>
               </Field>
               {ticket.resolved_at ? (
-                <Field label="Resolved">
+                <Field label={t("resolved")}>
                   <span className="text-sm">
                     {formatDateTime(ticket.resolved_at)}
                   </span>
                 </Field>
               ) : null}
-              <Field label="Created">
+              <Field label={t("created")}>
                 <span className="text-muted-foreground text-xs">
                   {formatDate(ticket.created_at)}
                 </span>

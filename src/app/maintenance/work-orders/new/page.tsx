@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -23,6 +24,11 @@ export default async function NewWorkOrderPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tCommon, tMaint] = await Promise.all([
+    getTranslations("workOrders"),
+    getTranslations("common"),
+    getTranslations("maintenance"),
+  ]);
   const { bikes, tickets } = await loadWOPickables();
 
   return (
@@ -31,36 +37,32 @@ export default async function NewWorkOrderPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/tickets">Maintenance</Link>
+              <Link href="/maintenance/tickets">{tMaint("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/work-orders">Work orders</Link>
+              <Link href="/maintenance/work-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          New work order
+          {t("newWorkOrder")}
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Standalone work orders are rare — most are spawned from a ticket via
-          the &ldquo;Start work order&rdquo; button. Use this when the work
-          doesn&apos;t correspond to a logged customer report.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("newSubtitle")}</p>
       </div>
       <WOForm
         initial={{

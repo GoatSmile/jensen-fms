@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -25,6 +26,10 @@ export default async function EditTicketPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("tickets"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const { data: ticket, error } = await supabase
@@ -51,13 +56,13 @@ export default async function EditTicketPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/tickets">Maintenance</Link>
+              <Link href="/maintenance/tickets">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -73,15 +78,16 @@ export default async function EditTicketPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Edit ticket</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("editTitle")}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Tweak any of the captured fields. Status changes happen on the
-          detail page via the move-to dropdown.
+          {t("editSubtitle")}
         </p>
       </div>
       <TicketForm

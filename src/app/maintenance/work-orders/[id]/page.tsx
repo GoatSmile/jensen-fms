@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -29,6 +30,11 @@ export default async function WorkOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon, tMaint] = await Promise.all([
+    getTranslations("workOrders"),
+    getTranslations("common"),
+    getTranslations("maintenance"),
+  ]);
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -137,19 +143,19 @@ export default async function WorkOrderDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/tickets">Maintenance</Link>
+              <Link href="/maintenance/tickets">{tMaint("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/maintenance/work-orders">Work orders</Link>
+              <Link href="/maintenance/work-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -201,9 +207,9 @@ export default async function WorkOrderDetailPage({
           />
 
           {bike ? (
-            <Section title="Bike">
+            <Section title={t("bikeTitle")}>
               <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                <Field label="Frame number">
+                <Field label={t("frameNumber")}>
                   <Link
                     href={`/bikes/${bike.id}`}
                     className="hover:text-foreground font-mono text-sm underline-offset-4 hover:underline"
@@ -211,7 +217,7 @@ export default async function WorkOrderDetailPage({
                     {bike.frame_number}
                   </Link>
                 </Field>
-                <Field label="Template / type">
+                <Field label={t("templateType")}>
                   {bike.bike_template ? (
                     <span className="text-sm">
                       {[
@@ -228,7 +234,7 @@ export default async function WorkOrderDetailPage({
                     <Muted>—</Muted>
                   )}
                 </Field>
-                <Field label="Owner">
+                <Field label={t("owner")}>
                   {owner && ownerName ? (
                     <Link
                       href={`/organizations/${owner.id}`}
@@ -237,11 +243,11 @@ export default async function WorkOrderDetailPage({
                       {ownerName}
                     </Link>
                   ) : (
-                    <Muted>No owner on file</Muted>
+                    <Muted>{t("noOwnerOnFile")}</Muted>
                   )}
                 </Field>
                 {wo.ticket ? (
-                  <Field label="Source ticket">
+                  <Field label={t("sourceTicket")}>
                     <Link
                       href={`/maintenance/tickets/${wo.ticket.id}`}
                       className="hover:text-foreground font-mono text-sm underline-offset-4 hover:underline"
@@ -265,16 +271,16 @@ export default async function WorkOrderDetailPage({
           />
 
           <Section
-            title="Cost summary"
+            title={t("costSummaryTitle")}
             description={
               wo.is_billable
-                ? "Parts at retail price + labour, excl. VAT — the invoice adds VAT on top."
-                : "Parts at retail price + labour, excl. VAT — this work is covered by a service agreement and won't be invoiced."
+                ? t("costSummaryDescBillable")
+                : t("costSummaryDescCovered")
             }
           >
             <dl className="flex flex-col gap-2 text-sm">
               <SummaryRow
-                label="Parts (retail)"
+                label={t("partsRetail")}
                 value={
                   <Money
                     amount={partsSubtotal}
@@ -286,8 +292,11 @@ export default async function WorkOrderDetailPage({
               <SummaryRow
                 label={
                   laborMinutes > 0 && laborRate != null
-                    ? `Labor (${laborMinutes} min × ${formatMoney(laborRate, "DKK")}/h)`
-                    : "Labor"
+                    ? t("laborWithRate", {
+                        minutes: laborMinutes,
+                        rate: formatMoney(laborRate, "DKK"),
+                      })
+                    : t("labor")
                 }
                 value={
                   laborRate != null && laborMinutes > 0 ? (
@@ -303,13 +312,13 @@ export default async function WorkOrderDetailPage({
               />
               <div className="my-1 border-t" />
               <SummaryRow
-                label="Total (excl. VAT)"
+                label={t("totalExVat")}
                 value={<Money amount={total} currency="DKK" />}
                 strong
               />
               {!wo.is_billable && wo.service_agreement ? (
                 <p className="text-muted-foreground mt-2 text-xs">
-                  Covered by service agreement:{" "}
+                  {t("coveredByAgreementInline")}
                   <span className="font-medium">
                     {wo.service_agreement.name_da ??
                       wo.service_agreement.name_en}

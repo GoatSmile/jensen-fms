@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +66,8 @@ function summarise(text: string, max = 50): string {
 }
 
 export function WOForm({ initial, bikes, tickets }: Props) {
+  const t = useTranslations("workOrders");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<WOFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -138,23 +141,23 @@ export function WOForm({ initial, bikes, tickets }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="Bike & ticket"
-        description="A work order always belongs to a specific bike. If it's resolving a ticket, link it here so the chain is auditable."
+        title={t("formBikeTicket")}
+        description={t("formBikeTicketDesc")}
       >
         <Field
-          label="Bike"
+          label={t("bike")}
           htmlFor="wo-bike"
           required
           error={errorField === "bike_id" ? error : null}
         >
           <Select value={values.bike_id} onValueChange={onBikeChange}>
             <SelectTrigger id="wo-bike">
-              <SelectValue placeholder="Pick a bike…" />
+              <SelectValue placeholder={t("pickBike")} />
             </SelectTrigger>
             <SelectContent>
               {bikes.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No bikes available.
+                  {t("noBikes")}
                 </div>
               ) : (
                 bikes.map((b) => {
@@ -178,21 +181,21 @@ export function WOForm({ initial, bikes, tickets }: Props) {
         </Field>
 
         {values.bike_id ? (
-          <Field label="Related ticket (optional)" htmlFor="wo-ticket">
+          <Field label={t("relatedTicket")} htmlFor="wo-ticket">
             <Select
               value={values.ticket_id || TICKET_NONE}
               onValueChange={(v) => update("ticket_id", v)}
             >
               <SelectTrigger id="wo-ticket">
-                <SelectValue placeholder="No ticket" />
+                <SelectValue placeholder={t("noTicketPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TICKET_NONE}>
-                  (No ticket — standalone work order)
+                  {t("noTicketOption")}
                 </SelectItem>
                 {ticketsForBike.length === 0 ? (
                   <div className="text-muted-foreground p-2 text-xs">
-                    No tickets on this bike.
+                    {t("noTickets")}
                   </div>
                 ) : (
                   ticketsForBike.map((t) => (
@@ -209,19 +212,18 @@ export function WOForm({ initial, bikes, tickets }: Props) {
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              When the work order completes, a linked ticket auto-advances to
-              resolved.
+              {t("relatedTicketHint")}
             </p>
           </Field>
         ) : null}
       </FormSection>
 
       <FormSection
-        title="Initial notes"
-        description="Optional — the technician fills these in as work proceeds. Customer-facing summary is captured later, on the work-order detail page."
+        title={t("formNotesTitle")}
+        description={t("formNotesDesc")}
       >
         <Field
-          label="Diagnosis"
+          label={t("diagnosis")}
           htmlFor="wo-diagnosis"
           error={errorField === "diagnosis" ? error : null}
         >
@@ -230,11 +232,11 @@ export function WOForm({ initial, bikes, tickets }: Props) {
             rows={3}
             value={values.diagnosis}
             onChange={(e) => update("diagnosis", e.target.value)}
-            placeholder="e.g. Front brake pads worn past wear-line; cable slightly stretched."
+            placeholder={t("formDiagnosisPlaceholder")}
           />
         </Field>
         <Field
-          label="Work performed"
+          label={t("workPerformed")}
           htmlFor="wo-work-performed"
           error={errorField === "work_performed" ? error : null}
         >
@@ -243,11 +245,11 @@ export function WOForm({ initial, bikes, tickets }: Props) {
             rows={3}
             value={values.work_performed}
             onChange={(e) => update("work_performed", e.target.value)}
-            placeholder="e.g. Replaced pads, re-tensioned cable, test ride OK."
+            placeholder={t("formWorkPerformedPlaceholder")}
           />
         </Field>
         <Field
-          label="Language"
+          label={t("language")}
           htmlFor="wo-language"
           error={errorField === "language" ? error : null}
         >
@@ -264,7 +266,7 @@ export function WOForm({ initial, bikes, tickets }: Props) {
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">
-            Drives which customer-summary field shows on the printed receipt.
+            {t("languageHint")}
           </p>
         </Field>
       </FormSection>
@@ -282,10 +284,10 @@ export function WOForm({ initial, bikes, tickets }: Props) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating…" : "Create work order"}
+          {isPending ? t("creating") : t("createWorkOrder")}
         </Button>
       </div>
     </form>

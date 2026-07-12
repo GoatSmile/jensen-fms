@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,9 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   TICKET_STATUS_VARIANT,
-  ticketPriorityLabel,
   ticketPriorityVariant,
-  ticketStatusLabel,
   ticketTransitionRequiresReason,
   validNextTicketStatuses,
   type TicketStatus,
@@ -70,6 +69,9 @@ export function TicketHeader({
   ownerOrganizationId,
   ownerName,
 }: Props) {
+  const t = useTranslations("tickets");
+  const tStatus = useTranslations("ticketStatus");
+  const tPriority = useTranslations("ticketPriority");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -77,7 +79,8 @@ export function TicketHeader({
     useState<PendingTransition>(null);
 
   const nextStatuses = validNextTicketStatuses(status);
-  const headline = summariseDescription(description) || `Ticket ${ticketNumber}`;
+  const headline =
+    summariseDescription(description) || t("ticketFallback", { number: ticketNumber });
 
   function startTransition(to: TicketStatus) {
     if (ticketTransitionRequiresReason(to)) {
@@ -114,10 +117,10 @@ export function TicketHeader({
               {ticketNumber}
             </span>
             <Badge variant={TICKET_STATUS_VARIANT[status] ?? "outline"}>
-              {ticketStatusLabel(status)}
+              {tStatus(status)}
             </Badge>
             <Badge variant={ticketPriorityVariant(priority)}>
-              {ticketPriorityLabel(priority)}
+              {tPriority(String(priority))}
             </Badge>
             {bikeTypeName ? (
               <Badge variant="outline" className="font-normal">
@@ -128,7 +131,7 @@ export function TicketHeader({
           <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span>
-              Bike{" "}
+              {t("bikeLabel")}{" "}
               <Link
                 href={`/bikes/${bikeId}`}
                 className="hover:text-foreground font-mono underline-offset-4 hover:underline"
@@ -138,7 +141,7 @@ export function TicketHeader({
             </span>
             {ownerOrganizationId && ownerName ? (
               <span>
-                Owner{" "}
+                {t("ownerLabel")}{" "}
                 <Link
                   href={`/organizations/${ownerOrganizationId}`}
                   className="hover:text-foreground underline-offset-4 hover:underline"
@@ -152,14 +155,14 @@ export function TicketHeader({
         <div className="flex gap-2">
           <Button asChild variant="outline">
             <Link href={`/maintenance/tickets/${ticketId}/edit`}>
-              <Pencil aria-hidden /> Edit
+              <Pencil aria-hidden /> {t("edit")}
             </Link>
           </Button>
           {nextStatuses.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -176,7 +179,7 @@ export function TicketHeader({
                           startTransition(to);
                         }}
                       >
-                        {ticketStatusLabel(to)}
+                        {tStatus(to)}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -210,6 +213,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("tickets");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -230,20 +234,17 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>Cancel ticket?</DialogTitle>
-            <DialogDescription>
-              The ticket will be cancelled and the reason will be appended to
-              its notes for the audit trail. Bike state is not changed.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ticket-cancel-reason">Reason</Label>
+            <Label htmlFor="ticket-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="ticket-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer fixed it themselves and asked us to close."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -258,14 +259,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel ticket"}
+              {isPending ? t("cancelling") : t("cancelTicket")}
             </Button>
           </DialogFooter>
         </form>
