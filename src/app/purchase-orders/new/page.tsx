@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -33,6 +34,10 @@ function emptyPOForm(): POFormValues {
 }
 
 export default async function NewPurchaseOrderPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("po"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [suppliersRes, currenciesRes] = await Promise.all([
@@ -73,30 +78,27 @@ export default async function NewPurchaseOrderPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/purchase-orders">Purchase orders</Link>
+              <Link href="/purchase-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          New purchase order
+          {t("newTitle")}
         </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Create the header now; add lines on the next screen. The PO stays in
-          draft until you move it to placed.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("newSubtitle")}</p>
       </div>
 
       <POForm

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
-import { poStatusLabel } from "@/lib/po/status";
 
 import {
   POForm,
@@ -26,6 +26,11 @@ export default async function EditPurchaseOrderPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("po"),
+    getTranslations("common"),
+    getTranslations("poStatus"),
+  ]);
   const supabase = await createClient();
 
   const [poRes, suppliersRes, currenciesRes, linesCountRes] =
@@ -80,7 +85,7 @@ export default async function EditPurchaseOrderPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/purchase-orders">Purchase orders</Link>
+                <Link href="/purchase-orders">{t("title")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -93,20 +98,22 @@ export default async function EditPurchaseOrderPage({
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Edit</BreadcrumbPage>
+              <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="rounded-md border p-6">
-          <h1 className="text-lg font-semibold">PO is no longer editable</h1>
+          <h1 className="text-lg font-semibold">{t("notEditableTitle")}</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Only draft POs can be edited — this one is in &quot;{poStatusLabel(po.status)}&quot;.
-            Use the receive flow on the detail page to log incoming stock, or
-            cancel the PO from the &quot;Move to&quot; menu.
+            {t("notEditableDesc", {
+              status: tStatus.has(po.status)
+                ? tStatus(po.status)
+                : po.status,
+            })}
           </p>
           <div className="mt-4">
             <Button asChild variant="outline">
-              <Link href={`/purchase-orders/${id}`}>Back to PO</Link>
+              <Link href={`/purchase-orders/${id}`}>{t("backToPo")}</Link>
             </Button>
           </div>
         </div>
@@ -135,13 +142,13 @@ export default async function EditPurchaseOrderPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/purchase-orders">Purchase orders</Link>
+              <Link href="/purchase-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -157,17 +164,17 @@ export default async function EditPurchaseOrderPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Edit</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbEdit")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Edit purchase order
+          {t("editTitle")}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Only the header fields. Lines live on the detail page.
+          {t("editSubtitle")}
         </p>
       </div>
 

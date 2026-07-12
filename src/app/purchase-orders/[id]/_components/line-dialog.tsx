@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,6 @@ import { formatPrice } from "@/lib/format";
 import { formatPct } from "@/lib/parts/format";
 import {
   defaultApplyImportTax,
-  importTaxDefaultHint,
   type ImportTaxBasis,
   type PartOrigin,
 } from "@/lib/purchasing/import-tax";
@@ -117,6 +117,8 @@ export function LineDialog({
   orderDate,
   supplierDutyPrepaid,
 }: Props) {
+  const t = useTranslations("poDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
   const initialQty =
@@ -328,7 +330,7 @@ export function LineDialog({
     setError(null);
 
     if (!partId) {
-      setError("Pick a part.");
+      setError(t("errPickPart"));
       return;
     }
 
@@ -347,8 +349,8 @@ export function LineDialog({
     });
   }
 
-  const title = mode.kind === "add" ? "Add line" : "Edit line";
-  const submitLabel = mode.kind === "add" ? "Add line" : "Save changes";
+  const title = mode.kind === "add" ? t("addLine") : t("editLineTitle");
+  const submitLabel = mode.kind === "add" ? t("addLine") : t("saveChanges");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -356,17 +358,12 @@ export function LineDialog({
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              Landed DKK/unit = unit price × FX rate × (1 + transport % +
-              import duty %). Both percentages are frozen onto this line at
-              insert; later admin edits don&apos;t retroactively change cost
-              basis.
-            </DialogDescription>
+            <DialogDescription>{t("dialogDesc")}</DialogDescription>
           </DialogHeader>
 
           {/* Part picker */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="line-part-filter">Part</Label>
+            <Label htmlFor="line-part-filter">{t("part")}</Label>
             {partLocked ? (
               <div className="bg-muted/40 rounded-md border px-3 py-2 text-sm">
                 <span className="font-medium">
@@ -379,12 +376,12 @@ export function LineDialog({
                   id="line-part-filter"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  placeholder="Filter parts by SKU or name…"
+                  placeholder={t("filterPartsPlaceholder")}
                 />
                 <div className="max-h-56 overflow-y-auto rounded-md border">
                   {filteredParts.length === 0 ? (
                     <p className="text-muted-foreground p-3 text-center text-sm">
-                      No parts match.
+                      {t("noPartsMatch")}
                     </p>
                   ) : (
                     <ul className="divide-y">
@@ -409,11 +406,11 @@ export function LineDialog({
                               </div>
                               {disabled ? (
                                 <span className="text-muted-foreground text-xs">
-                                  already on PO
+                                  {t("alreadyOnPo")}
                                 </span>
                               ) : isPicked ? (
                                 <span className="text-xs text-emerald-700 dark:text-emerald-400">
-                                  selected
+                                  {t("selected")}
                                 </span>
                               ) : null}
                             </button>
@@ -429,7 +426,7 @@ export function LineDialog({
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-qty">Quantity</Label>
+              <Label htmlFor="line-qty">{t("quantity")}</Label>
               <Input
                 id="line-qty"
                 inputMode="decimal"
@@ -439,21 +436,20 @@ export function LineDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-price">Unit price</Label>
+              <Label htmlFor="line-price">{t("unitPrice")}</Label>
               <Input
                 id="line-price"
                 inputMode="decimal"
                 value={unitPrice}
                 onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="Optional"
+                placeholder={t("unitPriceOptional")}
               />
               <p className="text-muted-foreground text-[11px] leading-tight">
-                Leave blank if the supplier hasn&apos;t quoted yet — fill it in
-                from the order confirmation before receiving.
+                {t("unitPriceHint")}
               </p>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-currency">Currency</Label>
+              <Label htmlFor="line-currency">{t("currency")}</Label>
               <Select value={currency} onValueChange={onCurrencyChange}>
                 <SelectTrigger id="line-currency">
                   <SelectValue />
@@ -471,7 +467,7 @@ export function LineDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-fx">FX rate to DKK</Label>
+              <Label htmlFor="line-fx">{t("fxRateLabel")}</Label>
               <Input
                 id="line-fx"
                 inputMode="decimal"
@@ -483,19 +479,26 @@ export function LineDialog({
               {currency !== "DKK" ? (
                 <p className="text-muted-foreground text-xs">
                   {fxLookup.kind === "loading"
-                    ? `Looking up ${currency} → DKK for ${orderDate}…`
+                    ? t("fxLookingUp", { currency, date: orderDate })
                     : fxLookup.kind === "ok"
-                      ? `ECB rate for ${fxLookup.actualDate}${fxLookup.actualDate !== orderDate ? ` (closest business day to ${orderDate})` : ""}${fxLookup.source === "frankfurter" ? " — just fetched" : ""}. Override if your invoice quotes a different rate.`
+                      ? t("fxEcbRateFor", { date: fxLookup.actualDate }) +
+                        (fxLookup.actualDate !== orderDate
+                          ? t("fxClosestBusinessDay", { date: orderDate })
+                          : "") +
+                        (fxLookup.source === "frankfurter"
+                          ? t("fxJustFetched")
+                          : "") +
+                        t("fxOverrideHint")
                       : fxLookup.kind === "missing"
-                        ? `Could not auto-look-up: ${fxLookup.message}. Enter manually.`
+                        ? t("fxMissing", { message: fxLookup.message })
                         : fxKnown
-                          ? "Pre-filled from the latest fx_rates row. Override if you have a fresher number on the invoice."
-                          : `No FX rate on file for ${currency} — enter manually.`}
+                          ? t("fxPrefilled")
+                          : t("fxNoRate", { currency })}
                 </p>
               ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="line-transport">Transport %</Label>
+              <Label htmlFor="line-transport">{t("transportPct")}</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="line-transport"
@@ -509,9 +512,12 @@ export function LineDialog({
                 <span className="text-muted-foreground text-sm">%</span>
               </div>
               <p className="text-muted-foreground text-xs">
-                Freight markup as a percent — e.g.{" "}
-                <span className="font-mono">10</span> for 10 %. Default from{" "}
-                <code>/admin/settings</code>.
+                {t.rich("transportHint", {
+                  mono: (chunks) => (
+                    <span className="font-mono">{chunks}</span>
+                  ),
+                  code: (chunks) => <code>{chunks}</code>,
+                })}
               </p>
             </div>
           </div>
@@ -525,67 +531,72 @@ export function LineDialog({
                 disabled={!partId}
                 className="size-4"
               />
-              Apply import tax
+              {t("applyImportTax")}
             </label>
             {partId ? (
               <p className="text-muted-foreground pl-6 text-xs">
-                {importTaxDefaultHint(
-                  selectedPart?.origin ?? null,
-                  supplierDutyPrepaid,
-                )}{" "}
-                Override for this line by toggling; the choice and its reason
-                are frozen onto the line.
+                {t(
+                  (selectedPart?.origin ?? null) === "eu"
+                    ? "importHintEu"
+                    : supplierDutyPrepaid
+                      ? "importHintPrepaid"
+                      : (selectedPart?.origin ?? null) == null
+                        ? "importHintUnclassified"
+                        : "importHintNonEu",
+                )}
+                {t("importHintSuffix")}
               </p>
             ) : (
               <p className="text-muted-foreground pl-6 text-xs">
-                Pick a part — the default follows its origin and the
-                supplier&apos;s duty-prepaid setting.
+                {t("importHintNoPart")}
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="line-notes">Notes</Label>
+            <Label htmlFor="line-notes">{t("notes")}</Label>
             <Textarea
               id="line-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional — e.g. supplier SKU on this PO, packing details."
+              placeholder={t("lineNotesPlaceholder")}
             />
           </div>
 
           {/* Live preview of the additive landed-cost breakdown. */}
           <div className="bg-muted/30 flex flex-col gap-1.5 rounded-md border px-3 py-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Line total ({currency})</span>
+              <span className="text-muted-foreground">
+                {t("lineTotalNative", { currency })}
+              </span>
               <span className="font-medium tabular-nums">
                 {formatPrice(lineTotalNative, currency)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Base DKK/unit</span>
+              <span className="text-muted-foreground">{t("baseDkkUnit")}</span>
               <span className="tabular-nums">
                 {formatPrice(breakdown?.base ?? null, "DKK")}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">+ Transport</span>
+              <span className="text-muted-foreground">{t("plusTransport")}</span>
               <span className="tabular-nums">
                 {formatPrice(breakdown?.transportDkk ?? null, "DKK")}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                + Import tax{" "}
+                {t("plusImportTax")}{" "}
                 {!applyImportTax ? (
-                  <span className="italic">not applied</span>
+                  <span className="italic">{t("importNotApplied")}</span>
                 ) : previewHsCode ? (
                   <span className="font-mono">({previewHsCode}, {formatPct(previewTariffPct)})</span>
                 ) : previewTariffPct > 0 ? (
                   <span>({formatPct(previewTariffPct)})</span>
                 ) : (
-                  <span className="italic">no HS code</span>
+                  <span className="italic">{t("noHsCode")}</span>
                 )}
               </span>
               <span className="tabular-nums">
@@ -595,7 +606,9 @@ export function LineDialog({
             {previewAntiDumpingPct > 0 ? (
               <div className="flex justify-between">
                 <span className="text-destructive">
-                  + Anti-dumping ({formatPct(previewAntiDumpingPct)})
+                  {t("plusAntiDumpingLabel", {
+                    pct: formatPct(previewAntiDumpingPct),
+                  })}
                 </span>
                 <span className="tabular-nums">
                   {formatPrice(breakdown?.antiDumpingDkk ?? null, "DKK")}
@@ -603,7 +616,7 @@ export function LineDialog({
               </div>
             ) : null}
             <div className="flex justify-between border-t pt-1.5">
-              <span className="text-muted-foreground">Landed DKK/unit</span>
+              <span className="text-muted-foreground">{t("landedDkkUnit")}</span>
               <span className="font-semibold tabular-nums">
                 {formatPrice(breakdown?.landed ?? null, "DKK")}
               </span>
@@ -623,10 +636,10 @@ export function LineDialog({
               onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isPending || !partId}>
-              {isPending ? "Saving…" : submitLabel}
+              {isPending ? tCommon("saving") : submitLabel}
             </Button>
           </DialogFooter>
         </form>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Mail, Pencil, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   PO_STATUS_VARIANT,
-  poStatusLabel,
   poTransitionRequiresReason,
   validNextPOStatuses,
   type PurchaseOrderStatus,
@@ -63,6 +63,8 @@ export function POHeader({
   emailTestMode,
   emailTestRecipients,
 }: Props) {
+  const t = useTranslations("poDetail");
+  const tStatus = useTranslations("poStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -107,7 +109,7 @@ export function POHeader({
               {poNumber}
             </span>
             <Badge variant={PO_STATUS_VARIANT[status] ?? "outline"}>
-              {poStatusLabel(status)}
+              {tStatus.has(status) ? tStatus(status) : status}
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -124,16 +126,17 @@ export function POHeader({
           </h1>
           {emailedAt ? (
             <p className="text-muted-foreground text-xs">
-              Emailed {new Date(emailedAt).toLocaleDateString("da-DK")}
+              {t("emailedPrefix", {
+                date: new Date(emailedAt).toLocaleDateString("da-DK"),
+              })}
               {emailedTo ? (
                 <>
-                  {" "}
-                  to{" "}
+                  {t("emailedToPrefix")}
                   <span className="font-mono">
                     {emailedTo.startsWith("test:") ? (
                       <>
                         <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                          test
+                          {t("testBadge")}
                         </span>{" "}
                         {emailedTo.slice(5)}
                       </>
@@ -150,13 +153,13 @@ export function POHeader({
           {status === "draft" ? (
             <Button variant="outline" asChild>
               <Link href={`/purchase-orders/${poId}/edit`}>
-                <Pencil aria-hidden /> Edit
+                <Pencil aria-hidden /> {t("edit")}
               </Link>
             </Button>
           ) : null}
           <Button variant="outline" asChild>
             <Link href={`/purchase-orders/${poId}/print`}>
-              <Printer aria-hidden /> Print
+              <Printer aria-hidden /> {t("print")}
             </Link>
           </Button>
           {status !== "cancelled" ? (
@@ -165,14 +168,14 @@ export function POHeader({
               onClick={() => setEmailDialogOpen(true)}
               disabled={pending}
             >
-              <Mail aria-hidden /> Email supplier
+              <Mail aria-hidden /> {t("emailSupplier")}
             </Button>
           ) : null}
           {nextStatuses.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -189,7 +192,7 @@ export function POHeader({
                           startTransition(to);
                         }}
                       >
-                        {poStatusLabel(to)}
+                        {tStatus.has(to) ? tStatus(to) : to}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -247,6 +250,8 @@ function EmailSupplierDialog({
   testRecipients: string | null;
   onSent: () => void;
 }) {
+  const t = useTranslations("poDetail");
+  const tCommon = useTranslations("common");
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -282,51 +287,53 @@ function EmailSupplierDialog({
         {sentTo ? (
           <div className="flex flex-col gap-4">
             <UiDialogHeader>
-              <DialogTitle>Email sent</DialogTitle>
+              <DialogTitle>{t("emailSentTitle")}</DialogTitle>
               <DialogDescription>
-                {poNumber} went to{" "}
-                <span className="font-mono">{sentTo}</span>.
+                {t.rich("emailSentDesc", {
+                  po: poNumber,
+                  to: sentTo,
+                  mono: (chunks) => (
+                    <span className="font-mono">{chunks}</span>
+                  ),
+                })}
               </DialogDescription>
             </UiDialogHeader>
             <DialogFooter>
               <Button type="button" onClick={() => onOpenChange(false)}>
-                Done
+                {t("done")}
               </Button>
             </DialogFooter>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="flex flex-col gap-4">
             <UiDialogHeader>
-              <DialogTitle>Email {poNumber} to the supplier?</DialogTitle>
+              <DialogTitle>{t("emailTitle", { po: poNumber })}</DialogTitle>
               <DialogDescription>
-                Sends the order document (same content as the print view) to{" "}
-                {supplierName ?? "the supplier"}&rsquo;s email on file. PO and
-                line notes stay internal — only the message below reaches
-                them.
+                {t("emailDesc", {
+                  supplier: supplierName ?? t("theSupplier"),
+                })}
               </DialogDescription>
             </UiDialogHeader>
 
             {testMode ? (
               <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
-                Outbound test mode is on — this email goes to{" "}
-                <span className="font-mono">
-                  {testRecipients ?? "(no test inbox set)"}
-                </span>{" "}
-                instead of the supplier. Turn it off under Admin → Settings →
-                Communication to go live.
+                {t.rich("testModeBanner", {
+                  recipients: testRecipients ?? t("noTestInbox"),
+                  mono: (chunks) => (
+                    <span className="font-mono">{chunks}</span>
+                  ),
+                })}
               </p>
             ) : null}
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="po-email-message">
-                Message to the supplier (optional)
-              </Label>
+              <Label htmlFor="po-email-message">{t("messageLabel")}</Label>
               <Textarea
                 id="po-email-message"
                 rows={3}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="e.g. Please confirm prices and delivery week."
+                placeholder={t("messagePlaceholder")}
               />
             </div>
 
@@ -343,10 +350,10 @@ function EmailSupplierDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isSending}
               >
-                Cancel
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={isSending}>
-                {isSending ? "Sending…" : "Send email"}
+                {isSending ? t("sending") : t("sendEmail")}
               </Button>
             </DialogFooter>
           </form>
@@ -367,6 +374,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("poDetail");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -387,21 +395,17 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>Cancel PO?</DialogTitle>
-            <DialogDescription>
-              The PO will be cancelled and the reason will be appended to its
-              notes for the audit trail. Already-received stock movements are
-              unaffected.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="po-cancel-reason">Reason</Label>
+            <Label htmlFor="po-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="po-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Supplier confirmed back-order pushes delivery past the project deadline."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -416,14 +420,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel PO"}
+              {isPending ? t("cancelling") : t("cancelPo")}
             </Button>
           </DialogFooter>
         </form>

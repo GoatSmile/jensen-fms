@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,8 @@ export function POForm({
   currencies,
   lockSupplier = false,
 }: Props) {
+  const t = useTranslations("po");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<POFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -131,15 +134,15 @@ export function POForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <FormSection
-        title="Identification"
+        title={t("identificationTitle")}
         description={
           mode === "edit" && lockSupplier
-            ? "Supplier is locked once lines exist — clear the lines first if you need to change it."
-            : "Which supplier this PO is being placed with."
+            ? t("identificationDescLocked")
+            : t("identificationDesc")
         }
       >
         <Field
-          label="Supplier"
+          label={t("supplier")}
           htmlFor="po-supplier"
           required
           error={errorField === "supplier_id" ? error : null}
@@ -150,12 +153,12 @@ export function POForm({
             disabled={mode === "edit" && lockSupplier}
           >
             <SelectTrigger id="po-supplier">
-              <SelectValue placeholder="Pick a supplier…" />
+              <SelectValue placeholder={t("pickSupplierPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {suppliers.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No active suppliers. Add one in Suppliers first.
+                  {t("noActiveSuppliers")}
                 </div>
               ) : (
                 suppliers.map((s) => (
@@ -174,13 +177,10 @@ export function POForm({
         </Field>
       </FormSection>
 
-      <FormSection
-        title="Dates"
-        description="Order date is mandatory; expected date is advisory and used for the dashboard 'arriving soon' view."
-      >
+      <FormSection title={t("datesTitle")} description={t("datesDesc")}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
-            label="Order date"
+            label={t("orderDate")}
             htmlFor="po-order-date"
             required
             error={errorField === "order_date" ? error : null}
@@ -193,7 +193,7 @@ export function POForm({
               required
             />
           </Field>
-          <Field label="Expected delivery" htmlFor="po-expected-date">
+          <Field label={t("expectedDelivery")} htmlFor="po-expected-date">
             <Input
               id="po-expected-date"
               type="date"
@@ -204,12 +204,9 @@ export function POForm({
         </div>
       </FormSection>
 
-      <FormSection
-        title="Billing"
-        description="The total currency drives the PO's summed total. Individual lines can still be quoted in other currencies — those are converted to DKK via the per-line FX rate."
-      >
+      <FormSection title={t("billingTitle")} description={t("billingDesc")}>
         <Field
-          label="Total currency"
+          label={t("totalCurrency")}
           htmlFor="po-currency"
           required
           error={errorField === "total_currency" ? error : null}
@@ -235,17 +232,14 @@ export function POForm({
         </Field>
       </FormSection>
 
-      <FormSection
-        title="Notes"
-        description="Internal — e.g. reference numbers, freight instructions, who at the supplier confirmed."
-      >
-        <Field label="Notes" htmlFor="po-notes">
+      <FormSection title={t("notesTitle")} description={t("notesDesc")}>
+        <Field label={t("notes")} htmlFor="po-notes">
           <Textarea
             id="po-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Free text. Cancellations append themselves here automatically."
+            placeholder={t("notesPlaceholder")}
           />
         </Field>
       </FormSection>
@@ -263,16 +257,16 @@ export function POForm({
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
             ? mode === "create"
-              ? "Creating…"
-              : "Saving…"
+              ? t("creating")
+              : tCommon("saving")
             : mode === "create"
-              ? "Create draft PO"
-              : "Save changes"}
+              ? t("createDraftPo")
+              : t("saveChanges")}
         </Button>
       </div>
     </form>

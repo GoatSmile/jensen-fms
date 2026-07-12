@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,7 @@ import { formatFxRate, formatPct } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
-import {
-  IMPORT_TAX_BASIS_LABELS,
-  type ImportTaxBasis,
-} from "@/lib/purchasing/import-tax";
+import type { ImportTaxBasis } from "@/lib/purchasing/import-tax";
 
 import { deleteLine } from "../_actions/manage-lines";
 import {
@@ -95,6 +93,8 @@ export function LinesSection({
   defaultTransportPct,
   supplierDutyPrepaid,
 }: Props) {
+  const t = useTranslations("poDetail");
+  const tBasis = useTranslations("importTaxBasis");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
@@ -122,18 +122,18 @@ export function LinesSection({
   }
 
   const description = isDraft
-    ? "Editable while draft. Once you move the PO to placed, lines lock and only the receive flow can change them."
+    ? t("descDraft")
     : status === "cancelled"
-      ? "This PO is cancelled — lines are read-only."
+      ? t("descCancelled")
       : status === "received"
-        ? "This PO is fully received — lines are read-only."
-        : "Lines are locked. Use the receive flow below to log incoming stock.";
+        ? t("descReceived")
+        : t("descLocked");
 
   return (
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">Lines</h2>
+          <h2 className="text-sm font-semibold">{t("linesTitle")}</h2>
           <p className="text-muted-foreground text-xs">{description}</p>
         </div>
         {isDraft ? (
@@ -142,7 +142,7 @@ export function LinesSection({
             variant="outline"
             onClick={() => setDialog({ kind: "add" })}
           >
-            <Plus aria-hidden /> Add line
+            <Plus aria-hidden /> {t("addLine")}
           </Button>
         ) : null}
       </header>
@@ -156,33 +156,35 @@ export function LinesSection({
 
         {rows.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-            {isDraft
-              ? "No lines yet — add the first one to get started."
-              : "No lines on this PO."}
+            {isDraft ? t("noLinesDraft") : t("noLines")}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Part</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead>{t("part")}</TableHead>
+                  <TableHead className="text-right">{t("thQty")}</TableHead>
                   {/* Unit price is just a step on the way to landed DKK.
                       Hide on phones; show on sm+. */}
                   <TableHead className="hidden text-right sm:table-cell">
-                    Unit price
+                    {t("unitPrice")}
                   </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
-                    FX rate
+                    {t("thFxRate")}
                   </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
-                    Transport
+                    {t("thTransport")}
                   </TableHead>
-                  <TableHead className="text-right">Landed DKK/unit</TableHead>
+                  <TableHead className="text-right">
+                    {t("landedDkkUnit")}
+                  </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
-                    Received
+                    {t("thReceived")}
                   </TableHead>
-                  <TableHead className="hidden md:table-cell">Notes</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("notes")}
+                  </TableHead>
                   {isDraft ? <TableHead className="w-[40px]" /> : null}
                 </TableRow>
               </TableHeader>
@@ -209,7 +211,7 @@ export function LinesSection({
                       <TableCell className="hidden text-right tabular-nums sm:table-cell">
                         {row.unitPrice == null ? (
                           <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                            price pending
+                            {t("pricePending")}
                           </span>
                         ) : (
                           <>
@@ -223,7 +225,7 @@ export function LinesSection({
                             </div>
                             {foreignCurrency ? (
                               <div className="text-muted-foreground text-[10px]">
-                                in {row.currency}
+                                {t("inCurrency", { currency: row.currency })}
                               </div>
                             ) : null}
                           </>
@@ -236,12 +238,14 @@ export function LinesSection({
                         {formatPct(row.transportPct)}
                         {row.tariffPct > 0 ? (
                           <div className="text-muted-foreground text-[10px]">
-                            + {formatPct(row.tariffPct)} tariff
+                            {t("plusTariff", { pct: formatPct(row.tariffPct) })}
                           </div>
                         ) : null}
                         {row.antiDumpingPct > 0 ? (
                           <div className="text-destructive text-[10px]">
-                            + {formatPct(row.antiDumpingPct)} anti-dumping
+                            {t("plusAntiDumping", {
+                              pct: formatPct(row.antiDumpingPct),
+                            })}
                           </div>
                         ) : null}
                         {/* Why a line carries no import tax — a correct zero
@@ -258,8 +262,9 @@ export function LinesSection({
                                 : "text-muted-foreground text-[10px]"
                             }
                           >
-                            no import tax —{" "}
-                            {IMPORT_TAX_BASIS_LABELS[row.importTaxBasis]}
+                            {t("noImportTax", {
+                              reason: tBasis(row.importTaxBasis),
+                            })}
                           </div>
                         ) : null}
                       </TableCell>
@@ -373,13 +378,14 @@ function RowActions({
   onAskDelete: () => void;
   onConfirmDelete: () => void;
 }) {
+  const t = useTranslations("poDetail");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           size="icon-sm"
           variant="ghost"
-          aria-label={`Actions for ${row.partSku}`}
+          aria-label={t("actionsAria", { sku: row.partSku })}
           disabled={pending}
         >
           <MoreVertical aria-hidden />
@@ -392,7 +398,7 @@ function RowActions({
             onEdit();
           }}
         >
-          <Pencil aria-hidden /> Edit
+          <Pencil aria-hidden /> {t("edit")}
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
@@ -404,7 +410,7 @@ function RowActions({
           }}
         >
           <Trash2 aria-hidden />{" "}
-          {confirming ? "Click again to confirm" : "Remove"}
+          {confirming ? t("clickAgainConfirm") : t("remove")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

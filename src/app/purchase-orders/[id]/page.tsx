@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -40,6 +41,11 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tPo, tCommon] = await Promise.all([
+    getTranslations("poDetail"),
+    getTranslations("po"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [
@@ -228,13 +234,13 @@ export default async function PurchaseOrderDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/purchase-orders">Purchase orders</Link>
+              <Link href="/purchase-orders">{tPo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -259,10 +265,10 @@ export default async function PurchaseOrderDetailPage({
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-        <Stat label="Ordered">{formatDate(po.order_date)}</Stat>
-        <Stat label="Expected">{formatDate(po.expected_date)}</Stat>
-        <Stat label="Received">{formatDate(po.received_date)}</Stat>
-        <Stat label="Order total">
+        <Stat label={t("statOrdered")}>{formatDate(po.order_date)}</Stat>
+        <Stat label={t("statExpected")}>{formatDate(po.expected_date)}</Stat>
+        <Stat label={t("statReceived")}>{formatDate(po.received_date)}</Stat>
+        <Stat label={t("statOrderTotal")}>
           <Money
             amount={
               po.total_amount != null ? Number(po.total_amount) : null
@@ -270,20 +276,20 @@ export default async function PurchaseOrderDetailPage({
             currency={po.total_currency}
           />
         </Stat>
-        <Stat label="Landed total">
+        <Stat label={t("statLandedTotal")}>
           <Money
             amount={poLineRows.length > 0 ? landedTotalDkk : null}
             currency="DKK"
           />
         </Stat>
-        <Stat label="Lines">{poLineRows.length}</Stat>
-        <Stat label="Units ordered" className="tabular-nums">
+        <Stat label={t("statLines")}>{poLineRows.length}</Stat>
+        <Stat label={t("statUnitsOrdered")} className="tabular-nums">
           {totalOrdered}
         </Stat>
-        <Stat label="Units received" className="tabular-nums">
+        <Stat label={t("statUnitsReceived")} className="tabular-nums">
           {totalReceived}
         </Stat>
-        <Stat label="Outstanding" className="tabular-nums">
+        <Stat label={t("statOutstanding")} className="tabular-nums">
           {totalOrdered - totalReceived}
         </Stat>
       </dl>

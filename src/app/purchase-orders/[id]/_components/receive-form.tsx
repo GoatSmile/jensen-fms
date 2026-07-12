@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,8 @@ export function ReceiveForm({
   hideLocation = false,
   primaryLocationId = null,
 }: Props) {
+  const t = useTranslations("poDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [locationId, setLocationId] = useState(
     primaryLocationId ?? locations[0]?.id ?? "",
@@ -118,7 +121,7 @@ export function ReceiveForm({
     setSuccess(null);
 
     if (receipts.length === 0) {
-      setError("No quantities entered. Type how many units arrived.");
+      setError(t("receiveErrNoQtys"));
       return;
     }
 
@@ -129,9 +132,7 @@ export function ReceiveForm({
         return;
       }
       setDrafts({});
-      setSuccess(
-        `Recorded ${receipts.length} line ${receipts.length === 1 ? "receipt" : "receipts"}.`,
-      );
+      setSuccess(t("recorded", { count: receipts.length }));
       router.refresh();
     });
   }
@@ -141,11 +142,8 @@ export function ReceiveForm({
       <section className="rounded-md border">
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Receive lines</h2>
-            <p className="text-muted-foreground text-xs">
-              Enter how many units arrived in this delivery. The DKK landed
-              cost from the order is used for inventory valuation.
-            </p>
+            <h2 className="text-sm font-semibold">{t("receiveTitle")}</h2>
+            <p className="text-muted-foreground text-xs">{t("receiveDesc")}</p>
           </div>
           {isClosed ? null : (
             <Button
@@ -155,7 +153,7 @@ export function ReceiveForm({
               onClick={fillAllRemaining}
               disabled={isPending}
             >
-              Receive all remaining
+              {t("receiveAllRemaining")}
             </Button>
           )}
         </header>
@@ -164,7 +162,7 @@ export function ReceiveForm({
           {hideLocation ? null : (
             <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="receive-location">Receive into</Label>
+                <Label htmlFor="receive-location">{t("receiveInto")}</Label>
                 <Select
                   value={locationId}
                   onValueChange={setLocationId}
@@ -192,22 +190,24 @@ export function ReceiveForm({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Part</TableHead>
+                  <TableHead>{t("part")}</TableHead>
                   <TableHead className="hidden text-right md:table-cell">
-                    Ordered
+                    {t("thOrdered")}
                   </TableHead>
                   <TableHead className="hidden text-right md:table-cell">
-                    Already received
+                    {t("thAlreadyReceived")}
                   </TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    Unit price
+                  <TableHead className="text-right">
+                    {t("thOutstanding")}
                   </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
-                    Landed DKK / unit
+                    {t("unitPrice")}
+                  </TableHead>
+                  <TableHead className="hidden text-right lg:table-cell">
+                    {t("landedDkkUnit")}
                   </TableHead>
                   <TableHead className="w-[140px] sm:w-[180px]">
-                    Receive now
+                    {t("thReceiveNow")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -260,15 +260,15 @@ export function ReceiveForm({
                       <TableCell>
                         {outstanding === 0 ? (
                           <span className="text-muted-foreground text-xs">
-                            Fully received
+                            {t("fullyReceived")}
                           </span>
                         ) : isClosed ? (
                           <span className="text-muted-foreground text-xs">
-                            PO closed
+                            {t("poClosed")}
                           </span>
                         ) : line.landedDkkPerUnit == null ? (
                           <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                            Enter price first
+                            {t("enterPriceFirst")}
                           </span>
                         ) : (
                           <div className="flex items-center gap-1.5">
@@ -278,7 +278,9 @@ export function ReceiveForm({
                               onChange={(e) => setDraft(line.id, e.target.value)}
                               placeholder="0"
                               className="h-8 w-[80px]"
-                              aria-label={`Receive quantity for ${line.partSku}`}
+                              aria-label={t("receiveQtyAria", {
+                                sku: line.partSku,
+                              })}
                             />
                             <Button
                               type="button"
@@ -286,7 +288,7 @@ export function ReceiveForm({
                               variant="ghost"
                               onClick={() => fillRemaining(line)}
                             >
-                              All
+                              {t("allBtn")}
                             </Button>
                           </div>
                         )}
@@ -318,8 +320,8 @@ export function ReceiveForm({
             disabled={isPending || receipts.length === 0 || !locationId}
           >
             {isPending
-              ? "Saving…"
-              : `Save ${receipts.length} ${receipts.length === 1 ? "receipt" : "receipts"}`}
+              ? tCommon("saving")
+              : t("saveNReceipts", { count: receipts.length })}
           </Button>
         </div>
       )}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ClipboardList, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +27,15 @@ import { SegmentedId } from "@/components/segmented-id";
 import { formatDate } from "@/lib/parts/format";
 import {
   PO_STATUS_VARIANT,
-  poStatusLabel,
   type PurchaseOrderStatus,
 } from "@/lib/po/status";
 
 export default async function PurchaseOrdersPage() {
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("po"),
+    getTranslations("common"),
+    getTranslations("poStatus"),
+  ]);
   const supabase = await createClient();
   const [poRes, totalsRes] = await Promise.all([
     supabase
@@ -71,27 +76,27 @@ export default async function PurchaseOrdersPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Purchase orders</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Purchase orders
+              {t("title")}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {rows.length} {rows.length === 1 ? "order" : "orders"}
+              {t("count", { count: rows.length })}
             </p>
           </div>
           <Button asChild>
             <Link href="/purchase-orders/new">
-              <Plus aria-hidden /> New PO
+              <Plus aria-hidden /> {t("newPo")}
             </Link>
           </Button>
         </div>
@@ -100,22 +105,30 @@ export default async function PurchaseOrdersPage() {
       {rows.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title="No purchase orders yet"
-          description="Create a purchase order to track incoming shipments and receive stock against catalog parts."
-          action={{ label: "New PO", href: "/purchase-orders/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+          action={{ label: t("newPo"), href: "/purchase-orders/new" }}
         />
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[160px] sm:w-[200px]">PO</TableHead>
-                <TableHead className="hidden md:table-cell">Supplier</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Ordered</TableHead>
-                <TableHead className="hidden lg:table-cell">Expected</TableHead>
+                <TableHead className="w-[160px] sm:w-[200px]">
+                  {t("thPo")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thSupplier")}
+                </TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thOrdered")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thExpected")}
+                </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Landed total
+                  {t("thLandedTotal")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -152,7 +165,7 @@ export default async function PurchaseOrdersPage() {
                           "outline"
                         }
                       >
-                        {poStatusLabel(po.status)}
+                        {tStatus.has(po.status) ? tStatus(po.status) : po.status}
                       </Badge>
                     </Link>
                   </TableCell>
