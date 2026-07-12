@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Paintbrush, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +30,9 @@ import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { formatDate } from "@/lib/parts/format";
 import {
   SERVICE_ORDER_STATUS_VARIANT,
-  serviceOrderStatusLabel,
   type ServiceOrderStatus,
 } from "@/lib/services/status";
-import { PAINT_SERVICE_SLUG, PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
+import { PAINT_SERVICE_SLUG } from "@/lib/services/vocab";
 
 const STATUS_OPTIONS: ServiceOrderStatus[] = [
   "planned",
@@ -52,6 +52,12 @@ export default async function PaintOrdersPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("paintOrders"),
+    getTranslations("common"),
+    getTranslations("serviceOrderStatus"),
+  ]);
+  const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
   const statusFilter =
     sp.status && STATUS_OPTIONS.includes(sp.status as ServiceOrderStatus)
       ? (sp.status as ServiceOrderStatus)
@@ -103,36 +109,32 @@ export default async function PaintOrdersPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Paint orders</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Paint orders
+              {t("title")}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {(rows ?? []).length}{" "}
-              {(rows ?? []).length === 1 ? "order" : "orders"}
+              {t("count", { count: (rows ?? []).length })}
               {statusFilter ? (
                 <>
                   {" · "}
-                  {serviceOrderStatusLabel(
-                    statusFilter,
-                    PAINT_SUPPLIER_NOUN,
-                  ).toLowerCase()}
+                  {svcStatus(statusFilter).toLowerCase()}
                   {" · "}
                   <Link
                     href="/paint-orders"
                     className="hover:text-foreground underline-offset-4 hover:underline"
                   >
-                    clear filter
+                    {t("clearFilter")}
                   </Link>
                 </>
               ) : null}
@@ -140,7 +142,7 @@ export default async function PaintOrdersPage({
           </div>
           <Button asChild>
             <Link href="/paint-orders/new">
-              <Plus aria-hidden /> New paint order
+              <Plus aria-hidden /> {t("newPaintOrder")}
             </Link>
           </Button>
         </div>
@@ -149,7 +151,7 @@ export default async function PaintOrdersPage({
       <form method="get" className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="paint-status">
-            Status
+            {t("filterStatus")}
           </label>
           <select
             id="paint-status"
@@ -160,30 +162,30 @@ export default async function PaintOrdersPage({
               statusFilter && FILTER_ACTIVE_CLASS,
             )}
           >
-            <option value="">All statuses</option>
+            <option value="">{t("allStatuses")}</option>
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
-                {serviceOrderStatusLabel(s, PAINT_SUPPLIER_NOUN)}
+                {svcStatus(s)}
               </option>
             ))}
           </select>
         </div>
         <Button type="submit" size="sm" variant="outline">
-          Apply
+          {tCommon("apply")}
         </Button>
       </form>
 
       {(rows ?? []).length === 0 ? (
         statusFilter ? (
           <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-            No paint orders match this status filter.
+            {t("noMatchFilter")}
           </div>
         ) : (
           <EmptyState
             icon={Paintbrush}
-            title="No paint orders yet"
-            description="Paint orders are batches of bikes sent to a supplier for paint."
-            action={{ label: "New paint order", href: "/paint-orders/new" }}
+            title={t("emptyTitle")}
+            description={t("emptyDesc")}
+            action={{ label: t("newPaintOrder"), href: "/paint-orders/new" }}
           />
         )
       ) : (
@@ -191,15 +193,25 @@ export default async function PaintOrdersPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[140px] sm:w-[160px]">Number</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Supplier</TableHead>
-                <TableHead className="hidden md:table-cell">Colour</TableHead>
-                <TableHead className="hidden text-right md:table-cell">
-                  Bikes
+                <TableHead className="w-[140px] sm:w-[160px]">
+                  {t("thNumber")}
                 </TableHead>
-                <TableHead className="hidden lg:table-cell">Sent</TableHead>
-                <TableHead className="hidden lg:table-cell">Returned</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thSupplier")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thColour")}
+                </TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  {t("thBikes")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thSent")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thReturned")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -225,7 +237,7 @@ export default async function PaintOrdersPage({
                           ] ?? "outline"
                         }
                       >
-                        {serviceOrderStatusLabel(r.status, PAINT_SUPPLIER_NOUN)}
+                        {svcStatus(r.status)}
                       </Badge>
                     </Link>
                   </TableCell>

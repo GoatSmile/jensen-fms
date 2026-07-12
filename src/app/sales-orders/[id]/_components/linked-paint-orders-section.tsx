@@ -15,10 +15,8 @@ import {
 } from "@/components/ui/table";
 import {
   SERVICE_ORDER_STATUS_VARIANT,
-  serviceOrderStatusLabel,
   type ServiceOrderStatus,
 } from "@/lib/services/status";
-import { PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
 
 export type LinkedPaintRow = {
   id: string;
@@ -39,7 +37,10 @@ export async function LinkedPaintOrdersSection({
   rows: LinkedPaintRow[];
   canCreate: boolean;
 }) {
-  const t = await getTranslations("soDetail");
+  const [t, tSvcStatus] = await Promise.all([
+    getTranslations("soDetail"),
+    getTranslations("serviceOrderStatus"),
+  ]);
   return (
     <Section
       title={t("linkedPaintTitle")}
@@ -101,7 +102,9 @@ export async function LinkedPaintOrdersSection({
                     <Badge
                       variant={SERVICE_ORDER_STATUS_VARIANT[po.status] ?? "outline"}
                     >
-                      {serviceOrderStatusLabel(po.status, PAINT_SUPPLIER_NOUN)}
+                      {tSvcStatus.has(po.status)
+                        ? tSvcStatus(po.status)
+                        : po.status}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +27,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   SERVICE_ORDER_STATUS_VARIANT,
-  serviceOrderStatusLabel,
   serviceOrderTransitionRequiresReason,
   validNextServiceOrderStatuses,
   type ServiceOrderStatus,
 } from "@/lib/services/status";
-import { PAINT_SUPPLIER_NOUN } from "@/lib/services/vocab";
 
 import { transitionServiceOrderStatus } from "../_actions/transition-status";
 
@@ -56,6 +55,9 @@ export function PaintOrderHeader({
   colorHex,
   colorFinish,
 }: Props) {
+  const t = useTranslations("paintOrderDetail");
+  const tStatus = useTranslations("serviceOrderStatus");
+  const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -99,11 +101,11 @@ export function PaintOrderHeader({
               {orderNumber}
             </span>
             <Badge variant={SERVICE_ORDER_STATUS_VARIANT[status] ?? "outline"}>
-              {serviceOrderStatusLabel(status, PAINT_SUPPLIER_NOUN)}
+              {svcStatus(status)}
             </Badge>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {supplierName ?? "Paint order"}
+            {supplierName ?? t("orderFallback")}
           </h1>
           {colorName ? (
             <p className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -119,7 +121,7 @@ export function PaintOrderHeader({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -136,7 +138,7 @@ export function PaintOrderHeader({
                           startTransition(to);
                         }}
                       >
-                        {serviceOrderStatusLabel(to, PAINT_SUPPLIER_NOUN)}
+                        {svcStatus(to)}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -170,6 +172,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("paintOrderDetail");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -190,21 +193,17 @@ function CancelReasonDialog({
           className="flex flex-col gap-4"
         >
           <UiDialogHeader>
-            <DialogTitle>Cancel paint order?</DialogTitle>
-            <DialogDescription>
-              The order will be cancelled and the reason will be appended to
-              its notes for the audit trail. Bikes attached to this order are
-              not changed.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paint-cancel-reason">Reason</Label>
+            <Label htmlFor="paint-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="paint-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Painter shut down for the holiday — re-batched next week."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -219,14 +218,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel paint order"}
+              {isPending ? t("cancelling") : t("cancelPo")}
             </Button>
           </DialogFooter>
         </form>

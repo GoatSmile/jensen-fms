@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -83,18 +84,15 @@ export function ServiceOrderItemsSection({
   unpricedCount,
   priceListName,
 }: Props) {
+  const t = useTranslations("paintOrderDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = orderStatus === "planned";
 
   return (
     <Section
-      title="Items"
-      description={
-        canEdit
-          ? "What gets painted, and how many. Prices follow the supplier's current list (qty tiers count per part type across the order) and freeze when the order is sent."
-          : "Cost basis frozen when the order was sent — a new price list never rewrites it."
-      }
+      title={t("itemsTitle")}
+      description={canEdit ? t("itemsDescEdit") : t("itemsDescSent")}
       action={
         canEdit ? (
           <AddItemDialog
@@ -116,22 +114,22 @@ export function ServiceOrderItemsSection({
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-          {canEdit
-            ? "No items yet — add what gets painted. The order can't be sent without items."
-            : "No items on this order."}
+          {canEdit ? t("noItemsEdit") : t("noItems")}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left text-xs">
-                <th className="px-4 py-2 font-medium">Part</th>
-                <th className="px-4 py-2 font-medium">Qty</th>
-                <th className="px-4 py-2 font-medium">Colour</th>
+                <th className="px-4 py-2 font-medium">{t("part")}</th>
+                <th className="px-4 py-2 font-medium">{t("qty")}</th>
+                <th className="px-4 py-2 font-medium">{t("colour")}</th>
                 <th className="hidden px-4 py-2 text-right font-medium sm:table-cell">
-                  Per piece
+                  {t("thPerPiece")}
                 </th>
-                <th className="px-4 py-2 text-right font-medium">Line</th>
+                <th className="px-4 py-2 text-right font-medium">
+                  {t("thLine")}
+                </th>
                 <th className="w-[60px] px-4 py-2" />
               </tr>
             </thead>
@@ -154,8 +152,10 @@ export function ServiceOrderItemsSection({
               <div className="text-muted-foreground flex justify-end gap-2 text-sm">
                 <span>
                   {totalIsEstimate
-                    ? `Estimated cost${priceListName ? ` (${priceListName})` : ""}:`
-                    : "Cost (frozen at send):"}
+                    ? priceListName
+                      ? t("estimatedCostNamed", { name: priceListName })
+                      : t("estimatedCost")
+                    : t("costFrozen")}
                 </span>
                 <span className="text-foreground tabular-nums">
                   {totalLabel}
@@ -164,9 +164,7 @@ export function ServiceOrderItemsSection({
             ) : null}
             {unpricedCount > 0 ? (
               <p className="text-right text-xs text-amber-600 dark:text-amber-500">
-                {unpricedCount}{" "}
-                {unpricedCount === 1 ? "line has" : "lines have"} no price on
-                the current list — sending is blocked until priced.
+                {t("unpricedWarning", { count: unpricedCount })}
               </p>
             ) : null}
           </div>
@@ -175,8 +173,7 @@ export function ServiceOrderItemsSection({
 
       {canEdit && rows.length > 0 && priceListName == null ? (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-          This supplier has no current price list for this service — items
-          can&apos;t be priced or sent.
+          {t("noPriceListWarning")}
         </p>
       ) : null}
     </Section>
@@ -198,6 +195,7 @@ function ItemRow({
   onError: (msg: string | null) => void;
   onChange: () => void;
 }) {
+  const t = useTranslations("paintOrderDetail");
   const [pending, start] = useTransition();
   const [qty, setQty] = useState(String(row.quantity));
 
@@ -274,7 +272,7 @@ function ItemRow({
             }}
             disabled={pending}
             className="h-8 w-20 tabular-nums"
-            aria-label={`Quantity of ${row.partTypeName}`}
+            aria-label={t("qtyAria", { name: row.partTypeName })}
           />
         ) : (
           <span className="tabular-nums">{row.quantity}</span>
@@ -330,7 +328,9 @@ function ItemRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-amber-600 dark:text-amber-500">no price</span>
+          <span className="text-amber-600 dark:text-amber-500">
+            {t("noPrice")}
+          </span>
         )}
       </td>
 
@@ -347,7 +347,7 @@ function ItemRow({
             variant="outline"
             onClick={runRemove}
             disabled={pending}
-            aria-label={`Remove ${row.partTypeName} line`}
+            aria-label={t("removeLineAria", { name: row.partTypeName })}
           >
             <Trash2 aria-hidden />
           </Button>
@@ -372,6 +372,8 @@ function AddItemDialog({
   onError: (msg: string | null) => void;
   onChange: () => void;
 }) {
+  const t = useTranslations("paintOrderDetail");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [partTypeId, setPartTypeId] = useState("");
   const [qty, setQty] = useState("1");
@@ -397,12 +399,12 @@ function AddItemDialog({
     e.preventDefault();
     setError(null);
     if (!partTypeId) {
-      setError("Pick a part type.");
+      setError(t("errPickPartType"));
       return;
     }
     const n = Number(qty);
     if (!Number.isInteger(n) || n <= 0) {
-      setError("Quantity must be a whole number above zero.");
+      setError(t("errQtyWhole"));
       return;
     }
     start(async () => {
@@ -426,26 +428,22 @@ function AddItemDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <Plus aria-hidden /> Add item
+          <Plus aria-hidden /> {t("addItem")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add item line</DialogTitle>
-            <DialogDescription>
-              A part type × quantity (× colour). The price resolves from the
-              supplier&apos;s current list — qty tiers count the part
-              type&apos;s total across the whole order.
-            </DialogDescription>
+            <DialogTitle>{t("addItemTitle")}</DialogTitle>
+            <DialogDescription>{t("addItemDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="item-part-type">Part</Label>
+              <Label htmlFor="item-part-type">{t("part")}</Label>
               <Select value={partTypeId} onValueChange={setPartTypeId}>
                 <SelectTrigger id="item-part-type">
-                  <SelectValue placeholder="Pick…" />
+                  <SelectValue placeholder={t("pickPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {partTypes.map((pt) => (
@@ -457,7 +455,7 @@ function AddItemDialog({
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="item-qty">Quantity</Label>
+              <Label htmlFor="item-qty">{t("quantity")}</Label>
               <Input
                 id="item-qty"
                 type="number"
@@ -471,7 +469,7 @@ function AddItemDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="item-color">Colour</Label>
+            <Label htmlFor="item-color">{t("colour")}</Label>
             <Select value={colorId} onValueChange={setColorId}>
               <SelectTrigger id="item-color">
                 <SelectValue placeholder="—" />
@@ -491,19 +489,18 @@ function AddItemDialog({
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              Two lines of the same part in different colours share one qty
-              tier.
+              {t("sharedTierHint")}
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="item-notes">Notes</Label>
+            <Label htmlFor="item-notes">{t("notes")}</Label>
             <Textarea
               id="item-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional — anything specific to these pieces."
+              placeholder={t("itemNotesPlaceholder")}
             />
           </div>
 
@@ -520,10 +517,10 @@ function AddItemDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isPending || partTypeId === ""}>
-              {isPending ? "Adding…" : "Add item"}
+              {isPending ? t("adding") : t("addItem")}
             </Button>
           </DialogFooter>
         </form>

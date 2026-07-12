@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,6 +20,10 @@ import {
 } from "../_components/paint-order-form";
 
 export default async function NewPaintOrderPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("paintOrders"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [suppliersRes, colorsRes] = await Promise.all([
@@ -51,28 +56,27 @@ export default async function NewPaintOrderPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/paint-orders">Paint orders</Link>
+              <Link href="/paint-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          New paint order
+          {t("newTitle")}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          One round trip with the painter. Add the item lines (what gets
-          painted) and the bikes that ship with the batch on the next screen.
+          {t("newSubtitle")}
         </p>
       </div>
       <PaintOrderForm initial={initial} suppliers={suppliers} colors={colors} />

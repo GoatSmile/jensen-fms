@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ export function AddBikeToPaintDialog({
   disabled,
   disabledReason,
 }: Props) {
+  const t = useTranslations("paintOrderDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -82,7 +85,7 @@ export function AddBikeToPaintDialog({
     e.preventDefault();
     setError(null);
     if (!bikeId) {
-      setError("Pick a bike.");
+      setError(t("errPickBike"));
       return;
     }
     start(async () => {
@@ -105,42 +108,38 @@ export function AddBikeToPaintDialog({
           disabled={disabled}
           title={disabled ? disabledReason : undefined}
         >
-          <Plus aria-hidden /> Add bike
+          <Plus aria-hidden /> {t("addBike")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add bike to this order</DialogTitle>
-            <DialogDescription>
-              The bike ships with this batch and is blocked from building
-              while the order is out. Bikes already in an open order are not
-              shown. What gets painted is set on the item lines.
-            </DialogDescription>
+            <DialogTitle>{t("addBikeTitle")}</DialogTitle>
+            <DialogDescription>{t("addBikeDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paint-bike-search">Find bike</Label>
+            <Label htmlFor="paint-bike-search">{t("findBike")}</Label>
             <Input
               id="paint-bike-search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Frame number or template…"
+              placeholder={t("findBikePlaceholder")}
               className="font-mono"
               autoFocus
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paint-bike-pick">Bike</Label>
+            <Label htmlFor="paint-bike-pick">{t("bike")}</Label>
             <Select value={bikeId} onValueChange={setBikeId}>
               <SelectTrigger id="paint-bike-pick">
-                <SelectValue placeholder="Pick a bike…" />
+                <SelectValue placeholder={t("pickBikePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {filtered.length === 0 ? (
                   <div className="text-muted-foreground p-2 text-xs">
-                    No bikes match.
+                    {t("noBikesMatch")}
                   </div>
                 ) : (
                   filtered.map((b) => (
@@ -159,13 +158,13 @@ export function AddBikeToPaintDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="paint-bike-notes">Notes</Label>
+            <Label htmlFor="paint-bike-notes">{t("notes")}</Label>
             <Textarea
               id="paint-bike-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional — anything specific to this bike."
+              placeholder={t("addBikeNotesPlaceholder")}
             />
           </div>
 
@@ -182,10 +181,10 @@ export function AddBikeToPaintDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={isPending || bikeId === ""}>
-              {isPending ? "Adding…" : "Add bike"}
+              {isPending ? t("adding") : t("addBike")}
             </Button>
           </DialogFooter>
         </form>

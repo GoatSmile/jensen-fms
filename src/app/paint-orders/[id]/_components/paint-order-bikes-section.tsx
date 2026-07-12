@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ColorChip } from "@/components/color-swatch";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 
 import { removeBikeFromPaintOrder } from "../_actions/remove-bike-from-paint";
 import {
@@ -57,6 +54,7 @@ export function PaintOrderBikesSection({
   rows,
   eligibleBikes,
 }: Props) {
+  const t = useTranslations("paintOrderDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = orderStatus === "planned";
@@ -67,18 +65,18 @@ export function PaintOrderBikesSection({
 
   return (
     <Section
-      title="Bikes in this batch"
+      title={t("bikesTitle")}
       description={
         canEdit
-          ? "The frames that physically ship with this batch — a bike here is blocked from building while the order is out. What gets painted (and the pricing) lives on the items above."
-          : `${rows.length} ${rows.length === 1 ? "bike" : "bikes"} attached.`
+          ? t("bikesDescEdit")
+          : t("bikesAttached", { count: rows.length })
       }
       action={
         <AddBikeToPaintDialog
           serviceOrderId={serviceOrderId}
           bikes={eligibleBikes}
           disabled={!canAdd}
-          disabledReason={!canAdd ? "Order is closed." : undefined}
+          disabledReason={!canAdd ? t("orderClosed") : undefined}
         />
       }
     >
@@ -90,22 +88,22 @@ export function PaintOrderBikesSection({
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-          No bikes attached yet.
+          {t("noBikes")}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-md border md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Frame number</TableHead>
-                <TableHead>Template</TableHead>
+                <TableHead>{t("thFrameNumber")}</TableHead>
+                <TableHead>{t("thTemplate")}</TableHead>
                 {hasLegacyColumns ? (
                   <TableHead className="hidden sm:table-cell">
-                    Colour / scope (legacy)
+                    {t("thLegacy")}
                   </TableHead>
                 ) : null}
                 <TableHead className="hidden md:table-cell">
-                  Bike status
+                  {t("thBikeStatus")}
                 </TableHead>
                 <TableHead className="w-[60px]" />
               </TableRow>
@@ -145,6 +143,8 @@ function BikeRow({
   onError: (msg: string | null) => void;
   onChange: () => void;
 }) {
+  const t = useTranslations("paintOrderDetail");
+  const tBikeStatus = useTranslations("bikeStatus");
   const [pending, start] = useTransition();
 
   function runRemove() {
@@ -193,7 +193,7 @@ function BikeRow({
 
       <TableCell className="hidden md:table-cell">
         <Badge variant={BIKE_STATUS_VARIANT[row.status] ?? "outline"}>
-          {bikeStatusLabel(row.status)}
+          {tBikeStatus.has(row.status) ? tBikeStatus(row.status) : row.status}
         </Badge>
       </TableCell>
 
@@ -204,7 +204,7 @@ function BikeRow({
             variant="outline"
             onClick={runRemove}
             disabled={pending}
-            aria-label="Remove bike from this order"
+            aria-label={t("removeBikeAria")}
           >
             <Trash2 aria-hidden />
           </Button>

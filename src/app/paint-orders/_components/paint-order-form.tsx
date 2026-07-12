@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,8 @@ type Props = {
 };
 
 export function PaintOrderForm({ initial, suppliers, colors }: Props) {
+  const t = useTranslations("paintOrders");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<PaintOrderFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -98,12 +101,9 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
-      <FormSection
-        title="Who and what"
-        description="Pick the painter (typically Metacoat A/S). The colour is an optional batch default — it pre-fills the item lines you add on the next screen, where the pricing comes from the painter's price list."
-      >
+      <FormSection title={t("whoWhatTitle")} description={t("whoWhatDesc")}>
         <Field
-          label="Supplier"
+          label={t("supplier")}
           htmlFor="paint-supplier"
           required
           error={errorField === "supplier_id" ? error : null}
@@ -113,12 +113,12 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
             onValueChange={(v) => update("supplier_id", v)}
           >
             <SelectTrigger id="paint-supplier">
-              <SelectValue placeholder="Pick a supplier…" />
+              <SelectValue placeholder={t("pickSupplierPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {suppliers.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No active suppliers.
+                  {t("noActiveSuppliers")}
                 </div>
               ) : (
                 suppliers.map((s) => (
@@ -132,7 +132,7 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
         </Field>
 
         <Field
-          label="Batch default colour (optional)"
+          label={t("batchColour")}
           htmlFor="paint-color"
           error={errorField === "color_id" ? error : null}
         >
@@ -141,7 +141,7 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
             onValueChange={(v) => update("color_id", v)}
           >
             <SelectTrigger id="paint-color">
-              <SelectValue placeholder="No default — set per item line" />
+              <SelectValue placeholder={t("batchColourPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {colors.map((c) => (
@@ -160,11 +160,8 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
         </Field>
       </FormSection>
 
-      <FormSection
-        title="Schedule"
-        description="Advisory only; actual sent / received timestamps are stamped on status transitions. Cost is per item line, frozen from the price list when the order is sent."
-      >
-        <Field label="Planned send date" htmlFor="paint-send-date">
+      <FormSection title={t("scheduleTitle")} description={t("scheduleDesc")}>
+        <Field label={t("plannedSendDate")} htmlFor="paint-send-date">
           <Input
             id="paint-send-date"
             type="date"
@@ -172,13 +169,13 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
             onChange={(e) => update("planned_send_date", e.target.value)}
           />
         </Field>
-        <Field label="Notes" htmlFor="paint-notes">
+        <Field label={t("notes")} htmlFor="paint-notes">
           <Textarea
             id="paint-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Internal notes about this batch."
+            placeholder={t("notesPlaceholder")}
           />
         </Field>
       </FormSection>
@@ -196,10 +193,10 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating…" : "Create paint order"}
+          {isPending ? t("creating") : t("createPaintOrder")}
         </Button>
       </div>
     </form>

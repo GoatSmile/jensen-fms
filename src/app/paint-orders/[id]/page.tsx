@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -39,18 +40,22 @@ import {
 } from "./_components/service-order-items-section";
 import { Section } from "./_components/section";
 
-/** Read-only labels for the pre-items paint model's per-bike scope. */
-const LEGACY_SCOPE_LABEL: Record<string, string> = {
-  std: "Frame + fork",
-  svaj: "Full (svajer)",
-};
-
 export default async function PaintOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tPo, tCommon] = await Promise.all([
+    getTranslations("paintOrderDetail"),
+    getTranslations("paintOrders"),
+    getTranslations("common"),
+  ]);
+  // Read-only labels for the pre-items paint model's per-bike scope.
+  const LEGACY_SCOPE_LABEL: Record<string, string> = {
+    std: t("legacyStd"),
+    svaj: t("legacySvaj"),
+  };
   const supabase = await createClient();
 
   const orderRes = await supabase
@@ -284,13 +289,13 @@ export default async function PaintOrderDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/paint-orders">Paint orders</Link>
+              <Link href="/paint-orders">{tPo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -316,15 +321,12 @@ export default async function PaintOrderDetailPage({
         }
       />
 
-      <Section
-        title="Details"
-        description="Supplier and round-trip timestamps."
-      >
+      <Section title={t("detailsTitle")} description={t("detailsDesc")}>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Field label="Supplier">
+          <Field label={t("fieldSupplier")}>
             {order.supplier?.name ?? <Muted>—</Muted>}
           </Field>
-          <Field label="Batch default colour">
+          <Field label={t("fieldBatchColour")}>
             {order.color ? (
               <span className="flex flex-col gap-0.5">
                 <ColorChip hex={order.color.hex} label={order.color.name_en} />
@@ -338,7 +340,7 @@ export default async function PaintOrderDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Sales order">
+          <Field label={t("fieldSalesOrder")}>
             {order.sales_order ? (
               <Link
                 href={`/sales-orders/${order.sales_order.id}`}
@@ -350,20 +352,20 @@ export default async function PaintOrderDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Planned send date">
+          <Field label={t("fieldPlannedSend")}>
             {order.planned_send_date ?? <Muted>—</Muted>}
           </Field>
-          <Field label="Sent">
+          <Field label={t("fieldSent")}>
             {order.sent_at ? formatDateTime(order.sent_at) : <Muted>—</Muted>}
           </Field>
-          <Field label="Expected return">
+          <Field label={t("fieldExpectedReturn")}>
             {order.expected_return_at ? (
               formatDateTime(order.expected_return_at)
             ) : (
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label="Received back">
+          <Field label={t("fieldReceivedBack")}>
             {order.received_at ? (
               formatDateTime(order.received_at)
             ) : (
@@ -371,7 +373,7 @@ export default async function PaintOrderDetailPage({
             )}
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Notes">
+            <Field label={t("fieldNotes")}>
               {order.notes ? (
                 <pre className="whitespace-pre-wrap font-sans text-sm">
                   {order.notes}
