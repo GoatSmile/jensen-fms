@@ -1139,6 +1139,15 @@ when the work ships or the idea is rejected.
     for the detail (coverage labels, fields, bikes-in-scope + covered-WO
     sections); `serviceAgreementForm` for the new/edit pages + shared form;
     new `saStatus` enum namespace; covered-WO status reuses `woStatus`).
+    And the **customers/orgs module** (bf91d31 — the largest cluster: new
+    namespaces `customers` (list), `customerDetail` (detail + archive
+    dialog), `assignedBikes`, `contacts` (section + dialog), `units`
+    (section + dialog), `customerForm` (org form + new/edit), `customerMap`
+    (map page + Leaflet component: view/segment chips, legend, popups,
+    empty states), plus a shared `lang` namespace for da/en language names;
+    map + assigned-bikes moved to the `bikeStatus` namespace, retiring the
+    last `bikeStatusLabel()` call sites). Country names still render via the
+    `countries` lib (a vocab concern, like colour/category names).
     `colorFinishLabel` (RAL/finish
     strings like "Glossy") stays English — a colours-vocab concern.
     **Enum labels are message namespaces
@@ -1148,24 +1157,27 @@ when the work ships or the idea is rejected.
     (parts cluster), `ticketStatus` / `ticketPriority` / `ticketSource`
     / `woStatus` (maintenance cluster), `poStatus` / `importTaxBasis`
     (PO cluster), `soStatus` (SO cluster), `serviceOrderStatus`
-    (paint cluster), `invoiceStatus` (invoices cluster), plus `saStatus`
-    (service-agreements cluster). Pattern:
+    (paint cluster), `invoiceStatus` (invoices cluster), `saStatus`
+    (service-agreements cluster), plus a shared `lang` (da/en language
+    names, customers cluster). Pattern:
     `getTranslations("moStatus")`
     then `t(status)`, with `t.has(status)` guarding open-ended enums before
     falling back to the raw value. The old lib helpers still stand for
     untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
-    has 2 call sites left (org assigned-bikes, customer map); `moStatusLabel()`
+    is now UNUSED in the app (its last two call sites — org assigned-bikes
+    + customer map — moved to the `bikeStatus` namespace); `moStatusLabel()`
     / `soStatusLabel()` / `poStatusLabel()` / `serviceOrderStatusLabel()` /
     `invoiceStatusLabel()` / `saStatusLabel()` / `woStatusLabel()` /
-    `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app (safe to delete when
+    `bikeStatusLabel()` / `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app
+    (safe to delete when
     convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
     for not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
   - **Remaining clusters**:
-    customers/orgs · admin (+ QR page, global chrome
+    admin (+ QR page, global chrome
     leftovers). Also a mop-up pass for server-action error strings
     (bikes/templates/parts/maintenance/MO/PO/SO/paint/invoices/service-
-    agreements actions still return English; harmless fallback).
+    agreements/customers actions still return English; harmless fallback).
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes
