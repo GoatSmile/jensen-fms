@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +55,8 @@ export function SubstitutePartDialog({
   parts,
   excludeIds,
 }: Props) {
+  const t = useTranslations("moDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [filter, setFilter] = useState("");
   const [partId, setPartId] = useState<string>("");
@@ -91,11 +94,11 @@ export function SubstitutePartDialog({
     setError(null);
     const qtyN = Number(qty);
     if (!partId) {
-      setError("Pick a replacement part.");
+      setError(t("errPickReplacement"));
       return;
     }
     if (!Number.isFinite(qtyN) || qtyN <= 0) {
-      setError("Quantity must be a positive number.");
+      setError(t("errQtyPositive"));
       return;
     }
     start(async () => {
@@ -114,10 +117,10 @@ export function SubstitutePartDialog({
 
   const title =
     mode.kind === "substitute"
-      ? `Substitute ${mode.originalPartName}`
-      : "Add part to MO";
+      ? t("substituteTitle", { name: mode.originalPartName })
+      : t("addPartTitle");
   const submitLabel =
-    mode.kind === "substitute" ? "Substitute" : "Add part";
+    mode.kind === "substitute" ? t("substitute") : t("addPart");
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -127,21 +130,21 @@ export function SubstitutePartDialog({
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
               {mode.kind === "substitute"
-                ? "The original row will be removed and the replacement added with origin = substituted."
-                : "Add a part to this MO with origin = added. Use Substitute on an existing row instead if you're swapping a templated part."}
+                ? t("substituteDesc")
+                : t("addPartDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter parts by SKU, name, category…"
+            placeholder={t("filterParts")}
           />
 
           <div className="max-h-72 overflow-y-auto rounded-md border">
             {filtered.length === 0 ? (
               <p className="text-muted-foreground p-3 text-center text-sm">
-                No parts match.
+                {t("noPartsMatch")}
               </p>
             ) : (
               <ul className="divide-y">
@@ -169,11 +172,11 @@ export function SubstitutePartDialog({
                         </div>
                         {disabled ? (
                           <span className="text-muted-foreground text-xs">
-                            already on MO
+                            {t("alreadyOnMo")}
                           </span>
                         ) : isPicked ? (
                           <span className="text-emerald-700 dark:text-emerald-400 text-xs">
-                            selected
+                            {t("selected")}
                           </span>
                         ) : null}
                       </button>
@@ -185,7 +188,7 @@ export function SubstitutePartDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="mo-part-qty">Qty per bike</Label>
+            <Label htmlFor="mo-part-qty">{t("qtyPerBike")}</Label>
             <Input
               id="mo-part-qty"
               inputMode="decimal"
@@ -208,13 +211,13 @@ export function SubstitutePartDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || !partId || qty.trim() === ""}
             >
-              {isPending ? "Saving…" : submitLabel}
+              {isPending ? tCommon("saving") : submitLabel}
             </Button>
           </DialogFooter>
         </form>

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Table,
@@ -28,6 +29,10 @@ export default async function MOPartsPrintPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tStatus] = await Promise.all([
+    getTranslations("moDetail"),
+    getTranslations("moStatus"),
+  ]);
   const supabase = await createClient();
 
   const moRes = await supabase
@@ -149,20 +154,29 @@ export default async function MOPartsPrintPage({
       <header className="flex items-start justify-between gap-4 print:items-end">
         <div className="flex flex-col gap-1">
           <p className="text-muted-foreground text-xs">
-            MO <span className="font-mono">{mo.mo_number}</span>
-            {mo.status ? ` · ${mo.status}` : null}
+            {t("printMoPrefix")}{" "}
+            <span className="font-mono">{mo.mo_number}</span>
+            {mo.status
+              ? ` · ${tStatus.has(mo.status) ? tStatus(mo.status) : mo.status}`
+              : null}
           </p>
           <h1 className="text-2xl font-semibold">
-            {templateLabel ?? "One-off MO"} — parts list
+            {t("printPartsListTitle", {
+              label: templateLabel ?? t("printOneOffLabel"),
+            })}
           </h1>
           <p className="text-muted-foreground text-sm">
             {mo.bike_type?.name_en ? `${mo.bike_type.name_en} · ` : ""}
             {mo.color?.name_en ? `${mo.color.name_en} · ` : ""}
-            target {mo.target_quantity} bike{mo.target_quantity === 1 ? "" : "s"} ·{" "}
-            {attachedBikes} attached · {outstandingBikes} outstanding
+            {t("printTargetBikes", { count: mo.target_quantity })} ·{" "}
+            {t("printAttached", { count: attachedBikes })} ·{" "}
+            {t("printOutstanding", { count: outstandingBikes })}
             {mo.planned_completion_date ? (
               <>
-                {" "}· planned completion {formatDate(mo.planned_completion_date)}
+                {" · "}
+                {t("printPlannedCompletion", {
+                  date: formatDate(mo.planned_completion_date),
+                })}
               </>
             ) : null}
           </p>
@@ -171,9 +185,7 @@ export default async function MOPartsPrintPage({
       </header>
 
       {rows.length === 0 ? (
-        <p className="text-muted-foreground italic">
-          No parts on this MO yet.
-        </p>
+        <p className="text-muted-foreground italic">{t("printNoParts")}</p>
       ) : (
         <>
           {groups.map((g) => (
@@ -184,14 +196,22 @@ export default async function MOPartsPrintPage({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Part</TableHead>
-                    <TableHead className="text-right">Qty / bike</TableHead>
+                    <TableHead>{t("printThPart")}</TableHead>
                     <TableHead className="text-right">
-                      Total ({outstandingBikes})
+                      {t("printThQtyBike")}
                     </TableHead>
-                    <TableHead className="text-right">On hand</TableHead>
-                    <TableHead className="text-right">Shortfall</TableHead>
-                    <TableHead className="text-right">Last cost (DKK)</TableHead>
+                    <TableHead className="text-right">
+                      {t("printThTotal", { count: outstandingBikes })}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("printThOnHand")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("printThShortfall")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("printThLastCost")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,6 +221,10 @@ export default async function MOPartsPrintPage({
                     const onHand = stockByPart.get(r.part_id) ?? 0;
                     const shortfall = Math.max(0, totalNeeded - onHand);
                     const lastCost = lastCostByPart.get(r.part_id) ?? 0;
+                    const originKey = `origin${r.origin.charAt(0).toUpperCase()}${r.origin.slice(1)}`;
+                    const originLabel = t.has(originKey)
+                      ? t(originKey)
+                      : r.origin;
                     return (
                       <TableRow key={r.id}>
                         <TableCell>
@@ -209,13 +233,13 @@ export default async function MOPartsPrintPage({
                           </div>
                           <div className="text-muted-foreground font-mono text-xs">
                             {r.part?.internal_sku ?? "—"}
-                            {r.origin !== "template"
-                              ? ` · ${r.origin}`
-                              : ""}
+                            {r.origin !== "template" ? ` · ${originLabel}` : ""}
                           </div>
                           {r.substituted_from?.name_en ? (
                             <div className="text-muted-foreground text-xs italic">
-                              replaces {r.substituted_from.name_en}
+                              {t("replaces", {
+                                name: r.substituted_from.name_en,
+                              })}
                             </div>
                           ) : null}
                           {r.notes ? (
@@ -255,7 +279,7 @@ export default async function MOPartsPrintPage({
             <div className="grid gap-2 sm:grid-cols-3">
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-xs uppercase">
-                  Distinct parts
+                  {t("printDistinctParts")}
                 </span>
                 <span className="text-lg font-semibold tabular-nums">
                   {rows.length}
@@ -263,7 +287,7 @@ export default async function MOPartsPrintPage({
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-xs uppercase">
-                  Units needed
+                  {t("printUnitsNeeded")}
                 </span>
                 <span className="text-lg font-semibold tabular-nums">
                   {formatQuantity(totalNeededAll)}
@@ -271,7 +295,7 @@ export default async function MOPartsPrintPage({
               </div>
               <div className="flex flex-col">
                 <span className="text-muted-foreground text-xs uppercase">
-                  Projected parts cost
+                  {t("printProjectedCost")}
                 </span>
                 <span className="text-lg font-semibold tabular-nums">
                   {totalCostAll > 0 ? formatDkk(totalCostAll) : "—"}
@@ -283,15 +307,15 @@ export default async function MOPartsPrintPage({
       )}
 
       <footer className="text-muted-foreground mt-4 text-xs print:fixed print:bottom-4 print:right-6">
-        Generated{" "}
-        {new Intl.DateTimeFormat("da-DK", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date())}{" "}
-        · Jensen FMS
+        {t("printGenerated", {
+          date: new Intl.DateTimeFormat("da-DK", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date()),
+        })}
       </footer>
     </div>
   );

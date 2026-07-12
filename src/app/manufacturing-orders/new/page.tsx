@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -32,6 +33,10 @@ export default async function NewManufacturingOrderPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("mo"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const [templatesRes, bikeTypesRes, colorsRes, bomsRes] = await Promise.all([
     supabase
@@ -163,39 +168,38 @@ export default async function NewManufacturingOrderPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/manufacturing-orders">Manufacturing orders</Link>
+              <Link href="/manufacturing-orders">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {isOneOff ? "New one-off build" : "New manufacturing orders"}
+          {isOneOff ? t("newOneOffTitle") : t("newBatchTitle")}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           {isOneOff ? (
             <>
-              No template — you assemble the parts list by hand on the next
-              screen.{" "}
+              {t("oneOffDesc")}
               <Link
                 href="/manufacturing-orders/new"
                 className="hover:text-foreground underline underline-offset-4"
               >
-                Back to batch creation
+                {t("backToBatch")}
               </Link>
             </>
           ) : (
-            "Build the batch row by row — each row becomes one MO with its parts list seeded from the template, and the bikes can be created in the same go."
+            t("batchDesc")
           )}
         </p>
       </div>

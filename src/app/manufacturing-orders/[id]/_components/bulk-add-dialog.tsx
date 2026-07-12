@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Layers } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,8 @@ export function BulkAddDialog({
   disabled,
   disabledReason,
 }: Props) {
+  const t = useTranslations("moDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState("");
@@ -52,7 +55,7 @@ export function BulkAddDialog({
     setError(null);
     const n = Number(count);
     if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
-      setError("Enter a positive whole number.");
+      setError(t("errPositiveWhole"));
       return;
     }
     start(async () => {
@@ -75,23 +78,23 @@ export function BulkAddDialog({
           disabled={disabled}
           title={disabled ? disabledReason : undefined}
         >
-          <Layers aria-hidden /> Bulk add
+          <Layers aria-hidden /> {t("bulkAdd")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Bulk add bikes</DialogTitle>
+            <DialogTitle>{t("bulkAddTitle")}</DialogTitle>
             <DialogDescription>
-              Creates N bikes against this MO with auto-suggested frame numbers.
-              Each starts in <em>planning</em> status. {slotsRemaining}{" "}
-              {slotsRemaining === 1 ? "slot" : "slots"} remaining before the
-              target is reached.
+              {t.rich("bulkAddDesc", {
+                count: slotsRemaining,
+                em: (chunks) => <em>{chunks}</em>,
+              })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="bulk-count">How many bikes?</Label>
+            <Label htmlFor="bulk-count">{t("howManyBikes")}</Label>
             <Input
               id="bulk-count"
               type="number"
@@ -105,9 +108,7 @@ export function BulkAddDialog({
               required
             />
             <p className="text-muted-foreground text-xs">
-              Up to {Math.min(slotsRemaining, 100)} per run. Frame numbers are
-              suggested from the bike type&rsquo;s slug; you can edit individual
-              ones afterward.
+              {t("bulkMaxHint", { max: Math.min(slotsRemaining, 100) })}
             </p>
           </div>
 
@@ -124,13 +125,13 @@ export function BulkAddDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || count.trim() === ""}
             >
-              {isPending ? "Creating…" : "Create bikes"}
+              {isPending ? t("creating") : t("createBikes")}
             </Button>
           </DialogFooter>
         </form>

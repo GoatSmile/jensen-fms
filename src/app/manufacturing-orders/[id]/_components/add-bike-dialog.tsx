@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,8 @@ export function AddBikeDialog({
   disabled,
   disabledReason,
 }: Props) {
+  const t = useTranslations("moDetail");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [frameNumber, setFrameNumber] = useState(suggestedFrameNumber);
@@ -81,22 +84,18 @@ export function AddBikeDialog({
           disabled={disabled}
           title={disabled ? disabledReason : undefined}
         >
-          <Plus aria-hidden /> Add bike
+          <Plus aria-hidden /> {t("addBike")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>Add bike to this MO</DialogTitle>
-            <DialogDescription>
-              The bike inherits the MO&rsquo;s type, plus its template and
-              colour when set. Other identifiers (lock, battery, charger,
-              &hellip;) get registered after the bike is created.
-            </DialogDescription>
+            <DialogTitle>{t("addBikeTitle")}</DialogTitle>
+            <DialogDescription>{t("addBikeDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="add-bike-frame">Frame number</Label>
+            <Label htmlFor="add-bike-frame">{t("frameNumber")}</Label>
             <Input
               id="add-bike-frame"
               value={frameNumber}
@@ -106,7 +105,7 @@ export function AddBikeDialog({
               autoFocus
             />
             <p className="text-muted-foreground text-xs">
-              Suggestion based on the bike type &mdash; override freely.
+              {t("frameSuggestionHint")}
             </p>
             {errorField === "frame_number" && error ? (
               <p className="text-destructive text-xs" role="alert">
@@ -116,13 +115,13 @@ export function AddBikeDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="add-bike-notes">Notes</Label>
+            <Label htmlFor="add-bike-notes">{t("notes")}</Label>
             <Textarea
               id="add-bike-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional internal notes."
+              placeholder={t("addBikeNotesPlaceholder")}
             />
           </div>
 
@@ -139,13 +138,13 @@ export function AddBikeDialog({
               onClick={() => handleOpenChange(false)}
               disabled={isPending}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isPending || frameNumber.trim() === ""}
             >
-              {isPending ? "Saving…" : "Add bike"}
+              {isPending ? tCommon("saving") : t("addBike")}
             </Button>
           </DialogFooter>
         </form>

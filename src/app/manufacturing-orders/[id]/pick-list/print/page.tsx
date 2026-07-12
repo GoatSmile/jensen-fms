@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { PrintButton } from "@/app/parts/print/_components/print-button";
 import { Logo } from "@/components/logo";
@@ -43,6 +44,7 @@ export default async function PickListPrintPage({
 }) {
   const { id: moId } = await params;
   const { n } = await searchParams;
+  const t = await getTranslations("moDetail");
   const supabase = await createClient();
 
   const { data: mo, error: moErr } = await supabase
@@ -193,36 +195,38 @@ export default async function PickListPrintPage({
           href={`/manufacturing-orders/${moId}`}
           className="text-muted-foreground text-sm underline underline-offset-4"
         >
-          ← Back to {mo.mo_number}
+          {t("backTo", { number: mo.mo_number })}
         </Link>
         <PrintButton />
       </div>
 
       <header className="flex items-start justify-between gap-6 border-b-2 border-black pb-3">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Pick list</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("pickListTitle")}
+          </h1>
           <div className="text-sm">
             <span className="font-mono">{mo.mo_number}</span>
             {templateLabel ? ` · ${templateLabel}` : ""}
             {mo.color?.name_en ? ` · ${mo.color.name_en}` : ""}
           </div>
           <div className="text-sm font-medium">
-            Build {batch} bike{batch === 1 ? "" : "s"}
+            {t("buildNBikes", { count: batch })}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 text-right">
           <Logo heightClass="h-9" />
           <div className="text-muted-foreground text-xs leading-relaxed">
-            Staging bin: ______
+            {t("stagingBin")}
             <br />
-            Picked by: ______
+            {t("pickedBy")}
           </div>
         </div>
       </header>
 
       {groups.length === 0 && loose.length === 0 ? (
         <p className="text-muted-foreground text-sm italic">
-          This MO has no recipe parts to pick.
+          {t("noPickParts")}
         </p>
       ) : null}
 
@@ -238,8 +242,8 @@ export default async function PickListPrintPage({
               style={{ backgroundColor: "rgba(255,255,255,0.25)" }}
             >
               {g.complete
-                ? `whole bucket · ${batch} set${batch === 1 ? "" : "s"}`
-                : `pick ${g.present} of ${g.totalKit}`}
+                ? t("wholeBucket", { count: batch })
+                : t("pickNofM", { present: g.present, total: g.totalKit })}
             </span>
           </div>
           <PickTable rows={g.rows} />
@@ -249,8 +253,10 @@ export default async function PickListPrintPage({
       {loose.length > 0 ? (
         <section className="break-inside-avoid">
           <div className="flex items-center gap-2 rounded-t-md border border-dashed px-3 py-2">
-            <span className="text-base font-semibold">Loose parts</span>
-            <span className="text-muted-foreground text-xs">no sticker</span>
+            <span className="text-base font-semibold">{t("looseParts")}</span>
+            <span className="text-muted-foreground text-xs">
+              {t("noSticker")}
+            </span>
           </div>
           <PickTable rows={loose} />
         </section>
@@ -259,17 +265,18 @@ export default async function PickListPrintPage({
   );
 }
 
-function PickTable({ rows }: { rows: PickRow[] }) {
+async function PickTable({ rows }: { rows: PickRow[] }) {
+  const t = await getTranslations("moDetail");
   return (
     <table className="w-full border-collapse text-sm">
       <thead>
         <tr className="border-b text-left">
           <th className="w-8 py-1 pr-2"></th>
-          <th className="py-1 pr-2 font-medium">Part</th>
+          <th className="py-1 pr-2 font-medium">{t("pickThPart")}</th>
           <th className="text-muted-foreground w-14 py-1 pr-2 text-right text-xs font-medium">
-            / bike
+            {t("pickThPerBike")}
           </th>
-          <th className="w-16 py-1 text-right font-medium">Pick</th>
+          <th className="w-16 py-1 text-right font-medium">{t("pickThPick")}</th>
         </tr>
       </thead>
       <tbody>
@@ -285,7 +292,7 @@ function PickTable({ rows }: { rows: PickRow[] }) {
               </span>
               {r.also.length > 0 ? (
                 <span className="text-muted-foreground ml-2 text-[10px] italic">
-                  also {r.also.join(", ")}
+                  {t("also", { list: r.also.join(", ") })}
                 </span>
               ) : null}
             </td>

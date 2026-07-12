@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, ChevronDown, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   MO_STATUS_VARIANT,
-  moStatusLabel,
   moTransitionRequiresReason,
   validNextMOStatuses,
   type MOStatus,
@@ -63,6 +63,8 @@ export function MOHeader({
   colorName,
   colorHex,
 }: Props) {
+  const t = useTranslations("moDetail");
+  const tStatus = useTranslations("moStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -101,14 +103,14 @@ export function MOHeader({
       {readyToComplete ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 dark:border-emerald-900 dark:bg-emerald-950/40">
           <p className="text-sm text-emerald-800 dark:text-emerald-300">
-            Every bike is built. Complete the MO when the batch is done.
+            {t("readyBanner")}
           </p>
           <Button
             size="sm"
             onClick={() => runTransition("completed", null)}
             disabled={pending}
           >
-            <CheckCircle2 aria-hidden /> Complete MO
+            <CheckCircle2 aria-hidden /> {t("completeMo")}
           </Button>
         </div>
       ) : null}
@@ -119,7 +121,7 @@ export function MOHeader({
               {moNumber}
             </span>
             <Badge variant={MO_STATUS_VARIANT[status] ?? "outline"}>
-              {moStatusLabel(status)}
+              {tStatus.has(status) ? tStatus(status) : status}
             </Badge>
             {bikeTypeName ? (
               <Badge variant="outline" className="font-normal">
@@ -129,19 +131,24 @@ export function MOHeader({
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {templateLabel ?? (
-              <span className="italic">One-off manufacturing order</span>
+              <span className="italic">{t("oneOffTitle")}</span>
             )}
           </h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             {templateLabel && templateId ? (
               <span>
-                Built against{" "}
-                <a
-                  href={`/bike-templates/${templateId}`}
-                  className="hover:text-foreground underline-offset-4 hover:underline"
-                >
-                  template{templateVersion != null ? ` v${templateVersion}` : ""}
-                </a>
+                {t.rich("builtAgainst", {
+                  version:
+                    templateVersion != null ? ` v${templateVersion}` : "",
+                  link: (chunks) => (
+                    <a
+                      href={`/bike-templates/${templateId}`}
+                      className="hover:text-foreground underline-offset-4 hover:underline"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </span>
             ) : null}
             {colorName ? (
@@ -156,14 +163,14 @@ export function MOHeader({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Printer aria-hidden /> Print parts list
+              <Printer aria-hidden /> {t("printPartsList")}
             </Link>
           </Button>
           {nextStatuses.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={pending}>
-                  Move to <ChevronDown aria-hidden />
+                  {t("moveTo")} <ChevronDown aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -180,7 +187,7 @@ export function MOHeader({
                           startTransition(to);
                         }}
                       >
-                        {moStatusLabel(to)}
+                        {tStatus.has(to) ? tStatus(to) : to}
                       </DropdownMenuItem>
                     </div>
                   );
@@ -214,6 +221,7 @@ function CancelReasonDialog({
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
+  const t = useTranslations("moDetail");
   const [reason, setReason] = useState("");
   return (
     <Dialog
@@ -235,22 +243,18 @@ function CancelReasonDialog({
         >
           <UiDialogHeader>
             <DialogTitle>
-              {pending ? `Cancel MO?` : "Confirm"}
+              {pending ? t("cancelTitle") : t("confirm")}
             </DialogTitle>
-            <DialogDescription>
-              The MO will be cancelled and the reason will be appended to its
-              notes for the audit trail. Bikes already attached to this MO are
-              not changed.
-            </DialogDescription>
+            <DialogDescription>{t("cancelDesc")}</DialogDescription>
           </UiDialogHeader>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="mo-cancel-reason">Reason</Label>
+            <Label htmlFor="mo-cancel-reason">{t("reason")}</Label>
             <Textarea
               id="mo-cancel-reason"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Customer cancelled the order before any bikes were built."
+              placeholder={t("cancelReasonPlaceholder")}
               autoFocus
               required
             />
@@ -265,14 +269,14 @@ function CancelReasonDialog({
               }}
               disabled={isPending}
             >
-              Keep open
+              {t("keepOpen")}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={isPending || reason.trim() === ""}
             >
-              {isPending ? "Cancelling…" : "Cancel MO"}
+              {isPending ? t("cancelling") : t("cancelMo")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -42,6 +43,11 @@ export default async function ManufacturingOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const [t, tMo, tCommon] = await Promise.all([
+    getTranslations("moDetail"),
+    getTranslations("mo"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const moRes = await supabase
@@ -316,13 +322,13 @@ export default async function ManufacturingOrderDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/manufacturing-orders">Manufacturing orders</Link>
+              <Link href="/manufacturing-orders">{tMo("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -348,12 +354,12 @@ export default async function ManufacturingOrderDetailPage({
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Target" value={String(mo.target_quantity)} />
-        <Stat label="Completed" value={String(mo.completed_quantity)} />
-        <Stat label="Outstanding" value={String(outstandingBikes)} />
-        <Stat label="Parts in recipe" value={String(moPartRows.length)} />
+        <Stat label={t("statTarget")} value={String(mo.target_quantity)} />
+        <Stat label={t("statCompleted")} value={String(mo.completed_quantity)} />
+        <Stat label={t("statOutstanding")} value={String(outstandingBikes)} />
+        <Stat label={t("statPartsInRecipe")} value={String(moPartRows.length)} />
         <Stat
-          label="Build cost so far"
+          label={t("statBuildCostSoFar")}
           value={
             totalBuildCost > 0
               ? new Intl.NumberFormat("da-DK", {
@@ -365,7 +371,7 @@ export default async function ManufacturingOrderDetailPage({
           }
         />
         <Stat
-          label="Avg cost per bike"
+          label={t("statAvgPerBike")}
           value={
             avgBuildCost != null
               ? new Intl.NumberFormat("da-DK", {
@@ -377,7 +383,7 @@ export default async function ManufacturingOrderDetailPage({
           }
         />
         <Stat
-          label="Projected per bike"
+          label={t("statProjectedPerBike")}
           value={
             projectedPartsCostPerBike > 0
               ? new Intl.NumberFormat("da-DK", {
@@ -389,7 +395,7 @@ export default async function ManufacturingOrderDetailPage({
           }
         />
         <Stat
-          label="Projected remaining"
+          label={t("statProjectedRemaining")}
           value={
             projectedBuildCost > 0
               ? new Intl.NumberFormat("da-DK", {
@@ -402,25 +408,25 @@ export default async function ManufacturingOrderDetailPage({
         />
       </div>
 
-      <Section title="Plan" description="Planned and actual dates and notes.">
+      <Section title={t("planTitle")} description={t("planDesc")}>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Field label="Planned start">
+          <Field label={t("plannedStart")}>
             {formatDate(mo.planned_start_date)}
           </Field>
-          <Field label="Expected completion">
+          <Field label={t("expectedCompletion")}>
             {formatDeliveryTarget(
               mo.planned_completion_date,
               mo.planned_completion_precision,
             ) ?? "—"}
           </Field>
-          <Field label="Actual start">
+          <Field label={t("actualStart")}>
             {formatDate(mo.actual_start_date)}
           </Field>
-          <Field label="Actual completion">
+          <Field label={t("actualCompletion")}>
             {formatDate(mo.actual_completion_date)}
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Notes">
+            <Field label={t("notes")}>
               {mo.notes ? (
                 <pre className="whitespace-pre-wrap font-sans text-sm">
                   {mo.notes}

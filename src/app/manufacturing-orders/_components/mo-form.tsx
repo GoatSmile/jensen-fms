@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,8 @@ type Props = {
 };
 
 export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
+  const t = useTranslations("mo");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<MOFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -148,12 +151,9 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
-      <FormSection
-        title="Recipe"
-        description="Pick a template to seed the parts list, or choose one-off to build the parts list by hand on the next screen."
-      >
+      <FormSection title={t("recipeTitle")} description={t("recipeDesc")}>
         <Field
-          label="Template"
+          label={t("template")}
           htmlFor="mo-template"
           required
           error={errorField === "bike_template_id" ? error : null}
@@ -163,15 +163,13 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
             onValueChange={(v) => update("bike_template_id", v)}
           >
             <SelectTrigger id="mo-template">
-              <SelectValue placeholder="Pick a template or one-off…" />
+              <SelectValue placeholder={t("pickTemplatePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ONE_OFF_VALUE}>
-                (One-off — no template)
-              </SelectItem>
+              <SelectItem value={ONE_OFF_VALUE}>{t("oneOffOption")}</SelectItem>
               {eligible.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No current templates yet. Create one in Bike templates first.
+                  {t("noCurrentTemplates")}
                 </div>
               ) : (
                 eligible.map((t) => (
@@ -192,7 +190,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
 
         {isOneOff ? (
           <Field
-            label="Bike type"
+            label={t("bikeType")}
             htmlFor="mo-bike-type"
             required
             error={errorField === "bike_type_id" ? error : null}
@@ -202,7 +200,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               onValueChange={(v) => update("bike_type_id", v)}
             >
               <SelectTrigger id="mo-bike-type">
-                <SelectValue placeholder="Pick a bike type…" />
+                <SelectValue placeholder={t("pickBikeTypePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {bikeTypes.map((bt) => (
@@ -216,7 +214,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
         ) : null}
 
         <Field
-          label={`Colour${hasTemplate ? "" : " (optional)"}`}
+          label={hasTemplate ? t("colour") : t("colourOptional")}
           htmlFor="mo-color"
           required={hasTemplate}
           error={errorField === "color_id" ? error : null}
@@ -230,7 +228,9 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
             <SelectTrigger id="mo-color">
               <SelectValue
                 placeholder={
-                  hasTemplate ? "Pick a colour…" : "Unpainted / not decided yet"
+                  hasTemplate
+                    ? t("pickColourPlaceholder")
+                    : t("colourUndecidedPlaceholder")
                 }
               />
             </SelectTrigger>
@@ -240,13 +240,13 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               {!hasTemplate ? (
                 <SelectItem value="__none__">
                   <span className="text-muted-foreground italic">
-                    Unpainted (no colour)
+                    {t("unpaintedOption")}
                   </span>
                 </SelectItem>
               ) : null}
               {colors.length === 0 ? (
                 <div className="text-muted-foreground p-2 text-xs">
-                  No active colours.
+                  {t("noActiveColours")}
                 </div>
               ) : (
                 colors.map((c) => (
@@ -262,11 +262,11 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
       </FormSection>
 
       <FormSection
-        title="Production plan"
-        description="How many bikes and when. Dates are advisory; actuals are stamped when the MO transitions through its states."
+        title={t("productionPlanTitle")}
+        description={t("productionPlanDesc")}
       >
         <Field
-          label="Target quantity"
+          label={t("targetQuantity")}
           htmlFor="mo-target"
           required
           error={errorField === "target_quantity" ? error : null}
@@ -283,7 +283,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
           />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Planned start date" htmlFor="mo-start">
+          <Field label={t("plannedStartDate")} htmlFor="mo-start">
             <Input
               id="mo-start"
               type="date"
@@ -291,7 +291,7 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
               onChange={(e) => update("planned_start_date", e.target.value)}
             />
           </Field>
-          <Field label="Expected completion" htmlFor="mo-end">
+          <Field label={t("expectedCompletion")} htmlFor="mo-end">
             <DeliveryWeekDateField
               id="mo-end"
               date={values.planned_completion_date}
@@ -303,13 +303,13 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
             />
           </Field>
         </div>
-        <Field label="Notes" htmlFor="mo-notes">
+        <Field label={t("notes")} htmlFor="mo-notes">
           <Textarea
             id="mo-notes"
             rows={3}
             value={values.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="Internal — e.g. 'gift batch for Aarhus opening' or 'demo bikes for spring fair'."
+            placeholder={t("notesPlaceholderSingle")}
           />
         </Field>
       </FormSection>
@@ -327,10 +327,10 @@ export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Creating…" : "Create manufacturing order"}
+          {isPending ? t("creating") : t("createMo")}
         </Button>
       </div>
     </form>

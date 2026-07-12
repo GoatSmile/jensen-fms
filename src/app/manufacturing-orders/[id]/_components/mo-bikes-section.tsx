@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { CheckSquare, Layers, Printer, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  BIKE_STATUS_VARIANT,
-  bikeStatusLabel,
-  type BikeStatus,
-} from "@/lib/bikes/status";
+import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 
 import { bulkMarkBikesBuilt } from "../_actions/bulk-mark-built";
 import { AddBikeDialog } from "./add-bike-dialog";
@@ -74,6 +71,8 @@ export function MOBikesSection({
   suggestedFrameNumber,
   closed,
 }: Props) {
+  const t = useTranslations("moDetail");
+  const tBikeStatus = useTranslations("bikeStatus");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -129,7 +128,7 @@ export function MOBikesSection({
       n !== undefined &&
       (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0)
     ) {
-      setError("Count must be a positive whole number.");
+      setError(t("errCountPositive"));
       return;
     }
     startBulk(async () => {
@@ -140,16 +139,18 @@ export function MOBikesSection({
       }
       const skipReasons: string[] = [];
       if (r.skippedUnconfirmed > 0) {
-        skipReasons.push(`${r.skippedUnconfirmed} need a confirmed frame`);
+        skipReasons.push(
+          t("skipNeedConfirmedFrame", { count: r.skippedUnconfirmed }),
+        );
       }
       if (r.skippedAtPainter > 0) {
-        skipReasons.push(`${r.skippedAtPainter} at the painter`);
+        skipReasons.push(t("skipAtPainter", { count: r.skippedAtPainter }));
       }
       const skippedNote =
-        skipReasons.length > 0 ? ` Skipped: ${skipReasons.join(", ")}.` : "";
-      setNotice(
-        `Marked ${r.built} bike${r.built === 1 ? "" : "s"} built.${skippedNote}`,
-      );
+        skipReasons.length > 0
+          ? t("skippedNote", { reasons: skipReasons.join(", ") })
+          : "";
+      setNotice(t("markedBuilt", { count: r.built }) + skippedNote);
       setBuildCount("");
       router.refresh();
     });
@@ -157,8 +158,12 @@ export function MOBikesSection({
 
   return (
     <Section
-      title="Bikes"
-      description={`${completedQuantity} built · ${targetQuantity} target · ${slotsRemaining} slot${slotsRemaining === 1 ? "" : "s"} remaining`}
+      title={t("bikesTitle")}
+      description={t("bikesDesc", {
+        built: completedQuantity,
+        target: targetQuantity,
+        slots: slotsRemaining,
+      })}
       action={
         <div className="flex flex-wrap items-center gap-2">
           {!closed && unconfirmedCount + buildableCount + atPainterCount > 0 ? (
@@ -167,14 +172,14 @@ export function MOBikesSection({
                 href={`/manufacturing-orders/${moId}/pick-list/print`}
                 target="_blank"
               >
-                <Printer aria-hidden /> Pick list
+                <Printer aria-hidden /> {t("pickListBtn")}
               </Link>
             </Button>
           ) : null}
           {!closed && unconfirmedCount + buildableCount > 0 ? (
             <Button size="sm" variant="outline" asChild>
               <Link href={`/manufacturing-orders/${moId}/build-batch`}>
-                <Layers aria-hidden /> Bulk build
+                <Layers aria-hidden /> {t("bulkBuildBtn")}
               </Link>
             </Button>
           ) : null}
@@ -186,7 +191,7 @@ export function MOBikesSection({
                 onChange={(e) => setBuildCount(e.target.value)}
                 placeholder={String(buildableCount)}
                 className="h-8 w-14 text-center text-xs tabular-nums"
-                aria-label="How many bikes to mark built"
+                aria-label={t("howManyBuiltAria")}
               />
               <Button
                 size="sm"
@@ -196,10 +201,10 @@ export function MOBikesSection({
               >
                 <CheckSquare aria-hidden />
                 {bulkPending
-                  ? "Building…"
+                  ? t("building")
                   : buildCount.trim() === ""
-                    ? `Mark ${buildableCount} built`
-                    : "Mark next built"}
+                    ? t("markNBuilt", { count: buildableCount })
+                    : t("markNextBuilt")}
               </Button>
             </div>
           ) : null}
@@ -209,9 +214,9 @@ export function MOBikesSection({
             disabled={!canAdd}
             disabledReason={
               closed
-                ? "MO is closed."
+                ? t("moClosedReason")
                 : slotsRemaining <= 0
-                  ? "All target slots are filled."
+                  ? t("slotsFilledReason")
                   : undefined
             }
           />
@@ -221,9 +226,9 @@ export function MOBikesSection({
             disabled={!canAdd}
             disabledReason={
               closed
-                ? "MO is closed."
+                ? t("moClosedReason")
                 : slotsRemaining <= 0
-                  ? "All target slots are filled. Increase target_quantity to add more."
+                  ? t("slotsFilledIncreaseReason")
                   : undefined
             }
           />
@@ -245,22 +250,18 @@ export function MOBikesSection({
       ) : null}
       {!closed && unconfirmedCount > 0 ? (
         <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
-          {unconfirmedCount} bike{unconfirmedCount === 1 ? "" : "s"} need
-          {unconfirmedCount === 1 ? "s" : ""} a confirmed frame number — open the
-          build workbench to enter the real frame before building.
+          {t("unconfirmedNote", { count: unconfirmedCount })}
         </p>
       ) : null}
       {!closed && atPainterCount > 0 ? (
         <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
-          {atPainterCount === 1
-            ? "1 bike is at the painter — it can’t be built until received back on its paint order."
-            : `${atPainterCount} bikes are at the painter — they can’t be built until received back on their paint order.`}
+          {t("atPainterNote", { count: atPainterCount })}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-          No bikes yet. Add the first one to start the build.
+          {t("noBikesYet")}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -275,7 +276,7 @@ export function MOBikesSection({
               )
                 .map(
                   (s) =>
-                    `${countByStatus.get(s.status)} ${bikeStatusLabel(s.status)}`,
+                    `${countByStatus.get(s.status)} ${tBikeStatus.has(s.status) ? tBikeStatus(s.status) : s.status}`,
                 )
                 .join(", ")}
             >
@@ -293,7 +294,7 @@ export function MOBikesSection({
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <FilterChip
-                label={`All ${rows.length}`}
+                label={t("filterAll", { count: rows.length })}
                 active={statusFilter === "all"}
                 onClick={() => setStatusFilter("all")}
               />
@@ -303,7 +304,7 @@ export function MOBikesSection({
                 return (
                   <FilterChip
                     key={status}
-                    label={`${bikeStatusLabel(status)} ${count}`}
+                    label={`${tBikeStatus.has(status) ? tBikeStatus(status) : status} ${count}`}
                     active={statusFilter === status}
                     onClick={() =>
                       setStatusFilter((prev) =>
@@ -320,13 +321,13 @@ export function MOBikesSection({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Frame number</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("thFrameNumber")}</TableHead>
+                  <TableHead>{t("thStatus")}</TableHead>
                   <TableHead className="hidden md:table-cell">
-                    Slated for
+                    {t("thSlatedFor")}
                   </TableHead>
                   <TableHead className="hidden text-right sm:table-cell">
-                    Identifiers
+                    {t("thIdentifiers")}
                   </TableHead>
                   <TableHead className="w-[100px] text-right sm:w-[120px]" />
                 </TableRow>
@@ -352,12 +353,12 @@ export function MOBikesSection({
               onClick={() => setShowAll(true)}
               className="self-center"
             >
-              Show all {filtered.length} bikes
+              {t("showAllBikes", { count: filtered.length })}
             </Button>
           ) : null}
           {filtered.length === 0 ? (
             <p className="text-muted-foreground text-center text-sm italic">
-              No bikes match the filter.
+              {t("noBikesMatchFilter")}
             </p>
           ) : null}
         </div>
@@ -401,6 +402,8 @@ function BikeRow({
   closed: boolean;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("moDetail");
+  const tBikeStatus = useTranslations("bikeStatus");
   const isBuilt =
     row.status === "in_stock" ||
     row.status === "assigned" ||
@@ -419,18 +422,20 @@ function BikeRow({
         {needsFrame ? (
           <span
             className="ml-2 align-middle text-[10px] font-sans text-amber-700 dark:text-amber-300"
-            title="Provisional frame — confirm the real one in the build workbench"
+            title={t("provisionalTitle")}
           >
-            provisional
+            {t("provisional")}
           </span>
         ) : null}
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={BIKE_STATUS_VARIANT[row.status] ?? "outline"}>
-            {bikeStatusLabel(row.status)}
+            {tBikeStatus.has(row.status) ? tBikeStatus(row.status) : row.status}
           </Badge>
-          {row.atPainter ? <Badge variant="warning">At painter</Badge> : null}
+          {row.atPainter ? (
+            <Badge variant="warning">{t("atPainterBadge")}</Badge>
+          ) : null}
         </div>
       </TableCell>
       <TableCell className="hidden text-xs md:table-cell">
@@ -459,7 +464,9 @@ function BikeRow({
         >
           {row.identifierCount}
           {row.requiredIdentifierCount > 0
-            ? ` / ${row.requiredIdentifierCount} required`
+            ? t("identifiersRequiredSuffix", {
+                count: row.requiredIdentifierCount,
+              })
             : ""}
         </span>
       </TableCell>
@@ -469,7 +476,8 @@ function BikeRow({
             <Link
               href={`/manufacturing-orders/${moId}/bikes/${row.id}/build`}
             >
-              <Wrench aria-hidden /> {needsFrame ? "Confirm & build" : "Build"}
+              <Wrench aria-hidden />{" "}
+              {needsFrame ? t("confirmAndBuild") : t("build")}
             </Link>
           </Button>
         ) : (
@@ -477,7 +485,7 @@ function BikeRow({
             href={`/bikes/${row.id}`}
             className="text-xs hover:underline"
           >
-            Open →
+            {t("open")}
           </Link>
         )}
       </TableCell>

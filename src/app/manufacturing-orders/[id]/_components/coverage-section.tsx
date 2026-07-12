@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
   ChevronDown,
@@ -40,6 +41,7 @@ export function CoverageSection({
   rows,
   readOnly,
 }: Props) {
+  const t = useTranslations("moDetail");
   const router = useRouter();
   const [showCovered, setShowCovered] = useState(false);
   const [result, setResult] = useState<DraftPOResult | null>(null);
@@ -63,17 +65,16 @@ export function CoverageSection({
       <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <PackageSearch className="text-muted-foreground size-4" aria-hidden />
-          <h2 className="text-sm font-semibold">Stock coverage</h2>
+          <h2 className="text-sm font-semibold">{t("coverageTitle")}</h2>
           {remainingToBuild === 0 ? (
-            <Badge variant="outline">nothing left to build</Badge>
+            <Badge variant="outline">{t("nothingLeft")}</Badge>
           ) : allCovered ? (
             <Badge variant="success">
-              all covered for {remainingToBuild} bike
-              {remainingToBuild === 1 ? "" : "s"}
+              {t("allCoveredFor", { count: remainingToBuild })}
             </Badge>
           ) : (
             <Badge variant="destructive">
-              {shortfall.length} part{shortfall.length === 1 ? "" : "s"} short
+              {t("partsShort", { count: shortfall.length })}
             </Badge>
           )}
         </div>
@@ -86,8 +87,8 @@ export function CoverageSection({
           >
             <ShoppingCart className="size-4" aria-hidden />
             {isPending
-              ? "Drafting…"
-              : `Draft PO for shortfall (${shortfall.length})`}
+              ? t("drafting")
+              : t("draftPoShortfall", { count: shortfall.length })}
           </Button>
         ) : null}
       </header>
@@ -99,7 +100,7 @@ export function CoverageSection({
             role="status"
           >
             <p>
-              Drafted{" "}
+              {t("draftedPrefix")}
               {result.pos.map((po, i) => (
                 <span key={po.id}>
                   {i > 0 ? ", " : ""}
@@ -109,15 +110,17 @@ export function CoverageSection({
                   >
                     {po.poNumber}
                   </Link>{" "}
-                  ({po.supplierName}, {po.lines} line
-                  {po.lines === 1 ? "" : "s"})
+                  {t("poLineSummary", {
+                    supplier: po.supplierName,
+                    count: po.lines,
+                  })}
                 </span>
               ))}
-              . Review and place from there.
+              {t("draftedSuffix")}
             </p>
             {result.skipped.length > 0 ? (
               <p className="mt-1 text-xs">
-                Skipped:{" "}
+                {t("skippedPrefix")}
                 {result.skipped
                   .map((s) => `${s.sku} (${s.reason})`)
                   .join(", ")}
@@ -136,7 +139,7 @@ export function CoverageSection({
 
       {remainingToBuild === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          Every bike on this MO is built — coverage doesn&rsquo;t apply.
+          {t("coverageNotApply")}
         </p>
       ) : (
         <div className="flex flex-col">
@@ -149,8 +152,7 @@ export function CoverageSection({
           ) : (
             <p className="flex items-center gap-2 p-4 text-sm text-emerald-700 dark:text-emerald-400">
               <CheckCircle2 className="size-4" aria-hidden />
-              Stock covers the full recipe for all {remainingToBuild} remaining
-              bike{remainingToBuild === 1 ? "" : "s"}.
+              {t("stockCoversAll", { count: remainingToBuild })}
             </p>
           )}
 
@@ -167,8 +169,7 @@ export function CoverageSection({
                   <ChevronRight className="size-3.5" aria-hidden />
                 )}
                 <span className="text-muted-foreground">
-                  {covered.length} covered part
-                  {covered.length === 1 ? "" : "s"}
+                  {t("coveredParts", { count: covered.length })}
                 </span>
               </button>
               {showCovered ? (
@@ -187,25 +188,32 @@ export function CoverageSection({
 }
 
 function CoverageLine({ row, short }: { row: CoverageRow; short?: boolean }) {
+  const t = useTranslations("moDetail");
   return (
     <li className="flex items-center justify-between gap-3 px-4 py-2">
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-sm">{row.name}</span>
         <span className="text-muted-foreground font-mono text-[10px]">
-          {row.sku} · {formatQuantity(row.perBike)}/bike
+          {t("perBikeLine", {
+            sku: row.sku,
+            qty: formatQuantity(row.perBike),
+          })}
         </span>
       </div>
       <div className="shrink-0 text-right text-xs tabular-nums">
         <span className="text-muted-foreground">
-          need {formatQuantity(row.demand)} · have {formatQuantity(row.onHand)}
+          {t("needHave", {
+            need: formatQuantity(row.demand),
+            have: formatQuantity(row.onHand),
+          })}
         </span>
         {short ? (
           <span className="text-destructive ml-2 font-semibold">
-            short {formatQuantity(row.shortfall)}
+            {t("shortBy", { qty: formatQuantity(row.shortfall) })}
           </span>
         ) : (
           <span className="ml-2 text-emerald-700 dark:text-emerald-400">
-            ok
+            {t("ok")}
           </span>
         )}
       </div>

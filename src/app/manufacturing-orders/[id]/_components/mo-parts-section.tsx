@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ArrowRightLeft,
   ChevronDown,
@@ -115,6 +116,7 @@ export function MOPartsSection({
   hasTemplate,
   readOnly,
 }: Props) {
+  const t = useTranslations("moDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [substitute, setSubstitute] = useState<SubstituteState | null>(null);
@@ -206,11 +208,11 @@ export function MOPartsSection({
 
   return (
     <Section
-      title="Parts recipe"
+      title={t("partsRecipeTitle")}
       description={
         hasTemplate
-          ? "Qty per bike comes from the template (or your edits). On-hand is summed across all locations; shortfall is highlighted."
-          : "One-off build — assemble the parts list from the categories on the left. Shortfall is highlighted."
+          ? t("partsRecipeDescTemplate")
+          : t("partsRecipeDescOneOff")
       }
     >
       {error ? (
@@ -223,7 +225,7 @@ export function MOPartsSection({
         {/* LEFT: Categories */}
         <div className="flex flex-col gap-1.5">
           <div className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-            Parts by category
+            {t("partsByCategory")}
           </div>
           {!readOnly ? (
             <KitBulkAdd
@@ -244,7 +246,7 @@ export function MOPartsSection({
                 id: p.id,
                 sku: p.internal_sku,
                 name: p.name_en,
-                meta: `(${formatQuantity(p.onHand)} on hand)`,
+                meta: t("onHandMeta", { qty: formatQuantity(p.onHand) }),
                 metaDanger: p.onHand <= 0,
               }))}
               addedIds={onMoPartIds}
@@ -273,8 +275,7 @@ export function MOPartsSection({
                   <ChevronRight className="size-3.5" aria-hidden />
                 )}
                 <span className="text-muted-foreground">
-                  {empty.length} empty categor
-                  {empty.length === 1 ? "y" : "ies"} (no parts in catalog yet)
+                  {t("emptyCategories", { count: empty.length })}
                 </span>
               </button>
               {showEmpty ? (
@@ -293,14 +294,14 @@ export function MOPartsSection({
         {/* RIGHT: Recipe */}
         <div className="flex flex-col gap-2">
           <div className="text-muted-foreground mb-1 flex items-center justify-between text-xs font-medium uppercase tracking-wide">
-            <span>Selected parts</span>
+            <span>{t("selectedParts")}</span>
             <span className="text-muted-foreground text-[10px] normal-case tracking-normal">
-              × {outstandingBikes} outstanding
+              {t("xOutstanding", { count: outstandingBikes })}
             </span>
           </div>
           {rows.length === 0 ? (
             <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
-              No parts on this MO yet. Pick from the categories on the left.
+              {t("noPartsYet")}
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -312,7 +313,7 @@ export function MOPartsSection({
                 })
                 .map(([catKey, catRows]) => {
                   const catName =
-                    catRows[0]?.categoryName ?? "Uncategorised";
+                    catRows[0]?.categoryName ?? t("uncategorised");
                   return (
                     <div key={catKey} className="rounded-md border">
                       <div className="bg-muted/30 border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
@@ -382,6 +383,7 @@ function RecipeLine({
   onSubstitute: () => void;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("moDetail");
   const totalNeeded = row.quantityPerBike * outstandingBikes;
   const shortfall = Math.max(0, totalNeeded - row.onHand);
   const removable = row.origin !== "template";
@@ -401,7 +403,7 @@ function RecipeLine({
           </span>
           {row.substitutedFromPartName ? (
             <span className="text-muted-foreground mt-0.5 text-[10px] italic">
-              replaces {row.substitutedFromPartName}
+              {t("replaces", { name: row.substitutedFromPartName })}
             </span>
           ) : null}
         </div>
@@ -425,11 +427,11 @@ function RecipeLine({
           onError={onError}
         />
         <span className="text-muted-foreground">
-          Total need:{" "}
+          {t("totalNeed")}{" "}
           <span className="tabular-nums">{formatQuantity(totalNeeded)}</span>
         </span>
         <span className="text-muted-foreground">
-          On hand:{" "}
+          {t("onHandLabel")}{" "}
           <span className="tabular-nums">{formatQuantity(row.onHand)}</span>
         </span>
         <span
@@ -439,7 +441,9 @@ function RecipeLine({
               : "text-emerald-700 dark:text-emerald-400"
           }`}
         >
-          {shortfall > 0 ? `Shortfall ${formatQuantity(shortfall)}` : "Stocked"}
+          {shortfall > 0
+            ? t("shortfallLabel", { qty: formatQuantity(shortfall) })
+            : t("stocked")}
         </span>
       </div>
     </li>
@@ -462,6 +466,7 @@ function QuantityField({
   readOnly: boolean;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("moDetail");
   const router = useRouter();
   const [value, setValue] = useState(String(row.quantityPerBike));
   const [pending, start] = useTransition();
@@ -470,7 +475,7 @@ function QuantityField({
     const next = Number(value.replace(",", "."));
     if (!Number.isFinite(next) || next <= 0) {
       setValue(String(row.quantityPerBike));
-      onError("Quantity must be a positive number.");
+      onError(t("errQtyPositive"));
       return;
     }
     if (next === row.quantityPerBike) return;
@@ -489,7 +494,7 @@ function QuantityField({
   if (readOnly) {
     return (
       <span className="text-muted-foreground">
-        Qty/bike:{" "}
+        {t("qtyPerBikeReadonly")}{" "}
         <span className="text-foreground tabular-nums">
           {formatQuantity(row.quantityPerBike)}
         </span>
@@ -499,7 +504,7 @@ function QuantityField({
 
   return (
     <label className="flex items-center gap-1.5">
-      <span className="text-muted-foreground">Qty/bike</span>
+      <span className="text-muted-foreground">{t("qtyPerBikeLabel")}</span>
       <Input
         inputMode="decimal"
         value={value}
@@ -513,37 +518,38 @@ function QuantityField({
         }}
         disabled={pending}
         className="h-7 w-[64px] text-right text-xs"
-        aria-label={`Quantity per bike for ${row.partSku}`}
+        aria-label={t("qtyPerBikeAria", { sku: row.partSku })}
       />
     </label>
   );
 }
 
 function OriginBadge({ origin }: { origin: MOPartRow["origin"] }) {
+  const t = useTranslations("moDetail");
   if (origin === "template") {
     return (
       <Badge variant="outline" className="font-normal text-[10px]">
-        template
+        {t("originTemplate")}
       </Badge>
     );
   }
   if (origin === "added") {
     return (
       <Badge variant="secondary" className="text-[10px]">
-        added
+        {t("originAdded")}
       </Badge>
     );
   }
   if (origin === "substituted") {
     return (
       <Badge variant="warning" className="text-[10px]">
-        substituted
+        {t("originSubstituted")}
       </Badge>
     );
   }
   return (
     <Badge variant="secondary" className="text-[10px]">
-      {origin}
+      {t("originModified")}
     </Badge>
   );
 }
@@ -559,6 +565,7 @@ function RowActions({
   onSubstitute: () => void;
   onError: (msg: string | null) => void;
 }) {
+  const t = useTranslations("moDetail");
   const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -584,7 +591,7 @@ function RowActions({
         <Button
           size="icon-sm"
           variant="ghost"
-          aria-label={`Actions for ${row.partSku}`}
+          aria-label={t("actionsAria", { sku: row.partSku })}
           disabled={pending}
         >
           <MoreVertical aria-hidden />
@@ -597,16 +604,12 @@ function RowActions({
             onSubstitute();
           }}
         >
-          <ArrowRightLeft aria-hidden /> Substitute
+          <ArrowRightLeft aria-hidden /> {t("substitute")}
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
           disabled={!removable || pending}
-          title={
-            !removable
-              ? "Template-origin parts can't be removed; substitute instead."
-              : undefined
-          }
+          title={!removable ? t("templateRemoveTitle") : undefined}
           onSelect={(e) => {
             e.preventDefault();
             if (!removable) return;
@@ -615,7 +618,7 @@ function RowActions({
           }}
         >
           <Trash2 aria-hidden />{" "}
-          {confirmRemove ? "Click again to confirm" : "Remove"}
+          {confirmRemove ? t("clickAgainConfirm") : t("remove")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Hammer, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,6 @@ import { formatDeliveryTarget } from "@/lib/iso-week";
 import {
   MO_STATUS_VARIANT,
   OPEN_MO_STATUSES,
-  moStatusLabel,
   type MOStatus,
 } from "@/lib/mo/status";
 import { cn } from "@/lib/utils";
@@ -51,6 +51,11 @@ function isMOOverdue(
 }
 
 export default async function ManufacturingOrdersPage() {
+  const [t, tCommon, tStatus] = await Promise.all([
+    getTranslations("mo"),
+    getTranslations("common"),
+    getTranslations("moStatus"),
+  ]);
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("manufacturing_orders")
@@ -79,27 +84,27 @@ export default async function ManufacturingOrdersPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Manufacturing orders</BreadcrumbPage>
+              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Manufacturing orders
+              {t("title")}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {rows.length} {rows.length === 1 ? "order" : "orders"}
+              {t("count", { count: rows.length })}
             </p>
           </div>
           <Button asChild>
             <Link href="/manufacturing-orders/new">
-              <Plus aria-hidden /> New MO
+              <Plus aria-hidden /> {t("newMo")}
             </Link>
           </Button>
         </div>
@@ -108,9 +113,9 @@ export default async function ManufacturingOrdersPage() {
       {rows.length === 0 ? (
         <EmptyState
           icon={Hammer}
-          title="No manufacturing orders yet"
-          description="Start a production run against a template — or go one-off and build the BOM by hand."
-          action={{ label: "New MO", href: "/manufacturing-orders/new" }}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+          action={{ label: t("newMo"), href: "/manufacturing-orders/new" }}
         />
       ) : (
         <div className="overflow-hidden rounded-md border">
@@ -118,16 +123,24 @@ export default async function ManufacturingOrdersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[140px] sm:w-[180px]">
-                  MO number
+                  {t("thNumber")}
                 </TableHead>
-                <TableHead className="hidden md:table-cell">Template</TableHead>
-                <TableHead className="hidden lg:table-cell">Type</TableHead>
-                <TableHead className="hidden lg:table-cell">Colour</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thTemplate")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thType")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("thColour")}
+                </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Target / done
+                  {t("thTargetDone")}
                 </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden md:table-cell">Planned</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thPlanned")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,7 +189,7 @@ export default async function ManufacturingOrdersPage() {
                           </>
                         ) : (
                           <span className="text-muted-foreground italic">
-                            One-off
+                            {t("oneOff")}
                           </span>
                         )}
                       </Link>
@@ -229,7 +242,7 @@ export default async function ManufacturingOrdersPage() {
                             "outline"
                           }
                         >
-                          {moStatusLabel(mo.status)}
+                          {tStatus.has(mo.status) ? tStatus(mo.status) : mo.status}
                         </Badge>
                       </Link>
                     </TableCell>

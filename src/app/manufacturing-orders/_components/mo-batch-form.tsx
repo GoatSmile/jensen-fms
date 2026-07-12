@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Minus, Plus, Search, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,8 @@ export function MOBatchForm({
   boms,
   partsInfo,
 }: Props) {
+  const t = useTranslations("mo");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [rows, setRows] = useState<BatchRow[]>(() =>
     initialTemplateId && templates.some((t) => t.id === initialTemplateId)
@@ -238,19 +241,19 @@ export function MOBatchForm({
     setErrorRow(null);
 
     if (rows.length === 0) {
-      setError("Click a template above to add a batch row.");
+      setError(t("errNoRows"));
       return;
     }
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       const n = Number(r.qty);
       if (!r.colorId) {
-        setError("Pick a colour — one MO covers one template and one colour.");
+        setError(t("errNoColour"));
         setErrorRow(i);
         return;
       }
       if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
-        setError("Quantity must be a positive whole number.");
+        setError(t("errQty"));
         setErrorRow(i);
         return;
       }
@@ -274,7 +277,9 @@ export function MOBatchForm({
       // Success redirects server-side; reaching here means failure.
       if (result && !result.ok) {
         const created = result.createdMoNumbers?.length
-          ? ` Already created and kept: ${result.createdMoNumbers.join(", ")}.`
+          ? t("alreadyCreatedKept", {
+              list: result.createdMoNumbers.join(", "),
+            })
           : "";
         setError(`${result.error}${created}`);
         setErrorRow(result.rowIndex ?? null);
@@ -289,10 +294,9 @@ export function MOBatchForm({
       <section className="rounded-md border">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">What are we building?</h2>
+            <h2 className="text-sm font-semibold">{t("buildingWhatTitle")}</h2>
             <p className="text-muted-foreground text-xs">
-              Click a template to add it to the batch — click again for a
-              second colour run.
+              {t("buildingWhatDesc")}
             </p>
           </div>
           <div className="relative w-full sm:w-56">
@@ -303,7 +307,7 @@ export function MOBatchForm({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search templates…"
+              placeholder={t("searchTemplates")}
               className="h-8 pl-8 text-sm"
             />
           </div>
@@ -311,17 +315,15 @@ export function MOBatchForm({
         <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
           {families.length === 0 ? (
             <p className="text-muted-foreground col-span-full p-2 text-center text-sm italic">
-              {templates.length === 0 ? (
-                <>
-                  No current templates yet. Create one in{" "}
-                  <Link href="/bike-templates" className="underline">
-                    Bike templates
-                  </Link>{" "}
-                  first.
-                </>
-              ) : (
-                "No templates match."
-              )}
+              {templates.length === 0
+                ? t.rich("noCurrentTemplatesCard", {
+                    link: (chunks) => (
+                      <Link href="/bike-templates" className="underline">
+                        {chunks}
+                      </Link>
+                    ),
+                  })
+                : t("noTemplatesMatch")}
             </p>
           ) : (
             families.map(([key, { label, familyId, members }]) => (
@@ -388,13 +390,16 @@ export function MOBatchForm({
           )}
         </div>
         <footer className="text-muted-foreground border-t px-4 py-2 text-xs">
-          Building something with no template?{" "}
-          <Link
-            href="/manufacturing-orders/new?mode=oneoff"
-            className="hover:text-foreground underline underline-offset-4"
-          >
-            One-off build by parts
-          </Link>
+          {t.rich("oneOffFooter", {
+            link: (chunks) => (
+              <Link
+                href="/manufacturing-orders/new?mode=oneoff"
+                className="hover:text-foreground underline underline-offset-4"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
         </footer>
       </section>
 
@@ -402,22 +407,24 @@ export function MOBatchForm({
       <section className="rounded-md border">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Batch</h2>
-            <p className="text-muted-foreground text-xs">
-              One MO per row — one template, one colour, N bikes.
-            </p>
+            <h2 className="text-sm font-semibold">{t("batchTitle")}</h2>
+            <p className="text-muted-foreground text-xs">{t("batchDescRow")}</p>
           </div>
           {rows.length > 0 ? (
             <span className="text-sm tabular-nums">
-              {rows.length} MO{rows.length === 1 ? "" : "s"} ·{" "}
-              <span className="font-semibold">{totalBikes}</span> bike
-              {totalBikes === 1 ? "" : "s"}
+              {t.rich("batchSummary", {
+                count: rows.length,
+                bikes: totalBikes,
+                b: (chunks) => (
+                  <span className="font-semibold">{chunks}</span>
+                ),
+              })}
             </span>
           ) : null}
         </header>
         {rows.length === 0 ? (
           <p className="text-muted-foreground p-6 text-center text-sm italic">
-            Nothing in the batch yet — click a template above.
+            {t("batchEmpty")}
           </p>
         ) : (
           <ul className="divide-y">
@@ -450,9 +457,9 @@ export function MOBatchForm({
                     >
                       <SelectTrigger
                         className="h-9 w-[150px]"
-                        aria-label={`Colour for ${label}`}
+                        aria-label={t("colourForLabel", { label })}
                       >
-                        <SelectValue placeholder="Colour…" />
+                        <SelectValue placeholder={t("colourShort")} />
                       </SelectTrigger>
                       <SelectContent>
                         {colors.map((c) => (
@@ -468,7 +475,7 @@ export function MOBatchForm({
                         type="button"
                         size="icon-sm"
                         variant="outline"
-                        aria-label={`Fewer bikes for ${label}`}
+                        aria-label={t("fewerBikesFor", { label })}
                         onClick={() => stepQty(row, -1)}
                         disabled={Number(row.qty) <= 1}
                       >
@@ -481,13 +488,13 @@ export function MOBatchForm({
                           updateRow(row.key, { qty: e.target.value })
                         }
                         className="h-9 w-14 text-center tabular-nums"
-                        aria-label={`Quantity for ${label}`}
+                        aria-label={t("quantityFor", { label })}
                       />
                       <Button
                         type="button"
                         size="icon-sm"
                         variant="outline"
-                        aria-label={`More bikes for ${label}`}
+                        aria-label={t("moreBikesFor", { label })}
                         onClick={() => stepQty(row, 1)}
                       >
                         <Plus className="size-3.5" aria-hidden />
@@ -513,7 +520,7 @@ export function MOBatchForm({
                       type="button"
                       size="icon-sm"
                       variant="ghost"
-                      aria-label={`Remove ${label} from the batch`}
+                      aria-label={t("removeFromBatch", { label })}
                       onClick={() => removeRow(row.key)}
                       className="text-muted-foreground hover:text-destructive"
                     >
@@ -529,10 +536,12 @@ export function MOBatchForm({
           <footer className="bg-muted/20 border-t px-4 py-2.5 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Parts coverage:</span>
+                <span className="text-muted-foreground">
+                  {t("partsCoverage")}
+                </span>
                 {coverage.shortfall.length === 0 ? (
                   <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                    all {coverage.totalParts} parts in stock
+                    {t("allPartsInStock", { count: coverage.totalParts })}
                   </span>
                 ) : (
                   <button
@@ -540,21 +549,20 @@ export function MOBatchForm({
                     onClick={() => setShowShortfall((v) => !v)}
                     className="text-destructive font-medium underline-offset-4 hover:underline"
                   >
-                    {coverage.shortfall.length} part
-                    {coverage.shortfall.length === 1 ? "" : "s"} short —{" "}
-                    {showShortfall ? "hide" : "show"}
+                    {t("partsShort", { count: coverage.shortfall.length })} —{" "}
+                    {showShortfall ? t("hide") : t("show")}
                   </button>
                 )}
               </div>
               <span className="text-muted-foreground tabular-nums">
-                Est. parts cost (last landed):{" "}
+                {t("estPartsCost")}
                 <span className="text-foreground font-medium">
                   {coverage.estimatedCost > 0
                     ? formatDkk(coverage.estimatedCost)
                     : "—"}
                 </span>
                 {coverage.unpriced > 0 ? (
-                  <span> ({coverage.unpriced} unpriced)</span>
+                  <span>{t("unpricedSuffix", { count: coverage.unpriced })}</span>
                 ) : null}
               </span>
             </div>
@@ -572,14 +580,15 @@ export function MOBatchForm({
                       </span>
                     </span>
                     <span className="text-destructive shrink-0 tabular-nums">
-                      need {formatQuantity(s.need)} · have{" "}
-                      {formatQuantity(s.have)}
+                      {t("needHave", {
+                        need: formatQuantity(s.need),
+                        have: formatQuantity(s.have),
+                      })}
                     </span>
                   </li>
                 ))}
                 <li className="text-muted-foreground mt-1">
-                  Shortfalls don&rsquo;t block creation — the MO page has a
-                  one-click draft PO for whatever is missing.
+                  {t("shortfallHint")}
                 </li>
               </ul>
             ) : null}
@@ -590,15 +599,16 @@ export function MOBatchForm({
       {/* 3 — shared production plan */}
       <section className="rounded-md border">
         <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Production plan</h2>
+          <h2 className="text-sm font-semibold">
+            {t("productionPlanTitle")}
+          </h2>
           <p className="text-muted-foreground text-xs">
-            Shared by every MO in the batch. Dates are advisory; actuals stamp
-            on status transitions.
+            {t("productionPlanDescBatch")}
           </p>
         </header>
         <div className="flex flex-col gap-3 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Planned start date" htmlFor="batch-start">
+            <Field label={t("plannedStartDate")} htmlFor="batch-start">
               <Input
                 id="batch-start"
                 type="date"
@@ -606,7 +616,7 @@ export function MOBatchForm({
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </Field>
-            <Field label="Expected completion" htmlFor="batch-end">
+            <Field label={t("expectedCompletion")} htmlFor="batch-end">
               <DeliveryWeekDateField
                 id="batch-end"
                 date={endDate}
@@ -618,13 +628,13 @@ export function MOBatchForm({
               />
             </Field>
           </div>
-          <Field label="Notes" htmlFor="batch-notes">
+          <Field label={t("notes")} htmlFor="batch-notes">
             <Textarea
               id="batch-notes"
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Internal — e.g. 'spring stock build' or 'Aarhus tender, delivery week 30'."
+              placeholder={t("notesPlaceholderBatch")}
             />
           </Field>
           <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3">
@@ -636,11 +646,10 @@ export function MOBatchForm({
             />
             <span className="flex flex-col">
               <span className="text-sm font-medium">
-                Create the bikes now (auto frame numbers)
+                {t("createBikesNow")}
               </span>
               <span className="text-muted-foreground text-xs">
-                Every MO gets its bikes immediately, numbered in sequence.
-                Uncheck to add bikes later from the MO page.
+                {t("createBikesHint")}
               </span>
             </span>
           </label>
@@ -663,19 +672,18 @@ export function MOBatchForm({
           onClick={() => router.push("/manufacturing-orders")}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending || rows.length === 0}>
           <Wrench className="size-4" aria-hidden />
           {isPending
-            ? "Creating…"
+            ? t("creating")
             : rows.length === 0
-              ? "Create manufacturing orders"
-              : `Create ${rows.length} MO${rows.length === 1 ? "" : "s"}${
-                  createBikes && totalBikes > 0
-                    ? ` + ${totalBikes} bike${totalBikes === 1 ? "" : "s"}`
-                    : ""
-                }`}
+              ? t("createMoBatch")
+              : t("createNMos", { count: rows.length }) +
+                (createBikes && totalBikes > 0
+                  ? t("plusNBikes", { count: totalBikes })
+                  : "")}
         </Button>
       </div>
     </form>
