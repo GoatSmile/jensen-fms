@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 export type UnitResult =
   | { ok: true }
@@ -18,10 +19,11 @@ type ParsedUnit = {
 
 function parseUnit(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): ParsedUnit | { error: string; field?: string } {
   const name = nullable(formData.get("name"));
   if (!name) {
-    return { error: "Name is required.", field: "name" };
+    return { error: t("nameRequired"), field: "name" };
   }
   return {
     name,
@@ -35,10 +37,11 @@ export async function createUnit(
   organizationId: string,
   formData: FormData,
 ): Promise<UnitResult> {
+  const t = await getTranslations("errors");
   if (!organizationId) {
-    return { ok: false, error: "Missing customer id." };
+    return { ok: false, error: t("missingCustomerId") };
   }
-  const parsed = parseUnit(formData);
+  const parsed = parseUnit(formData, t);
   if ("error" in parsed) {
     return { ok: false, error: parsed.error, field: parsed.field };
   }
@@ -49,7 +52,7 @@ export async function createUnit(
     ...parsed,
   });
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${organizationId}`);
@@ -60,10 +63,11 @@ export async function updateUnit(
   unitId: string,
   formData: FormData,
 ): Promise<UnitResult> {
+  const t = await getTranslations("errors");
   if (!unitId) {
-    return { ok: false, error: "Missing sub-unit id." };
+    return { ok: false, error: t("orgMissingUnitId") };
   }
-  const parsed = parseUnit(formData);
+  const parsed = parseUnit(formData, t);
   if ("error" in parsed) {
     return { ok: false, error: parsed.error, field: parsed.field };
   }
@@ -75,10 +79,10 @@ export async function updateUnit(
     .eq("id", unitId)
     .maybeSingle();
   if (existing.error) {
-    return { ok: false, error: `Could not load: ${existing.error.message}` };
+    return { ok: false, error: t("couldNotLoad", { detail: existing.error.message }) };
   }
   if (!existing.data) {
-    return { ok: false, error: "Sub-unit not found." };
+    return { ok: false, error: t("unitNotFound") };
   }
 
   const { error } = await supabase
@@ -86,7 +90,7 @@ export async function updateUnit(
     .update(parsed)
     .eq("id", unitId);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${existing.data.organization_id}`);
@@ -100,8 +104,9 @@ export async function updateUnit(
  * reassign or unassign the bikes first.
  */
 export async function archiveUnit(unitId: string): Promise<UnitResult> {
+  const t = await getTranslations("errors");
   if (!unitId) {
-    return { ok: false, error: "Missing sub-unit id." };
+    return { ok: false, error: t("orgMissingUnitId") };
   }
   const supabase = await createClient();
 
@@ -111,10 +116,10 @@ export async function archiveUnit(unitId: string): Promise<UnitResult> {
     .eq("id", unitId)
     .maybeSingle();
   if (existing.error) {
-    return { ok: false, error: `Could not load: ${existing.error.message}` };
+    return { ok: false, error: t("couldNotLoad", { detail: existing.error.message }) };
   }
   if (!existing.data) {
-    return { ok: false, error: "Sub-unit not found." };
+    return { ok: false, error: t("unitNotFound") };
   }
 
   const { count, error: countError } = await supabase
@@ -125,7 +130,7 @@ export async function archiveUnit(unitId: string): Promise<UnitResult> {
   if (countError) {
     return {
       ok: false,
-      error: `Could not check assigned bikes: ${countError.message}`,
+      error: t("unitCouldNotCheckBikes", { detail: countError.message }),
     };
   }
   if ((count ?? 0) > 0) {
@@ -133,8 +138,8 @@ export async function archiveUnit(unitId: string): Promise<UnitResult> {
       ok: false,
       error:
         count === 1
-          ? "Reassign the bike pointing at this sub-unit before archiving."
-          : `Reassign the ${count} bikes pointing at this sub-unit before archiving.`,
+          ? t("unitReassignBikeSingular")
+          : t("unitReassignBikesPlural", { count: count ?? 0 }),
     };
   }
 
@@ -143,7 +148,7 @@ export async function archiveUnit(unitId: string): Promise<UnitResult> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", unitId);
   if (error) {
-    return { ok: false, error: `Could not archive: ${error.message}` };
+    return { ok: false, error: t("couldNotArchive", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${existing.data.organization_id}`);

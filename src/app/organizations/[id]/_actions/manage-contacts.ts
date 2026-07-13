@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 export type ContactResult =
   | { ok: true }
@@ -22,6 +23,7 @@ type ParsedContact = {
 
 function parseContact(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): ParsedContact | { error: string; field?: string } {
   const first_name = nullable(formData.get("first_name"));
   const last_name = nullable(formData.get("last_name"));
@@ -33,7 +35,7 @@ function parseContact(
   // least one of name or email so the table doesn't accumulate ghost rows.
   if (!first_name && !last_name && !email) {
     return {
-      error: "Add at least a name or email.",
+      error: t("contactAddNameOrEmail"),
       field: "first_name",
     };
   }
@@ -88,10 +90,11 @@ export async function createContact(
   organizationId: string,
   formData: FormData,
 ): Promise<ContactResult> {
+  const t = await getTranslations("errors");
   if (!organizationId) {
-    return { ok: false, error: "Missing customer id." };
+    return { ok: false, error: t("missingCustomerId") };
   }
-  const parsed = parseContact(formData);
+  const parsed = parseContact(formData, t);
   if ("error" in parsed) {
     return { ok: false, error: parsed.error, field: parsed.field };
   }
@@ -101,7 +104,7 @@ export async function createContact(
   if (parsed.is_primary) {
     const r = await demoteOtherPrimaries(supabase, organizationId, null);
     if (!r.ok) {
-      return { ok: false, error: `Could not save: ${r.error}` };
+      return { ok: false, error: t("couldNotSave", { detail: r.error }) };
     }
   }
 
@@ -110,7 +113,7 @@ export async function createContact(
     ...parsed,
   });
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${organizationId}`);
@@ -121,10 +124,11 @@ export async function updateContact(
   contactId: string,
   formData: FormData,
 ): Promise<ContactResult> {
+  const t = await getTranslations("errors");
   if (!contactId) {
-    return { ok: false, error: "Missing contact id." };
+    return { ok: false, error: t("orgMissingContactId") };
   }
-  const parsed = parseContact(formData);
+  const parsed = parseContact(formData, t);
   if ("error" in parsed) {
     return { ok: false, error: parsed.error, field: parsed.field };
   }
@@ -139,17 +143,17 @@ export async function updateContact(
     .eq("id", contactId)
     .maybeSingle();
   if (existing.error) {
-    return { ok: false, error: `Could not load: ${existing.error.message}` };
+    return { ok: false, error: t("couldNotLoad", { detail: existing.error.message }) };
   }
   if (!existing.data) {
-    return { ok: false, error: "Contact not found." };
+    return { ok: false, error: t("contactNotFound") };
   }
   const organizationId = existing.data.organization_id;
 
   if (parsed.is_primary) {
     const r = await demoteOtherPrimaries(supabase, organizationId, contactId);
     if (!r.ok) {
-      return { ok: false, error: `Could not save: ${r.error}` };
+      return { ok: false, error: t("couldNotSave", { detail: r.error }) };
     }
   }
 
@@ -161,7 +165,7 @@ export async function updateContact(
     })
     .eq("id", contactId);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${organizationId}`);
@@ -171,8 +175,9 @@ export async function updateContact(
 export async function archiveContact(
   contactId: string,
 ): Promise<ContactResult> {
+  const t = await getTranslations("errors");
   if (!contactId) {
-    return { ok: false, error: "Missing contact id." };
+    return { ok: false, error: t("orgMissingContactId") };
   }
   const supabase = await createClient();
 
@@ -182,10 +187,10 @@ export async function archiveContact(
     .eq("id", contactId)
     .maybeSingle();
   if (existing.error) {
-    return { ok: false, error: `Could not load: ${existing.error.message}` };
+    return { ok: false, error: t("couldNotLoad", { detail: existing.error.message }) };
   }
   if (!existing.data) {
-    return { ok: false, error: "Contact not found." };
+    return { ok: false, error: t("contactNotFound") };
   }
 
   const { error } = await supabase
@@ -196,7 +201,7 @@ export async function archiveContact(
     })
     .eq("id", contactId);
   if (error) {
-    return { ok: false, error: `Could not archive: ${error.message}` };
+    return { ok: false, error: t("couldNotArchive", { detail: error.message }) };
   }
 
   revalidatePath(`/organizations/${existing.data.organization_id}`);

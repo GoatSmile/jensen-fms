@@ -12,6 +12,7 @@ import {
   geocodeAddress,
   type GeocodeInput,
 } from "@/lib/geocode/nominatim";
+import { getTranslations } from "next-intl/server";
 
 export type SaveOrganizationResult =
   | { ok: true; organizationId: string }
@@ -44,13 +45,14 @@ type ParsedOrganization = {
 
 function parsePaymentTerms(
   raw: string | null,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; value: number | null } | { ok: false; error: string } {
   if (!raw) return { ok: true, value: null };
   const n = Number(raw);
   if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
     return {
       ok: false,
-      error: "Payment terms must be a non-negative whole number of days.",
+      error: t("orgPaymentTermsWholeDays"),
     };
   }
   return { ok: true, value: n };
@@ -58,19 +60,20 @@ function parsePaymentTerms(
 
 function parseOrganization(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): ParsedOrganization | { error: string; field?: string } {
   const legal_name = nullable(formData.get("legal_name"));
   const customer_segment_id = nullable(formData.get("customer_segment_id"));
 
   if (!legal_name)
-    return { error: "Legal name is required.", field: "legal_name" };
+    return { error: t("orgLegalNameRequired"), field: "legal_name" };
   if (!customer_segment_id)
     return {
-      error: "Customer segment is required.",
+      error: t("orgSegmentRequired"),
       field: "customer_segment_id",
     };
 
-  const pt = parsePaymentTerms(nullable(formData.get("payment_terms_days")));
+  const pt = parsePaymentTerms(nullable(formData.get("payment_terms_days")), t);
   if (!pt.ok) return { error: pt.error, field: "payment_terms_days" };
 
   const rawCountry = nullable(formData.get("country_code"));
@@ -84,7 +87,7 @@ function parseOrganization(
   // the same set; we guard here so a bad value gives a clean error.
   const rawStage = nullable(formData.get("lifecycle_stage")) ?? "customer";
   if (rawStage !== "customer" && rawStage !== "prospect")
-    return { error: "Invalid lifecycle stage.", field: "lifecycle_stage" };
+    return { error: t("orgInvalidLifecycle"), field: "lifecycle_stage" };
 
   return {
     legal_name,
@@ -178,7 +181,8 @@ async function geocodeAndPersist(
 export async function createOrganization(
   formData: FormData,
 ): Promise<SaveOrganizationResult> {
-  const parsed = parseOrganization(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseOrganization(formData, t);
   if ("error" in parsed)
     return { ok: false, error: parsed.error, field: parsed.field };
 
@@ -194,7 +198,7 @@ export async function createOrganization(
   if (error || !data) {
     return {
       ok: false,
-      error: `Could not create customer: ${error?.message ?? "unknown error"}`,
+      error: t("orgCouldNotCreate", { detail: error?.message ?? t("unknownError") }),
     };
   }
 
@@ -210,8 +214,9 @@ export async function updateOrganization(
   organizationId: string,
   formData: FormData,
 ): Promise<SaveOrganizationResult> {
-  if (!organizationId) return { ok: false, error: "Missing customer id." };
-  const parsed = parseOrganization(formData);
+  const t = await getTranslations("errors");
+  if (!organizationId) return { ok: false, error: t("missingCustomerId") };
+  const parsed = parseOrganization(formData, t);
   if ("error" in parsed)
     return { ok: false, error: parsed.error, field: parsed.field };
 
@@ -235,7 +240,7 @@ export async function updateOrganization(
       updated_at: new Date().toISOString(),
     })
     .eq("id", organizationId);
-  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
 
   // Re-geocode when the address changed, or when we never successfully
   // geocoded before but the org now has an address to try.

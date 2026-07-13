@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 export type SaveServiceAgreementResult =
   | { ok: true; id: string }
@@ -30,30 +31,31 @@ const bool = (fd: FormData, k: string) => fd.get(k) === "true";
 
 function parse(
   fd: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: Parsed } | { ok: false; error: string; field?: string } {
   const organization_id = nullable(fd.get("organization_id"));
   if (!organization_id)
-    return { ok: false, error: "Pick a customer.", field: "organization_id" };
+    return { ok: false, error: t("saPickCustomer"), field: "organization_id" };
 
   const name = nullable(fd.get("name"));
   if (!name)
-    return { ok: false, error: "Give the agreement a name.", field: "name" };
+    return { ok: false, error: t("saGiveName"), field: "name" };
 
   const start_date = nullable(fd.get("start_date"));
   if (!start_date)
-    return { ok: false, error: "A start date is required.", field: "start_date" };
+    return { ok: false, error: t("saStartDateRequired"), field: "start_date" };
 
   const end_date = nullable(fd.get("end_date"));
   if (end_date && end_date < start_date)
     return {
       ok: false,
-      error: "End date can't be before the start date.",
+      error: t("saEndBeforeStart"),
       field: "end_date",
     };
 
   const statusRaw = nullable(fd.get("status")) ?? "active";
   if (!["active", "expired", "cancelled"].includes(statusRaw))
-    return { ok: false, error: "Invalid status.", field: "status" };
+    return { ok: false, error: t("saInvalidStatus"), field: "status" };
 
   let monthly_fee: number | null = null;
   const feeRaw = nullable(fd.get("monthly_fee"));
@@ -62,7 +64,7 @@ function parse(
     if (!Number.isFinite(n) || n < 0)
       return {
         ok: false,
-        error: "Monthly fee must be a non-negative number.",
+        error: t("saMonthlyFeeNonNegative"),
         field: "monthly_fee",
       };
     monthly_fee = n;
@@ -91,7 +93,8 @@ function parse(
 export async function createServiceAgreement(
   fd: FormData,
 ): Promise<SaveServiceAgreementResult> {
-  const parsed = parse(fd);
+  const t = await getTranslations("errors");
+  const parsed = parse(fd, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -103,7 +106,7 @@ export async function createServiceAgreement(
   if (error || !data)
     return {
       ok: false,
-      error: `Could not create agreement: ${error?.message ?? "unknown error"}`,
+      error: t("saCouldNotCreate", { detail: error?.message ?? t("unknownError") }),
     };
 
   revalidatePath("/service-agreements");
@@ -115,8 +118,9 @@ export async function updateServiceAgreement(
   id: string,
   fd: FormData,
 ): Promise<SaveServiceAgreementResult> {
-  if (!id) return { ok: false, error: "Missing agreement id." };
-  const parsed = parse(fd);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("saMissingAgreementId") };
+  const parsed = parse(fd, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -124,7 +128,7 @@ export async function updateServiceAgreement(
     .from("service_agreements")
     .update({ ...parsed.values, updated_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
 
   revalidatePath("/service-agreements");
   revalidatePath(`/service-agreements/${id}`);

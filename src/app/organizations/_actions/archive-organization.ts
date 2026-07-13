@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 
 export type ArchiveOrganizationResult =
   | { ok: true }
@@ -21,7 +22,8 @@ export async function archiveOrganization(
   organizationId: string,
   reason: string | null,
 ): Promise<ArchiveOrganizationResult> {
-  if (!organizationId) return { ok: false, error: "Missing customer id." };
+  const t = await getTranslations("errors");
+  if (!organizationId) return { ok: false, error: t("missingCustomerId") };
 
   const supabase = await createClient();
 
@@ -35,10 +37,10 @@ export async function archiveOrganization(
   if (existing.error) {
     return {
       ok: false,
-      error: `Could not load customer: ${existing.error.message}`,
+      error: t("orgCouldNotLoadCustomer", { detail: existing.error.message }),
     };
   }
-  if (!existing.data) return { ok: false, error: "Customer not found." };
+  if (!existing.data) return { ok: false, error: t("orgCustomerNotFound") };
 
   const cleanReason = nullable(reason);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -57,7 +59,7 @@ export async function archiveOrganization(
       updated_at: new Date().toISOString(),
     })
     .eq("id", organizationId);
-  if (error) return { ok: false, error: `Could not archive: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotArchive", { detail: error.message }) };
 
   revalidatePath("/organizations");
   revalidatePath(`/organizations/${organizationId}`);
