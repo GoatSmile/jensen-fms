@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { round2 } from "@/lib/invoicing/status";
 import { formatDkk } from "@/lib/parts/stock";
+import { getTranslations } from "next-intl/server";
 
 export type CreateDepositResult = { ok: false; error: string };
 
@@ -52,7 +53,8 @@ export async function createDepositInvoice(
   soId: string,
   input: DepositInput,
 ): Promise<CreateDepositResult> {
-  if (!soId) return { ok: false, error: "Missing sales order id." };
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("invMissingSoId") };
 
   const supabase = await createClient();
 
@@ -68,22 +70,22 @@ export async function createDepositInvoice(
   if (soErr || !so) {
     return {
       ok: false,
-      error: `Could not load sales order: ${soErr?.message ?? "not found"}`,
+      error: t("invCouldNotLoadSo", { detail: soErr?.message ?? t("notFound") }),
     };
   }
   if (!so.organization_id) {
-    return { ok: false, error: "The sales order has no customer organization." };
+    return { ok: false, error: t("invSoNoCustomer") };
   }
   if (!["confirmed", "in_production", "ready"].includes(so.status)) {
     return {
       ok: false,
-      error: `Deposits can be taken on a confirmed–ready order. This one is ${so.status}.`,
+      error: t("invDepositConfirmedReady", { status: so.status }),
     };
   }
 
   const soSubtotal = round2(Number(so.subtotal_amount ?? 0));
   if (soSubtotal <= 0) {
-    return { ok: false, error: "The sales order has no value to deposit against." };
+    return { ok: false, error: t("invSoNoValue") };
   }
 
   // Order VAT: the code covering the most subtotal (single-VAT orders are the
@@ -120,7 +122,7 @@ export async function createDepositInvoice(
 
   if (input.mode === "parts") {
     if (!input.parts || input.parts.length === 0) {
-      return { ok: false, error: "Add at least one part to prepay." };
+      return { ok: false, error: t("invAddPartToPrepay") };
     }
     const partIds = input.parts.map((p) => p.partId);
     const { data: catalog } = await supabase
@@ -134,13 +136,13 @@ export async function createDepositInvoice(
       const qty = Number(pl.quantity);
       const up = round2(Number(pl.unitPrice));
       if (!Number.isFinite(qty) || qty <= 0) {
-        return { ok: false, error: "Each prepaid part needs a positive quantity." };
+        return { ok: false, error: t("invPrepaidQtyPositive") };
       }
       if (!Number.isFinite(up) || up < 0) {
-        return { ok: false, error: "Each prepaid part needs a valid unit price." };
+        return { ok: false, error: t("invPrepaidPriceValid") };
       }
       const part = partById.get(pl.partId);
-      if (!part) return { ok: false, error: "One of the parts could not be found." };
+      if (!part) return { ok: false, error: t("invPartNotFound") };
       const sku = part.internal_sku ? ` (${part.internal_sku})` : "";
       const ls = round2(qty * up);
       const lv = round2(ls * (vatRate / 100));
@@ -161,22 +163,22 @@ export async function createDepositInvoice(
       depositSubtotal = round2(depositSubtotal + ls);
     }
     if (depositSubtotal <= 0) {
-      return { ok: false, error: "The prepaid parts work out to zero." };
+      return { ok: false, error: t("invPrepaidZero") };
     }
   } else {
     const value = Number(input.value);
     if (!Number.isFinite(value) || value <= 0) {
-      return { ok: false, error: "Enter a positive percentage or amount." };
+      return { ok: false, error: t("invEnterPositivePctAmount") };
     }
     if (input.mode === "percent" && value > 100) {
-      return { ok: false, error: "Percentage can't exceed 100." };
+      return { ok: false, error: t("invPctMax100") };
     }
     depositSubtotal =
       input.mode === "percent"
         ? round2(soSubtotal * (value / 100))
         : round2(value);
     if (depositSubtotal <= 0) {
-      return { ok: false, error: "The deposit works out to zero — raise the amount." };
+      return { ok: false, error: t("invDepositZero") };
     }
     const pct = round2((depositSubtotal / soSubtotal) * 100);
     const lv = round2(depositSubtotal * (vatRate / 100));
@@ -209,7 +211,10 @@ export async function createDepositInvoice(
   if (round2(priorSum + depositSubtotal) > soSubtotal) {
     return {
       ok: false,
-      error: `Deposits would exceed the order subtotal — ${formatDkk(priorSum)} already taken of ${formatDkk(soSubtotal)}.`,
+      error: t("invDepositsExceed", {
+        prior: formatDkk(priorSum),
+        total: formatDkk(soSubtotal),
+      }),
     };
   }
 
@@ -244,7 +249,9 @@ export async function createDepositInvoice(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: `Could not create deposit invoice: ${invErr?.message ?? "unknown error"}`,
+      error: t("invCouldNotCreateDeposit", {
+        detail: invErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -255,7 +262,7 @@ export async function createDepositInvoice(
     await supabase.from("invoices").delete().eq("id", invoice.id);
     return {
       ok: false,
-      error: `Could not write the deposit lines: ${lineErr.message}`,
+      error: t("invCouldNotWriteDepositLines", { detail: lineErr.message }),
     };
   }
 

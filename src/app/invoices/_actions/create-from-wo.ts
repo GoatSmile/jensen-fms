@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { round2 } from "@/lib/invoicing/status";
@@ -25,7 +26,8 @@ export type CreateInvoiceResult = { ok: false; error: string };
 export async function createInvoiceFromWO(
   woId: string,
 ): Promise<CreateInvoiceResult> {
-  if (!woId) return { ok: false, error: "Missing work order id." };
+  const t = await getTranslations("errors");
+  if (!woId) return { ok: false, error: t("missingWorkOrderId") };
 
   const supabase = await createClient();
 
@@ -50,7 +52,7 @@ export async function createInvoiceFromWO(
   if (woErr || !wo) {
     return {
       ok: false,
-      error: `Could not load work order: ${woErr?.message ?? "not found"}`,
+      error: t("invCouldNotLoadWo", { detail: woErr?.message ?? t("notFound") }),
     };
   }
 
@@ -60,22 +62,21 @@ export async function createInvoiceFromWO(
   const bike = one(wo.bike);
 
   if (wo.status !== "completed") {
-    return { ok: false, error: "Only completed work orders can be invoiced." };
+    return { ok: false, error: t("invOnlyCompletedWo") };
   }
   if (!wo.is_billable) {
     return {
       ok: false,
-      error: "This work order is covered by a service agreement — nothing to bill.",
+      error: t("invWoCoveredByAgreement"),
     };
   }
   if (wo.invoice_id) {
-    return { ok: false, error: "This work order is already on an invoice." };
+    return { ok: false, error: t("invWoAlreadyInvoiced") };
   }
   if (!bike?.owner_organization_id) {
     return {
       ok: false,
-      error:
-        "The bike has no owner organization — assign the bike to a customer first.",
+      error: t("invBikeNoOwner"),
     };
   }
 
@@ -89,7 +90,7 @@ export async function createInvoiceFromWO(
   if (vatErr || !vat) {
     return {
       ok: false,
-      error: "VAT code DK_STANDARD is missing or archived — check /admin.",
+      error: t("invVatCodeMissing"),
     };
   }
   const vatRate = Number(vat.default_rate);
@@ -184,7 +185,9 @@ export async function createInvoiceFromWO(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: `Could not create invoice: ${invErr?.message ?? "unknown error"}`,
+      error: t("invCouldNotCreate", {
+        detail: invErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -196,7 +199,7 @@ export async function createInvoiceFromWO(
     await supabase.from("invoices").delete().eq("id", invoice.id);
     return {
       ok: false,
-      error: `Could not write invoice lines: ${linesErr.message}`,
+      error: t("invCouldNotWriteLines", { detail: linesErr.message }),
     };
   }
 
@@ -207,7 +210,7 @@ export async function createInvoiceFromWO(
   if (linkErr) {
     return {
       ok: false,
-      error: `Invoice created but linking the work order failed: ${linkErr.message}`,
+      error: t("invCreatedLinkWoFailed", { detail: linkErr.message }),
     };
   }
 

@@ -8,6 +8,7 @@ import {
   validNextInvoiceStatuses,
   type InvoiceStatus,
 } from "@/lib/invoicing/status";
+import { getTranslations } from "next-intl/server";
 
 export type InvoiceTransitionResult = { ok: true } | { ok: false; error: string };
 
@@ -24,7 +25,8 @@ export type InvoiceTransitionResult = { ok: true } | { ok: false; error: string 
 export async function issueInvoice(
   invoiceId: string,
 ): Promise<InvoiceTransitionResult> {
-  if (!invoiceId) return { ok: false, error: "Missing invoice id." };
+  const t = await getTranslations("errors");
+  if (!invoiceId) return { ok: false, error: t("missingInvoiceId") };
 
   const supabase = await createClient();
   const { data: invoice, error: invErr } = await supabase
@@ -38,11 +40,11 @@ export async function issueInvoice(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: `Could not load invoice: ${invErr?.message ?? "not found"}`,
+      error: t("invCouldNotLoadInvoice", { detail: invErr?.message ?? t("notFound") }),
     };
   }
   if (invoice.status !== "draft") {
-    return { ok: false, error: "Only draft invoices can be issued." };
+    return { ok: false, error: t("invOnlyDraftIssued") };
   }
   const isCreditNote = invoice.credited_invoice_id != null;
   const org = Array.isArray(invoice.organization)
@@ -54,7 +56,7 @@ export async function issueInvoice(
     .select("id", { count: "exact", head: true })
     .eq("invoice_id", invoiceId);
   if ((lineCount ?? 0) === 0) {
-    return { ok: false, error: "Cannot issue an invoice with no lines." };
+    return { ok: false, error: t("invNoLinesIssue") };
   }
 
   // Credit notes draw from their own sequential series (CRE-yyyy-xxxx) —
@@ -67,7 +69,9 @@ export async function issueInvoice(
   if (numErr || typeof invoiceNumber !== "string") {
     return {
       ok: false,
-      error: `Could not allocate invoice number: ${numErr?.message ?? "unknown error"}`,
+      error: t("invCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -93,7 +97,7 @@ export async function issueInvoice(
     .eq("id", invoiceId)
     .eq("status", "draft");
   if (updErr) {
-    return { ok: false, error: `Could not issue invoice: ${updErr.message}` };
+    return { ok: false, error: t("invCouldNotIssue", { detail: updErr.message }) };
   }
 
   // Issuing a credit note settles the original: status → credited, and
@@ -155,7 +159,8 @@ async function transition(
     paid_date: string | null;
   }) => Record<string, unknown>,
 ): Promise<InvoiceTransitionResult> {
-  if (!invoiceId) return { ok: false, error: "Missing invoice id." };
+  const t = await getTranslations("errors");
+  if (!invoiceId) return { ok: false, error: t("missingInvoiceId") };
 
   const supabase = await createClient();
   const { data: invoice, error: invErr } = await supabase
@@ -166,13 +171,13 @@ async function transition(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: `Could not load invoice: ${invErr?.message ?? "not found"}`,
+      error: t("invCouldNotLoadInvoice", { detail: invErr?.message ?? t("notFound") }),
     };
   }
 
   const from = invoice.status as InvoiceStatus;
   if (!validNextInvoiceStatuses(from).includes(toStatus)) {
-    return { ok: false, error: `Cannot move from "${from}" to "${toStatus}".` };
+    return { ok: false, error: t("invCannotMove", { from, to: toStatus }) };
   }
 
   const { error: updErr } = await supabase
@@ -181,7 +186,7 @@ async function transition(
     .eq("id", invoiceId)
     .eq("status", from);
   if (updErr) {
-    return { ok: false, error: `Could not update invoice: ${updErr.message}` };
+    return { ok: false, error: t("invCouldNotUpdate", { detail: updErr.message }) };
   }
 
   revalidatePath("/invoices");

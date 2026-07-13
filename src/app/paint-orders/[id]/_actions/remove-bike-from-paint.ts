@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,8 +19,9 @@ export async function removeBikeFromPaintOrder(
   serviceOrderId: string,
   bikeId: string,
 ): Promise<RemoveBikeFromPaintResult> {
-  if (!serviceOrderId) return { ok: false, error: "Missing order id." };
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
 
   const supabase = await createClient();
 
@@ -31,13 +33,15 @@ export async function removeBikeFromPaintOrder(
   if (orderErr || !order) {
     return {
       ok: false,
-      error: `Could not load order: ${orderErr?.message ?? "not found"}`,
+      error: t("paintCouldNotLoadOrder", {
+        detail: orderErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (order.status !== "planned") {
     return {
       ok: false,
-      error: `Bikes can only be removed while the order is still planned (current: ${order.status}).`,
+      error: t("paintBikeRemovePlannedOnly", { status: order.status }),
     };
   }
 
@@ -47,7 +51,10 @@ export async function removeBikeFromPaintOrder(
     .eq("service_order_id", serviceOrderId)
     .eq("bike_id", bikeId);
   if (delErr) {
-    return { ok: false, error: `Could not remove bike: ${delErr.message}` };
+    return {
+      ok: false,
+      error: t("paintCouldNotRemoveBike", { detail: delErr.message }),
+    };
   }
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);

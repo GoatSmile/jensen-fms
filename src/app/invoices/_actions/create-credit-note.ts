@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { round2 } from "@/lib/invoicing/status";
+import { getTranslations } from "next-intl/server";
 
 export type CreateCreditNoteResult = { ok: false; error: string };
 
@@ -22,7 +23,8 @@ export type CreateCreditNoteResult = { ok: false; error: string };
 export async function createCreditNote(
   invoiceId: string,
 ): Promise<CreateCreditNoteResult> {
-  if (!invoiceId) return { ok: false, error: "Missing invoice id." };
+  const t = await getTranslations("errors");
+  if (!invoiceId) return { ok: false, error: t("missingInvoiceId") };
 
   const supabase = await createClient();
 
@@ -52,16 +54,18 @@ export async function createCreditNote(
   if (invoiceRes.error || !invoice) {
     return {
       ok: false,
-      error: `Could not load invoice: ${invoiceRes.error?.message ?? "not found"}`,
+      error: t("invCouldNotLoadInvoice", {
+        detail: invoiceRes.error?.message ?? t("notFound"),
+      }),
     };
   }
   if (invoice.credited_invoice_id) {
-    return { ok: false, error: "This is already a credit note." };
+    return { ok: false, error: t("invAlreadyCreditNote") };
   }
   if (!["issued", "overdue", "paid"].includes(invoice.status as string)) {
     return {
       ok: false,
-      error: "Only issued invoices can be credited — cancel drafts instead.",
+      error: t("invOnlyIssuedCredited"),
     };
   }
 
@@ -75,7 +79,7 @@ export async function createCreditNote(
   if (existing) {
     return {
       ok: false,
-      error: `A credit note already exists for this invoice (${existing.invoice_number}).`,
+      error: t("invCreditNoteExists", { number: existing.invoice_number }),
     };
   }
 
@@ -99,7 +103,9 @@ export async function createCreditNote(
   if (cnErr || !creditNote) {
     return {
       ok: false,
-      error: `Could not create credit note: ${cnErr?.message ?? "unknown error"}`,
+      error: t("invCouldNotCreateCreditNote", {
+        detail: cnErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -130,7 +136,7 @@ export async function createCreditNote(
       await supabase.from("invoices").delete().eq("id", creditNote.id);
       return {
         ok: false,
-        error: `Could not mirror invoice lines: ${linesErr.message}`,
+        error: t("invCouldNotMirrorLines", { detail: linesErr.message }),
       };
     }
   }

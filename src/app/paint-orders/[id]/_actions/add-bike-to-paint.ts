@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -24,8 +25,9 @@ export async function addBikeToPaintOrder(
   bikeId: string,
   opts: { notes?: string | null } = {},
 ): Promise<AddBikeToPaintResult> {
-  if (!serviceOrderId) return { ok: false, error: "Missing order id." };
-  if (!bikeId) return { ok: false, error: "Pick a bike to add." };
+  const t = await getTranslations("errors");
+  if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
+  if (!bikeId) return { ok: false, error: t("paintPickBike") };
 
   const supabase = await createClient();
 
@@ -37,13 +39,15 @@ export async function addBikeToPaintOrder(
   if (orderErr || !order) {
     return {
       ok: false,
-      error: `Could not load order: ${orderErr?.message ?? "not found"}`,
+      error: t("paintCouldNotLoadOrder", {
+        detail: orderErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (order.status === "received_back" || order.status === "cancelled") {
     return {
       ok: false,
-      error: `Cannot add bikes to a ${order.status} order.`,
+      error: t("paintCannotAddBikes", { status: order.status }),
     };
   }
 
@@ -54,9 +58,12 @@ export async function addBikeToPaintOrder(
   });
   if (insErr) {
     if (insErr.code === "23505") {
-      return { ok: false, error: "That bike is already on this order." };
+      return { ok: false, error: t("paintBikeAlreadyOn") };
     }
-    return { ok: false, error: `Could not add bike: ${insErr.message}` };
+    return {
+      ok: false,
+      error: t("paintCouldNotAddBike", { detail: insErr.message }),
+    };
   }
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);

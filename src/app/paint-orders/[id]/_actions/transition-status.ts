@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { getOrFetchRate } from "@/lib/fx/get-or-fetch";
@@ -33,7 +34,8 @@ export async function transitionServiceOrderStatus(
   toStatus: ServiceOrderStatus,
   reason: string | null,
 ): Promise<TransitionServiceOrderResult> {
-  if (!serviceOrderId) return { ok: false, error: "Missing order id." };
+  const t = await getTranslations("errors");
+  if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
 
   const supabase = await createClient();
   const { data: order, error: lookupErr } = await supabase
@@ -44,18 +46,20 @@ export async function transitionServiceOrderStatus(
   if (lookupErr || !order) {
     return {
       ok: false,
-      error: `Could not load order: ${lookupErr?.message ?? "not found"}`,
+      error: t("paintCouldNotLoadOrder", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
   const fromStatus = order.status as ServiceOrderStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
   if (!validNextServiceOrderStatuses(fromStatus).includes(toStatus)) {
     return {
       ok: false,
-      error: `Cannot move from "${fromStatus}" to "${toStatus}".`,
+      error: t("paintCannotMove", { from: fromStatus, to: toStatus }),
     };
   }
 
@@ -63,7 +67,7 @@ export async function transitionServiceOrderStatus(
   if (serviceOrderTransitionRequiresReason(toStatus) && trimmedReason === "") {
     return {
       ok: false,
-      error: "A reason is required when cancelling the order.",
+      error: t("reasonRequiredCancel"),
     };
   }
 
@@ -76,6 +80,7 @@ export async function transitionServiceOrderStatus(
       order.supplier_id,
       order.service_type_id,
       nowIso.slice(0, 10),
+      t,
     );
     if (!snapshot.ok) return snapshot;
   }
@@ -109,13 +114,15 @@ export async function transitionServiceOrderStatus(
     .eq("status", fromStatus)
     .select("id");
   if (updErr) {
-    return { ok: false, error: `Could not update status: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("paintCouldNotUpdateStatus", { detail: updErr.message }),
+    };
   }
   if (!updated || updated.length === 0) {
     return {
       ok: false,
-      error:
-        "The order's status changed while you were looking at it — refresh and try again.",
+      error: t("paintStatusChangedConcurrent"),
     };
   }
 
@@ -135,6 +142,7 @@ async function snapshotItemPrices(
   supplierId: string,
   serviceTypeId: string,
   sendDate: string,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): Promise<TransitionServiceOrderResult> {
   const { data: items, error: itemsErr } = await supabase
     .from("service_order_items")
@@ -143,13 +151,15 @@ async function snapshotItemPrices(
     )
     .eq("service_order_id", orderId);
   if (itemsErr) {
-    return { ok: false, error: `Could not load items: ${itemsErr.message}` };
+    return {
+      ok: false,
+      error: t("paintCouldNotLoadItems", { detail: itemsErr.message }),
+    };
   }
   if (!items || items.length === 0) {
     return {
       ok: false,
-      error:
-        "Add at least one item line (what gets painted, and how many) before sending — the send freezes the order's cost basis.",
+      error: t("paintAddItemBeforeSending"),
     };
   }
 
@@ -157,8 +167,7 @@ async function snapshotItemPrices(
   if (!list) {
     return {
       ok: false,
-      error:
-        "This supplier has no current price list for this service, so the items can't be priced. Add the price list first.",
+      error: t("paintNoPriceList"),
     };
   }
 
@@ -170,7 +179,7 @@ async function snapshotItemPrices(
     ].join(", ");
     return {
       ok: false,
-      error: `The current price list ("${list.name}") has no price for: ${names}. Add the missing prices or remove those lines before sending.`,
+      error: t("paintPriceListMissingPrices", { name: list.name, names }),
     };
   }
 
@@ -181,7 +190,10 @@ async function snapshotItemPrices(
     if (!fx) {
       return {
         ok: false,
-        error: `Could not look up the ${list.currency}→DKK rate for ${sendDate}. Try again, or check the FX admin.`,
+        error: t("paintCouldNotLookUpRate", {
+          currency: list.currency,
+          date: sendDate,
+        }),
       };
     }
     fxRate = fx.rate;
@@ -202,7 +214,7 @@ async function snapshotItemPrices(
     if (error) {
       return {
         ok: false,
-        error: `Could not freeze the price snapshot: ${error.message}. The order was NOT sent — fix and retry.`,
+        error: t("paintCouldNotFreezeSnapshot", { detail: error.message }),
       };
     }
   }

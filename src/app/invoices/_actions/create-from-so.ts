@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { round2 } from "@/lib/invoicing/status";
+import { getTranslations } from "next-intl/server";
 
 export type CreateInvoiceFromSOResult = { ok: false; error: string };
 
@@ -22,7 +23,8 @@ export type CreateInvoiceFromSOResult = { ok: false; error: string };
 export async function createInvoiceFromSO(
   soId: string,
 ): Promise<CreateInvoiceFromSOResult> {
-  if (!soId) return { ok: false, error: "Missing sales order id." };
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("invMissingSoId") };
 
   const supabase = await createClient();
 
@@ -45,17 +47,17 @@ export async function createInvoiceFromSO(
   if (soErr || !so) {
     return {
       ok: false,
-      error: `Could not load sales order: ${soErr?.message ?? "not found"}`,
+      error: t("invCouldNotLoadSo", { detail: soErr?.message ?? t("notFound") }),
     };
   }
   const one = <T,>(v: T | T[] | null): T | null =>
     Array.isArray(v) ? (v[0] ?? null) : v;
 
   if (so.status !== "delivered") {
-    return { ok: false, error: "Only delivered sales orders can be invoiced." };
+    return { ok: false, error: t("invOnlyDeliveredSo") };
   }
   if (!so.organization_id) {
-    return { ok: false, error: "The sales order has no customer organization." };
+    return { ok: false, error: t("invSoNoCustomer") };
   }
 
   // Only a prior standard/final invoice blocks this one — deposits are expected
@@ -72,13 +74,13 @@ export async function createInvoiceFromSO(
   if (existing) {
     return {
       ok: false,
-      error: `An invoice already exists for this SO (${existing.invoice_number}).`,
+      error: t("invSoInvoiceExists", { number: existing.invoice_number }),
     };
   }
 
   const soLines = (so.lines ?? []).filter((l) => Number(l.quantity) > 0);
   if (soLines.length === 0) {
-    return { ok: false, error: "The sales order has no lines to invoice." };
+    return { ok: false, error: t("invSoNoLines") };
   }
 
   // VAT lookup: every code, keyed for two jobs — the DK_STANDARD fallback for
@@ -231,7 +233,7 @@ export async function createInvoiceFromSO(
   if (depositCount > 0 && round2(subtotal) <= 0) {
     return {
       ok: false,
-      error: "Deposits already cover this order in full — nothing left to bill.",
+      error: t("invDepositsCoverFull"),
     };
   }
   const invoiceKind = depositCount > 0 ? "final" : "standard";
@@ -261,7 +263,7 @@ export async function createInvoiceFromSO(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: `Could not create invoice: ${invErr?.message ?? "unknown error"}`,
+      error: t("invCouldNotCreate", { detail: invErr?.message ?? t("unknownError") }),
     };
   }
 
@@ -272,7 +274,7 @@ export async function createInvoiceFromSO(
     await supabase.from("invoices").delete().eq("id", invoice.id);
     return {
       ok: false,
-      error: `Could not write invoice lines: ${linesErr.message}`,
+      error: t("invCouldNotWriteLines", { detail: linesErr.message }),
     };
   }
 

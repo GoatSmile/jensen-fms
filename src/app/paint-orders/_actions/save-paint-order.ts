@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -22,13 +23,14 @@ export type SavePaintOrderResult =
 export async function createPaintOrder(
   formData: FormData,
 ): Promise<SavePaintOrderResult> {
+  const t = await getTranslations("errors");
   const supplier_id = nullable(formData.get("supplier_id"));
   const color_id = nullable(formData.get("color_id"));
   const planned_send_date = nullable(formData.get("planned_send_date"));
   const notes = nullable(formData.get("notes"));
 
   if (!supplier_id) {
-    return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
+    return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
   }
   // Colour is an optional batch DEFAULT — it pre-fills new item lines.
 
@@ -36,7 +38,7 @@ export async function createPaintOrder(
 
   const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
   if (!serviceType) {
-    return { ok: false, error: "Painting service type is missing." };
+    return { ok: false, error: t("paintServiceTypeMissing") };
   }
 
   const { data: numberData, error: numErr } = await supabase.rpc(
@@ -46,7 +48,9 @@ export async function createPaintOrder(
   if (numErr || typeof numberData !== "string") {
     return {
       ok: false,
-      error: `Could not allocate paint-order number: ${numErr?.message ?? "unknown error"}`,
+      error: t("paintCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -66,7 +70,9 @@ export async function createPaintOrder(
   if (error || !data) {
     return {
       ok: false,
-      error: `Could not create paint order: ${error?.message ?? "unknown error"}`,
+      error: t("paintCouldNotCreate", {
+        detail: error?.message ?? t("unknownError"),
+      }),
     };
   }
 

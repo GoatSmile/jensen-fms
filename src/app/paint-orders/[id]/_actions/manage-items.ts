@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type ManageItemResult = { ok: true } | { ok: false; error: string };
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
 /**
  * Item lines (part type × qty × colour) are editable only while the order is
@@ -16,6 +19,7 @@ export type ManageItemResult = { ok: true } | { ok: false; error: string };
 async function assertPlanned(
   supabase: Awaited<ReturnType<typeof createClient>>,
   serviceOrderId: string,
+  t: Translator,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: order, error } = await supabase
     .from("service_orders")
@@ -25,13 +29,15 @@ async function assertPlanned(
   if (error || !order) {
     return {
       ok: false,
-      error: `Could not load order: ${error?.message ?? "not found"}`,
+      error: t("paintCouldNotLoadOrder", {
+        detail: error?.message ?? t("notFound"),
+      }),
     };
   }
   if (order.status !== "planned") {
     return {
       ok: false,
-      error: `Items can only be changed while the order is planned (current: ${order.status}).`,
+      error: t("paintItemsPlannedOnly", { status: order.status }),
     };
   }
   return { ok: true };
@@ -39,10 +45,11 @@ async function assertPlanned(
 
 function parseQuantity(
   raw: unknown,
+  t: Translator,
 ): { ok: true; value: number } | { ok: false; error: string } {
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) {
-    return { ok: false, error: "Quantity must be a whole number above zero." };
+    return { ok: false, error: t("paintQtyWholeAboveZero") };
   }
   return { ok: true, value: n };
 }
@@ -56,15 +63,16 @@ export async function addServiceOrderItem(
     notes?: string | null;
   },
 ): Promise<ManageItemResult> {
-  if (!serviceOrderId) return { ok: false, error: "Missing order id." };
+  const t = await getTranslations("errors");
+  if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
   if (!input.servicePartTypeId) {
-    return { ok: false, error: "Pick a part type." };
+    return { ok: false, error: t("paintPickPartType") };
   }
-  const qty = parseQuantity(input.quantity);
+  const qty = parseQuantity(input.quantity, t);
   if (!qty.ok) return qty;
 
   const supabase = await createClient();
-  const guard = await assertPlanned(supabase, serviceOrderId);
+  const guard = await assertPlanned(supabase, serviceOrderId, t);
   if (!guard.ok) return guard;
 
   const { error } = await supabase.from("service_order_items").insert({
@@ -75,7 +83,7 @@ export async function addServiceOrderItem(
     notes: nullable(input.notes ?? null),
   });
   if (error) {
-    return { ok: false, error: `Could not add item: ${error.message}` };
+    return { ok: false, error: t("paintCouldNotAddItem", { detail: error.message }) };
   }
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);
@@ -87,13 +95,14 @@ export async function updateServiceOrderItem(
   itemId: string,
   patch: { quantity?: number; colorId?: string | null },
 ): Promise<ManageItemResult> {
+  const t = await getTranslations("errors");
   if (!serviceOrderId || !itemId) {
-    return { ok: false, error: "Missing order or item id." };
+    return { ok: false, error: t("paintMissingOrderOrItem") };
   }
 
   const update: { quantity?: number; color_id?: string | null } = {};
   if ("quantity" in patch && patch.quantity !== undefined) {
-    const qty = parseQuantity(patch.quantity);
+    const qty = parseQuantity(patch.quantity, t);
     if (!qty.ok) return qty;
     update.quantity = qty.value;
   }
@@ -101,7 +110,7 @@ export async function updateServiceOrderItem(
   if (Object.keys(update).length === 0) return { ok: true };
 
   const supabase = await createClient();
-  const guard = await assertPlanned(supabase, serviceOrderId);
+  const guard = await assertPlanned(supabase, serviceOrderId, t);
   if (!guard.ok) return guard;
 
   const { error } = await supabase
@@ -110,7 +119,7 @@ export async function updateServiceOrderItem(
     .eq("id", itemId)
     .eq("service_order_id", serviceOrderId);
   if (error) {
-    return { ok: false, error: `Could not update item: ${error.message}` };
+    return { ok: false, error: t("paintCouldNotUpdateItem", { detail: error.message }) };
   }
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);
@@ -121,12 +130,13 @@ export async function removeServiceOrderItem(
   serviceOrderId: string,
   itemId: string,
 ): Promise<ManageItemResult> {
+  const t = await getTranslations("errors");
   if (!serviceOrderId || !itemId) {
-    return { ok: false, error: "Missing order or item id." };
+    return { ok: false, error: t("paintMissingOrderOrItem") };
   }
 
   const supabase = await createClient();
-  const guard = await assertPlanned(supabase, serviceOrderId);
+  const guard = await assertPlanned(supabase, serviceOrderId, t);
   if (!guard.ok) return guard;
 
   const { error } = await supabase
@@ -135,7 +145,7 @@ export async function removeServiceOrderItem(
     .eq("id", itemId)
     .eq("service_order_id", serviceOrderId);
   if (error) {
-    return { ok: false, error: `Could not remove item: ${error.message}` };
+    return { ok: false, error: t("paintCouldNotRemoveItem", { detail: error.message }) };
   }
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);

@@ -9,6 +9,7 @@ import {
   type FeePeriod,
 } from "@/lib/invoicing/agreement-fees";
 import { round2 } from "@/lib/invoicing/status";
+import { getTranslations } from "next-intl/server";
 
 export type FeeInvoicesResult =
   | {
@@ -26,6 +27,7 @@ export type FeeInvoicesResult =
  * the usual DRAFT-xxxx placeholder until issue.
  */
 export async function createAgreementFeeInvoices(): Promise<FeeInvoicesResult> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
 
   const result = await findUnbilledFeePeriods(supabase);
@@ -33,7 +35,7 @@ export async function createAgreementFeeInvoices(): Promise<FeeInvoicesResult> {
   if (result.periods.length === 0) {
     return {
       ok: false,
-      error: "Nothing to bill — every active agreement is billed up to last month.",
+      error: t("invNothingToBill"),
     };
   }
 
@@ -46,7 +48,7 @@ export async function createAgreementFeeInvoices(): Promise<FeeInvoicesResult> {
   if (vatErr || !vat) {
     return {
       ok: false,
-      error: "VAT code DK_STANDARD is missing or archived — check /admin.",
+      error: t("invVatCodeMissing"),
     };
   }
   const vatRate = Number(vat.default_rate);
@@ -110,9 +112,16 @@ export async function createAgreementFeeInvoices(): Promise<FeeInvoicesResult> {
     if (invErr || !invoice) {
       return {
         ok: false,
-        error: `Could not create fee invoice for ${periods[0].orgName}: ${
-          invErr?.message ?? "unknown error"
-        }${invoices.length > 0 ? ` Already drafted: ${invoices.map((d) => d.orgName).join(", ")}.` : ""}`,
+        error:
+          t("invCouldNotCreateFeeInvoice", {
+            org: periods[0].orgName,
+            detail: invErr?.message ?? t("unknownError"),
+          }) +
+          (invoices.length > 0
+            ? t("invAlreadyDrafted", {
+                names: invoices.map((d) => d.orgName).join(", "),
+              })
+            : ""),
       };
     }
 
@@ -123,7 +132,10 @@ export async function createAgreementFeeInvoices(): Promise<FeeInvoicesResult> {
       await supabase.from("invoices").delete().eq("id", invoice.id);
       return {
         ok: false,
-        error: `Could not write fee lines for ${periods[0].orgName}: ${linesErr.message}`,
+        error: t("invCouldNotWriteFeeLines", {
+          org: periods[0].orgName,
+          detail: linesErr.message,
+        }),
       };
     }
 
