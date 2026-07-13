@@ -1183,8 +1183,9 @@ when the work ships or the idea is rejected.
     convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
     for not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
-  - **Remaining clusters**: the QR page + any global-chrome leftovers
-    (the admin cluster is now DONE — 84013ee). Also a mop-up pass for
+  - **Remaining clusters**: any global-chrome leftovers only — the admin
+    cluster (84013ee) and the QR pages (`/qr/[bikeId]` + `/qr/print`,
+    66fe7a6, `qr` namespace) are now DONE. Also a mop-up pass for
     server-action error strings
     (bikes/templates/parts/maintenance/MO/PO/SO/paint/invoices/service-
     agreements/customers/admin actions still return English; harmless
