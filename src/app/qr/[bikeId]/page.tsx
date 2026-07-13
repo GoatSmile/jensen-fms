@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Download, Printer } from "lucide-react";
 
 import {
@@ -35,6 +36,10 @@ export default async function BikeQRPage({
 }) {
   const { bikeId } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("qr"),
+    getTranslations("common"),
+  ]);
 
   const { data: bike, error } = await supabase
     .from("bikes")
@@ -72,13 +77,13 @@ export default async function BikeQRPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/bikes">Bikes</Link>
+              <Link href="/bikes">{t("crumbBikes")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -94,18 +99,16 @@ export default async function BikeQRPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>QR sticker</BreadcrumbPage>
+            <BreadcrumbPage>{t("sticker")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">QR sticker</h1>
-        <p className="text-muted-foreground text-sm">
-          Print or download. Scanning the code lands on a public page where
-          customers can report a problem; staff can open the full bike
-          detail from there.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("sticker")}
+        </h1>
+        <p className="text-muted-foreground text-sm">{t("description")}</p>
       </div>
 
       <section className="flex flex-col items-center gap-4 rounded-lg border bg-white p-6 print:border-0 print:p-0">
@@ -139,7 +142,7 @@ export default async function BikeQRPage({
             href={`/api/qr/${bike.id}.svg`}
             download={`${bike.frame_number}.svg`}
           >
-            <Download aria-hidden /> Download SVG
+            <Download aria-hidden /> {t("downloadSvg")}
           </a>
         </Button>
         <Button variant="outline" asChild>
@@ -147,12 +150,12 @@ export default async function BikeQRPage({
             href={`/api/qr/${bike.id}.png`}
             download={`${bike.frame_number}.png`}
           >
-            <Download aria-hidden /> Download PNG
+            <Download aria-hidden /> {t("downloadPng")}
           </a>
         </Button>
         <Button asChild>
           <Link href={`/qr/print?bikes=${bike.id}`}>
-            <Printer aria-hidden /> Print sheet
+            <Printer aria-hidden /> {t("printSheet")}
           </Link>
         </Button>
       </div>

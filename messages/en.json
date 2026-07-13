@@ -3060,5 +3060,16 @@
     "subtitle": "The vendors parts are bought from. Used by part offerings, purchase orders, and paint orders. Archived suppliers stay on historical records but drop out of new pickers.",
     "termsPlaceholder": "e.g. 30",
     "upToDate": "Up to date"
+  },
+  "qr": {
+    "crumbBikes": "Bikes",
+    "sticker": "QR sticker",
+    "description": "Print or download. Scanning the code lands on a public page where customers can report a problem; staff can open the full bike detail from there.",
+    "downloadSvg": "Download SVG",
+    "downloadPng": "Download PNG",
+    "printSheet": "Print sheet",
+    "sheet": "QR sticker sheet",
+    "sheetSummary": "{count, plural, one {# bike} other {# bikes}} on this sheet. A4-fits 3×8 cells; print at 100% scale.",
+    "sheetEmpty": "No bikes match the requested ids."
   }
 }

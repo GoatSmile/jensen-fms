@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -37,6 +38,10 @@ export default async function QRPrintPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("qr"),
+    getTranslations("common"),
+  ]);
   const limit = Math.max(1, Math.min(96, parseInt(sp.limit ?? "24", 10) || 24));
   const ids = (sp.bikes ?? "")
     .split(",")
@@ -76,29 +81,28 @@ export default async function QRPrintPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/">Dashboard</Link>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/bikes">Bikes</Link>
+                <Link href="/bikes">{t("crumbBikes")}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>QR sticker sheet</BreadcrumbPage>
+              <BreadcrumbPage>{t("sheet")}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              QR sticker sheet
+              {t("sheet")}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              {bikes.length} {bikes.length === 1 ? "bike" : "bikes"} on this
-              sheet. A4-fits 3×8 cells; print at 100% scale.
+              {t("sheetSummary", { count: bikes.length })}
             </p>
           </div>
           <PrintButton />
@@ -107,7 +111,7 @@ export default async function QRPrintPage({
 
       {qrs.length === 0 ? (
         <p className="text-muted-foreground text-center text-sm">
-          No bikes match the requested ids.
+          {t("sheetEmpty")}
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 print:grid-cols-3 print:gap-2">

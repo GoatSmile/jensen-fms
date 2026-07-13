@@ -3060,5 +3060,16 @@
     "subtitle": "De leverandører, varer købes fra. Bruges af varetilbud, indkøbsordrer og malingsordrer. Arkiverede leverandører forbliver på historiske poster, men falder ud af nye vælgere.",
     "termsPlaceholder": "f.eks. 30",
     "upToDate": "Opdateret"
+  },
+  "qr": {
+    "crumbBikes": "Cykler",
+    "sticker": "QR-klistermærke",
+    "description": "Udskriv eller download. Når koden scannes, lander man på en offentlig side, hvor kunder kan rapportere et problem; personalet kan åbne den fulde cykeldetalje derfra.",
+    "downloadSvg": "Hent SVG",
+    "downloadPng": "Hent PNG",
+    "printSheet": "Udskriv ark",
+    "sheet": "QR-klistermærkeark",
+    "sheetSummary": "{count, plural, one {# cykel} other {# cykler}} på dette ark. A4 passer 3×8 celler; udskriv i 100 % skala.",
+    "sheetEmpty": "Ingen cykler matcher de anmodede id'er."
   }
 }
