@@ -1186,34 +1186,34 @@ when the work ships or the idea is rejected.
   - **Global-chrome leftovers DONE 2026-07-13** (0942f63): the
     shared-password login screen (`auth` namespace) + the mobile scan FAB
     aria-label (`scan.fabLabel`). Every visible UI surface is now swept.
-  - **Server-action error-string mop-up — IN PROGRESS 2026-07-13.** The
-    ~530 English error strings that actions return/throw
-    (`{ error: "…" }` / `throw new Error("…")`) are being localized AT THE
-    SOURCE: each action does `const t = await getTranslations("errors")`
-    and returns `t("key")` / `t("key", { detail })`. Locale resolves
-    per-surface in action context (the action POST hits the page path,
-    middleware stamps `x-pathname`) — verified live in Danish (placing a
-    line-less draft PO). Shared **flat `errors` namespace**: common
-    cross-module keys (missingId, couldNotSave{detail}, pickSupplier,
-    alreadyInState…) + module-prefixed keys (`bike*`, `tpl*`, `po*`…).
-    Rule: only human-authored string literals convert; Supabase-destructured
-    `error:` bindings, console strings, comments, and page-load data-fetch
-    throws (`page.tsx` "Failed to load…") stay as-is. Raw DB/API messages
-    ride along as the `{detail}` value (only our prefix is translated).
-    **DONE**: PO status transitions (transition-po.ts, fd18b1a), **bikes**
-    + **bike-templates** actions (c2c1df7). **REMAINING** action modules
-    (each independent, same pattern — good for parallel agents that return
-    a `{key:{en,da}}` map for a CENTRAL JSON merge, never editing
-    messages/*.json concurrently): parts · maintenance (tickets + WOs) +
-    `work/[woId]` image actions + `_actions/month-detail` · manufacturing-
-    orders (13 files) · purchase-orders (save-po, lookup-fx, manage-lines,
-    email-po, receive — transition-po already done) · sales-orders ·
-    paint-orders · invoices · admin (13 files) · organizations +
-    service-agreements. EXCLUDED (own per-document language): the public
-    `/b/[bikeId]` + `/report` action files. (A 9-agent fan-out on 2026-07-13
-    was cut short by an API session limit after only bikes + templates
-    returned; the other 7 were reverted clean — re-run them.) Harmless
-    fallback meanwhile: untranslated actions still return English.
+  - **Server-action error-string mop-up — COMPLETE 2026-07-13.** Every
+    English error string an action returns/throws (`{ error: "…" }` /
+    `throw new Error("…")`) is localized AT THE SOURCE: each action does
+    `const t = await getTranslations("errors")` and returns `t("key")` /
+    `t("key", { detail })`. Locale resolves per-surface in action context
+    (the action POST hits the page path, middleware stamps `x-pathname`) —
+    verified live in Danish (placing a line-less draft PO). Shared **flat
+    `errors` namespace** (~560 keys, en+da): common cross-module keys
+    (missingId, couldNotSave{detail}, pickSupplier, alreadyInState…) +
+    module-prefixed keys (`bike*`/`tpl*`/`part*`/`ticket*`/`wo*`/`mo*`/`po*`/
+    `so*`/`paint*`/`inv*`/`org*`/`sa*`/`admin*`). Rule applied throughout:
+    only human-authored string literals convert; Supabase-destructured
+    `error:` bindings, console strings, comments, page-load data-fetch
+    throws (`page.tsx`/`_components` loaders "Failed to load…"), internal
+    control-flow throws, and supplier/e-conomic verbatim API errors stay
+    as-is; raw DB/API messages ride along as the `{detail}` value (only our
+    prefix is translated). Shipped across commits fd18b1a (foundation + PO
+    transitions), c2c1df7 (bikes + templates), a2b6855 (parts + maintenance/
+    work), 6b20989 (MO + PO/SO), 847fc83 (paint + invoices), ca89d23 (orgs +
+    service-agreements), 0beeefe (admin). EXCLUDED by design (own
+    per-document language): the public `/b/[bikeId]` + `/report` action
+    files; `test-economic.ts` + `push-economic.ts` (verbatim e-conomic
+    responses). Deferred as out-of-scope: fx-rates ok:true success
+    `message:` strings (not errors). Method note: modules ran as parallel
+    agents returning a `{key:{en,da}}` map for a CENTRAL JSON merge (never
+    editing messages/*.json concurrently); a mid-sweep API session limit
+    was worked around by finishing several modules directly via an exact
+    import+replace script (`scratchpad/i18n_convert.py` pattern).
     Service/part-type + service-type names on `/admin/services`
     render `service_part_types.name_en` / `service_types.name_en` — DB vocab,
     same separate-concern bucket as bike-type/colour/category names.
