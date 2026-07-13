@@ -1214,17 +1214,40 @@ when the work ships or the idea is rejected.
     editing messages/*.json concurrently); a mid-sweep API session limit
     was worked around by finishing several modules directly via an exact
     import+replace script (`scratchpad/i18n_convert.py` pattern).
-    Service/part-type + service-type names on `/admin/services`
-    render `service_part_types.name_en` / `service_types.name_en` — DB vocab,
-    same separate-concern bucket as bike-type/colour/category names.
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes
     per-user at M1. See `docs/plan-july9-vacation-month.md`.
-    Data-not-UI notes: batch-grid identifier column headers render
-    `bike_identifier_types.name_en` (DB vocab) — bilingual vocab names
-    are a separate, unstarted concern; same for `bike_types.name_en`,
-    colour names, and category names surfaced in pickers.
+  - **Controlled-vocab names (categories, types, colours…) — PLANNED,
+    helper built 2026-07-13, render sweep NOT yet run.** Correction to an
+    earlier note that called this a "separate unstarted concern needing
+    bilingual columns": the schema is ALREADY bilingual and the Danish is
+    ALREADY authored. Every controlled-vocab table has `name_en` + `name_da`
+    (orgs: `display_name_en/_da`), and `name_da` is fully populated on the
+    ones that matter — part_categories 71/71, bike_identifier_types 13/13,
+    tax_identifier_types 11/11, bike_types 7/7, vat_codes 7/7,
+    service_part_types 8/8, customer_segments 7/10, colors 5/5,
+    service_types 1/1, inventory_locations 1/1. The app just renders
+    `name_en` unconditionally, so a Danish user still sees "Brakes",
+    "Frame Number", "Electric Bike". Remaining work is a **code sweep**
+    (no migration, no data entry): add `name_da` to the vocab embeds/selects
+    and render through the pure helper `localizedName(locale, en, da)` in
+    `src/i18n/vocab.ts` (da→`name_da||name_en`, en→`name_en||name_da`, so a
+    blank never renders empty). Locale from `getLocale()` (server) /
+    `useLocale()` (client). **Scope ~82 files** across app modules + a few
+    `src/lib` loaders. IN: the 10 vocabs above. **OUT (deliberate):**
+    `parts.name_en` (6/176 real da — English product names) and
+    `bike_templates.name_en` (0/8) — owner-confirmed exclusion 2026-07-13;
+    `bike_families.name` (single col, proper nouns); org `display_name`/
+    `legal_name` (identity, already da-first ad-hoc). Wrinkle: the parts
+    LIST shows `category_name` precomputed by a DB view — localize via a
+    lookup against the already-loaded category list (which gains `name_da`),
+    not the view. Fold in `colorFinishLabel` (Glossy/Matte/Satin/Clear) as
+    a message-namespace enum (it's code-side, not DB vocab). Method when
+    run: reference module first, then parallel agents per module (NO JSON
+    merge this time — cleaner than the error sweep). `bike_families.name`,
+    `bike_types.name_en` etc. surfaced in pickers all go through the same
+    helper once swept.
 
 - **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
