@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { KIT_STICKER_COLORS } from "@/lib/kits/colors";
@@ -10,7 +11,10 @@ export type KitResult =
   | { ok: true; id: string }
   | { ok: false; error: string; field?: string };
 
-function parseKit(fd: FormData):
+function parseKit(
+  fd: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
+):
   | {
       ok: true;
       values: {
@@ -25,7 +29,7 @@ function parseKit(fd: FormData):
     !sticker_color ||
     !KIT_STICKER_COLORS.some((c) => c.slug === sticker_color)
   ) {
-    return { ok: false, error: "Pick a sticker colour.", field: "sticker_color" };
+    return { ok: false, error: t("adminKitPickColor"), field: "sticker_color" };
   }
 
   // Number is optional — blank means a bare-colour code ("Red"). When
@@ -37,7 +41,7 @@ function parseKit(fd: FormData):
     if (!Number.isInteger(n) || n <= 0) {
       return {
         ok: false,
-        error: "The number must be a positive whole number, or blank for a colour-only code.",
+        error: t("adminKitNumberPositive"),
         field: "kit_number",
       };
     }
@@ -61,7 +65,8 @@ function revalidateKitSurfaces() {
 }
 
 export async function createKit(fd: FormData): Promise<KitResult> {
-  const parsed = parseKit(fd);
+  const t = await getTranslations("errors");
+  const parsed = parseKit(fd, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -71,12 +76,12 @@ export async function createKit(fd: FormData): Promise<KitResult> {
     .select("id")
     .single();
   if (error || !data) {
-    const msg = error?.message ?? "unknown error";
+    const msg = error?.message ?? t("unknownError");
     return {
       ok: false,
       error: msg.includes("duplicate")
-        ? "That sticker code already exists."
-        : `Could not create kit: ${msg}`,
+        ? t("adminKitCodeExists")
+        : t("adminKitCouldNotCreate", { detail: msg }),
     };
   }
   revalidateKitSurfaces();
@@ -84,8 +89,9 @@ export async function createKit(fd: FormData): Promise<KitResult> {
 }
 
 export async function updateKit(id: string, fd: FormData): Promise<KitResult> {
-  if (!id) return { ok: false, error: "Missing kit id." };
-  const parsed = parseKit(fd);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("adminMissingKitId") };
+  const parsed = parseKit(fd, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -97,8 +103,8 @@ export async function updateKit(id: string, fd: FormData): Promise<KitResult> {
     return {
       ok: false,
       error: error.message.includes("duplicate")
-        ? "That sticker code already exists."
-        : `Could not save: ${error.message}`,
+        ? t("adminKitCodeExists")
+        : t("couldNotSave", { detail: error.message }),
     };
   }
   revalidateKitSurfaces();
@@ -110,13 +116,14 @@ export async function setKitActive(
   id: string,
   isActive: boolean,
 ): Promise<KitResult> {
-  if (!id) return { ok: false, error: "Missing kit id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("adminMissingKitId") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("kits")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) return { ok: false, error: `Could not update: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   revalidateKitSurfaces();
   revalidatePath(`/admin/kits/${id}`);
   return { ok: true, id };

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -28,13 +29,14 @@ type ParsedSupplier = {
 
 function parsePaymentTerms(
   raw: string | null,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; value: number | null } | { ok: false; error: string } {
   if (!raw) return { ok: true, value: null };
   const n = Number(raw);
   if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
     return {
       ok: false,
-      error: "Payment terms must be a non-negative whole number of days.",
+      error: t("adminSupplierPaymentTerms"),
     };
   }
   return { ok: true, value: n };
@@ -42,11 +44,12 @@ function parsePaymentTerms(
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedSupplier } | { ok: false; error: string } {
   const name = nullable(formData.get("name"))?.trim();
-  if (!name) return { ok: false, error: "Supplier name is required." };
+  if (!name) return { ok: false, error: t("adminSupplierNameRequired") };
 
-  const pt = parsePaymentTerms(nullable(formData.get("payment_terms_days")));
+  const pt = parsePaymentTerms(nullable(formData.get("payment_terms_days")), t);
   if (!pt.ok) return { ok: false, error: pt.error };
 
   const rawCountry = nullable(formData.get("country_code"));
@@ -82,7 +85,8 @@ function parseFormData(
 export async function createSupplier(
   formData: FormData,
 ): Promise<SupplierResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -91,10 +95,10 @@ export async function createSupplier(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A supplier named "${parsed.values.name}" already exists.`,
+        error: t("adminSupplierNameExists", { name: parsed.values.name }),
       };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/suppliers");
   revalidatePath("/admin");
@@ -105,8 +109,9 @@ export async function updateSupplier(
   id: string,
   formData: FormData,
 ): Promise<SupplierResult> {
-  if (!id) return { ok: false, error: "Missing supplier id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingSupplierId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -118,10 +123,10 @@ export async function updateSupplier(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A supplier named "${parsed.values.name}" already exists.`,
+        error: t("adminSupplierNameExists", { name: parsed.values.name }),
       };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/suppliers");
   revalidatePath("/admin");
@@ -138,7 +143,8 @@ export async function setSupplierActive(
   id: string,
   isActive: boolean,
 ): Promise<SupplierResult> {
-  if (!id) return { ok: false, error: "Missing supplier id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingSupplierId") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -146,7 +152,7 @@ export async function setSupplierActive(
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/suppliers");
   revalidatePath("/admin");

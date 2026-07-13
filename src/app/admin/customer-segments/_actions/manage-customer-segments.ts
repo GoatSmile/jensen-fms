@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -28,9 +29,10 @@ function slugify(s: string): string {
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedSegment } | { ok: false; error: string } {
   const name_en = nullable(formData.get("name_en"))?.trim();
-  if (!name_en) return { ok: false, error: "English name is required." };
+  if (!name_en) return { ok: false, error: t("englishNameRequired") };
 
   const name_da = nullable(formData.get("name_da"))?.trim() ?? null;
   const description_en =
@@ -43,7 +45,7 @@ function parseFormData(
   if (sortOrderRaw) {
     const n = Number(sortOrderRaw);
     if (!Number.isFinite(n)) {
-      return { ok: false, error: "Sort order must be a number." };
+      return { ok: false, error: t("sortOrderNumber") };
     }
     sort_order = Math.trunc(n);
   }
@@ -54,7 +56,7 @@ function parseFormData(
   const explicitSlug = nullable(formData.get("slug"))?.trim();
   const slug = slugify(explicitSlug || name_en);
   if (!slug) {
-    return { ok: false, error: "Could not generate a slug from the name." };
+    return { ok: false, error: t("adminSlugFromName") };
   }
 
   return {
@@ -74,7 +76,8 @@ function parseFormData(
 export async function createCustomerSegment(
   formData: FormData,
 ): Promise<SegmentResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -85,10 +88,12 @@ export async function createCustomerSegment(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A segment with that ${error.message.includes("slug") ? "slug" : "name"} already exists.`,
+        error: error.message.includes("slug")
+          ? t("adminSegmentSlugExists")
+          : t("adminSegmentNameExists"),
       };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/customer-segments");
   revalidatePath("/admin");
@@ -99,8 +104,9 @@ export async function updateCustomerSegment(
   id: string,
   formData: FormData,
 ): Promise<SegmentResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -112,10 +118,10 @@ export async function updateCustomerSegment(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "A segment with that slug already exists.",
+        error: t("adminSegmentSlugExists"),
       };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/customer-segments");
   revalidatePath("/admin");
@@ -130,7 +136,8 @@ export async function setCustomerSegmentActive(
   id: string,
   isActive: boolean,
 ): Promise<SegmentResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -138,7 +145,7 @@ export async function setCustomerSegmentActive(
     .update({ is_active: isActive })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/customer-segments");
   revalidatePath("/admin");

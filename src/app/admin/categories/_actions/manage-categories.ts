@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -80,9 +81,10 @@ async function wouldCycle(
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedCategory } | { ok: false; error: string } {
   const name_en = nullable(formData.get("name_en"))?.trim();
-  if (!name_en) return { ok: false, error: "English name is required." };
+  if (!name_en) return { ok: false, error: t("englishNameRequired") };
 
   const name_da = nullable(formData.get("name_da"));
   const parent_id = nullable(formData.get("parent_id"));
@@ -94,7 +96,7 @@ function parseFormData(
   if (sortOrderRaw) {
     const n = Number(sortOrderRaw);
     if (!Number.isFinite(n)) {
-      return { ok: false, error: "Sort order must be a number." };
+      return { ok: false, error: t("sortOrderNumber") };
     }
     sort_order = Math.trunc(n);
   }
@@ -116,7 +118,8 @@ function parseFormData(
 export async function createCategory(
   formData: FormData,
 ): Promise<CategoryResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -127,9 +130,9 @@ export async function createCategory(
     .insert({ ...parsed.values, slug });
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "A category with that slug already exists." };
+      return { ok: false, error: t("adminCategorySlugExists") };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/categories");
   revalidatePath("/admin");
@@ -140,8 +143,9 @@ export async function updateCategory(
   id: string,
   formData: FormData,
 ): Promise<CategoryResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -152,7 +156,7 @@ export async function updateCategory(
   ) {
     return {
       ok: false,
-      error: "A category can't be its own parent or a child of its descendants.",
+      error: t("adminCategoryCycle"),
     };
   }
 
@@ -163,7 +167,7 @@ export async function updateCategory(
     .update({ ...parsed.values, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/categories");
   revalidatePath("/admin");
@@ -180,7 +184,8 @@ export async function setCategoryActive(
   id: string,
   isActive: boolean,
 ): Promise<CategoryResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -188,7 +193,7 @@ export async function setCategoryActive(
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/categories");
   revalidatePath("/admin");

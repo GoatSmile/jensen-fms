@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { nullableString as nullable } from "@/lib/forms";
@@ -37,19 +38,20 @@ export type SaveRevisionResult = { ok: false; error: string };
 export async function saveServicePriceRevision(
   input: SaveRevisionInput,
 ): Promise<SaveRevisionResult> {
-  if (!input.supplierId) return { ok: false, error: "Pick a supplier." };
-  if (!input.serviceTypeId) return { ok: false, error: "Missing service type." };
+  const t = await getTranslations("errors");
+  if (!input.supplierId) return { ok: false, error: t("pickSupplier") };
+  if (!input.serviceTypeId) return { ok: false, error: t("adminServiceMissingType") };
   const name = input.name?.trim();
   if (!name) {
-    return { ok: false, error: "Give the revision a name (e.g. “SIK priser 2027”)." };
+    return { ok: false, error: t("adminServiceRevisionName") };
   }
   if (!/^[A-Z]{3}$/.test(input.currency ?? "")) {
-    return { ok: false, error: "Pick a currency." };
+    return { ok: false, error: t("pickCurrency") };
   }
   if (!input.items || input.items.length === 0) {
     return {
       ok: false,
-      error: "Fill in at least one price before publishing the revision.",
+      error: t("adminServiceAtLeastOnePrice"),
     };
   }
 
@@ -58,19 +60,19 @@ export async function saveServicePriceRevision(
   const byPartType = new Map<string, RevisionItemInput[]>();
   for (const item of input.items) {
     if (!item.servicePartTypeId) {
-      return { ok: false, error: "An item line is missing its part type." };
+      return { ok: false, error: t("adminServiceItemMissingPartType") };
     }
     if (!Number.isInteger(item.tierMin) || item.tierMin < 1) {
-      return { ok: false, error: "Tier boundaries must be whole numbers of 1 or more." };
+      return { ok: false, error: t("adminServiceTierWhole") };
     }
     if (
       item.tierMax != null &&
       (!Number.isInteger(item.tierMax) || item.tierMax < item.tierMin)
     ) {
-      return { ok: false, error: "A tier's upper bound can't sit below its lower bound." };
+      return { ok: false, error: t("adminServiceTierUpperLower") };
     }
     if (!Number.isFinite(item.unitPrice) || item.unitPrice < 0) {
-      return { ok: false, error: "Prices must be zero or above." };
+      return { ok: false, error: t("adminServicePriceNonNegative") };
     }
     const list = byPartType.get(item.servicePartTypeId) ?? [];
     list.push(item);
@@ -84,7 +86,10 @@ export async function saveServicePriceRevision(
       if (cur.tierMax == null || next.tierMin <= cur.tierMax) {
         return {
           ok: false,
-          error: `Overlapping quantity tiers (${cur.tierMin}–${cur.tierMax ?? "∞"} and ${next.tierMin}–${next.tierMax ?? "∞"}) on the same part type — tiers must not overlap, or the resolved price would be ambiguous.`,
+          error: t("adminServiceTierOverlap", {
+            curRange: `${cur.tierMin}–${cur.tierMax ?? "∞"}`,
+            nextRange: `${next.tierMin}–${next.tierMax ?? "∞"}`,
+          }),
         };
       }
     }
@@ -102,7 +107,7 @@ export async function saveServicePriceRevision(
     .limit(1)
     .maybeSingle();
   if (maxErr) {
-    return { ok: false, error: `Could not look up revisions: ${maxErr.message}` };
+    return { ok: false, error: t("adminServiceCouldNotLookUpRevisions", { detail: maxErr.message }) };
   }
   const nextVersion = (maxRow?.version ?? 0) + 1;
 
@@ -122,7 +127,9 @@ export async function saveServicePriceRevision(
   if (insErr || !created) {
     return {
       ok: false,
-      error: `Could not create the revision: ${insErr?.message ?? "unknown error"}`,
+      error: t("adminServiceCouldNotCreateRevision", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -142,7 +149,7 @@ export async function saveServicePriceRevision(
     await supabase.from("service_price_lists").delete().eq("id", created.id);
     return {
       ok: false,
-      error: `Could not save the prices: ${itemsErr.message}`,
+      error: t("adminServiceCouldNotSavePrices", { detail: itemsErr.message }),
     };
   }
 
@@ -154,7 +161,7 @@ export async function saveServicePriceRevision(
     await supabase.from("service_price_lists").delete().eq("id", created.id);
     return {
       ok: false,
-      error: `Could not publish the revision: ${publishErr.message}`,
+      error: t("adminServiceCouldNotPublish", { detail: publishErr.message }),
     };
   }
 

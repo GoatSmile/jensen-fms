@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -10,18 +11,19 @@ export type SettingsResult = { ok: true } | { ok: false; error: string };
 export async function saveSettings(
   formData: FormData,
 ): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
   const raw = nullable(formData.get("default_transport_pct"));
   if (!raw) {
-    return { ok: false, error: "Default transport % is required." };
+    return { ok: false, error: t("adminSettingsTransportRequired") };
   }
   const n = Number(raw.replace(",", "."));
   if (!Number.isFinite(n)) {
-    return { ok: false, error: "Default transport % must be a number." };
+    return { ok: false, error: t("adminSettingsTransportNumber") };
   }
   if (n < 0 || n > 1) {
     return {
       ok: false,
-      error: "Default transport % must be between 0 and 1 (decimal — 0.10 = 10 %).",
+      error: t("adminSettingsTransportRange"),
     };
   }
 
@@ -35,7 +37,7 @@ export async function saveSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: `Could not save settings: ${error.message}` };
+    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/admin/settings");
@@ -60,6 +62,7 @@ export async function saveSettings(
 export async function saveCommunicationSettings(
   formData: FormData,
 ): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
   const fromEmail = nullable(formData.get("outbound_from_email"));
   const replyToEmail = nullable(formData.get("outbound_reply_to_email"));
   const testEmail = nullable(formData.get("outbound_test_email"));
@@ -67,11 +70,11 @@ export async function saveCommunicationSettings(
   const testMode = formData.get("outbound_test_mode") === "on";
 
   for (const [label, value] of [
-    ["From address", fromEmail],
-    ["Reply-to address", replyToEmail],
+    [t("adminCommFromAddress"), fromEmail],
+    [t("adminCommReplyToAddress"), replyToEmail],
   ] as const) {
     if (value && !value.includes("@")) {
-      return { ok: false, error: `${label} does not look like an email.` };
+      return { ok: false, error: t("adminCommNotEmail", { label }) };
     }
   }
   // The test field may hold several addresses (comma-separated) — every
@@ -81,14 +84,14 @@ export async function saveCommunicationSettings(
     if (pieces.length === 0 || pieces.some((p) => !p.includes("@"))) {
       return {
         ok: false,
-        error: "Test recipients must be one or more emails, comma-separated.",
+        error: t("adminCommTestRecipients"),
       };
     }
   }
   if (testMode && !testEmail) {
     return {
       ok: false,
-      error: "Test mode needs at least one test recipient.",
+      error: t("adminCommTestModeNeedsRecipient"),
     };
   }
 
@@ -106,7 +109,7 @@ export async function saveCommunicationSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: `Could not save settings: ${error.message}` };
+    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/admin/settings");
@@ -136,9 +139,10 @@ export type EmailDnsRecord = {
 export async function saveEmailDnsSettings(
   formData: FormData,
 ): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
   const domain = nullable(formData.get("email_domain"));
   if (domain && !domain.includes(".")) {
-    return { ok: false, error: "Domain does not look like a domain name." };
+    return { ok: false, error: t("adminDnsDomainInvalid") };
   }
 
   const rawRecords = nullable(formData.get("records"));
@@ -146,15 +150,15 @@ export async function saveEmailDnsSettings(
   try {
     parsed = rawRecords ? JSON.parse(rawRecords) : [];
   } catch {
-    return { ok: false, error: "Could not read the DNS records payload." };
+    return { ok: false, error: t("adminDnsCouldNotRead") };
   }
   if (!Array.isArray(parsed)) {
-    return { ok: false, error: "DNS records payload must be a list." };
+    return { ok: false, error: t("adminDnsPayloadList") };
   }
   const records: EmailDnsRecord[] = [];
   for (const r of parsed) {
     if (typeof r !== "object" || r === null) {
-      return { ok: false, error: "Malformed DNS record row." };
+      return { ok: false, error: t("adminDnsMalformedRow") };
     }
     const row = r as Record<string, unknown>;
     const type = String(row.type ?? "");
@@ -164,15 +168,15 @@ export async function saveEmailDnsSettings(
     const note = String(row.note ?? "").trim();
     if (name === "" && value === "") continue; // silently drop empty rows
     if (!(DNS_RECORD_TYPES as readonly string[]).includes(type)) {
-      return { ok: false, error: `Unknown record type "${type}".` };
+      return { ok: false, error: t("adminDnsUnknownType", { type }) };
     }
     if (!(DNS_RECORD_STATUSES as readonly string[]).includes(status)) {
-      return { ok: false, error: `Unknown record status "${status}".` };
+      return { ok: false, error: t("adminDnsUnknownStatus", { status }) };
     }
     if (name === "" || value === "") {
       return {
         ok: false,
-        error: "Every DNS record needs both a name and a value.",
+        error: t("adminDnsNameValueRequired"),
       };
     }
     records.push({
@@ -195,7 +199,7 @@ export async function saveEmailDnsSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: `Could not save settings: ${error.message}` };
+    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/admin/settings");
@@ -212,6 +216,7 @@ export async function saveEmailDnsSettings(
 export async function saveLanguageSettings(
   formData: FormData,
 ): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
   const appLanguage = formData.get("app_language") === "da" ? "da" : "en";
   const workerLanguage = formData.get("worker_language") === "da" ? "da" : "en";
 
@@ -226,7 +231,7 @@ export async function saveLanguageSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: `Could not save settings: ${error.message}` };
+    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/admin/settings");
@@ -243,6 +248,7 @@ export async function saveLanguageSettings(
 export async function saveEconomicSettings(
   formData: FormData,
 ): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
   const enabled = formData.get("economic_enabled") === "on";
 
   const intField = (
@@ -253,20 +259,20 @@ export async function saveEconomicSettings(
     if (!raw || raw.trim() === "") return { value: null };
     const n = Number(raw.trim());
     if (!Number.isInteger(n) || n < 0) {
-      return { error: `${label} must be a whole number.` };
+      return { error: t("adminEconomicWholeNumber", { label }) };
     }
     return { value: n };
   };
 
-  const journal = intField("economic_journal_number", "Journal number");
+  const journal = intField("economic_journal_number", t("adminEconomicJournalNumber"));
   if ("error" in journal) return { ok: false, error: journal.error };
-  const revenue = intField("economic_revenue_account", "Revenue account");
+  const revenue = intField("economic_revenue_account", t("adminEconomicRevenueAccount"));
   if ("error" in revenue) return { ok: false, error: revenue.error };
-  const group = intField("economic_customer_group", "Customer group");
+  const group = intField("economic_customer_group", t("adminEconomicCustomerGroup"));
   if ("error" in group) return { ok: false, error: group.error };
-  const zone = intField("economic_vat_zone", "VAT zone");
+  const zone = intField("economic_vat_zone", t("adminEconomicVatZone"));
   if ("error" in zone) return { ok: false, error: zone.error };
-  const terms = intField("economic_payment_terms", "Payment terms");
+  const terms = intField("economic_payment_terms", t("adminEconomicPaymentTerms"));
   if ("error" in terms) return { ok: false, error: terms.error };
 
   const vatCodeRaw = nullable(formData.get("economic_vat_code"));
@@ -287,7 +293,7 @@ export async function saveEconomicSettings(
     })
     .eq("id", 1);
   if (error) {
-    return { ok: false, error: `Could not save settings: ${error.message}` };
+    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/admin/settings");

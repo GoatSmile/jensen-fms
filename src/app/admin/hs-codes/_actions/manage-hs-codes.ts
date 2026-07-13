@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -18,18 +19,19 @@ type ParsedHsCode = {
 
 function parsePctInput(
   raw: string | null,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; value: number } | { ok: false; error: string } {
   if (!raw || raw.trim() === "") {
-    return { ok: false, error: "Tariff % is required (decimal: 0.10 = 10 %)." };
+    return { ok: false, error: t("adminHsTariffRequired") };
   }
   const n = Number(raw.replace(",", "."));
   if (!Number.isFinite(n)) {
-    return { ok: false, error: "Tariff % must be a number." };
+    return { ok: false, error: t("adminHsTariffNumber") };
   }
   if (n < 0 || n > 1) {
     return {
       ok: false,
-      error: "Tariff % must be between 0 and 1 (decimal — 0.10 = 10 %).",
+      error: t("adminHsTariffRange"),
     };
   }
   return { ok: true, value: n };
@@ -37,14 +39,15 @@ function parsePctInput(
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedHsCode } | { ok: false; error: string } {
   const code = nullable(formData.get("code"))?.trim();
-  if (!code) return { ok: false, error: "Code is required." };
+  if (!code) return { ok: false, error: t("adminCodeRequired") };
 
   const description = nullable(formData.get("description"))?.trim();
-  if (!description) return { ok: false, error: "Description is required." };
+  if (!description) return { ok: false, error: t("adminHsDescriptionRequired") };
 
-  const tariff = parsePctInput(nullable(formData.get("tariff_pct")));
+  const tariff = parsePctInput(nullable(formData.get("tariff_pct")), t);
   if (!tariff.ok) return { ok: false, error: tariff.error };
 
   // Anti-dumping is optional. Form sends "" when not set; treat as null.
@@ -58,8 +61,7 @@ function parseFormData(
     if (!Number.isFinite(n) || n < 0 || n > 2) {
       return {
         ok: false,
-        error:
-          "Anti-dumping % must be between 0 and 2 (decimal — 0.485 = 48.5 %).",
+        error: t("adminHsAntiDumpingRange"),
       };
     }
     anti_dumping_pct = n;
@@ -81,16 +83,17 @@ function parseFormData(
 export async function createHsCode(
   formData: FormData,
 ): Promise<HsCodeResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
   const { error } = await supabase.from("hs_codes").insert(parsed.values);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: `HS code "${parsed.values.code}" already exists.` };
+      return { ok: false, error: t("adminHsCodeExists", { code: parsed.values.code }) };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/hs-codes");
   revalidatePath("/admin");
@@ -101,8 +104,9 @@ export async function updateHsCode(
   id: string,
   formData: FormData,
 ): Promise<HsCodeResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -112,9 +116,9 @@ export async function updateHsCode(
     .eq("id", id);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: `HS code "${parsed.values.code}" already exists.` };
+      return { ok: false, error: t("adminHsCodeExists", { code: parsed.values.code }) };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/hs-codes");
   revalidatePath("/admin");
@@ -137,7 +141,8 @@ export async function setHsCodeActive(
   id: string,
   isActive: boolean,
 ): Promise<HsCodeResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -145,7 +150,7 @@ export async function setHsCodeActive(
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/hs-codes");
   revalidatePath("/admin");

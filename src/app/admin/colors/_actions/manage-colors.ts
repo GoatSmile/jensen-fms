@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { ralToHex } from "@/lib/colors/ral";
 import { nullableString as nullable } from "@/lib/forms";
@@ -30,9 +31,10 @@ function slugify(s: string): string {
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedColor } | { ok: false; error: string } {
   const name_en = nullable(formData.get("name_en"))?.trim();
-  if (!name_en) return { ok: false, error: "English name is required." };
+  if (!name_en) return { ok: false, error: t("englishNameRequired") };
 
   const name_da = (nullable(formData.get("name_da"))?.trim()) || name_en;
 
@@ -43,7 +45,7 @@ function parseFormData(
     if (!/^#[0-9a-fA-F]{6}$/.test(hex)) {
       return {
         ok: false,
-        error: "Hex must be 6 hex digits (e.g. #1e4a7a) or blank.",
+        error: t("adminColorHexFormat"),
       };
     }
     hex = hex.toLowerCase();
@@ -67,7 +69,7 @@ function parseFormData(
   if (sortOrderRaw) {
     const n = Number(sortOrderRaw);
     if (!Number.isFinite(n)) {
-      return { ok: false, error: "Sort order must be a number." };
+      return { ok: false, error: t("sortOrderNumber") };
     }
     sort_order = Math.trunc(n);
   }
@@ -76,7 +78,7 @@ function parseFormData(
   const explicitSlug = nullable(formData.get("slug"))?.trim();
   const slug = slugify(explicitSlug || name_en);
   if (!slug) {
-    return { ok: false, error: "Could not generate a slug from the name." };
+    return { ok: false, error: t("adminSlugFromName") };
   }
 
   return {
@@ -95,7 +97,8 @@ function parseFormData(
 }
 
 export async function createColor(formData: FormData): Promise<ColorResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -104,10 +107,12 @@ export async function createColor(formData: FormData): Promise<ColorResult> {
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A colour with that ${error.message.includes("slug") ? "slug" : "name"} already exists.`,
+        error: error.message.includes("slug")
+          ? t("adminColorSlugExists")
+          : t("adminColorNameExists"),
       };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/colors");
   revalidatePath("/admin");
@@ -118,8 +123,9 @@ export async function updateColor(
   id: string,
   formData: FormData,
 ): Promise<ColorResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -129,9 +135,9 @@ export async function updateColor(
     .eq("id", id);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "A colour with that slug already exists." };
+      return { ok: false, error: t("adminColorSlugExists") };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/colors");
   revalidatePath("/admin");
@@ -146,7 +152,8 @@ export async function setColorActive(
   id: string,
   isActive: boolean,
 ): Promise<ColorResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -154,7 +161,7 @@ export async function setColorActive(
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/colors");
   revalidatePath("/admin");

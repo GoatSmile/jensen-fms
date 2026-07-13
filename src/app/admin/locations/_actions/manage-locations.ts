@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -17,12 +18,13 @@ type ParsedLocation = {
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedLocation } | { ok: false; error: string } {
   const code = nullable(formData.get("code"))?.trim();
-  if (!code) return { ok: false, error: "Code is required." };
+  if (!code) return { ok: false, error: t("adminCodeRequired") };
 
   const name_en = nullable(formData.get("name_en"))?.trim();
-  if (!name_en) return { ok: false, error: "English name is required." };
+  if (!name_en) return { ok: false, error: t("englishNameRequired") };
 
   const name_da = nullable(formData.get("name_da"))?.trim() || null;
   const address = nullable(formData.get("address"))?.trim() || null;
@@ -42,7 +44,8 @@ function parseFormData(
 export async function createLocation(
   formData: FormData,
 ): Promise<LocationResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -53,10 +56,10 @@ export async function createLocation(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A location with code "${parsed.values.code}" already exists.`,
+        error: t("adminLocationCodeExists", { code: parsed.values.code }),
       };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/locations");
   revalidatePath("/admin");
@@ -67,8 +70,9 @@ export async function updateLocation(
   id: string,
   formData: FormData,
 ): Promise<LocationResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -80,10 +84,10 @@ export async function updateLocation(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: `A location with code "${parsed.values.code}" already exists.`,
+        error: t("adminLocationCodeExists", { code: parsed.values.code }),
       };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/locations");
   revalidatePath("/admin");
@@ -99,13 +103,14 @@ export async function updateLocation(
 export async function setLocationVisibility(
   hide: boolean,
 ): Promise<LocationResult> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
   const { error } = await supabase
     .from("app_settings")
     .update({ hide_location_info: hide, updated_at: new Date().toISOString() })
     .eq("id", 1);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/locations");
   revalidatePath("/admin");
@@ -123,7 +128,8 @@ export async function setLocationVisibility(
  * qualify. Revalidates the surfaces that read the primary.
  */
 export async function setPrimaryLocation(id: string): Promise<LocationResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { data: loc } = await supabase
@@ -131,11 +137,11 @@ export async function setPrimaryLocation(id: string): Promise<LocationResult> {
     .select("id, is_active")
     .eq("id", id)
     .maybeSingle();
-  if (!loc) return { ok: false, error: "Location not found." };
+  if (!loc) return { ok: false, error: t("adminLocationNotFound") };
   if (!loc.is_active) {
     return {
       ok: false,
-      error: "An archived location can't be primary — restore it first.",
+      error: t("adminLocationArchivedPrimary"),
     };
   }
 
@@ -147,7 +153,7 @@ export async function setPrimaryLocation(id: string): Promise<LocationResult> {
     })
     .eq("id", 1);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/locations");
   revalidatePath("/admin");
@@ -166,7 +172,8 @@ export async function setLocationActive(
   id: string,
   isActive: boolean,
 ): Promise<LocationResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
 
@@ -179,8 +186,7 @@ export async function setLocationActive(
     if (settings?.primary_location_id === id) {
       return {
         ok: false,
-        error:
-          "This is the primary shop location. Mark another location as primary before archiving it.",
+        error: t("adminLocationPrimaryArchive"),
       };
     }
   }
@@ -190,7 +196,7 @@ export async function setLocationActive(
     .update({ is_active: isActive })
     .eq("id", id);
   if (error) {
-    return { ok: false, error: `Could not save: ${error.message}` };
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
   revalidatePath("/admin/locations");
   revalidatePath("/admin");

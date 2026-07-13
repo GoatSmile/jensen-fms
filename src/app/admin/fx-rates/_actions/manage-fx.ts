@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -22,6 +23,7 @@ export type FxResult =
  * Vercel Cron at /api/cron/refresh-fx-rates.
  */
 export async function refreshLatestRates(): Promise<FxResult> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
   // The ECB basket is quoted FROM EUR, so the cleanest call is one request
   // EUR → {all tracked currencies} and then we derive DKK pairs from it. But
@@ -40,7 +42,7 @@ export async function refreshLatestRates(): Promise<FxResult> {
   if (results.length === 0) {
     return {
       ok: false,
-      error: "Could not fetch any rates from Frankfurter — check connectivity.",
+      error: t("adminFxNoRatesFetched"),
     };
   }
 
@@ -55,7 +57,7 @@ export async function refreshLatestRates(): Promise<FxResult> {
     { onConflict: "from_currency,to_currency,rate_date" },
   );
   if (error) {
-    return { ok: false, error: `Could not save rates: ${error.message}` };
+    return { ok: false, error: t("adminFxCouldNotSaveRates", { detail: error.message }) };
   }
 
   revalidatePath("/admin/fx-rates");
@@ -75,6 +77,7 @@ export async function refreshLatestRates(): Promise<FxResult> {
  * Idempotent: re-running won't change rates that already match.
  */
 export async function backfillHistoricalPoRates(): Promise<FxResult> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
 
   // Pull every non-DKK PO line with its order_date.
@@ -86,7 +89,7 @@ export async function backfillHistoricalPoRates(): Promise<FxResult> {
     )
     .neq("currency", "DKK");
   if (error) {
-    return { ok: false, error: `Could not load PO lines: ${error.message}` };
+    return { ok: false, error: t("adminFxCouldNotLoadPoLines", { detail: error.message }) };
   }
   if (!lines || lines.length === 0) {
     return { ok: true, message: "No non-DKK PO lines to backfill." };

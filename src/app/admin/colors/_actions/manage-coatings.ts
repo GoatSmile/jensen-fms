@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -25,15 +26,16 @@ function slugify(s: string): string {
 
 function parseFormData(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; values: ParsedCoating } | { ok: false; error: string } {
   const label_en = nullable(formData.get("label_en"))?.trim();
-  if (!label_en) return { ok: false, error: "English label is required." };
+  if (!label_en) return { ok: false, error: t("adminCoatingLabelRequired") };
   const label_da = nullable(formData.get("label_da"))?.trim() || label_en;
 
   const explicitSlug = nullable(formData.get("slug"))?.trim();
   const slug = slugify(explicitSlug || label_en);
   if (!slug) {
-    return { ok: false, error: "Could not generate a slug from the label." };
+    return { ok: false, error: t("adminSlugFromLabel") };
   }
 
   const sortOrderRaw = nullable(formData.get("sort_order"));
@@ -41,7 +43,7 @@ function parseFormData(
   if (sortOrderRaw) {
     const n = Number(sortOrderRaw);
     if (!Number.isFinite(n)) {
-      return { ok: false, error: "Sort order must be a number." };
+      return { ok: false, error: t("sortOrderNumber") };
     }
     sort_order = Math.trunc(n);
   }
@@ -52,16 +54,17 @@ function parseFormData(
 export async function createCoating(
   formData: FormData,
 ): Promise<CoatingResult> {
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
   const { error } = await supabase.from("coatings").insert(parsed.values);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "A finish with that name already exists." };
+      return { ok: false, error: t("adminCoatingNameExists") };
     }
-    return { ok: false, error: `Could not create: ${error.message}` };
+    return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
   revalidatePath("/admin/colors");
   return { ok: true };
@@ -71,8 +74,9 @@ export async function updateCoating(
   id: string,
   formData: FormData,
 ): Promise<CoatingResult> {
-  if (!id) return { ok: false, error: "Missing id." };
-  const parsed = parseFormData(formData);
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const parsed = parseFormData(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
   const supabase = await createClient();
@@ -82,9 +86,9 @@ export async function updateCoating(
     .eq("id", id);
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "A finish with that name already exists." };
+      return { ok: false, error: t("adminCoatingNameExists") };
     }
-    return { ok: false, error: `Could not update: ${error.message}` };
+    return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
   revalidatePath("/admin/colors");
   return { ok: true };
@@ -98,14 +102,15 @@ export async function setCoatingActive(
   id: string,
   isActive: boolean,
 ): Promise<CoatingResult> {
-  if (!id) return { ok: false, error: "Missing id." };
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("coatings")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   revalidatePath("/admin/colors");
   return { ok: true };
 }
