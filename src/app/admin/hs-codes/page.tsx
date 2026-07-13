@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -17,6 +18,10 @@ import {
 
 export default async function HsCodesPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminHsCodes"),
+    getTranslations("common"),
+  ]);
 
   const [hsRes, partCountsRes] = await Promise.all([
     supabase
@@ -59,30 +64,25 @@ export default async function HsCodesPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>HS / TARIC codes</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbHsCodes")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">HS / TARIC codes</h1>
-        <p className="text-muted-foreground text-sm">
-          EU import duty classifications. Each part can carry one; PO lines
-          snapshot the tariff at insert so future edits don&apos;t retroactively
-          change cost basis. Codes with parts attached can be archived but not
-          deleted.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("pageTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("pageDescription")}</p>
       </header>
 
       <HsCodesSection rows={rows} />

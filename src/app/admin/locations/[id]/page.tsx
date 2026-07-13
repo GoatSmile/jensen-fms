@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,6 +26,10 @@ export default async function LocationDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminLocations"),
+    getTranslations("common"),
+  ]);
 
   const [locRes, movesRes, settingsRes] = await Promise.all([
     supabase
@@ -66,19 +71,19 @@ export default async function LocationDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/locations">Locations</Link>
+              <Link href="/admin/locations">{t("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -94,9 +99,11 @@ export default async function LocationDetailPage({
           <p className="text-muted-foreground font-mono text-xs">{l.code}</p>
         </div>
         <div className="flex items-center gap-2">
-          {isPrimary ? <Badge variant="secondary">Primary</Badge> : null}
+          {isPrimary ? (
+            <Badge variant="secondary">{t("badgePrimary")}</Badge>
+          ) : null}
           <Badge variant={l.is_active ? "success" : "outline"}>
-            {l.is_active ? "Active" : "Archived"}
+            {l.is_active ? t("statusActive") : t("statusArchived")}
           </Badge>
         </div>
       </header>

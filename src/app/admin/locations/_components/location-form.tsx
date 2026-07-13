@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ export function LocationForm({
   initial: LocationFormValues;
 }) {
   const router = useRouter();
+  const t = useTranslations("adminLocations");
+  const tCommon = useTranslations("common");
   const [values, setValues] = useState<LocationFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -89,48 +92,46 @@ export function LocationForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <Field label="Code" htmlFor="location-code">
+      <Field label={t("fieldCode")} htmlFor="location-code">
         <Input
           id="location-code"
           value={values.code}
           onChange={(e) => update("code", e.target.value)}
-          placeholder="e.g. WH-MAIN"
+          placeholder={t("codePlaceholder")}
           className="max-w-[200px] font-mono"
           required
         />
-        <p className="text-muted-foreground text-xs">
-          Short stable identifier shown on movements and receiving.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("codeHint")}</p>
       </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name (English)" htmlFor="location-name-en">
+        <Field label={t("fieldNameEn")} htmlFor="location-name-en">
           <Input
             id="location-name-en"
             value={values.name_en}
             onChange={(e) => update("name_en", e.target.value)}
-            placeholder="e.g. Main Warehouse"
+            placeholder={t("nameEnPlaceholder")}
             required
           />
         </Field>
-        <Field label="Name (Dansk)" htmlFor="location-name-da">
+        <Field label={t("fieldNameDa")} htmlFor="location-name-da">
           <Input
             id="location-name-da"
             value={values.name_da}
             onChange={(e) => update("name_da", e.target.value)}
-            placeholder="(falls back to English if blank)"
+            placeholder={t("nameDaPlaceholder")}
           />
         </Field>
       </div>
 
-      <Field label="Address" htmlFor="location-address">
+      <Field label={t("fieldAddress")} htmlFor="location-address">
         <Input
           id="location-address"
           value={values.address}
           onChange={(e) => update("address", e.target.value)}
-          placeholder="e.g. Ellekær 3, 2730 Herlev"
+          placeholder={t("addressPlaceholder")}
         />
-        <p className="text-muted-foreground text-xs">Optional.</p>
+        <p className="text-muted-foreground text-xs">{t("addressHint")}</p>
       </Field>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -140,7 +141,7 @@ export function LocationForm({
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in location pickers)
+        {t("activeLabel")}
       </label>
 
       {error ? (
@@ -152,21 +153,23 @@ export function LocationForm({
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedAt", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/locations">Cancel</Link>
+            <Link href="/admin/locations">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add location"
-                : "Save changes"}
+                ? t("addLocation")
+                : t("saveChanges")}
           </Button>
         </div>
       </div>

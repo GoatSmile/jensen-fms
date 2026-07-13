@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   ArrowDown,
   ArrowUp,
@@ -54,6 +55,7 @@ type SortDir = "asc" | "desc";
  * child's parent may be filtered out.
  */
 export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
+  const t = useTranslations("adminCategories");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("hierarchy");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -153,11 +155,11 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
     <section className="rounded-md border">
       <header className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Part categories</h2>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
           <span className="text-muted-foreground text-xs">
             {searching
-              ? `${filtered.length} of ${rows.length} shown`
-              : `${activeCount} active · ${rows.length} total`}
+              ? t("countShown", { shown: filtered.length, total: rows.length })
+              : t("countSummary", { active: activeCount, total: rows.length })}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -170,14 +172,14 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search categories…"
-              aria-label="Search categories"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchAria")}
               className="h-8 w-full pl-8 sm:w-56"
             />
           </div>
           <Button asChild size="sm" variant="outline">
             <Link href="/admin/categories/new">
-              <Plus aria-hidden /> New category
+              <Plus aria-hidden /> {t("newCategory")}
             </Link>
           </Button>
         </div>
@@ -185,28 +187,28 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          No categories yet. Add one to start classifying parts.
+          {t("emptyState")}
         </p>
       ) : filtered.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          No categories match &ldquo;{query}&rdquo;.
+          {t("noMatch", { query })}
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <SortHeader col="name" label="Name" />
+                <SortHeader col="name" label={t("colName")} />
                 <SortHeader
                   col="parts"
-                  label="Parts"
+                  label={t("colParts")}
                   align="right"
                   className="hidden [&>button]:justify-end md:table-cell md:text-right"
                 />
-                <SortHeader col="status" label="Status" />
+                <SortHeader col="status" label={t("colStatus")} />
                 <SortHeader
                   col="order"
-                  label="Order"
+                  label={t("colOrder")}
                   align="right"
                   className="[&>button]:justify-end text-right"
                 />
@@ -251,9 +253,9 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         {row.isActive ? (
-                          <Badge variant="success">Active</Badge>
+                          <Badge variant="success">{t("active")}</Badge>
                         ) : (
-                          <Badge variant="outline">Archived</Badge>
+                          <Badge variant="outline">{t("archived")}</Badge>
                         )}
                       </Link>
                     </TableCell>
@@ -266,7 +268,7 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={`Open ${row.name_en}`}
+                        aria-label={t("openAria", { name: row.name_en })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

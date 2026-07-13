@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -18,6 +19,10 @@ import { buildParentOptions, type CategoryInput } from "../_lib/tree";
 
 export default async function NewCategoryPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminCategories"),
+    getTranslations("common"),
+  ]);
   const { data } = await supabase
     .from("part_categories")
     .select("id, name_en, name_da, parent_id, is_active, sort_order")
@@ -33,34 +38,31 @@ export default async function NewCategoryPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/categories">Part categories</Link>
+              <Link href="/admin/categories">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">New part category</h1>
-        <p className="text-muted-foreground text-sm">
-          Pick a parent to nest it, or leave it top-level. The category is
-          immediately selectable on new parts.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("newTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("newDescription")}</p>
       </header>
 
       <CategoryForm

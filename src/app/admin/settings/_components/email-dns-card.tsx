@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Check, Copy, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,8 @@ const RECORD_TYPES: EmailDnsRecord["type"][] = ["TXT", "CNAME", "MX"];
  * instead of being maintained by hand.
  */
 export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
+  const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [domain, setDomain] = useState(initialDomain);
   const [records, setRecords] = useState<EmailDnsRecord[]>(initialRecords);
@@ -85,7 +88,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -93,7 +96,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="dns-domain">Sending domain</Label>
+        <Label htmlFor="dns-domain">{t("sendingDomainLabel")}</Label>
         <Input
           id="dns-domain"
           value={domain}
@@ -102,16 +105,13 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
           className="max-w-[280px] font-mono"
         />
         <p className="text-muted-foreground text-xs">
-          The domain outbound email sends from. The records below are what the
-          email provider asks you to add at the DNS host — they take effect
-          there, not here; this list is the paste-source and status tracker.
+          {t("sendingDomainHelp")}
         </p>
       </div>
 
       {records.length === 0 ? (
         <p className="text-muted-foreground rounded-md border border-dashed p-3 text-center text-xs">
-          No DNS records on file yet. Add the rows from the email
-          provider&rsquo;s domain-verification page.
+          {t("dnsEmpty")}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -125,7 +125,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   }
                 >
                   <SelectTrigger
-                    aria-label={`Record ${i + 1} type`}
+                    aria-label={t("recordTypeAria", { n: i + 1 })}
                     className="w-[92px] shrink-0"
                   >
                     <SelectValue />
@@ -139,10 +139,10 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   </SelectContent>
                 </Select>
                 <Input
-                  aria-label={`Record ${i + 1} name`}
+                  aria-label={t("recordNameAria", { n: i + 1 })}
                   value={r.name}
                   onChange={(e) => updateRecord(i, { name: e.target.value })}
-                  placeholder="e.g. resend._domainkey"
+                  placeholder={t("recordNamePlaceholder")}
                   className="flex-1 font-mono"
                 />
                 <Select
@@ -154,7 +154,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   }
                 >
                   <SelectTrigger
-                    aria-label={`Record ${i + 1} status`}
+                    aria-label={t("recordStatusAria", { n: i + 1 })}
                     className="w-[120px] shrink-0"
                   >
                     <SelectValue />
@@ -162,11 +162,11 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   <SelectContent>
                     <SelectItem value="pending">
                       <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
-                      Pending
+                      {t("statusPending")}
                     </SelectItem>
                     <SelectItem value="verified">
                       <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-                      Verified
+                      {t("statusVerified")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -175,17 +175,17 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   size="icon-sm"
                   variant="ghost"
                   onClick={() => removeRecord(i)}
-                  aria-label={`Remove record ${i + 1}`}
+                  aria-label={t("removeRecordAria", { n: i + 1 })}
                 >
                   <Trash2 aria-hidden />
                 </Button>
               </div>
               <div className="flex items-center gap-2">
                 <Input
-                  aria-label={`Record ${i + 1} value`}
+                  aria-label={t("recordValueAria", { n: i + 1 })}
                   value={r.value}
                   onChange={(e) => updateRecord(i, { value: e.target.value })}
-                  placeholder="Record value — paste from the provider"
+                  placeholder={t("recordValuePlaceholder")}
                   className="flex-1 font-mono text-xs"
                 />
                 <Button
@@ -193,7 +193,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   size="icon-sm"
                   variant="outline"
                   onClick={() => void copyValue(i, r.value)}
-                  aria-label={`Copy record ${i + 1} value`}
+                  aria-label={t("copyRecordAria", { n: i + 1 })}
                   disabled={r.value.trim() === ""}
                 >
                   {copiedIdx === i ? (
@@ -204,10 +204,10 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                 </Button>
               </div>
               <Input
-                aria-label={`Record ${i + 1} note`}
+                aria-label={t("recordNoteAria", { n: i + 1 })}
                 value={r.note}
                 onChange={(e) => updateRecord(i, { note: e.target.value })}
-                placeholder="Note (optional) — e.g. SPF, DKIM, return-path"
+                placeholder={t("recordNotePlaceholder")}
                 className="text-xs"
               />
             </div>
@@ -217,7 +217,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
 
       <div>
         <Button type="button" size="sm" variant="outline" onClick={addRecord}>
-          <Plus aria-hidden /> Add record
+          <Plus aria-hidden /> {t("addRecord")}
         </Button>
       </div>
 
@@ -234,7 +234,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
 
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save DNS records"}
+          {pending ? tCommon("saving") : t("saveDns")}
         </Button>
       </div>
     </form>

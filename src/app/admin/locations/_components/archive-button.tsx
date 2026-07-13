@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Archive, ArchiveRestore } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function ArchiveButton({
   movementCount,
 }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminLocations");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -51,16 +53,16 @@ export function ArchiveButton({
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this location" : "Restore this location"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {blockedPrimary
-              ? "This is the primary shop location. Set a different primary in Settings before archiving it."
+              ? t("blockedPrimaryDesc")
               : isActive
                 ? movementCount > 0
-                  ? `${movementCount} movement${movementCount === 1 ? "" : "s"} reference this location. Archiving hides it from new pickers; the ledger keeps its history.`
-                  : "Archiving hides this location from new pickers. No movements reference it currently."
-                : "Restoring makes this location selectable again in new pickers."}
+                  ? t("archiveWithMovements", { count: movementCount })
+                  : t("archiveNoMovements")
+                : t("restoreDesc")}
           </p>
         </div>
         <Button
@@ -73,12 +75,12 @@ export function ArchiveButton({
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

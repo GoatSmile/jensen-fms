@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -17,6 +18,10 @@ import {
 
 export default async function AdminCustomerSegmentsPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSegments"),
+    getTranslations("common"),
+  ]);
 
   const [segmentsRes, usageRes] = await Promise.all([
     supabase
@@ -68,29 +73,25 @@ export default async function AdminCustomerSegmentsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Customer segments</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Customer segments</h1>
-        <p className="text-muted-foreground text-sm">
-          Classification for organisations (hotel, hospital, municipality,
-          etc.). Edits flow into new pickers; existing organisations keep
-          their reference even if the segment is later archived.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("description")}</p>
       </header>
 
       <SegmentsSection rows={rows} />

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,8 @@ type Props = {
 
 export function SupplierForm({ mode, initial, currencies }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminSuppliers");
+  const tCommon = useTranslations("common");
   const [values, setValues] = useState<SupplierFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -143,18 +146,18 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <Field label="Supplier name" htmlFor="sup-name">
+      <Field label={t("fieldName")} htmlFor="sup-name">
         <Input
           id="sup-name"
           value={values.name}
           onChange={(e) => update("name", e.target.value)}
-          placeholder="e.g. Eastek HK"
+          placeholder={t("namePlaceholder")}
           required
         />
       </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Default currency" htmlFor="sup-currency">
+        <Field label={t("fieldCurrency")} htmlFor="sup-currency">
           <Select
             value={
               values.default_currency === ""
@@ -169,7 +172,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             <SelectContent>
               <SelectItem value={NO_CURRENCY}>
                 <span className="text-muted-foreground italic">
-                  Unspecified
+                  {t("currencyUnspecified")}
                 </span>
               </SelectItem>
               {currencies.map((c) => (
@@ -180,14 +183,14 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Payment terms (days)" htmlFor="sup-terms">
+        <Field label={t("fieldTerms")} htmlFor="sup-terms">
           <Input
             id="sup-terms"
             type="number"
             inputMode="numeric"
             value={values.payment_terms_days}
             onChange={(e) => update("payment_terms_days", e.target.value)}
-            placeholder="e.g. 30"
+            placeholder={t("termsPlaceholder")}
             className="max-w-[140px]"
           />
         </Field>
@@ -203,17 +206,15 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             }
             className="size-4"
           />
-          Import duty prepaid by default
+          {t("dutyPrepaidLabel")}
         </label>
         <p className="text-muted-foreground pl-6 text-xs">
-          This supplier delivers duty-paid (e.g. Shimano) — new PO lines
-          default to &ldquo;Apply import tax&rdquo; off. Overridable per line;
-          existing lines stay frozen.
+          {t("dutyPrepaidHint")}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Phone" htmlFor="sup-phone">
+        <Field label={t("fieldPhone")} htmlFor="sup-phone">
           <Input
             id="sup-phone"
             type="tel"
@@ -222,7 +223,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             placeholder="+45 12 34 56 78"
           />
         </Field>
-        <Field label="Website" htmlFor="sup-website">
+        <Field label={t("fieldWebsite")} htmlFor="sup-website">
           <Input
             id="sup-website"
             type="url"
@@ -231,7 +232,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             placeholder="https://example.com"
           />
         </Field>
-        <Field label="Email (primary)" htmlFor="sup-email1">
+        <Field label={t("fieldEmailPrimary")} htmlFor="sup-email1">
           <Input
             id="sup-email1"
             type="email"
@@ -241,71 +242,71 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             className="font-mono"
           />
         </Field>
-        <Field label="Email (secondary)" htmlFor="sup-email2">
+        <Field label={t("fieldEmailSecondary")} htmlFor="sup-email2">
           <Input
             id="sup-email2"
             type="email"
             value={values.email_secondary}
             onChange={(e) => update("email_secondary", e.target.value)}
-            placeholder="Optional"
+            placeholder={t("optional")}
             className="font-mono"
           />
         </Field>
       </div>
 
-      <Field label="Address line 1" htmlFor="sup-addr1">
+      <Field label={t("fieldAddr1")} htmlFor="sup-addr1">
         <Input
           id="sup-addr1"
           value={values.address_line1}
           onChange={(e) => update("address_line1", e.target.value)}
-          placeholder="Street and number"
+          placeholder={t("addr1Placeholder")}
         />
       </Field>
-      <Field label="Address line 2" htmlFor="sup-addr2">
+      <Field label={t("fieldAddr2")} htmlFor="sup-addr2">
         <Input
           id="sup-addr2"
           value={values.address_line2}
           onChange={(e) => update("address_line2", e.target.value)}
-          placeholder="Optional"
+          placeholder={t("optional")}
         />
       </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Field label="Zip code" htmlFor="sup-zip">
+        <Field label={t("fieldZip")} htmlFor="sup-zip">
           <Input
             id="sup-zip"
             value={values.zip_code}
             onChange={(e) => update("zip_code", e.target.value)}
           />
         </Field>
-        <Field label="Town" htmlFor="sup-town">
+        <Field label={t("fieldTown")} htmlFor="sup-town">
           <Input
             id="sup-town"
             value={values.town}
             onChange={(e) => update("town", e.target.value)}
           />
         </Field>
-        <Field label="Province / region" htmlFor="sup-province">
+        <Field label={t("fieldProvince")} htmlFor="sup-province">
           <Input
             id="sup-province"
             value={values.province}
             onChange={(e) => update("province", e.target.value)}
-            placeholder="Optional"
+            placeholder={t("optional")}
           />
         </Field>
       </div>
 
-      <Field label="Country" htmlFor="sup-country">
+      <Field label={t("fieldCountry")} htmlFor="sup-country">
         <Select
           value={values.country_code || DEFAULT_COUNTRY_CODE}
           onValueChange={(v) => update("country_code", v)}
         >
           <SelectTrigger id="sup-country">
-            <SelectValue placeholder="Pick a country" />
+            <SelectValue placeholder={t("countryPlaceholder")} />
           </SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectGroup>
-              <SelectLabel>Common</SelectLabel>
+              <SelectLabel>{t("countryCommon")}</SelectLabel>
               {countries.popular.map((c) => (
                 <SelectItem key={c.code} value={c.code}>
                   {c.name}
@@ -314,7 +315,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             </SelectGroup>
             <SelectSeparator />
             <SelectGroup>
-              <SelectLabel>All countries</SelectLabel>
+              <SelectLabel>{t("countryAll")}</SelectLabel>
               {countries.rest.map((c) => (
                 <SelectItem key={c.code} value={c.code}>
                   {c.name}
@@ -325,13 +326,13 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
         </Select>
       </Field>
 
-      <Field label="Notes" htmlFor="sup-notes">
+      <Field label={t("fieldNotes")} htmlFor="sup-notes">
         <Textarea
           id="sup-notes"
           rows={2}
           value={values.notes}
           onChange={(e) => update("notes", e.target.value)}
-          placeholder="Optional — internal."
+          placeholder={t("notesPlaceholder")}
         />
       </Field>
 
@@ -342,7 +343,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in supplier pickers)
+        {t("activeLabel")}
       </label>
 
       {error ? (
@@ -354,21 +355,23 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedAt", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/suppliers">Cancel</Link>
+            <Link href="/admin/suppliers">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add supplier"
-                : "Save changes"}
+                ? t("addSupplier")
+                : t("saveChanges")}
           </Button>
         </div>
       </div>

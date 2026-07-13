@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -36,6 +37,10 @@ export default async function NewServicePriceListPage({
   searchParams: Promise<{ from?: string }>;
 }) {
   const { from } = await searchParams;
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminServices"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [partTypesRes, currenciesRes, suppliersRes, typesRes] =
@@ -127,25 +132,25 @@ export default async function NewServicePriceListPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/services">Service price lists</Link>
+              <Link href="/admin/services">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbPage>
-              {source ? "New revision" : "New price list"}
+              {source ? t("newRevision") : t("newPriceList")}
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
@@ -154,13 +159,19 @@ export default async function NewServicePriceListPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           {source
-            ? `New revision — ${source.serviceTypeName} · ${source.supplierName}`
-            : "New price list"}
+            ? t("newRevisionHeading", {
+                serviceType: source.serviceTypeName,
+                supplier: source.supplierName,
+              })
+            : t("newPriceList")}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           {source
-            ? `Starts from ${source.name} (v${source.version}). Adjust the numbers, review the diff, publish — the old revision archives and sent orders keep their frozen prices.`
-            : "The supplier's first list for a service. Fill in the prices you have; blank cells simply stay unpriced."}
+            ? t("newRevisionSubtitle", {
+                name: source.name,
+                version: source.version,
+              })
+            : t("newPriceListSubtitle")}
         </p>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -14,6 +15,8 @@ import { setPrimaryLocation } from "../_actions/manage-locations";
  */
 export function MakePrimaryButton({ locationId }: { locationId: string }) {
   const router = useRouter();
+  const t = useTranslations("adminLocations");
+  const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -36,7 +39,7 @@ export function MakePrimaryButton({ locationId }: { locationId: string }) {
           });
         }}
       >
-        {pending ? "Saving…" : "Make primary"}
+        {pending ? tCommon("saving") : t("makePrimary")}
       </Button>
       {error ? (
         <span className="text-destructive text-xs" role="alert">

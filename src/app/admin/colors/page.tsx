@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -21,6 +22,10 @@ import {
 
 export default async function AdminColorsPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminColors"),
+    getTranslations("common"),
+  ]);
 
   const [colorsRes, bikeUsageRes, moUsageRes, coatingsRes] = await Promise.all([
     supabase
@@ -90,29 +95,25 @@ export default async function AdminColorsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Colours</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbColours")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Colours</h1>
-        <p className="text-muted-foreground text-sm">
-          The colour palette bikes can ship in. Bike + MO pickers default to
-          showing active colours; existing records that reference an archived
-          colour keep their reference.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("pageTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("pageDescription")}</p>
       </header>
 
       <ColorsSection rows={rows} />

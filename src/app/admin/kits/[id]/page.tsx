@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Printer } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -28,6 +29,10 @@ export default async function KitDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminKits"),
+    getTranslations("common"),
+  ]);
 
   const [kitRes, membersRes] = await Promise.all([
     supabase
@@ -64,19 +69,19 @@ export default async function KitDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/kits">Kits</Link>
+              <Link href="/admin/kits">{t("crumbKits")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -97,7 +102,7 @@ export default async function KitDetailPage({
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold">{code}</h1>
               <Badge variant={kit.is_active ? "success" : "secondary"}>
-                {kit.is_active ? "Active" : "Archived"}
+                {kit.is_active ? t("active") : t("archived")}
               </Badge>
             </div>
             {kit.description ? (
@@ -107,25 +112,25 @@ export default async function KitDetailPage({
         </div>
         <Button asChild variant="outline">
           <Link href={`/admin/kits/${id}/stickers`}>
-            <Printer aria-hidden /> Sticker sheet
+            <Printer aria-hidden /> {t("stickerSheet")}
           </Link>
         </Button>
       </div>
 
       <Section
-        title="Edit kit"
-        description="Changing colour or number changes the sticker code — reprint labels afterwards."
+        title={t("editKitTitle")}
+        description={t("editKitDescription")}
       >
         <KitForm mode="edit" kitId={id} initial={initial} />
       </Section>
 
       <Section
-        title={`Labelled parts (${parts.length})`}
-        description="Parts carrying this sticker. Tag and untag from each part's detail page, or in bulk from a bike template's BOM."
+        title={t("labelledParts", { count: parts.length })}
+        description={t("labelledPartsDescription")}
       >
         {parts.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No parts labelled yet.
+            {t("noPartsLabelled")}
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -26,6 +27,10 @@ export const dynamic = "force-dynamic";
 
 export default async function KitsPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminKits"),
+    getTranslations("common"),
+  ]);
 
   const [kitsRes, membershipsRes] = await Promise.all([
     supabase
@@ -50,52 +55,49 @@ export default async function KitsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Kits</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbKits")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">Kits</h1>
-          <p className="text-muted-foreground text-sm">
-            Colour + number sticker labels ("Red 1") for part boxes, so the
-            assembly floor picks complete part sets per build.
-          </p>
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </header>
         <Button asChild>
           <Link href="/admin/kits/new">
-            <Plus aria-hidden /> New kit
+            <Plus aria-hidden /> {t("newKit")}
           </Link>
         </Button>
       </div>
 
       {rows.length === 0 ? (
         <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
-          No kits yet — create the first sticker label.
+          {t("empty")}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kit</TableHead>
+                <TableHead>{t("colKit")}</TableHead>
                 <TableHead className="hidden sm:table-cell">
-                  Description
+                  {t("colDescription")}
                 </TableHead>
-                <TableHead className="text-right">Parts</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="text-right">{t("colParts")}</TableHead>
+                <TableHead className="w-[100px]">{t("colStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -134,7 +136,7 @@ export default async function KitsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={k.is_active ? "success" : "secondary"}>
-                        {k.is_active ? "Active" : "Archived"}
+                        {k.is_active ? t("active") : t("archived")}
                       </Badge>
                     </TableCell>
                   </TableRow>

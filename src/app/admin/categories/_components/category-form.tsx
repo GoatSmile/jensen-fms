@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ type Props = {
 };
 
 export function CategoryForm({ mode, initial, parentOptions }: Props) {
+  const t = useTranslations("adminCategories");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<CategoryFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +76,7 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
     e.preventDefault();
     setError(null);
     if (!values.name_en.trim()) {
-      setError("English name is required.");
+      setError(t("nameRequired"));
       return;
     }
     const fd = buildFormData();
@@ -98,66 +101,63 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <Field label="Name (English)" htmlFor="cat-name-en">
+      <Field label={t("nameEn")} htmlFor="cat-name-en">
         <Input
           id="cat-name-en"
           value={values.name_en}
           onChange={(e) => update("name_en", e.target.value)}
-          placeholder="e.g. Wheel sets"
+          placeholder={t("nameEnPlaceholder")}
           required
         />
       </Field>
 
-      <Field label="Name (Danish)" htmlFor="cat-name-da">
+      <Field label={t("nameDa")} htmlFor="cat-name-da">
         <Input
           id="cat-name-da"
           value={values.name_da}
           onChange={(e) => update("name_da", e.target.value)}
-          placeholder="Optional — e.g. Hjulsæt"
+          placeholder={t("nameDaPlaceholder")}
         />
       </Field>
 
-      <Field label="Parent category" htmlFor="cat-parent">
+      <Field label={t("parentCategory")} htmlFor="cat-parent">
         <select
           id="cat-parent"
           value={values.parent_id}
           onChange={(e) => update("parent_id", e.target.value)}
           className="border-input bg-background h-9 rounded-md border px-2 text-sm"
         >
-          <option value="">— Top level (no parent)</option>
+          <option value="">{t("topLevelOption")}</option>
           {parentOptions.map((o) => (
             <option key={o.id} value={o.id}>
               {o.label}
             </option>
           ))}
         </select>
-        <p className="text-muted-foreground text-xs">
-          Leave as top level for a main category, or nest it under an existing
-          one.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("parentHint")}</p>
       </Field>
 
-      <Field label="Description (English)" htmlFor="cat-desc-en">
+      <Field label={t("descriptionEn")} htmlFor="cat-desc-en">
         <Textarea
           id="cat-desc-en"
           rows={2}
           value={values.description_en}
           onChange={(e) => update("description_en", e.target.value)}
-          placeholder="Optional — what belongs in this category."
+          placeholder={t("descriptionEnPlaceholder")}
         />
       </Field>
 
-      <Field label="Description (Danish)" htmlFor="cat-desc-da">
+      <Field label={t("descriptionDa")} htmlFor="cat-desc-da">
         <Textarea
           id="cat-desc-da"
           rows={2}
           value={values.description_da}
           onChange={(e) => update("description_da", e.target.value)}
-          placeholder="Valgfri."
+          placeholder={t("descriptionDaPlaceholder")}
         />
       </Field>
 
-      <Field label="Sort order" htmlFor="cat-sort">
+      <Field label={t("sortOrder")} htmlFor="cat-sort">
         <Input
           id="cat-sort"
           inputMode="numeric"
@@ -166,10 +166,7 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
           placeholder="0"
           className="max-w-[160px]"
         />
-        <p className="text-muted-foreground text-xs">
-          Lower numbers sort first within the same level; ties fall back to
-          alphabetical.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("sortHint")}</p>
       </Field>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -179,7 +176,7 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in part pickers)
+        {t("activeLabel")}
       </label>
 
       {error ? (
@@ -191,21 +188,23 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedAt", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/categories">Cancel</Link>
+            <Link href="/admin/categories">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add category"
-                : "Save changes"}
+                ? t("addCategory")
+                : t("saveChanges")}
           </Button>
         </div>
       </div>

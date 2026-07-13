@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,6 +28,10 @@ export default async function ColorDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminColors"),
+    getTranslations("common"),
+  ]);
 
   // Pull the row + usage counts (bikes + MOs) in parallel. Usage drives
   // the archive-button warning copy.
@@ -83,19 +88,19 @@ export default async function ColorDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/colors">Colours</Link>
+              <Link href="/admin/colors">{t("crumbColours")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -119,7 +124,7 @@ export default async function ColorDetailPage({
           </div>
         </div>
         <Badge variant={c.is_active ? "success" : "outline"}>
-          {c.is_active ? "Active" : "Archived"}
+          {c.is_active ? t("statusActive") : t("statusArchived")}
         </Badge>
       </header>
 

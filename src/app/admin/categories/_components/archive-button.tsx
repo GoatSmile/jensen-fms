@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export function ArchiveButton({ id, isActive, partCount, childCount }: Props) {
+  const t = useTranslations("adminCategories");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -34,26 +36,20 @@ export function ArchiveButton({ id, isActive, partCount, childCount }: Props) {
   }
 
   const hints: string[] = [];
-  if (partCount > 0)
-    hints.push(
-      `${partCount} part${partCount === 1 ? "" : "s"} reference this category`,
-    );
-  if (childCount > 0)
-    hints.push(
-      `${childCount} sub-categor${childCount === 1 ? "y" : "ies"} stay${childCount === 1 ? "s" : ""} visible`,
-    );
+  if (partCount > 0) hints.push(t("hintParts", { count: partCount }));
+  if (childCount > 0) hints.push(t("hintChildren", { count: childCount }));
 
   return (
     <div className="bg-card flex flex-col gap-2 rounded-md border border-dashed p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this category" : "Restore this category"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {isActive
-              ? `Archiving hides this category from new-part pickers and the parts filter. Existing parts keep their classification.${hints.length ? ` (${hints.join("; ")}.)` : ""}`
-              : "Restoring makes this category selectable again for new parts."}
+              ? `${t("archiveDescription")}${hints.length ? ` (${hints.join("; ")}.)` : ""}`
+              : t("restoreDescription")}
           </p>
         </div>
         <Button
@@ -66,12 +62,12 @@ export function ArchiveButton({ id, isActive, partCount, childCount }: Props) {
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

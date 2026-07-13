@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -18,6 +19,10 @@ import { buildTreeRows, type CategoryInput } from "./_lib/tree";
 
 export default async function CategoriesPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminCategories"),
+    getTranslations("common"),
+  ]);
 
   const [catsRes, partCountsRes] = await Promise.all([
     supabase
@@ -61,29 +66,25 @@ export default async function CategoriesPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Part categories</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Part categories</h1>
-        <p className="text-muted-foreground text-sm">
-          The hierarchy parts are classified under. Every part carries one
-          category. Archiving hides a category from new-part pickers and the
-          parts filter while leaving existing parts classified.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("description")}</p>
       </header>
 
       <CategoriesSection rows={rows} />

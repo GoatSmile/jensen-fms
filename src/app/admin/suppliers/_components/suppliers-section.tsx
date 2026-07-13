@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,42 +30,49 @@ export type SupplierRow = {
  * archive live on the detail page, matching the other admin
  * controlled-vocab sections.
  */
-export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
+export async function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
+  const t = await getTranslations("adminSuppliers");
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Suppliers</h2>
+          <h2 className="text-sm font-semibold">{t("sectionTitle")}</h2>
           <span className="text-muted-foreground text-xs">
-            {activeCount} active · {rows.length} total
+            {t("countSummary", { active: activeCount, total: rows.length })}
           </span>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href="/admin/suppliers/new">
-            <Plus aria-hidden /> Add supplier
+            <Plus aria-hidden /> {t("addSupplier")}
           </Link>
         </Button>
       </header>
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          No suppliers yet. Add one to start.
+          {t("emptyState")}
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Supplier</TableHead>
-                <TableHead className="hidden sm:table-cell">Country</TableHead>
-                <TableHead className="hidden md:table-cell">Currency</TableHead>
-                <TableHead className="hidden lg:table-cell">Email</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">
-                  Parts
+                <TableHead>{t("colSupplier")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("colCountry")}
                 </TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("colCurrency")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("colEmail")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("colParts")}
+                </TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-[36px]" />
               </TableRow>
             </TableHeader>
@@ -103,7 +111,7 @@ export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                           <span className="break-all">{row.emailPrimary}</span>
                         ) : (
                           <span className="font-sans text-amber-700 dark:text-amber-400">
-                            Set email
+                            {t("setEmail")}
                           </span>
                         )}
                       </Link>
@@ -116,9 +124,9 @@ export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         {row.isActive ? (
-                          <Badge variant="success">Active</Badge>
+                          <Badge variant="success">{t("statusActive")}</Badge>
                         ) : (
-                          <Badge variant="outline">Archived</Badge>
+                          <Badge variant="outline">{t("statusArchived")}</Badge>
                         )}
                       </Link>
                     </TableCell>
@@ -126,7 +134,7 @@ export function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={`Open ${row.name}`}
+                        aria-label={t("openAria", { name: row.name })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

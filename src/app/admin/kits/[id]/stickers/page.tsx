@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,7 @@ export default async function KitStickerSheetPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const t = await getTranslations("adminKits");
 
   const [kitRes, membersRes] = await Promise.all([
     supabase
@@ -54,18 +56,17 @@ export default async function KitStickerSheetPage({
         <div className="flex items-center gap-3">
           <Button asChild variant="outline" size="sm">
             <Link href={`/admin/kits/${id}`}>
-              <ArrowLeft aria-hidden /> Back to kit
+              <ArrowLeft aria-hidden /> {t("backToKit")}
             </Link>
           </Button>
           <h1 className="text-xl font-semibold">
-            Sticker sheet — {code}
+            {t("stickerSheetHeading", { code })}
           </h1>
         </div>
         <PrintButton />
       </div>
       <p className="text-muted-foreground text-sm print:hidden">
-        {parts.length} part sticker{parts.length === 1 ? "" : "s"} + 1 kit
-        header sticker. Print on A4 label paper and cut along the borders.
+        {t("stickerSheetHint", { count: parts.length })}
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 print:grid-cols-3 print:gap-2">
@@ -74,7 +75,7 @@ export default async function KitStickerSheetPage({
           hex={colour.hex}
           fg={colour.fg}
           code={code}
-          line1={kit.description ?? "Kit"}
+          line1={kit.description ?? t("kitFallback")}
           line2={null}
         />
         {parts.map((p) => (

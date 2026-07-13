@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,8 @@ type Props = {
 };
 
 export function SegmentForm({ mode, initial }: Props) {
+  const t = useTranslations("adminSegments");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<SegmentFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -94,59 +97,57 @@ export function SegmentForm({ mode, initial }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name (English)" htmlFor="seg-name-en">
+        <Field label={t("nameEn")} htmlFor="seg-name-en">
           <Input
             id="seg-name-en"
             value={values.name_en}
             onChange={(e) => update("name_en", e.target.value)}
-            placeholder="e.g. Hotel"
+            placeholder={t("nameEnPlaceholder")}
             required
           />
         </Field>
-        <Field label="Name (Dansk)" htmlFor="seg-name-da">
+        <Field label={t("nameDa")} htmlFor="seg-name-da">
           <Input
             id="seg-name-da"
             value={values.name_da}
             onChange={(e) => update("name_da", e.target.value)}
-            placeholder="e.g. Hotel"
+            placeholder={t("nameDaPlaceholder")}
           />
         </Field>
       </div>
 
-      <Field label="Slug" htmlFor="seg-slug">
+      <Field label={t("slug")} htmlFor="seg-slug">
         <Input
           id="seg-slug"
           value={values.slug}
           onChange={(e) => update("slug", e.target.value)}
-          placeholder="auto-derived from English name (uses underscores)"
+          placeholder={t("slugPlaceholder")}
           className="font-mono"
         />
-        <p className="text-muted-foreground text-xs">
-          Stable identifier. Leave blank to auto-derive.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("slugHint")}</p>
       </Field>
 
-      <Field label="Description (English)" htmlFor="seg-desc-en">
+      <Field label={t("descriptionEn")} htmlFor="seg-desc-en">
         <Textarea
           id="seg-desc-en"
           rows={2}
           value={values.description_en}
           onChange={(e) => update("description_en", e.target.value)}
-          placeholder="Optional. Shown as helper text in pickers."
+          placeholder={t("descriptionEnPlaceholder")}
         />
       </Field>
 
-      <Field label="Description (Dansk)" htmlFor="seg-desc-da">
+      <Field label={t("descriptionDa")} htmlFor="seg-desc-da">
         <Textarea
           id="seg-desc-da"
           rows={2}
           value={values.description_da}
           onChange={(e) => update("description_da", e.target.value)}
-          placeholder="Optional Danish translation."
+          placeholder={t("descriptionDaPlaceholder")}
         />
       </Field>
 
-      <Field label="Sort order" htmlFor="seg-sort">
+      <Field label={t("sortOrder")} htmlFor="seg-sort">
         <Input
           id="seg-sort"
           type="number"
@@ -155,9 +156,7 @@ export function SegmentForm({ mode, initial }: Props) {
           onChange={(e) => update("sort_order", e.target.value)}
           className="max-w-[120px]"
         />
-        <p className="text-muted-foreground text-xs">
-          Lower numbers appear first in pickers.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("sortHint")}</p>
       </Field>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -167,7 +166,7 @@ export function SegmentForm({ mode, initial }: Props) {
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in segment pickers)
+        {t("activeLabel")}
       </label>
 
       {error ? (
@@ -179,21 +178,23 @@ export function SegmentForm({ mode, initial }: Props) {
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedAt", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/customer-segments">Cancel</Link>
+            <Link href="/admin/customer-segments">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add segment"
-                : "Save changes"}
+                ? t("addSegment")
+                : t("saveChanges")}
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,8 @@ export function CommunicationSettingsForm({
   initialTestEmail,
   initialWorkshopPhone,
 }: Props) {
+  const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [fromEmail, setFromEmail] = useState(initialFromEmail);
   const [replyToEmail, setReplyToEmail] = useState(initialReplyToEmail);
@@ -57,7 +60,7 @@ export function CommunicationSettingsForm({
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -66,7 +69,7 @@ export function CommunicationSettingsForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="comm-from">From address</Label>
+          <Label htmlFor="comm-from">{t("fromAddressLabel")}</Label>
           <Input
             id="comm-from"
             type="email"
@@ -76,12 +79,11 @@ export function CommunicationSettingsForm({
             className="font-mono"
           />
           <p className="text-muted-foreground text-xs">
-            Sender for app-generated email. Must be on the domain the email
-            provider has verified.
+            {t("fromAddressHelp")}
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="comm-reply">Reply-to address</Label>
+          <Label htmlFor="comm-reply">{t("replyToLabel")}</Label>
           <Input
             id="comm-reply"
             type="email"
@@ -91,7 +93,7 @@ export function CommunicationSettingsForm({
             className="font-mono"
           />
           <p className="text-muted-foreground text-xs">
-            Where supplier replies land — usually the real inbox.
+            {t("replyToHelp")}
           </p>
         </div>
       </div>
@@ -104,15 +106,13 @@ export function CommunicationSettingsForm({
             onChange={(e) => setTestMode(e.target.checked)}
             className="size-4"
           />
-          Test mode — reroute all outbound email
+          {t("testModeToggle")}
         </label>
         <p className="text-muted-foreground pl-6 text-xs">
-          While on, every email the app sends goes to the test recipients
-          below instead of the real recipient (the mail says who it was meant
-          for). Untick to go live.
+          {t("testModeHelp")}
         </p>
         <div className="flex flex-col gap-1.5 pl-6 pt-1">
-          <Label htmlFor="comm-test">Test recipients</Label>
+          <Label htmlFor="comm-test">{t("testRecipientsLabel")}</Label>
           <Input
             id="comm-test"
             value={testEmail}
@@ -122,13 +122,13 @@ export function CommunicationSettingsForm({
             disabled={!testMode}
           />
           <p className="text-muted-foreground text-xs">
-            One or more emails, comma-separated.
+            {t("testRecipientsHelp")}
           </p>
         </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="comm-phone">Workshop phone</Label>
+        <Label htmlFor="comm-phone">{t("workshopPhoneLabel")}</Label>
         <Input
           id="comm-phone"
           type="tel"
@@ -138,8 +138,7 @@ export function CommunicationSettingsForm({
           className="max-w-[240px]"
         />
         <p className="text-muted-foreground text-xs">
-          Shown on outbound documents; the phone-call → ticket pipeline will
-          use it for call routing and SMS later.
+          {t("workshopPhoneHelp")}
         </p>
       </div>
 
@@ -156,7 +155,7 @@ export function CommunicationSettingsForm({
 
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save communication settings"}
+          {pending ? tCommon("saving") : t("saveCommunication")}
         </Button>
       </div>
     </form>

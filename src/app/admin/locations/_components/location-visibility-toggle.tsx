@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { setLocationVisibility } from "../_actions/manage-locations";
  */
 export function LocationVisibilityToggle({ hidden }: { hidden: boolean }) {
   const router = useRouter();
+  const t = useTranslations("adminLocations");
+  const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -38,12 +41,10 @@ export function LocationVisibilityToggle({ hidden }: { hidden: boolean }) {
         <Icon className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
         <div className="flex flex-col">
           <span className="text-sm font-medium">
-            Location detail is {hidden ? "hidden" : "shown"} across the app
+            {hidden ? t("visibilityTitleHidden") : t("visibilityTitleShown")}
           </span>
           <span className="text-muted-foreground text-xs">
-            {hidden
-              ? "Stock shows a single total, the movements ledger drops its location column, and receiving / stock-adjust target the primary location."
-              : "Per-location stock, the movements location column, and the receive / stock-adjust pickers are all visible."}
+            {hidden ? t("visibilityHiddenDesc") : t("visibilityShownDesc")}
           </span>
           {error ? (
             <span className="text-destructive text-xs" role="alert">
@@ -60,10 +61,10 @@ export function LocationVisibilityToggle({ hidden }: { hidden: boolean }) {
         disabled={pending}
       >
         {pending
-          ? "Saving…"
+          ? tCommon("saving")
           : hidden
-            ? "Show location detail"
-            : "Hide location detail"}
+            ? t("showDetail")
+            : t("hideDetail")}
       </Button>
     </div>
   );

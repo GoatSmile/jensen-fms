@@ -14,12 +14,14 @@ import { cn } from "@/lib/utils";
 export function CopyButton({
   value,
   label = "Copy",
+  copiedLabel = "Copied",
   className,
   size = "sm",
   variant = "outline",
 }: {
   value: string;
   label?: string;
+  copiedLabel?: string;
   className?: string;
   size?: "sm" | "default" | "lg" | "icon" | "icon-sm";
   variant?:
@@ -54,7 +56,7 @@ export function CopyButton({
     >
       {copied ? (
         <>
-          <Check className="size-4" aria-hidden /> Copied
+          <Check className="size-4" aria-hidden /> {copiedLabel}
         </>
       ) : (
         <>

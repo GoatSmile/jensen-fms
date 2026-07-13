@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +28,7 @@ type Props = {
  */
 export function ArchiveButton({ id, isActive, usageCount }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminColors");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -48,14 +50,14 @@ export function ArchiveButton({ id, isActive, usageCount }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this colour" : "Restore this colour"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {isActive
               ? usageCount > 0
-                ? `${usageCount} bike${usageCount === 1 ? "" : "s"} / MO${usageCount === 1 ? "" : "s"} reference this colour. Archiving hides it from new pickers; existing records keep their reference.`
-                : "Archiving hides this colour from new bike + MO pickers. No records reference it currently."
-              : "Restoring makes this colour selectable again in new pickers."}
+                ? t("archiveWithUsage", { count: usageCount })
+                : t("archiveNoUsage")
+              : t("restoreHint")}
           </p>
         </div>
         <Button
@@ -68,12 +70,12 @@ export function ArchiveButton({ id, isActive, usageCount }: Props) {
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

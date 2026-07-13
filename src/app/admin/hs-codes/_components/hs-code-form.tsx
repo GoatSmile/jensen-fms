@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,8 @@ type Props = {
 
 export function HsCodeForm({ mode, initial }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminHsCodes");
+  const tCommon = useTranslations("common");
   const [values, setValues] = useState<HsCodeFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -85,16 +88,14 @@ export function HsCodeForm({ mode, initial }: Props) {
     setError(null);
     const tariffPct = Number(values.tariff.trim().replace(",", "."));
     if (!Number.isFinite(tariffPct) || tariffPct < 0 || tariffPct > 100) {
-      setError("Tariff must be a number between 0 and 100.");
+      setError(t("tariffError"));
       return;
     }
     const adRaw = values.antiDumping.trim();
     if (adRaw !== "") {
       const adPct = Number(adRaw.replace(",", "."));
       if (!Number.isFinite(adPct) || adPct < 0 || adPct > 200) {
-        setError(
-          "Anti-dumping must be a number between 0 and 200, or blank.",
-        );
+        setError(t("antiDumpingError"));
         return;
       }
     }
@@ -120,28 +121,28 @@ export function HsCodeForm({ mode, initial }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <Field label="Code" htmlFor="hs-code">
+      <Field label={t("codeLabel")} htmlFor="hs-code">
         <Input
           id="hs-code"
           value={values.code}
           onChange={(e) => update("code", e.target.value)}
-          placeholder="e.g. 8714.99.90"
+          placeholder={t("codePlaceholder")}
           required
           className="font-mono"
         />
       </Field>
 
-      <Field label="Description" htmlFor="hs-description">
+      <Field label={t("descriptionLabel")} htmlFor="hs-description">
         <Input
           id="hs-description"
           value={values.description}
           onChange={(e) => update("description", e.target.value)}
-          placeholder="e.g. Bicycle parts and accessories"
+          placeholder={t("descriptionPlaceholder")}
           required
         />
       </Field>
 
-      <Field label="Tariff %" htmlFor="hs-tariff">
+      <Field label={t("tariffLabel")} htmlFor="hs-tariff">
         <div className="flex items-center gap-2">
           <Input
             id="hs-tariff"
@@ -155,41 +156,38 @@ export function HsCodeForm({ mode, initial }: Props) {
           <span className="text-muted-foreground text-sm">%</span>
         </div>
         <p className="text-muted-foreground text-xs">
-          EU import duty as a percent — e.g.{" "}
-          <span className="font-mono">5</span> for 5 %,{" "}
-          <span className="font-mono">10.2</span> for 10.2 %. Snapshotted
-          onto each new PO line at insert.
+          {t.rich("tariffHint", {
+            mono: (chunks) => <span className="font-mono">{chunks}</span>,
+          })}
         </p>
       </Field>
 
-      <Field label="Anti-dumping %" htmlFor="hs-anti-dumping">
+      <Field label={t("antiDumpingLabel")} htmlFor="hs-anti-dumping">
         <div className="flex items-center gap-2">
           <Input
             id="hs-anti-dumping"
             inputMode="decimal"
             value={values.antiDumping}
             onChange={(e) => update("antiDumping", e.target.value)}
-            placeholder="Leave blank when none applies"
+            placeholder={t("antiDumpingPlaceholder")}
             className="max-w-[160px]"
           />
           <span className="text-muted-foreground text-sm">%</span>
         </div>
         <p className="text-muted-foreground text-xs">
-          Optional second tariff column applied alongside the base duty
-          for goods subject to EU anti-dumping measures (most Chinese-
-          origin bicycle parts under heading 8714 carry{" "}
-          <span className="font-mono">48.5</span> %). Snapshotted onto
-          PO lines and added to the landed-cost formula.
+          {t.rich("antiDumpingHint", {
+            mono: (chunks) => <span className="font-mono">{chunks}</span>,
+          })}
         </p>
       </Field>
 
-      <Field label="Notes" htmlFor="hs-notes">
+      <Field label={t("notesLabel")} htmlFor="hs-notes">
         <Textarea
           id="hs-notes"
           rows={2}
           value={values.notes}
           onChange={(e) => update("notes", e.target.value)}
-          placeholder="Optional — e.g. footnote on rate of return."
+          placeholder={t("notesPlaceholder")}
         />
       </Field>
 
@@ -200,7 +198,7 @@ export function HsCodeForm({ mode, initial }: Props) {
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in part pickers)
+        {t("activeCheckbox")}
       </label>
 
       {error ? (
@@ -212,21 +210,23 @@ export function HsCodeForm({ mode, initial }: Props) {
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedStatus", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/hs-codes">Cancel</Link>
+            <Link href="/admin/hs-codes">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add code"
-                : "Save changes"}
+                ? t("addCode")
+                : t("submitEdit")}
           </Button>
         </div>
       </div>

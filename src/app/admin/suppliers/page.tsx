@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -23,6 +24,10 @@ export default async function AdminSuppliersPage({
 }) {
   const gap = (await searchParams).gap === "email";
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSuppliers"),
+    getTranslations("common"),
+  ]);
 
   const [suppliersRes, offeringsRes] = await Promise.all([
     supabase
@@ -70,45 +75,39 @@ export default async function AdminSuppliersPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Suppliers</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Suppliers</h1>
-        <p className="text-muted-foreground text-sm">
-          The vendors parts are bought from. Used by part offerings,
-          purchase orders, and paint orders. Archived suppliers stay on
-          historical records but drop out of new pickers.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("heading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       {gap ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/20">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">
-              Housekeeping filter: {rows.length} active supplier
-              {rows.length === 1 ? "" : "s"} without an email
+              {t("gapTitle", { count: rows.length })}
             </span>
             <span className="text-muted-foreground text-xs">
-              PO emails can&apos;t reach these suppliers — add the address on
-              the supplier form.
+              {t("gapDesc")}
             </span>
           </div>
           <Button asChild size="sm" variant="outline">
-            <Link href="/admin/suppliers">Clear filter</Link>
+            <Link href="/admin/suppliers">{t("clearFilter")}</Link>
           </Button>
         </div>
       ) : null}

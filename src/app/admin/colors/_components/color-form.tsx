@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { ColorSwatch } from "@/components/color-swatch";
@@ -60,6 +61,8 @@ type Props = {
  */
 export function ColorForm({ mode, initial, coatings }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminColors");
+  const tCommon = useTranslations("common");
   const [values, setValues] = useState<ColorFormValues>(initial);
 
   // Keep an already-stored finish selectable even if it's since been archived,
@@ -150,46 +153,46 @@ export function ColorForm({ mode, initial, coatings }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name (English)" htmlFor="color-name-en">
+        <Field label={t("nameEnglish")} htmlFor="color-name-en">
           <Input
             id="color-name-en"
             value={values.name_en}
             onChange={(e) => update("name_en", e.target.value)}
-            placeholder="e.g. Petrol Blue"
+            placeholder={t("nameEnglishPlaceholder")}
             required
           />
         </Field>
-        <Field label="Name (Dansk)" htmlFor="color-name-da">
+        <Field label={t("nameDansk")} htmlFor="color-name-da">
           <Input
             id="color-name-da"
             value={values.name_da}
             onChange={(e) => update("name_da", e.target.value)}
-            placeholder="(falls back to English if blank)"
+            placeholder={t("nameDaPlaceholder")}
           />
         </Field>
       </div>
 
-      <Field label="Slug" htmlFor="color-slug">
+      <Field label={t("slug")} htmlFor="color-slug">
         <Input
           id="color-slug"
           value={values.slug}
           onChange={(e) => update("slug", e.target.value)}
-          placeholder="auto-derived from English name"
+          placeholder={t("slugPlaceholder")}
           className="font-mono"
         />
         <p className="text-muted-foreground text-xs">
-          Stable identifier used in URLs / API. Leave blank to auto-derive.
+          {t("slugHint")}
         </p>
       </Field>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="RAL code" htmlFor="color-ral">
+        <Field label={t("ralCode")} htmlFor="color-ral">
           <div className="flex items-center gap-2">
             <Input
               id="color-ral"
               value={values.ral_code}
               onChange={(e) => onRalChange(e.target.value)}
-              placeholder="e.g. RAL 5013"
+              placeholder={t("ralPlaceholder")}
             />
             {ralHex ? (
               <ColorSwatch hex={ralHex} label={ralHex} />
@@ -199,18 +202,15 @@ export function ColorForm({ mode, initial, coatings }: Props) {
           </div>
           {ralUnknown ? (
             <p className="text-xs text-amber-700 dark:text-amber-400" role="alert">
-              &ldquo;{values.ral_code.trim()}&rdquo; isn&rsquo;t a recognised RAL
-              Classic code — no colour to show. Check for a typo, or set the hex
-              manually if it&rsquo;s a non-Classic RAL.
+              {t("ralUnknown", { code: values.ral_code.trim() })}
             </p>
           ) : (
             <p className="text-muted-foreground text-xs">
-              Optional. For the painter (Metacoat) to mix consistently. A known
-              RAL sets the colour (auto-fills the hex).
+              {t("ralHint")}
             </p>
           )}
         </Field>
-        <Field label="Hex" htmlFor="color-hex">
+        <Field label={t("hexLabel")} htmlFor="color-hex">
           <div className="flex items-center gap-2">
             <Input
               id="color-hex"
@@ -226,7 +226,7 @@ export function ColorForm({ mode, initial, coatings }: Props) {
             )}
           </div>
           <p className="text-muted-foreground text-xs">
-            Optional. Used for the colour chip throughout the app.
+            {t("hexHint")}
           </p>
         </Field>
       </div>
@@ -234,23 +234,22 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       {ralConflict ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/30">
           <span className="text-amber-900 dark:text-amber-200">
-            Hex doesn&rsquo;t match RAL {values.ral_code.trim()} ({ralHex}). The
-            painter mixes to RAL — the on-screen chip won&rsquo;t match.
+            {t("ralConflict", { code: values.ral_code.trim(), hex: ralHex ?? "" })}
           </span>
           <Button type="button" variant="outline" size="sm" onClick={matchRal}>
-            Match RAL
+            {t("matchRal")}
           </Button>
         </div>
       ) : null}
 
-      <Field label="Coating / finish" htmlFor="color-coating">
+      <Field label={t("coatingLabel")} htmlFor="color-coating">
         <select
           id="color-coating"
           value={values.coating}
           onChange={(e) => update("coating", e.target.value)}
           className="border-input bg-background h-9 max-w-[200px] rounded-md border px-2 text-sm"
         >
-          <option value="">— None / unspecified</option>
+          <option value="">{t("coatingNone")}</option>
           {coatingOptions.map((c) => (
             <option key={c.slug} value={c.slug}>
               {c.label}
@@ -258,13 +257,11 @@ export function ColorForm({ mode, initial, coatings }: Props) {
           ))}
         </select>
         <p className="text-muted-foreground text-xs">
-          Optional. Make &ldquo;matte&rdquo; and &ldquo;glossy&rdquo; of the same
-          RAL separate colours so the finish carries through to the build and
-          paint order.
+          {t("coatingHint")}
         </p>
       </Field>
 
-      <Field label="Sort order" htmlFor="color-sort">
+      <Field label={t("sortOrder")} htmlFor="color-sort">
         <Input
           id="color-sort"
           type="number"
@@ -274,7 +271,7 @@ export function ColorForm({ mode, initial, coatings }: Props) {
           className="max-w-[120px]"
         />
         <p className="text-muted-foreground text-xs">
-          Lower numbers appear first in pickers.
+          {t("sortHint")}
         </p>
       </Field>
 
@@ -285,7 +282,7 @@ export function ColorForm({ mode, initial, coatings }: Props) {
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (visible in colour pickers)
+        {t("activeCheckbox")}
       </label>
 
       {error ? (
@@ -297,21 +294,23 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedStatus", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/colors">Cancel</Link>
+            <Link href="/admin/colors">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add colour"
-                : "Save changes"}
+                ? t("addColour")
+                : t("submitEdit")}
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { PlugZap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ export function EconomicSettingsForm({
   initialPaymentTerms,
   tokensReady,
 }: Props) {
+  const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [journalNumber, setJournalNumber] = useState(initialJournalNumber);
@@ -74,7 +77,7 @@ export function EconomicSettingsForm({
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -83,9 +86,7 @@ export function EconomicSettingsForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {!tokensReady ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
-          API tokens are not set. Add ECONOMIC_APP_SECRET_TOKEN and
-          ECONOMIC_AGREEMENT_GRANT_TOKEN to .env.local (and Vercel), then
-          restart — tokens are secrets and never live in this form.
+          {t("economicTokensMissing")}
         </p>
       ) : null}
 
@@ -98,14 +99,15 @@ export function EconomicSettingsForm({
           className="size-4 accent-primary"
         />
         <Label htmlFor="economic_enabled" className="text-sm font-normal">
-          Enable the e-conomic integration (shows the push button on issued
-          invoices)
+          {t("economicEnableLabel")}
         </Label>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_journal_number">Journal number</Label>
+          <Label htmlFor="economic_journal_number">
+            {t("journalNumberLabel")}
+          </Label>
           <Input
             id="economic_journal_number"
             inputMode="numeric"
@@ -115,7 +117,9 @@ export function EconomicSettingsForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_revenue_account">Revenue account</Label>
+          <Label htmlFor="economic_revenue_account">
+            {t("revenueAccountLabel")}
+          </Label>
           <Input
             id="economic_revenue_account"
             inputMode="numeric"
@@ -125,7 +129,7 @@ export function EconomicSettingsForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_vat_code">Outgoing VAT code</Label>
+          <Label htmlFor="economic_vat_code">{t("vatCodeLabel")}</Label>
           <Input
             id="economic_vat_code"
             value={vatCode}
@@ -134,7 +138,9 @@ export function EconomicSettingsForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_customer_group">Customer group</Label>
+          <Label htmlFor="economic_customer_group">
+            {t("customerGroupLabel")}
+          </Label>
           <Input
             id="economic_customer_group"
             inputMode="numeric"
@@ -144,30 +150,32 @@ export function EconomicSettingsForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_vat_zone">VAT zone</Label>
+          <Label htmlFor="economic_vat_zone">{t("vatZoneLabel")}</Label>
           <Input
             id="economic_vat_zone"
             inputMode="numeric"
             value={vatZone}
             onChange={(e) => setVatZone(e.target.value)}
-            placeholder="1 (domestic)"
+            placeholder={t("vatZonePlaceholder")}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="economic_payment_terms">Payment terms</Label>
+          <Label htmlFor="economic_payment_terms">
+            {t("paymentTermsLabel")}
+          </Label>
           <Input
             id="economic_payment_terms"
             inputMode="numeric"
             value={paymentTerms}
             onChange={(e) => setPaymentTerms(e.target.value)}
-            placeholder="e.g. 1"
+            placeholder={t("paymentTermsPlaceholder")}
           />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Saving…" : "Save accounting settings"}
+          {pending ? tCommon("saving") : t("saveAccounting")}
         </Button>
         <Button
           type="button"
@@ -182,7 +190,7 @@ export function EconomicSettingsForm({
           }}
         >
           <PlugZap aria-hidden />
-          {probing ? "Testing…" : "Test connection"}
+          {probing ? t("testing") : t("testConnection")}
         </Button>
       </div>
 
@@ -190,12 +198,13 @@ export function EconomicSettingsForm({
         probe.ok ? (
           <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
             <p>
-              Connected to <span className="font-medium">{probe.company}</span>{" "}
-              (agreement {probe.agreementNumber}).
+              {t("probeConnectedPrefix")}{" "}
+              <span className="font-medium">{probe.company}</span>{" "}
+              {t("probeAgreement", { number: probe.agreementNumber })}
             </p>
             {probe.journals.length > 0 ? (
               <p className="text-muted-foreground mt-1">
-                Journals:{" "}
+                {t("probeJournals")}{" "}
                 {probe.journals
                   .map((j) => `${j.number} · ${j.name}`)
                   .join("  |  ")}
@@ -203,7 +212,9 @@ export function EconomicSettingsForm({
             ) : null}
             {probe.accountingYears.length > 0 ? (
               <p className="text-muted-foreground mt-1">
-                Open accounting years: {probe.accountingYears.join(", ")}
+                {t("probeAccountingYears", {
+                  years: probe.accountingYears.join(", "),
+                })}
               </p>
             ) : null}
           </div>

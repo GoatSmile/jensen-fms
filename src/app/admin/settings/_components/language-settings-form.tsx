@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,9 @@ export function LanguageSettingsForm({
   initialAppLanguage,
   initialWorkerLanguage,
 }: Props) {
+  const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
+  const tLang = useTranslations("lang");
   const router = useRouter();
   const [appLanguage, setAppLanguage] = useState<Lang>(initialAppLanguage);
   const [workerLanguage, setWorkerLanguage] = useState<Lang>(
@@ -47,7 +51,7 @@ export function LanguageSettingsForm({
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -55,42 +59,41 @@ export function LanguageSettingsForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="setting-app-language">App language</Label>
+        <Label htmlFor="setting-app-language">{t("appLanguageLabel")}</Label>
         <select
           id="setting-app-language"
           value={appLanguage}
           onChange={(e) => setAppLanguage(e.target.value as Lang)}
           className="border-input bg-background h-9 max-w-[260px] rounded-md border px-2 text-sm"
         >
-          <option value="en">English</option>
-          <option value="da">Dansk</option>
+          <option value="en">{tLang("en")}</option>
+          <option value="da">{tLang("da")}</option>
         </select>
         <p className="text-muted-foreground text-xs">
-          The language for the office / admin side of the app.
+          {t("appLanguageHelp")}
         </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="setting-worker-language">Workshop language</Label>
+        <Label htmlFor="setting-worker-language">
+          {t("workerLanguageLabel")}
+        </Label>
         <select
           id="setting-worker-language"
           value={workerLanguage}
           onChange={(e) => setWorkerLanguage(e.target.value as Lang)}
           className="border-input bg-background h-9 max-w-[260px] rounded-md border px-2 text-sm"
         >
-          <option value="en">English</option>
-          <option value="da">Dansk</option>
+          <option value="en">{tLang("en")}</option>
+          <option value="da">{tLang("da")}</option>
         </select>
         <p className="text-muted-foreground text-xs">
-          The language the build floor and ticket / work-order screens use.
-          Becomes a per-worker setting later.
+          {t("workerLanguageHelp")}
         </p>
       </div>
 
       <p className="text-muted-foreground max-w-prose text-xs">
-        These save your preference now. The interface is still being translated,
-        so some screens stay in English until that rolls out — customer-facing
-        documents (invoices, the public report) already follow their own language.
+        {t("languageRolloutNote")}
       </p>
 
       {error ? (
@@ -109,7 +112,7 @@ export function LanguageSettingsForm({
 
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save language settings"}
+          {pending ? tCommon("saving") : t("saveLanguage")}
         </Button>
       </div>
     </form>

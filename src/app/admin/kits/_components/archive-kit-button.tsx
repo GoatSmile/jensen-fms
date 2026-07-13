@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +18,7 @@ export function ArchiveKitButton({
   isActive: boolean;
   partCount: number;
 }) {
+  const t = useTranslations("adminKits");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -38,12 +40,12 @@ export function ArchiveKitButton({
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this kit" : "Restore this kit"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {isActive
-              ? `Archiving hides the kit from pickers, pick lists, and the parts filter. The ${partCount} labelled part${partCount === 1 ? "" : "s"} keep the label (greyed) until removed.`
-              : "Restoring puts the kit back in pickers and pick lists."}
+              ? t("archiveDescription", { count: partCount })
+              : t("restoreDescription")}
           </p>
         </div>
         <Button
@@ -56,12 +58,12 @@ export function ArchiveKitButton({
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />{" "}
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />{" "}
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

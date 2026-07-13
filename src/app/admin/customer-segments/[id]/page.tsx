@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,6 +26,10 @@ export default async function CustomerSegmentDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSegments"),
+    getTranslations("common"),
+  ]);
 
   const [segmentRes, usageRes] = await Promise.all([
     supabase
@@ -67,19 +72,19 @@ export default async function CustomerSegmentDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/customer-segments">Customer segments</Link>
+              <Link href="/admin/customer-segments">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -95,7 +100,7 @@ export default async function CustomerSegmentDetailPage({
           <p className="text-muted-foreground font-mono text-xs">{s.slug}</p>
         </div>
         <Badge variant={s.is_active ? "success" : "outline"}>
-          {s.is_active ? "Active" : "Archived"}
+          {s.is_active ? t("active") : t("archived")}
         </Badge>
       </header>
 

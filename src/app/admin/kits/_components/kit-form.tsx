@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,8 @@ type Props = {
 };
 
 export function KitForm({ mode, kitId, initial }: Props) {
+  const t = useTranslations("adminKits");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<KitFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +93,7 @@ export function KitForm({ mode, kitId, initial }: Props) {
     <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="Sticker colour"
+          label={t("colorLabel")}
           htmlFor="kit-color"
           required
           error={errorField === "sticker_color" ? error : null}
@@ -100,7 +103,7 @@ export function KitForm({ mode, kitId, initial }: Props) {
             onValueChange={(v) => update("sticker_color", v)}
           >
             <SelectTrigger id="kit-color">
-              <SelectValue placeholder="Pick a colour…" />
+              <SelectValue placeholder={t("colorPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {KIT_STICKER_COLORS.map((c) => (
@@ -119,7 +122,7 @@ export function KitForm({ mode, kitId, initial }: Props) {
           </Select>
         </Field>
         <Field
-          label="Number (optional)"
+          label={t("numberLabel")}
           htmlFor="kit-number"
           error={errorField === "kit_number" ? error : null}
         >
@@ -128,23 +131,24 @@ export function KitForm({ mode, kitId, initial }: Props) {
             inputMode="numeric"
             value={values.kit_number}
             onChange={(e) => update("kit_number", e.target.value)}
-            placeholder="Blank = colour only"
+            placeholder={t("numberPlaceholder")}
           />
         </Field>
       </div>
 
-      <Field label="Description" htmlFor="kit-desc">
+      <Field label={t("descriptionLabel")} htmlFor="kit-desc">
         <Input
           id="kit-desc"
           value={values.description}
           onChange={(e) => update("description", e.target.value)}
-          placeholder='e.g. "Norma base kit" — optional'
+          placeholder={t("descriptionPlaceholder")}
         />
       </Field>
 
       {preview ? (
         <p className="text-muted-foreground text-sm">
-          Sticker code: <span className="font-semibold">{preview}</span>
+          {t("stickerCodeLabel")}{" "}
+          <span className="font-semibold">{preview}</span>
         </p>
       ) : null}
 
@@ -161,14 +165,14 @@ export function KitForm({ mode, kitId, initial }: Props) {
           onClick={() => router.push("/admin/kits")}
           disabled={isPending}
         >
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending
-            ? "Saving…"
+            ? tCommon("saving")
             : mode === "create"
-              ? "Create kit"
-              : "Save changes"}
+              ? t("createKit")
+              : t("saveChanges")}
         </Button>
       </div>
     </form>

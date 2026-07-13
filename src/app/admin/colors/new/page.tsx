@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,6 +20,10 @@ import {
 
 export default async function NewColorPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminColors"),
+    getTranslations("common"),
+  ]);
   const { data: coatingsData } = await supabase
     .from("coatings")
     .select("slug, label_en")
@@ -35,34 +40,31 @@ export default async function NewColorPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/colors">Colours</Link>
+              <Link href="/admin/colors">{t("crumbColours")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">New colour</h1>
-        <p className="text-muted-foreground text-sm">
-          Add a colour to the palette. Bike + MO pickers default to showing
-          active colours.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("newTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("newDescription")}</p>
       </header>
 
       <ColorForm

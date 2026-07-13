@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ExternalLink, MessageCircleWarning } from "lucide-react";
 
 import { CopyButton } from "@/components/copy-button";
@@ -14,6 +15,7 @@ const STATS_WINDOW_DAYS = 30;
  * the company.
  */
 export async function ReportUrlCard() {
+  const t = await getTranslations("adminSettings");
   const reportUrl = `${appOrigin()}/report`;
   const helpUrl = `${appOrigin()}/report/help`;
 
@@ -44,61 +46,63 @@ export async function ReportUrlCard() {
             className="text-muted-foreground size-4"
             aria-hidden
           />
-          <h2 className="text-sm font-semibold">Customer report URL</h2>
+          <h2 className="text-sm font-semibold">{t("reportUrlTitle")}</h2>
         </div>
-        <p className="text-muted-foreground text-xs">
-          Share this URL with customers who need to report a bike issue.
-          They&rsquo;ll scan the QR sticker or enter the frame number; no
-          login required.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("reportUrlDesc")}</p>
       </header>
 
       <div className="flex flex-col gap-3">
         <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border p-2">
           <code className="flex-1 font-mono text-sm break-all">{reportUrl}</code>
           <div className="flex gap-1.5">
-            <CopyButton value={reportUrl} />
+            <CopyButton
+              value={reportUrl}
+              label={t("reportUrlCopy")}
+              copiedLabel={t("reportUrlCopied")}
+            />
             <Link
               href="/report"
               target="_blank"
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs"
             >
-              <ExternalLink className="size-3.5" aria-hidden /> Open
+              <ExternalLink className="size-3.5" aria-hidden />{" "}
+              {t("reportUrlOpen")}
             </Link>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Stat
-            label="Visits"
+            label={t("reportUrlVisits")}
             value={views}
-            hint={`/report · last ${STATS_WINDOW_DAYS} days`}
+            hint={t("reportUrlVisitsHint", { days: STATS_WINDOW_DAYS })}
           />
           <Stat
-            label="Send-a-message visits"
+            label={t("reportUrlMsgVisits")}
             value={helpViews}
-            hint={`/report/help · last ${STATS_WINDOW_DAYS} days`}
+            hint={t("reportUrlMsgVisitsHint", { days: STATS_WINDOW_DAYS })}
           />
           <Stat
-            label="Reports submitted"
+            label={t("reportUrlSubmitted")}
             value={ticketsCount}
-            hint={`From customer · last ${STATS_WINDOW_DAYS} days`}
+            hint={t("reportUrlSubmittedHint", { days: STATS_WINDOW_DAYS })}
           />
         </div>
 
         <div className="text-muted-foreground border-t pt-3 text-xs">
           <p>
-            The &quot;I don&rsquo;t know my bike&quot; fallback lives at{" "}
-            <code className="font-mono">{helpUrl}</code> — useful when a
-            customer can&rsquo;t find the QR sticker. Both paths land in{" "}
-            <Link
-              href="/maintenance/tickets"
-              className="hover:text-foreground underline-offset-4 hover:underline"
-            >
-              /maintenance/tickets
-            </Link>
-            ; unidentified-bike reports show up flagged &ldquo;Needs
-            triage&rdquo; in the Bike column.
+            {t.rich("reportUrlFallback", {
+              helpUrl,
+              code: (chunks) => <code className="font-mono">{chunks}</code>,
+              link: (chunks) => (
+                <Link
+                  href="/maintenance/tickets"
+                  className="hover:text-foreground underline-offset-4 hover:underline"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       </div>

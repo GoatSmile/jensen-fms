@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,43 +30,46 @@ export type SegmentRow = {
  * /admin/customer-segments/[id]. Edit + Archive live on the detail
  * page now.
  */
-export function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
+export async function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
+  const t = await getTranslations("adminSegments");
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Customer segments</h2>
+          <h2 className="text-sm font-semibold">{t("title")}</h2>
           <span className="text-muted-foreground text-xs">
-            {activeCount} active · {rows.length} total
+            {t("countSummary", { active: activeCount, total: rows.length })}
           </span>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href="/admin/customer-segments/new">
-            <Plus aria-hidden /> Add segment
+            <Plus aria-hidden /> {t("addSegment")}
           </Link>
         </Button>
       </header>
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          No segments yet. Add one to start.
+          {t("emptyState")}
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Segment</TableHead>
-                <TableHead className="hidden sm:table-cell">Slug</TableHead>
+                <TableHead>{t("colSegment")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("colSlug")}
+                </TableHead>
                 <TableHead className="hidden text-right md:table-cell">
-                  Sort
+                  {t("colSort")}
                 </TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Orgs
+                  {t("colOrgs")}
                 </TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-[36px]" />
               </TableRow>
             </TableHeader>
@@ -107,9 +111,9 @@ export function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         {row.isActive ? (
-                          <Badge variant="success">Active</Badge>
+                          <Badge variant="success">{t("active")}</Badge>
                         ) : (
-                          <Badge variant="outline">Archived</Badge>
+                          <Badge variant="outline">{t("archived")}</Badge>
                         )}
                       </Link>
                     </TableCell>
@@ -117,7 +121,7 @@ export function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={`Open ${row.nameEn}`}
+                        aria-label={t("openAria", { name: row.nameEn })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

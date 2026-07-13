@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +63,10 @@ function tierHeading(min: number, max: number | null): string {
  * orders keep their frozen snapshots regardless.
  */
 export default async function AdminServicesPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminServices"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
 
   const [listsRes, partTypesRes] = await Promise.all([
@@ -140,18 +145,18 @@ export default async function AdminServicesPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Service price lists</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -159,25 +164,20 @@ export default async function AdminServicesPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Service price lists
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Supplier-issued per-piece prices for outsourced work (painting
-            today), in quantity tiers. A change is a new revision — sent
-            orders keep the prices frozen on them.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
         </div>
         <Button asChild>
           <Link href="/admin/services/new">
-            <Plus aria-hidden /> New price list
+            <Plus aria-hidden /> {t("newPriceList")}
           </Link>
         </Button>
       </div>
 
       {groupList.length === 0 ? (
         <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm">
-          No price lists yet — add the first supplier list to price service
-          orders.
+          {t("emptyState")}
         </div>
       ) : (
         groupList.map((revisions) => {
@@ -230,21 +230,26 @@ export default async function AdminServicesPage() {
                   <p className="text-muted-foreground text-xs">
                     {current ? (
                       <>
-                        Current: {current.name} · v{current.version} ·{" "}
-                        {current.currency}
+                        {t("currentRevision", {
+                          name: current.name,
+                          version: current.version,
+                          currency: current.currency,
+                        })}
                         {current.effective_from
-                          ? ` · effective ${formatDate(current.effective_from)}`
+                          ? t("effectiveSuffix", {
+                              date: formatDate(current.effective_from),
+                            })
                           : ""}
                       </>
                     ) : (
-                      "No current revision."
+                      t("noCurrentRevision")
                     )}
                   </p>
                 </div>
                 {current ? (
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/admin/services/new?from=${current.id}`}>
-                      <Plus aria-hidden /> New revision
+                      <Plus aria-hidden /> {t("newRevision")}
                     </Link>
                   </Button>
                 ) : null}
@@ -255,13 +260,15 @@ export default async function AdminServicesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Part</TableHead>
-                        {tierCols.map((t) => (
+                        <TableHead>{t("partColumn")}</TableHead>
+                        {tierCols.map((tier) => (
                           <TableHead
-                            key={tierKey(t.min, t.max)}
+                            key={tierKey(tier.min, tier.max)}
                             className="text-right"
                           >
-                            {tierHeading(t.min, t.max)} pcs
+                            {t("tierPcs", {
+                              tier: tierHeading(tier.min, tier.max),
+                            })}
                           </TableHead>
                         ))}
                       </TableRow>
@@ -312,7 +319,7 @@ export default async function AdminServicesPage() {
 
               <div className="border-t px-4 py-3">
                 <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                  Revisions
+                  {t("revisionsHeading")}
                 </h3>
                 <ul className="flex flex-col gap-1 text-sm">
                   {revisions.map((r) => (
@@ -327,13 +334,15 @@ export default async function AdminServicesPage() {
                       <span className="text-muted-foreground text-xs">
                         {r.currency}
                         {r.effective_from
-                          ? ` · effective ${formatDate(r.effective_from)}`
+                          ? t("effectiveSuffix", {
+                              date: formatDate(r.effective_from),
+                            })
                           : ""}
-                        {` · ${r.items.length} price${r.items.length === 1 ? "" : "s"}`}
-                        {` · added ${formatDate(r.created_at)}`}
+                        {t("priceCountSuffix", { count: r.items.length })}
+                        {t("addedSuffix", { date: formatDate(r.created_at) })}
                       </span>
                       {r.is_current ? (
-                        <Badge variant="success">current</Badge>
+                        <Badge variant="success">{t("currentBadge")}</Badge>
                       ) : null}
                     </li>
                   ))}

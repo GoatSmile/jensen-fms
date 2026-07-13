@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ export type CoatingRow = {
  */
 export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
   const router = useRouter();
+  const t = useTranslations("adminColors");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -101,7 +103,7 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
 
   function onAdd() {
     if (!newEn.trim()) {
-      setError("English label is required.");
+      setError(t("englishLabelRequired"));
       return;
     }
     setError(null);
@@ -120,10 +122,9 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
   return (
     <section className="rounded-md border">
       <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Coating finishes</h2>
+        <h2 className="text-sm font-semibold">{t("coatingsTitle")}</h2>
         <p className="text-muted-foreground text-xs">
-          The finishes offered when classifying a colour (e.g. matte RAL 9005).
-          Archived finishes drop out of the picker but stay on existing colours.
+          {t("coatingsDescription")}
         </p>
       </header>
 
@@ -131,11 +132,11 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Finish (English)</TableHead>
-              <TableHead className="hidden sm:table-cell">Danish</TableHead>
-              <TableHead className="hidden md:table-cell">Slug</TableHead>
-              <TableHead className="w-[80px]">Sort</TableHead>
-              <TableHead className="w-[160px] text-right">Actions</TableHead>
+              <TableHead>{t("thFinishEnglish")}</TableHead>
+              <TableHead className="hidden sm:table-cell">{t("thDanish")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("slug")}</TableHead>
+              <TableHead className="w-[80px]">{t("thSort")}</TableHead>
+              <TableHead className="w-[160px] text-right">{t("thActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -182,10 +183,10 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
                           onClick={() => onSave(r)}
                           disabled={pending}
                         >
-                          Save
+                          {t("save")}
                         </Button>
                       ) : !r.isActive ? (
-                        <Badge variant="outline">Archived</Badge>
+                        <Badge variant="outline">{t("statusArchived")}</Badge>
                       ) : null}
                       <Button
                         type="button"
@@ -194,7 +195,7 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
                         onClick={() => onToggleActive(r)}
                         disabled={pending}
                       >
-                        {r.isActive ? "Archive" : "Restore"}
+                        {r.isActive ? t("archive") : t("restore")}
                       </Button>
                     </div>
                   </TableCell>
@@ -208,7 +209,7 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
                 <Input
                   value={newEn}
                   onChange={(e) => setNewEn(e.target.value)}
-                  placeholder="New finish (English)"
+                  placeholder={t("newFinishEnglishPlaceholder")}
                   className="h-8"
                 />
               </TableCell>
@@ -216,12 +217,12 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
                 <Input
                   value={newDa}
                   onChange={(e) => setNewDa(e.target.value)}
-                  placeholder="Danish (optional)"
+                  placeholder={t("danishOptionalPlaceholder")}
                   className="h-8"
                 />
               </TableCell>
               <TableCell className="hidden md:table-cell">
-                <span className="text-muted-foreground text-xs">auto</span>
+                <span className="text-muted-foreground text-xs">{t("auto")}</span>
               </TableCell>
               <TableCell />
               <TableCell className="text-right">
@@ -232,7 +233,7 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
                   onClick={onAdd}
                   disabled={pending || !newEn.trim()}
                 >
-                  Add finish
+                  {t("addFinish")}
                 </Button>
               </TableCell>
             </TableRow>

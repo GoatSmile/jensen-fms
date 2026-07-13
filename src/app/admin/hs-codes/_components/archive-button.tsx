@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ type Props = {
 
 export function ArchiveButton({ id, isActive, partCount }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminHsCodes");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -37,14 +39,14 @@ export function ArchiveButton({ id, isActive, partCount }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this HS code" : "Restore this HS code"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {isActive
               ? partCount > 0
-                ? `${partCount} part${partCount === 1 ? "" : "s"} reference this code. Archiving hides it from new part pickers; existing PO lines keep their snapshotted tariff so nothing downstream breaks.`
-                : "Archiving hides this code from new part pickers. No parts reference it currently."
-              : "Restoring makes this code selectable again in new parts."}
+                ? t("archiveWithUsage", { count: partCount })
+                : t("archiveNoUsage")
+              : t("restoreHint")}
           </p>
         </div>
         <Button
@@ -57,12 +59,12 @@ export function ArchiveButton({ id, isActive, partCount }: Props) {
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

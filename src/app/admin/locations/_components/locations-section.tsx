@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,41 +30,44 @@ export type LocationRow = {
  * Server component list of inventory locations, mirroring the colours list.
  * Rows link to /admin/locations/[id] where edit + archive live.
  */
-export function LocationsSection({ rows }: { rows: LocationRow[] }) {
+export async function LocationsSection({ rows }: { rows: LocationRow[] }) {
+  const t = await getTranslations("adminLocations");
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
     <section className="rounded-md border">
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">Locations</h2>
+          <h2 className="text-sm font-semibold">{t("sectionTitle")}</h2>
           <span className="text-muted-foreground text-xs">
-            {activeCount} active · {rows.length} total
+            {t("countSummary", { active: activeCount, total: rows.length })}
           </span>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href="/admin/locations/new">
-            <Plus aria-hidden /> Add location
+            <Plus aria-hidden /> {t("addLocation")}
           </Link>
         </Button>
       </header>
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground p-4 text-sm italic">
-          No locations yet. Add one to start.
+          {t("emptyState")}
         </p>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Address</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">
-                  Movements
+                <TableHead>{t("colCode")}</TableHead>
+                <TableHead>{t("colName")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("colAddress")}
                 </TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("colMovements")}
+                </TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-[120px]" />
                 <TableHead className="w-[36px]" />
               </TableRow>
@@ -86,7 +90,9 @@ export function LocationsSection({ rows }: { rows: LocationRow[] }) {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">{row.nameEn}</span>
                           {row.isPrimary ? (
-                            <Badge variant="secondary">Primary</Badge>
+                            <Badge variant="secondary">
+                              {t("badgePrimary")}
+                            </Badge>
                           ) : null}
                         </div>
                         {row.nameDa && row.nameDa !== row.nameEn ? (
@@ -111,9 +117,9 @@ export function LocationsSection({ rows }: { rows: LocationRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         {row.isActive ? (
-                          <Badge variant="success">Active</Badge>
+                          <Badge variant="success">{t("statusActive")}</Badge>
                         ) : (
-                          <Badge variant="outline">Archived</Badge>
+                          <Badge variant="outline">{t("statusArchived")}</Badge>
                         )}
                       </Link>
                     </TableCell>
@@ -126,7 +132,7 @@ export function LocationsSection({ rows }: { rows: LocationRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={`Open ${row.nameEn}`}
+                        aria-label={t("openAria", { name: row.nameEn })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

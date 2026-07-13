@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -18,6 +19,10 @@ import { LocationVisibilityToggle } from "./_components/location-visibility-togg
 
 export default async function AdminLocationsPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminLocations"),
+    getTranslations("common"),
+  ]);
 
   const [locRes, movesRes, settingsRes] = await Promise.all([
     supabase
@@ -63,29 +68,25 @@ export default async function AdminLocationsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Locations</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Locations</h1>
-        <p className="text-muted-foreground text-sm">
-          The physical sites stock lives at. Most shops run one. The primary
-          location is where parts are received into and consumed from by
-          default — mark it on its row below.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("heading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <LocationVisibilityToggle hidden={hidden} />

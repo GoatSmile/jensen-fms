@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Archive, ArchiveRestore } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ type Props = {
 
 export function ArchiveButton({ id, isActive, partCount }: Props) {
   const router = useRouter();
+  const t = useTranslations("adminSuppliers");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -37,14 +39,14 @@ export function ArchiveButton({ id, isActive, partCount }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h3 className="text-sm font-semibold">
-            {isActive ? "Archive this supplier" : "Restore this supplier"}
+            {isActive ? t("archiveTitle") : t("restoreTitle")}
           </h3>
           <p className="text-muted-foreground text-xs">
             {isActive
               ? partCount > 0
-                ? `${partCount} part${partCount === 1 ? "" : "s"} list this supplier in an offering. Archiving hides it from new pickers (PO lines, paint orders, offerings); existing offerings and POs keep their reference.`
-                : "Archiving hides this supplier from new pickers. No part offerings reference it currently."
-              : "Restoring makes this supplier selectable again in new pickers."}
+                ? t("archiveWithParts", { count: partCount })
+                : t("archiveNoParts")
+              : t("restoreDesc")}
           </p>
         </div>
         <Button
@@ -57,12 +59,12 @@ export function ArchiveButton({ id, isActive, partCount }: Props) {
           {isActive ? (
             <>
               <Archive className="size-4" aria-hidden />
-              {pending ? "Archiving…" : "Archive"}
+              {pending ? t("archiving") : t("archive")}
             </>
           ) : (
             <>
               <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? "Restoring…" : "Restore"}
+              {pending ? t("restoring") : t("restore")}
             </>
           )}
         </Button>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,8 @@ function decimalToPercentInput(decimal: number): string {
 }
 
 export function SettingsForm({ initialDefaultTransportPct }: Props) {
+  const t = useTranslations("adminSettings");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const [value, setValue] = useState(
     decimalToPercentInput(initialDefaultTransportPct),
@@ -42,7 +45,7 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
     const pctRaw = value.trim().replace(",", ".");
     const pct = Number(pctRaw);
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-      setError("Transport % must be a number between 0 and 100.");
+      setError(t("transportError"));
       return;
     }
     const decimal = pct / 100;
@@ -54,7 +57,7 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
         setError(r.error);
         return;
       }
-      setSuccess("Saved.");
+      setSuccess(t("saved"));
       router.refresh();
     });
   }
@@ -62,7 +65,7 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="setting-transport">Default transport %</Label>
+        <Label htmlFor="setting-transport">{t("transportLabel")}</Label>
         <div className="flex items-center gap-2">
           <Input
             id="setting-transport"
@@ -76,9 +79,9 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
           <span className="text-muted-foreground text-sm">%</span>
         </div>
         <p className="text-muted-foreground text-xs">
-          Whole or decimal percent — e.g. <span className="font-mono">10</span>{" "}
-          for 10 %, <span className="font-mono">10.2</span> for 10.2 %. New PO
-          lines pre-fill this; existing lines keep their own snapshot.
+          {t("transportHelpPrefix")} <span className="font-mono">10</span>{" "}
+          {t("transportHelpMid")} <span className="font-mono">10.2</span>{" "}
+          {t("transportHelpSuffix")}
         </p>
       </div>
 
@@ -95,7 +98,7 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
 
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save settings"}
+          {pending ? tCommon("saving") : t("saveSettings")}
         </Button>
       </div>
     </form>

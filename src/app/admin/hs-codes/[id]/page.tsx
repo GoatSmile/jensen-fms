@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,6 +29,10 @@ export default async function HsCodeDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminHsCodes"),
+    getTranslations("common"),
+  ]);
 
   const [codeRes, partsRes] = await Promise.all([
     supabase
@@ -82,19 +87,19 @@ export default async function HsCodeDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/hs-codes">HS / TARIC codes</Link>
+              <Link href="/admin/hs-codes">{t("crumbHsCodes")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -110,7 +115,7 @@ export default async function HsCodeDetailPage({
           <p className="text-muted-foreground text-sm">{c.description}</p>
         </div>
         <Badge variant={c.is_active ? "success" : "outline"}>
-          {c.is_active ? "Active" : "Archived"}
+          {c.is_active ? t("statusActive") : t("statusArchived")}
         </Badge>
       </header>
 
@@ -122,15 +127,14 @@ export default async function HsCodeDetailPage({
           doesn't track edits here. */}
       <section className="rounded-md border">
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Parts using this code</h2>
+          <h2 className="text-sm font-semibold">{t("partsUsingTitle")}</h2>
           <span className="text-muted-foreground text-xs">
-            {partCount} part{partCount === 1 ? "" : "s"}
+            {t("partsCount", { count: partCount })}
           </span>
         </header>
         {partCount === 0 ? (
           <p className="text-muted-foreground p-4 text-sm italic">
-            No parts are classified under this code yet. Assign it on a
-            part&rsquo;s edit page.
+            {t("noPartsYet")}
           </p>
         ) : (
           <ul className="divide-y">
@@ -152,7 +156,7 @@ export default async function HsCodeDetailPage({
                   <div className="flex shrink-0 items-center gap-2">
                     {p.tariff_pct_override != null ? (
                       <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                        Tariff override
+                        {t("tariffOverride")}
                       </span>
                     ) : null}
                     <ChevronRight

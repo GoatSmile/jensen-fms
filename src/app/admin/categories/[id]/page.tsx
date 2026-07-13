@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,6 +29,10 @@ export default async function CategoryDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminCategories"),
+    getTranslations("common"),
+  ]);
 
   const [catRes, allCatsRes, partsRes] = await Promise.all([
     supabase
@@ -79,19 +84,19 @@ export default async function CategoryDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/categories">Part categories</Link>
+              <Link href="/admin/categories">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -109,7 +114,7 @@ export default async function CategoryDetailPage({
           ) : null}
         </div>
         <Badge variant={c.is_active ? "success" : "outline"}>
-          {c.is_active ? "Active" : "Archived"}
+          {c.is_active ? t("active") : t("archived")}
         </Badge>
       </header>
 
@@ -121,14 +126,14 @@ export default async function CategoryDetailPage({
 
       <section className="rounded-md border">
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Parts in this category</h2>
+          <h2 className="text-sm font-semibold">{t("partsHeading")}</h2>
           <span className="text-muted-foreground text-xs">
-            {partCount} part{partCount === 1 ? "" : "s"}
+            {t("partsCount", { count: partCount })}
           </span>
         </header>
         {partCount === 0 ? (
           <p className="text-muted-foreground p-4 text-sm italic">
-            No parts are classified directly under this category yet.
+            {t("noPartsYet")}
           </p>
         ) : (
           <ul className="divide-y">

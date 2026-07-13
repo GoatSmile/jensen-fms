@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,8 @@ export function RevisionEditor({
   suppliers,
   serviceTypes,
 }: Props) {
+  const t = useTranslations("adminServices");
+  const tCommon = useTranslations("common");
   const [supplierId, setSupplierId] = useState(source?.supplierId ?? "");
   const [serviceTypeId, setServiceTypeId] = useState(
     source?.serviceTypeId ?? "",
@@ -167,26 +170,44 @@ export function RevisionEditor({
     for (const row of rows) {
       const rowName = partTypeName.get(row.partTypeId) ?? "—";
       row.cells.forEach((cell, tierIdx) => {
-        const t = tiers[tierIdx];
-        const key = `${row.partTypeId}|${t.min}:${t.max ?? "open"}`;
+        const tier = tiers[tierIdx];
+        const key = `${row.partTypeId}|${tier.min}:${tier.max ?? "open"}`;
         seenKeys.add(key);
         const old = sourceCell.get(key);
         const newPrice = cell.price.trim() === "" ? null : Number(cell.price);
         if (old == null && newPrice != null) {
           lines.push(
-            `${rowName} ${tierHeading(t)}: new — ${formatPrice(newPrice, currency)}`,
+            t("diffNew", {
+              row: rowName,
+              tier: tierHeading(tier),
+              price: formatPrice(newPrice, currency),
+            }),
           );
         } else if (old != null && newPrice == null) {
           lines.push(
-            `${rowName} ${tierHeading(t)}: removed (was ${formatPrice(old.price, currency)})`,
+            t("diffRemoved", {
+              row: rowName,
+              tier: tierHeading(tier),
+              was: formatPrice(old.price, currency),
+            }),
           );
         } else if (old != null && newPrice != null) {
           if (newPrice !== old.price) {
             lines.push(
-              `${rowName} ${tierHeading(t)}: ${formatPrice(old.price, currency)} → ${formatPrice(newPrice, currency)}`,
+              t("diffChanged", {
+                row: rowName,
+                tier: tierHeading(tier),
+                old: formatPrice(old.price, currency),
+                new: formatPrice(newPrice, currency),
+              }),
             );
           } else if (cell.itemNo.trim() !== old.itemNo) {
-            lines.push(`${rowName} ${tierHeading(t)}: item no. changed`);
+            lines.push(
+              t("diffItemNoChanged", {
+                row: rowName,
+                tier: tierHeading(tier),
+              }),
+            );
           }
         }
       });
@@ -194,10 +215,10 @@ export function RevisionEditor({
     for (const [key] of sourceCell) {
       if (seenKeys.has(key)) continue;
       const [ptId] = key.split("|");
-      lines.push(`${partTypeName.get(ptId) ?? "—"}: row removed`);
+      lines.push(t("diffRowRemoved", { row: partTypeName.get(ptId) ?? "—" }));
     }
     return lines;
-  }, [source, rows, tiers, currency, partTypeName]);
+  }, [source, rows, tiers, currency, partTypeName, t]);
 
   function onPublish(): void {
     setError(null);
@@ -206,11 +227,11 @@ export function RevisionEditor({
       row.cells.forEach((cell, tierIdx) => {
         const raw = cell.price.trim();
         if (raw === "") return;
-        const t = tiers[tierIdx];
+        const tier = tiers[tierIdx];
         items.push({
           servicePartTypeId: row.partTypeId,
-          tierMin: t.min,
-          tierMax: t.max,
+          tierMin: tier.min,
+          tierMax: tier.max,
           unitPrice: Number(raw.replace(",", ".")),
           supplierItemNo: cell.itemNo.trim() || null,
         });
@@ -220,7 +241,7 @@ export function RevisionEditor({
       (i) => !Number.isFinite(i.unitPrice) || i.unitPrice < 0,
     );
     if (bad) {
-      setError("Prices must be numbers of zero or above.");
+      setError(t("priceError"));
       return;
     }
     start(async () => {
@@ -244,21 +265,21 @@ export function RevisionEditor({
           {source ? (
             <>
               <div className="flex flex-col gap-1.5">
-                <Label>Supplier</Label>
+                <Label>{t("supplierLabel")}</Label>
                 <p className="text-sm">{source.supplierName}</p>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label>Service</Label>
+                <Label>{t("serviceLabel")}</Label>
                 <p className="text-sm">{source.serviceTypeName}</p>
               </div>
             </>
           ) : (
             <>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="rev-supplier">Supplier</Label>
+                <Label htmlFor="rev-supplier">{t("supplierLabel")}</Label>
                 <Select value={supplierId} onValueChange={setSupplierId}>
                   <SelectTrigger id="rev-supplier">
-                    <SelectValue placeholder="Pick…" />
+                    <SelectValue placeholder={t("pickPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map((s) => (
@@ -270,10 +291,10 @@ export function RevisionEditor({
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="rev-type">Service</Label>
+                <Label htmlFor="rev-type">{t("serviceLabel")}</Label>
                 <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
                   <SelectTrigger id="rev-type">
-                    <SelectValue placeholder="Pick…" />
+                    <SelectValue placeholder={t("pickPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {serviceTypes.map((t) => (
@@ -287,16 +308,16 @@ export function RevisionEditor({
             </>
           )}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rev-name">Revision name</Label>
+            <Label htmlFor="rev-name">{t("revisionNameLabel")}</Label>
             <Input
               id="rev-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. SIK priser 2027"
+              placeholder={t("revisionNamePlaceholder")}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rev-effective">Effective from</Label>
+            <Label htmlFor="rev-effective">{t("effectiveFromLabel")}</Label>
             <Input
               id="rev-effective"
               type="date"
@@ -305,7 +326,7 @@ export function RevisionEditor({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rev-currency">Currency</Label>
+            <Label htmlFor="rev-currency">{t("currencyLabel")}</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger id="rev-currency" className="w-[110px]">
                 <SelectValue />
@@ -325,22 +346,24 @@ export function RevisionEditor({
       <section className="rounded-md border">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">Prices per piece</h2>
+            <h2 className="text-sm font-semibold">{t("pricesHeading")}</h2>
             <p className="text-muted-foreground text-xs">
-              One row per part type, one column per quantity tier. Blank
-              cells stay unpriced; the supplier&apos;s own item number sits
-              under each price.
+              {t("pricesDescription")}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Select value={addPartTypeId} onValueChange={setAddPartTypeId}>
-              <SelectTrigger size="sm" className="w-[160px]" aria-label="Part type">
-                <SelectValue placeholder="Part type…" />
+              <SelectTrigger
+                size="sm"
+                className="w-[160px]"
+                aria-label={t("partTypeAria")}
+              >
+                <SelectValue placeholder={t("partTypePlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {addable.length === 0 ? (
                   <div className="text-muted-foreground p-2 text-xs">
-                    Every part type has a row.
+                    {t("everyPartTypeHasRow")}
                   </div>
                 ) : (
                   addable.map((pt) => (
@@ -358,7 +381,7 @@ export function RevisionEditor({
               onClick={addRow}
               disabled={addPartTypeId === ""}
             >
-              <Plus aria-hidden /> Add row
+              <Plus aria-hidden /> {t("addRow")}
             </Button>
           </div>
         </header>
@@ -367,10 +390,13 @@ export function RevisionEditor({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left text-xs">
-                <th className="px-2 py-2 font-medium">Part</th>
-                {tiers.map((t) => (
-                  <th key={tierHeading(t)} className="px-2 py-2 font-medium">
-                    {tierHeading(t)} pcs · {currency}
+                <th className="px-2 py-2 font-medium">{t("partColumn")}</th>
+                {tiers.map((tier) => (
+                  <th key={tierHeading(tier)} className="px-2 py-2 font-medium">
+                    {t("tierPcsCurrency", {
+                      tier: tierHeading(tier),
+                      currency,
+                    })}
                   </th>
                 ))}
                 <th className="w-[50px] px-2 py-2" />
@@ -398,7 +424,10 @@ export function RevisionEditor({
                           }
                           placeholder="—"
                           className="h-8 w-28 tabular-nums"
-                          aria-label={`${partTypeName.get(row.partTypeId) ?? ""} ${tierHeading(tiers[tierIdx])} price`}
+                          aria-label={t("priceAria", {
+                            part: partTypeName.get(row.partTypeId) ?? "",
+                            tier: tierHeading(tiers[tierIdx]),
+                          })}
                         />
                         <Input
                           value={cell.itemNo}
@@ -407,9 +436,12 @@ export function RevisionEditor({
                               itemNo: e.target.value,
                             })
                           }
-                          placeholder="item no."
+                          placeholder={t("itemNoPlaceholder")}
                           className="h-7 w-28 font-mono text-xs"
-                          aria-label={`${partTypeName.get(row.partTypeId) ?? ""} ${tierHeading(tiers[tierIdx])} item number`}
+                          aria-label={t("itemNumberAria", {
+                            part: partTypeName.get(row.partTypeId) ?? "",
+                            tier: tierHeading(tiers[tierIdx]),
+                          })}
                         />
                       </div>
                     </td>
@@ -420,7 +452,9 @@ export function RevisionEditor({
                       size="xs"
                       variant="outline"
                       onClick={() => removeRow(rowIdx)}
-                      aria-label={`Remove ${partTypeName.get(row.partTypeId) ?? ""} row`}
+                      aria-label={t("removeRowAria", {
+                        part: partTypeName.get(row.partTypeId) ?? "",
+                      })}
                     >
                       <Trash2 aria-hidden />
                     </Button>
@@ -435,11 +469,11 @@ export function RevisionEditor({
       {source ? (
         <section className="rounded-md border p-4">
           <h2 className="text-sm font-semibold">
-            Changes vs {source.name} (v{source.version})
+            {t("changesVs", { name: source.name, version: source.version })}
           </h2>
           {diff.length === 0 ? (
             <p className="text-muted-foreground mt-2 text-sm">
-              No changes yet — identical to the current revision.
+              {t("noChangesYet")}
             </p>
           ) : (
             <ul className="mt-2 flex flex-col gap-1 text-sm">
@@ -461,14 +495,14 @@ export function RevisionEditor({
 
       <div className="flex justify-end gap-2">
         <Button variant="outline" asChild>
-          <Link href="/admin/services">Cancel</Link>
+          <Link href="/admin/services">{tCommon("cancel")}</Link>
         </Button>
         <Button
           type="button"
           onClick={onPublish}
           disabled={isPending || (source != null && diff.length === 0)}
         >
-          {isPending ? "Publishing…" : "Publish revision"}
+          {isPending ? t("publishing") : t("publishRevision")}
         </Button>
       </div>
     </div>

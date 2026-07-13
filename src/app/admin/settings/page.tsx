@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -20,6 +21,10 @@ import { EconomicSettingsForm } from "./_components/economic-settings-form";
 import { economicEnvReady } from "@/lib/economic/client";
 
 export default async function AdminSettingsPage() {
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSettings"),
+    getTranslations("common"),
+  ]);
   const supabase = await createClient();
   const settingsRes = await supabase
     .from("app_settings")
@@ -63,38 +68,34 @@ export default async function AdminSettingsPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Settings</BreadcrumbPage>
+            <BreadcrumbPage>{t("title")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-muted-foreground text-sm">
-          App-wide defaults read at form load. Snapshots already written to PO
-          lines or HS codes are not touched.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <ReportUrlCard />
 
       <section className="rounded-md border border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Language</h2>
+          <h2 className="text-sm font-semibold">{t("languageHeading")}</h2>
           <p className="text-muted-foreground text-xs">
-            Working language for the office app and the workshop floor. Defaults
-            to English.
+            {t("languageDescription")}
           </p>
         </header>
         <div className="p-4">
@@ -107,11 +108,9 @@ export default async function AdminSettingsPage() {
 
       <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Communication</h2>
+          <h2 className="text-sm font-semibold">{t("communicationHeading")}</h2>
           <p className="text-muted-foreground text-xs">
-            Sender identity for app-generated email (PO to supplier; the
-            phone-call pipeline later) and the workshop phone. Test mode
-            reroutes all mail to the test inboxes.
+            {t("communicationDescription")}
           </p>
         </header>
         <div className="p-4">
@@ -127,13 +126,8 @@ export default async function AdminSettingsPage() {
 
       <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Sending domain (DNS)</h2>
-          <p className="text-muted-foreground text-xs">
-            Reference copy of the DNS records the email provider needs for
-            domain verification. The records take effect at the DNS host —
-            keep the values and their status here so they&rsquo;re never
-            buried in a dashboard or an email thread.
-          </p>
+          <h2 className="text-sm font-semibold">{t("dnsHeading")}</h2>
+          <p className="text-muted-foreground text-xs">{t("dnsDescription")}</p>
         </header>
         <div className="p-4">
           <EmailDnsCard
@@ -145,12 +139,9 @@ export default async function AdminSettingsPage() {
 
       <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Accounting (e-conomic)</h2>
+          <h2 className="text-sm font-semibold">{t("accountingHeading")}</h2>
           <p className="text-muted-foreground text-xs">
-            Issued invoices push to e-conomic as draft journal vouchers — the
-            bookkeeper reviews and books them there. API tokens live in env
-            vars; this card holds the agreement numbers. Confirm the journal
-            and revenue account with the revisor before the first real push.
+            {t("accountingDescription")}
           </p>
         </header>
         <div className="p-4">
@@ -189,9 +180,9 @@ export default async function AdminSettingsPage() {
 
       <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Purchasing</h2>
+          <h2 className="text-sm font-semibold">{t("purchasingHeading")}</h2>
           <p className="text-muted-foreground text-xs">
-            Default values pre-filled into new PO line dialogs.
+            {t("purchasingDescription")}
           </p>
         </header>
         <div className="p-4">

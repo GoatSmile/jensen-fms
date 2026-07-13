@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -18,6 +19,10 @@ import {
 
 export default async function NewSupplierPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSuppliers"),
+    getTranslations("common"),
+  ]);
   const { data: currenciesData } = await supabase
     .from("currencies")
     .select("code")
@@ -31,34 +36,31 @@ export default async function NewSupplierPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/suppliers">Suppliers</Link>
+              <Link href="/admin/suppliers">{t("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>New</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbNew")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">New supplier</h1>
-        <p className="text-muted-foreground text-sm">
-          Add a vendor. Once saved, it becomes selectable when adding a
-          part offering, a purchase order, or a paint order.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("newHeading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("newSubtitle")}</p>
       </header>
 
       <SupplierForm

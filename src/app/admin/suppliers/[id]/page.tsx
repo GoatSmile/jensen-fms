@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +30,10 @@ export default async function SupplierDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminSuppliers"),
+    getTranslations("common"),
+  ]);
 
   const [supplierRes, offeringsRes, currenciesRes] = await Promise.all([
     supabase
@@ -93,19 +98,19 @@ export default async function SupplierDetailPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/suppliers">Suppliers</Link>
+              <Link href="/admin/suppliers">{t("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -125,7 +130,7 @@ export default async function SupplierDetailPage({
           ) : null}
         </div>
         <Badge variant={s.is_active ? "success" : "outline"}>
-          {s.is_active ? "Active" : "Archived"}
+          {s.is_active ? t("statusActive") : t("statusArchived")}
         </Badge>
       </header>
 
@@ -139,15 +144,14 @@ export default async function SupplierDetailPage({
           shows the supplier's own SKU for it. */}
       <section className="rounded-md border">
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Parts from this supplier</h2>
+          <h2 className="text-sm font-semibold">{t("partsSectionTitle")}</h2>
           <span className="text-muted-foreground text-xs">
-            {partCount} part{partCount === 1 ? "" : "s"}
+            {t("partsCount", { count: partCount })}
           </span>
         </header>
         {partCount === 0 ? (
           <p className="text-muted-foreground p-4 text-sm italic">
-            No part offerings reference this supplier yet. Add an offering
-            from a part&rsquo;s page.
+            {t("partsEmpty")}
           </p>
         ) : (
           <ul className="divide-y">
@@ -172,7 +176,7 @@ export default async function SupplierDetailPage({
                         />
                         {o.is_preferred ? (
                           <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                            Preferred
+                            {t("preferred")}
                           </span>
                         ) : null}
                       </span>
