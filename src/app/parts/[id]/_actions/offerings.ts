@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -25,14 +26,14 @@ type ParsedOffering = {
 
 function parseFields(
   formData: FormData,
-): ParsedOffering | { error: string; field?: string } {
+): ParsedOffering | { errorKey: string; field?: string } {
   const priceRaw = nullable(formData.get("default_purchase_price"));
   let default_purchase_price: number | null = null;
   if (priceRaw !== null) {
     const n = Number(priceRaw);
     if (!Number.isFinite(n) || n < 0) {
       return {
-        error: "Purchase price must be a non-negative number.",
+        errorKey: "partPurchasePriceNonNegative",
         field: "default_purchase_price",
       };
     }
@@ -45,7 +46,7 @@ function parseFields(
     const n = Number(moqRaw);
     if (!Number.isFinite(n) || n < 0) {
       return {
-        error: "Minimum order quantity must be a non-negative number.",
+        errorKey: "partMoqNonNegative",
         field: "minimum_order_quantity",
       };
     }
@@ -58,7 +59,7 @@ function parseFields(
     const n = Number(leadRaw);
     if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
       return {
-        error: "Lead time must be a non-negative whole number of days.",
+        errorKey: "partLeadTimeWholeDays",
         field: "lead_time_days",
       };
     }
@@ -100,12 +101,14 @@ export async function createOffering(
   supplierId: string,
   formData: FormData,
 ): Promise<OfferingResult> {
-  if (!partId) return { ok: false, error: "Missing partId." };
+  const t = await getTranslations("errors");
+  if (!partId) return { ok: false, error: t("missingPartId") };
   if (!supplierId)
-    return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
+    return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
 
   const parsed = parseFields(formData);
-  if ("error" in parsed) return { ok: false, error: parsed.error, field: parsed.field };
+  if ("errorKey" in parsed)
+    return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -122,20 +125,25 @@ export async function createOffering(
     if (error?.code === "23505") {
       return {
         ok: false,
-        error: "That supplier already has an offering for this part.",
+        error: t("partSupplierAlreadyHasOffering"),
         field: "supplier_id",
       };
     }
     return {
       ok: false,
-      error: `Could not save offering: ${error?.message ?? "unknown error"}`,
+      error: t("partCouldNotSaveOffering", {
+        detail: error?.message ?? t("unknownError"),
+      }),
     };
   }
 
   if (parsed.is_preferred) {
     const { error: demErr } = await demoteOthers(supabase, partId, data.id);
     if (demErr)
-      return { ok: false, error: `Could not demote others: ${demErr.message}` };
+      return {
+        ok: false,
+        error: t("partCouldNotDemoteOthers", { detail: demErr.message }),
+      };
   }
 
   revalidatePath("/parts");
@@ -148,11 +156,13 @@ export async function updateOffering(
   offeringId: string,
   formData: FormData,
 ): Promise<OfferingResult> {
+  const t = await getTranslations("errors");
   if (!partId || !offeringId)
-    return { ok: false, error: "Missing partId or offeringId." };
+    return { ok: false, error: t("partMissingPartOrOffering") };
 
   const parsed = parseFields(formData);
-  if ("error" in parsed) return { ok: false, error: parsed.error, field: parsed.field };
+  if ("errorKey" in parsed)
+    return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -163,12 +173,15 @@ export async function updateOffering(
     })
     .eq("id", offeringId);
 
-  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
 
   if (parsed.is_preferred) {
     const { error: demErr } = await demoteOthers(supabase, partId, offeringId);
     if (demErr)
-      return { ok: false, error: `Could not demote others: ${demErr.message}` };
+      return {
+        ok: false,
+        error: t("partCouldNotDemoteOthers", { detail: demErr.message }),
+      };
   }
 
   revalidatePath("/parts");
@@ -180,8 +193,9 @@ export async function setPreferredOffering(
   partId: string,
   offeringId: string,
 ): Promise<OfferingActionResult> {
+  const t = await getTranslations("errors");
   if (!partId || !offeringId)
-    return { ok: false, error: "Missing partId or offeringId." };
+    return { ok: false, error: t("partMissingPartOrOffering") };
 
   const supabase = await createClient();
   const { error: promoteErr } = await supabase
@@ -189,10 +203,17 @@ export async function setPreferredOffering(
     .update({ is_preferred: true, updated_at: new Date().toISOString() })
     .eq("id", offeringId);
   if (promoteErr)
-    return { ok: false, error: `Could not promote: ${promoteErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotPromote", { detail: promoteErr.message }),
+    };
 
   const { error: demErr } = await demoteOthers(supabase, partId, offeringId);
-  if (demErr) return { ok: false, error: `Could not demote others: ${demErr.message}` };
+  if (demErr)
+    return {
+      ok: false,
+      error: t("partCouldNotDemoteOthers", { detail: demErr.message }),
+    };
 
   revalidatePath("/parts");
   revalidatePath(`/parts/${partId}`);
@@ -203,15 +224,17 @@ export async function deleteOffering(
   partId: string,
   offeringId: string,
 ): Promise<OfferingActionResult> {
+  const t = await getTranslations("errors");
   if (!partId || !offeringId)
-    return { ok: false, error: "Missing partId or offeringId." };
+    return { ok: false, error: t("partMissingPartOrOffering") };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("part_supplier_offerings")
     .delete()
     .eq("id", offeringId);
-  if (error) return { ok: false, error: `Could not remove: ${error.message}` };
+  if (error)
+    return { ok: false, error: t("partCouldNotRemove", { detail: error.message }) };
 
   revalidatePath("/parts");
   revalidatePath(`/parts/${partId}`);

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
@@ -36,6 +37,7 @@ export type ReorderRow = {
 export async function findPartsBelowReorderPoint(): Promise<
   ReorderRow[] | { error: string }
 > {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
   const [partsRes, stockRes] = await Promise.all([
     supabase
@@ -46,7 +48,7 @@ export async function findPartsBelowReorderPoint(): Promise<
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
   ]);
   if (partsRes.error) {
-    return { error: `Could not load parts: ${partsRes.error.message}` };
+    return { error: t("partCouldNotLoadParts", { detail: partsRes.error.message }) };
   }
 
   const onHandByPart = new Map<string, number>();
@@ -88,12 +90,13 @@ export async function findPartsBelowReorderPoint(): Promise<
  * for review.
  */
 export async function draftPOsFromReorderPoints(): Promise<ReorderDraftResult> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
 
   const below = await findPartsBelowReorderPoint();
   if ("error" in below) return { ok: false, error: below.error };
   if (below.length === 0) {
-    return { ok: false, error: "No parts are below their reorder point." };
+    return { ok: false, error: t("partNoneBelowReorderPoint") };
   }
 
   const result = await createDraftPOsForDemand(

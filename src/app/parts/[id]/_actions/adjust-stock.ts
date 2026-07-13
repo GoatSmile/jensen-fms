@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,15 +62,16 @@ export type AdjustStockResult =
 export async function adjustStock(
   input: AdjustStockInput,
 ): Promise<AdjustStockResult> {
+  const t = await getTranslations("errors");
   const reason = input.reason.trim();
   if (!reason) {
-    return { ok: false, error: "Reason is required for stock adjustments." };
+    return { ok: false, error: t("partReasonRequired") };
   }
   if (!Number.isFinite(input.value)) {
-    return { ok: false, error: "Quantity must be a number." };
+    return { ok: false, error: t("partQtyNumber") };
   }
   if (input.unitCostDkk != null && !Number.isFinite(input.unitCostDkk)) {
-    return { ok: false, error: "Unit cost must be a number or empty." };
+    return { ok: false, error: t("partUnitCostNumberOrEmpty") };
   }
 
   // Foreign-cost path: DKK is computed here (not trusted from the client
@@ -81,18 +83,18 @@ export async function adjustStock(
     if (unitCostDkk != null) {
       return {
         ok: false,
-        error: "Provide the unit cost either in DKK or in a foreign currency, not both.",
+        error: t("partUnitCostDkkOrForeign"),
       };
     }
     if (!Number.isFinite(foreign.amount) || foreign.amount < 0) {
-      return { ok: false, error: "Unit cost must be a non-negative number." };
+      return { ok: false, error: t("partUnitCostNonNegative") };
     }
     if (!Number.isFinite(foreign.fxRate) || foreign.fxRate <= 0) {
-      return { ok: false, error: "FX rate must be greater than zero." };
+      return { ok: false, error: t("partFxRatePositive") };
     }
     const currency = foreign.currency.trim().toUpperCase();
     if (currency.length !== 3 || currency === "DKK") {
-      return { ok: false, error: "Pick a valid foreign currency." };
+      return { ok: false, error: t("partPickForeignCurrency") };
     }
     // Same 4-dp rounding as the PO landed-cost money convention.
     unitCostDkk = Math.round(foreign.amount * foreign.fxRate * 10000) / 10000;
@@ -108,13 +110,13 @@ export async function adjustStock(
   if (rawDate) {
     const parsed = new Date(rawDate);
     if (Number.isNaN(parsed.getTime())) {
-      return { ok: false, error: "Purchase date is not a valid date." };
+      return { ok: false, error: t("partPurchaseDateInvalid") };
     }
     // Compare on the calendar day (today's date is still allowed).
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     if (parsed.getTime() > today.getTime()) {
-      return { ok: false, error: "Purchase date cannot be in the future." };
+      return { ok: false, error: t("partPurchaseDateFuture") };
     }
     occurredAt = rawDate;
   }
@@ -132,7 +134,10 @@ export async function adjustStock(
     .maybeSingle();
 
   if (stockErr) {
-    return { ok: false, error: `Could not read current stock: ${stockErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotReadStock", { detail: stockErr.message }),
+    };
   }
 
   const currentOnHand = Number(stockRow?.quantity_on_hand ?? 0);
@@ -143,7 +148,7 @@ export async function adjustStock(
   } else {
     // mode === 'set'
     if (input.value < 0) {
-      return { ok: false, error: "Target on-hand cannot be negative." };
+      return { ok: false, error: t("partTargetOnHandNegative") };
     }
     delta = input.value - currentOnHand;
   }
@@ -151,8 +156,7 @@ export async function adjustStock(
   if (delta === 0) {
     return {
       ok: false,
-      error:
-        "This adjustment would not change the count. Cancel instead, or change the value.",
+      error: t("partAdjustmentNoChange"),
     };
   }
 
@@ -160,7 +164,7 @@ export async function adjustStock(
   if (projected < 0) {
     return {
       ok: false,
-      error: `Adjustment would result in ${projected} on hand. On-hand cannot go below zero.`,
+      error: t("partAdjustmentBelowZero", { projected }),
     };
   }
 
@@ -175,7 +179,10 @@ export async function adjustStock(
   });
 
   if (insertErr) {
-    return { ok: false, error: `Could not write adjustment: ${insertErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotWriteAdjustment", { detail: insertErr.message }),
+    };
   }
 
   // The list page summarises stock; the detail page reads movements + stock.

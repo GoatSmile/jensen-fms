@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -27,7 +28,8 @@ export async function transitionTicket(
   toStatus: TicketStatus,
   reason: string | null,
 ): Promise<TicketTransitionResult> {
-  if (!ticketId) return { ok: false, error: "Missing ticket id." };
+  const t = await getTranslations("errors");
+  if (!ticketId) return { ok: false, error: t("missingTicketId") };
 
   const supabase = await createClient();
   const { data: ticket, error: lookupErr } = await supabase
@@ -38,18 +40,20 @@ export async function transitionTicket(
   if (lookupErr || !ticket) {
     return {
       ok: false,
-      error: `Could not load ticket: ${lookupErr?.message ?? "not found"}`,
+      error: t("ticketCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
   const fromStatus = ticket.status as TicketStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
   if (!validNextTicketStatuses(fromStatus).includes(toStatus)) {
     return {
       ok: false,
-      error: `Cannot move from "${fromStatus}" to "${toStatus}".`,
+      error: t("ticketCannotMove", { from: fromStatus, to: toStatus }),
     };
   }
 
@@ -57,7 +61,7 @@ export async function transitionTicket(
   if (ticketTransitionRequiresReason(toStatus) && trimmedReason === "") {
     return {
       ok: false,
-      error: "A reason is required when cancelling a ticket.",
+      error: t("reasonRequiredCancel"),
     };
   }
 
@@ -82,7 +86,10 @@ export async function transitionTicket(
     })
     .eq("id", ticketId);
   if (updErr) {
-    return { ok: false, error: `Could not update status: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("ticketCouldNotUpdateStatus", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/maintenance/tickets");

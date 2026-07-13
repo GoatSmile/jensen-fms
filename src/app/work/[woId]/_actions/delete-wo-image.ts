@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -20,8 +21,9 @@ export async function deleteWorkOrderImage(
   attachmentId: string,
   woId: string,
 ): Promise<DeleteWOImageResult> {
-  if (!attachmentId) return { ok: false, error: "Missing attachment id." };
-  if (!woId) return { ok: false, error: "Missing work order id." };
+  const t = await getTranslations("errors");
+  if (!attachmentId) return { ok: false, error: t("woMissingAttachmentId") };
+  if (!woId) return { ok: false, error: t("missingWorkOrderId") };
 
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -31,7 +33,10 @@ export async function deleteWorkOrderImage(
     .eq("entity_type", "work_order")
     .eq("entity_id", woId);
   if (error) {
-    return { ok: false, error: `Could not remove photo: ${error.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotRemovePhoto", { detail: error.message }),
+    };
   }
 
   revalidatePath(`/work/${woId}`);

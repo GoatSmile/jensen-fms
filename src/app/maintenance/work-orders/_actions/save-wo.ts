@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { findActiveAgreementForBike } from "@/lib/agreements/coverage";
 import { nullableString as nullable } from "@/lib/forms";
@@ -46,11 +47,13 @@ type CreateWOPayload = {
   work_performed: string | null;
 };
 
-function parseCreateForm(
+async function parseCreateForm(
   formData: FormData,
-):
+): Promise<
   | { ok: true; payload: CreateWOPayload }
-  | { ok: false; error: string; field?: string } {
+  | { ok: false; error: string; field?: string }
+> {
+  const t = await getTranslations("errors");
   const bike_id = nullable(formData.get("bike_id"));
   const ticket_id = nullable(formData.get("ticket_id"));
   const languageRaw = nullable(formData.get("language")) ?? "da";
@@ -58,10 +61,10 @@ function parseCreateForm(
   const work_performed = nullable(formData.get("work_performed"));
 
   if (!bike_id) {
-    return { ok: false, error: "Pick a bike for this work order.", field: "bike_id" };
+    return { ok: false, error: t("woPickBike"), field: "bike_id" };
   }
   if (!VALID_LANGUAGES.has(languageRaw)) {
-    return { ok: false, error: "Language must be da or en.", field: "language" };
+    return { ok: false, error: t("languageDaEn"), field: "language" };
   }
   return {
     ok: true,
@@ -83,6 +86,7 @@ function parseCreateForm(
 async function createWorkOrderInternal(
   payload: CreateWOPayload,
 ): Promise<{ ok: true; workOrderId: string } | { ok: false; error: string }> {
+  const t = await getTranslations("errors");
   const supabase = await createClient();
 
   const { data: woNumber, error: numErr } = await supabase.rpc(
@@ -92,7 +96,9 @@ async function createWorkOrderInternal(
   if (numErr || typeof woNumber !== "string") {
     return {
       ok: false,
-      error: `Could not allocate work-order number: ${numErr?.message ?? "unknown error"}`,
+      error: t("woCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -116,7 +122,9 @@ async function createWorkOrderInternal(
   if (insErr || !wo) {
     return {
       ok: false,
-      error: `Could not create work order: ${insErr?.message ?? "unknown error"}`,
+      error: t("woCouldNotCreate", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -132,7 +140,7 @@ async function createWorkOrderInternal(
  * success. Document number comes from `next_document_number('work_order')`.
  */
 export async function createWorkOrder(formData: FormData): Promise<SaveWOResult> {
-  const parsed = parseCreateForm(formData);
+  const parsed = await parseCreateForm(formData);
   if (!parsed.ok) return parsed;
 
   const result = await createWorkOrderInternal(parsed.payload);
@@ -149,7 +157,8 @@ export async function createWorkOrder(formData: FormData): Promise<SaveWOResult>
 export async function convertTicketToWO(
   ticketId: string,
 ): Promise<SaveWOResult> {
-  if (!ticketId) return { ok: false, error: "Missing ticket id." };
+  const t = await getTranslations("errors");
+  if (!ticketId) return { ok: false, error: t("missingTicketId") };
 
   const supabase = await createClient();
   const { data: ticket, error: tErr } = await supabase
@@ -160,11 +169,11 @@ export async function convertTicketToWO(
   if (tErr || !ticket) {
     return {
       ok: false,
-      error: `Could not load ticket: ${tErr?.message ?? "not found"}`,
+      error: t("ticketCouldNotLoad", { detail: tErr?.message ?? t("notFound") }),
     };
   }
   if (!ticket.bike_id) {
-    return { ok: false, error: "Ticket has no bike attached." };
+    return { ok: false, error: t("woTicketNoBike") };
   }
 
   const language =
@@ -215,7 +224,8 @@ export async function updateWODetails(
   woId: string,
   formData: FormData,
 ): Promise<SaveWOResult> {
-  if (!woId) return { ok: false, error: "Missing work order id." };
+  const t = await getTranslations("errors");
+  if (!woId) return { ok: false, error: t("missingWorkOrderId") };
 
   const supabase = await createClient();
   const { data: existing, error: lookupErr } = await supabase
@@ -226,13 +236,15 @@ export async function updateWODetails(
   if (lookupErr || !existing) {
     return {
       ok: false,
-      error: `Could not load work order: ${lookupErr?.message ?? "not found"}`,
+      error: t("woCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (CLOSED_WO_STATUSES.includes(existing.status as WorkOrderStatus)) {
     return {
       ok: false,
-      error: "Work order is closed — details can't be edited.",
+      error: t("woClosedDetails"),
     };
   }
 
@@ -246,7 +258,7 @@ export async function updateWODetails(
   const isBillableRaw = formData.get("is_billable");
 
   if (!VALID_LANGUAGES.has(languageRaw)) {
-    return { ok: false, error: "Language must be da or en.", field: "language" };
+    return { ok: false, error: t("languageDaEn"), field: "language" };
   }
 
   let laborMinutes: number | null = null;
@@ -255,7 +267,7 @@ export async function updateWODetails(
     if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
       return {
         ok: false,
-        error: "Labor minutes must be a non-negative integer.",
+        error: t("woLaborMinutesInteger"),
         field: "labor_minutes",
       };
     }
@@ -267,7 +279,7 @@ export async function updateWODetails(
     if (!Number.isFinite(n) || n < 0) {
       return {
         ok: false,
-        error: "Labor rate must be a non-negative number.",
+        error: t("woLaborRateNonNegative"),
         field: "labor_rate_dkk",
       };
     }
@@ -295,7 +307,10 @@ export async function updateWODetails(
     })
     .eq("id", woId);
   if (updErr) {
-    return { ok: false, error: `Could not save details: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotSaveDetails", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/maintenance/work-orders");

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,7 +18,8 @@ export async function addKitToPart(
   partId: string,
   kitId: string,
 ): Promise<PartKitResult> {
-  if (!partId || !kitId) return { ok: false, error: "Missing part or kit." };
+  const t = await getTranslations("errors");
+  if (!partId || !kitId) return { ok: false, error: t("partMissingPartOrKit") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("part_kits")
@@ -25,7 +27,8 @@ export async function addKitToPart(
       { part_id: partId, kit_id: kitId },
       { onConflict: "part_id,kit_id", ignoreDuplicates: true },
     );
-  if (error) return { ok: false, error: `Could not add label: ${error.message}` };
+  if (error)
+    return { ok: false, error: t("partCouldNotAddLabel", { detail: error.message }) };
   revalidate(partId, kitId);
   return { ok: true };
 }
@@ -34,7 +37,8 @@ export async function removeKitFromPart(
   partId: string,
   kitId: string,
 ): Promise<PartKitResult> {
-  if (!partId || !kitId) return { ok: false, error: "Missing part or kit." };
+  const t = await getTranslations("errors");
+  if (!partId || !kitId) return { ok: false, error: t("partMissingPartOrKit") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("part_kits")
@@ -42,7 +46,10 @@ export async function removeKitFromPart(
     .eq("part_id", partId)
     .eq("kit_id", kitId);
   if (error)
-    return { ok: false, error: `Could not remove label: ${error.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotRemoveLabel", { detail: error.message }),
+    };
   revalidate(partId, kitId);
   return { ok: true };
 }

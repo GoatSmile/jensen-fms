@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
@@ -37,6 +38,7 @@ async function loadOpenWO(
   | { ok: true; wo: { id: string; status: string; bike_id: string | null } }
   | { ok: false; error: string }
 > {
+  const t = await getTranslations("errors");
   const { data: wo, error: woErr } = await supabase
     .from("work_orders")
     .select("id, status, bike_id")
@@ -45,13 +47,13 @@ async function loadOpenWO(
   if (woErr || !wo) {
     return {
       ok: false,
-      error: `Could not load work order: ${woErr?.message ?? "not found"}`,
+      error: t("woCouldNotLoad", { detail: woErr?.message ?? t("notFound") }),
     };
   }
   if (CLOSED_WO_STATUSES.includes(wo.status as WorkOrderStatus)) {
     return {
       ok: false,
-      error: "Work order is closed — parts can't be changed.",
+      error: t("woClosedParts"),
     };
   }
   return { ok: true, wo };
@@ -83,6 +85,7 @@ async function consumePartOntoWO(
   qty: number,
   unitPrice: number | null,
 ): Promise<WOPartsResult> {
+  const t = await getTranslations("errors");
   // Insert the movement first; source_entity_id gets patched after the
   // wo_parts row exists.
   const { data: movement, error: movErr } = await supabase
@@ -102,7 +105,9 @@ async function consumePartOntoWO(
   if (movErr || !movement) {
     return {
       ok: false,
-      error: `Could not write inventory movement: ${movErr?.message ?? "unknown error"}`,
+      error: t("woCouldNotWriteMovement", {
+        detail: movErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -124,12 +129,14 @@ async function consumePartOntoWO(
     if (wopErr?.code === "23505") {
       return {
         ok: false,
-        error: "That part is already on this work order. Remove the existing row first.",
+        error: t("woPartAlreadyOn"),
       };
     }
     return {
       ok: false,
-      error: `Could not record part on work order: ${wopErr?.message ?? "unknown error"}`,
+      error: t("woCouldNotRecordPart", {
+        detail: wopErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -149,16 +156,17 @@ export async function addPartToWO(
   woId: string,
   formData: FormData,
 ): Promise<WOPartsResult> {
-  if (!woId) return { ok: false, error: "Missing work order id." };
+  const t = await getTranslations("errors");
+  if (!woId) return { ok: false, error: t("missingWorkOrderId") };
 
   const partId = nullable(formData.get("part_id"));
   const qtyRaw = nullable(formData.get("quantity"));
   const unitPriceRaw = nullable(formData.get("unit_price"));
 
-  if (!partId) return { ok: false, error: "Pick a part." };
+  if (!partId) return { ok: false, error: t("woPickPart") };
   const qty = Number(qtyRaw);
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be a positive number." };
+    return { ok: false, error: t("positiveQty") };
   }
 
   const supabase = await createClient();
@@ -176,7 +184,7 @@ export async function addPartToWO(
   if (unitPriceRaw != null) {
     const n = Number(unitPriceRaw);
     if (!Number.isFinite(n) || n < 0) {
-      return { ok: false, error: "Unit price must be a non-negative number." };
+      return { ok: false, error: t("woUnitPriceNonNegative") };
     }
     unitPrice = n;
   } else {
@@ -217,11 +225,12 @@ export async function updateWOPartQty(
   woPartId: string,
   quantity: number,
 ): Promise<WOPartsResult> {
+  const t = await getTranslations("errors");
   if (!woId || !woPartId) {
-    return { ok: false, error: "Missing work order id or row id." };
+    return { ok: false, error: t("woMissingWoOrRowId") };
   }
   if (!Number.isFinite(quantity) || quantity <= 0) {
-    return { ok: false, error: "Quantity must be a positive number." };
+    return { ok: false, error: t("positiveQty") };
   }
 
   const supabase = await createClient();
@@ -236,11 +245,11 @@ export async function updateWOPartQty(
   if (rowErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${rowErr?.message ?? "not found"}`,
+      error: t("woCouldNotLoadRow", { detail: rowErr?.message ?? t("notFound") }),
     };
   }
   if (row.work_order_id !== woId) {
-    return { ok: false, error: "That row does not belong to this work order." };
+    return { ok: false, error: t("woRowNotOnWo") };
   }
 
   const { error: updErr } = await supabase
@@ -248,7 +257,10 @@ export async function updateWOPartQty(
     .update({ quantity })
     .eq("id", woPartId);
   if (updErr) {
-    return { ok: false, error: `Could not update quantity: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotUpdateQty", { detail: updErr.message }),
+    };
   }
 
   if (row.inventory_movement_id) {
@@ -259,7 +271,7 @@ export async function updateWOPartQty(
     if (movErr) {
       return {
         ok: false,
-        error: `Quantity updated but inventory movement could not be adjusted: ${movErr.message}`,
+        error: t("woQtyUpdatedMovementFailed", { detail: movErr.message }),
       };
     }
   }
@@ -279,15 +291,16 @@ export async function addKitPartsToWO(
   woId: string,
   kitId: string,
 ): Promise<WOKitAddResult> {
+  const t = await getTranslations("errors");
   if (!woId || !kitId) {
-    return { ok: false, error: "Missing work order id or kit id." };
+    return { ok: false, error: t("woMissingWoOrKitId") };
   }
 
   const supabase = await createClient();
   const gate = await loadOpenWO(supabase, woId);
   if (!gate.ok) return gate;
   if (!gate.wo.bike_id) {
-    return { ok: false, error: "Work order has no bike — can't resolve its kit parts." };
+    return { ok: false, error: t("woNoBikeForKit") };
   }
 
   // The bike's parts (part_id → quantity), as-built first, MO recipe fallback.
@@ -320,7 +333,7 @@ export async function addKitPartsToWO(
     }
   }
   if (bikeQty.size === 0) {
-    return { ok: false, error: "No parts recorded for this bike — add parts individually." };
+    return { ok: false, error: t("woNoPartsForBike") };
   }
 
   // Parts carrying this kit label, intersected with the bike's parts.
@@ -329,14 +342,17 @@ export async function addKitPartsToWO(
     .select("part_id")
     .eq("kit_id", kitId);
   if (memErr) {
-    return { ok: false, error: `Could not load kit parts: ${memErr.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotLoadKitParts", { detail: memErr.message }),
+    };
   }
   const kitPartIds = new Set((memberships ?? []).map((m) => m.part_id));
   const targets = [...bikeQty.entries()].filter(([partId]) =>
     kitPartIds.has(partId),
   );
   if (targets.length === 0) {
-    return { ok: false, error: "None of this bike's parts carry that kit label." };
+    return { ok: false, error: t("woNoKitLabelParts") };
   }
 
   // Skip parts already consumed on this WO.
@@ -384,7 +400,11 @@ export async function addKitPartsToWO(
       revalidateWOPaths(woId);
       return {
         ok: false,
-        error: `Added ${added} of ${toAdd.length} parts, then failed: ${r.error}`,
+        error: t("woKitAddPartialFail", {
+          added,
+          total: toAdd.length,
+          detail: r.error,
+        }),
       };
     }
     added += 1;
@@ -403,8 +423,9 @@ export async function removePartFromWO(
   woId: string,
   woPartId: string,
 ): Promise<WOPartsResult> {
+  const t = await getTranslations("errors");
   if (!woId || !woPartId) {
-    return { ok: false, error: "Missing work order id or row id." };
+    return { ok: false, error: t("woMissingWoOrRowId") };
   }
 
   const supabase = await createClient();
@@ -419,11 +440,11 @@ export async function removePartFromWO(
   if (rowErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${rowErr?.message ?? "not found"}`,
+      error: t("woCouldNotLoadRow", { detail: rowErr?.message ?? t("notFound") }),
     };
   }
   if (row.work_order_id !== woId) {
-    return { ok: false, error: "That row does not belong to this work order." };
+    return { ok: false, error: t("woRowNotOnWo") };
   }
 
   const { error: delErr } = await supabase
@@ -431,7 +452,10 @@ export async function removePartFromWO(
     .delete()
     .eq("id", woPartId);
   if (delErr) {
-    return { ok: false, error: `Could not remove row: ${delErr.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotRemoveRow", { detail: delErr.message }),
+    };
   }
 
   if (row.inventory_movement_id) {
@@ -444,7 +468,7 @@ export async function removePartFromWO(
       // adjust stock manually; we surface the error so they know.
       return {
         ok: false,
-        error: `Part removed but inventory movement could not be reversed: ${movDelErr.message}`,
+        error: t("woPartRemovedMovementFailed", { detail: movDelErr.message }),
       };
     }
   }

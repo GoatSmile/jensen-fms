@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,7 +13,8 @@ export type RetireResult = { ok: true } | { ok: false; error: string };
  * purchases, photos) stays intact and reachable via direct URL.
  */
 export async function retirePart(partId: string): Promise<RetireResult> {
-  if (!partId) return { ok: false, error: "Missing partId." };
+  const t = await getTranslations("errors");
+  if (!partId) return { ok: false, error: t("missingPartId") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("parts")
@@ -25,7 +27,8 @@ export async function retirePart(partId: string): Promise<RetireResult> {
 }
 
 export async function restorePart(partId: string): Promise<RetireResult> {
-  if (!partId) return { ok: false, error: "Missing partId." };
+  const t = await getTranslations("errors");
+  if (!partId) return { ok: false, error: t("missingPartId") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("parts")

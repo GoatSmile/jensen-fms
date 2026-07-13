@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -48,17 +49,19 @@ function parseAttributes(formData: FormData): Record<string, string> {
   return attrs;
 }
 
-function parseFields(formData: FormData): ParsedFields | { error: string; field?: string } {
+function parseFields(
+  formData: FormData,
+): ParsedFields | { errorKey: string; field?: string } {
   const internal_sku = nullable(formData.get("internal_sku"));
   const name_en = nullable(formData.get("name_en"));
   const category_id = nullable(formData.get("category_id"));
   const unit_of_measure = nullable(formData.get("unit_of_measure"));
 
-  if (!internal_sku) return { error: "SKU is required.", field: "internal_sku" };
-  if (!name_en) return { error: "English name is required.", field: "name_en" };
-  if (!category_id) return { error: "Category is required.", field: "category_id" };
+  if (!internal_sku) return { errorKey: "partSkuRequired", field: "internal_sku" };
+  if (!name_en) return { errorKey: "englishNameRequired", field: "name_en" };
+  if (!category_id) return { errorKey: "partCategoryRequired", field: "category_id" };
   if (!unit_of_measure) {
-    return { error: "Unit of measure is required.", field: "unit_of_measure" };
+    return { errorKey: "partUnitOfMeasureRequired", field: "unit_of_measure" };
   }
 
   // Optional numerics: empty string → null, otherwise must parse non-negative.
@@ -68,7 +71,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     const n = Number(priceRaw);
     if (!Number.isFinite(n) || n < 0) {
       return {
-        error: "Default retail price must be a non-negative number.",
+        errorKey: "partRetailPriceNonNegative",
         field: "default_retail_price",
       };
     }
@@ -81,7 +84,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     const n = Number(weightRaw);
     if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
       return {
-        error: "Weight must be a non-negative whole number of grams.",
+        errorKey: "partWeightWholeGrams",
         field: "weight_grams",
       };
     }
@@ -99,7 +102,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     const n = Number(reorderPointRaw);
     if (!Number.isFinite(n) || n < 0) {
       return {
-        error: "Reorder point must be a non-negative number.",
+        errorKey: "partReorderPointNonNegative",
         field: "reorder_point",
       };
     }
@@ -112,7 +115,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     const n = Number(reorderQuantityRaw);
     if (!Number.isFinite(n) || n < 0) {
       return {
-        error: "Reorder quantity must be a non-negative number.",
+        errorKey: "partReorderQtyNonNegative",
         field: "reorder_quantity",
       };
     }
@@ -127,7 +130,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
   // CHECK would reject anything else; validate here for a friendly error.
   const originRaw = nullable(formData.get("origin"));
   if (originRaw !== null && originRaw !== "eu" && originRaw !== "non_eu") {
-    return { error: "Origin must be EU or outside EU.", field: "origin" };
+    return { errorKey: "partOriginInvalid", field: "origin" };
   }
   const origin = originRaw;
 
@@ -140,7 +143,7 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
     const pct = Number(tariffOverrideRaw.replace(",", "."));
     if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
       return {
-        error: "Tariff override must be a number between 0 and 100.",
+        errorKey: "partTariffOverrideRange",
         field: "tariff_pct_override",
       };
     }
@@ -172,13 +175,12 @@ function parseFields(formData: FormData): ParsedFields | { error: string; field?
  * Translate a Postgres error into a friendlier UI message. Today the only
  * one we expect to surface is the unique violation on `parts.internal_sku`.
  */
-function explain(err: { code?: string; message: string }): {
-  message: string;
-  field?: string;
-} {
+function explain(
+  err: { code?: string; message: string },
+): { messageKey: string; field?: string } | { message: string } {
   if (err.code === "23505" && /internal_sku/.test(err.message)) {
     return {
-      message: "That SKU is already in use. Pick another.",
+      messageKey: "partSkuInUse",
       field: "internal_sku",
     };
   }
@@ -186,8 +188,10 @@ function explain(err: { code?: string; message: string }): {
 }
 
 export async function createPart(formData: FormData): Promise<SavePartResult> {
+  const t = await getTranslations("errors");
   const parsed = parseFields(formData);
-  if ("error" in parsed) return { ok: false, error: parsed.error, field: parsed.field };
+  if ("errorKey" in parsed)
+    return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -215,8 +219,10 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
     .single();
 
   if (error || !data) {
-    const e = explain(error ?? { message: "Unknown error" });
-    return { ok: false, error: e.message, field: e.field };
+    const e = explain(error ?? { message: t("unknownError") });
+    if ("messageKey" in e)
+      return { ok: false, error: t(e.messageKey), field: e.field };
+    return { ok: false, error: e.message };
   }
 
   // Optional: seed one preferred supplier offering entered on the create form.
@@ -242,10 +248,12 @@ export async function updatePart(
   partId: string,
   formData: FormData,
 ): Promise<SavePartResult> {
-  if (!partId) return { ok: false, error: "Missing partId." };
+  const t = await getTranslations("errors");
+  if (!partId) return { ok: false, error: t("missingPartId") };
 
   const parsed = parseFields(formData);
-  if ("error" in parsed) return { ok: false, error: parsed.error, field: parsed.field };
+  if ("errorKey" in parsed)
+    return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -274,7 +282,9 @@ export async function updatePart(
 
   if (error) {
     const e = explain(error);
-    return { ok: false, error: e.message, field: e.field };
+    if ("messageKey" in e)
+      return { ok: false, error: t(e.messageKey), field: e.field };
+    return { ok: false, error: e.message };
   }
 
   revalidatePath("/parts");

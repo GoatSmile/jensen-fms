@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -36,6 +37,7 @@ async function assertTicketableBike(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bikeId: string,
 ): Promise<{ ok: true } | { ok: false; error: string; field: string }> {
+  const t = await getTranslations("errors");
   const { data: bike, error } = await supabase
     .from("bikes")
     .select("id, status, deleted_at")
@@ -44,7 +46,9 @@ async function assertTicketableBike(
   if (error || !bike || bike.deleted_at != null) {
     return {
       ok: false,
-      error: `Could not load that bike: ${error?.message ?? "not found"}`,
+      error: t("ticketCouldNotLoadBike", {
+        detail: error?.message ?? t("notFound"),
+      }),
       field: "bike_id",
     };
   }
@@ -52,9 +56,7 @@ async function assertTicketableBike(
     const unbuilt = bike.status === "planning" || bike.status === "building";
     return {
       ok: false,
-      error: unbuilt
-        ? "That bike hasn't been built yet — build issues belong on the MO's build workbench, not a maintenance ticket."
-        : "That bike is retired or lost/stolen — tickets can't be opened against it.",
+      error: unbuilt ? t("ticketBikeNotBuilt") : t("ticketBikeTerminal"),
       field: "bike_id",
     };
   }
@@ -65,7 +67,7 @@ async function assertTicketableBike(
  * Parse + validate the fields shared between create and update. Returns
  * either a clean payload or an error description matching SaveTicketResult.
  */
-function parseTicketForm(formData: FormData):
+async function parseTicketForm(formData: FormData): Promise<
   | {
       ok: true;
       payload: {
@@ -79,7 +81,9 @@ function parseTicketForm(formData: FormData):
         notes: string | null;
       };
     }
-  | { ok: false; error: string; field?: string } {
+  | { ok: false; error: string; field?: string }
+> {
+  const t = await getTranslations("errors");
   const bike_id = nullable(formData.get("bike_id"));
   const contactId = nullable(formData.get("reported_by_contact_id"));
   const reporterText = nullable(formData.get("reported_by_text"));
@@ -90,25 +94,25 @@ function parseTicketForm(formData: FormData):
   const notes = nullable(formData.get("notes"));
 
   if (!bike_id) {
-    return { ok: false, error: "Pick a bike for this ticket.", field: "bike_id" };
+    return { ok: false, error: t("ticketPickBike"), field: "bike_id" };
   }
   if (!description) {
     return {
       ok: false,
-      error: "Describe what's wrong — the workshop needs a starting point.",
+      error: t("ticketDescribeProblem"),
       field: "description",
     };
   }
   if (!contactId && !reporterText) {
     return {
       ok: false,
-      error: "Pick a contact or enter the reporter's name.",
+      error: t("ticketPickContactOrReporter"),
       field: "reported_by_text",
     };
   }
 
   if (!TICKET_SOURCES.includes(sourceRaw as TicketSource)) {
-    return { ok: false, error: "Unknown source.", field: "source" };
+    return { ok: false, error: t("ticketUnknownSource"), field: "source" };
   }
   const priorityNum = Number(priorityRaw);
   if (
@@ -117,14 +121,14 @@ function parseTicketForm(formData: FormData):
   ) {
     return {
       ok: false,
-      error: "Pick a priority between 1 (urgent) and 5 (minor).",
+      error: t("ticketPickPriority"),
       field: "priority",
     };
   }
   if (language && !VALID_LANGUAGES.has(language)) {
     return {
       ok: false,
-      error: "Language must be da or en.",
+      error: t("languageDaEn"),
       field: "reported_language",
     };
   }
@@ -151,9 +155,10 @@ function parseTicketForm(formData: FormData):
  * `next_document_number('maintenance_ticket')` → TKT-2026-NNNN.
  */
 export async function createTicket(formData: FormData): Promise<SaveTicketResult> {
-  const parsed = parseTicketForm(formData);
+  const parsed = await parseTicketForm(formData);
   if (!parsed.ok) return parsed;
 
+  const t = await getTranslations("errors");
   const supabase = await createClient();
 
   const bikeGate = await assertTicketableBike(supabase, parsed.payload.bike_id);
@@ -166,7 +171,9 @@ export async function createTicket(formData: FormData): Promise<SaveTicketResult
   if (numErr || typeof ticketNumber !== "string") {
     return {
       ok: false,
-      error: `Could not allocate ticket number: ${numErr?.message ?? "unknown error"}`,
+      error: t("ticketCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -189,7 +196,9 @@ export async function createTicket(formData: FormData): Promise<SaveTicketResult
   if (insErr || !ticket) {
     return {
       ok: false,
-      error: `Could not create ticket: ${insErr?.message ?? "unknown error"}`,
+      error: t("ticketCouldNotCreate", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -206,10 +215,11 @@ export async function updateTicket(
   ticketId: string,
   formData: FormData,
 ): Promise<SaveTicketResult> {
+  const t = await getTranslations("errors");
   if (!ticketId) {
-    return { ok: false, error: "Missing ticket id." };
+    return { ok: false, error: t("missingTicketId") };
   }
-  const parsed = parseTicketForm(formData);
+  const parsed = await parseTicketForm(formData);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -244,7 +254,10 @@ export async function updateTicket(
     })
     .eq("id", ticketId);
   if (updErr) {
-    return { ok: false, error: `Could not update ticket: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("ticketCouldNotUpdate", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/maintenance/tickets");

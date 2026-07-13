@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -34,7 +35,8 @@ export async function transitionWO(
   toStatus: WorkOrderStatus,
   reason: string | null,
 ): Promise<WOTransitionResult> {
-  if (!woId) return { ok: false, error: "Missing work order id." };
+  const t = await getTranslations("errors");
+  if (!woId) return { ok: false, error: t("missingWorkOrderId") };
 
   const supabase = await createClient();
   const { data: wo, error: lookupErr } = await supabase
@@ -47,18 +49,20 @@ export async function transitionWO(
   if (lookupErr || !wo) {
     return {
       ok: false,
-      error: `Could not load work order: ${lookupErr?.message ?? "not found"}`,
+      error: t("woCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
   const fromStatus = wo.status as WorkOrderStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
   if (!validNextWOStatuses(fromStatus).includes(toStatus)) {
     return {
       ok: false,
-      error: `Cannot move from "${fromStatus}" to "${toStatus}".`,
+      error: t("woCannotMove", { from: fromStatus, to: toStatus }),
     };
   }
 
@@ -66,7 +70,7 @@ export async function transitionWO(
   if (woTransitionRequiresReason(toStatus) && trimmedReason === "") {
     return {
       ok: false,
-      error: "A reason is required when cancelling a work order.",
+      error: t("reasonRequiredCancel"),
     };
   }
 
@@ -94,7 +98,10 @@ export async function transitionWO(
     })
     .eq("id", woId);
   if (updErr) {
-    return { ok: false, error: `Could not update status: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("woCouldNotUpdateStatus", { detail: updErr.message }),
+    };
   }
 
   // If we just completed a WO and there's a linked ticket still open, mark

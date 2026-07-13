@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -15,8 +16,9 @@ export async function setHeroImage(
   partId: string,
   attachmentId: string,
 ): Promise<ManageImageResult> {
+  const t = await getTranslations("errors");
   if (!partId || !attachmentId) {
-    return { ok: false, error: "partId and attachmentId are required." };
+    return { ok: false, error: t("partPartIdAndAttachmentRequired") };
   }
   const supabase = createServiceClient();
 
@@ -30,7 +32,10 @@ export async function setHeroImage(
     .neq("id", attachmentId)
     .is("deleted_at", null);
   if (demoteErr) {
-    return { ok: false, error: `Could not demote prior hero: ${demoteErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotDemoteHero", { detail: demoteErr.message }),
+    };
   }
 
   const { error: promoteErr } = await supabase
@@ -39,7 +44,10 @@ export async function setHeroImage(
     .eq("id", attachmentId)
     .is("deleted_at", null);
   if (promoteErr) {
-    return { ok: false, error: `Could not promote hero: ${promoteErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotPromoteHero", { detail: promoteErr.message }),
+    };
   }
 
   revalidatePath("/parts");
@@ -61,8 +69,9 @@ export async function deletePartImage(
   partId: string,
   attachmentId: string,
 ): Promise<ManageImageResult> {
+  const t = await getTranslations("errors");
   if (!partId || !attachmentId) {
-    return { ok: false, error: "partId and attachmentId are required." };
+    return { ok: false, error: t("partPartIdAndAttachmentRequired") };
   }
   const supabase = createServiceClient();
 
@@ -73,10 +82,13 @@ export async function deletePartImage(
     .is("deleted_at", null)
     .maybeSingle();
   if (fetchErr) {
-    return { ok: false, error: `Could not load attachment: ${fetchErr.message}` };
+    return {
+      ok: false,
+      error: t("partCouldNotLoadAttachment", { detail: fetchErr.message }),
+    };
   }
   if (!target) {
-    return { ok: false, error: "Attachment not found or already deleted." };
+    return { ok: false, error: t("partAttachmentNotFound") };
   }
 
   const { error: deleteErr } = await supabase
@@ -84,7 +96,7 @@ export async function deletePartImage(
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", attachmentId);
   if (deleteErr) {
-    return { ok: false, error: `Could not delete: ${deleteErr.message}` };
+    return { ok: false, error: t("couldNotDelete", { detail: deleteErr.message }) };
   }
 
   // If we removed the hero, promote the next-most-recent gallery photo so the

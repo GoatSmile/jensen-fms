@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -22,19 +23,20 @@ export type UploadWOImageResult =
 export async function uploadWorkOrderImage(
   formData: FormData,
 ): Promise<UploadWOImageResult> {
+  const t = await getTranslations("errors");
   const woId = formData.get("woId");
   const file = formData.get("file");
 
   if (typeof woId !== "string" || woId.length === 0) {
-    return { ok: false, error: "Missing work order id." };
+    return { ok: false, error: t("missingWorkOrderId") };
   }
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "No file received." };
+    return { ok: false, error: t("woNoFileReceived") };
   }
   if (file.size > 5 * 1024 * 1024) {
     return {
       ok: false,
-      error: "File is larger than 5 MB after resize — please retry.",
+      error: t("woFileTooLarge"),
     };
   }
 
@@ -62,7 +64,9 @@ export async function uploadWorkOrderImage(
   if (insertErr || !inserted) {
     return {
       ok: false,
-      error: `Could not save attachment: ${insertErr?.message ?? "unknown error"}`,
+      error: t("woCouldNotSaveAttachment", {
+        detail: insertErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -77,12 +81,14 @@ export async function uploadWorkOrderImage(
       .from("attachments")
       .delete()
       .eq("id", inserted.id);
-    const detail = cleanupErr
-      ? ` (and the placeholder row could not be cleaned up: ${cleanupErr.message})`
+    const cleanup = cleanupErr
+      ? t("woUploadCleanupFailed", { detail: cleanupErr.message })
       : "";
     return {
       ok: false,
-      error: `Upload failed: ${uploadErr.message}.${detail}`,
+      error: t("woUploadFailed", {
+        detail: `${uploadErr.message}.${cleanup}`,
+      }),
     };
   }
 
