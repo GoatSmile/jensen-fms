@@ -1146,7 +1146,17 @@ when the work ships or the idea is rejected.
     (map page + Leaflet component: view/segment chips, legend, popups,
     empty states), plus a shared `lang` namespace for da/en language names;
     map + assigned-bikes moved to the `bikeStatus` namespace, retiring the
-    last `bikeStatusLabel()` call sites). Country names still render via the
+    last `bikeStatusLabel()` call sites).
+    And the **admin cluster** (84013ee — the last big cluster: nine
+    sub-modules under `/admin` — `adminCategories`, `adminColors`,
+    `adminHsCodes`, `adminKits`, `adminLocations`, `adminSegments`,
+    `adminServices`, `adminSettings`, `adminSuppliers`, 490 keys across
+    list/new/detail pages, forms, section tables + archive/restore dialogs;
+    joins the already-done `adminHome`/`adminFx`/`adminFamilies` from
+    dd80151). The shared `ReportUrlCard` (rendered only on /admin/settings)
+    was also translated under `adminSettings`, and `CopyButton` gained an
+    optional `copiedLabel` prop, so the settings page is fully Danish.
+    Country names still render via the
     `countries` lib (a vocab concern, like colour/category names).
     `colorFinishLabel` (RAL/finish
     strings like "Glossy") stays English — a colours-vocab concern.
@@ -1173,11 +1183,14 @@ when the work ships or the idea is rejected.
     convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
     for not-yet-swept surfaces — convert per cluster, then delete each helper
     when its last call site is gone.
-  - **Remaining clusters**:
-    admin (+ QR page, global chrome
-    leftovers). Also a mop-up pass for server-action error strings
+  - **Remaining clusters**: the QR page + any global-chrome leftovers
+    (the admin cluster is now DONE — 84013ee). Also a mop-up pass for
+    server-action error strings
     (bikes/templates/parts/maintenance/MO/PO/SO/paint/invoices/service-
-    agreements/customers actions still return English; harmless fallback).
+    agreements/customers/admin actions still return English; harmless
+    fallback). Service/part-type + service-type names on `/admin/services`
+    render `service_part_types.name_en` / `service_types.name_en` — DB vocab,
+    same separate-concern bucket as bike-type/colour/category names.
     Customer-facing documents keep their own per-document `language`
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes

@@ -55,9 +55,10 @@ treat the early totals as floors, not truth.
 | Thu 2026-07-10 | ~8 | Painter price list analyzed; service model designed + SHIPPED (migs 61+62: service_orders promotion, tiered price lists, snapshot-at-send, JP-lak retired); housekeeping drill-down + mobile photo iOS fixes; worklog set up; evening: post-ship review + fixes, template cost-to-paint (mig 63) |
 | Fri 2026-07-11 | ~8 | /admin/services price-list revision grid (mig 64: atomic publish RPC + tier-overlap EXCLUDE constraint); **i18n sweep launched** — foundation (next-intl, per-surface locale from app_settings), then Danish for /work + /scan, WO workspace, build workbench + batch build (worker surfaces done), app chrome, dashboard, bikes, bike templates |
 | Sun 2026-07-12 | ~15.5 | i18n Danish sweep — nine modules in one long day: parts, maintenance (tickets + WOs), manufacturing-orders (+ print), purchase-orders (+ receive/line dialogs), sales-orders (+ deposit + paint-from-SO flows), paint-orders (+ items/bikes/dialogs), invoices (list + detail + actions + e-conomic sync), service agreements (list + detail + form), and customers/orgs (list, detail + sub-units/contacts/assigned-bikes, form, Leaflet customer map); shared DeliveryWeekDateField + lang namespace |
+| Mon 2026-07-13 | ~4 | i18n Danish sweep — **admin cluster** (last big cluster): landing + FX rates + families (early block), then all nine admin sub-modules (categories, colours, HS/TARIC codes, kits, locations, customer segments, service price lists, settings, suppliers) — 490 keys × en/da; shared report-URL card + copy button translated (settings page now fully Danish). Remaining i18n: QR page + server-action error-string mop-up |
 
-**July so far: ~51 h** (8 working days)
+**July so far: ~55 h** (9 working days)
 
 ---
 
-**Project total: ~134.5 h across 24 working days (2026-05-07 → 2026-07-12)**
+**Project total: ~138.5 h across 25 working days (2026-05-07 → 2026-07-13)**
