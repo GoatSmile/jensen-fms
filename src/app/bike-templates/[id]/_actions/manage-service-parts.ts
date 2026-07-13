@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +17,7 @@ async function assertCurrentTemplate(
   supabase: Awaited<ReturnType<typeof createClient>>,
   templateId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const t = await getTranslations("errors");
   const { data: tpl, error } = await supabase
     .from("bike_templates")
     .select("id, is_current")
@@ -24,13 +26,13 @@ async function assertCurrentTemplate(
   if (error || !tpl) {
     return {
       ok: false,
-      error: `Could not load template: ${error?.message ?? "not found"}`,
+      error: t("tplCouldNotLoad", { detail: error?.message ?? t("notFound") }),
     };
   }
   if (!tpl.is_current) {
     return {
       ok: false,
-      error: "Paintwork can only be edited on the current version.",
+      error: t("tplPaintworkCurrentOnly"),
     };
   }
   return { ok: true };
@@ -38,10 +40,11 @@ async function assertCurrentTemplate(
 
 function parseQuantity(
   raw: unknown,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; value: number } | { ok: false; error: string } {
   const n = Number(raw);
   if (!Number.isInteger(n) || n <= 0) {
-    return { ok: false, error: "Quantity must be a whole number above zero." };
+    return { ok: false, error: t("tplQuantityWholeAboveZero") };
   }
   return { ok: true, value: n };
 }
@@ -50,9 +53,11 @@ export async function addTemplatePaintPart(
   templateId: string,
   input: { servicePartTypeId: string; quantity: number },
 ): Promise<ManagePaintworkResult> {
-  if (!templateId) return { ok: false, error: "Missing template id." };
-  if (!input.servicePartTypeId) return { ok: false, error: "Pick a part type." };
-  const qty = parseQuantity(input.quantity);
+  const t = await getTranslations("errors");
+  if (!templateId) return { ok: false, error: t("missingTemplateId") };
+  if (!input.servicePartTypeId)
+    return { ok: false, error: t("tplPickPartType") };
+  const qty = parseQuantity(input.quantity, t);
   if (!qty.ok) return qty;
 
   const supabase = await createClient();
@@ -68,10 +73,10 @@ export async function addTemplatePaintPart(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "That part type is already on the paintwork list — edit its quantity instead.",
+        error: t("tplPaintPartDuplicate"),
       };
     }
-    return { ok: false, error: `Could not add paintwork: ${error.message}` };
+    return { ok: false, error: t("tplCouldNotAddPaintwork", { detail: error.message }) };
   }
 
   revalidatePath(`/bike-templates/${templateId}`);
@@ -83,10 +88,11 @@ export async function updateTemplatePaintPart(
   rowId: string,
   input: { quantity: number },
 ): Promise<ManagePaintworkResult> {
+  const t = await getTranslations("errors");
   if (!templateId || !rowId) {
-    return { ok: false, error: "Missing template or row id." };
+    return { ok: false, error: t("tplMissingTemplateOrRow") };
   }
-  const qty = parseQuantity(input.quantity);
+  const qty = parseQuantity(input.quantity, t);
   if (!qty.ok) return qty;
 
   const supabase = await createClient();
@@ -99,7 +105,7 @@ export async function updateTemplatePaintPart(
     .eq("id", rowId)
     .eq("template_id", templateId);
   if (error) {
-    return { ok: false, error: `Could not update paintwork: ${error.message}` };
+    return { ok: false, error: t("tplCouldNotUpdatePaintwork", { detail: error.message }) };
   }
 
   revalidatePath(`/bike-templates/${templateId}`);
@@ -110,8 +116,9 @@ export async function removeTemplatePaintPart(
   templateId: string,
   rowId: string,
 ): Promise<ManagePaintworkResult> {
+  const t = await getTranslations("errors");
   if (!templateId || !rowId) {
-    return { ok: false, error: "Missing template or row id." };
+    return { ok: false, error: t("tplMissingTemplateOrRow") };
   }
 
   const supabase = await createClient();
@@ -124,7 +131,7 @@ export async function removeTemplatePaintPart(
     .eq("id", rowId)
     .eq("template_id", templateId);
   if (error) {
-    return { ok: false, error: `Could not remove paintwork: ${error.message}` };
+    return { ok: false, error: t("tplCouldNotRemovePaintwork", { detail: error.message }) };
   }
 
   revalidatePath(`/bike-templates/${templateId}`);

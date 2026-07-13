@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -27,7 +28,8 @@ export async function transitionBike(
   toStatus: BikeStatus,
   reason: string | null,
 ): Promise<TransitionResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
 
   const supabase = await createClient();
 
@@ -39,20 +41,20 @@ export async function transitionBike(
   if (lookupErr || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${lookupErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
     };
   }
 
   const fromStatus = bike.status as BikeStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Bike is already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
 
   const allowed = validNextStatuses(fromStatus);
   if (!allowed.includes(toStatus)) {
     return {
       ok: false,
-      error: `Cannot move from "${fromStatus}" to "${toStatus}".`,
+      error: t("bikeCannotMove", { from: fromStatus, to: toStatus }),
     };
   }
 
@@ -60,7 +62,7 @@ export async function transitionBike(
   if (transitionRequiresReason(toStatus) && trimmedReason === "") {
     return {
       ok: false,
-      error: "A reason is required when retiring a bike or marking it lost/stolen.",
+      error: t("bikeReasonRequiredRetire"),
     };
   }
 
@@ -78,7 +80,7 @@ export async function transitionBike(
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: `Could not update status: ${updErr.message}` };
+    return { ok: false, error: t("bikeCouldNotUpdateStatus", { detail: updErr.message }) };
   }
 
   // The trigger has just appended a (fromStatus, toStatus) log row with

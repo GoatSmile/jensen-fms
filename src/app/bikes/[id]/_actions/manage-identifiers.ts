@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -21,16 +22,17 @@ export async function createBikeIdentifier(
   formData: FormData,
   extraRevalidatePaths?: string[],
 ): Promise<IdentifierResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
   const identifier_type_id = nullable(formData.get("identifier_type_id"));
   const identifier_value = nullable(formData.get("identifier_value"));
   const notes = nullable(formData.get("notes"));
 
   if (!identifier_type_id) {
-    return { ok: false, error: "Pick an identifier type.", field: "identifier_type_id" };
+    return { ok: false, error: t("bikePickIdentifierType"), field: "identifier_type_id" };
   }
   if (!identifier_value) {
-    return { ok: false, error: "Identifier value is required.", field: "identifier_value" };
+    return { ok: false, error: t("bikeIdentifierValueRequired"), field: "identifier_value" };
   }
 
   const supabase = await createClient();
@@ -47,7 +49,10 @@ export async function createBikeIdentifier(
       if (!re.test(identifier_value)) {
         return {
           ok: false,
-          error: `${typeRow.name_en} doesn't match the expected format (${typeRow.format_regex}).`,
+          error: t("bikeIdentifierFormatMismatch", {
+            name: typeRow.name_en,
+            format: typeRow.format_regex,
+          }),
           field: "identifier_value",
         };
       }
@@ -67,11 +72,11 @@ export async function createBikeIdentifier(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "That value is already registered as the same kind of identifier on another bike.",
+        error: t("bikeIdentifierDuplicate"),
         field: "identifier_value",
       };
     }
-    return { ok: false, error: `Could not register: ${error.message}` };
+    return { ok: false, error: t("bikeCouldNotRegister", { detail: error.message }) };
   }
 
   revalidatePath(`/bikes/${bikeId}`);
@@ -91,8 +96,9 @@ export async function deactivateBikeIdentifier(
   bikeId: string,
   identifierId: string,
 ): Promise<IdentifierResult> {
+  const t = await getTranslations("errors");
   if (!bikeId || !identifierId) {
-    return { ok: false, error: "Missing bike id or identifier id." };
+    return { ok: false, error: t("bikeMissingBikeOrIdentifierId") };
   }
   const supabase = await createClient();
   const { error } = await supabase

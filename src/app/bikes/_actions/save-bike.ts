@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -20,13 +21,13 @@ type ParsedFields = {
 
 function parseFields(
   formData: FormData,
-): ParsedFields | { error: string; field?: string } {
+): ParsedFields | { errorKey: string; field?: string } {
   const bike_type_id = nullable(formData.get("bike_type_id"));
   const frame_number = nullable(formData.get("frame_number"));
   if (!bike_type_id)
-    return { error: "Bike type is required.", field: "bike_type_id" };
+    return { errorKey: "bikeTypeRequired", field: "bike_type_id" };
   if (!frame_number)
-    return { error: "Frame number is required.", field: "frame_number" };
+    return { errorKey: "bikeFrameNumberRequired", field: "frame_number" };
 
   return {
     bike_type_id,
@@ -37,17 +38,15 @@ function parseFields(
   };
 }
 
-function explainBikeError(err: { code?: string; message: string }): {
-  message: string;
-  field?: string;
-} {
+function explainBikeError(
+  err: { code?: string; message: string },
+):
+  | { duplicateFrame: true; field: string }
+  | { duplicateFrame: false; message: string } {
   if (err.code === "23505" && /frame_number/.test(err.message)) {
-    return {
-      message: "That frame number is already on file for another bike.",
-      field: "frame_number",
-    };
+    return { duplicateFrame: true, field: "frame_number" };
   }
-  return { message: err.message };
+  return { duplicateFrame: false, message: err.message };
 }
 
 /**
@@ -61,9 +60,10 @@ function explainBikeError(err: { code?: string; message: string }): {
 export async function createBike(
   formData: FormData,
 ): Promise<SaveBikeResult> {
+  const t = await getTranslations("errors");
   const parsed = parseFields(formData);
-  if ("error" in parsed)
-    return { ok: false, error: parsed.error, field: parsed.field };
+  if ("errorKey" in parsed)
+    return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
 
@@ -82,8 +82,10 @@ export async function createBike(
     .single();
 
   if (error || !bike) {
-    const e = explainBikeError(error ?? { message: "Unknown error" });
-    return { ok: false, error: e.message, field: e.field };
+    const e = explainBikeError(error ?? { message: t("unknownError") });
+    if (e.duplicateFrame)
+      return { ok: false, error: t("bikeFrameNumberDuplicate"), field: e.field };
+    return { ok: false, error: e.message };
   }
 
   // Also register the frame number as a bike_identifier so search/lookup

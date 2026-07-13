@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,8 +18,9 @@ export async function labelTemplateBomWithKit(
   templateId: string,
   kitId: string,
 ): Promise<LabelBomResult> {
+  const t = await getTranslations("errors");
   if (!templateId || !kitId)
-    return { ok: false, error: "Missing template or kit." };
+    return { ok: false, error: t("tplMissingTemplateOrKit") };
 
   const supabase = await createClient();
 
@@ -30,11 +32,14 @@ export async function labelTemplateBomWithKit(
     supabase.from("part_kits").select("part_id").eq("kit_id", kitId),
   ]);
   if (bomRes.error)
-    return { ok: false, error: `Could not read BOM: ${bomRes.error.message}` };
+    return {
+      ok: false,
+      error: t("tplCouldNotReadBom", { detail: bomRes.error.message }),
+    };
 
   const bomPartIds = [...new Set((bomRes.data ?? []).map((r) => r.part_id))];
   if (bomPartIds.length === 0)
-    return { ok: false, error: "This template's BOM is empty." };
+    return { ok: false, error: t("tplBomEmpty") };
 
   const alreadySet = new Set((existingRes.data ?? []).map((r) => r.part_id));
   const fresh = bomPartIds.filter((p) => !alreadySet.has(p));
@@ -44,7 +49,10 @@ export async function labelTemplateBomWithKit(
       .from("part_kits")
       .insert(fresh.map((part_id) => ({ part_id, kit_id: kitId })));
     if (error)
-      return { ok: false, error: `Could not write labels: ${error.message}` };
+      return {
+        ok: false,
+        error: t("tplCouldNotWriteLabels", { detail: error.message }),
+      };
   }
 
   revalidatePath(`/bike-templates/${templateId}`);

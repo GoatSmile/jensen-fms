@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -15,8 +16,9 @@ export async function setBikeHeroImage(
   bikeId: string,
   attachmentId: string,
 ): Promise<ManageImageResult> {
+  const t = await getTranslations("errors");
   if (!bikeId || !attachmentId) {
-    return { ok: false, error: "bikeId and attachmentId are required." };
+    return { ok: false, error: t("bikeIdAndAttachmentRequired") };
   }
   const supabase = createServiceClient();
 
@@ -31,7 +33,7 @@ export async function setBikeHeroImage(
   if (demoteErr) {
     return {
       ok: false,
-      error: `Could not demote prior hero: ${demoteErr.message}`,
+      error: t("bikeCouldNotDemoteHero", { detail: demoteErr.message }),
     };
   }
 
@@ -43,7 +45,7 @@ export async function setBikeHeroImage(
   if (promoteErr) {
     return {
       ok: false,
-      error: `Could not promote hero: ${promoteErr.message}`,
+      error: t("bikeCouldNotPromoteHero", { detail: promoteErr.message }),
     };
   }
 
@@ -62,8 +64,9 @@ export async function deleteBikeImage(
   bikeId: string,
   attachmentId: string,
 ): Promise<ManageImageResult> {
+  const t = await getTranslations("errors");
   if (!bikeId || !attachmentId) {
-    return { ok: false, error: "bikeId and attachmentId are required." };
+    return { ok: false, error: t("bikeIdAndAttachmentRequired") };
   }
   const supabase = createServiceClient();
 
@@ -76,11 +79,11 @@ export async function deleteBikeImage(
   if (fetchErr) {
     return {
       ok: false,
-      error: `Could not load attachment: ${fetchErr.message}`,
+      error: t("bikeCouldNotLoadAttachment", { detail: fetchErr.message }),
     };
   }
   if (!target) {
-    return { ok: false, error: "Attachment not found or already deleted." };
+    return { ok: false, error: t("bikeAttachmentNotFound") };
   }
 
   const { error: deleteErr } = await supabase
@@ -88,7 +91,7 @@ export async function deleteBikeImage(
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", attachmentId);
   if (deleteErr) {
-    return { ok: false, error: `Could not delete: ${deleteErr.message}` };
+    return { ok: false, error: t("couldNotDelete", { detail: deleteErr.message }) };
   }
 
   if (target.purpose === "hero") {

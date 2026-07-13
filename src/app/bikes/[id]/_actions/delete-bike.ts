@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,7 +17,8 @@ export type DeleteBikeResult = { ok: true } | { ok: false; error: string };
  * action (Phase 2B.3). This action is for accidental creates only.
  */
 export async function deleteBike(bikeId: string): Promise<DeleteBikeResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("bikes")
@@ -29,7 +31,8 @@ export async function deleteBike(bikeId: string): Promise<DeleteBikeResult> {
 }
 
 export async function restoreBike(bikeId: string): Promise<DeleteBikeResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
   const supabase = await createClient();
   const { error } = await supabase
     .from("bikes")

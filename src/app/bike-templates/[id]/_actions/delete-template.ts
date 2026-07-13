@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +22,8 @@ export type DeleteTemplateResult = { ok: false; error: string };
 export async function deleteTemplate(
   templateId: string,
 ): Promise<DeleteTemplateResult | void> {
-  if (!templateId) return { ok: false, error: "Missing template id." };
+  const te = await getTranslations("errors");
+  if (!templateId) return { ok: false, error: te("missingTemplateId") };
 
   const supabase = await createClient();
 
@@ -33,7 +35,9 @@ export async function deleteTemplate(
   if (loadErr || !t) {
     return {
       ok: false,
-      error: `Could not load template: ${loadErr?.message ?? "not found"}`,
+      error: te("tplCouldNotLoad", {
+        detail: loadErr?.message ?? te("notFound"),
+      }),
     };
   }
 
@@ -41,13 +45,13 @@ export async function deleteTemplate(
   // this anyway (a racing insert makes the delete below fail loudly).
   // Soft-deleted bikes still count: their rows still reference the template.
   const head = { count: "exact", head: true } as const;
-  const labels = [
-    "bike",
-    "manufacturing order",
-    "sales order line",
-    "offer line",
-    "invoice line",
-  ];
+  const blockerKeys = [
+    "tplBlockerBike",
+    "tplBlockerMo",
+    "tplBlockerSalesOrderLine",
+    "tplBlockerOfferLine",
+    "tplBlockerInvoiceLine",
+  ] as const;
   const counts = await Promise.all([
     supabase.from("bikes").select("id", head).eq("template_id", templateId),
     supabase
@@ -73,16 +77,16 @@ export async function deleteTemplate(
     if (res.error) {
       return {
         ok: false,
-        error: `Could not check references: ${res.error.message}`,
+        error: te("tplCouldNotCheckReferences", { detail: res.error.message }),
       };
     }
     const n = res.count ?? 0;
-    if (n > 0) blockers.push(`${n} ${labels[i]}${n === 1 ? "" : "s"}`);
+    if (n > 0) blockers.push(te(blockerKeys[i], { n }));
   }
   if (blockers.length > 0) {
     return {
       ok: false,
-      error: `${blockers.join(", ")} reference this template — delete is only for unused templates.`,
+      error: te("tplReferencedBlocked", { blockers: blockers.join(", ") }),
     };
   }
 
@@ -93,7 +97,7 @@ export async function deleteTemplate(
   if (partsErr) {
     return {
       ok: false,
-      error: `Could not remove the recipe: ${partsErr.message}`,
+      error: te("tplCouldNotRemoveRecipe", { detail: partsErr.message }),
     };
   }
 
@@ -102,7 +106,7 @@ export async function deleteTemplate(
     .delete()
     .eq("id", templateId);
   if (delErr) {
-    return { ok: false, error: `Could not delete: ${delErr.message}` };
+    return { ok: false, error: te("couldNotDelete", { detail: delErr.message }) };
   }
 
   // Keep the version chain headed: promote the newest surviving sibling.

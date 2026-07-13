@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,7 +29,8 @@ export async function cloneAsNewVersion(
     notes: string | null;
   }>,
 ): Promise<CloneResult> {
-  if (!templateId) return { ok: false, error: "Missing template id." };
+  const t = await getTranslations("errors");
+  if (!templateId) return { ok: false, error: t("missingTemplateId") };
 
   const supabase = await createClient();
 
@@ -43,7 +45,9 @@ export async function cloneAsNewVersion(
   if (srcErr || !src) {
     return {
       ok: false,
-      error: `Could not load source template: ${srcErr?.message ?? "not found"}`,
+      error: t("tplCouldNotLoadSource", {
+        detail: srcErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -63,7 +67,7 @@ export async function cloneAsNewVersion(
   if (maxErr) {
     return {
       ok: false,
-      error: `Could not look up versions: ${maxErr.message}`,
+      error: t("tplCouldNotLookUpVersions", { detail: maxErr.message }),
     };
   }
   const nextVersion = (maxRow?.version ?? src.version) + 1;
@@ -88,7 +92,9 @@ export async function cloneAsNewVersion(
   if (insErr || !created) {
     return {
       ok: false,
-      error: `Could not create new version: ${insErr?.message ?? "unknown error"}`,
+      error: t("tplCouldNotCreateVersion", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -106,7 +112,10 @@ export async function cloneAsNewVersion(
   if (demoteErr) {
     return {
       ok: false,
-      error: `New version created (${created.id}) but could not demote prior version: ${demoteErr.message}`,
+      error: t("tplVersionCreatedDemoteFailed", {
+        id: created.id,
+        detail: demoteErr.message,
+      }),
     };
   }
 
@@ -126,7 +135,7 @@ export async function cloneAsNewVersion(
     if (partsErr) {
       return {
         ok: false,
-        error: `New version created but parts didn't seed: ${partsErr.message}. Open the new version and add parts manually.`,
+        error: t("tplVersionCreatedPartsFailed", { detail: partsErr.message }),
       };
     }
   }
@@ -150,7 +159,7 @@ export async function cloneAsNewVersion(
     if (paintErr) {
       return {
         ok: false,
-        error: `New version created but its paintwork didn't copy: ${paintErr.message}. Open the new version and add it manually.`,
+        error: t("tplVersionCreatedPaintFailed", { detail: paintErr.message }),
       };
     }
   }

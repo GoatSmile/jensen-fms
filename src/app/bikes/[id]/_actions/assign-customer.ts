@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,9 +32,10 @@ export async function assignBikeToCustomer(
   organizationId: string,
   unitId: string | null,
 ): Promise<AssignResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
   if (!organizationId)
-    return { ok: false, error: "Pick a customer to assign the bike to." };
+    return { ok: false, error: t("bikePickCustomer") };
 
   const supabase = await createClient();
 
@@ -45,7 +47,7 @@ export async function assignBikeToCustomer(
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${bikeErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
     };
   }
 
@@ -56,7 +58,7 @@ export async function assignBikeToCustomer(
   if (blockedStatuses.has(bike.status)) {
     return {
       ok: false,
-      error: `Cannot assign a "${bike.status}" bike — it's out of the active fleet.`,
+      error: t("bikeCannotAssignStatus", { status: bike.status }),
     };
   }
 
@@ -69,11 +71,13 @@ export async function assignBikeToCustomer(
   if (orgErr || !org) {
     return {
       ok: false,
-      error: `Could not load customer: ${orgErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoadCustomer", {
+        detail: orgErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (org.deleted_at != null || !org.is_active) {
-    return { ok: false, error: "That customer is archived." };
+    return { ok: false, error: t("bikeCustomerArchived") };
   }
 
   // If a unit was picked, make sure it belongs to the org.
@@ -86,13 +90,15 @@ export async function assignBikeToCustomer(
     if (unitErr || !unit) {
       return {
         ok: false,
-        error: `Could not load unit: ${unitErr?.message ?? "not found"}`,
+        error: t("bikeCouldNotLoadUnit", {
+          detail: unitErr?.message ?? t("notFound"),
+        }),
       };
     }
     if (unit.organization_id !== organizationId) {
       return {
         ok: false,
-        error: "That unit does not belong to the chosen customer.",
+        error: t("bikeUnitNotInCustomer"),
       };
     }
   }
@@ -111,7 +117,7 @@ export async function assignBikeToCustomer(
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: `Could not assign: ${updErr.message}` };
+    return { ok: false, error: t("bikeCouldNotAssign", { detail: updErr.message }) };
   }
 
   revalidatePath("/bikes");
@@ -129,7 +135,8 @@ export async function assignBikeToCustomer(
  * captures the assigned→in_stock transition.
  */
 export async function unassignBike(bikeId: string): Promise<AssignResult> {
-  if (!bikeId) return { ok: false, error: "Missing bike id." };
+  const t = await getTranslations("errors");
+  if (!bikeId) return { ok: false, error: t("missingBikeId") };
 
   const supabase = await createClient();
 
@@ -141,11 +148,11 @@ export async function unassignBike(bikeId: string): Promise<AssignResult> {
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${bikeErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
     };
   }
   if (!bike.owner_organization_id) {
-    return { ok: false, error: "Bike has no current customer assignment." };
+    return { ok: false, error: t("bikeNoAssignment") };
   }
 
   const now = new Date().toISOString();
@@ -159,7 +166,7 @@ export async function unassignBike(bikeId: string): Promise<AssignResult> {
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: `Could not unassign: ${updErr.message}` };
+    return { ok: false, error: t("bikeCouldNotUnassign", { detail: updErr.message }) };
   }
 
   revalidatePath("/bikes");

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -24,19 +25,20 @@ export type UploadImageResult =
 export async function uploadBikeImage(
   formData: FormData,
 ): Promise<UploadImageResult> {
+  const t = await getTranslations("errors");
   const bikeId = formData.get("bikeId");
   const file = formData.get("file");
 
   if (typeof bikeId !== "string" || bikeId.length === 0) {
-    return { ok: false, error: "Missing bikeId." };
+    return { ok: false, error: t("missingBikeId") };
   }
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "No file received." };
+    return { ok: false, error: t("bikeNoFileReceived") };
   }
   if (file.size > 5 * 1024 * 1024) {
     return {
       ok: false,
-      error: "File is larger than 5 MB after resize — please retry.",
+      error: t("bikeFileTooLarge"),
     };
   }
 
@@ -49,7 +51,7 @@ export async function uploadBikeImage(
     .eq("entity_id", bikeId)
     .is("deleted_at", null);
   if (countErr) {
-    return { ok: false, error: `Could not count photos: ${countErr.message}` };
+    return { ok: false, error: t("bikeCouldNotCountPhotos", { detail: countErr.message }) };
   }
   const purpose = (existingCount ?? 0) === 0 ? "hero" : "gallery";
 
@@ -75,7 +77,9 @@ export async function uploadBikeImage(
   if (insertErr || !inserted) {
     return {
       ok: false,
-      error: `Could not save attachment: ${insertErr?.message ?? "unknown error"}`,
+      error: t("bikeCouldNotSaveAttachment", {
+        detail: insertErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -91,11 +95,14 @@ export async function uploadBikeImage(
       .delete()
       .eq("id", inserted.id);
     const detail = cleanupErr
-      ? ` (and the placeholder row could not be cleaned up: ${cleanupErr.message} — attachment id ${inserted.id})`
+      ? t("bikeUploadCleanupFailed", {
+          detail: cleanupErr.message,
+          id: inserted.id,
+        })
       : "";
     return {
       ok: false,
-      error: `Upload failed: ${uploadErr.message}.${detail}`,
+      error: t("bikeUploadFailed", { detail: `${uploadErr.message}.${detail}` }),
     };
   }
 

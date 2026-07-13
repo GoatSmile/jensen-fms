@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +25,8 @@ export type DuplicateResult = { ok: false; error: string };
  * intentionally not included.
  */
 export async function duplicateTemplate(templateId: string): Promise<DuplicateResult> {
-  if (!templateId) return { ok: false, error: "Missing template id." };
+  const t = await getTranslations("errors");
+  if (!templateId) return { ok: false, error: t("missingTemplateId") };
 
   const supabase = await createClient();
 
@@ -39,7 +41,9 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
   if (srcErr || !src) {
     return {
       ok: false,
-      error: `Could not load source template: ${srcErr?.message ?? "not found"}`,
+      error: t("tplCouldNotLoadSource", {
+        detail: srcErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -62,7 +66,9 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
   if (insErr || !created) {
     return {
       ok: false,
-      error: `Could not create the copy: ${insErr?.message ?? "unknown error"}`,
+      error: t("tplCouldNotCreateCopy", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -74,7 +80,10 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
   if (partsReadErr) {
     return {
       ok: false,
-      error: `Copy created (${created.id}) but could not read the source recipe: ${partsReadErr.message}`,
+      error: t("tplCopyCreatedRecipeReadFailed", {
+        id: created.id,
+        detail: partsReadErr.message,
+      }),
     };
   }
 
@@ -93,7 +102,7 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
     if (partsErr) {
       return {
         ok: false,
-        error: `Copy created but its recipe didn't seed: ${partsErr.message}. Open the copy and add parts manually.`,
+        error: t("tplCopyCreatedPartsFailed", { detail: partsErr.message }),
       };
     }
   }
@@ -116,7 +125,7 @@ export async function duplicateTemplate(templateId: string): Promise<DuplicateRe
     if (paintErr) {
       return {
         ok: false,
-        error: `Copy created but its paintwork didn't copy: ${paintErr.message}. Open the copy and add it manually.`,
+        error: t("tplCopyCreatedPaintFailed", { detail: paintErr.message }),
       };
     }
   }

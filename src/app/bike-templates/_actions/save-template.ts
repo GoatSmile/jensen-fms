@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -23,31 +24,36 @@ type ParsedShell = {
 
 function parsePrice(
   raw: string | null,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): { ok: true; value: number | null } | { ok: false; error: string } {
   if (!raw) return { ok: true, value: null };
   const normalized = raw.replace(",", ".");
   const n = Number(normalized);
   if (!Number.isFinite(n) || n < 0) {
-    return { ok: false, error: "Price must be a non-negative number." };
+    return { ok: false, error: t("tplPriceNonNegative") };
   }
   return { ok: true, value: n };
 }
 
 function parseShell(
   formData: FormData,
+  t: Awaited<ReturnType<typeof getTranslations>>,
 ): ParsedShell | { error: string; field?: string } {
   const bike_type_id = nullable(formData.get("bike_type_id"));
   const frame_size = nullable(formData.get("frame_size"));
   const name_en = nullable(formData.get("name_en"));
 
   if (!bike_type_id)
-    return { error: "Bike type is required.", field: "bike_type_id" };
+    return { error: t("tplBikeTypeRequired"), field: "bike_type_id" };
   if (!frame_size)
-    return { error: "Frame size is required.", field: "frame_size" };
+    return { error: t("tplFrameSizeRequired"), field: "frame_size" };
   if (!name_en)
-    return { error: "Template name (English) is required.", field: "name_en" };
+    return { error: t("tplTemplateNameEnRequired"), field: "name_en" };
 
-  const priceParsed = parsePrice(nullable(formData.get("default_retail_price")));
+  const priceParsed = parsePrice(
+    nullable(formData.get("default_retail_price")),
+    t,
+  );
   if (!priceParsed.ok)
     return { error: priceParsed.error, field: "default_retail_price" };
 
@@ -69,7 +75,8 @@ function parseShell(
 export async function createTemplate(
   formData: FormData,
 ): Promise<SaveTemplateResult> {
-  const parsed = parseShell(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseShell(formData, t);
   if ("error" in parsed)
     return { ok: false, error: parsed.error, field: parsed.field };
 
@@ -93,7 +100,9 @@ export async function createTemplate(
   if (error || !data) {
     return {
       ok: false,
-      error: `Could not create template: ${error?.message ?? "unknown error"}`,
+      error: t("tplCouldNotCreate", {
+        detail: error?.message ?? t("unknownError"),
+      }),
     };
   }
   revalidatePath("/bike-templates");
@@ -104,7 +113,8 @@ export async function updateTemplate(
   templateId: string,
   formData: FormData,
 ): Promise<SaveTemplateResult> {
-  if (!templateId) return { ok: false, error: "Missing template id." };
+  const t = await getTranslations("errors");
+  if (!templateId) return { ok: false, error: t("missingTemplateId") };
   // Edit-shell mutates everything except bike_type_id (kept stable to preserve
   // history). Frame size CAN change on edit — if you really need a different
   // size, you almost always want a new template instead, but we don't enforce.
@@ -113,17 +123,20 @@ export async function updateTemplate(
   if (!frame_size)
     return {
       ok: false,
-      error: "Frame size is required.",
+      error: t("tplFrameSizeRequired"),
       field: "frame_size",
     };
   if (!name_en)
     return {
       ok: false,
-      error: "Template name (English) is required.",
+      error: t("tplTemplateNameEnRequired"),
       field: "name_en",
     };
 
-  const priceParsed = parsePrice(nullable(formData.get("default_retail_price")));
+  const priceParsed = parsePrice(
+    nullable(formData.get("default_retail_price")),
+    t,
+  );
   if (!priceParsed.ok)
     return {
       ok: false,
@@ -147,7 +160,7 @@ export async function updateTemplate(
       notes: nullable(formData.get("notes")),
     })
     .eq("id", templateId);
-  if (error) return { ok: false, error: `Could not save: ${error.message}` };
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
 
   revalidatePath("/bike-templates");
   revalidatePath(`/bike-templates/${templateId}`);

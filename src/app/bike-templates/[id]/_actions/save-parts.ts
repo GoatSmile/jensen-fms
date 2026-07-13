@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,14 +32,15 @@ export type SaveTemplatePartsResult =
 export async function saveTemplateParts(
   input: SaveTemplatePartsInput,
 ): Promise<SaveTemplatePartsResult> {
-  if (!input.templateId) return { ok: false, error: "Missing template id." };
+  const t = await getTranslations("errors");
+  if (!input.templateId) return { ok: false, error: t("missingTemplateId") };
 
   for (const p of input.parts) {
-    if (!p.partId) return { ok: false, error: "A row is missing its part." };
+    if (!p.partId) return { ok: false, error: t("tplRowMissingPart") };
     if (!Number.isFinite(p.quantity) || p.quantity <= 0) {
       return {
         ok: false,
-        error: "Each quantity must be a positive number.",
+        error: t("tplQuantityPositiveNumber"),
       };
     }
   }
@@ -50,8 +52,7 @@ export async function saveTemplateParts(
     if (seen.has(p.partId)) {
       return {
         ok: false,
-        error:
-          "The same part appears more than once. Combine the rows or remove the duplicate.",
+        error: t("tplDuplicatePart"),
       };
     }
     seen.add(p.partId);
@@ -64,7 +65,10 @@ export async function saveTemplateParts(
     .delete()
     .eq("template_id", input.templateId);
   if (delErr) {
-    return { ok: false, error: `Could not clear existing parts: ${delErr.message}` };
+    return {
+      ok: false,
+      error: t("tplCouldNotClearParts", { detail: delErr.message }),
+    };
   }
 
   if (input.parts.length > 0) {
@@ -82,7 +86,7 @@ export async function saveTemplateParts(
     if (insErr) {
       return {
         ok: false,
-        error: `Could not write new parts: ${insErr.message}. The template may be temporarily empty — re-submit to retry.`,
+        error: t("tplCouldNotWriteParts", { detail: insErr.message }),
       };
     }
   }
