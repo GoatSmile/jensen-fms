@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -26,7 +27,8 @@ export async function transitionPO(
   toStatus: PurchaseOrderStatus,
   reason: string | null,
 ): Promise<POTransitionResult> {
-  if (!poId) return { ok: false, error: "Missing PO id." };
+  const t = await getTranslations("errors");
+  if (!poId) return { ok: false, error: t("missingPoId") };
 
   const supabase = await createClient();
   const { data: po, error: lookupErr } = await supabase
@@ -37,18 +39,20 @@ export async function transitionPO(
   if (lookupErr || !po) {
     return {
       ok: false,
-      error: `Could not load PO: ${lookupErr?.message ?? "not found"}`,
+      error: t("poCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
   const fromStatus = po.status as PurchaseOrderStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
   if (!validNextPOStatuses(fromStatus).includes(toStatus)) {
     return {
       ok: false,
-      error: `Cannot move from "${fromStatus}" to "${toStatus}".`,
+      error: t("poCannotMove", { from: fromStatus, to: toStatus }),
     };
   }
 
@@ -56,7 +60,7 @@ export async function transitionPO(
   if (poTransitionRequiresReason(toStatus) && trimmedReason === "") {
     return {
       ok: false,
-      error: "A reason is required when cancelling a PO.",
+      error: t("reasonRequiredCancel"),
     };
   }
 
@@ -71,13 +75,13 @@ export async function transitionPO(
     if (linesErr) {
       return {
         ok: false,
-        error: `Could not check lines: ${linesErr.message}`,
+        error: t("poCouldNotCheckLines", { detail: linesErr.message }),
       };
     }
     if ((count ?? 0) === 0) {
       return {
         ok: false,
-        error: "Add at least one line before placing this PO.",
+        error: t("poAddLineBeforePlacing"),
       };
     }
   }
@@ -99,7 +103,7 @@ export async function transitionPO(
   if (updErr) {
     return {
       ok: false,
-      error: `Could not update status: ${updErr.message}`,
+      error: t("poCouldNotUpdateStatus", { detail: updErr.message }),
     };
   }
 
