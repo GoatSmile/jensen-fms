@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ScanLine } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
  */
 export function ScanFab() {
   const pathname = usePathname();
+  const t = useTranslations("scan");
   const hide =
     pathname === "/scan" ||
     pathname === "/login" ||
@@ -30,7 +32,7 @@ export function ScanFab() {
   return (
     <Link
       href="/scan"
-      aria-label="Scan a QR sticker"
+      aria-label={t("fabLabel")}
       className={cn(
         "bg-primary text-primary-foreground fixed bottom-4 right-4 z-40 flex size-12 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95 md:hidden",
       )}

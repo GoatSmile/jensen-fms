@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { AUTH_COOKIE, passwordToken, safeNextPath } from "@/lib/auth/gate";
 
@@ -22,7 +23,8 @@ export async function login(
   const expected = process.env.SITE_PASSWORD;
   if (!expected) redirect(next);
   if (password !== expected) {
-    return { error: "Wrong password. Try again." };
+    const t = await getTranslations("auth");
+    return { error: t("wrongPassword") };
   }
 
   const jar = await cookies();

@@ -256,7 +256,8 @@
     "go": "Go",
     "installDismiss": "Dismiss hint",
     "installIos": "<b>Tired of allowing the camera every time?</b> Tap the <share></share> share button in Safari, then <i>Add to Home Screen</i>. Launching from the home-screen icon remembers the camera permission and feels like a native app.",
-    "installAndroid": "<b>Tired of allowing the camera every time?</b> Open your browser menu and pick <i>Install app</i> (or <i>Add to Home Screen</i>). Launched from the home-screen icon the camera permission sticks."
+    "installAndroid": "<b>Tired of allowing the camera every time?</b> Open your browser menu and pick <i>Install app</i> (or <i>Add to Home Screen</i>). Launched from the home-screen icon the camera permission sticks.",
+    "fabLabel": "Scan a QR sticker"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -3071,5 +3072,12 @@
     "sheet": "QR sticker sheet",
     "sheetSummary": "{count, plural, one {# bike} other {# bikes}} on this sheet. A4-fits 3×8 cells; print at 100% scale.",
     "sheetEmpty": "No bikes match the requested ids."
+  },
+  "auth": {
+    "signInPrompt": "Sign in to Jensen FMS",
+    "password": "Password",
+    "logIn": "Log in",
+    "checking": "Checking…",
+    "wrongPassword": "Wrong password. Try again."
   }
 }
