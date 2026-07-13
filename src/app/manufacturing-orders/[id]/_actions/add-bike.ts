@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -21,11 +22,16 @@ export async function addBikeToMO(
   moId: string,
   formData: FormData,
 ): Promise<AddBikeResult> {
-  if (!moId) return { ok: false, error: "Missing MO id." };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId") };
   const frame_number = nullable(formData.get("frame_number"));
   const notes = nullable(formData.get("notes"));
   if (!frame_number) {
-    return { ok: false, error: "Frame number is required.", field: "frame_number" };
+    return {
+      ok: false,
+      error: t("bikeFrameNumberRequired"),
+      field: "frame_number",
+    };
   }
 
   const supabase = await createClient();
@@ -43,13 +49,16 @@ export async function addBikeToMO(
     .eq("id", moId)
     .maybeSingle();
   if (moErr || !mo) {
-    return { ok: false, error: `Could not load MO: ${moErr?.message ?? "not found"}` };
+    return {
+      ok: false,
+      error: t("moCouldNotLoad", { detail: moErr?.message ?? t("notFound") }),
+    };
   }
 
   if (mo.status === "completed" || mo.status === "cancelled") {
     return {
       ok: false,
-      error: `Cannot add bikes to a ${mo.status} MO.`,
+      error: t("moCannotAddBikes", { status: mo.status }),
     };
   }
 
@@ -63,7 +72,7 @@ export async function addBikeToMO(
   if ((existingBikes ?? 0) >= mo.target_quantity) {
     return {
       ok: false,
-      error: `MO already has ${existingBikes} bike${existingBikes === 1 ? "" : "s"} attached. Increase the target quantity to add more.`,
+      error: t("moAlreadyHasBikes", { count: existingBikes ?? 0 }),
     };
   }
 
@@ -99,13 +108,15 @@ export async function addBikeToMO(
     if (bikeErr?.code === "23505" && /frame_number/.test(bikeErr.message)) {
       return {
         ok: false,
-        error: "That frame number is already on file for another bike.",
+        error: t("bikeFrameNumberDuplicate"),
         field: "frame_number",
       };
     }
     return {
       ok: false,
-      error: `Could not create bike: ${bikeErr?.message ?? "unknown error"}`,
+      error: t("moCouldNotCreateBike", {
+        detail: bikeErr?.message ?? t("unknownError"),
+      }),
     };
   }
 

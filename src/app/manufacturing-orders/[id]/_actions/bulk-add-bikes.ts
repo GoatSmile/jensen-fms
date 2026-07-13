@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -27,18 +28,19 @@ export async function bulkAddBikesToMO(
   moId: string,
   count: number,
 ): Promise<BulkAddResult> {
-  if (!moId) return { ok: false, error: "Missing MO id.", created: 0 };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId"), created: 0 };
   if (!Number.isFinite(count) || !Number.isInteger(count) || count <= 0) {
     return {
       ok: false,
-      error: "Count must be a positive whole number.",
+      error: t("moCountPositiveWhole"),
       created: 0,
     };
   }
   if (count > 100) {
     return {
       ok: false,
-      error: "At most 100 bikes per bulk add. Split into multiple runs.",
+      error: t("moBulkAddMax100"),
       created: 0,
     };
   }
@@ -58,14 +60,14 @@ export async function bulkAddBikesToMO(
   if (moErr || !mo) {
     return {
       ok: false,
-      error: `Could not load MO: ${moErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoad", { detail: moErr?.message ?? t("notFound") }),
       created: 0,
     };
   }
   if (mo.status === "completed" || mo.status === "cancelled") {
     return {
       ok: false,
-      error: `Cannot add bikes to a ${mo.status} MO.`,
+      error: t("moCannotAddBikes", { status: mo.status }),
       created: 0,
     };
   }
@@ -79,7 +81,7 @@ export async function bulkAddBikesToMO(
   if (slotsLeft <= 0) {
     return {
       ok: false,
-      error: "MO is already at its target quantity. Increase the target to add more.",
+      error: t("moAtTargetQuantity"),
       created: 0,
     };
   }
@@ -154,7 +156,12 @@ export async function bulkAddBikesToMO(
     if (bikeErr || !bike) {
       return {
         ok: false,
-        error: `Created ${created} of ${toCreate} bikes; aborted on frame ${frameNumber}: ${bikeErr?.message ?? "unknown error"}.`,
+        error: t("moBulkAddAborted", {
+          created,
+          total: toCreate,
+          frame: frameNumber,
+          detail: bikeErr?.message ?? t("unknownError"),
+        }),
         created,
       };
     }

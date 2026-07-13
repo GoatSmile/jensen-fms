@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -24,7 +25,8 @@ export async function transitionMO(
   toStatus: MOStatus,
   reason: string | null,
 ): Promise<MOTransitionResult> {
-  if (!moId) return { ok: false, error: "Missing MO id." };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId") };
 
   const supabase = await createClient();
   const { data: mo, error: lookupErr } = await supabase
@@ -35,21 +37,26 @@ export async function transitionMO(
   if (lookupErr || !mo) {
     return {
       ok: false,
-      error: `Could not load MO: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
   const fromStatus = mo.status as MOStatus;
   if (fromStatus === toStatus) {
-    return { ok: false, error: "Already in that state." };
+    return { ok: false, error: t("alreadyInState") };
   }
   if (!validNextMOStatuses(fromStatus).includes(toStatus)) {
-    return { ok: false, error: `Cannot move from "${fromStatus}" to "${toStatus}".` };
+    return {
+      ok: false,
+      error: t("moCannotMove", { from: fromStatus, to: toStatus }),
+    };
   }
 
   const trimmedReason = reason?.trim() ?? "";
   if (moTransitionRequiresReason(toStatus) && trimmedReason === "") {
-    return { ok: false, error: "A reason is required when cancelling an MO." };
+    return { ok: false, error: t("moReasonRequiredCancel") };
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -80,7 +87,10 @@ export async function transitionMO(
     })
     .eq("id", moId);
   if (updErr) {
-    return { ok: false, error: `Could not update status: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotUpdateStatus", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/manufacturing-orders");

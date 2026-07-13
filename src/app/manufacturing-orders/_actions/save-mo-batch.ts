@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -40,6 +41,7 @@ const MAX_QTY_PER_ROW = 100;
 export async function createManufacturingOrdersBatch(
   formData: FormData,
 ): Promise<SaveMOBatchResult> {
+  const t = await getTranslations("errors");
   const rowsRaw = nullable(formData.get("rows"));
   const planned_start_date = nullable(formData.get("planned_start_date"));
   const planned_completion_date = nullable(
@@ -60,27 +62,27 @@ export async function createManufacturingOrdersBatch(
     if (!Array.isArray(parsed)) throw new Error("rows must be an array");
     rows = parsed as BatchRowInput[];
   } catch {
-    return { ok: false, error: "Could not read the batch rows." };
+    return { ok: false, error: t("moCouldNotReadBatchRows") };
   }
 
   if (rows.length === 0) {
-    return { ok: false, error: "Add at least one batch row." };
+    return { ok: false, error: t("moAddAtLeastOneRow") };
   }
   if (rows.length > MAX_ROWS) {
     return {
       ok: false,
-      error: `At most ${MAX_ROWS} MOs per batch. Split it up.`,
+      error: t("moBatchMaxRows", { max: MAX_ROWS }),
     };
   }
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     if (!r.bike_template_id) {
-      return { ok: false, error: "Row is missing a template.", rowIndex: i };
+      return { ok: false, error: t("moRowMissingTemplate"), rowIndex: i };
     }
     if (!r.color_id) {
       return {
         ok: false,
-        error: "Pick a colour — one MO covers one template and one colour.",
+        error: t("moPickColour"),
         rowIndex: i,
       };
     }
@@ -91,14 +93,14 @@ export async function createManufacturingOrdersBatch(
     ) {
       return {
         ok: false,
-        error: "Quantity must be a positive whole number.",
+        error: t("moQtyPositiveWhole"),
         rowIndex: i,
       };
     }
     if (r.quantity > MAX_QTY_PER_ROW) {
       return {
         ok: false,
-        error: `At most ${MAX_QTY_PER_ROW} bikes per MO. Split into two rows.`,
+        error: t("moBatchMaxQty", { max: MAX_QTY_PER_ROW }),
         rowIndex: i,
       };
     }
@@ -114,18 +116,21 @@ export async function createManufacturingOrdersBatch(
     .select("id, bike_type_id, is_current")
     .in("id", templateIds);
   if (tplErr) {
-    return { ok: false, error: `Could not load templates: ${tplErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotLoadTemplates", { detail: tplErr.message }),
+    };
   }
-  const templateById = new Map((templates ?? []).map((t) => [t.id, t]));
+  const templateById = new Map((templates ?? []).map((tpl) => [tpl.id, tpl]));
   for (let i = 0; i < rows.length; i++) {
     const tpl = templateById.get(rows[i].bike_template_id);
     if (!tpl) {
-      return { ok: false, error: "Template not found.", rowIndex: i };
+      return { ok: false, error: t("moTemplateNotFound"), rowIndex: i };
     }
     if (!tpl.is_current) {
       return {
         ok: false,
-        error: "That template is a past version. Pick the current version.",
+        error: t("moTemplatePastVersion"),
         rowIndex: i,
       };
     }
@@ -144,7 +149,9 @@ export async function createManufacturingOrdersBatch(
     if (numErr || typeof moNumber !== "string") {
       return {
         ok: false,
-        error: `Could not allocate MO number: ${numErr?.message ?? "unknown error"}`,
+        error: t("moCouldNotAllocateNumber", {
+          detail: numErr?.message ?? t("unknownError"),
+        }),
         rowIndex: i,
         createdMoNumbers: created.map((c) => c.mo_number),
       };
@@ -169,7 +176,9 @@ export async function createManufacturingOrdersBatch(
     if (insErr || !mo) {
       return {
         ok: false,
-        error: `Could not create MO: ${insErr?.message ?? "unknown error"}`,
+        error: t("moCouldNotCreate", {
+          detail: insErr?.message ?? t("unknownError"),
+        }),
         rowIndex: i,
         createdMoNumbers: created.map((c) => c.mo_number),
       };
@@ -192,7 +201,10 @@ export async function createManufacturingOrdersBatch(
       if (!bulk.ok) {
         return {
           ok: false,
-          error: `${moNumber} was created but bike creation stopped: ${bulk.error}`,
+          error: t("moBikeCreationStopped", {
+            moNumber,
+            detail: bulk.error,
+          }),
           rowIndex: i,
           createdMoNumbers: created.map((c) => c.mo_number),
         };

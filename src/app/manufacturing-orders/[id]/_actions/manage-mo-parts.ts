@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,7 +21,8 @@ export async function addKitPartsToMO(
   moId: string,
   kitId: string,
 ): Promise<MOKitAddResult> {
-  if (!moId || !kitId) return { ok: false, error: "Missing MO id or kit id." };
+  const t = await getTranslations("errors");
+  if (!moId || !kitId) return { ok: false, error: t("moMissingMoOrKitId") };
 
   const supabase = await createClient();
 
@@ -29,9 +31,9 @@ export async function addKitPartsToMO(
     .select("id, status")
     .eq("id", moId)
     .maybeSingle();
-  if (!mo) return { ok: false, error: "Manufacturing order not found." };
+  if (!mo) return { ok: false, error: t("moNotFound") };
   if (mo.status === "completed" || mo.status === "cancelled") {
-    return { ok: false, error: `Cannot edit the recipe of a ${mo.status} MO.` };
+    return { ok: false, error: t("moCannotEditRecipe", { status: mo.status }) };
   }
 
   const [membershipsRes, existingRes] = await Promise.all([
@@ -47,7 +49,9 @@ export async function addKitPartsToMO(
   if (membershipsRes.error) {
     return {
       ok: false,
-      error: `Could not load kit parts: ${membershipsRes.error.message}`,
+      error: t("moCouldNotLoadKitParts", {
+        detail: membershipsRes.error.message,
+      }),
     };
   }
 
@@ -77,7 +81,10 @@ export async function addKitPartsToMO(
       })),
     );
   if (insErr) {
-    return { ok: false, error: `Could not add kit parts: ${insErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotAddKitParts", { detail: insErr.message }),
+    };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}`);
@@ -93,9 +100,10 @@ export async function addMOPart(
   partId: string,
   qty: number,
 ): Promise<MOPartsResult> {
-  if (!moId || !partId) return { ok: false, error: "Missing MO id or part id." };
+  const t = await getTranslations("errors");
+  if (!moId || !partId) return { ok: false, error: t("moMissingMoOrPartId") };
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be a positive number." };
+    return { ok: false, error: t("positiveQty") };
   }
 
   const supabase = await createClient();
@@ -109,10 +117,10 @@ export async function addMOPart(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "That part is already in this MO. Edit the existing row instead.",
+        error: t("moPartAlreadyInMo"),
       };
     }
-    return { ok: false, error: `Could not add part: ${error.message}` };
+    return { ok: false, error: t("moCouldNotAddPart", { detail: error.message }) };
   }
   revalidatePath(`/manufacturing-orders/${moId}`);
   return { ok: true };
@@ -130,11 +138,12 @@ export async function substituteMOPart(
   replacementPartId: string,
   qty: number,
 ): Promise<MOPartsResult> {
+  const t = await getTranslations("errors");
   if (!moId || !originalRowId || !replacementPartId) {
-    return { ok: false, error: "Missing MO id, original row, or replacement part." };
+    return { ok: false, error: t("moMissingSubstituteInputs") };
   }
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be a positive number." };
+    return { ok: false, error: t("positiveQty") };
   }
 
   const supabase = await createClient();
@@ -146,14 +155,16 @@ export async function substituteMOPart(
   if (lookupErr || !original) {
     return {
       ok: false,
-      error: `Could not load original row: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoadOriginalRow", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (original.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That row does not belong to this MO." };
+    return { ok: false, error: t("moRowNotOnMo") };
   }
   if (original.part_id === replacementPartId) {
-    return { ok: false, error: "Replacement is the same as the original." };
+    return { ok: false, error: t("moReplacementSameAsOriginal") };
   }
 
   // Insert replacement first so we always have a row even if the delete fails.
@@ -170,11 +181,13 @@ export async function substituteMOPart(
     if (insErr.code === "23505") {
       return {
         ok: false,
-        error:
-          "That replacement part is already on the MO. Substitute against a different part or remove the existing row first.",
+        error: t("moReplacementAlreadyOnMo"),
       };
     }
-    return { ok: false, error: `Could not insert replacement: ${insErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotInsertReplacement", { detail: insErr.message }),
+    };
   }
 
   const { error: delErr } = await supabase
@@ -184,7 +197,7 @@ export async function substituteMOPart(
   if (delErr) {
     return {
       ok: false,
-      error: `Replacement inserted but the original row didn't delete: ${delErr.message}. The MO now has both — remove the original manually.`,
+      error: t("moReplacementInsertedDeleteFailed", { detail: delErr.message }),
     };
   }
 
@@ -203,9 +216,10 @@ export async function updateMOPartQuantity(
   rowId: string,
   qty: number,
 ): Promise<MOPartsResult> {
-  if (!moId || !rowId) return { ok: false, error: "Missing MO id or row id." };
+  const t = await getTranslations("errors");
+  if (!moId || !rowId) return { ok: false, error: t("moMissingMoOrRowId") };
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be a positive number." };
+    return { ok: false, error: t("positiveQty") };
   }
 
   const supabase = await createClient();
@@ -217,11 +231,13 @@ export async function updateMOPartQuantity(
   if (lookupErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoadRow", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That row does not belong to this MO." };
+    return { ok: false, error: t("moRowNotOnMo") };
   }
   if (Number(row.quantity_per_bike) === qty) {
     return { ok: true }; // no-op
@@ -234,7 +250,7 @@ export async function updateMOPartQuantity(
     .update({ quantity_per_bike: qty, origin: newOrigin })
     .eq("id", rowId);
   if (updErr) {
-    return { ok: false, error: `Could not update qty: ${updErr.message}` };
+    return { ok: false, error: t("moCouldNotUpdateQty", { detail: updErr.message }) };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}`);
@@ -251,7 +267,8 @@ export async function removeMOPart(
   moId: string,
   rowId: string,
 ): Promise<MOPartsResult> {
-  if (!moId || !rowId) return { ok: false, error: "Missing MO id or row id." };
+  const t = await getTranslations("errors");
+  if (!moId || !rowId) return { ok: false, error: t("moMissingMoOrRowId") };
 
   const supabase = await createClient();
   const { data: row, error: lookupErr } = await supabase
@@ -262,17 +279,18 @@ export async function removeMOPart(
   if (lookupErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoadRow", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That row does not belong to this MO." };
+    return { ok: false, error: t("moRowNotOnMo") };
   }
   if (row.origin === "template") {
     return {
       ok: false,
-      error:
-        "Cannot remove a template-origin part. Substitute it instead, or save the template as a new version without it.",
+      error: t("moCannotRemoveTemplatePart"),
     };
   }
 
@@ -280,7 +298,9 @@ export async function removeMOPart(
     .from("manufacturing_order_parts")
     .delete()
     .eq("id", rowId);
-  if (delErr) return { ok: false, error: `Could not remove: ${delErr.message}` };
+  if (delErr) {
+    return { ok: false, error: t("moCouldNotRemove", { detail: delErr.message }) };
+  }
 
   revalidatePath(`/manufacturing-orders/${moId}`);
   return { ok: true };

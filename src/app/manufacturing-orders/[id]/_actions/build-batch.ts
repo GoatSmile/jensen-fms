@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
@@ -41,9 +42,10 @@ export async function bulkBuildBikesWithIds(
   moId: string,
   entries: BatchBuildEntry[],
 ): Promise<BatchBuildResult> {
-  if (!moId) return { ok: false, error: "Missing MO id." };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId") };
   if (!entries || entries.length === 0) {
-    return { ok: false, error: "No bikes to build." };
+    return { ok: false, error: t("moNoBikesToBuild") };
   }
 
   const supabase = await createClient();
@@ -54,7 +56,10 @@ export async function bulkBuildBikesWithIds(
     .select("id, frame_number, status, manufacturing_order_id")
     .in("id", bikeIds);
   if (bikesErr) {
-    return { ok: false, error: `Could not load bikes: ${bikesErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotLoadBikes", { detail: bikesErr.message }),
+    };
   }
   const bikeById = new Map((bikes ?? []).map((b) => [b.id, b]));
   const atPainter = await loadAtSupplierBikeIds(supabase, bikeIds);
@@ -69,7 +74,7 @@ export async function bulkBuildBikesWithIds(
     const label = frame || bike?.frame_number || entry.bikeId.slice(0, 8);
 
     if (!bike || bike.manufacturing_order_id !== moId) {
-      errors.push({ frame: label, error: "Bike is not on this MO." });
+      errors.push({ frame: label, error: t("moBikeNotOnMo") });
       continue;
     }
     if (bike.status !== "planning" && bike.status !== "building") {
@@ -85,7 +90,7 @@ export async function bulkBuildBikesWithIds(
     if (atPainter.has(entry.bikeId)) {
       errors.push({
         frame: label,
-        error: "At the painter — receive it back before building.",
+        error: t("moAtPainterReceiveFirst"),
       });
       continue;
     }
@@ -108,8 +113,8 @@ export async function bulkBuildBikesWithIds(
       if (error) {
         idErr =
           error.code === "23505"
-            ? `Identifier "${value}" is already registered on another bike.`
-            : `Could not register an identifier: ${error.message}`;
+            ? t("moIdentifierDuplicate", { value })
+            : t("moCouldNotRegisterIdentifier", { detail: error.message });
         break;
       }
     }

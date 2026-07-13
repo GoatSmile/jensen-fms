@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
@@ -24,6 +25,7 @@ async function assertBikeEditable(
   bikeId: string,
   moId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const t = await getTranslations("errors");
   const { data: bike, error } = await supabase
     .from("bikes")
     .select("id, status, manufacturing_order_id")
@@ -32,16 +34,16 @@ async function assertBikeEditable(
   if (error || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${error?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: error?.message ?? t("notFound") }),
     };
   }
   if (bike.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That bike doesn't belong to this MO." };
+    return { ok: false, error: t("moBikeNotBelongMo") };
   }
   if (bike.status !== "planning" && bike.status !== "building") {
     return {
       ok: false,
-      error: `Parts can only be edited while the bike is in planning or building. Current: ${bike.status}.`,
+      error: t("moPartsEditableStatus", { status: bike.status }),
     };
   }
   return { ok: true };
@@ -59,8 +61,9 @@ export async function copyMoRecipeToBike(
   moId: string,
   bikeId: string,
 ): Promise<BikePartsResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId) {
-    return { ok: false, error: "Missing MO id or bike id." };
+    return { ok: false, error: t("moMissingMoOrBikeId") };
   }
 
   const supabase = await createClient();
@@ -86,7 +89,7 @@ export async function copyMoRecipeToBike(
   if (recipeErr) {
     return {
       ok: false,
-      error: `Could not load MO recipe: ${recipeErr.message}`,
+      error: t("moCouldNotLoadRecipe", { detail: recipeErr.message }),
     };
   }
   const recipe = (recipeRows ?? []).filter(
@@ -107,7 +110,10 @@ export async function copyMoRecipeToBike(
 
   const { error: insErr } = await supabase.from("bike_parts").insert(rows);
   if (insErr) {
-    return { ok: false, error: `Could not copy recipe: ${insErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotCopyRecipe", { detail: insErr.message }),
+    };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -125,11 +131,12 @@ export async function addBikePart(
   partId: string,
   qty: number,
 ): Promise<BikePartsResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId || !partId) {
-    return { ok: false, error: "Missing MO id, bike id, or part id." };
+    return { ok: false, error: t("moMissingMoBikePartId") };
   }
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be positive." };
+    return { ok: false, error: t("moQtyPositive") };
   }
 
   const supabase = await createClient();
@@ -148,7 +155,7 @@ export async function addBikePart(
   if (existing) {
     return {
       ok: false,
-      error: "That part is already on this bike. Edit its quantity instead.",
+      error: t("moBikePartAlreadyOn"),
     };
   }
 
@@ -159,7 +166,7 @@ export async function addBikePart(
     installed_at: new Date().toISOString(),
   });
   if (insErr) {
-    return { ok: false, error: `Could not add part: ${insErr.message}` };
+    return { ok: false, error: t("moCouldNotAddPart", { detail: insErr.message }) };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -179,11 +186,12 @@ export async function updateBikePartQuantity(
   rowId: string,
   qty: number,
 ): Promise<BikePartsResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId || !rowId) {
-    return { ok: false, error: "Missing identifiers." };
+    return { ok: false, error: t("moMissingIdentifiers") };
   }
   if (!Number.isFinite(qty) || qty <= 0) {
-    return { ok: false, error: "Quantity must be positive." };
+    return { ok: false, error: t("moQtyPositive") };
   }
 
   const supabase = await createClient();
@@ -198,16 +206,18 @@ export async function updateBikePartQuantity(
   if (lookupErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoadRow", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.bike_id !== bikeId) {
-    return { ok: false, error: "That row doesn't belong to this bike." };
+    return { ok: false, error: t("moRowNotOnBike") };
   }
   if (row.inventory_movement_id != null) {
     return {
       ok: false,
-      error: "Cannot change qty: inventory already consumed for this row.",
+      error: t("moQtyFrozenConsumed"),
     };
   }
   if (Number(row.quantity) === qty) return { ok: true };
@@ -217,7 +227,7 @@ export async function updateBikePartQuantity(
     .update({ quantity: qty })
     .eq("id", rowId);
   if (updErr) {
-    return { ok: false, error: `Could not update qty: ${updErr.message}` };
+    return { ok: false, error: t("moCouldNotUpdateQty", { detail: updErr.message }) };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -234,8 +244,9 @@ export async function removeBikePart(
   bikeId: string,
   rowId: string,
 ): Promise<BikePartsResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId || !rowId) {
-    return { ok: false, error: "Missing identifiers." };
+    return { ok: false, error: t("moMissingIdentifiers") };
   }
 
   const supabase = await createClient();
@@ -250,16 +261,18 @@ export async function removeBikePart(
   if (lookupErr || !row) {
     return {
       ok: false,
-      error: `Could not load row: ${lookupErr?.message ?? "not found"}`,
+      error: t("moCouldNotLoadRow", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.bike_id !== bikeId) {
-    return { ok: false, error: "That row doesn't belong to this bike." };
+    return { ok: false, error: t("moRowNotOnBike") };
   }
   if (row.inventory_movement_id != null) {
     return {
       ok: false,
-      error: "Cannot remove: inventory already consumed for this row.",
+      error: t("moRemoveFrozenConsumed"),
     };
   }
 
@@ -268,7 +281,7 @@ export async function removeBikePart(
     .delete()
     .eq("id", rowId);
   if (delErr) {
-    return { ok: false, error: `Could not remove: ${delErr.message}` };
+    return { ok: false, error: t("moCouldNotRemove", { detail: delErr.message }) };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -290,8 +303,9 @@ export async function bulkAddPartsByKit(
   bikeId: string,
   kitId: string,
 ): Promise<BikeKitAddResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId || !kitId) {
-    return { ok: false, error: "Missing MO id, bike id, or kit id." };
+    return { ok: false, error: t("moMissingMoBikeKitId") };
   }
 
   const supabase = await createClient();
@@ -312,7 +326,9 @@ export async function bulkAddPartsByKit(
   if (membershipsRes.error) {
     return {
       ok: false,
-      error: `Could not load kit parts: ${membershipsRes.error.message}`,
+      error: t("moCouldNotLoadKitParts", {
+        detail: membershipsRes.error.message,
+      }),
     };
   }
 
@@ -339,7 +355,10 @@ export async function bulkAddPartsByKit(
     })),
   );
   if (insErr) {
-    return { ok: false, error: `Could not add kit parts: ${insErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotAddKitParts", { detail: insErr.message }),
+    };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -360,8 +379,9 @@ export async function clearBikeBuildParts(
   moId: string,
   bikeId: string,
 ): Promise<BikePartsClearResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId) {
-    return { ok: false, error: "Missing MO id or bike id." };
+    return { ok: false, error: t("moMissingMoOrBikeId") };
   }
 
   const supabase = await createClient();
@@ -374,7 +394,7 @@ export async function clearBikeBuildParts(
     .eq("bike_id", bikeId)
     .is("removed_at", null);
   if (loadErr) {
-    return { ok: false, error: `Could not load parts: ${loadErr.message}` };
+    return { ok: false, error: t("moCouldNotLoadParts", { detail: loadErr.message }) };
   }
 
   const removableIds = (partRows ?? [])
@@ -390,7 +410,7 @@ export async function clearBikeBuildParts(
     .delete()
     .in("id", removableIds);
   if (delErr) {
-    return { ok: false, error: `Could not clear build: ${delErr.message}` };
+    return { ok: false, error: t("moCouldNotClearBuild", { detail: delErr.message }) };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
@@ -413,8 +433,9 @@ export async function removeBikePartsByKit(
   bikeId: string,
   kitId: string,
 ): Promise<BikeKitRemoveResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId || !kitId) {
-    return { ok: false, error: "Missing MO id, bike id, or kit id." };
+    return { ok: false, error: t("moMissingMoBikeKitId") };
   }
 
   const supabase = await createClient();
@@ -426,7 +447,7 @@ export async function removeBikePartsByKit(
     .select("part_id")
     .eq("kit_id", kitId);
   if (memErr) {
-    return { ok: false, error: `Could not load kit parts: ${memErr.message}` };
+    return { ok: false, error: t("moCouldNotLoadKitParts", { detail: memErr.message }) };
   }
   const kitPartIds = (memberships ?? []).map((m) => m.part_id);
   if (kitPartIds.length === 0) {
@@ -440,7 +461,10 @@ export async function removeBikePartsByKit(
     .is("removed_at", null)
     .in("part_id", kitPartIds);
   if (rowsErr) {
-    return { ok: false, error: `Could not load bike parts: ${rowsErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotLoadBikeParts", { detail: rowsErr.message }),
+    };
   }
 
   const removableIds = (rows ?? [])
@@ -456,7 +480,10 @@ export async function removeBikePartsByKit(
     .delete()
     .in("id", removableIds);
   if (delErr) {
-    return { ok: false, error: `Could not remove kit parts: ${delErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotRemoveKitParts", { detail: delErr.message }),
+    };
   }
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);

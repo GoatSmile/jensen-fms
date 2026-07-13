@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
@@ -34,8 +35,9 @@ export async function finishBikeBuild(
   moId: string,
   bikeId: string,
 ): Promise<FinishBuildResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId) {
-    return { ok: false, error: "Missing MO id or bike id." };
+    return { ok: false, error: t("moMissingMoOrBikeId") };
   }
 
   const supabase = await createClient();
@@ -50,33 +52,32 @@ export async function finishBikeBuild(
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${bikeErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
     };
   }
   if (bike.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That bike doesn't belong to this MO." };
+    return { ok: false, error: t("moBikeNotBelongMo") };
   }
   if (
     bike.status === "in_stock" ||
     bike.status === "assigned" ||
     bike.status === "in_service"
   ) {
-    return { ok: false, error: "Bike is already marked built." };
+    return { ok: false, error: t("moBikeAlreadyBuilt") };
   }
   if (bike.status === "retired" || bike.status === "lost_or_stolen") {
     return {
       ok: false,
-      error: "Cannot finish-build a retired or lost/stolen bike.",
+      error: t("moCannotFinishTerminal"),
     };
   }
   if (!bike.frame_number || bike.frame_number.trim() === "") {
-    return { ok: false, error: "Frame number is required before finishing." };
+    return { ok: false, error: t("moFrameRequiredBeforeFinish") };
   }
   if (!bike.frame_number_confirmed) {
     return {
       ok: false,
-      error:
-        "Confirm the real frame number in the build workbench before finishing.",
+      error: t("moConfirmFrameBeforeFinish"),
     };
   }
 
@@ -88,8 +89,7 @@ export async function finishBikeBuild(
   if (atPainter.has(bikeId)) {
     return {
       ok: false,
-      error:
-        "Bike is at the painter and can't be built yet. Receive it back on its paint order first.",
+      error: t("moBikeAtPainterFinish"),
     };
   }
 
@@ -108,13 +108,15 @@ export async function finishBikeBuild(
     .eq("bike_id", bikeId)
     .is("removed_at", null);
   if (bpErr) {
-    return { ok: false, error: `Could not load bike parts: ${bpErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotLoadBikeParts", { detail: bpErr.message }),
+    };
   }
   if (!bikeParts || bikeParts.length === 0) {
     return {
       ok: false,
-      error:
-        "No parts on this bike. Pick parts in the workbench (or copy the MO recipe) before finishing the build.",
+      error: t("moNoPartsOnBike"),
     };
   }
 
@@ -175,9 +177,10 @@ export async function finishBikeBuild(
     if (movErr || !movement) {
       return {
         ok: false,
-        error: `Could not write inventory movement for part ${bp.part_id}: ${
-          movErr?.message ?? "unknown error"
-        }. Re-run to retry; already-consumed rows will be skipped.`,
+        error: t("moCouldNotWriteMovementForPart", {
+          partId: bp.part_id,
+          detail: movErr?.message ?? t("unknownError"),
+        }),
       };
     }
 
@@ -188,7 +191,10 @@ export async function finishBikeBuild(
     if (linkErr) {
       return {
         ok: false,
-        error: `Could not link movement to bike_part ${bp.id}: ${linkErr.message}. Re-run to retry.`,
+        error: t("moCouldNotLinkMovement", {
+          id: bp.id,
+          detail: linkErr.message,
+        }),
       };
     }
 
@@ -214,7 +220,7 @@ export async function finishBikeBuild(
   if (statusErr) {
     return {
       ok: false,
-      error: `Could not advance status: ${statusErr.message}`,
+      error: t("moCouldNotAdvanceStatus", { detail: statusErr.message }),
     };
   }
 

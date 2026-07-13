@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,7 @@ import {
 // Supabase server client type — narrowed for the helper signature so the
 // recompute helper can be reused from either action without re-creating it.
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
 export type ManageLinesResult = { ok: true } | { ok: false; error: string };
 
@@ -42,18 +44,21 @@ type ParsedLineFields = {
 function parseNumeric(
   raw: string | null,
   field: string,
+  t: Translator,
   opts: { allowZero?: boolean } = {},
 ): { ok: true; value: number } | { ok: false; error: string } {
-  if (!raw) return { ok: false, error: `${field} is required.` };
+  if (!raw) return { ok: false, error: t("fieldRequired", { field }) };
   const normalized = raw.replace(",", ".");
   const n = Number(normalized);
   if (!Number.isFinite(n)) {
-    return { ok: false, error: `${field} must be a number.` };
+    return { ok: false, error: t("fieldMustBeNumber", { field }) };
   }
   if (opts.allowZero ? n < 0 : n <= 0) {
     return {
       ok: false,
-      error: `${field} must be ${opts.allowZero ? "non-negative" : "greater than zero"}.`,
+      error: opts.allowZero
+        ? t("fieldNonNegative", { field })
+        : t("fieldGreaterThanZero", { field }),
     };
   }
   return { ok: true, value: n };
@@ -66,36 +71,44 @@ function parseNumeric(
 function parseOptionalNumeric(
   raw: string | null,
   field: string,
+  t: Translator,
 ): { ok: true; value: number | null } | { ok: false; error: string } {
   if (!raw || raw.trim() === "") return { ok: true, value: null };
-  const parsed = parseNumeric(raw, field, { allowZero: true });
+  const parsed = parseNumeric(raw, field, t, { allowZero: true });
   if (!parsed.ok) return parsed;
   return { ok: true, value: parsed.value };
 }
 
 function parseLineFields(
   formData: FormData,
+  t: Translator,
 ): { ok: true; values: ParsedLineFields } | { ok: false; error: string } {
   const part_id = nullable(formData.get("part_id"));
-  if (!part_id) return { ok: false, error: "Pick a part." };
+  if (!part_id) return { ok: false, error: t("poPickPart") };
 
-  const qty = parseNumeric(nullable(formData.get("quantity")), "Quantity");
+  const qty = parseNumeric(
+    nullable(formData.get("quantity")),
+    t("fieldQuantity"),
+    t,
+  );
   if (!qty.ok) return { ok: false, error: qty.error };
 
   const unit = parseOptionalNumeric(
     nullable(formData.get("unit_price")),
-    "Unit price",
+    t("fieldUnitPrice"),
+    t,
   );
   if (!unit.ok) return { ok: false, error: unit.error };
 
   const currency = (nullable(formData.get("currency")) ?? "").toUpperCase();
   if (!currency || currency.length !== 3) {
-    return { ok: false, error: "Pick a currency." };
+    return { ok: false, error: t("pickCurrency") };
   }
 
   const fx = parseNumeric(
     nullable(formData.get("fx_rate_to_dkk")),
-    "FX rate",
+    t("fieldFxRate"),
+    t,
   );
   if (!fx.ok) return { ok: false, error: fx.error };
 
@@ -104,15 +117,22 @@ function parseLineFields(
   const transportRaw = nullable(formData.get("transport_pct"));
   let transport_pct = 0.10;
   if (transportRaw) {
-    const t = parseNumeric(transportRaw, "Transport %", { allowZero: true });
-    if (!t.ok) return { ok: false, error: t.error };
-    if (t.value > 1) {
+    const parsedTransport = parseNumeric(
+      transportRaw,
+      t("fieldTransportPct"),
+      t,
+      { allowZero: true },
+    );
+    if (!parsedTransport.ok) {
+      return { ok: false, error: parsedTransport.error };
+    }
+    if (parsedTransport.value > 1) {
       return {
         ok: false,
-        error: "Transport % must be a decimal (0.10 = 10 %).",
+        error: t("poTransportDecimal"),
       };
     }
-    transport_pct = t.value;
+    transport_pct = parsedTransport.value;
   }
 
   return {
@@ -133,6 +153,7 @@ function parseLineFields(
 async function assertDraft(
   supabase: SupabaseServer,
   poId: string,
+  t: Translator,
 ): Promise<
   | { ok: true; supplierId: string | null }
   | { ok: false; error: string }
@@ -145,13 +166,13 @@ async function assertDraft(
   if (error || !po) {
     return {
       ok: false,
-      error: `Could not load PO: ${error?.message ?? "not found"}`,
+      error: t("poCouldNotLoad", { detail: error?.message ?? t("notFound") }),
     };
   }
   if (po.status !== "draft") {
     return {
       ok: false,
-      error: "Lines can only be edited while the PO is in draft.",
+      error: t("poLinesDraftOnly"),
     };
   }
   return { ok: true, supplierId: po.supplier_id ?? null };
@@ -177,14 +198,15 @@ export async function addLine(
   poId: string,
   formData: FormData,
 ): Promise<ManageLinesResult> {
-  if (!poId) return { ok: false, error: "Missing PO id." };
+  const t = await getTranslations("errors");
+  if (!poId) return { ok: false, error: t("missingPoId") };
 
-  const parsed = parseLineFields(formData);
+  const parsed = parseLineFields(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
   const v = parsed.values;
 
   const supabase = await createClient();
-  const guard = await assertDraft(supabase, poId);
+  const guard = await assertDraft(supabase, poId, t);
   if (!guard.ok) return guard;
 
   // Defensive duplicate check (no DB UNIQUE constraint as of today).
@@ -197,14 +219,13 @@ export async function addLine(
   if (existingErr) {
     return {
       ok: false,
-      error: `Could not check existing lines: ${existingErr.message}`,
+      error: t("poCouldNotCheckExistingLines", { detail: existingErr.message }),
     };
   }
   if (existing) {
     return {
       ok: false,
-      error:
-        "That part is already on this PO. Edit the existing line instead of adding a second row.",
+      error: t("poPartAlreadyOnAddRow"),
     };
   }
 
@@ -235,11 +256,10 @@ export async function addLine(
     if (insErr.code === "23505") {
       return {
         ok: false,
-        error:
-          "That part is already on this PO. Edit the existing line instead.",
+        error: t("poPartAlreadyOnEdit"),
       };
     }
-    return { ok: false, error: `Could not add line: ${insErr.message}` };
+    return { ok: false, error: t("poCouldNotAddLine", { detail: insErr.message }) };
   }
 
   await recomputePOTotal(supabase, poId);
@@ -258,9 +278,10 @@ export async function updateLine(
   lineId: string,
   formData: FormData,
 ): Promise<ManageLinesResult> {
-  if (!lineId) return { ok: false, error: "Missing line id." };
+  const t = await getTranslations("errors");
+  if (!lineId) return { ok: false, error: t("missingLineId") };
 
-  const parsed = parseLineFields(formData);
+  const parsed = parseLineFields(formData, t);
   if (!parsed.ok) return { ok: false, error: parsed.error };
   const v = parsed.values;
 
@@ -273,11 +294,13 @@ export async function updateLine(
   if (lookupErr || !line) {
     return {
       ok: false,
-      error: `Could not load line: ${lookupErr?.message ?? "not found"}`,
+      error: t("poCouldNotLoadLine", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
-  const guard = await assertDraft(supabase, line.purchase_order_id);
+  const guard = await assertDraft(supabase, line.purchase_order_id, t);
   if (!guard.ok) return guard;
 
   // Duplicate-part guard (only if the part actually changed).
@@ -291,14 +314,13 @@ export async function updateLine(
   if (clashErr) {
     return {
       ok: false,
-      error: `Could not check existing lines: ${clashErr.message}`,
+      error: t("poCouldNotCheckExistingLines", { detail: clashErr.message }),
     };
   }
   if (clash) {
     return {
       ok: false,
-      error:
-        "Another line on this PO already uses that part. Pick a different part.",
+      error: t("poAnotherLineUsesPart"),
     };
   }
 
@@ -327,7 +349,7 @@ export async function updateLine(
     })
     .eq("id", lineId);
   if (updErr) {
-    return { ok: false, error: `Could not update line: ${updErr.message}` };
+    return { ok: false, error: t("poCouldNotUpdateLine", { detail: updErr.message }) };
   }
 
   await recomputePOTotal(supabase, line.purchase_order_id);
@@ -345,7 +367,8 @@ export async function updateLine(
 export async function deleteLine(
   lineId: string,
 ): Promise<ManageLinesResult> {
-  if (!lineId) return { ok: false, error: "Missing line id." };
+  const t = await getTranslations("errors");
+  if (!lineId) return { ok: false, error: t("missingLineId") };
 
   const supabase = await createClient();
   const { data: line, error: lookupErr } = await supabase
@@ -356,11 +379,13 @@ export async function deleteLine(
   if (lookupErr || !line) {
     return {
       ok: false,
-      error: `Could not load line: ${lookupErr?.message ?? "not found"}`,
+      error: t("poCouldNotLoadLine", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
-  const guard = await assertDraft(supabase, line.purchase_order_id);
+  const guard = await assertDraft(supabase, line.purchase_order_id, t);
   if (!guard.ok) return guard;
 
   const { error: delErr } = await supabase
@@ -368,7 +393,7 @@ export async function deleteLine(
     .delete()
     .eq("id", lineId);
   if (delErr) {
-    return { ok: false, error: `Could not remove line: ${delErr.message}` };
+    return { ok: false, error: t("poCouldNotRemoveLine", { detail: delErr.message }) };
   }
 
   await recomputePOTotal(supabase, line.purchase_order_id);

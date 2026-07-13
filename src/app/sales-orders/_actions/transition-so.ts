@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import type { SOStatus } from "@/lib/so/status";
@@ -37,7 +38,8 @@ export async function transitionSO(
   to: SOStatus,
   reason: string | null,
 ): Promise<TransitionResult> {
-  if (!soId) return { ok: false, error: "Missing SO id." };
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("missingSoId") };
 
   const supabase = await createClient();
   const { data: so, error: lookupErr } = await supabase
@@ -50,7 +52,7 @@ export async function transitionSO(
   if (lookupErr || !so) {
     return {
       ok: false,
-      error: `Could not load SO: ${lookupErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
     };
   }
 
@@ -58,7 +60,7 @@ export async function transitionSO(
   if (!validNextSOStatuses(from).includes(to)) {
     return {
       ok: false,
-      error: `Cannot move from ${from} to ${to}.`,
+      error: t("soCannotMove", { from, to }),
     };
   }
 
@@ -105,7 +107,7 @@ export async function transitionSO(
       if (slateErr) {
         return {
           ok: false,
-          error: `Could not slate bikes: ${slateErr.message}`,
+          error: t("soCouldNotSlateBikes", { detail: slateErr.message }),
         };
       }
     }
@@ -133,7 +135,7 @@ export async function transitionSO(
       if (delErr) {
         return {
           ok: false,
-          error: `Could not flip bikes to assigned: ${delErr.message}`,
+          error: t("soCouldNotFlipBikes", { detail: delErr.message }),
         };
       }
     }
@@ -160,7 +162,7 @@ export async function transitionSO(
       if (unslateErr) {
         return {
           ok: false,
-          error: `Could not unslate unbuilt bikes: ${unslateErr.message}`,
+          error: t("soCouldNotUnslateBikes", { detail: unslateErr.message }),
         };
       }
     }
@@ -188,7 +190,7 @@ export async function transitionSO(
     })
     .eq("id", soId);
   if (updErr) {
-    return { ok: false, error: `Could not transition SO: ${updErr.message}` };
+    return { ok: false, error: t("soCouldNotTransition", { detail: updErr.message }) };
   }
 
   revalidatePath("/sales-orders");

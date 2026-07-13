@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +22,7 @@ export type SavePOResult =
  * — the lines-management actions recompute it then.
  */
 export async function createPO(formData: FormData): Promise<SavePOResult> {
+  const t = await getTranslations("errors");
   const supplier_id = nullable(formData.get("supplier_id"));
   const order_date_raw = nullable(formData.get("order_date"));
   const expected_date = nullable(formData.get("expected_date"));
@@ -28,7 +30,7 @@ export async function createPO(formData: FormData): Promise<SavePOResult> {
   const notes = nullable(formData.get("notes"));
 
   if (!supplier_id) {
-    return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
+    return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
   }
 
   const order_date =
@@ -56,7 +58,9 @@ export async function createPO(formData: FormData): Promise<SavePOResult> {
   if (numErr || typeof numberData !== "string") {
     return {
       ok: false,
-      error: `Could not allocate PO number: ${numErr?.message ?? "unknown error"}`,
+      error: t("poCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -76,7 +80,9 @@ export async function createPO(formData: FormData): Promise<SavePOResult> {
   if (error || !data) {
     return {
       ok: false,
-      error: `Could not create PO: ${error?.message ?? "unknown error"}`,
+      error: t("poCouldNotCreate", {
+        detail: error?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -94,7 +100,8 @@ export async function updatePO(
   poId: string,
   formData: FormData,
 ): Promise<SavePOResult> {
-  if (!poId) return { ok: false, error: "Missing PO id." };
+  const t = await getTranslations("errors");
+  if (!poId) return { ok: false, error: t("missingPoId") };
 
   const supplier_id = nullable(formData.get("supplier_id"));
   const order_date_raw = nullable(formData.get("order_date"));
@@ -103,12 +110,12 @@ export async function updatePO(
   const notes = nullable(formData.get("notes"));
 
   if (!supplier_id) {
-    return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
+    return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
   }
   if (!order_date_raw) {
     return {
       ok: false,
-      error: "Order date is required.",
+      error: t("orderDateRequired"),
       field: "order_date",
     };
   }
@@ -122,14 +129,13 @@ export async function updatePO(
   if (lookupErr || !po) {
     return {
       ok: false,
-      error: `Could not load PO: ${lookupErr?.message ?? "not found"}`,
+      error: t("poCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
     };
   }
   if (po.status !== "draft") {
     return {
       ok: false,
-      error:
-        "Only draft POs can be edited. Move this PO back to draft is not supported — create a new PO instead.",
+      error: t("poOnlyDraftEditable"),
     };
   }
 
@@ -141,14 +147,13 @@ export async function updatePO(
     if (linesErr) {
       return {
         ok: false,
-        error: `Could not check existing lines: ${linesErr.message}`,
+        error: t("poCouldNotCheckExistingLines", { detail: linesErr.message }),
       };
     }
     if ((count ?? 0) > 0) {
       return {
         ok: false,
-        error:
-          "Can't change the supplier once lines exist — clear the lines first or start a new PO.",
+        error: t("poCannotChangeSupplier"),
         field: "supplier_id",
       };
     }
@@ -168,7 +173,7 @@ export async function updatePO(
     })
     .eq("id", poId);
   if (updErr) {
-    return { ok: false, error: `Could not update PO: ${updErr.message}` };
+    return { ok: false, error: t("poCouldNotUpdate", { detail: updErr.message }) };
   }
 
   revalidatePath("/purchase-orders");

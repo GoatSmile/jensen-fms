@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -29,24 +30,24 @@ export async function emailPOToSupplier(
   poId: string,
   message: string | null,
 ): Promise<EmailPOResult> {
-  if (!poId) return { ok: false, error: "Missing PO id." };
+  const t = await getTranslations("errors");
+  if (!poId) return { ok: false, error: t("missingPoId") };
 
   const supabase = await createClient();
   const doc = await loadPODocument(supabase, poId);
-  if (!doc) return { ok: false, error: "PO not found." };
+  if (!doc) return { ok: false, error: t("poNotFound") };
   if (doc.status === "cancelled") {
-    return { ok: false, error: "Cancelled POs can't be emailed." };
+    return { ok: false, error: t("poCancelledCannotEmail") };
   }
   if (doc.lines.length === 0) {
-    return { ok: false, error: "Add at least one line before emailing." };
+    return { ok: false, error: t("poAddLineBeforeEmailing") };
   }
 
   const settings = await loadCommunicationSettings(supabase);
   if (!settings.fromEmail) {
     return {
       ok: false,
-      error:
-        "No from-address configured — set one under Admin → Settings → Communication.",
+      error: t("poNoFromAddress"),
     };
   }
 
@@ -60,7 +61,9 @@ export async function emailPOToSupplier(
       ok: false,
       error:
         realRecipients.length === 0 && !settings.testMode
-          ? `${doc.supplier?.name ?? "The supplier"} has no email on file — add one on the supplier page.`
+          ? t("poSupplierNoEmail", {
+              name: doc.supplier?.name ?? t("theSupplier"),
+            })
           : resolved.error,
     };
   }
@@ -98,7 +101,7 @@ export async function emailPOToSupplier(
     // nothing was sent.
     return {
       ok: false,
-      error: `Email sent, but recording it failed: ${stampErr.message}`,
+      error: t("poEmailSentStampFailed", { detail: stampErr.message }),
     };
   }
 

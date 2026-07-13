@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { bulkAddBikesToMO } from "@/app/manufacturing-orders/[id]/_actions/bulk-add-bikes";
 import { createClient } from "@/lib/supabase/server";
@@ -39,8 +40,9 @@ export async function spawnMOFromSOLine(
   soId: string,
   lineId: string,
 ): Promise<SpawnMOResult> {
+  const t = await getTranslations("errors");
   if (!soId || !lineId) {
-    return { ok: false, error: "Missing SO id or line id." };
+    return { ok: false, error: t("soMissingSoOrLineId") };
   }
 
   const supabase = await createClient();
@@ -56,27 +58,26 @@ export async function spawnMOFromSOLine(
   if (lineErr || !line) {
     return {
       ok: false,
-      error: `Could not load SO line: ${lineErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoadLine", { detail: lineErr?.message ?? t("notFound") }),
     };
   }
   if (line.sales_order_id !== soId) {
-    return { ok: false, error: "That line doesn't belong to this SO." };
+    return { ok: false, error: t("soLineNotOnOrder") };
   }
   if (!line.bike_template_id || !line.template) {
     return {
       ok: false,
-      error: "Only bike-template lines can spawn an MO. Use a part line for spares.",
+      error: t("soOnlyTemplateLinesSpawnMo"),
     };
   }
   if (!line.template.is_current) {
     return {
       ok: false,
-      error:
-        "That template is not the current version. Edit the SO line to point at the current template before spawning.",
+      error: t("soTemplateNotCurrent"),
     };
   }
   if (!Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0) {
-    return { ok: false, error: "Line quantity must be positive." };
+    return { ok: false, error: t("soLineQtyPositive") };
   }
 
   const { data: so, error: soErr } = await supabase
@@ -87,13 +88,13 @@ export async function spawnMOFromSOLine(
   if (soErr || !so) {
     return {
       ok: false,
-      error: `Could not load SO: ${soErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoad", { detail: soErr?.message ?? t("notFound") }),
     };
   }
   if (so.status === "cancelled" || so.status === "delivered") {
     return {
       ok: false,
-      error: `Cannot spawn an MO from a ${so.status} SO.`,
+      error: t("soCannotSpawnFromStatus", { status: so.status }),
     };
   }
 
@@ -107,8 +108,7 @@ export async function spawnMOFromSOLine(
   if ((existing ?? 0) > 0) {
     return {
       ok: false,
-      error:
-        "An active MO already exists for this line. Cancel it before spawning another.",
+      error: t("soActiveMoExists"),
     };
   }
 
@@ -119,7 +119,9 @@ export async function spawnMOFromSOLine(
   if (numErr || !numberData) {
     return {
       ok: false,
-      error: `Could not allocate MO number: ${numErr?.message ?? "unknown"}`,
+      error: t("soCouldNotAllocateMoNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -143,7 +145,7 @@ export async function spawnMOFromSOLine(
   if (moErr || !mo) {
     return {
       ok: false,
-      error: `Could not create MO: ${moErr?.message ?? "unknown"}`,
+      error: t("soCouldNotCreateMo", { detail: moErr?.message ?? t("unknownError") }),
     };
   }
 
@@ -166,7 +168,10 @@ export async function spawnMOFromSOLine(
     revalidatePath("/manufacturing-orders");
     return {
       ok: false,
-      error: `${numberData} was created, but bike creation stopped: ${bulk.error} Add the remaining bikes from the MO page.`,
+      error: t("soMoCreatedBikesFailed", {
+        number: numberData,
+        detail: bulk.error,
+      }),
     };
   }
 

@@ -1,5 +1,7 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
+
 import { createClient } from "@/lib/supabase/server";
 import { getOrFetchRate } from "@/lib/fx/get-or-fetch";
 
@@ -26,15 +28,16 @@ export async function lookupFxRate(
   toCurrency: string,
   date: string,
 ): Promise<FxLookupResult> {
+  const t = await getTranslations("errors");
   if (!fromCurrency || !toCurrency || !date) {
-    return { ok: false, error: "Missing currency or date." };
+    return { ok: false, error: t("poMissingCurrencyOrDate") };
   }
   const supabase = await createClient();
   const lookup = await getOrFetchRate(supabase, fromCurrency, toCurrency, date);
   if (!lookup) {
     return {
       ok: false,
-      error: `No rate available for ${fromCurrency} → ${toCurrency} on ${date}.`,
+      error: t("poNoFxRate", { from: fromCurrency, to: toCurrency, date }),
     };
   }
   return {

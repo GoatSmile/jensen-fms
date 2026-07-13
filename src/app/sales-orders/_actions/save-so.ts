@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
 export type SaveSOResult =
   | { ok: true; id: string }
@@ -24,25 +27,26 @@ type ParsedSOFields = {
 
 function parseFields(
   formData: FormData,
+  t: Translator,
 ): { ok: true; values: ParsedSOFields } | { ok: false; error: string; field?: string } {
   const organization_id = nullable(formData.get("organization_id"));
   if (!organization_id) {
-    return { ok: false, error: "Pick a customer.", field: "organization_id" };
+    return { ok: false, error: t("soPickCustomer"), field: "organization_id" };
   }
 
   const language = (nullable(formData.get("language")) ?? "da").toLowerCase();
   if (language !== "da" && language !== "en") {
-    return { ok: false, error: "Language must be da or en.", field: "language" };
+    return { ok: false, error: t("languageDaEn"), field: "language" };
   }
 
   const order_date = nullable(formData.get("order_date"));
   if (!order_date) {
-    return { ok: false, error: "Order date is required.", field: "order_date" };
+    return { ok: false, error: t("orderDateRequired"), field: "order_date" };
   }
 
   const currency = (nullable(formData.get("currency")) ?? "DKK").toUpperCase();
   if (currency.length !== 3) {
-    return { ok: false, error: "Pick a currency.", field: "currency" };
+    return { ok: false, error: t("pickCurrency"), field: "currency" };
   }
 
   const requested_delivery_date = nullable(
@@ -78,7 +82,8 @@ function parseFields(
  * of the document numbering. Lines come later via manage-so-lines.
  */
 export async function createSO(formData: FormData): Promise<SaveSOResult> {
-  const parsed = parseFields(formData);
+  const t = await getTranslations("errors");
+  const parsed = parseFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -90,7 +95,9 @@ export async function createSO(formData: FormData): Promise<SaveSOResult> {
   if (numErr || !numberData) {
     return {
       ok: false,
-      error: `Could not allocate SO number: ${numErr?.message ?? "unknown"}`,
+      error: t("soCouldNotAllocateNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -105,7 +112,10 @@ export async function createSO(formData: FormData): Promise<SaveSOResult> {
     .single();
 
   if (error || !data) {
-    return { ok: false, error: `Could not create SO: ${error?.message ?? "unknown"}` };
+    return {
+      ok: false,
+      error: t("soCouldNotCreate", { detail: error?.message ?? t("unknownError") }),
+    };
   }
 
   revalidatePath("/sales-orders");
@@ -121,8 +131,9 @@ export async function updateSO(
   soId: string,
   formData: FormData,
 ): Promise<SaveSOResult> {
-  if (!soId) return { ok: false, error: "Missing SO id." };
-  const parsed = parseFields(formData);
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("missingSoId") };
+  const parsed = parseFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -134,13 +145,13 @@ export async function updateSO(
   if (lookupErr || !existing) {
     return {
       ok: false,
-      error: `Could not load SO: ${lookupErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
     };
   }
   if (existing.status !== "draft") {
     return {
       ok: false,
-      error: `Header is locked once SO leaves draft (currently ${existing.status}).`,
+      error: t("soHeaderLocked", { status: existing.status }),
     };
   }
 
@@ -149,7 +160,7 @@ export async function updateSO(
     .update({ ...parsed.values, updated_at: new Date().toISOString() })
     .eq("id", soId);
   if (error) {
-    return { ok: false, error: `Could not save SO: ${error.message}` };
+    return { ok: false, error: t("soCouldNotSave", { detail: error.message }) };
   }
 
   revalidatePath("/sales-orders");

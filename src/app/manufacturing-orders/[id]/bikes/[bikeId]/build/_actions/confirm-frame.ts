@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,12 +27,13 @@ export async function confirmBikeFrame(
   bikeId: string,
   rawFrameNumber: string,
 ): Promise<ConfirmFrameResult> {
+  const t = await getTranslations("errors");
   if (!moId || !bikeId) {
-    return { ok: false, error: "Missing MO id or bike id." };
+    return { ok: false, error: t("moMissingMoOrBikeId") };
   }
   const frameNumber = (rawFrameNumber ?? "").trim();
   if (frameNumber === "") {
-    return { ok: false, error: "Enter the real frame number." };
+    return { ok: false, error: t("moEnterRealFrame") };
   }
 
   const supabase = await createClient();
@@ -44,16 +46,16 @@ export async function confirmBikeFrame(
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: `Could not load bike: ${bikeErr?.message ?? "not found"}`,
+      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
     };
   }
   if (bike.manufacturing_order_id !== moId) {
-    return { ok: false, error: "That bike doesn't belong to this MO." };
+    return { ok: false, error: t("moBikeNotBelongMo") };
   }
   if (bike.status !== "planning" && bike.status !== "building") {
     return {
       ok: false,
-      error: "The frame can only be confirmed while the bike is still being built.",
+      error: t("moFrameConfirmWhileBuilding"),
     };
   }
 
@@ -72,10 +74,13 @@ export async function confirmBikeFrame(
     if (updErr.code === "23505") {
       return {
         ok: false,
-        error: "That frame number is already on file for another bike.",
+        error: t("bikeFrameNumberDuplicate"),
       };
     }
-    return { ok: false, error: `Could not confirm frame: ${updErr.message}` };
+    return {
+      ok: false,
+      error: t("moCouldNotConfirmFrame", { detail: updErr.message }),
+    };
   }
 
   // Keep the bike_identifiers frame row in sync. bikes.frame_number is
@@ -122,8 +127,8 @@ export async function confirmBikeFrame(
           ok: false,
           error:
             syncErr.code === "23505"
-              ? "That frame number is already registered as an identifier on another bike."
-              : `Could not sync the frame identifier: ${syncErr.message}`,
+              ? t("moFrameIdentifierDuplicate")
+              : t("moCouldNotSyncFrameIdentifier", { detail: syncErr.message }),
         };
       }
     }

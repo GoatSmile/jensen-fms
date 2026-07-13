@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { loadMOCoverage } from "@/lib/manufacturing/coverage";
@@ -25,7 +26,8 @@ export type DraftPOResult =
 export async function draftPOsFromShortfall(
   moId: string,
 ): Promise<DraftPOResult> {
-  if (!moId) return { ok: false, error: "Missing MO id." };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId") };
 
   const supabase = await createClient();
 
@@ -34,15 +36,15 @@ export async function draftPOsFromShortfall(
     .select("id, mo_number, status")
     .eq("id", moId)
     .maybeSingle();
-  if (!mo) return { ok: false, error: "Manufacturing order not found." };
+  if (!mo) return { ok: false, error: t("moNotFound") };
   if (mo.status === "completed" || mo.status === "cancelled") {
-    return { ok: false, error: `MO is ${mo.status} — nothing left to buy for it.` };
+    return { ok: false, error: t("moNothingToBuy", { status: mo.status }) };
   }
 
   const coverage = await loadMOCoverage(supabase, moId);
   if ("error" in coverage) return { ok: false, error: coverage.error };
   if (coverage.shortfallRows.length === 0) {
-    return { ok: false, error: "No shortfall — every part is covered by current stock." };
+    return { ok: false, error: t("moNoShortfall") };
   }
 
   const result = await createDraftPOsForDemand(

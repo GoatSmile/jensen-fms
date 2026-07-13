@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +28,7 @@ export type SaveMOResult =
 export async function createManufacturingOrder(
   formData: FormData,
 ): Promise<SaveMOResult> {
+  const t = await getTranslations("errors");
   const bike_template_id = nullable(formData.get("bike_template_id"));
   const bike_type_id_input = nullable(formData.get("bike_type_id"));
   const color_id = nullable(formData.get("color_id"));
@@ -47,7 +49,7 @@ export async function createManufacturingOrder(
   if (!targetRaw) {
     return {
       ok: false,
-      error: "Target quantity is required.",
+      error: t("moTargetQtyRequired"),
       field: "target_quantity",
     };
   }
@@ -59,7 +61,7 @@ export async function createManufacturingOrder(
   ) {
     return {
       ok: false,
-      error: "Target quantity must be a positive whole number.",
+      error: t("moTargetQtyPositiveWhole"),
       field: "target_quantity",
     };
   }
@@ -78,21 +80,20 @@ export async function createManufacturingOrder(
     if (tplErr || !tpl) {
       return {
         ok: false,
-        error: `Could not load template: ${tplErr?.message ?? "not found"}`,
+        error: t("tplCouldNotLoad", { detail: tplErr?.message ?? t("notFound") }),
       };
     }
     if (!tpl.is_current) {
       return {
         ok: false,
-        error:
-          "That template is a past version. Pick the current version instead.",
+        error: t("moTemplatePastVersionInstead"),
         field: "bike_template_id",
       };
     }
     if (!color_id) {
       return {
         ok: false,
-        error: "Pick a colour — one MO covers one template and one colour.",
+        error: t("moPickColour"),
         field: "color_id",
       };
     }
@@ -102,7 +103,7 @@ export async function createManufacturingOrder(
     if (!bike_type_id_input) {
       return {
         ok: false,
-        error: "Pick a bike type for the one-off build.",
+        error: t("moPickBikeTypeOneOff"),
         field: "bike_type_id",
       };
     }
@@ -117,7 +118,9 @@ export async function createManufacturingOrder(
   if (moNumErr || typeof moNumberData !== "string") {
     return {
       ok: false,
-      error: `Could not allocate MO number: ${moNumErr?.message ?? "unknown error"}`,
+      error: t("moCouldNotAllocateNumber", {
+        detail: moNumErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -140,7 +143,9 @@ export async function createManufacturingOrder(
   if (insErr || !mo) {
     return {
       ok: false,
-      error: `Could not create MO: ${insErr?.message ?? "unknown error"}`,
+      error: t("moCouldNotCreate", {
+        detail: insErr?.message ?? t("unknownError"),
+      }),
     };
   }
 

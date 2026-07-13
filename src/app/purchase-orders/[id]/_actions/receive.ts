@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -30,19 +31,20 @@ export async function receivePurchaseOrder(
   locationId: string,
   receipts: LineReceipt[],
 ): Promise<ReceiveResult> {
-  if (!poId) return { ok: false, error: "Missing PO id." };
-  if (!locationId) return { ok: false, error: "Pick a location." };
+  const t = await getTranslations("errors");
+  if (!poId) return { ok: false, error: t("missingPoId") };
+  if (!locationId) return { ok: false, error: t("poPickLocation") };
   if (receipts.length === 0) {
     return {
       ok: false,
-      error: "No quantities entered. Type how many units arrived and try again.",
+      error: t("poNoQuantities"),
     };
   }
   for (const r of receipts) {
     if (!Number.isFinite(r.additionalQty) || r.additionalQty <= 0) {
       return {
         ok: false,
-        error: "Each receive quantity must be a positive number.",
+        error: t("poReceiveQtyPositive"),
       };
     }
   }
@@ -61,25 +63,24 @@ export async function receivePurchaseOrder(
     )
     .eq("purchase_order_id", poId);
   if (linesErr) {
-    return { ok: false, error: `Could not load lines: ${linesErr.message}` };
+    return { ok: false, error: t("poCouldNotLoadLines", { detail: linesErr.message }) };
   }
   if (!lines || lines.length !== receipts.length) {
-    return { ok: false, error: "One or more lines could not be found on this PO." };
+    return { ok: false, error: t("poLinesNotFound") };
   }
 
   // Validate over-receipt + unpriced lines before writing anything.
   for (const r of receipts) {
     const line = lines.find((l) => l.id === r.lineId);
     if (!line) {
-      return { ok: false, error: `Unknown line ${r.lineId}.` };
+      return { ok: false, error: t("poUnknownLine", { lineId: r.lineId }) };
     }
     // A line with no price yet has a NULL landed cost; receiving it would stamp
     // a NULL cost basis onto inventory. Block until the price is entered.
     if (line.landed_cost_dkk_per_unit == null) {
       return {
         ok: false,
-        error:
-          "This line has no price yet. Enter the unit price (from the supplier's order confirmation) before receiving it.",
+        error: t("poLineNoPrice"),
       };
     }
     const outstanding =
@@ -87,7 +88,10 @@ export async function receivePurchaseOrder(
     if (r.additionalQty > outstanding) {
       return {
         ok: false,
-        error: `Cannot receive ${r.additionalQty} on this line — only ${outstanding} outstanding.`,
+        error: t("poCannotReceiveOverOutstanding", {
+          qty: r.additionalQty,
+          outstanding,
+        }),
       };
     }
   }
@@ -109,7 +113,7 @@ export async function receivePurchaseOrder(
     .from("inventory_movements")
     .insert(movements);
   if (insertErr) {
-    return { ok: false, error: `Could not write movements: ${insertErr.message}` };
+    return { ok: false, error: t("poCouldNotWriteMovements", { detail: insertErr.message }) };
   }
 
   // 2) Bump received_quantity on each line. PostgREST has no `+=`, so we
@@ -127,7 +131,10 @@ export async function receivePurchaseOrder(
     if (updErr) {
       return {
         ok: false,
-        error: `Movements landed but line ${r.lineId} did not update: ${updErr.message}. Refresh the page and re-enter only the unreceived lines.`,
+        error: t("poLineUpdateFailed", {
+          lineId: r.lineId,
+          detail: updErr.message,
+        }),
       };
     }
   }
@@ -140,7 +147,9 @@ export async function receivePurchaseOrder(
   if (allErr || !allLines) {
     return {
       ok: false,
-      error: `Could not recompute PO status: ${allErr?.message ?? "no lines"}`,
+      error: t("poCouldNotRecomputeStatus", {
+        detail: allErr?.message ?? t("poNoLines"),
+      }),
     };
   }
 
@@ -152,7 +161,7 @@ export async function receivePurchaseOrder(
   if (poErr || !poRow) {
     return {
       ok: false,
-      error: `Could not load PO: ${poErr?.message ?? "not found"}`,
+      error: t("poCouldNotLoad", { detail: poErr?.message ?? t("notFound") }),
     };
   }
 
@@ -178,7 +187,7 @@ export async function receivePurchaseOrder(
     })
     .eq("id", poId);
   if (poUpdErr) {
-    return { ok: false, error: `Could not update PO status: ${poUpdErr.message}` };
+    return { ok: false, error: t("poCouldNotUpdatePoStatus", { detail: poUpdErr.message }) };
   }
 
   revalidatePath("/parts");

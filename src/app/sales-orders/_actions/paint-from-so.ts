@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
@@ -44,23 +45,24 @@ export type PaintFromSOResult =
 export async function createPaintOrderFromSO(
   input: PaintFromSOInput,
 ): Promise<PaintFromSOResult> {
+  const t = await getTranslations("errors");
   const { soId, bikeIds } = input;
-  if (!soId) return { ok: false, error: "Missing SO id." };
+  if (!soId) return { ok: false, error: t("missingSoId") };
   if (!bikeIds || bikeIds.length === 0) {
-    return { ok: false, error: "Pick at least one frame to paint." };
+    return { ok: false, error: t("soPickFrameToPaint") };
   }
   if (!input.supplierId) {
-    return { ok: false, error: "Pick a supplier.", field: "supplier_id" };
+    return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
   }
   if (!input.colorId) {
-    return { ok: false, error: "Pick a colour.", field: "color_id" };
+    return { ok: false, error: t("soPickColour"), field: "color_id" };
   }
 
   const supabase = await createClient();
 
   const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
   if (!serviceType) {
-    return { ok: false, error: "Painting service type is missing." };
+    return { ok: false, error: t("soPaintServiceMissing") };
   }
 
   // SO must exist and be in a state where painting its frames makes sense.
@@ -72,13 +74,13 @@ export async function createPaintOrderFromSO(
   if (soErr || !so) {
     return {
       ok: false,
-      error: `Could not load SO: ${soErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoad", { detail: soErr?.message ?? t("notFound") }),
     };
   }
   if (so.status === "cancelled" || so.status === "delivered") {
     return {
       ok: false,
-      error: `Cannot create a paint order from a ${so.status} sales order.`,
+      error: t("soCannotPaintFromStatus", { status: so.status }),
     };
   }
 
@@ -89,7 +91,7 @@ export async function createPaintOrderFromSO(
     .select("id")
     .eq("sales_order_id", soId);
   if (moErr) {
-    return { ok: false, error: `Could not load MOs: ${moErr.message}` };
+    return { ok: false, error: t("soCouldNotLoadMos", { detail: moErr.message }) };
   }
   const moIds = (mos ?? []).map((m) => m.id);
 
@@ -101,7 +103,7 @@ export async function createPaintOrderFromSO(
       .in("manufacturing_order_id", moIds)
       .is("deleted_at", null);
     if (bikesErr) {
-      return { ok: false, error: `Could not load bikes: ${bikesErr.message}` };
+      return { ok: false, error: t("soCouldNotLoadBikes", { detail: bikesErr.message }) };
     }
     validBikeIds = new Set((soBikes ?? []).map((b) => b.id));
   }
@@ -111,7 +113,7 @@ export async function createPaintOrderFromSO(
   if (strayIds.length > 0) {
     return {
       ok: false,
-      error: `${strayIds.length} selected frame${strayIds.length === 1 ? " doesn't" : "s don't"} belong to this sales order.`,
+      error: t("soFramesNotOnOrder", { count: strayIds.length }),
     };
   }
 
@@ -130,7 +132,7 @@ export async function createPaintOrderFromSO(
   if (linkErr) {
     return {
       ok: false,
-      error: `Could not check existing orders: ${linkErr.message}`,
+      error: t("soCouldNotCheckOrders", { detail: linkErr.message }),
     };
   }
   const blockedCount = (openLinks ?? []).filter(
@@ -139,7 +141,7 @@ export async function createPaintOrderFromSO(
   if (blockedCount > 0) {
     return {
       ok: false,
-      error: `${blockedCount} selected frame${blockedCount === 1 ? " is" : "s are"} already in an open paint order. Refresh and pick again.`,
+      error: t("soFramesInOpenPaint", { count: blockedCount }),
     };
   }
 
@@ -151,7 +153,9 @@ export async function createPaintOrderFromSO(
   if (numErr || typeof numberData !== "string") {
     return {
       ok: false,
-      error: `Could not allocate paint-order number: ${numErr?.message ?? "unknown error"}`,
+      error: t("soCouldNotAllocatePaintNumber", {
+        detail: numErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -172,7 +176,9 @@ export async function createPaintOrderFromSO(
   if (createErr || !created) {
     return {
       ok: false,
-      error: `Could not create paint order: ${createErr?.message ?? "unknown error"}`,
+      error: t("soCouldNotCreatePaint", {
+        detail: createErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -191,7 +197,10 @@ export async function createPaintOrderFromSO(
   if (attachErr) {
     return {
       ok: false,
-      error: `${numberData} was created, but attaching frames failed: ${attachErr.message} Add them from the paint order page.`,
+      error: t("soPaintCreatedAttachFailed", {
+        number: numberData,
+        detail: attachErr.message,
+      }),
     };
   }
 
@@ -213,7 +222,10 @@ export async function createPaintOrderFromSO(
     if (itemsErr) {
       return {
         ok: false,
-        error: `${numberData} was created with its frames, but seeding the item lines failed: ${itemsErr.message} Add them from the paint order page.`,
+        error: t("soPaintCreatedItemsFailed", {
+          number: numberData,
+          detail: itemsErr.message,
+        }),
       };
     }
   }

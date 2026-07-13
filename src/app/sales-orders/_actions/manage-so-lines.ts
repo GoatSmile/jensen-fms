@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SOLineResult = { ok: true } | { ok: false; error: string };
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>;
 
 /**
  * SO lines reference EITHER a part (spare/service) OR a bike_template (a
@@ -30,17 +33,20 @@ type ParsedLine = {
 function parsePositiveNumber(
   raw: string | null,
   field: string,
+  t: Translator,
   opts: { allowZero?: boolean } = {},
 ): { ok: true; value: number } | { ok: false; error: string } {
-  if (!raw) return { ok: false, error: `${field} is required.` };
+  if (!raw) return { ok: false, error: t("fieldRequired", { field }) };
   const n = Number(raw.replace(",", "."));
   if (!Number.isFinite(n)) {
-    return { ok: false, error: `${field} must be a number.` };
+    return { ok: false, error: t("fieldMustBeNumber", { field }) };
   }
   if (opts.allowZero ? n < 0 : n <= 0) {
     return {
       ok: false,
-      error: `${field} must be ${opts.allowZero ? "non-negative" : "positive"}.`,
+      error: opts.allowZero
+        ? t("fieldNonNegative", { field })
+        : t("fieldPositive", { field }),
     };
   }
   return { ok: true, value: n };
@@ -61,10 +67,11 @@ async function resolveVatRate(
 
 function parseFields(
   formData: FormData,
+  t: Translator,
 ): { ok: true; values: Omit<ParsedLine, "vat_rate"> } | { ok: false; error: string } {
   const kindRaw = nullable(formData.get("kind"));
   if (kindRaw !== "part" && kindRaw !== "template") {
-    return { ok: false, error: "Line must reference a part or a bike template." };
+    return { ok: false, error: t("soLineKindRequired") };
   }
   const kind = kindRaw;
 
@@ -72,18 +79,23 @@ function parseFields(
   const bike_template_id =
     kind === "template" ? nullable(formData.get("bike_template_id")) : null;
   if (kind === "part" && !part_id) {
-    return { ok: false, error: "Pick a part." };
+    return { ok: false, error: t("soPickPart") };
   }
   if (kind === "template" && !bike_template_id) {
-    return { ok: false, error: "Pick a bike template." };
+    return { ok: false, error: t("soPickBikeTemplate") };
   }
 
-  const qty = parsePositiveNumber(nullable(formData.get("quantity")), "Quantity");
+  const qty = parsePositiveNumber(
+    nullable(formData.get("quantity")),
+    t("fieldQuantity"),
+    t,
+  );
   if (!qty.ok) return { ok: false, error: qty.error };
 
   const price = parsePositiveNumber(
     nullable(formData.get("unit_price")),
-    "Unit price",
+    t("fieldUnitPrice"),
+    t,
     { allowZero: true },
   );
   if (!price.ok) return { ok: false, error: price.error };
@@ -145,17 +157,18 @@ async function recomputeSOTotal(
 async function assertDraft(
   supabase: Awaited<ReturnType<typeof createClient>>,
   soId: string,
+  t: Translator,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: so } = await supabase
     .from("sales_orders")
     .select("status")
     .eq("id", soId)
     .maybeSingle();
-  if (!so) return { ok: false, error: "SO not found." };
+  if (!so) return { ok: false, error: t("soNotFound") };
   if (so.status !== "draft") {
     return {
       ok: false,
-      error: `Lines are locked once SO leaves draft (currently ${so.status}).`,
+      error: t("soLinesLocked", { status: so.status }),
     };
   }
   return { ok: true };
@@ -165,12 +178,13 @@ export async function addSOLine(
   soId: string,
   formData: FormData,
 ): Promise<SOLineResult> {
-  if (!soId) return { ok: false, error: "Missing SO id." };
-  const parsed = parseFields(formData);
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("missingSoId") };
+  const parsed = parseFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
-  const guard = await assertDraft(supabase, soId);
+  const guard = await assertDraft(supabase, soId, t);
   if (!guard.ok) return guard;
 
   const v = parsed.values;
@@ -210,7 +224,7 @@ export async function addSOLine(
     line_total: Math.round(lineTotal * 10000) / 10000,
   });
   if (error) {
-    return { ok: false, error: `Could not add line: ${error.message}` };
+    return { ok: false, error: t("soCouldNotAddLine", { detail: error.message }) };
   }
 
   await recomputeSOTotal(supabase, soId);
@@ -222,8 +236,9 @@ export async function updateSOLine(
   lineId: string,
   formData: FormData,
 ): Promise<SOLineResult> {
-  if (!lineId) return { ok: false, error: "Missing line id." };
-  const parsed = parseFields(formData);
+  const t = await getTranslations("errors");
+  if (!lineId) return { ok: false, error: t("missingLineId") };
+  const parsed = parseFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
@@ -232,9 +247,9 @@ export async function updateSOLine(
     .select("id, sales_order_id")
     .eq("id", lineId)
     .maybeSingle();
-  if (!line) return { ok: false, error: "Line not found." };
+  if (!line) return { ok: false, error: t("soLineNotFound") };
 
-  const guard = await assertDraft(supabase, line.sales_order_id);
+  const guard = await assertDraft(supabase, line.sales_order_id, t);
   if (!guard.ok) return guard;
 
   const v = parsed.values;
@@ -261,7 +276,7 @@ export async function updateSOLine(
     })
     .eq("id", lineId);
   if (error) {
-    return { ok: false, error: `Could not update line: ${error.message}` };
+    return { ok: false, error: t("soCouldNotUpdateLine", { detail: error.message }) };
   }
 
   await recomputeSOTotal(supabase, line.sales_order_id);
@@ -270,7 +285,8 @@ export async function updateSOLine(
 }
 
 export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
-  if (!lineId) return { ok: false, error: "Missing line id." };
+  const t = await getTranslations("errors");
+  if (!lineId) return { ok: false, error: t("missingLineId") };
 
   const supabase = await createClient();
   const { data: line } = await supabase
@@ -278,9 +294,9 @@ export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
     .select("id, sales_order_id")
     .eq("id", lineId)
     .maybeSingle();
-  if (!line) return { ok: false, error: "Line not found." };
+  if (!line) return { ok: false, error: t("soLineNotFound") };
 
-  const guard = await assertDraft(supabase, line.sales_order_id);
+  const guard = await assertDraft(supabase, line.sales_order_id, t);
   if (!guard.ok) return guard;
 
   // Block delete if a MO was already spawned from this line — the link
@@ -293,7 +309,7 @@ export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
   if ((linkedMoCount ?? 0) > 0) {
     return {
       ok: false,
-      error: `Cannot delete: ${linkedMoCount} manufacturing order${linkedMoCount === 1 ? "" : "s"} reference this line. Cancel the MO first.`,
+      error: t("soCannotDeleteLinkedMo", { count: linkedMoCount ?? 0 }),
     };
   }
 
@@ -302,7 +318,7 @@ export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
     .delete()
     .eq("id", lineId);
   if (error) {
-    return { ok: false, error: `Could not delete: ${error.message}` };
+    return { ok: false, error: t("couldNotDelete", { detail: error.message }) };
   }
 
   await recomputeSOTotal(supabase, line.sales_order_id);

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
@@ -37,14 +38,15 @@ export async function bulkMarkBikesBuilt(
   moId: string,
   limit?: number,
 ): Promise<BulkBuiltResult> {
-  if (!moId) return { ok: false, error: "Missing MO id.", built: 0 };
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("missingMoId"), built: 0 };
   if (
     limit != null &&
     (!Number.isFinite(limit) || !Number.isInteger(limit) || limit <= 0)
   ) {
     return {
       ok: false,
-      error: "Count must be a positive whole number.",
+      error: t("moCountPositiveWhole"),
       built: 0,
     };
   }
@@ -62,7 +64,7 @@ export async function bulkMarkBikesBuilt(
   if (candErr) {
     return {
       ok: false,
-      error: `Could not load candidate bikes: ${candErr.message}`,
+      error: t("moCouldNotLoadCandidateBikes", { detail: candErr.message }),
       built: 0,
     };
   }
@@ -71,7 +73,7 @@ export async function bulkMarkBikesBuilt(
   if (all.length === 0) {
     return {
       ok: false,
-      error: "No unbuilt bikes attached to this MO.",
+      error: t("moNoUnbuiltBikes"),
       built: 0,
     };
   }
@@ -91,13 +93,15 @@ export async function bulkMarkBikesBuilt(
 
   if (buildable.length === 0) {
     const reasons: string[] = [];
-    if (unconfirmed > 0) reasons.push(`${unconfirmed} need a confirmed frame`);
+    if (unconfirmed > 0) {
+      reasons.push(t("moReasonNeedConfirmedFrame", { count: unconfirmed }));
+    }
     if (atPainter > 0) {
-      reasons.push(`${atPainter} ${atPainter === 1 ? "is" : "are"} at the painter`);
+      reasons.push(t("moReasonAtPainter", { count: atPainter }));
     }
     return {
       ok: false,
-      error: `No bikes are ready to build: ${reasons.join("; ")}.`,
+      error: t("moNoBikesReady", { reasons: reasons.join("; ") }),
       built: 0,
     };
   }
@@ -110,7 +114,12 @@ export async function bulkMarkBikesBuilt(
     if (!r.ok) {
       return {
         ok: false,
-        error: `Marked ${built} of ${targets.length} built; aborted on ${bike.frame_number}: ${r.error}`,
+        error: t("moBulkMarkAborted", {
+          built,
+          total: targets.length,
+          frame: bike.frame_number,
+          detail: r.error,
+        }),
         built,
       };
     }

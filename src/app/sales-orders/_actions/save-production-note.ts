@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +25,8 @@ export async function saveProductionNote(
   soId: string,
   note: string,
 ): Promise<SaveProductionNoteResult> {
-  if (!soId) return { ok: false, error: "Missing SO id." };
+  const t = await getTranslations("errors");
+  if (!soId) return { ok: false, error: t("missingSoId") };
 
   const supabase = await createClient();
 
@@ -36,13 +38,13 @@ export async function saveProductionNote(
   if (lookupErr || !so) {
     return {
       ok: false,
-      error: `Could not load SO: ${lookupErr?.message ?? "not found"}`,
+      error: t("soCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
     };
   }
   if (so.status === "cancelled" || so.status === "delivered") {
     return {
       ok: false,
-      error: `Can't edit the production note on a ${so.status} sales order.`,
+      error: t("soCannotEditNoteStatus", { status: so.status }),
     };
   }
 
@@ -55,7 +57,7 @@ export async function saveProductionNote(
     })
     .eq("id", soId);
   if (error) {
-    return { ok: false, error: `Could not save note: ${error.message}` };
+    return { ok: false, error: t("soCouldNotSaveNote", { detail: error.message }) };
   }
 
   revalidatePath(`/sales-orders/${soId}`);
