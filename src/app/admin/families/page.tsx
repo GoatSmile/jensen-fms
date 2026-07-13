@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,10 @@ import { familyTint } from "@/lib/bike-templates/family-colors";
 
 export default async function AdminFamiliesPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminFamilies"),
+    getTranslations("common"),
+  ]);
 
   const [familiesRes, templatesRes] = await Promise.all([
     supabase
@@ -59,64 +64,59 @@ export default async function AdminFamiliesPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Families</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Families</h1>
-        <p className="text-muted-foreground text-sm">
-          Product families group bike templates on the templates list (e.g.
-          &ldquo;Norma&rdquo; over its sizes). Order them with the sort field;
-          archived families drop out of the template picker but keep their
-          existing templates grouped.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("heading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <section className="rounded-md border">
         <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-semibold">Families</h2>
+            <h2 className="text-sm font-semibold">{t("sectionTitle")}</h2>
             <span className="text-muted-foreground text-xs">
-              {activeCount} active · {rows.length} total
+              {t("countSummary", { active: activeCount, total: rows.length })}
             </span>
           </div>
           <Button asChild size="sm" variant="outline">
             <Link href="/admin/families/new">
-              <Plus aria-hidden /> New family
+              <Plus aria-hidden /> {t("newFamily")}
             </Link>
           </Button>
         </header>
 
         {rows.length === 0 ? (
           <p className="text-muted-foreground p-4 text-sm italic">
-            No families yet. Add one to start grouping templates.
+            {t("emptyState")}
           </p>
         ) : (
           <div className="overflow-x-auto md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Family</TableHead>
+                  <TableHead>{t("colFamily")}</TableHead>
                   <TableHead className="hidden text-right md:table-cell">
-                    Sort
+                    {t("colSort")}
                   </TableHead>
                   <TableHead className="hidden text-right lg:table-cell">
-                    Templates
+                    {t("colTemplates")}
                   </TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("colStatus")}</TableHead>
                   <TableHead className="w-[36px]" />
                 </TableRow>
               </TableHeader>
@@ -156,9 +156,11 @@ export default async function AdminFamiliesPage() {
                       <TableCell className="p-0">
                         <Link href={href} className="block px-4 py-2.5">
                           {row.is_active ? (
-                            <Badge variant="success">Active</Badge>
+                            <Badge variant="success">{t("statusActive")}</Badge>
                           ) : (
-                            <Badge variant="outline">Archived</Badge>
+                            <Badge variant="outline">
+                              {t("statusArchived")}
+                            </Badge>
                           )}
                         </Link>
                       </TableCell>
@@ -166,7 +168,7 @@ export default async function AdminFamiliesPage() {
                         <Link
                           href={href}
                           className="text-muted-foreground block px-3 py-2.5"
-                          aria-label={`Open ${row.name}`}
+                          aria-label={t("openAria", { name: row.name })}
                         >
                           <ChevronRight className="size-4" aria-hidden />
                         </Link>

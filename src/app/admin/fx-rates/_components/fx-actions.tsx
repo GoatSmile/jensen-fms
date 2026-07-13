@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { RefreshCw, History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
 
 export function FxActions() {
   const router = useRouter();
+  const t = useTranslations("adminFx");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -59,7 +61,8 @@ export function FxActions() {
           onClick={runRefresh}
           disabled={pending}
         >
-          <RefreshCw aria-hidden /> {activeAction === "refresh" ? "Refreshing…" : "Refresh latest rates"}
+          <RefreshCw aria-hidden />{" "}
+          {activeAction === "refresh" ? t("refreshing") : t("refresh")}
         </Button>
         <Button
           type="button"
@@ -68,9 +71,7 @@ export function FxActions() {
           disabled={pending}
         >
           <History aria-hidden />{" "}
-          {activeAction === "backfill"
-            ? "Backfilling…"
-            : "Backfill historical PO line rates"}
+          {activeAction === "backfill" ? t("backfilling") : t("backfill")}
         </Button>
       </div>
       {error ? (
@@ -84,19 +85,18 @@ export function FxActions() {
         </p>
       ) : null}
       <p className="text-muted-foreground text-xs">
-        Rates come from{" "}
-        <a
-          href="https://frankfurter.app"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          frankfurter.app
-        </a>{" "}
-        (ECB reference rates, same data Danmarks Nationalbank publishes as the
-        daily fixing). Free, no API key, history to 1999. Backfill walks every
-        non-DKK PO line, looks up the rate for its order date, and updates
-        the snapshot — inventory_movements unit cost is recomputed too.
+        {t.rich("attribution", {
+          link: (chunks) => (
+            <a
+              href="https://frankfurter.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              {chunks}
+            </a>
+          ),
+        })}
       </p>
     </div>
   );

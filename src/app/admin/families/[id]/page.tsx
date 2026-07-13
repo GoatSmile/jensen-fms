@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -20,6 +21,7 @@ export default async function EditFamilyPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const t = await getTranslations("adminFamilies");
 
   const { data, error } = await supabase
     .from("bike_families")
@@ -38,13 +40,13 @@ export default async function EditFamilyPage({
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin/families">Families</Link>
+              <Link href="/admin/families">{t("crumb")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -56,9 +58,7 @@ export default async function EditFamilyPage({
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{data.name}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Edit the family, reorder it, or archive it.
-        </p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("editSubtitle")}</p>
       </div>
 
       <FamilyForm

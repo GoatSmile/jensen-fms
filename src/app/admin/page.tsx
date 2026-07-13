@@ -13,6 +13,8 @@ import {
   Warehouse,
 } from "lucide-react";
 
+import { getTranslations } from "next-intl/server";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -33,6 +35,10 @@ import { cn } from "@/lib/utils";
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminHome"),
+    getTranslations("common"),
+  ]);
   const [
     hsRes,
     settingsRes,
@@ -123,132 +129,131 @@ export default async function AdminLandingPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Admin</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <p className="text-muted-foreground text-sm">
-          Controlled-vocab lists and app-wide defaults. Edits here flow into
-          new PO lines; existing snapshots stay frozen.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("heading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminGroup
-          title="Catalog & inventory"
+          title={t("groupCatalog")}
           tint="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
         >
           <Tile
             href="/admin/categories"
             icon={FolderTree}
-            title="Part categories"
-            description="The hierarchy parts are classified under. Every part carries one."
-            stat={`${activeCategoryCount} active categor${activeCategoryCount === 1 ? "y" : "ies"}`}
+            title={t("categoriesTitle")}
+            description={t("categoriesDesc")}
+            stat={t("categoriesStat", { count: activeCategoryCount })}
           />
           <Tile
             href="/admin/colors"
             icon={Palette}
-            title="Colours"
-            description="Bike colours and finishes. Edits flow into new pickers; existing records keep their reference."
-            stat={`${activeColorCount} active colour${activeColorCount === 1 ? "" : "s"}`}
+            title={t("coloursTitle")}
+            description={t("coloursDesc")}
+            stat={t("coloursStat", { count: activeColorCount })}
           />
           <Tile
             href="/admin/families"
             icon={Layers}
-            title="Families"
-            description="Product families that group bike templates (e.g. Norma over its sizes) on the templates list."
-            stat={`${activeFamilyCount} active famil${activeFamilyCount === 1 ? "y" : "ies"}`}
+            title={t("familiesTitle")}
+            description={t("familiesDesc")}
+            stat={t("familiesStat", { count: activeFamilyCount })}
           />
           <Tile
             href="/admin/kits"
             icon={Package}
-            title="Kits"
-            description="Colour + number sticker labels for part boxes — the assembly floor picks complete part sets by code."
-            stat={`${activeKitCount} active kit${activeKitCount === 1 ? "" : "s"}`}
+            title={t("kitsTitle")}
+            description={t("kitsDesc")}
+            stat={t("kitsStat", { count: activeKitCount })}
           />
           <Tile
             href="/admin/locations"
             icon={Warehouse}
-            title="Locations"
-            description="Physical sites stock lives at. The primary location is the default for receiving and consumption."
-            stat={`${activeLocationCount} active location${activeLocationCount === 1 ? "" : "s"}`}
+            title={t("locationsTitle")}
+            description={t("locationsDesc")}
+            stat={t("locationsStat", { count: activeLocationCount })}
           />
         </AdminGroup>
 
         <AdminGroup
-          title="Purchasing & landed cost"
+          title={t("groupPurchasing")}
           tint="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
         >
           <Tile
             href="/admin/suppliers"
             icon={Truck}
-            title="Suppliers"
-            description="Vendors parts are bought from. Used by part offerings, purchase orders, and paint orders."
-            stat={`${activeSupplierCount} active supplier${activeSupplierCount === 1 ? "" : "s"}`}
+            title={t("suppliersTitle")}
+            description={t("suppliersDesc")}
+            stat={t("suppliersStat", { count: activeSupplierCount })}
           />
           <Tile
             href="/admin/hs-codes"
             icon={Tag}
-            title="HS / TARIC codes"
-            description="Classify parts so EU import duty rolls into the landed cost."
-            stat={`${activeHsCount} active code${activeHsCount === 1 ? "" : "s"}`}
+            title={t("hsCodesTitle")}
+            description={t("hsCodesDesc")}
+            stat={t("hsCodesStat", { count: activeHsCount })}
           />
           <Tile
             href="/admin/fx-rates"
             icon={Coins}
-            title="FX rates"
-            description="Currency-to-DKK conversion rates from ECB via Frankfurter."
+            title={t("fxRatesTitle")}
+            description={t("fxRatesDesc")}
             stat={
-              lastFxRefresh ? `Latest: ${lastFxRefresh}` : "No rates on file yet"
+              lastFxRefresh
+                ? t("fxRatesStatLatest", { date: lastFxRefresh })
+                : t("fxRatesStatNone")
             }
           />
           <Tile
             href="/admin/services"
             icon={Percent}
-            title="Service price lists"
-            description="Supplier-issued tiered prices for outsourced work (painting). A change is a new revision; sent orders stay frozen."
-            stat={`${currentPriceListCount} current list${currentPriceListCount === 1 ? "" : "s"}`}
+            title={t("servicesTitle")}
+            description={t("servicesDesc")}
+            stat={t("servicesStat", { count: currentPriceListCount })}
           />
         </AdminGroup>
 
         <AdminGroup
-          title="Customers"
+          title={t("groupCustomers")}
           tint="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
         >
           <Tile
             href="/admin/customer-segments"
             icon={Users}
-            title="Customer segments"
-            description="Hotel / hospital / municipality / FM / B2B / B2C. Used to classify organisations and report on the customer mix."
-            stat={`${activeSegmentCount} active segment${activeSegmentCount === 1 ? "" : "s"}`}
+            title={t("segmentsTitle")}
+            description={t("segmentsDesc")}
+            stat={t("segmentsStat", { count: activeSegmentCount })}
           />
           <Tile
             href="/organizations/map"
             icon={MapIcon}
-            title="Map"
-            description="Geocoded view of customers and prospects — a sales and routing aid."
-            stat={`${customerCount} customer${customerCount === 1 ? "" : "s"}`}
+            title={t("mapTitle")}
+            description={t("mapDesc")}
+            stat={t("mapStat", { count: customerCount })}
           />
         </AdminGroup>
 
         <AdminGroup
-          title="System"
+          title={t("groupSystem")}
           tint="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
         >
           <Tile
             href="/admin/settings"
             icon={Percent}
-            title="Settings"
-            description="App-wide defaults (transport %, primary location, hide location info)."
-            stat={`Default transport: ${formatPct(defaultTransportPct)}`}
+            title={t("settingsTitle")}
+            description={t("settingsDesc")}
+            stat={t("settingsStat", { pct: formatPct(defaultTransportPct) })}
           />
         </AdminGroup>
       </div>

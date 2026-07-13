@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,8 @@ export function FamilyForm({
   initial: FamilyFormValues;
 }) {
   const router = useRouter();
+  const t = useTranslations("adminFamilies");
+  const tCommon = useTranslations("common");
   const [values, setValues] = useState<FamilyFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -83,21 +86,19 @@ export function FamilyForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <Field label="Name" htmlFor="family-name">
+      <Field label={t("fieldName")} htmlFor="family-name">
         <Input
           id="family-name"
           value={values.name}
           onChange={(e) => update("name", e.target.value)}
-          placeholder="e.g. Norma"
+          placeholder={t("namePlaceholder")}
           required
           autoFocus
         />
-        <p className="text-muted-foreground text-xs">
-          Groups this family&rsquo;s templates together on the templates list.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("nameHint")}</p>
       </Field>
 
-      <Field label="Sort order" htmlFor="family-sort">
+      <Field label={t("fieldSort")} htmlFor="family-sort">
         <Input
           id="family-sort"
           type="number"
@@ -106,9 +107,7 @@ export function FamilyForm({
           onChange={(e) => update("sort_order", e.target.value)}
           className="max-w-[120px]"
         />
-        <p className="text-muted-foreground text-xs">
-          Lower numbers list first.
-        </p>
+        <p className="text-muted-foreground text-xs">{t("sortHint")}</p>
       </Field>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -118,7 +117,7 @@ export function FamilyForm({
           onChange={(e) => update("is_active", e.target.checked)}
           className="size-4"
         />
-        Active (shown in the template family picker)
+        {t("activeLabel")}
       </label>
 
       {error ? (
@@ -130,21 +129,23 @@ export function FamilyForm({
       <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
         <span className="text-muted-foreground text-xs">
           {savedAt
-            ? `Saved · ${new Date(savedAt).toLocaleTimeString("da-DK")}`
+            ? t("savedAt", {
+                time: new Date(savedAt).toLocaleTimeString("da-DK"),
+              })
             : mode.kind === "create"
-              ? "Not yet saved"
-              : "Up to date"}
+              ? t("notYetSaved")
+              : t("upToDate")}
         </span>
         <div className="flex gap-2">
           <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/families">Cancel</Link>
+            <Link href="/admin/families">{tCommon("cancel")}</Link>
           </Button>
           <Button type="submit" disabled={pending}>
             {pending
-              ? "Saving…"
+              ? tCommon("saving")
               : mode.kind === "create"
-                ? "Add family"
-                : "Save changes"}
+                ? t("addFamily")
+                : t("saveChanges")}
           </Button>
         </div>
       </div>

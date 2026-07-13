@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -24,6 +25,10 @@ import { FxActions } from "./_components/fx-actions";
 
 export default async function FxRatesPage() {
   const supabase = await createClient();
+  const [t, tCommon] = await Promise.all([
+    getTranslations("adminFx"),
+    getTranslations("common"),
+  ]);
 
   // Latest rate per (from, to) pair — most recent rate_date wins.
   const { data: allRates } = await supabase
@@ -63,58 +68,58 @@ export default async function FxRatesPage() {
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/">Dashboard</Link>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">Admin</Link>
+              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>FX rates</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumb")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">FX rates</h1>
-        <p className="text-muted-foreground text-sm">
-          Currency conversion rates against DKK. PO lines snapshot the rate
-          for their order date at insert — historical lines are not touched
-          unless you run the backfill below.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("heading")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <section className="rounded-md border">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Latest rates</h2>
+          <h2 className="text-sm font-semibold">{t("latestTitle")}</h2>
           <p className="text-muted-foreground text-xs">
-            One row per currency pair, showing the most recent rate stored.
+            {t("latestDesc")}
             {totalCount > 0 ? (
               <span>
                 {" "}
-                Total historical rows: <strong>{totalCount}</strong>.
+                {t.rich("totalRows", {
+                  count: totalCount,
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                })}
               </span>
             ) : null}
           </p>
         </header>
         {rows.length === 0 ? (
           <p className="text-muted-foreground p-4 text-sm italic">
-            No FX rates on file. Click &ldquo;Refresh latest rates&rdquo; to
-            pull from Frankfurter.
+            {t("emptyState")}
           </p>
         ) : (
           <div className="overflow-x-auto md:overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>From → To</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead>As of</TableHead>
-                  <TableHead className="hidden sm:table-cell">Source</TableHead>
+                  <TableHead>{t("colPair")}</TableHead>
+                  <TableHead className="text-right">{t("colRate")}</TableHead>
+                  <TableHead>{t("colAsOf")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    {t("colSource")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,11 +153,8 @@ export default async function FxRatesPage() {
 
       <section className="rounded-md border">
         <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Actions</h2>
-          <p className="text-muted-foreground text-xs">
-            Manual triggers. The same refresh runs automatically every day at
-            17:00 UTC via Vercel Cron (see /api/cron/refresh-fx-rates).
-          </p>
+          <h2 className="text-sm font-semibold">{t("actionsTitle")}</h2>
+          <p className="text-muted-foreground text-xs">{t("actionsDesc")}</p>
         </header>
         <div className="p-4">
           <FxActions />
