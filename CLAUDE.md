@@ -1252,13 +1252,32 @@ when the work ships or the idea is rejected.
     types, org segments) then `app_language` restored to `en` — flipping it
     to `da` is the owner's 1-click go-live.
 
-- **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
+- **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track;
+  BUILT AS A GENERIC INBOUND SYSTEM (dev decision 2026-07-14).**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
   Speech EU, not plain OpenAI Whisper; Claude haiku extraction; GatewayAPI
   SMS unchanged) and the build is **harness-first**: upload-a-voicemail
   test UI + processing pipeline + shadow-mode tickets before any telephony
-  is wired. Full deep-dive in `docs/plan-july9-vacation-month.md`; the
-  design below remains the reference.
+  is wired. **Voicemail is the FIRST CHANNEL of a generic inbound trunk**
+  (the paint → service_types move again): table is `inbound_messages`
+  (NOT `calls`) with a `channel` enum (only `voicemail` seeded), a
+  normalized `body_text` ("what they said" — transcript / email body /
+  message text) that extraction + matching read exclusively (never the
+  channel payload), `channel_meta` jsonb for channel-shaped data, and a
+  plain `ticket_id` action column (no polymorphic action framework until
+  a second action type is real). Libs in `src/lib/inbound/` —
+  pipeline/extract/match channel-blind, `channels/voicemail.ts` owns
+  transcription; harness at `/admin/inbound`. Extraction emits `intent`
+  (repair_request/order_inquiry/other) from day one — v1 renders it on
+  the review banner, later it's the routing key. Future channels (email,
+  WhatsApp Business, agent/API ingress) are thin adapters built WHEN
+  REAL; threading/conversations gets its own design session when the
+  first two-way channel lands. Sliced A–F (harness shell → transcribe →
+  extract → match → shadow ticket → Twilio+retention); slices B/C need
+  `AZURE_SPEECH_KEY/REGION` / `ANTHROPIC_API_KEY`, D is
+  key-free and doesn't wait on B/C. Full deep-dive + slice detail in
+  `docs/plan-july9-vacation-month.md`; the design below remains the
+  reference.
   Original design (parked June 2026, designed in-session).
   Workshop calls become maintenance tickets automatically:
   - Telephony: Twilio (conditional forwarding from the existing number),
@@ -1276,10 +1295,12 @@ when the work ships or the idea is rejected.
     to confirm on the ticket.
   - Schema: `maintenance_tickets` is already shaped for it (nullable
     bike_id, reported_by_contact_id/text/phone, reported_language, source
-    enum already has 'phone'). New `calls` table (recording path, caller
-    number, duration, language, transcript jsonb with speaker+timestamps,
-    summary, extraction payload, candidate bikes, pipeline status, nullable
-    ticket_id). New `bike_identifiers` type `fleet_number` for customers'
+    enum already has 'phone'). New `inbound_messages` table (channel,
+    from_identity, media_path, body_text, understanding/extraction/
+    match_candidates jsonb, matched org/contact/bike FKs, channel_meta +
+    raw_payload jsonb, status `received → understood → extracted →
+    matched → actioned / failed`, nullable ticket_id). New
+    `bike_identifiers` type `fleet_number` for customers'
     own numbering ("bike 25") — big match-rate win for municipalities.
   - Notifications: SMS ack to caller via GatewayAPI (Danish, alphanumeric
     sender) including the public report link `/b/<bikeId>`; Web Push to the

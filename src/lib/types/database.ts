@@ -1113,6 +1113,110 @@ export type Database = {
         }
         Relationships: []
       }
+      inbound_messages: {
+        Row: {
+          body_text: string | null
+          channel: Database["public"]["Enums"]["inbound_channel"]
+          channel_meta: Json
+          created_at: string
+          error: string | null
+          extraction: Json | null
+          from_identity: string | null
+          id: string
+          language: string | null
+          match_candidates: Json | null
+          matched_bike_id: string | null
+          matched_contact_id: string | null
+          matched_organization_id: string | null
+          media_mime_type: string | null
+          media_path: string | null
+          processed_at: string | null
+          raw_payload: Json | null
+          received_at: string
+          status: Database["public"]["Enums"]["inbound_status"]
+          ticket_id: string | null
+          understanding: Json | null
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string | null
+          channel: Database["public"]["Enums"]["inbound_channel"]
+          channel_meta?: Json
+          created_at?: string
+          error?: string | null
+          extraction?: Json | null
+          from_identity?: string | null
+          id?: string
+          language?: string | null
+          match_candidates?: Json | null
+          matched_bike_id?: string | null
+          matched_contact_id?: string | null
+          matched_organization_id?: string | null
+          media_mime_type?: string | null
+          media_path?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          received_at?: string
+          status?: Database["public"]["Enums"]["inbound_status"]
+          ticket_id?: string | null
+          understanding?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string | null
+          channel?: Database["public"]["Enums"]["inbound_channel"]
+          channel_meta?: Json
+          created_at?: string
+          error?: string | null
+          extraction?: Json | null
+          from_identity?: string | null
+          id?: string
+          language?: string | null
+          match_candidates?: Json | null
+          matched_bike_id?: string | null
+          matched_contact_id?: string | null
+          matched_organization_id?: string | null
+          media_mime_type?: string | null
+          media_path?: string | null
+          processed_at?: string | null
+          raw_payload?: Json | null
+          received_at?: string
+          status?: Database["public"]["Enums"]["inbound_status"]
+          ticket_id?: string | null
+          understanding?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_messages_matched_bike_id_fkey"
+            columns: ["matched_bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_matched_contact_id_fkey"
+            columns: ["matched_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_matched_organization_id_fkey"
+            columns: ["matched_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_locations: {
         Row: {
           address: string | null
@@ -4173,6 +4277,14 @@ export type Database = {
         | "in_maintenance"
         | "retired"
         | "lost_or_stolen"
+      inbound_channel: "voicemail"
+      inbound_status:
+        | "received"
+        | "understood"
+        | "extracted"
+        | "matched"
+        | "actioned"
+        | "failed"
       inventory_movement_type:
         | "received"
         | "consumed_build"
@@ -4382,6 +4494,15 @@ export const Constants = {
         "in_maintenance",
         "retired",
         "lost_or_stolen",
+      ],
+      inbound_channel: ["voicemail"],
+      inbound_status: [
+        "received",
+        "understood",
+        "extracted",
+        "matched",
+        "actioned",
+        "failed",
       ],
       inventory_movement_type: [
         "received",

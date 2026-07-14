@@ -2488,7 +2488,10 @@
     "mapStat": "{count, plural, one {# customer} other {# customers}}",
     "settingsTitle": "Settings",
     "settingsDesc": "App-wide defaults (transport %, primary location, hide location info).",
-    "settingsStat": "Default transport: {pct}"
+    "settingsStat": "Default transport: {pct}",
+    "inboundTitle": "Inbound",
+    "inboundDesc": "Voicemails and other incoming messages, as draft tickets.",
+    "inboundStat": "{count, plural, =0 {nothing to review} one {# to review} other {# to review}}"
   },
   "adminFx": {
     "crumb": "FX rates",
@@ -3641,6 +3644,55 @@
     "adminEconomicPaymentTerms": "Payment terms",
     "adminSupplierPaymentTerms": "Payment terms must be a non-negative whole number of days.",
     "adminSupplierNameRequired": "Supplier name is required.",
-    "adminSupplierNameExists": "A supplier named \"{name}\" already exists."
+    "adminSupplierNameExists": "A supplier named \"{name}\" already exists.",
+    "inboundNoFile": "No audio file provided.",
+    "inboundFileTooLarge": "Audio file is too large (max 25 MB).",
+    "inboundNotAudio": "Unsupported file type: {type}. Upload an audio file.",
+    "inboundCouldNotSave": "Could not save the message: {detail}",
+    "inboundUploadFailed": "Upload failed: {detail}"
+  },
+  "adminInbound": {
+    "crumbAdmin": "Admin",
+    "title": "Inbound",
+    "subtitle": "Incoming messages turned into draft tickets — review before anything is trusted. Voicemail today; more channels later.",
+    "uploadTitle": "Upload a voicemail",
+    "uploadHint": "Drop in a recorded voicemail (Danish or English) to run it through the pipeline. Test ingress until the phone number is wired.",
+    "uploadFileLabel": "Audio file",
+    "uploadFromLabel": "Caller number (optional)",
+    "uploadButton": "Upload",
+    "uploading": "Uploading…",
+    "uploadPickFirst": "Pick an audio file first.",
+    "emptyTitle": "No inbound messages yet",
+    "emptyDesc": "Upload a voicemail above to see it flow through the pipeline.",
+    "thChannel": "Channel",
+    "thFrom": "From",
+    "thReceived": "Received",
+    "thStatus": "Status",
+    "thTicket": "Ticket",
+    "unknownSender": "Unknown",
+    "ticketCreated": "Created",
+    "detailCrumb": "Message",
+    "fromLabel": "From",
+    "receivedLabel": "Received",
+    "languageLabel": "Language",
+    "audioTitle": "Recording",
+    "noAudio": "No audio attached.",
+    "stageTranscript": "Transcript",
+    "stageExtraction": "Extraction",
+    "stageMatch": "Match",
+    "stagePendingB": "Transcription arrives in a later step.",
+    "stagePendingC": "Extraction arrives in a later step.",
+    "stagePendingD": "Matching arrives in a later step."
+  },
+  "inboundStatus": {
+    "received": "Received",
+    "understood": "Transcribed",
+    "extracted": "Extracted",
+    "matched": "Matched",
+    "actioned": "Ticket created",
+    "failed": "Failed"
+  },
+  "inboundChannel": {
+    "voicemail": "Voicemail"
   }
 }

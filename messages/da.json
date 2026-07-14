@@ -2488,7 +2488,10 @@
     "mapStat": "{count, plural, one {# kunde} other {# kunder}}",
     "settingsTitle": "Indstillinger",
     "settingsDesc": "App-dækkende standarder (transport %, primær lokation, skjul lokationsinfo).",
-    "settingsStat": "Standardtransport: {pct}"
+    "settingsStat": "Standardtransport: {pct}",
+    "inboundTitle": "Indgående",
+    "inboundDesc": "Telefonbeskeder og andre indgående beskeder, som kladde-sager.",
+    "inboundStat": "{count, plural, =0 {intet at gennemse} one {# at gennemse} other {# at gennemse}}"
   },
   "adminFx": {
     "crumb": "Valutakurser",
@@ -3641,6 +3644,55 @@
     "adminEconomicPaymentTerms": "Betalingsbetingelser",
     "adminSupplierPaymentTerms": "Betalingsbetingelser skal være et ikke-negativt helt antal dage.",
     "adminSupplierNameRequired": "Leverandørnavn er påkrævet.",
-    "adminSupplierNameExists": "En leverandør med navnet \"{name}\" findes allerede."
+    "adminSupplierNameExists": "En leverandør med navnet \"{name}\" findes allerede.",
+    "inboundNoFile": "Ingen lydfil angivet.",
+    "inboundFileTooLarge": "Lydfilen er for stor (maks. 25 MB).",
+    "inboundNotAudio": "Ikke-understøttet filtype: {type}. Upload en lydfil.",
+    "inboundCouldNotSave": "Kunne ikke gemme beskeden: {detail}",
+    "inboundUploadFailed": "Upload mislykkedes: {detail}"
+  },
+  "adminInbound": {
+    "crumbAdmin": "Admin",
+    "title": "Indgående",
+    "subtitle": "Indgående beskeder omdannet til kladde-sager — gennemse før noget stoles på. Telefonbeskeder nu; flere kanaler senere.",
+    "uploadTitle": "Upload en telefonbesked",
+    "uploadHint": "Læg en optaget telefonbesked ind (dansk eller engelsk) for at køre den gennem pipelinen. Testindgang indtil telefonnummeret er koblet på.",
+    "uploadFileLabel": "Lydfil",
+    "uploadFromLabel": "Opkaldsnummer (valgfrit)",
+    "uploadButton": "Upload",
+    "uploading": "Uploader…",
+    "uploadPickFirst": "Vælg en lydfil først.",
+    "emptyTitle": "Ingen indgående beskeder endnu",
+    "emptyDesc": "Upload en telefonbesked ovenfor for at se den løbe gennem pipelinen.",
+    "thChannel": "Kanal",
+    "thFrom": "Fra",
+    "thReceived": "Modtaget",
+    "thStatus": "Status",
+    "thTicket": "Sag",
+    "unknownSender": "Ukendt",
+    "ticketCreated": "Oprettet",
+    "detailCrumb": "Besked",
+    "fromLabel": "Fra",
+    "receivedLabel": "Modtaget",
+    "languageLabel": "Sprog",
+    "audioTitle": "Optagelse",
+    "noAudio": "Ingen lyd vedhæftet.",
+    "stageTranscript": "Transskription",
+    "stageExtraction": "Udtræk",
+    "stageMatch": "Match",
+    "stagePendingB": "Transskription kommer i et senere trin.",
+    "stagePendingC": "Udtræk kommer i et senere trin.",
+    "stagePendingD": "Matchning kommer i et senere trin."
+  },
+  "inboundStatus": {
+    "received": "Modtaget",
+    "understood": "Transskriberet",
+    "extracted": "Udtrukket",
+    "matched": "Matchet",
+    "actioned": "Sag oprettet",
+    "failed": "Fejlet"
+  },
+  "inboundChannel": {
+    "voicemail": "Telefonbesked"
   }
 }

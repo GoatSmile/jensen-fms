@@ -283,44 +283,93 @@ voicemail into a draft maintenance ticket (transcribed, customer and
 bike identified where possible) waiting for review. Nothing auto-sends
 to customers in v1; it just saves the "who called about what" typing.
 
-The parked design (CLAUDE.md → Parked ideas) survives review with three
-adjustments: build order, transcription provider, and an explicit
+The parked design (CLAUDE.md → Parked ideas) survives review with four
+adjustments: build order, transcription provider, an explicit
 "harness-first" v1 — we build and tune it by uploading hand-recorded
-voicemails first, and connect a real phone number only at the very end.
+voicemails first, and connect a real phone number only at the very end —
+and (2026-07-14) the **generic inbound trunk** below.
 
-### Build order — harness first, telco last
+### Decision 2026-07-14 — generic inbound trunk **[dev decision]**
 
-**~80 % of the pipeline needs no phone number at all.** Everything from
-"audio file exists" onward is provider-independent:
+The pipeline is built as a **generic inbound-information system** with
+voicemail as its first channel — the same move as paint →
+`service_types` ("first instance of a generic machine"). Rationale:
+every future channel (email, WhatsApp Business, agent/API ingress, web
+forms, a company sending an order) shares one skeleton — receive →
+store raw (replayable) → normalize to text → extract (who/what/intent)
+→ match (deterministic) → route to an action → human review until
+trusted. What varies per channel is a thin adapter: webhook wiring,
+media handling, the identity primitive, transcription (audio-only).
+**Naming + seams go generic NOW (near-zero cost); adapters are built
+WHEN REAL** — email ~2–3 d, API/agent ingress ~1 d, WhatsApp needs a
+real channel decision (Meta verification, 24 h windows — "maybe" isn't
+enough), and threading/conversations (the hard generalization — email/
+WhatsApp are two-way, voicemail is one-shot) gets its own design
+session when the first two-way channel lands; it also intersects
+outbound (Resend) → the eventual per-customer communication timeline.
+Guardrail against N=1 over-abstraction: only demonstrably-shared parts
+live in the trunk; channel-shaped data stays in `channel_meta` jsonb
+until a second real channel proves the shape.
 
-1. **Migration**: `calls` table (recording path, caller number, duration,
-   language, transcript jsonb w/ timestamps, summary, extraction payload,
-   candidate bikes, pipeline status enum `received → transcribed →
-   extracted → matched → ticketed / failed`, nullable `ticket_id`,
-   raw provider payload jsonb for replay). Plus a `fleet_number` row in
-   `bike_identifier_types` (customers' own numbering — "bike 25" — big
-   match-rate win for municipalities).
-2. **Processing pipeline** (`src/lib/calls/`): transcribe → extract →
-   match → draft ticket. Each stage writes its output + advances status,
-   so a failure is resumable and inspectable.
-3. **Test harness UI** (`/admin/calls`): list of calls + **"Upload a
-   voicemail"** (any audio file → Supabase Storage → `calls` row) +
-   per-call detail: audio player, transcript, extraction JSON, matching
-   candidates, "Process now" button, "Create ticket / attach to
-   existing" review actions. Record fake voicemails on a phone in Danish
-   and English; iterate on extraction quality with zero telephony cost.
-4. **Shadow-mode ticketing**: pipeline creates tickets with
-   `source='phone'` + a "from phone — review me" banner; deterministic
-   matching attaches a bike only when exactly one candidate survives,
-   else stores candidates for the tech to confirm. Measure match
-   accuracy on the call rows before trusting anything.
-5. **Twilio wiring (last, ~1 d)**: buy DK number, conditional forwarding
-   from the workshop number (busy/no-answer), TwiML voicemail flow with
-   the bilingual da/en "call is recorded" announcement (GDPR), webhook
-   route → store call row → **fetch recording into Supabase Storage (EU)
-   → delete from Twilio immediately**. Processing trigger: inline if it
-   fits the function budget, else Vercel cron each 5 min + the manual
-   "Process now" button (which exists anyway from the harness).
+- **`inbound_messages` table** (NOT `calls`): `channel` enum
+  (`voicemail` only seeded — Postgres enums extend with one ALTER),
+  `from_identity` (caller number / email addr / WA number),
+  `received_at`, `media_path`, **`body_text`** — the canonical "what
+  they said" (transcript / email body / message text). Extraction and
+  matching read ONLY normalized fields, never the channel payload —
+  that single rule is what makes them channel-blind. Plus
+  `understanding` / `extraction` / `match_candidates` jsonb, matched
+  org/contact/bike FKs, `ticket_id`, `channel_meta` jsonb (duration,
+  provider SIDs…), `raw_payload` jsonb (replay), status
+  `received → understood → extracted → matched → actioned / failed`.
+- **`src/lib/inbound/`** — pipeline/extract/match are channel-blind;
+  `channels/voicemail.ts` owns transcription. Harness at
+  `/admin/inbound` (channel badge on the list). Retention is designed
+  against `media_path`, not "call audio", so the same cron later covers
+  email attachments.
+- Extraction emits **`intent`** (repair_request / order_inquiry /
+  other) from day one — free in the same model call; v1 just renders it
+  on the review banner, later it's the routing key to non-ticket
+  actions.
+- v1 action stays a plain `ticket_id` column — no polymorphic action
+  framework until a second action type is real. The public `/report`
+  flow stays untouched (at most it someday logs through the same trunk).
+
+### Build order — harness first, telco last (re-sliced 2026-07-14)
+
+**~80 % of the pipeline needs no phone number at all.** Six slices,
+each shippable + browser-verifiable alone. D needs no external keys and
+does NOT wait on B/C (testable with hand-written extraction JSON); A
+needs nothing at all.
+
+- **A. Harness shell** — migration 65 (`inbound_messages` + a
+  `fleet_number` row in `bike_identifier_types` — customers' own
+  numbering, "bike 25", big match-rate win for municipalities) ·
+  private `inbound` storage bucket · `/admin/inbound` list +
+  **"Upload a voicemail"** (any audio file → Storage → row) + detail
+  w/ audio player (status stuck `received`) · admin tile. Deps: none.
+- **B. Transcribe** — Azure Speech (EU) stage in
+  `channels/voicemail.ts` + transcript panel + "Process now" button.
+  Record fake voicemails on a phone in Danish and English; iterate on
+  quality with zero telephony cost. Deps: `AZURE_SPEECH_KEY/REGION`.
+- **C. Extract** — Claude Haiku tool-use stage (caller, org, callback
+  number, bike clues, problem, urgency, language, **intent**) +
+  extraction panel. Deps: `ANTHROPIC_API_KEY`.
+- **D. Match** — deterministic matcher + candidates panel (order
+  below). Attach bike iff exactly one candidate survives. Deps: none.
+- **E. Shadow ticket** — "Create ticket / attach to existing" review
+  actions + "from phone — review me" banner (`source='phone'`).
+  Measure match accuracy on real rows before trusting anything.
+  Deps: none.
+- **F. Twilio + retention (last, ~1 d)** — buy DK number, conditional
+  forwarding from the workshop number (busy/no-answer), TwiML voicemail
+  flow with the bilingual da/en "call is recorded" announcement (GDPR),
+  webhook route → store row → **fetch recording into Supabase Storage
+  (EU) → delete from Twilio immediately**. Processing trigger: inline
+  if it fits the function budget, else Vercel cron each 5 min + the
+  harness's "Process now". The ~90-day media-retention cron lands here
+  — the obligation starts with real customer audio, deliberately not
+  earlier. Deps: Twilio account.
 
 ### Provider verdicts **[dev decisions 2026-07-09]**
 
