@@ -3669,7 +3669,9 @@
     "inboundCouldNotSave": "Could not save the message: {detail}",
     "inboundUploadFailed": "Upload failed: {detail}",
     "inboundUnknownProvider": "Unknown provider: {provider}.",
-    "inboundRetentionRange": "Audio retention must be a whole number of days (1–3650)."
+    "inboundRetentionRange": "Audio retention must be a whole number of days (1–3650).",
+    "inboundBadJson": "Extraction must be valid JSON.",
+    "inboundNoExtraction": "Add an extraction payload before running matching."
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3702,7 +3704,30 @@
     "stageMatch": "Match",
     "stagePendingB": "Transcription arrives in a later step.",
     "stagePendingC": "Extraction arrives in a later step.",
-    "stagePendingD": "Matching arrives in a later step."
+    "stagePendingD": "Matching arrives in a later step.",
+    "extractionTitle": "Extraction",
+    "extractionHarnessHint": "Paste or edit the structured payload the AI will produce, to test matching before transcription/extraction are wired.",
+    "saveExtraction": "Save extraction",
+    "saving": "Saving…",
+    "matchTitle": "Match",
+    "runMatch": "Run matching",
+    "matching": "Matching…",
+    "matchNeedsExtraction": "Add an extraction payload first, then run matching.",
+    "matchNotRun": "Matching hasn't run yet.",
+    "candOrganizations": "Organizations",
+    "candContacts": "Contacts",
+    "candBikes": "Bikes",
+    "attached": "attached",
+    "needsReview": "needs review",
+    "noCandidates": "no candidates",
+    "via_name": "by name",
+    "via_contact": "via contact",
+    "via_frame": "frame no.",
+    "via_qr": "QR code",
+    "via_fleet": "fleet no.",
+    "via_fleet_filter": "fleet + hint",
+    "note_phoneTooShort": "phone too short to match",
+    "note_fleetTruncated": "fleet list truncated"
   },
   "inboundStatus": {
     "received": "Received",

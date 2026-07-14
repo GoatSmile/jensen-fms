@@ -17,6 +17,9 @@ import {
   INBOUND_STATUS_ORDER,
   INBOUND_STATUS_VARIANT,
 } from "@/lib/inbound/types";
+import type { MatchCandidates } from "@/lib/inbound/match";
+
+import { MatchPanel } from "./_components/match-panel";
 
 /**
  * Inbound message detail — the review surface. Slice A renders the raw
@@ -143,23 +146,16 @@ export default async function InboundDetailPage({
         pendingNote={t("stagePendingB")}
         content={msg.body_text}
       />
-      <StagePanel
-        title={t("stageExtraction")}
-        done={currentStageIndex >= INBOUND_STATUS_ORDER.indexOf("extracted")}
-        pendingNote={t("stagePendingC")}
-        content={msg.extraction ? JSON.stringify(msg.extraction, null, 2) : null}
-        mono
-      />
-      <StagePanel
-        title={t("stageMatch")}
-        done={currentStageIndex >= INBOUND_STATUS_ORDER.indexOf("matched")}
-        pendingNote={t("stagePendingD")}
-        content={
-          msg.match_candidates
-            ? JSON.stringify(msg.match_candidates, null, 2)
-            : null
+      <MatchPanel
+        messageId={msg.id}
+        initialExtractionJson={
+          msg.extraction ? JSON.stringify(msg.extraction, null, 2) : ""
         }
-        mono
+        hasExtraction={msg.extraction != null}
+        matchCandidates={(msg.match_candidates as MatchCandidates | null) ?? null}
+        matchedOrganizationId={msg.matched_organization_id}
+        matchedContactId={msg.matched_contact_id}
+        matchedBikeId={msg.matched_bike_id}
       />
 
       {msg.error ? (

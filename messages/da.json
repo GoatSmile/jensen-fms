@@ -3669,7 +3669,9 @@
     "inboundCouldNotSave": "Kunne ikke gemme beskeden: {detail}",
     "inboundUploadFailed": "Upload mislykkedes: {detail}",
     "inboundUnknownProvider": "Ukendt udbyder: {provider}.",
-    "inboundRetentionRange": "Lydopbevaring skal være et helt antal dage (1–3650)."
+    "inboundRetentionRange": "Lydopbevaring skal være et helt antal dage (1–3650).",
+    "inboundBadJson": "Udtræk skal være gyldig JSON.",
+    "inboundNoExtraction": "Tilføj en udtræk-payload før matchning køres."
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3702,7 +3704,30 @@
     "stageMatch": "Match",
     "stagePendingB": "Transskription kommer i et senere trin.",
     "stagePendingC": "Udtræk kommer i et senere trin.",
-    "stagePendingD": "Matchning kommer i et senere trin."
+    "stagePendingD": "Matchning kommer i et senere trin.",
+    "extractionTitle": "Udtræk",
+    "extractionHarnessHint": "Indsæt eller redigér den strukturerede payload, AI'en vil producere, for at teste matchning før transskription/udtræk er koblet på.",
+    "saveExtraction": "Gem udtræk",
+    "saving": "Gemmer…",
+    "matchTitle": "Match",
+    "runMatch": "Kør matchning",
+    "matching": "Matcher…",
+    "matchNeedsExtraction": "Tilføj en udtræk-payload først, kør derefter matchning.",
+    "matchNotRun": "Matchning er ikke kørt endnu.",
+    "candOrganizations": "Kunder",
+    "candContacts": "Kontakter",
+    "candBikes": "Cykler",
+    "attached": "tilknyttet",
+    "needsReview": "kræver gennemsyn",
+    "noCandidates": "ingen kandidater",
+    "via_name": "efter navn",
+    "via_contact": "via kontakt",
+    "via_frame": "stelnr.",
+    "via_qr": "QR-kode",
+    "via_fleet": "flådenr.",
+    "via_fleet_filter": "flåde + spor",
+    "note_phoneTooShort": "telefonnr. for kort til match",
+    "note_fleetTruncated": "flådeliste afkortet"
   },
   "inboundStatus": {
     "received": "Modtaget",

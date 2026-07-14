@@ -342,12 +342,13 @@ each shippable + browser-verifiable alone. D needs no external keys and
 does NOT wait on B/C (testable with hand-written extraction JSON); A
 needs nothing at all.
 
-- **A. Harness shell** — migration 65 (`inbound_messages` + a
-  `fleet_number` row in `bike_identifier_types` — customers' own
-  numbering, "bike 25", big match-rate win for municipalities) ·
-  private `inbound` storage bucket · `/admin/inbound` list +
-  **"Upload a voicemail"** (any audio file → Storage → row) + detail
-  w/ audio player (status stuck `received`) · admin tile. Deps: none.
+- **A. Harness shell — ✅ SHIPPED 2026-07-13** — migration 65
+  (`inbound_messages` + a `fleet_number` row in `bike_identifier_types` —
+  customers' own numbering, "bike 25", big match-rate win for
+  municipalities) · private `inbound` storage bucket · `/admin/inbound`
+  list + **"Upload a voicemail"** (any audio file → Storage → row) +
+  detail w/ signed-URL audio player · admin tile. Browser-verified.
+  Config seam added (migration 66): Admin → Settings "Calls & inbound".
 - **B. Transcribe** — Azure Speech (EU) stage in
   `channels/voicemail.ts` + transcript panel + "Process now" button.
   Record fake voicemails on a phone in Danish and English; iterate on
@@ -355,8 +356,18 @@ needs nothing at all.
 - **C. Extract** — Claude Haiku tool-use stage (caller, org, callback
   number, bike clues, problem, urgency, language, **intent**) +
   extraction panel. Deps: `ANTHROPIC_API_KEY`.
-- **D. Match** — deterministic matcher + candidates panel (order
-  below). Attach bike iff exactly one candidate survives. Deps: none.
+- **D. Match — ✅ SHIPPED 2026-07-14** — deterministic matcher
+  (`src/lib/inbound/match.ts`, channel-blind) + candidates panel. Probes
+  in order: phone (from_identity / callback → contacts, normalized
+  in-memory) → org name (ILIKE legal/display) → frame/QR/fleet exact →
+  fallback org-fleet filtered by colour/type hint. Attaches org/contact/
+  bike iff EXACTLY one candidate survives, else stores candidates for
+  review. Extraction contract in `src/lib/inbound/extraction.ts`
+  (`InboundExtraction` + `intent`); harness detail page gained an
+  extraction-JSON editor + "Run matching" so D is testable before C.
+  Browser-verified both paths (all-exactly-one → attached; ambiguous org
+  [10 hits] + no bike → not attached, contact still matched via phone).
+  Deps: none.
 - **E. Shadow ticket** — "Create ticket / attach to existing" review
   actions + "from phone — review me" banner (`source='phone'`).
   Measure match accuracy on real rows before trusting anything.
