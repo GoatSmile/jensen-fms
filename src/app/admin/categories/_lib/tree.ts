@@ -1,3 +1,5 @@
+import { localizedName } from "@/i18n/vocab";
+
 import type { ParentOption } from "../_components/category-form";
 
 /** Minimal shape both the list and the form-prep need. */
@@ -65,6 +67,7 @@ export function descendantIds(
  */
 export function buildParentOptions(
   cats: CategoryInput[],
+  locale: string,
   excludeId?: string,
 ): ParentOption[] {
   const blocked = new Set<string>();
@@ -76,6 +79,6 @@ export function buildParentOptions(
     .filter((r) => !blocked.has(r.id))
     .map((r) => ({
       id: r.id,
-      label: `${NBSP.repeat(r.depth)}${r.name_en}${r.is_active ? "" : " (archived)"}`,
+      label: `${NBSP.repeat(r.depth)}${localizedName(locale, r.name_en, r.name_da)}${r.is_active ? "" : " (archived)"}`,
     }));
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Hammer, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 import { formatDate } from "@/lib/parts/format";
 import { formatDeliveryTarget } from "@/lib/iso-week";
 import {
@@ -51,10 +52,11 @@ function isMOOverdue(
 }
 
 export default async function ManufacturingOrdersPage() {
-  const [t, tCommon, tStatus] = await Promise.all([
+  const [t, tCommon, tStatus, locale] = await Promise.all([
     getTranslations("mo"),
     getTranslations("common"),
     getTranslations("moStatus"),
+    getLocale(),
   ]);
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -63,9 +65,9 @@ export default async function ManufacturingOrdersPage() {
       `
         id, mo_number, status, target_quantity, completed_quantity,
         planned_start_date, planned_completion_date, planned_completion_precision, notes,
-        bike_type:bike_types(id, name_en),
+        bike_type:bike_types(id, name_en, name_da),
         bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
-        color:colors(id, name_en, hex)
+        color:colors(id, name_en, name_da, hex)
       `,
     )
     .order("created_at", { ascending: false });
@@ -200,7 +202,13 @@ export default async function ManufacturingOrdersPage() {
                         className="block px-4 py-2.5"
                       >
                         <Badge variant="outline" className="font-normal">
-                          {mo.bike_type?.name_en ?? "—"}
+                          {mo.bike_type
+                            ? localizedName(
+                                locale,
+                                mo.bike_type.name_en,
+                                mo.bike_type.name_da,
+                              )
+                            : "—"}
                         </Badge>
                       </Link>
                     </TableCell>
@@ -212,7 +220,11 @@ export default async function ManufacturingOrdersPage() {
                         {mo.color ? (
                           <ColorChip
                             hex={mo.color.hex}
-                            label={mo.color.name_en}
+                            label={localizedName(
+                              locale,
+                              mo.color.name_en,
+                              mo.color.name_da,
+                            )}
                           />
                         ) : (
                           <span className="text-muted-foreground">—</span>

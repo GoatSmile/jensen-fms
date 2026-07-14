@@ -30,7 +30,7 @@ export default async function NewOrganizationPage() {
   const [segmentsRes, currenciesRes, vatCodesRes] = await Promise.all([
     supabase
       .from("customer_segments")
-      .select("id, slug, name_en")
+      .select("id, slug, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
@@ -41,17 +41,20 @@ export default async function NewOrganizationPage() {
       .order("code", { ascending: true }),
     supabase
       .from("vat_codes")
-      .select("code, name_en")
+      .select("code, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
   ]);
 
   const segmentRows = segmentsRes.data ?? [];
-  const segments: SegmentOption[] = segmentRows.map(({ id, name_en }) => ({
-    id,
-    name_en,
-  }));
+  const segments: SegmentOption[] = segmentRows.map(
+    ({ id, name_en, name_da }) => ({
+      id,
+      name_en,
+      name_da,
+    }),
+  );
   const defaultSegmentId =
     segmentRows.find((s) => s.slug === "hotel")?.id ?? "";
   const currencies: CurrencyOption[] = currenciesRes.data ?? [];

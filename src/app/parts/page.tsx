@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Boxes, Coins, Plus, Printer, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { EmptyState } from "@/components/empty-state";
 import { compareKits } from "@/lib/kits/colors";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
@@ -111,10 +112,11 @@ export default async function PartsPage({
   const page = parsePage(sp.page);
   const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
 
-  const [t, tCommon, tStock] = await Promise.all([
+  const [t, tCommon, tStock, locale] = await Promise.all([
     getTranslations("parts"),
     getTranslations("common"),
     getTranslations("stockStatus"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -183,13 +185,24 @@ export default async function PartsPage({
   // descendants. Cheap query (~dozens of rows), so a separate await is fine.
   const categoriesRes = await supabase
     .from("part_categories")
-    .select("id, name_en, parent_id")
+    .select("id, name_en, name_da, parent_id")
     .is("deleted_at", null)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name_en", { ascending: true });
 
   const categoryRows: FlatCategory[] = categoriesRes.data ?? [];
+
+  // Locale-aware lookup for the list's category column. The dashboard VIEW
+  // precomputes `category_name` as name_en only, so we remap it from the
+  // categories list (which now carries name_da) by category_id.
+  const categoryNameById = new Map<
+    string,
+    { en: string | null; da: string | null }
+  >();
+  for (const c of categoriesRes.data ?? []) {
+    categoryNameById.set(c.id, { en: c.name_en, da: c.name_da });
+  }
   const categoryFilterIds = categoryId
     ? descendantIds(categoryRows, categoryId)
     : null;
@@ -313,11 +326,15 @@ export default async function PartsPage({
     }
   }
 
-  const pageRows: PartRow[] = (viewRes.data ?? []).map((row) => ({
+  const pageRows: PartRow[] = (viewRes.data ?? []).map((row) => {
+    const cat = row.category_id
+      ? categoryNameById.get(row.category_id)
+      : undefined;
+    return {
     id: row.id!,
     internalSku: row.internal_sku!,
     name: row.name_en!,
-    categoryName: row.category_name,
+    categoryName: cat ? localizedName(locale, cat.en, cat.da) : row.category_name,
     supplierName: row.primary_supplier_name,
     supplierCount: row.supplier_count ?? 0,
     stockOnHand: Number(row.stock_on_hand ?? 0),
@@ -329,7 +346,8 @@ export default async function PartsPage({
     stockStatus: (row.stock_status ?? "ok") as StockStatus,
     heroUrl: heroByPartId.get(row.id!) ?? null,
     kits: kitsByPartId.get(row.id!) ?? [],
-  }));
+    };
+  });
 
   // Low-stock banner — empty (and invisible) until parts get reorder points.
   const reorderRes = await findPartsBelowReorderPoint();

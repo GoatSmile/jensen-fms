@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { localizedName } from "@/i18n/vocab";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +25,8 @@ export type BikeOption = {
   id: string;
   frame_number: string;
   template_label: string | null;
-  bike_type_name: string | null;
+  bike_type_name_en: string | null;
+  bike_type_name_da: string | null;
   owner_organization_id: string | null;
   owner_name: string | null;
 };
@@ -67,6 +69,7 @@ function summarise(text: string, max = 50): string {
 
 export function WOForm({ initial, bikes, tickets }: Props) {
   const t = useTranslations("workOrders");
+  const locale = useLocale();
   const tCommon = useTranslations("common");
   const router = useRouter();
   const [values, setValues] = useState<WOFormValues>(initial);
@@ -161,8 +164,14 @@ export function WOForm({ initial, bikes, tickets }: Props) {
                 </div>
               ) : (
                 bikes.map((b) => {
+                  const typeName =
+                    localizedName(
+                      locale,
+                      b.bike_type_name_en,
+                      b.bike_type_name_da,
+                    ) || null;
                   const parts = [
-                    b.template_label ?? b.bike_type_name ?? "—",
+                    b.template_label ?? typeName ?? "—",
                   ].filter(Boolean);
                   const tail = b.owner_name ? ` · ${b.owner_name}` : "";
                   return (

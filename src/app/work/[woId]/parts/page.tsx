@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 import { compareKits } from "@/lib/kits/colors";
 import {
   CLOSED_WO_STATUSES,
@@ -27,6 +29,7 @@ export default async function AddPartsPage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
+  const locale = await getLocale();
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -55,7 +58,7 @@ export default async function AddPartsPage({
     supabase
       .from("parts")
       .select(
-        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en)",
+        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en, name_da)",
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
@@ -74,7 +77,8 @@ export default async function AddPartsPage({
     id: p.id,
     sku: p.internal_sku,
     name: p.name_en,
-    categoryName: p.category?.name_en ?? null,
+    categoryName:
+      localizedName(locale, p.category?.name_en, p.category?.name_da) || null,
     retailDkk:
       p.default_retail_price != null &&
       (p.default_retail_currency ?? "DKK") === "DKK"

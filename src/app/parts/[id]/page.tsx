@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 import { lookupDkkRate } from "@/lib/format";
 import { getStockStatus } from "@/lib/parts/stock";
 import { compareKits } from "@/lib/kits/colors";
@@ -47,9 +48,10 @@ export default async function PartDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [tParts, tCommon] = await Promise.all([
+  const [tParts, tCommon, locale] = await Promise.all([
     getTranslations("parts"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -92,7 +94,7 @@ export default async function PartDetailPage({
           notes,
           attributes,
           deleted_at,
-          category:part_categories(id, name_en),
+          category:part_categories(id, name_en, name_da),
           hs_code:hs_codes!hs_code_id(id, code, description, tariff_pct, is_active)
         `,
       )
@@ -124,7 +126,7 @@ export default async function PartDetailPage({
           location_id,
           quantity_on_hand,
           last_movement_at,
-          inventory_locations(id, code, name_en)
+          inventory_locations(id, code, name_en, name_da)
         `,
       )
       .eq("part_id", id),
@@ -144,7 +146,7 @@ export default async function PartDetailPage({
           unit_cost_dkk,
           reason,
           source_entity_type,
-          inventory_locations(code, name_en)
+          inventory_locations(code, name_en, name_da)
         `,
       )
       .eq("part_id", id)
@@ -177,7 +179,7 @@ export default async function PartDetailPage({
       .order("effective_from", { ascending: false }),
     supabase
       .from("inventory_locations")
-      .select("id, code, name_en")
+      .select("id, code, name_en, name_da")
       .eq("is_active", true)
       .order("code", { ascending: true }),
     supabase
@@ -205,7 +207,7 @@ export default async function PartDetailPage({
           template_id, quantity,
           bike_templates!inner(
             id, name_en, family:bike_families(name), frame_size, version, is_current,
-            bike_type:bike_types(id, name_en)
+            bike_type:bike_types(id, name_en, name_da)
           )
         `,
       )
@@ -271,7 +273,12 @@ export default async function PartDetailPage({
   const stockRows = (stockRes.data ?? []).map((row) => ({
     locationId: row.location_id ?? "",
     locationCode: row.inventory_locations?.code ?? "—",
-    locationName: row.inventory_locations?.name_en ?? "—",
+    locationName:
+      localizedName(
+        locale,
+        row.inventory_locations?.name_en,
+        row.inventory_locations?.name_da,
+      ) || "—",
     quantityOnHand: Number(row.quantity_on_hand ?? 0),
     lastMovementAt: row.last_movement_at,
   }));
@@ -303,7 +310,13 @@ export default async function PartDetailPage({
       templateVersion: r.bike_templates?.version ?? 0,
       family: r.bike_templates?.family?.name ?? null,
       frameSize: r.bike_templates?.frame_size ?? "",
-      bikeTypeName: r.bike_templates?.bike_type?.name_en ?? null,
+      bikeTypeName: r.bike_templates?.bike_type
+        ? localizedName(
+            locale,
+            r.bike_templates.bike_type.name_en,
+            r.bike_templates.bike_type.name_da,
+          )
+        : null,
       qtyPerBike: Number(r.quantity),
     }))
     .filter((t) => t.templateId !== "");
@@ -368,7 +381,12 @@ export default async function PartDetailPage({
     occurredAt: row.occurred_at,
     movementType: row.movement_type,
     locationCode: row.inventory_locations?.code ?? "—",
-    locationName: row.inventory_locations?.name_en ?? "—",
+    locationName:
+      localizedName(
+        locale,
+        row.inventory_locations?.name_en,
+        row.inventory_locations?.name_da,
+      ) || "—",
     quantityDelta: Number(row.quantity_delta),
     unitCostDkk:
       row.unit_cost_dkk != null ? Number(row.unit_cost_dkk) : null,
@@ -433,7 +451,7 @@ export default async function PartDetailPage({
     (row) => ({
       id: row.id,
       code: row.code,
-      name: row.name_en,
+      name: localizedName(locale, row.name_en, row.name_da),
       currentOnHand: stockByLocation.get(row.id) ?? 0,
     }),
   );
@@ -486,7 +504,11 @@ export default async function PartDetailPage({
         internalSku={part.internal_sku}
         nameEn={part.name_en}
         nameDa={part.name_da}
-        categoryName={part.category?.name_en ?? null}
+        categoryName={
+          part.category
+            ? localizedName(locale, part.category.name_en, part.category.name_da)
+            : null
+        }
         isDeleted={part.deleted_at != null}
         locations={locationOptions}
         hideLocations={hideLocations}

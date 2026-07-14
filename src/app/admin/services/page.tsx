@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
+import { localizedName } from "@/i18n/vocab";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 
@@ -63,9 +64,10 @@ function tierHeading(min: number, max: number | null): string {
  * orders keep their frozen snapshots regardless.
  */
 export default async function AdminServicesPage() {
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminServices"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -77,7 +79,7 @@ export default async function AdminServicesPage() {
           id, name, currency, effective_from, version, is_current, created_at,
           supplier_id, service_type_id,
           supplier:suppliers(name),
-          service_type:service_types(name_en),
+          service_type:service_types(name_en, name_da),
           items:service_price_items(
             service_part_type_id, supplier_item_no, tier_min, tier_max, unit_price
           )
@@ -86,7 +88,7 @@ export default async function AdminServicesPage() {
       .order("version", { ascending: false }),
     supabase
       .from("service_part_types")
-      .select("id, name_en, sort_order")
+      .select("id, name_en, name_da, sort_order")
       .order("sort_order", { ascending: true }),
   ]);
 
@@ -97,7 +99,7 @@ export default async function AdminServicesPage() {
   const partTypeName = new Map<string, string>();
   const partTypeSort = new Map<string, number>();
   for (const pt of partTypesRes.data ?? []) {
-    partTypeName.set(pt.id, pt.name_en);
+    partTypeName.set(pt.id, localizedName(locale, pt.name_en, pt.name_da));
     partTypeSort.set(pt.id, pt.sort_order);
   }
 
@@ -112,7 +114,12 @@ export default async function AdminServicesPage() {
     supplier_id: l.supplier_id,
     service_type_id: l.service_type_id,
     supplierName: one(l.supplier)?.name ?? "—",
-    serviceTypeName: one(l.service_type)?.name_en ?? "—",
+    serviceTypeName:
+      localizedName(
+        locale,
+        one(l.service_type)?.name_en,
+        one(l.service_type)?.name_da,
+      ) || "—",
     items: (l.items ?? []).map((i) => ({
       service_part_type_id: i.service_part_type_id,
       supplier_item_no: i.supplier_item_no,

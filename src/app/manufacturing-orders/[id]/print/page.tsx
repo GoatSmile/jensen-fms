@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+import { localizedName } from "@/i18n/vocab";
 
 import {
   Table,
@@ -29,9 +31,10 @@ export default async function MOPartsPrintPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tStatus] = await Promise.all([
+  const [t, tStatus, locale] = await Promise.all([
     getTranslations("moDetail"),
     getTranslations("moStatus"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -40,9 +43,9 @@ export default async function MOPartsPrintPage({
     .select(
       `id, mo_number, target_quantity, completed_quantity, status,
        planned_completion_date,
-       bike_type:bike_types(name_en),
+       bike_type:bike_types(name_en, name_da),
        bike_template:bike_templates(name_en, family:bike_families(name), frame_size, version),
-       color:colors(name_en)`,
+       color:colors(name_en, name_da)`,
     )
     .eq("id", id)
     .maybeSingle();
@@ -57,7 +60,7 @@ export default async function MOPartsPrintPage({
         `id, part_id, quantity_per_bike, origin, notes,
          part:parts!part_id(
            id, internal_sku, name_en,
-           category:part_categories(id, name_en, sort_order)
+           category:part_categories(id, name_en, name_da, sort_order)
          ),
          substituted_from:parts!substituted_part_id(internal_sku, name_en)`,
       )
@@ -115,7 +118,9 @@ export default async function MOPartsPrintPage({
     const key = cat?.id ?? "__uncategorised__";
     if (!groupsByCat.has(key)) {
       groupsByCat.set(key, {
-        categoryName: cat?.name_en ?? "Uncategorised",
+        categoryName: cat
+          ? localizedName(locale, cat.name_en, cat.name_da)
+          : "Uncategorised",
         sortOrder: cat?.sort_order ?? 9999,
         rows: [],
       });
@@ -166,8 +171,12 @@ export default async function MOPartsPrintPage({
             })}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {mo.bike_type?.name_en ? `${mo.bike_type.name_en} · ` : ""}
-            {mo.color?.name_en ? `${mo.color.name_en} · ` : ""}
+            {mo.bike_type
+              ? `${localizedName(locale, mo.bike_type.name_en, mo.bike_type.name_da)} · `
+              : ""}
+            {mo.color
+              ? `${localizedName(locale, mo.color.name_en, mo.color.name_da)} · `
+              : ""}
             {t("printTargetBikes", { count: mo.target_quantity })} ·{" "}
             {t("printAttached", { count: attachedBikes })} ·{" "}
             {t("printOutstanding", { count: outstandingBikes })}

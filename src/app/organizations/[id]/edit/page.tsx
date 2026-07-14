@@ -50,7 +50,7 @@ export default async function EditOrganizationPage({
       .maybeSingle(),
     supabase
       .from("customer_segments")
-      .select("id, name_en")
+      .select("id, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
@@ -61,7 +61,7 @@ export default async function EditOrganizationPage({
       .order("code", { ascending: true }),
     supabase
       .from("vat_codes")
-      .select("code, name_en")
+      .select("code, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),

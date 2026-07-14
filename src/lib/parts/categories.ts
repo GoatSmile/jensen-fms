@@ -3,10 +3,12 @@
  * `(id, name_en, parent_id)` rows — the tree is small enough to build and
  * walk in memory, no recursive SQL needed.
  */
+import { localizedName } from "@/i18n/vocab";
 
 export type FlatCategory = {
   id: string;
   name_en: string | null;
+  name_da?: string | null;
   parent_id: string | null;
 };
 
@@ -26,7 +28,12 @@ export type CategoryNode = {
  * `ORDER BY sort_order, name_en` — the workshop's canonical build order, same
  * as the template recipe page), with `depth` and `path` precomputed for the UI.
  */
-export function flattenCategoryTree(rows: FlatCategory[]): CategoryNode[] {
+export function flattenCategoryTree(
+  rows: FlatCategory[],
+  locale = "en",
+): CategoryNode[] {
+  const label = (r: FlatCategory) =>
+    localizedName(locale, r.name_en, r.name_da) || "—";
   const byId = new Map<string, FlatCategory>();
   for (const r of rows) byId.set(r.id, r);
 
@@ -40,7 +47,7 @@ export function flattenCategoryTree(rows: FlatCategory[]): CategoryNode[] {
 
   const out: CategoryNode[] = [];
   function walk(node: FlatCategory, ancestry: string[]) {
-    const name = node.name_en ?? "—";
+    const name = label(node);
     const path = [...ancestry, name];
     out.push({
       id: node.id,
@@ -60,8 +67,8 @@ export function flattenCategoryTree(rows: FlatCategory[]): CategoryNode[] {
     if (seen.has(r.id)) continue;
     out.push({
       id: r.id,
-      name: r.name_en ?? "—",
-      path: [r.name_en ?? "—"],
+      name: label(r),
+      path: [label(r)],
       depth: 0,
       parent_id: r.parent_id,
     });

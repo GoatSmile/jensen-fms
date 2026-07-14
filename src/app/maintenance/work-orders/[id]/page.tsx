@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   Breadcrumb,
@@ -30,10 +31,11 @@ export default async function WorkOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tCommon, tMaint] = await Promise.all([
+  const [t, tCommon, tMaint, locale] = await Promise.all([
     getTranslations("workOrders"),
     getTranslations("common"),
     getTranslations("maintenance"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -49,7 +51,7 @@ export default async function WorkOrderDetailPage({
         ticket:maintenance_tickets!ticket_id(id, ticket_number, status, description),
         bike:bikes!bike_id(
           id, frame_number,
-          bike_type:bike_types(name_en),
+          bike_type:bike_types(name_en, name_da),
           bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         ),
@@ -81,7 +83,7 @@ export default async function WorkOrderDetailPage({
     supabase
       .from("parts")
       .select(
-        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en)",
+        "id, internal_sku, name_en, default_retail_price, default_retail_currency, category:part_categories(name_en, name_da)",
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
@@ -91,7 +93,8 @@ export default async function WorkOrderDetailPage({
     id: p.id,
     internal_sku: p.internal_sku,
     name_en: p.name_en,
-    category_name: p.category?.name_en ?? null,
+    category_name:
+      localizedName(locale, p.category?.name_en, p.category?.name_da) || null,
   }));
 
   // Retail per part — work_order_parts.unit_price is the customer-facing
@@ -132,6 +135,9 @@ export default async function WorkOrderDetailPage({
   const owner = bike?.owner_organization ?? null;
   const ownerName =
     owner?.display_name_da ?? owner?.display_name_en ?? owner?.legal_name ?? null;
+  const bikeTypeName =
+    localizedName(locale, bike?.bike_type?.name_en, bike?.bike_type?.name_da) ||
+    null;
   const headline =
     wo.language === "da"
       ? (wo.customer_summary_da ?? wo.customer_summary_en)
@@ -180,7 +186,7 @@ export default async function WorkOrderDetailPage({
         headline={headline}
         bikeId={bike?.id ?? ""}
         bikeFrameNumber={bike?.frame_number ?? "—"}
-        bikeTypeName={bike?.bike_type?.name_en ?? null}
+        bikeTypeName={bikeTypeName}
         ticketId={wo.ticket?.id ?? null}
         ticketNumber={wo.ticket?.ticket_number ?? null}
         startedAt={wo.started_at}
@@ -228,8 +234,8 @@ export default async function WorkOrderDetailPage({
                         .filter(Boolean)
                         .join(" · ")}
                     </span>
-                  ) : bike.bike_type?.name_en ? (
-                    <span className="text-sm">{bike.bike_type.name_en}</span>
+                  ) : bikeTypeName ? (
+                    <span className="text-sm">{bikeTypeName}</span>
                   ) : (
                     <Muted>—</Muted>
                   )}

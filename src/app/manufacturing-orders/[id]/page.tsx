@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+import { localizedName } from "@/i18n/vocab";
 
 import {
   Breadcrumb,
@@ -43,10 +45,11 @@ export default async function ManufacturingOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tMo, tCommon] = await Promise.all([
+  const [t, tMo, tCommon, locale] = await Promise.all([
     getTranslations("moDetail"),
     getTranslations("mo"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -59,9 +62,9 @@ export default async function ManufacturingOrderDetailPage({
         actual_start_date, actual_completion_date,
         notes, created_at,
         bike_template_id, bike_type_id, color_id,
-        bike_type:bike_types(id, name_en, slug),
+        bike_type:bike_types(id, name_en, name_da, slug),
         bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size, version, is_current),
-        color:colors(id, slug, name_en, hex)
+        color:colors(id, slug, name_en, name_da, hex)
       `,
     )
     .eq("id", id)
@@ -97,7 +100,7 @@ export default async function ManufacturingOrderDetailPage({
           id, part_id, quantity_per_bike, origin, substituted_part_id, notes,
           part:parts!part_id(
             id, internal_sku, name_en, deleted_at,
-            category:part_categories(id, name_en)
+            category:part_categories(id, name_en, name_da)
           ),
           substituted_from:parts!substituted_part_id(id, internal_sku, name_en)
         `,
@@ -122,7 +125,7 @@ export default async function ManufacturingOrderDetailPage({
       .from("parts")
       .select(
         `id, internal_sku, name_en, category_id,
-         category:part_categories(name_en)`,
+         category:part_categories(name_en, name_da)`,
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
@@ -134,7 +137,7 @@ export default async function ManufacturingOrderDetailPage({
     // 57 active categories — drives the LEFT-column picker.
     supabase
       .from("part_categories")
-      .select("id, name_en, sort_order")
+      .select("id, name_en, name_da, sort_order")
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -181,7 +184,13 @@ export default async function ManufacturingOrderDetailPage({
       partSku: row.part?.internal_sku ?? "—",
       partName: row.part?.name_en ?? "—",
       categoryId: row.part?.category?.id ?? null,
-      categoryName: row.part?.category?.name_en ?? null,
+      categoryName: row.part?.category
+        ? localizedName(
+            locale,
+            row.part.category.name_en,
+            row.part.category.name_da,
+          )
+        : null,
       quantityPerBike: Number(row.quantity_per_bike),
       origin: row.origin as MOPartRow["origin"],
       substitutedFromPartName: row.substituted_from?.name_en ?? null,
@@ -194,7 +203,9 @@ export default async function ManufacturingOrderDetailPage({
   // current stock (passed to the LEFT-column dropdowns).
   const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({
     id: c.id,
-    name_en: c.name_en,
+    // Pre-localized here: the MOPartsSection picker (out of this sweep's scope)
+    // renders the `name_en` field verbatim, so we resolve the display name now.
+    name_en: localizedName(locale, c.name_en, c.name_da),
     sortOrder: c.sort_order,
   }));
   const partsCatalogWithStock: PartInCatalog[] = (partsCatalogRes.data ?? []).map(
@@ -271,7 +282,9 @@ export default async function ManufacturingOrderDetailPage({
     id: p.id,
     internal_sku: p.internal_sku,
     name_en: p.name_en,
-    category_name: p.category?.name_en ?? null,
+    category_name: p.category
+      ? localizedName(locale, p.category.name_en, p.category.name_da)
+      : null,
   }));
 
   // Bikes that still need parts: attached pre-build bikes + unfilled slots.
@@ -348,8 +361,16 @@ export default async function ManufacturingOrderDetailPage({
         templateLabel={templateLabel}
         templateId={mo.bike_template?.id ?? null}
         templateVersion={mo.bike_template?.version ?? null}
-        bikeTypeName={mo.bike_type?.name_en ?? null}
-        colorName={mo.color?.name_en ?? null}
+        bikeTypeName={
+          mo.bike_type
+            ? localizedName(locale, mo.bike_type.name_en, mo.bike_type.name_da)
+            : null
+        }
+        colorName={
+          mo.color
+            ? localizedName(locale, mo.color.name_en, mo.color.name_da)
+            : null
+        }
         colorHex={mo.color?.hex ?? null}
       />
 

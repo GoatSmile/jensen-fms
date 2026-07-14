@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
+import { localizedName } from "@/i18n/vocab";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import { DEFAULT_PAINTER_NAME } from "@/lib/services/vocab";
@@ -32,11 +33,12 @@ export default async function PaintFromSOPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tSo, tSoStatus, tCommon] = await Promise.all([
+  const [t, tSo, tSoStatus, tCommon, locale] = await Promise.all([
     getTranslations("soDetail"),
     getTranslations("so"),
     getTranslations("soStatus"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -64,7 +66,7 @@ export default async function PaintFromSOPage({
         .from("bikes")
         .select(
           `id, frame_number, status,
-           color:colors(name_en, hex),
+           color:colors(name_en, name_da, hex),
            template:bike_templates(family:bike_families(name), frame_size, name_en)`,
         )
         .in("manufacturing_order_id", moIds)
@@ -101,7 +103,9 @@ export default async function PaintFromSOPage({
           id: b.id,
           frameNumber: b.frame_number,
           status: b.status as BikeStatus,
-          colorName: b.color?.name_en ?? null,
+          colorName: b.color
+            ? localizedName(locale, b.color.name_en, b.color.name_da)
+            : null,
           colorHex: b.color?.hex ?? null,
           templateLabel: tpl
             ? [tpl.family?.name, tpl.frame_size, tpl.name_en]
@@ -122,7 +126,7 @@ export default async function PaintFromSOPage({
       .order("name", { ascending: true }),
     supabase
       .from("colors")
-      .select("id, name_en, hex, ral_code, coating")
+      .select("id, name_en, name_da, hex, ral_code, coating")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);

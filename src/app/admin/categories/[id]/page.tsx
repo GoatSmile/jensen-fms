@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,6 +21,7 @@ import {
   type CategoryFormValues,
 } from "../_components/category-form";
 import { buildParentOptions, type CategoryInput } from "../_lib/tree";
+import { localizedName } from "@/i18n/vocab";
 
 export default async function CategoryDetailPage({
   params,
@@ -29,9 +30,10 @@ export default async function CategoryDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminCategories"),
     getTranslations("common"),
+    getLocale(),
   ]);
 
   const [catRes, allCatsRes, partsRes] = await Promise.all([
@@ -62,8 +64,10 @@ export default async function CategoryDetailPage({
   if (!catRes.data) notFound();
 
   const c = catRes.data;
+  const displayName = localizedName(locale, c.name_en, c.name_da);
+  const otherName = locale === "da" ? c.name_en : c.name_da;
   const allCats = (allCatsRes.data ?? []) as CategoryInput[];
-  const parentOptions = buildParentOptions(allCats, c.id);
+  const parentOptions = buildParentOptions(allCats, locale, c.id);
   const childCount = allCats.filter((x) => x.parent_id === c.id).length;
   const parts = partsRes.data ?? [];
   const partCount = parts.length;
@@ -101,16 +105,16 @@ export default async function CategoryDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{c.name_en}</BreadcrumbPage>
+            <BreadcrumbPage>{displayName}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold">{c.name_en}</h1>
-          {c.name_da ? (
-            <p className="text-muted-foreground text-sm">{c.name_da}</p>
+          <h1 className="text-2xl font-semibold">{displayName}</h1>
+          {otherName && otherName !== displayName ? (
+            <p className="text-muted-foreground text-sm">{otherName}</p>
           ) : null}
         </div>
         <Badge variant={c.is_active ? "success" : "outline"}>

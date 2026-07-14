@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
 
@@ -12,6 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { countryName } from "@/lib/countries";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
 import { AssignedBikesSection } from "../_components/assigned-bikes-section";
@@ -37,11 +38,12 @@ export default async function OrganizationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tCustomers, tCommon, tLang] = await Promise.all([
+  const [t, tCustomers, tCommon, tLang, locale] = await Promise.all([
     getTranslations("customerDetail"),
     getTranslations("customers"),
     getTranslations("common"),
     getTranslations("lang"),
+    getLocale(),
   ]);
   const langLabel = (code: string | null) =>
     code ? (tLang.has(code) ? tLang(code) : code) : null;
@@ -62,7 +64,7 @@ export default async function OrganizationDetailPage({
           billing_currency, payment_terms_days, default_vat_code,
           preferred_language, notes,
           deleted_at, is_active, created_at,
-          segment:customer_segments(id, name_en)
+          segment:customer_segments(id, name_en, name_da)
         `,
       )
       .eq("id", id)
@@ -195,7 +197,11 @@ export default async function OrganizationDetailPage({
         organizationId={o.id}
         legalName={o.legal_name}
         subtitle={subtitleCandidate}
-        segmentLabel={o.segment?.name_en ?? null}
+        segmentLabel={
+          o.segment
+            ? localizedName(locale, o.segment.name_en, o.segment.name_da)
+            : null
+        }
         countryCode={o.country_code}
         preferredLanguage={o.preferred_language}
       />

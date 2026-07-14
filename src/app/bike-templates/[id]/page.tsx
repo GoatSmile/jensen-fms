@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
 import { loadTemplatePaintEstimate } from "@/lib/services/template-paint";
 import { loadActiveServicePartTypes } from "@/lib/services/vocab";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   PartsRecipeSection,
@@ -40,10 +41,11 @@ export default async function BikeTemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tTpl, tCommon] = await Promise.all([
+  const [t, tTpl, tCommon, locale] = await Promise.all([
     getTranslations("templateDetail"),
     getTranslations("templates"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -54,7 +56,7 @@ export default async function BikeTemplateDetailPage({
         id, name_en, name_da, notes, version, is_current, created_at,
         bike_type_id, family_id, family:bike_families(name), frame_size,
         default_retail_price, default_retail_currency,
-        bike_type:bike_types(id, name_en)
+        bike_type:bike_types(id, name_en, name_da)
       `,
     )
     .eq("id", id)
@@ -248,7 +250,13 @@ export default async function BikeTemplateDetailPage({
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-normal">
-              {tpl.bike_type?.name_en ?? "—"}
+              {tpl.bike_type
+                ? localizedName(
+                    locale,
+                    tpl.bike_type.name_en,
+                    tpl.bike_type.name_da,
+                  )
+                : "—"}
             </Badge>
             {tpl.family?.name && tpl.family_id ? (
               // Family chip in the family's colour — links back to this
@@ -329,8 +337,14 @@ export default async function BikeTemplateDetailPage({
       <PaintworkSection
         templateId={tpl.id}
         isCurrent={tpl.is_current}
-        rows={paintEstimate.rows}
-        partTypes={servicePartTypes}
+        rows={paintEstimate.rows.map((r) => ({
+          ...r,
+          partTypeName: localizedName(locale, r.partTypeName, r.partTypeNameDa),
+        }))}
+        partTypes={servicePartTypes.map((pt) => ({
+          ...pt,
+          name_en: localizedName(locale, pt.name_en, pt.name_da),
+        }))}
         totalLabel={paintEstimate.totalLabel}
         listLabel={paintEstimate.listLabel}
         unpricedCount={paintEstimate.unpricedCount}

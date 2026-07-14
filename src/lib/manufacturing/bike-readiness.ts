@@ -38,7 +38,10 @@ export type BuildQueueBike = {
   frameNumber: string;
   frameConfirmed: boolean;
   status: string;
+  /** English colour vocab name. */
   colorName: string | null;
+  /** Danish colour vocab name; localize the display at render. */
+  colorNameDa: string | null;
   colorHex: string | null;
   templateLabel: string | null;
   ownerName: string | null;
@@ -66,7 +69,7 @@ export async function loadBuildQueue(
     .from("bikes")
     .select(
       `id, frame_number, frame_number_confirmed, status,
-       color:colors(name_en, hex),
+       color:colors(name_en, name_da, hex),
        bike_template:bike_templates(family:bike_families(name), frame_size),
        owner_organization:organizations!owner_organization_id(
          legal_name, display_name_da, display_name_en
@@ -181,6 +184,7 @@ export async function loadBuildQueue(
       frameConfirmed: b.frame_number_confirmed,
       status: b.status as string,
       colorName: color?.name_en ?? null,
+      colorNameDa: color?.name_da ?? null,
       colorHex: color?.hex ?? null,
       templateLabel: tpl
         ? [tpl.family?.name, tpl.frame_size].filter(Boolean).join(" · ")

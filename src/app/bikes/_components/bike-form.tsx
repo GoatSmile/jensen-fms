@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
 import { appendField } from "@/lib/forms";
+import { localizedName } from "@/i18n/vocab";
 
 import { createBike } from "../_actions/save-bike";
 
-export type BikeTypeOption = { id: string; name_en: string };
+export type BikeTypeOption = {
+  id: string;
+  name_en: string;
+  name_da?: string | null;
+};
 
 export type TemplateOption = {
   id: string;
@@ -65,6 +70,7 @@ type Props = {
 export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
   const t = useTranslations("bikes");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<BikeFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -146,9 +152,9 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
               <SelectValue placeholder={t("pickBikeType")} />
             </SelectTrigger>
             <SelectContent>
-              {bikeTypes.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name_en}
+              {bikeTypes.map((opt) => (
+                <SelectItem key={opt.id} value={opt.id}>
+                  {localizedName(locale, opt.name_en, opt.name_da)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -207,8 +213,11 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
               ) : (
                 colors.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    <ColorSwatch hex={c.hex} label={c.name_en} />
-                    {c.name_en}
+                    <ColorSwatch
+                      hex={c.hex}
+                      label={localizedName(locale, c.name_en, c.name_da)}
+                    />
+                    {localizedName(locale, c.name_en, c.name_da)}
                   </SelectItem>
                 ))
               )}

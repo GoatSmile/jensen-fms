@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { PrintButton } from "@/app/parts/print/_components/print-button";
 import { Logo } from "@/components/logo";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import { compareKits, kitCode, stickerColor } from "@/lib/kits/colors";
@@ -44,7 +45,10 @@ export default async function PickListPrintPage({
 }) {
   const { id: moId } = await params;
   const { n } = await searchParams;
-  const t = await getTranslations("moDetail");
+  const [t, locale] = await Promise.all([
+    getTranslations("moDetail"),
+    getLocale(),
+  ]);
   const supabase = await createClient();
 
   const { data: mo, error: moErr } = await supabase
@@ -52,7 +56,7 @@ export default async function PickListPrintPage({
     .select(
       `id, mo_number, target_quantity,
        bike_template:bike_templates(name_en, family:bike_families(name), frame_size),
-       color:colors(name_en)`,
+       color:colors(name_en, name_da)`,
     )
     .eq("id", moId)
     .maybeSingle();
@@ -208,7 +212,9 @@ export default async function PickListPrintPage({
           <div className="text-sm">
             <span className="font-mono">{mo.mo_number}</span>
             {templateLabel ? ` · ${templateLabel}` : ""}
-            {mo.color?.name_en ? ` · ${mo.color.name_en}` : ""}
+            {mo.color
+              ? ` · ${localizedName(locale, mo.color.name_en, mo.color.name_da)}`
+              : ""}
           </div>
           <div className="text-sm font-medium">
             {t("buildNBikes", { count: batch })}

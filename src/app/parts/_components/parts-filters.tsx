@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ export function PartsFilters({
 }: Props) {
   const t = useTranslations("parts");
   const tStock = useTranslations("stockStatus");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,8 +61,8 @@ export function PartsFilters({
   const currentStock = searchParams.get("stock") ?? "all";
 
   const categoryNodes = useMemo(
-    () => flattenCategoryTree(categories),
-    [categories],
+    () => flattenCategoryTree(categories, locale),
+    [categories, locale],
   );
 
   // Local state for the search input so keystrokes don't wait on the round-trip.

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { appendField } from "@/lib/forms";
 
 import { createPaintOrder } from "../_actions/save-paint-order";
@@ -26,6 +27,7 @@ export type SupplierOption = { id: string; name: string };
 export type ColorOption = {
   id: string;
   name_en: string;
+  name_da?: string | null;
   hex: string | null;
   /** Optional finish info — populated by paint surfaces so pickers can
    * disambiguate e.g. a glossy and a matte "Black 9005". */
@@ -56,6 +58,7 @@ type Props = {
 export function PaintOrderForm({ initial, suppliers, colors }: Props) {
   const t = useTranslations("paintOrders");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<PaintOrderFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -144,17 +147,20 @@ export function PaintOrderForm({ initial, suppliers, colors }: Props) {
               <SelectValue placeholder={t("batchColourPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              {colors.map((c) => (
+              {colors.map((c) => {
+                const label = localizedName(locale, c.name_en, c.name_da);
+                return (
                 <SelectItem key={c.id} value={c.id}>
-                  <ColorSwatch hex={c.hex} label={c.name_en} />
-                  {c.name_en}
-                  {colorFinishLabel(c.ral_code, c.coating) ? (
+                  <ColorSwatch hex={c.hex} label={label} />
+                  {label}
+                  {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
                     <span className="text-muted-foreground ml-1.5 text-xs">
-                      {colorFinishLabel(c.ral_code, c.coating)}
+                      {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
                     </span>
                   ) : null}
                 </SelectItem>
-              ))}
+                );
+              })}
             </SelectContent>
           </Select>
         </Field>

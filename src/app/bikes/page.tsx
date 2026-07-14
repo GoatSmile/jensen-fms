@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Bike, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import {
   type ActiveAgreement,
 } from "@/lib/agreements/coverage";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { formatDate } from "@/lib/parts/format";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
@@ -79,10 +80,11 @@ export default async function BikesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const [t, tc, tStatus] = await Promise.all([
+  const [t, tc, tStatus, locale] = await Promise.all([
     getTranslations("bikes"),
     getTranslations("common"),
     getTranslations("bikeStatus"),
+    getLocale(),
   ]);
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
@@ -177,9 +179,9 @@ export default async function BikesPage({
         deleted_at,
         built_at,
         owner_unit_id,
-        bike_type:bike_types(id, name_en),
+        bike_type:bike_types(id, name_en, name_da),
         template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
-        color:colors(id, name_en, hex, ral_code, coating),
+        color:colors(id, name_en, name_da, hex, ral_code, coating),
         manufacturing_order:manufacturing_orders(
           id,
           sales_order:sales_orders!sales_order_id(id, sales_order_number)
@@ -228,7 +230,7 @@ export default async function BikesPage({
     bikesQuery,
     supabase
       .from("bike_types")
-      .select("id, name_en")
+      .select("id, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     facetQuery,
@@ -317,7 +319,11 @@ export default async function BikesPage({
     activeChips.push({ key: "status", label: tStatus(statusFilter) });
   if (typeFilter) {
     const ty = typesRes.data?.find((x) => x.id === typeFilter);
-    if (ty) activeChips.push({ key: "type", label: ty.name_en });
+    if (ty)
+      activeChips.push({
+        key: "type",
+        label: localizedName(locale, ty.name_en, ty.name_da),
+      });
   }
   if (ownerFilter) {
     const o = ownerOptions.find((x) => x.id === ownerFilter);
@@ -434,7 +440,7 @@ export default async function BikesPage({
             <option value="">{t("allTypes")}</option>
             {(typesRes.data ?? []).map((t) => (
               <option key={t.id} value={t.id}>
-                {t.name_en}
+                {localizedName(locale, t.name_en, t.name_da)}
               </option>
             ))}
           </select>
@@ -631,7 +637,13 @@ export default async function BikesPage({
                   <TableCell className="hidden p-0 md:table-cell">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5">
                       <Badge variant="outline" className="font-normal">
-                        {b.bike_type?.name_en ?? "—"}
+                        {b.bike_type
+                          ? localizedName(
+                              locale,
+                              b.bike_type.name_en,
+                              b.bike_type.name_da,
+                            )
+                          : "—"}
                       </Badge>
                     </Link>
                   </TableCell>
@@ -660,18 +672,30 @@ export default async function BikesPage({
                           <ColorSwatch
                             hex={b.color.hex}
                             ralCode={b.color.ral_code}
-                            label={b.color.name_en}
+                            label={localizedName(
+                              locale,
+                              b.color.name_en,
+                              b.color.name_da,
+                            )}
                           />
                           <span className="flex flex-col leading-tight">
-                            <span>{b.color.name_en}</span>
+                            <span>
+                              {localizedName(
+                                locale,
+                                b.color.name_en,
+                                b.color.name_da,
+                              )}
+                            </span>
                             {colorFinishLabel(
                               b.color.ral_code,
                               b.color.coating,
+                              locale === "da" ? "da" : "en",
                             ) ? (
                               <span className="text-muted-foreground text-xs">
                                 {colorFinishLabel(
                                   b.color.ral_code,
                                   b.color.coating,
+                                  locale === "da" ? "da" : "en",
                                 )}
                               </span>
                             ) : null}

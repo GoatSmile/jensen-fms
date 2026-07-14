@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { ArrowLeft, Bike } from "lucide-react";
+import { localizedName } from "@/i18n/vocab";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
@@ -37,7 +38,10 @@ export default async function WorkspacePage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
-  const t = await getTranslations("wo");
+  const [t, locale] = await Promise.all([
+    getTranslations("wo"),
+    getLocale(),
+  ]);
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -52,7 +56,7 @@ export default async function WorkspacePage({
           id, frame_number,
           bike_type:bike_types(name_en),
           bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
-          color:colors(name_en, hex),
+          color:colors(name_en, name_da, hex),
           owner_organization:organizations!owner_organization_id(
             id, legal_name, display_name_da, display_name_en
           )
@@ -123,7 +127,9 @@ export default async function WorkspacePage({
     wo.bike?.color?.hex && /^#[0-9a-fA-F]{6}$/.test(wo.bike.color.hex)
       ? wo.bike.color.hex
       : null;
-  const colorName = wo.bike?.color?.name_en ?? null;
+  const colorName =
+    localizedName(locale, wo.bike?.color?.name_en, wo.bike?.color?.name_da) ||
+    null;
 
   // Status-banner classes. Workshop-mode tokens — not the generic
   // shadcn Badge variants — so they read as "state of work" rather

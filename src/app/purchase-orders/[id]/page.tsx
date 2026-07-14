@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 import { Money } from "@/components/money";
 import { SegmentedId } from "@/components/segmented-id";
 import { formatDate } from "@/lib/parts/format";
@@ -41,10 +42,11 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tPo, tCommon] = await Promise.all([
+  const [t, tPo, tCommon, locale] = await Promise.all([
     getTranslations("poDetail"),
     getTranslations("po"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -82,7 +84,7 @@ export default async function PurchaseOrderDetailPage({
       .order("created_at", { ascending: true }),
     supabase
       .from("inventory_locations")
-      .select("id, code, name_en")
+      .select("id, code, name_en, name_da")
       .eq("is_active", true)
       .order("code", { ascending: true }),
     supabase
@@ -165,7 +167,11 @@ export default async function PurchaseOrderDetailPage({
   }));
 
   const locationOptions: LocationOption[] = (locationsRes.data ?? []).map(
-    (l) => ({ id: l.id, code: l.code, name: l.name_en }),
+    (l) => ({
+      id: l.id,
+      code: l.code,
+      name: localizedName(locale, l.name_en, l.name_da),
+    }),
   );
 
   // Latest fx_rates row per from_currency. Rows are already sorted desc by

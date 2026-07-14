@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   RevisionEditor,
@@ -37,9 +38,10 @@ export default async function NewServicePriceListPage({
   searchParams: Promise<{ from?: string }>;
 }) {
   const { from } = await searchParams;
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminServices"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -47,7 +49,7 @@ export default async function NewServicePriceListPage({
     await Promise.all([
       supabase
         .from("service_part_types")
-        .select("id, name_en, sort_order")
+        .select("id, name_en, name_da, sort_order")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       supabase
@@ -63,7 +65,7 @@ export default async function NewServicePriceListPage({
         .order("name", { ascending: true }),
       supabase
         .from("service_types")
-        .select("id, name_en")
+        .select("id, name_en, name_da")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
     ]);
@@ -77,7 +79,7 @@ export default async function NewServicePriceListPage({
           id, name, currency, effective_from, version,
           supplier_id, service_type_id,
           supplier:suppliers(name),
-          service_type:service_types(name_en),
+          service_type:service_types(name_en, name_da),
           items:service_price_items(
             service_part_type_id, supplier_item_no, tier_min, tier_max, unit_price
           )
@@ -98,7 +100,12 @@ export default async function NewServicePriceListPage({
       supplierId: src.supplier_id,
       serviceTypeId: src.service_type_id,
       supplierName: one(src.supplier)?.name ?? "—",
-      serviceTypeName: one(src.service_type)?.name_en ?? "—",
+      serviceTypeName:
+        localizedName(
+          locale,
+          one(src.service_type)?.name_en,
+          one(src.service_type)?.name_da,
+        ) || "—",
       items: (src.items ?? []).map((i) => ({
         servicePartTypeId: i.service_part_type_id,
         supplierItemNo: i.supplier_item_no,

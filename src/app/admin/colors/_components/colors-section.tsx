@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 
 export type ColorRow = {
   id: string;
@@ -35,7 +36,11 @@ export type ColorRow = {
  * live on the detail page now, so there's no 3-dot menu.
  */
 export async function ColorsSection({ rows }: { rows: ColorRow[] }) {
-  const t = await getTranslations("adminColors");
+  const [t, locale] = await Promise.all([
+    getTranslations("adminColors"),
+    getLocale(),
+  ]);
+  const finishLang = locale === "da" ? "da" : "en";
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
@@ -79,6 +84,8 @@ export async function ColorsSection({ rows }: { rows: ColorRow[] }) {
             <TableBody>
               {rows.map((row) => {
                 const href = `/admin/colors/${row.id}`;
+                const primaryName = localizedName(locale, row.nameEn, row.nameDa);
+                const secondaryName = locale === "da" ? row.nameEn : row.nameDa;
                 return (
                   <TableRow
                     key={row.id}
@@ -90,13 +97,13 @@ export async function ColorsSection({ rows }: { rows: ColorRow[] }) {
                           <ColorSwatch
                             hex={row.hex}
                             ralCode={row.ralCode}
-                            label={row.nameEn}
+                            label={primaryName}
                           />
                           <div className="flex flex-col">
-                            <span className="font-medium">{row.nameEn}</span>
-                            {row.nameDa && row.nameDa !== row.nameEn ? (
+                            <span className="font-medium">{primaryName}</span>
+                            {secondaryName && secondaryName !== primaryName ? (
                               <span className="text-muted-foreground text-xs">
-                                {row.nameDa}
+                                {secondaryName}
                               </span>
                             ) : null}
                           </div>
@@ -110,9 +117,11 @@ export async function ColorsSection({ rows }: { rows: ColorRow[] }) {
                     </TableCell>
                     <TableCell className="hidden p-0 text-xs md:table-cell">
                       <Link href={href} className="block px-4 py-2.5">
-                        {colorFinishLabel(row.ralCode, row.coating) ?? (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        {colorFinishLabel(
+                          row.ralCode,
+                          row.coating,
+                          finishLang,
+                        ) ?? <span className="text-muted-foreground">—</span>}
                       </Link>
                     </TableCell>
                     <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
@@ -138,7 +147,7 @@ export async function ColorsSection({ rows }: { rows: ColorRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={t("openAria", { name: row.nameEn })}
+                        aria-label={t("openAria", { name: primaryName })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

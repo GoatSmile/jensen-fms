@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { ColorSwatch } from "@/components/color-swatch";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { formatPrice } from "@/lib/format";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { familyTint } from "@/lib/bike-templates/family-colors";
 
 import { addSOLine, updateSOLine } from "../../_actions/manage-so-lines";
@@ -49,11 +50,13 @@ export type TemplateChoice = {
 export type VatCodeChoice = {
   code: string;
   name_en: string;
+  name_da?: string | null;
   default_rate: number;
 };
 export type ColorChoice = {
   id: string;
   name_en: string;
+  name_da?: string | null;
   hex: string | null;
   ral_code: string | null;
   coating: string | null;
@@ -105,6 +108,7 @@ export function LineDialog({
 }: Props) {
   const t = useTranslations("soDetail");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const initial = mode.kind === "edit" ? mode.initial : null;
   const defaultVatCode =
@@ -397,7 +401,8 @@ export function LineDialog({
                     <SelectItem key={v.code} value={v.code}>
                       <span className="font-mono text-xs">{v.code}</span>
                       <span className="text-muted-foreground ml-2 text-xs">
-                        {v.name_en} ({v.default_rate}%)
+                        {localizedName(locale, v.name_en, v.name_da)} (
+                        {v.default_rate}%)
                       </span>
                     </SelectItem>
                   ))}
@@ -425,16 +430,17 @@ export function LineDialog({
                     </span>
                   </SelectItem>
                   {colors.map((c) => {
-                    const finish = colorFinishLabel(c.ral_code, c.coating);
+                    const finish = colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en");
+                    const label = localizedName(locale, c.name_en, c.name_da);
                     return (
                       <SelectItem key={c.id} value={c.id}>
                         <ColorSwatch
                           hex={c.hex}
                           ralCode={c.ral_code}
-                          label={c.name_en}
+                          label={label}
                           className="mr-2"
                         />
-                        {c.name_en}
+                        {label}
                         {finish ? (
                           <span className="text-muted-foreground ml-2 text-xs">
                             {finish}

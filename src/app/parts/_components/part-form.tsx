@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
@@ -114,11 +114,12 @@ export function PartForm({
 }: Props) {
   const t = useTranslations("parts");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<PartFormValues>(initial);
   const categoryNodes = useMemo(
-    () => flattenCategoryTree(categories),
-    [categories],
+    () => flattenCategoryTree(categories, locale),
+    [categories, locale],
   );
   // The HS list can run to hundreds of codes — a searchable combobox beats a
   // flat Select. The sentinel "none" row sits first; codes are searchable by

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ColorSwatch } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
 import type {
   ColorOption,
@@ -55,6 +56,7 @@ export function PaintFromSOForm({
   const t = useTranslations("soDetail");
   const tCommon = useTranslations("common");
   const tBikeStatus = useTranslations("bikeStatus");
+  const locale = useLocale();
   const router = useRouter();
   // Default: every eligible frame selected.
   const [selected, setSelected] = useState<Set<string>>(
@@ -239,17 +241,20 @@ export function PaintFromSOForm({
                 <SelectValue placeholder={t("pickColourPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                {colors.map((c) => (
+                {colors.map((c) => {
+                  const label = localizedName(locale, c.name_en, c.name_da);
+                  return (
                   <SelectItem key={c.id} value={c.id}>
-                    <ColorSwatch hex={c.hex} label={c.name_en} />
-                    {c.name_en}
-                    {colorFinishLabel(c.ral_code, c.coating) ? (
+                    <ColorSwatch hex={c.hex} label={label} />
+                    {label}
+                    {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
                       <span className="text-muted-foreground ml-1.5 text-xs">
-                        {colorFinishLabel(c.ral_code, c.coating)}
+                        {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
                       </span>
                     ) : null}
                   </SelectItem>
-                ))}
+                  );
+                })}
               </SelectContent>
             </Select>
           </Field>

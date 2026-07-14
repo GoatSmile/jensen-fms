@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { localizedName } from "@/i18n/vocab";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
@@ -30,7 +31,8 @@ export type BikeOption = {
   id: string;
   frame_number: string;
   template_label: string | null;
-  bike_type_name: string | null;
+  bike_type_name_en: string | null;
+  bike_type_name_da: string | null;
   owner_organization_id: string | null;
   owner_name: string | null;
 };
@@ -76,6 +78,7 @@ type Props = {
 
 export function TicketForm({ initial, bikes, contacts, mode }: Props) {
   const t = useTranslations("tickets");
+  const locale = useLocale();
   const tCommon = useTranslations("common");
   const tSource = useTranslations("ticketSource");
   const tPriority = useTranslations("ticketPriority");
@@ -194,8 +197,14 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
                 </div>
               ) : (
                 bikes.map((b) => {
+                  const typeName =
+                    localizedName(
+                      locale,
+                      b.bike_type_name_en,
+                      b.bike_type_name_da,
+                    ) || null;
                   const parts = [
-                    b.template_label ?? b.bike_type_name ?? "—",
+                    b.template_label ?? typeName ?? "—",
                   ].filter(Boolean);
                   const tail = b.owner_name ? ` · ${b.owner_name}` : "";
                   return (

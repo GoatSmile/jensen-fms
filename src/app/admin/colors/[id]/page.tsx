@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { ColorSwatch } from "@/components/color-swatch";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 
 import { ArchiveButton } from "../_components/archive-button";
 import {
@@ -28,9 +29,10 @@ export default async function ColorDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminColors"),
     getTranslations("common"),
+    getLocale(),
   ]);
 
   // Pull the row + usage counts (bikes + MOs) in parallel. Usage drives
@@ -65,6 +67,7 @@ export default async function ColorDetailPage({
   if (!colorRes.data) notFound();
 
   const c = colorRes.data;
+  const displayName = localizedName(locale, c.name_en, c.name_da);
   const usageCount = (bikeUsageRes.count ?? 0) + (moUsageRes.count ?? 0);
   const coatings: CoatingChoice[] = (coatingsRes.data ?? []).map((x) => ({
     slug: x.slug,
@@ -105,7 +108,7 @@ export default async function ColorDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{c.name_en}</BreadcrumbPage>
+            <BreadcrumbPage>{displayName}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -115,11 +118,11 @@ export default async function ColorDetailPage({
           <ColorSwatch
             hex={c.hex}
             ralCode={c.ral_code}
-            label={c.name_en}
+            label={displayName}
             size={6}
           />
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-2xl font-semibold">{c.name_en}</h1>
+            <h1 className="text-2xl font-semibold">{displayName}</h1>
             <p className="text-muted-foreground font-mono text-xs">{c.slug}</p>
           </div>
         </div>

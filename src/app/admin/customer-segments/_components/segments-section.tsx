@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+import { localizedName } from "@/i18n/vocab";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,10 @@ export type SegmentRow = {
  * page now.
  */
 export async function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
-  const t = await getTranslations("adminSegments");
+  const [t, locale] = await Promise.all([
+    getTranslations("adminSegments"),
+    getLocale(),
+  ]);
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
@@ -76,6 +81,12 @@ export async function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
             <TableBody>
               {rows.map((row) => {
                 const href = `/admin/customer-segments/${row.id}`;
+                const primaryName = localizedName(locale, row.nameEn, row.nameDa);
+                const description = localizedName(
+                  locale,
+                  row.descriptionEn,
+                  row.descriptionDa,
+                );
                 return (
                   <TableRow
                     key={row.id}
@@ -84,10 +95,10 @@ export async function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         <div className="flex flex-col">
-                          <span className="font-medium">{row.nameEn}</span>
-                          {row.descriptionEn ? (
+                          <span className="font-medium">{primaryName}</span>
+                          {description ? (
                             <span className="text-muted-foreground text-xs">
-                              {row.descriptionEn}
+                              {description}
                             </span>
                           ) : null}
                         </div>
@@ -121,7 +132,7 @@ export async function SegmentsSection({ rows }: { rows: SegmentRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={t("openAria", { name: row.nameEn })}
+                        aria-label={t("openAria", { name: primaryName })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

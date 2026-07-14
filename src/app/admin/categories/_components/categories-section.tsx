@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   ArrowDown,
   ArrowUp,
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { localizedName } from "@/i18n/vocab";
 
 export type CategoryRow = {
   id: string;
@@ -56,6 +57,7 @@ type SortDir = "asc" | "desc";
  */
 export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
   const t = useTranslations("adminCategories");
+  const locale = useLocale();
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("hierarchy");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -220,6 +222,8 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                 const href = `/admin/categories/${row.id}`;
                 // Indentation only makes sense in the default hierarchy view.
                 const depth = flat ? 0 : row.depth;
+                const rowName = localizedName(locale, row.name_en, row.name_da);
+                const rowOther = locale === "da" ? row.name_en : row.name_da;
                 return (
                   <TableRow
                     key={row.id}
@@ -237,10 +241,10 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                             aria-hidden
                           />
                         ) : null}
-                        <span className="font-medium">{row.name_en}</span>
-                        {row.name_da ? (
+                        <span className="font-medium">{rowName}</span>
+                        {rowOther && rowOther !== rowName ? (
                           <span className="text-muted-foreground text-xs">
-                            {row.name_da}
+                            {rowOther}
                           </span>
                         ) : null}
                       </Link>
@@ -268,7 +272,7 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={t("openAria", { name: row.name_en })}
+                        aria-label={t("openAria", { name: rowName })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

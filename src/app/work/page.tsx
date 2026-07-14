@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { ChevronRight, ScanLine, Tag } from "lucide-react";
+import { localizedName } from "@/i18n/vocab";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
@@ -32,7 +33,10 @@ export default async function WorkQueuePage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { tab } = await searchParams;
-  const t = await getTranslations("work");
+  const [t, locale] = await Promise.all([
+    getTranslations("work"),
+    getLocale(),
+  ]);
   const supabase = await createClient();
 
   const [woRes, buildQueue] = await Promise.all([
@@ -44,7 +48,7 @@ export default async function WorkQueuePage({
         diagnosis,
         bike:bikes!bike_id(
           id, frame_number,
-          color:colors(name_en, hex),
+          color:colors(name_en, name_da, hex),
           bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(
             id, legal_name, display_name_da, display_name_en
@@ -145,7 +149,12 @@ export default async function WorkQueuePage({
                 ? wo.diagnosis.slice(0, 120)
                 : null;
             const colorHex = wo.bike?.color?.hex ?? null;
-            const colorName = wo.bike?.color?.name_en ?? null;
+            const colorName =
+              localizedName(
+                locale,
+                wo.bike?.color?.name_en,
+                wo.bike?.color?.name_da,
+              ) || null;
             const elapsed =
               inProgress && wo.started_at ? elapsedShort(wo.started_at) : null;
 

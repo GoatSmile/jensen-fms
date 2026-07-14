@@ -26,7 +26,7 @@ export async function loadTicketPickables(): Promise<{
       .select(
         `
           id, frame_number, owner_organization_id,
-          bike_type:bike_types(name_en),
+          bike_type:bike_types(name_en, name_da),
           bike_template:bike_templates(family:bike_families(name), frame_size, name_en),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         `,
@@ -69,7 +69,8 @@ export async function loadTicketPickables(): Promise<{
       id: b.id,
       frame_number: b.frame_number,
       template_label: templateLabel,
-      bike_type_name: b.bike_type?.name_en ?? null,
+      bike_type_name_en: b.bike_type?.name_en ?? null,
+      bike_type_name_da: b.bike_type?.name_da ?? null,
       owner_organization_id: b.owner_organization_id,
       owner_name: ownerName,
     };

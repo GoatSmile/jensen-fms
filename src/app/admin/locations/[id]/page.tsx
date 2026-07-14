@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 
 import { ArchiveButton } from "../_components/archive-button";
 import {
@@ -26,9 +27,10 @@ export default async function LocationDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminLocations"),
     getTranslations("common"),
+    getLocale(),
   ]);
 
   const [locRes, movesRes, settingsRes] = await Promise.all([
@@ -88,14 +90,18 @@ export default async function LocationDetailPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{l.name_en}</BreadcrumbPage>
+            <BreadcrumbPage>
+              {localizedName(locale, l.name_en, l.name_da)}
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <header className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-2xl font-semibold">{l.name_en}</h1>
+          <h1 className="text-2xl font-semibold">
+            {localizedName(locale, l.name_en, l.name_da)}
+          </h1>
           <p className="text-muted-foreground font-mono text-xs">{l.code}</p>
         </div>
         <div className="flex items-center gap-2">

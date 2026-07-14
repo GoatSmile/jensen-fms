@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 
 export type IdentifierResult = { ok: true } | { ok: false; error: string; field?: string };
 
@@ -40,17 +41,18 @@ export async function createBikeIdentifier(
   // Server-side regex validation so the action stands on its own without UI cooperation.
   const { data: typeRow } = await supabase
     .from("bike_identifier_types")
-    .select("name_en, format_regex")
+    .select("name_en, name_da, format_regex")
     .eq("id", identifier_type_id)
     .maybeSingle();
   if (typeRow?.format_regex) {
     try {
       const re = new RegExp(typeRow.format_regex);
       if (!re.test(identifier_value)) {
+        const locale = await getLocale();
         return {
           ok: false,
           error: t("bikeIdentifierFormatMismatch", {
-            name: typeRow.name_en,
+            name: localizedName(locale, typeRow.name_en, typeRow.name_da),
             format: typeRow.format_regex,
           }),
           field: "identifier_value",

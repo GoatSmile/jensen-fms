@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+
+import { localizedName } from "@/i18n/vocab";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,7 +45,12 @@ export type EditorSourceList = {
   }[];
 };
 
-type PartTypeOption = { id: string; name_en: string; sort_order: number };
+type PartTypeOption = {
+  id: string;
+  name_en: string;
+  name_da?: string | null;
+  sort_order: number;
+};
 
 type Cell = { price: string; itemNo: string };
 type Row = { partTypeId: string; cells: Cell[] };
@@ -54,7 +61,7 @@ type Props = {
   partTypes: PartTypeOption[];
   currencies: string[];
   suppliers: { id: string; name: string }[];
-  serviceTypes: { id: string; name_en: string }[];
+  serviceTypes: { id: string; name_en: string; name_da?: string | null }[];
 };
 
 function tierHeading(t: TierCol): string {
@@ -100,6 +107,7 @@ export function RevisionEditor({
 }: Props) {
   const t = useTranslations("adminServices");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [supplierId, setSupplierId] = useState(source?.supplierId ?? "");
   const [serviceTypeId, setServiceTypeId] = useState(
     source?.serviceTypeId ?? "",
@@ -117,8 +125,14 @@ export function RevisionEditor({
   const [isPending, start] = useTransition();
 
   const partTypeName = useMemo(
-    () => new Map(partTypes.map((pt) => [pt.id, pt.name_en])),
-    [partTypes],
+    () =>
+      new Map(
+        partTypes.map((pt) => [
+          pt.id,
+          localizedName(locale, pt.name_en, pt.name_da),
+        ]),
+      ),
+    [partTypes, locale],
   );
   const presentIds = new Set(rows.map((r) => r.partTypeId));
   const addable = partTypes.filter((pt) => !presentIds.has(pt.id));
@@ -297,9 +311,9 @@ export function RevisionEditor({
                     <SelectValue placeholder={t("pickPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {serviceTypes.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name_en}
+                    {serviceTypes.map((st) => (
+                      <SelectItem key={st.id} value={st.id}>
+                        {localizedName(locale, st.name_en, st.name_da)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -368,7 +382,7 @@ export function RevisionEditor({
                 ) : (
                   addable.map((pt) => (
                     <SelectItem key={pt.id} value={pt.id}>
-                      {pt.name_en}
+                      {localizedName(locale, pt.name_en, pt.name_da)}
                     </SelectItem>
                   ))
                 )}

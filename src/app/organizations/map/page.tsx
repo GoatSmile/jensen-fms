@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -10,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 
 import CustomerMap, {
   type CustomerPin,
@@ -37,9 +38,10 @@ const WORKSHOP = { lat: 55.7203944, lng: 12.4268145 };
  * UI just renders whatever count comes back.
  */
 export default async function CustomerMapPage() {
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("customerMap"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -55,7 +57,7 @@ export default async function CustomerMapPage() {
       .select(
         `id, legal_name, display_name_da, display_name_en, lifecycle_stage,
          city, country_code, latitude, longitude,
-         segment:customer_segments(id, slug, name_en)`,
+         segment:customer_segments(id, slug, name_en, name_da)`,
       )
       .is("deleted_at", null)
       .eq("is_active", true)
@@ -68,7 +70,7 @@ export default async function CustomerMapPage() {
       .select(
         `id, name, city, country_code, latitude, longitude,
          organization:organizations(legal_name, display_name_da, display_name_en,
-           segment:customer_segments(slug, name_en))`,
+           segment:customer_segments(slug, name_en, name_da))`,
       )
       .is("deleted_at", null)
       .not("latitude", "is", null)
@@ -140,7 +142,9 @@ export default async function CustomerMapPage() {
         city: o.city,
         countryCode: o.country_code,
         segmentSlug: o.segment?.slug ?? null,
-        segmentLabel: o.segment?.name_en ?? null,
+        segmentLabel: o.segment
+          ? localizedName(locale, o.segment.name_en, o.segment.name_da)
+          : null,
         bikes,
         saBikes: orgsWithActiveSA.has(o.id) ? bikes : 0,
         expiringSoon: orgsExpiringSoon.has(o.id),
@@ -173,7 +177,9 @@ export default async function CustomerMapPage() {
         city: u.city,
         countryCode: u.country_code,
         segmentSlug: seg?.slug ?? null,
-        segmentLabel: seg?.name_en ?? null,
+        segmentLabel: seg
+          ? localizedName(locale, seg.name_en, seg.name_da)
+          : null,
         bikes: bikesByUnit.get(u.id) ?? 0,
         saBikes: 0,
         expiringSoon: false,
@@ -194,7 +200,9 @@ export default async function CustomerMapPage() {
         lng: finiteCoord(o.longitude),
         name: o.display_name_da ?? o.display_name_en ?? o.legal_name,
         segSlug: o.segment?.slug ?? null,
-        segLabel: o.segment?.name_en ?? null,
+        segLabel: o.segment
+          ? localizedName(locale, o.segment.name_en, o.segment.name_da)
+          : null,
       },
     ]),
   );
@@ -217,7 +225,9 @@ export default async function CustomerMapPage() {
           lng: finiteCoord(u.longitude),
           name: parent ? `${parent} · ${u.name}` : u.name,
           segSlug: seg?.slug ?? null,
-          segLabel: seg?.name_en ?? null,
+          segLabel: seg
+            ? localizedName(locale, seg.name_en, seg.name_da)
+            : null,
         },
       ];
     }),

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { ColorChip } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import { formatDateTime } from "@/lib/parts/format";
@@ -46,10 +47,11 @@ export default async function PaintOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tPo, tCommon] = await Promise.all([
+  const [t, tPo, tCommon, locale] = await Promise.all([
     getTranslations("paintOrderDetail"),
     getTranslations("paintOrders"),
     getTranslations("common"),
+    getLocale(),
   ]);
   // Read-only labels for the pre-items paint model's per-bike scope.
   const LEGACY_SCOPE_LABEL: Record<string, string> = {
@@ -66,7 +68,7 @@ export default async function PaintOrderDetailPage({
         planned_send_date, sent_at, expected_return_at, received_at,
         notes, created_at,
         supplier:suppliers(id, name),
-        color:colors(id, slug, name_en, hex, ral_code, coating),
+        color:colors(id, slug, name_en, name_da, hex, ral_code, coating),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
     )
@@ -100,8 +102,8 @@ export default async function PaintOrderDetailPage({
         `
           id, service_part_type_id, quantity, notes,
           supplier_item_no, unit_price, currency,
-          part_type:service_part_types(id, name_en),
-          color:colors(id, name_en, hex, ral_code, coating)
+          part_type:service_part_types(id, name_en, name_da),
+          color:colors(id, name_en, name_da, hex, ral_code, coating)
         `,
       )
       .eq("service_order_id", id)
@@ -111,7 +113,7 @@ export default async function PaintOrderDetailPage({
       .select(
         `
           bike_id, added_at, notes, scope,
-          color:colors(id, name_en, hex),
+          color:colors(id, name_en, name_da, hex),
           bike:bikes(
             id, frame_number, status,
             template:bike_templates(id, name_en, family:bike_families(name), frame_size, version)
@@ -144,7 +146,7 @@ export default async function PaintOrderDetailPage({
       .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES),
     supabase
       .from("colors")
-      .select("id, name_en, hex, ral_code, coating")
+      .select("id, name_en, name_da, hex, ral_code, coating")
       .eq("is_active", true)
       .order("name_en", { ascending: true }),
     loadActiveServicePartTypes(supabase),
@@ -170,13 +172,17 @@ export default async function PaintOrderDetailPage({
     const base = {
       id: i.id,
       partTypeId: i.service_part_type_id,
-      partTypeName: i.part_type?.name_en ?? "—",
+      partTypeName: i.part_type
+        ? localizedName(locale, i.part_type.name_en, i.part_type.name_da)
+        : "—",
       quantity: i.quantity,
       colorId: i.color?.id ?? null,
-      colorName: i.color?.name_en ?? null,
+      colorName: i.color
+        ? localizedName(locale, i.color.name_en, i.color.name_da)
+        : null,
       colorHex: i.color?.hex ?? null,
       colorFinish: i.color
-        ? colorFinishLabel(i.color.ral_code, i.color.coating)
+        ? colorFinishLabel(i.color.ral_code, i.color.coating, locale === "da" ? "da" : "en")
         : null,
       notes: i.notes,
     };
@@ -250,7 +256,9 @@ export default async function PaintOrderDetailPage({
       templateLabel,
       addedAt: r.added_at,
       notes: r.notes,
-      legacyColorName: r.color?.name_en ?? null,
+      legacyColorName: r.color
+        ? localizedName(locale, r.color.name_en, r.color.name_da)
+        : null,
       legacyColorHex: r.color?.hex ?? null,
       legacyScopeLabel: r.scope ? (LEGACY_SCOPE_LABEL[r.scope] ?? r.scope) : null,
     };
@@ -312,11 +320,15 @@ export default async function PaintOrderDetailPage({
         orderNumber={order.order_number}
         status={order.status as ServiceOrderStatus}
         supplierName={order.supplier?.name ?? null}
-        colorName={order.color?.name_en ?? null}
+        colorName={
+          order.color
+            ? localizedName(locale, order.color.name_en, order.color.name_da)
+            : null
+        }
         colorHex={order.color?.hex ?? null}
         colorFinish={
           order.color
-            ? colorFinishLabel(order.color.ral_code, order.color.coating)
+            ? colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en")
             : null
         }
       />
@@ -329,10 +341,17 @@ export default async function PaintOrderDetailPage({
           <Field label={t("fieldBatchColour")}>
             {order.color ? (
               <span className="flex flex-col gap-0.5">
-                <ColorChip hex={order.color.hex} label={order.color.name_en} />
-                {colorFinishLabel(order.color.ral_code, order.color.coating) ? (
+                <ColorChip
+                  hex={order.color.hex}
+                  label={localizedName(
+                    locale,
+                    order.color.name_en,
+                    order.color.name_da,
+                  )}
+                />
+                {colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en") ? (
                   <span className="text-muted-foreground text-xs">
-                    {colorFinishLabel(order.color.ral_code, order.color.coating)}
+                    {colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en")}
                   </span>
                 ) : null}
               </span>

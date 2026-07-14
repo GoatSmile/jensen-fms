@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { ChevronRight, Plus } from "lucide-react";
+
+import { localizedName } from "@/i18n/vocab";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,10 @@ export type LocationRow = {
  * Rows link to /admin/locations/[id] where edit + archive live.
  */
 export async function LocationsSection({ rows }: { rows: LocationRow[] }) {
-  const t = await getTranslations("adminLocations");
+  const [t, locale] = await Promise.all([
+    getTranslations("adminLocations"),
+    getLocale(),
+  ]);
   const activeCount = rows.filter((r) => r.isActive).length;
 
   return (
@@ -75,6 +80,8 @@ export async function LocationsSection({ rows }: { rows: LocationRow[] }) {
             <TableBody>
               {rows.map((row) => {
                 const href = `/admin/locations/${row.id}`;
+                const primaryName = localizedName(locale, row.nameEn, row.nameDa);
+                const secondaryName = locale === "da" ? row.nameEn : row.nameDa;
                 return (
                   <TableRow
                     key={row.id}
@@ -88,16 +95,16 @@ export async function LocationsSection({ rows }: { rows: LocationRow[] }) {
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{row.nameEn}</span>
+                          <span className="font-medium">{primaryName}</span>
                           {row.isPrimary ? (
                             <Badge variant="secondary">
                               {t("badgePrimary")}
                             </Badge>
                           ) : null}
                         </div>
-                        {row.nameDa && row.nameDa !== row.nameEn ? (
+                        {secondaryName && secondaryName !== primaryName ? (
                           <span className="text-muted-foreground text-xs">
-                            {row.nameDa}
+                            {secondaryName}
                           </span>
                         ) : null}
                       </Link>
@@ -132,7 +139,7 @@ export async function LocationsSection({ rows }: { rows: LocationRow[] }) {
                       <Link
                         href={href}
                         className="text-muted-foreground block px-3 py-2.5"
-                        aria-label={t("openAria", { name: row.nameEn })}
+                        aria-label={t("openAria", { name: primaryName })}
                       >
                         <ChevronRight className="size-4" aria-hidden />
                       </Link>

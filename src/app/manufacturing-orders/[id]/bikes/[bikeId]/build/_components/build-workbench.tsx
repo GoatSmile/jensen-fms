@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   CheckCircle2,
   ChevronDown,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
+import { localizedName } from "@/i18n/vocab";
 import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
 import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
@@ -56,6 +57,7 @@ export type WorkbenchIdentifierRow = {
 export type CategoryOption = {
   id: string;
   name_en: string;
+  name_da?: string | null;
   sortOrder: number;
 };
 
@@ -149,6 +151,7 @@ export function BuildWorkbench({
 }: Props) {
   const t = useTranslations("build");
   const tStatus = useTranslations("bikeStatus");
+  const locale = useLocale();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -645,7 +648,7 @@ export function BuildWorkbench({
                   <CategoryChecklistRow
                     key={category.id}
                     index={index + 1}
-                    label={category.name_en}
+                    label={localizedName(locale, category.name_en, category.name_da)}
                     parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
                       id: p.id,
                       sku: p.internal_sku,
@@ -687,7 +690,8 @@ export function BuildWorkbench({
                       <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
                         {empty.map((c, i) => (
                           <li key={c.id} className="py-0.5">
-                            {populated.length + i + 1}. {c.name_en}
+                            {populated.length + i + 1}.{" "}
+                            {localizedName(locale, c.name_en, c.name_da)}
                           </li>
                         ))}
                       </ul>

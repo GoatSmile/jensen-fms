@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+
+import { localizedName } from "@/i18n/vocab";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,7 @@ import {
 export type SegmentOption = {
   id: string;
   name_en: string;
+  name_da?: string | null;
 };
 
 export type CurrencyOption = {
@@ -38,6 +41,7 @@ export type CurrencyOption = {
 export type VatCodeOption = {
   code: string;
   name_en: string;
+  name_da?: string | null;
 };
 
 export type OrganizationFormValues = {
@@ -114,6 +118,7 @@ export function OrganizationForm({
   const t = useTranslations("customerForm");
   const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
+  const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<OrganizationFormValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -239,7 +244,7 @@ export function OrganizationForm({
             <SelectContent>
               {segments.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
-                  {s.name_en}
+                  {localizedName(locale, s.name_en, s.name_da)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -486,7 +491,7 @@ export function OrganizationForm({
                 <SelectItem value={NO_VAT_CODE}>{t("vatNone")}</SelectItem>
                 {vatCodes.map((v) => (
                   <SelectItem key={v.code} value={v.code}>
-                    {v.code} — {v.name_en}
+                    {v.code} — {localizedName(locale, v.name_en, v.name_da)}
                   </SelectItem>
                 ))}
               </SelectContent>

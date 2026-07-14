@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -19,9 +19,10 @@ import { buildParentOptions, type CategoryInput } from "../_lib/tree";
 
 export default async function NewCategoryPage() {
   const supabase = await createClient();
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("adminCategories"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const { data } = await supabase
     .from("part_categories")
@@ -30,7 +31,10 @@ export default async function NewCategoryPage() {
     .order("sort_order", { ascending: true })
     .order("name_en", { ascending: true });
 
-  const parentOptions = buildParentOptions((data ?? []) as CategoryInput[]);
+  const parentOptions = buildParentOptions(
+    (data ?? []) as CategoryInput[],
+    locale,
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 sm:p-6">

@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Minus, Plus, Search, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Field } from "@/components/field";
 import { DeliveryWeekDateField } from "@/components/delivery-week-date-field";
 import { appendField } from "@/lib/forms";
 import { familyTint } from "@/lib/bike-templates/family-colors";
+import { localizedName } from "@/i18n/vocab";
 
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
 
@@ -77,6 +78,7 @@ export function MOBatchForm({
 }: Props) {
   const t = useTranslations("mo");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [rows, setRows] = useState<BatchRow[]>(() =>
     initialTemplateId && templates.some((t) => t.id === initialTemplateId)
@@ -464,8 +466,11 @@ export function MOBatchForm({
                       <SelectContent>
                         {colors.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            <ColorSwatch hex={c.hex} label={c.name_en} />
-                            {c.name_en}
+                            <ColorSwatch
+                              hex={c.hex}
+                              label={localizedName(locale, c.name_en, c.name_da)}
+                            />
+                            {localizedName(locale, c.name_en, c.name_da)}
                           </SelectItem>
                         ))}
                       </SelectContent>

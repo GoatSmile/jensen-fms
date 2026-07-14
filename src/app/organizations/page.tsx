@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Building2, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
 import { countryName } from "@/lib/countries";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
@@ -38,9 +39,10 @@ export default async function OrganizationsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("customers"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
@@ -51,7 +53,7 @@ export default async function OrganizationsPage({
   const [segmentsRes] = await Promise.all([
     supabase
       .from("customer_segments")
-      .select("id, slug, name_en")
+      .select("id, slug, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);
@@ -67,7 +69,7 @@ export default async function OrganizationsPage({
       `
         id, legal_name, display_name_en, display_name_da,
         email, phone, country_code, created_at,
-        segment:customer_segments(id, slug, name_en)
+        segment:customer_segments(id, slug, name_en, name_da)
       `,
       { count: "exact" },
     )
@@ -117,7 +119,14 @@ export default async function OrganizationsPage({
   }
 
   const filterDescriptors: string[] = [];
-  if (selectedSegment) filterDescriptors.push(selectedSegment.name_en.toLowerCase());
+  if (selectedSegment)
+    filterDescriptors.push(
+      localizedName(
+        locale,
+        selectedSegment.name_en,
+        selectedSegment.name_da,
+      ).toLowerCase(),
+    );
   if (q) filterDescriptors.push(t("filterMatching", { q }));
 
   return (
@@ -183,7 +192,7 @@ export default async function OrganizationsPage({
             <option value="">{t("allSegments")}</option>
             {segments.map((s) => (
               <option key={s.id} value={s.slug}>
-                {s.name_en}
+                {localizedName(locale, s.name_en, s.name_da)}
               </option>
             ))}
           </select>
@@ -256,7 +265,13 @@ export default async function OrganizationsPage({
                         className="block px-4 py-2.5"
                       >
                         <Badge variant="outline" className="font-normal">
-                          {o.segment?.name_en ?? "—"}
+                          {o.segment
+                            ? localizedName(
+                                locale,
+                                o.segment.name_en,
+                                o.segment.name_da,
+                              )
+                            : "—"}
                         </Badge>
                       </Link>
                     </TableCell>

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Field } from "@/components/field";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import { localizedName } from "@/i18n/vocab";
 
 import { Badge } from "@/components/ui/badge";
 import { SegmentedId } from "@/components/segmented-id";
@@ -34,11 +35,12 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tCommon, tSource, tPriority] = await Promise.all([
+  const [t, tCommon, tSource, tPriority, locale] = await Promise.all([
     getTranslations("tickets"),
     getTranslations("common"),
     getTranslations("ticketSource"),
     getTranslations("ticketPriority"),
+    getLocale(),
   ]);
   const languageLabelMap: Record<string, string> = {
     da: t("langDa"),
@@ -56,7 +58,7 @@ export default async function TicketDetailPage({
         reported_by_text, reported_by_phone,
         bike:bikes!bike_id(
           id, frame_number,
-          bike_type:bike_types(name_en),
+          bike_type:bike_types(name_en, name_da),
           bike_template:bike_templates(family:bike_families(name), frame_size, name_en, version),
           owner_organization:organizations!owner_organization_id(id, legal_name, display_name_da, display_name_en)
         ),
@@ -134,6 +136,9 @@ export default async function TicketDetailPage({
       "(no name)"
     : null;
   const reporterFallback = ticket.reported_by_text;
+  const bikeTypeName =
+    localizedName(locale, bike?.bike_type?.name_en, bike?.bike_type?.name_da) ||
+    null;
   const templateLabel = bike?.bike_template
     ? [
         bike.bike_template.family?.name,
@@ -179,7 +184,7 @@ export default async function TicketDetailPage({
         description={ticket.description}
         bikeId={bike?.id ?? ""}
         bikeFrameNumber={bike?.frame_number ?? "—"}
-        bikeTypeName={bike?.bike_type?.name_en ?? null}
+        bikeTypeName={bikeTypeName}
         ownerOrganizationId={owner?.id ?? null}
         ownerName={ownerName}
       />
@@ -292,8 +297,8 @@ export default async function TicketDetailPage({
               <Field label={t("templateType")}>
                 {templateLabel ? (
                   <span className="text-sm">{templateLabel}</span>
-                ) : bike?.bike_type?.name_en ? (
-                  <span className="text-sm">{bike.bike_type.name_en}</span>
+                ) : bikeTypeName ? (
+                  <span className="text-sm">{bikeTypeName}</span>
                 ) : (
                   <Muted>—</Muted>
                 )}

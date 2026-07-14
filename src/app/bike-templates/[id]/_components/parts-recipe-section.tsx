@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+
+import { localizedName } from "@/i18n/vocab";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -117,6 +119,7 @@ export function PartsRecipeSection({
 }: Props) {
   const t = useTranslations("templateDetail");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
   const [error, setError] = useState<string | null>(null);
@@ -496,7 +499,7 @@ export function PartsRecipeSection({
               <CategoryChecklistRow
                 key={category.id}
                 index={index + 1}
-                label={category.name_en}
+                label={localizedName(locale, category.name_en, category.name_da)}
                 parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
                   id: p.id,
                   sku: p.internal_sku,
@@ -538,7 +541,8 @@ export function PartsRecipeSection({
                   <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
                     {empty.map((c, i) => (
                       <li key={c.id} className="py-0.5">
-                        {populated.length + i + 1}. {c.name_en}
+                        {populated.length + i + 1}.{" "}
+                        {localizedName(locale, c.name_en, c.name_da)}
                       </li>
                     ))}
                   </ul>

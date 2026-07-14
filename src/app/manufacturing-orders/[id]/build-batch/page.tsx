@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+import { localizedName } from "@/i18n/vocab";
 
 import {
   Breadcrumb,
@@ -24,7 +26,10 @@ export default async function BuildBatchPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: moId } = await params;
-  const t = await getTranslations("batchBuild");
+  const [t, locale] = await Promise.all([
+    getTranslations("batchBuild"),
+    getLocale(),
+  ]);
   const supabase = await createClient();
 
   const { data: mo, error: moErr } = await supabase
@@ -66,12 +71,15 @@ export default async function BuildBatchPage({
     if (requiredIds.length > 0) {
       const { data: types } = await supabase
         .from("bike_identifier_types")
-        .select("id, slug, name_en, sort_order")
+        .select("id, slug, name_en, name_da, sort_order")
         .in("id", requiredIds)
         .eq("is_active", true)
         .neq("slug", "frame_number")
         .order("sort_order", { ascending: true });
-      identifierTypes = (types ?? []).map((t) => ({ id: t.id, name: t.name_en }));
+      identifierTypes = (types ?? []).map((t) => ({
+        id: t.id,
+        name: localizedName(locale, t.name_en, t.name_da),
+      }));
     }
   }
 

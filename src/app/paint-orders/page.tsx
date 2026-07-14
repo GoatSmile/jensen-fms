@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { Paintbrush, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
@@ -52,10 +53,11 @@ export default async function PaintOrdersPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const [t, tCommon, tStatus] = await Promise.all([
+  const [t, tCommon, tStatus, locale] = await Promise.all([
     getTranslations("paintOrders"),
     getTranslations("common"),
     getTranslations("serviceOrderStatus"),
+    getLocale(),
   ]);
   const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
   const statusFilter =
@@ -73,7 +75,7 @@ export default async function PaintOrdersPage({
         id, order_number, status, planned_send_date, sent_at, received_at,
         service_type:service_types!inner(slug),
         supplier:suppliers(id, name),
-        color:colors(id, name_en, hex, ral_code, coating)
+        color:colors(id, name_en, name_da, hex, ral_code, coating)
       `,
     )
     .eq("service_type.slug", PAINT_SERVICE_SLUG)
@@ -258,16 +260,22 @@ export default async function PaintOrdersPage({
                         <span className="flex flex-col gap-0.5">
                           <ColorChip
                             hex={r.color.hex}
-                            label={r.color.name_en}
+                            label={localizedName(
+                              locale,
+                              r.color.name_en,
+                              r.color.name_da,
+                            )}
                           />
                           {colorFinishLabel(
                             r.color.ral_code,
                             r.color.coating,
+                            locale === "da" ? "da" : "en",
                           ) ? (
                             <span className="text-muted-foreground text-xs">
                               {colorFinishLabel(
                                 r.color.ral_code,
                                 r.color.coating,
+                                locale === "da" ? "da" : "en",
                               )}
                             </span>
                           ) : null}

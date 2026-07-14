@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { SegmentedId } from "@/components/segmented-id";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatDeliveryTarget } from "@/lib/iso-week";
@@ -51,10 +52,11 @@ export default async function SODetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tSo, tCommon] = await Promise.all([
+  const [t, tSo, tCommon, locale] = await Promise.all([
     getTranslations("soDetail"),
     getTranslations("so"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -102,7 +104,7 @@ export default async function SODetailPage({
            color_id, description_en, description_da,
            part:parts!part_id(id, internal_sku, name_en),
            template:bike_templates!bike_template_id(id, name_en, family:bike_families(name), frame_size),
-           color:colors!color_id(name_en)`,
+           color:colors!color_id(name_en, name_da)`,
         )
         .eq("sales_order_id", id)
         .order("line_number", { ascending: true }),
@@ -120,7 +122,7 @@ export default async function SODetailPage({
         .select(
           `id, order_number, status,
            supplier:suppliers(name),
-           color:colors(name_en, hex),
+           color:colors(name_en, name_da, hex),
            service_order_bikes(count)`,
         )
         .eq("sales_order_id", id)
@@ -141,12 +143,12 @@ export default async function SODetailPage({
         .order("frame_size", { ascending: true }),
       supabase
         .from("vat_codes")
-        .select("code, name_en, default_rate, is_active")
+        .select("code, name_en, name_da, default_rate, is_active")
         .eq("is_active", true)
         .order("default_rate", { ascending: false }),
       supabase
         .from("colors")
-        .select("id, name_en, hex, ral_code, coating, is_active")
+        .select("id, name_en, name_da, hex, ral_code, coating, is_active")
         .eq("is_active", true)
         .order("sort_order", { ascending: true })
         .order("name_en", { ascending: true }),
@@ -195,7 +197,9 @@ export default async function SODetailPage({
           .join(" · ")
       : null,
     colorId: l.color_id ?? null,
-    colorName: l.color?.name_en ?? null,
+    colorName: l.color
+      ? localizedName(locale, l.color.name_en, l.color.name_da)
+      : null,
     quantity: Number(l.quantity),
     unitPrice: Number(l.unit_price),
     vatCode: l.vat_code ?? null,
@@ -231,7 +235,9 @@ export default async function SODetailPage({
     order_number: p.order_number,
     status: p.status as ServiceOrderStatus,
     supplierName: p.supplier?.name ?? null,
-    colorName: p.color?.name_en ?? null,
+    colorName: p.color
+      ? localizedName(locale, p.color.name_en, p.color.name_da)
+      : null,
     colorHex: p.color?.hex ?? null,
     bikeCount: p.service_order_bikes?.[0]?.count ?? 0,
   }));
@@ -298,6 +304,7 @@ export default async function SODetailPage({
   const vatCodes: VatCodeChoice[] = (vatRes.data ?? []).map((v) => ({
     code: v.code,
     name_en: v.name_en,
+    name_da: v.name_da,
     default_rate: Number(v.default_rate),
   }));
   const colors: ColorChoice[] = colorsRes.data ?? [];

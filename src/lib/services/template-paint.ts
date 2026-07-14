@@ -35,7 +35,10 @@ import {
 export type TemplatePaintworkRow = {
   id: string;
   partTypeId: string;
+  /** English service-part-type vocab name. */
   partTypeName: string;
+  /** Danish service-part-type vocab name; localize the display at render. */
+  partTypeNameDa: string | null;
   quantity: number;
   /** Formatted per-piece / line estimate; null = the list has no price. */
   unitPriceLabel: string | null;
@@ -119,7 +122,7 @@ export async function loadTemplatePaintEstimate(
   const { data: paintRows, error } = await supabase
     .from("bike_template_service_parts")
     .select(
-      "id, service_part_type_id, quantity, part_type:service_part_types(name_en, sort_order)",
+      "id, service_part_type_id, quantity, part_type:service_part_types(name_en, name_da, sort_order)",
     )
     .eq("template_id", templateId);
   if (error || !paintRows) return empty;
@@ -151,6 +154,7 @@ export async function loadTemplatePaintEstimate(
         id: r.id,
         partTypeId: r.service_part_type_id,
         partTypeName: partType?.name_en ?? "—",
+        partTypeNameDa: partType?.name_da ?? null,
         quantity: r.quantity,
         unitPriceLabel:
           resolved && list

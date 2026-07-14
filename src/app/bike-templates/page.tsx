@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { BookOpen, Plus } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
+import { localizedName } from "@/i18n/vocab";
 
 type SearchParams = {
   current?: string;
@@ -38,9 +39,10 @@ export default async function BikeTemplatesPage({
 }) {
   const sp = await searchParams;
   const showAllVersions = sp.current === "all";
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("templates"),
     getTranslations("common"),
+    getLocale(),
   ]);
 
   const supabase = await createClient();
@@ -59,7 +61,7 @@ export default async function BikeTemplatesPage({
         default_retail_price,
         default_retail_currency,
         created_at,
-        bike_type:bike_types(id, name_en)
+        bike_type:bike_types(id, name_en, name_da)
       `,
     )
     .order("frame_size", { ascending: true })
@@ -242,7 +244,13 @@ export default async function BikeTemplatesPage({
                               className="block px-4 py-2.5"
                             >
                               <Badge variant="outline" className="font-normal">
-                                {tpl.bike_type?.name_en ?? "—"}
+                                {tpl.bike_type
+                                  ? localizedName(
+                                      locale,
+                                      tpl.bike_type.name_en,
+                                      tpl.bike_type.name_da,
+                                    )
+                                  : "—"}
                               </Badge>
                             </Link>
                           </TableCell>

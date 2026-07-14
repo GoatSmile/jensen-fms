@@ -23,7 +23,7 @@ export default async function NewPartPage() {
     await Promise.all([
       supabase
         .from("part_categories")
-        .select("id, name_en, parent_id")
+        .select("id, name_en, name_da, parent_id")
         .is("deleted_at", null)
         .eq("is_active", true)
         .order("sort_order", { ascending: true })

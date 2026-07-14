@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Field } from "@/components/field";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   coverageScopeLabel,
@@ -23,6 +23,7 @@ import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { type BikeStatus } from "@/lib/bikes/status";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   AssignCustomerDialog,
@@ -62,10 +63,11 @@ export default async function BikeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tc, tStatus] = await Promise.all([
+  const [t, tc, tStatus, locale] = await Promise.all([
     getTranslations("bikeDetail"),
     getTranslations("common"),
     getTranslations("bikeStatus"),
+    getLocale(),
   ]);
   const supabase = await createClient();
 
@@ -86,16 +88,16 @@ export default async function BikeDetailPage({
             id, frame_number, status, notes, deleted_at, bike_type_id,
             manufacturing_order_id, build_cost_dkk,
             owner_organization_id, owner_unit_id, assigned_at,
-            bike_type:bike_types(id, name_en),
+            bike_type:bike_types(id, name_en, name_da),
             template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
-            color:colors(id, slug, name_en, hex),
+            color:colors(id, slug, name_en, name_da, hex),
             manufacturing_order:manufacturing_orders(
               id, mo_number, status,
               sales_order:sales_orders!sales_order_id(id, sales_order_number)
             ),
             owner_organization:organizations!owner_organization_id(
               id, legal_name, display_name_en, display_name_da,
-              segment:customer_segments(name_en)
+              segment:customer_segments(name_en, name_da)
             ),
             owner_unit:organization_units!owner_unit_id(id, name)
           `,
@@ -107,7 +109,7 @@ export default async function BikeDetailPage({
         .select(
           `
             id, identifier_value, is_active, created_at, deactivated_at,
-            identifier_type:bike_identifier_types(id, name_en)
+            identifier_type:bike_identifier_types(id, name_en, name_da)
           `,
         )
         .eq("bike_id", id)
@@ -130,7 +132,7 @@ export default async function BikeDetailPage({
         .order("occurred_at", { ascending: false }),
       supabase
         .from("bike_identifier_types")
-        .select("id, slug, name_en, format_regex, is_active")
+        .select("id, slug, name_en, name_da, format_regex, is_active")
         .eq("is_active", true)
         .order("sort_order", { ascending: true }),
       // Active customers for the assign dialog — loaded eagerly so the dialog
@@ -140,7 +142,7 @@ export default async function BikeDetailPage({
         .from("organizations")
         .select(
           `id, legal_name, display_name_en, display_name_da,
-           segment:customer_segments(name_en)`,
+           segment:customer_segments(name_en, name_da)`,
         )
         .eq("is_active", true)
         .is("deleted_at", null)
@@ -201,7 +203,13 @@ export default async function BikeDetailPage({
     (r) => ({
       id: r.id,
       typeId: r.identifier_type?.id ?? "",
-      typeName: r.identifier_type?.name_en ?? "—",
+      typeName: r.identifier_type
+        ? localizedName(
+            locale,
+            r.identifier_type.name_en,
+            r.identifier_type.name_da,
+          )
+        : "—",
       isRequired:
         r.identifier_type?.id != null
           ? requiredTypes.has(r.identifier_type.id)
@@ -218,7 +226,7 @@ export default async function BikeDetailPage({
   ).map((t) => ({
     id: t.id,
     slug: t.slug,
-    name_en: t.name_en,
+    name_en: localizedName(locale, t.name_en, t.name_da),
     format_regex: t.format_regex,
     is_required: requiredTypes.has(t.id),
     alreadyRegistered: activeIdentifierTypeIds.has(t.id),
@@ -277,7 +285,9 @@ export default async function BikeDetailPage({
     id: o.id,
     legal_name: o.legal_name,
     display_name: o.display_name_da ?? o.display_name_en ?? null,
-    segment_name: o.segment?.name_en ?? null,
+    segment_name: o.segment
+      ? localizedName(locale, o.segment.name_en, o.segment.name_da)
+      : null,
   }));
   const organizationUnits: OrgUnitOption[] = (unitsRes.data ?? []).map((u) => ({
     id: u.id,
@@ -327,9 +337,17 @@ export default async function BikeDetailPage({
         bikeId={b.id}
         frameNumber={b.frame_number}
         status={b.status as BikeStatus}
-        bikeTypeName={b.bike_type?.name_en ?? null}
+        bikeTypeName={
+          b.bike_type
+            ? localizedName(locale, b.bike_type.name_en, b.bike_type.name_da)
+            : null
+        }
         templateLabel={templateLabel}
-        colorName={b.color?.name_en ?? null}
+        colorName={
+          b.color
+            ? localizedName(locale, b.color.name_en, b.color.name_da)
+            : null
+        }
         colorHex={b.color?.hex ?? null}
         isDeleted={b.deleted_at != null}
         assignAction={
@@ -360,7 +378,11 @@ export default async function BikeDetailPage({
       >
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <Field label={t("bikeType")}>
-            {b.bike_type?.name_en ?? <Muted>—</Muted>}
+            {b.bike_type ? (
+              localizedName(locale, b.bike_type.name_en, b.bike_type.name_da)
+            ) : (
+              <Muted>—</Muted>
+            )}
           </Field>
           <Field label={t("template")}>
             {b.template ? (
@@ -379,7 +401,10 @@ export default async function BikeDetailPage({
           </Field>
           <Field label={t("colour")}>
             {b.color ? (
-              <ColorChip hex={b.color.hex} label={b.color.name_en} />
+              <ColorChip
+                hex={b.color.hex}
+                label={localizedName(locale, b.color.name_en, b.color.name_da)}
+              />
             ) : (
               <Muted>—</Muted>
             )}

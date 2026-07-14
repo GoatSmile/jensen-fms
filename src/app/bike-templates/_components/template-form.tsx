@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { familyTint } from "@/lib/bike-templates/family-colors";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   createTemplate,
@@ -26,6 +27,7 @@ import {
 export type BikeTypeOption = {
   id: string;
   name_en: string;
+  name_da?: string | null;
 };
 
 export type CurrencyOption = {
@@ -83,6 +85,7 @@ export function TemplateForm({
 }: Props) {
   const t = useTranslations("templates");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<TemplateShellValues>(initial);
   const [error, setError] = useState<string | null>(null);
@@ -155,8 +158,14 @@ export function TemplateForm({
         >
           {isEdit ? (
             <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
-              {bikeTypes.find((t) => t.id === values.bike_type_id)?.name_en ??
-                "—"}
+              {(() => {
+                const bt = bikeTypes.find(
+                  (opt) => opt.id === values.bike_type_id,
+                );
+                return bt
+                  ? localizedName(locale, bt.name_en, bt.name_da)
+                  : "—";
+              })()}
             </p>
           ) : (
             <Select
@@ -167,9 +176,9 @@ export function TemplateForm({
                 <SelectValue placeholder={t("pickType")} />
               </SelectTrigger>
               <SelectContent>
-                {bikeTypes.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name_en}
+                {bikeTypes.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {localizedName(locale, opt.name_en, opt.name_da)}
                   </SelectItem>
                 ))}
               </SelectContent>

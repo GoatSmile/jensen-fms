@@ -17,6 +17,8 @@ export type BikeIdentifierTypeOption = {
   id: string;
   slug: string;
   name_en: string;
+  /** Danish vocab name; localize the display via `localizedName` at render. */
+  name_da: string | null;
   format_regex: string | null;
   is_required: boolean;
   alreadyRegistered: boolean;
@@ -24,7 +26,10 @@ export type BikeIdentifierTypeOption = {
 
 export type BikeIdentifierRow = {
   id: string;
+  /** English vocab name of the identifier type. */
   typeName: string;
+  /** Danish vocab name of the identifier type; localize at render. */
+  typeNameDa: string | null;
   typeSlug: string;
   value: string;
 };
@@ -47,14 +52,14 @@ export async function loadBikeIdentifierContext(
     supabase
       .from("bike_identifiers")
       .select(
-        "id, identifier_value, is_active, identifier_type:bike_identifier_types(id, slug, name_en)",
+        "id, identifier_value, is_active, identifier_type:bike_identifier_types(id, slug, name_en, name_da)",
       )
       .eq("bike_id", bikeId)
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
     supabase
       .from("bike_identifier_types")
-      .select("id, slug, name_en, format_regex")
+      .select("id, slug, name_en, name_da, format_regex")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -77,6 +82,7 @@ export async function loadBikeIdentifierContext(
   const rows: BikeIdentifierRow[] = (identifiersRes.data ?? []).map((r) => ({
     id: r.id,
     typeName: r.identifier_type?.name_en ?? "—",
+    typeNameDa: r.identifier_type?.name_da ?? null,
     typeSlug: r.identifier_type?.slug ?? "",
     value: r.identifier_value,
   }));
@@ -85,6 +91,7 @@ export async function loadBikeIdentifierContext(
     id: t.id,
     slug: t.slug,
     name_en: t.name_en,
+    name_da: t.name_da,
     format_regex: t.format_regex,
     is_required: requiredTypes.has(t.id),
     alreadyRegistered: activeTypeIds.has(t.id),

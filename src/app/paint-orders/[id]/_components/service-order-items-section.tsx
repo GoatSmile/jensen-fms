@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ColorChip, ColorSwatch } from "@/components/color-swatch";
 import { colorFinishLabel } from "@/lib/colors/coating";
+import { localizedName } from "@/i18n/vocab";
 import type { ColorOption } from "@/app/paint-orders/_components/paint-order-form";
 
 import {
@@ -37,7 +38,11 @@ import {
 } from "../_actions/manage-items";
 import { Section } from "./section";
 
-export type PartTypeOption = { id: string; name_en: string };
+export type PartTypeOption = {
+  id: string;
+  name_en: string;
+  name_da?: string | null;
+};
 
 export type ServiceOrderItemRow = {
   id: string;
@@ -196,6 +201,7 @@ function ItemRow({
   onChange: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
+  const locale = useLocale();
   const [pending, start] = useTransition();
   const [qty, setQty] = useState(String(row.quantity));
 
@@ -290,17 +296,20 @@ function ItemRow({
               <SelectValue placeholder="—" />
             </SelectTrigger>
             <SelectContent>
-              {colors.map((c) => (
+              {colors.map((c) => {
+                const label = localizedName(locale, c.name_en, c.name_da);
+                return (
                 <SelectItem key={c.id} value={c.id}>
-                  <ColorSwatch hex={c.hex} label={c.name_en} />
-                  {c.name_en}
-                  {colorFinishLabel(c.ral_code, c.coating) ? (
+                  <ColorSwatch hex={c.hex} label={label} />
+                  {label}
+                  {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
                     <span className="text-muted-foreground ml-1.5 text-xs">
-                      {colorFinishLabel(c.ral_code, c.coating)}
+                      {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
                     </span>
                   ) : null}
                 </SelectItem>
-              ))}
+                );
+              })}
             </SelectContent>
           </Select>
         ) : row.colorName ? (
@@ -374,6 +383,7 @@ function AddItemDialog({
 }) {
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [partTypeId, setPartTypeId] = useState("");
   const [qty, setQty] = useState("1");
@@ -448,7 +458,7 @@ function AddItemDialog({
                 <SelectContent>
                   {partTypes.map((pt) => (
                     <SelectItem key={pt.id} value={pt.id}>
-                      {pt.name_en}
+                      {localizedName(locale, pt.name_en, pt.name_da)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -475,17 +485,20 @@ function AddItemDialog({
                 <SelectValue placeholder="—" />
               </SelectTrigger>
               <SelectContent>
-                {colors.map((c) => (
+                {colors.map((c) => {
+                  const label = localizedName(locale, c.name_en, c.name_da);
+                  return (
                   <SelectItem key={c.id} value={c.id}>
-                    <ColorSwatch hex={c.hex} label={c.name_en} />
-                    {c.name_en}
-                    {colorFinishLabel(c.ral_code, c.coating) ? (
+                    <ColorSwatch hex={c.hex} label={label} />
+                    {label}
+                    {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
                       <span className="text-muted-foreground ml-1.5 text-xs">
-                        {colorFinishLabel(c.ral_code, c.coating)}
+                        {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
                       </span>
                     ) : null}
                   </SelectItem>
-                ))}
+                  );
+                })}
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
@@ -34,7 +35,10 @@ export default async function BikeBuildWorkbenchPage({
   params: Promise<{ id: string; bikeId: string }>;
 }) {
   const { id: moId, bikeId } = await params;
-  const t = await getTranslations("build");
+  const [t, locale] = await Promise.all([
+    getTranslations("build"),
+    getLocale(),
+  ]);
   const supabase = await createClient();
 
   const [
@@ -52,7 +56,7 @@ export default async function BikeBuildWorkbenchPage({
       .select(
         `id, mo_number, status,
          bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size),
-         color:colors(name_en, hex),
+         color:colors(name_en, name_da, hex),
          sales_order:sales_orders!sales_order_id(production_note)`,
       )
       .eq("id", moId)
@@ -71,7 +75,7 @@ export default async function BikeBuildWorkbenchPage({
          part:parts!part_id(
            id, internal_sku, name_en,
            default_retail_price, default_retail_currency,
-           category:part_categories(id, name_en)
+           category:part_categories(id, name_en, name_da)
          )`,
       )
       .eq("bike_id", bikeId)
@@ -83,7 +87,7 @@ export default async function BikeBuildWorkbenchPage({
       .eq("manufacturing_order_id", moId),
     supabase
       .from("part_categories")
-      .select("id, name_en, sort_order")
+      .select("id, name_en, name_da, sort_order")
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -136,7 +140,13 @@ export default async function BikeBuildWorkbenchPage({
       partSku: r.part?.internal_sku ?? "—",
       partName: r.part?.name_en ?? "—",
       categoryId: r.part?.category?.id ?? null,
-      categoryName: r.part?.category?.name_en ?? null,
+      categoryName: r.part?.category
+        ? localizedName(
+            locale,
+            r.part.category.name_en,
+            r.part.category.name_da,
+          )
+        : null,
       quantity: Number(r.quantity),
       consumed: r.inventory_movement_id != null,
       notes: r.notes,
@@ -151,6 +161,7 @@ export default async function BikeBuildWorkbenchPage({
   const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({
     id: c.id,
     name_en: c.name_en,
+    name_da: c.name_da,
     sortOrder: c.sort_order,
   }));
   const catalog: PartInCatalog[] = (catalogRes.data ?? []).map((p) => ({
@@ -375,7 +386,11 @@ export default async function BikeBuildWorkbenchPage({
         buildNote={buildNote}
         bikeStatus={bikeStatus}
         templateLabel={templateLabel}
-        colorName={mo.color?.name_en ?? null}
+        colorName={
+          mo.color
+            ? localizedName(locale, mo.color.name_en, mo.color.name_da)
+            : null
+        }
         colorHex={mo.color?.hex ?? null}
         initialBikeParts={bikeParts}
         categories={categories}

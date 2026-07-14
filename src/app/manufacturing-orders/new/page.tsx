@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+
+import { localizedName } from "@/i18n/vocab";
 
 import {
   Breadcrumb,
@@ -33,9 +35,10 @@ export default async function NewManufacturingOrderPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const [t, tCommon] = await Promise.all([
+  const [t, tCommon, locale] = await Promise.all([
     getTranslations("mo"),
     getTranslations("common"),
+    getLocale(),
   ]);
   const supabase = await createClient();
   const [templatesRes, bikeTypesRes, colorsRes, bomsRes] = await Promise.all([
@@ -45,7 +48,7 @@ export default async function NewManufacturingOrderPage({
         `
           id, name_en, family_id, family:bike_families(name, sort_order),
           frame_size, version, is_current, bike_type_id,
-          bike_type:bike_types(name_en)
+          bike_type:bike_types(name_en, name_da)
         `,
       )
       .eq("is_current", true)
@@ -53,7 +56,7 @@ export default async function NewManufacturingOrderPage({
       .order("name_en", { ascending: true }),
     supabase
       .from("bike_types")
-      .select("id, slug, name_en")
+      .select("id, slug, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -87,7 +90,9 @@ export default async function NewManufacturingOrderPage({
       version: t.version,
       is_current: t.is_current,
       bike_type_id: t.bike_type_id,
-      bike_type_name: t.bike_type?.name_en ?? null,
+      bike_type_name: t.bike_type
+        ? localizedName(locale, t.bike_type.name_en, t.bike_type.name_da)
+        : null,
     }))
     // Family-adjacent ordering everywhere the list feeds (batch cards +
     // one-off select): families by their admin sort_order, then no-family
@@ -103,10 +108,13 @@ export default async function NewManufacturingOrderPage({
         a.name_en.localeCompare(b.name_en),
     );
   const typeRows = bikeTypesRes.data ?? [];
-  const bikeTypes: BikeTypeOption[] = typeRows.map(({ id, name_en }) => ({
-    id,
-    name_en,
-  }));
+  const bikeTypes: BikeTypeOption[] = typeRows.map(
+    ({ id, name_en, name_da }) => ({
+      id,
+      name_en,
+      name_da,
+    }),
+  );
   const defaultBikeTypeId =
     typeRows.find((t) => t.slug === "e_bike")?.id ?? "";
   const colors: ColorOption[] = colorsRes.data ?? [];

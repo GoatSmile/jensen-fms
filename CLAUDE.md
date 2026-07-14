@@ -1218,36 +1218,39 @@ when the work ships or the idea is rejected.
     (`/invoices/[id]/print` per-invoice, PO print deliberately English,
     `/b/[bikeId]` public flow untouched). `worker_language` becomes
     per-user at M1. See `docs/plan-july9-vacation-month.md`.
-  - **Controlled-vocab names (categories, types, colours…) — PLANNED,
-    helper built 2026-07-13, render sweep NOT yet run.** Correction to an
-    earlier note that called this a "separate unstarted concern needing
-    bilingual columns": the schema is ALREADY bilingual and the Danish is
-    ALREADY authored. Every controlled-vocab table has `name_en` + `name_da`
-    (orgs: `display_name_en/_da`), and `name_da` is fully populated on the
-    ones that matter — part_categories 71/71, bike_identifier_types 13/13,
-    tax_identifier_types 11/11, bike_types 7/7, vat_codes 7/7,
-    service_part_types 8/8, customer_segments 7/10, colors 5/5,
-    service_types 1/1, inventory_locations 1/1. The app just renders
-    `name_en` unconditionally, so a Danish user still sees "Brakes",
-    "Frame Number", "Electric Bike". Remaining work is a **code sweep**
-    (no migration, no data entry): add `name_da` to the vocab embeds/selects
-    and render through the pure helper `localizedName(locale, en, da)` in
+  - **Controlled-vocab names (categories, types, colours…) — SHIPPED
+    2026-07-14.** Every controlled-vocab name now renders in the active
+    locale via the pure helper `localizedName(locale, en, da)` in
     `src/i18n/vocab.ts` (da→`name_da||name_en`, en→`name_en||name_da`, so a
     blank never renders empty). Locale from `getLocale()` (server) /
-    `useLocale()` (client). **Scope ~82 files** across app modules + a few
-    `src/lib` loaders. IN: the 10 vocabs above. **OUT (deliberate):**
-    `parts.name_en` (6/176 real da — English product names) and
-    `bike_templates.name_en` (0/8) — owner-confirmed exclusion 2026-07-13;
-    `bike_families.name` (single col, proper nouns); org `display_name`/
-    `legal_name` (identity, already da-first ad-hoc). Wrinkle: the parts
-    LIST shows `category_name` precomputed by a DB view — localize via a
-    lookup against the already-loaded category list (which gains `name_da`),
-    not the view. Fold in `colorFinishLabel` (Glossy/Matte/Satin/Clear) as
-    a message-namespace enum (it's code-side, not DB vocab). Method when
-    run: reference module first, then parallel agents per module (NO JSON
-    merge this time — cleaner than the error sweep). `bike_families.name`,
-    `bike_types.name_en` etc. surfaced in pickers all go through the same
-    helper once swept.
+    `useLocale()` (client). No migration, no data entry — the schema was
+    already bilingual and `name_da` already authored. Covered the 10 vocabs:
+    part_categories, bike_types, bike_identifier_types, tax_identifier_types,
+    vat_codes, service_types, service_part_types, customer_segments, colors,
+    inventory_locations — across ~90 files (list/detail/form/print surfaces +
+    child `_components` + `src/lib` loaders). **Patterns used:** most render
+    sites wrap `localizedName` inline after adding `name_da` to the embed;
+    where a value was pre-composed by a parent and passed to a child
+    component, the PARENT remaps `name_en → localizedName(...)` before
+    passing (MO detail, bike detail identifier options, template paintwork)
+    so the child needs no change; the parts LIST `category_name` (DB-view
+    column) is localized via a `categoryNameById` lookup against the loaded
+    category list; `flattenCategoryTree` / `buildParentOptions` gained a
+    `locale` param. **Admin vocab-management sections** (colors/categories/
+    segments/locations lists) lead with the localized name + show the OTHER
+    language as a muted subtitle (differs-only) — the maintainer keeps both.
+    **`colorFinishLabel`/`coatingLabel`** already carried da labels (Mat/
+    Blank/Klar/Satin); call sites now pass the locale (coerced `"en"|"da"` —
+    the fn doesn't accept `de`). NO message-namespace fold was needed.
+    **OUT (deliberate, still English):** `parts.name_en` (product names),
+    `bike_templates.name_en`, `bike_families.name` (single col), org
+    `display_name`/`legal_name` (identity), `hs_codes.description`, kit
+    sticker colours (app constant), the public `/b/[bikeId]` report flow
+    (own per-document language), invoice/PO document generators (own doc
+    language), and `countries` lib names (separate vocab concern). Verified
+    in the browser in Danish (categories admin, parts list + recipe, bike
+    types, org segments) then `app_language` restored to `en` — flipping it
+    to `da` is the owner's 1-click go-live.
 
 - **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track.**
   Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure

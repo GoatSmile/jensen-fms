@@ -46,7 +46,7 @@ export default async function EditBikeTemplatePage({
       .maybeSingle(),
     supabase
       .from("bike_types")
-      .select("id, name_en")
+      .select("id, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true })
       .order("name_en", { ascending: true }),
