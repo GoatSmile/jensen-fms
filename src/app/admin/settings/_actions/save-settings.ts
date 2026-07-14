@@ -5,6 +5,12 @@ import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import {
+  TRANSCRIPTION_PROVIDERS,
+  EXTRACTION_PROVIDERS,
+  TELEPHONY_PROVIDERS,
+  findProvider,
+} from "@/lib/inbound/settings";
 
 export type SettingsResult = { ok: true } | { ok: false; error: string };
 
@@ -294,6 +300,86 @@ export async function saveEconomicSettings(
     .eq("id", 1);
   if (error) {
     return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+  }
+
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
+/**
+ * Inbound-pipeline provider config (migration 66). Provider selection is
+ * validated against the registries so a stored key always maps to a built
+ * adapter; the provider API keys stay in env (this only touches non-secret
+ * params + which adapter is active).
+ */
+export async function saveInboundSettings(
+  formData: FormData,
+): Promise<SettingsResult> {
+  const t = await getTranslations("errors");
+
+  const pick = (
+    field: string,
+    registry: typeof TRANSCRIPTION_PROVIDERS,
+    fallback: string,
+  ): { value: string } | { error: string } => {
+    const raw = (nullable(formData.get(field)) ?? fallback).trim();
+    if (!findProvider(registry, raw)) {
+      return { error: t("inboundUnknownProvider", { provider: raw }) };
+    }
+    return { value: raw };
+  };
+
+  const transcription = pick(
+    "inbound_transcription_provider",
+    TRANSCRIPTION_PROVIDERS,
+    "azure",
+  );
+  if ("error" in transcription) return { ok: false, error: transcription.error };
+  const extraction = pick(
+    "inbound_extraction_provider",
+    EXTRACTION_PROVIDERS,
+    "anthropic",
+  );
+  if ("error" in extraction) return { ok: false, error: extraction.error };
+  const telephony = pick(
+    "inbound_telephony_provider",
+    TELEPHONY_PROVIDERS,
+    "twilio",
+  );
+  if ("error" in telephony) return { ok: false, error: telephony.error };
+
+  const retentionRaw = (
+    nullable(formData.get("inbound_media_retention_days")) ?? "90"
+  ).trim();
+  const retention = Number(retentionRaw);
+  if (!Number.isInteger(retention) || retention < 1 || retention > 3650) {
+    return { ok: false, error: t("inboundRetentionRange") };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .update({
+      inbound_transcription_provider: transcription.value,
+      inbound_transcription_region: nullable(
+        formData.get("inbound_transcription_region"),
+      ),
+      inbound_extraction_provider: extraction.value,
+      inbound_extraction_model:
+        nullable(formData.get("inbound_extraction_model")) ??
+        "claude-haiku-4-5-20251001",
+      inbound_telephony_provider: telephony.value,
+      inbound_phone_number: nullable(formData.get("inbound_phone_number")),
+      inbound_media_retention_days: retention,
+      inbound_shadow_mode: formData.get("inbound_shadow_mode") === "on",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+  if (error) {
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");

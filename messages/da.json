@@ -2994,7 +2994,25 @@
     "reportUrlSubmittedHint": "Fra kunde · seneste {days} dage",
     "reportUrlFallback": "“Jeg kender ikke min cykel”-alternativet ligger på <code>{helpUrl}</code> — nyttigt, når en kunde ikke kan finde QR-klistermærket. Begge veje ender i <link>/maintenance/tickets</link>; rapporter om uidentificerede cykler vises markeret “Skal triageres” i cykelkolonnen.",
     "reportUrlCopy": "Kopiér",
-    "reportUrlCopied": "Kopieret"
+    "reportUrlCopied": "Kopieret",
+    "inboundHeading": "Opkald & indgående",
+    "inboundDescription": "Hvilke udbydere der driver telefonbesked→sag-pipelinen og deres indstillinger. Udbydernes API-nøgler er env-hemmeligheder — vises her kun som sat/mangler.",
+    "inboundShadowLabel": "Skyggetilstand",
+    "inboundShadowHint": "Opretter kun kladde-sager til gennemsyn; intet sendes automatisk til kunder. Slå fra senere for at gå live.",
+    "inboundTranscriptionTitle": "Transskription (tale → tekst)",
+    "inboundExtractionTitle": "Udtræk (tekst → struktureret)",
+    "inboundTelephonyTitle": "Telefoni (telefonnummer)",
+    "providerLabel": "Udbyder",
+    "inboundRegionLabel": "Region",
+    "inboundModelLabel": "Model",
+    "inboundPhoneLabel": "Indgående telefonnummer",
+    "inboundRetentionLabel": "Lydopbevaring (dage)",
+    "secretSet": "sat",
+    "secretMissing": "mangler",
+    "saveInbound": "Gem indgående-indstillinger",
+    "provider_azure": "Azure Speech (EU)",
+    "provider_anthropic": "Claude (Anthropic)",
+    "provider_twilio": "Twilio"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -3649,7 +3667,9 @@
     "inboundFileTooLarge": "Lydfilen er for stor (maks. 25 MB).",
     "inboundNotAudio": "Ikke-understøttet filtype: {type}. Upload en lydfil.",
     "inboundCouldNotSave": "Kunne ikke gemme beskeden: {detail}",
-    "inboundUploadFailed": "Upload mislykkedes: {detail}"
+    "inboundUploadFailed": "Upload mislykkedes: {detail}",
+    "inboundUnknownProvider": "Ukendt udbyder: {provider}.",
+    "inboundRetentionRange": "Lydopbevaring skal være et helt antal dage (1–3650)."
   },
   "adminInbound": {
     "crumbAdmin": "Admin",

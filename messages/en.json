@@ -2994,7 +2994,25 @@
     "reportUrlSubmittedHint": "From customer · last {days} days",
     "reportUrlFallback": "The “I don’t know my bike” fallback lives at <code>{helpUrl}</code> — useful when a customer can’t find the QR sticker. Both paths land in <link>/maintenance/tickets</link>; unidentified-bike reports show up flagged “Needs triage” in the Bike column.",
     "reportUrlCopy": "Copy",
-    "reportUrlCopied": "Copied"
+    "reportUrlCopied": "Copied",
+    "inboundHeading": "Calls & inbound",
+    "inboundDescription": "Which providers run the voicemail→ticket pipeline and their settings. Provider API keys are env secrets — shown here only as set/missing.",
+    "inboundShadowLabel": "Shadow mode",
+    "inboundShadowHint": "Draft tickets for review only; nothing is sent to customers automatically. Turn off later to go live.",
+    "inboundTranscriptionTitle": "Transcription (speech → text)",
+    "inboundExtractionTitle": "Extraction (text → structured)",
+    "inboundTelephonyTitle": "Telephony (phone number)",
+    "providerLabel": "Provider",
+    "inboundRegionLabel": "Region",
+    "inboundModelLabel": "Model",
+    "inboundPhoneLabel": "Inbound phone number",
+    "inboundRetentionLabel": "Audio retention (days)",
+    "secretSet": "set",
+    "secretMissing": "missing",
+    "saveInbound": "Save inbound settings",
+    "provider_azure": "Azure Speech (EU)",
+    "provider_anthropic": "Claude (Anthropic)",
+    "provider_twilio": "Twilio"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -3649,7 +3667,9 @@
     "inboundFileTooLarge": "Audio file is too large (max 25 MB).",
     "inboundNotAudio": "Unsupported file type: {type}. Upload an audio file.",
     "inboundCouldNotSave": "Could not save the message: {detail}",
-    "inboundUploadFailed": "Upload failed: {detail}"
+    "inboundUploadFailed": "Upload failed: {detail}",
+    "inboundUnknownProvider": "Unknown provider: {provider}.",
+    "inboundRetentionRange": "Audio retention must be a whole number of days (1–3650)."
   },
   "adminInbound": {
     "crumbAdmin": "Admin",

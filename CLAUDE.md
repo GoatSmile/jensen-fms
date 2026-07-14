@@ -54,11 +54,45 @@ cross-cutting. Original SQL files live in `/migrations/`.
   snapshot `tariff_pct = 0` and skip the import-tax bucket. Admin manages the
   list at `/admin/hs-codes`. Archiving (`is_active = false`) hides a code
   from new-part pickers but leaves historical snapshots alone.
+- **Configuration doctrine — three tiers (standing rule, formalized
+  2026-07-14).** Every configurable knob goes in exactly one place by its
+  nature; apply this to all new config:
+  1. **Secrets → env / Vercel only.** API keys, tokens, passwords. NEVER in
+     the DB or UI. The admin surface may show a secret as *present/missing*
+     (a `process.env[...]` boolean, never the value) so the owner knows what
+     to set — e.g. `economicEnvReady()`, `inboundSecretStatus()`.
+  2. **Operational config → `app_settings` + `/admin/settings`.** Emails,
+     phone numbers, domains/DNS, feature flags, defaults, **provider
+     selection**, and a provider's non-secret params (region, model name,
+     sender id, phone number). Read via a per-domain loader in
+     `src/lib/<domain>/settings.ts` (e.g. `loadCommunicationSettings`,
+     `loadInboundSettings`) — never `process.env` for these.
+  3. **Vocabulary / reference data → controlled-vocab tables + `/admin/*`.**
+     Colours, categories, service types, etc. (localized via `localizedName`).
+  - **Swappable providers (registry pattern).** A "provider" for a swappable
+    capability (transcription, telephony, extraction-LLM, email, geocoding)
+    is an **adapter behind a stable interface**. Config *selects* which
+    already-built adapter runs + holds its params; it can NOT conjure an
+    unbuilt integration. Each capability has a registry
+    (`src/lib/inbound/settings.ts` → `TRANSCRIPTION_PROVIDERS` etc.) listing
+    `{ key, envSecrets[] }`; `app_settings` stores the selected key; the
+    admin card shows the selected provider's secret present/missing. Adding a
+    provider = build its adapter + add a registry entry, never a config-only
+    switch. Provider *endpoints* (base URLs) stay hardcoded in the client lib
+    (you change code to add a provider anyway). First applied to the inbound
+    pipeline (migration 66); the e-conomic + communication settings already
+    follow tiers 1–2. Known not-yet-migrated knob: `DEFAULT_PAINTER_NAME`
+    (code constant → should become a setting / supplier flag) — do it when it
+    next bites.
 - **App-wide defaults** live in a singleton `app_settings` row (id = 1),
   edited at `/admin/settings`. Holds: `default_transport_pct` (0.10 = 10 %,
-  pre-filled into new PO line dialogs); and the location-visibility pair added
+  pre-filled into new PO line dialogs); the location-visibility pair added
   in migration 47 — `primary_location_id` (FK → `inventory_locations`) and
-  `hide_location_info` (bool). See the locations note below.
+  `hide_location_info` (bool, see the locations note below); communication +
+  e-conomic operational config; and (migration 66) the inbound-pipeline
+  provider selection + params (`inbound_transcription_*`, `inbound_extraction_*`,
+  `inbound_telephony_*`, `inbound_phone_number`, `inbound_media_retention_days`,
+  `inbound_shadow_mode`).
 - **Single-location simplification + location visibility (migration 47).** The
   shop runs one stock location (`WH-MAIN`), so location detail is hidden
   app-wide by default (`app_settings.hide_location_info` seeded `true`), with

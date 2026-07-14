@@ -29,6 +29,14 @@ export type Database = {
           email_domain: string | null
           hide_location_info: boolean
           id: number
+          inbound_extraction_model: string
+          inbound_extraction_provider: string
+          inbound_media_retention_days: number
+          inbound_phone_number: string | null
+          inbound_shadow_mode: boolean
+          inbound_telephony_provider: string
+          inbound_transcription_provider: string
+          inbound_transcription_region: string | null
           outbound_from_email: string | null
           outbound_reply_to_email: string | null
           outbound_test_email: string | null
@@ -52,6 +60,14 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_extraction_model?: string
+          inbound_extraction_provider?: string
+          inbound_media_retention_days?: number
+          inbound_phone_number?: string | null
+          inbound_shadow_mode?: boolean
+          inbound_telephony_provider?: string
+          inbound_transcription_provider?: string
+          inbound_transcription_region?: string | null
           outbound_from_email?: string | null
           outbound_reply_to_email?: string | null
           outbound_test_email?: string | null
@@ -75,6 +91,14 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_extraction_model?: string
+          inbound_extraction_provider?: string
+          inbound_media_retention_days?: number
+          inbound_phone_number?: string | null
+          inbound_shadow_mode?: boolean
+          inbound_telephony_provider?: string
+          inbound_transcription_provider?: string
+          inbound_transcription_region?: string | null
           outbound_from_email?: string | null
           outbound_reply_to_email?: string | null
           outbound_test_email?: string | null

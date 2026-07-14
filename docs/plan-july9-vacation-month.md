@@ -371,6 +371,18 @@ needs nothing at all.
   — the obligation starts with real customer audio, deliberately not
   earlier. Deps: Twilio account.
 
+**Provider config seam SHIPPED 2026-07-14 (migration 66).** Provider
+selection + non-secret params live in `app_settings`, edited at
+Admin → Settings → "Calls & inbound" (transcription/extraction/telephony
+provider + region/model/phone, shadow-mode, retention days); provider API
+keys stay env secrets, shown in the card as present/missing via
+`inboundSecretStatus()`. Slices B/C/F read `loadInboundSettings()` and pick
+their adapter from the capability registry
+(`src/lib/inbound/settings.ts` → `TRANSCRIPTION_PROVIDERS` etc.), gating on
+the secret-present check — so swapping a provider later is a dropdown +
+adding an adapter, per the config doctrine in CLAUDE.md. The verdicts below
+are the seeded defaults.
+
 ### Provider verdicts **[dev decisions 2026-07-09]**
 
 | Layer | Choice | Why / mitigations |

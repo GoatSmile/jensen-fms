@@ -19,6 +19,14 @@ import type { EmailDnsRecord } from "./_actions/save-settings";
 import { LanguageSettingsForm } from "./_components/language-settings-form";
 import { EconomicSettingsForm } from "./_components/economic-settings-form";
 import { economicEnvReady } from "@/lib/economic/client";
+import { InboundSettingsForm } from "./_components/inbound-settings-form";
+import {
+  loadInboundSettings,
+  inboundSecretStatus,
+  TRANSCRIPTION_PROVIDERS,
+  EXTRACTION_PROVIDERS,
+  TELEPHONY_PROVIDERS,
+} from "@/lib/inbound/settings";
 
 export default async function AdminSettingsPage() {
   const [t, tCommon] = await Promise.all([
@@ -34,6 +42,8 @@ export default async function AdminSettingsPage() {
     .eq("id", 1)
     .maybeSingle();
   const data = settingsRes.data;
+  const inboundSettings = await loadInboundSettings(supabase);
+  const inboundSecrets = inboundSecretStatus(inboundSettings);
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
   const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
   const workerLanguage = (
@@ -174,6 +184,31 @@ export default async function AdminSettingsPage() {
                 : ""
             }
             tokensReady={economicEnvReady()}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-md border border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20">
+        <header className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">{t("inboundHeading")}</h2>
+          <p className="text-muted-foreground text-xs">
+            {t("inboundDescription")}
+          </p>
+        </header>
+        <div className="p-4">
+          <InboundSettingsForm
+            initialTranscriptionProvider={inboundSettings.transcriptionProvider}
+            initialTranscriptionRegion={inboundSettings.transcriptionRegion ?? ""}
+            initialExtractionProvider={inboundSettings.extractionProvider}
+            initialExtractionModel={inboundSettings.extractionModel}
+            initialTelephonyProvider={inboundSettings.telephonyProvider}
+            initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
+            initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
+            initialShadowMode={inboundSettings.shadowMode}
+            transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
+            extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
+            telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
+            secrets={inboundSecrets}
           />
         </div>
       </section>
