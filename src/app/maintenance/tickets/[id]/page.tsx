@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PhoneCall } from "lucide-react";
 import { Field } from "@/components/field";
 import { Section } from "@/components/section";
 import { notFound } from "next/navigation";
@@ -101,6 +102,14 @@ export default async function TicketDetailPage({
       .order("created_at", { ascending: false }),
   ]);
 
+  // Provenance: was this ticket drafted from an inbound message (voicemail →
+  // ticket pipeline)? If so, surface a "review me" banner linking back.
+  const { data: inboundMsg } = await supabase
+    .from("inbound_messages")
+    .select("id, channel")
+    .eq("ticket_id", ticket.id)
+    .maybeSingle();
+
   const attachments = (attachmentData ?? []).map((a) => ({
     id: a.id,
     fileUrl: a.file_url,
@@ -188,6 +197,26 @@ export default async function TicketDetailPage({
         ownerOrganizationId={owner?.id ?? null}
         ownerName={ownerName}
       />
+
+      {inboundMsg ? (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <PhoneCall
+              className="size-4 text-amber-700 dark:text-amber-500"
+              aria-hidden
+            />
+            <span className="font-medium text-amber-800 dark:text-amber-300">
+              {t("fromInboundBanner")}
+            </span>
+            <Link
+              href={`/admin/inbound/${inboundMsg.id}`}
+              className="text-amber-800 underline dark:text-amber-300"
+            >
+              {t("reviewInbound")}
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">

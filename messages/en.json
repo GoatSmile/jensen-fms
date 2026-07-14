@@ -1136,7 +1136,9 @@
     "crumbEdit": "Edit",
     "newSubtitle": "Capture an issue against a specific bike. Work orders come in the next push — for now this just logs the report.",
     "editTitle": "Edit ticket",
-    "editSubtitle": "Tweak any of the captured fields. Status changes happen on the detail page via the move-to dropdown."
+    "editSubtitle": "Tweak any of the captured fields. Status changes happen on the detail page via the move-to dropdown.",
+    "fromInboundBanner": "Drafted from a phone message — review before acting.",
+    "reviewInbound": "Review message"
   },
   "workOrders": {
     "title": "Work orders",
@@ -3675,7 +3677,10 @@
     "inboundUnknownProvider": "Unknown provider: {provider}.",
     "inboundRetentionRange": "Audio retention must be a whole number of days (1–3650).",
     "inboundBadJson": "Extraction must be valid JSON.",
-    "inboundNoExtraction": "Add an extraction payload before running matching."
+    "inboundNoExtraction": "Add an extraction payload before running matching.",
+    "inboundTicketExists": "A ticket has already been created for this message.",
+    "inboundNoDetails": "(no details captured)",
+    "inboundTicketLinkFailed": "Ticket {number} was created but linking it to the message failed: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3731,7 +3736,15 @@
     "via_fleet": "fleet no.",
     "via_fleet_filter": "fleet + hint",
     "note_phoneTooShort": "phone too short to match",
-    "note_fleetTruncated": "fleet list truncated"
+    "note_fleetTruncated": "fleet list truncated",
+    "actionTitle": "Action",
+    "ticketCreatedLabel": "Ticket created:",
+    "viewTicket": "View ticket",
+    "createHint": "Turn this into a draft maintenance ticket.",
+    "shadowCreateHint": "Shadow mode — ticket creation is manual; review the match first.",
+    "createTicket": "Create draft ticket",
+    "creatingTicket": "Creating…",
+    "createNeedsMatch": "Run matching first, then create the ticket."
   },
   "inboundStatus": {
     "received": "Received",

@@ -18,8 +18,10 @@ import {
   INBOUND_STATUS_VARIANT,
 } from "@/lib/inbound/types";
 import type { MatchCandidates } from "@/lib/inbound/match";
+import { loadInboundSettings } from "@/lib/inbound/settings";
 
 import { MatchPanel } from "./_components/match-panel";
+import { TicketAction } from "./_components/ticket-action";
 
 /**
  * Inbound message detail — the review surface. Slice A renders the raw
@@ -64,6 +66,18 @@ export default async function InboundDetailPage({
 
   const meta = (msg.channel_meta ?? {}) as { original_filename?: string };
   const currentStageIndex = INBOUND_STATUS_ORDER.indexOf(msg.status);
+
+  // Shadow-mode flag + the linked ticket's number (if one was created).
+  const { shadowMode } = await loadInboundSettings(supabase);
+  let ticketNumber: string | null = null;
+  if (msg.ticket_id) {
+    const { data: ticket } = await supabase
+      .from("maintenance_tickets")
+      .select("ticket_number")
+      .eq("id", msg.ticket_id)
+      .maybeSingle();
+    ticketNumber = ticket?.ticket_number ?? null;
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -156,6 +170,14 @@ export default async function InboundDetailPage({
         matchedOrganizationId={msg.matched_organization_id}
         matchedContactId={msg.matched_contact_id}
         matchedBikeId={msg.matched_bike_id}
+      />
+
+      <TicketAction
+        messageId={msg.id}
+        ticketId={msg.ticket_id}
+        ticketNumber={ticketNumber}
+        canCreate={msg.status === "matched"}
+        shadowMode={shadowMode}
       />
 
       {msg.error ? (

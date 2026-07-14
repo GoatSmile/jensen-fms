@@ -1136,7 +1136,9 @@
     "crumbEdit": "Redigér",
     "newSubtitle": "Registrér et problem på en bestemt cykel. For nu logger dette blot indmeldingen.",
     "editTitle": "Redigér sag",
-    "editSubtitle": "Justér de indfangede felter. Statusændringer sker på detaljesiden via flyt-til-menuen."
+    "editSubtitle": "Justér de indfangede felter. Statusændringer sker på detaljesiden via flyt-til-menuen.",
+    "fromInboundBanner": "Oprettet fra en telefonbesked — gennemse før handling.",
+    "reviewInbound": "Gennemse besked"
   },
   "workOrders": {
     "title": "Arbejdssedler",
@@ -3675,7 +3677,10 @@
     "inboundUnknownProvider": "Ukendt udbyder: {provider}.",
     "inboundRetentionRange": "Lydopbevaring skal være et helt antal dage (1–3650).",
     "inboundBadJson": "Udtræk skal være gyldig JSON.",
-    "inboundNoExtraction": "Tilføj en udtræk-payload før matchning køres."
+    "inboundNoExtraction": "Tilføj en udtræk-payload før matchning køres.",
+    "inboundTicketExists": "Der er allerede oprettet en sag for denne besked.",
+    "inboundNoDetails": "(ingen detaljer registreret)",
+    "inboundTicketLinkFailed": "Sag {number} blev oprettet, men kunne ikke knyttes til beskeden: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3731,7 +3736,15 @@
     "via_fleet": "flådenr.",
     "via_fleet_filter": "flåde + spor",
     "note_phoneTooShort": "telefonnr. for kort til match",
-    "note_fleetTruncated": "flådeliste afkortet"
+    "note_fleetTruncated": "flådeliste afkortet",
+    "actionTitle": "Handling",
+    "ticketCreatedLabel": "Sag oprettet:",
+    "viewTicket": "Se sag",
+    "createHint": "Omdan denne til en kladde-vedligeholdelsessag.",
+    "shadowCreateHint": "Skyggetilstand — sagsoprettelse er manuel; gennemse matchet først.",
+    "createTicket": "Opret kladde-sag",
+    "creatingTicket": "Opretter…",
+    "createNeedsMatch": "Kør matchning først, opret derefter sagen."
   },
   "inboundStatus": {
     "received": "Modtaget",

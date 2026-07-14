@@ -368,10 +368,21 @@ needs nothing at all.
   Browser-verified both paths (all-exactly-one → attached; ambiguous org
   [10 hits] + no bike → not attached, contact still matched via phone).
   Deps: none.
-- **E. Shadow ticket** — "Create ticket / attach to existing" review
-  actions + "from phone — review me" banner (`source='phone'`).
-  Measure match accuracy on real rows before trusting anything.
-  Deps: none.
+- **E. Shadow ticket — ✅ SHIPPED 2026-07-14** — `createTicketFromInbound`
+  (`_actions/create-ticket.ts`): reviewer turns a matched message into a
+  draft `maintenance_ticket` (source='phone', TKT number via
+  `next_document_number`, description = extraction.problem ?? transcript,
+  priority from urgency [high→2…low→4], exactly-one matched bike/contact
+  attached — bike skipped if in a build phase, phone/language from the
+  message). Sets `inbound_messages.ticket_id` + status='actioned'.
+  `TicketAction` on the detail (create button gated on status='matched',
+  or a link to the created ticket); "Drafted from a phone message —
+  review" banner on the ticket detail links back. Human-in-the-loop
+  (nothing auto-creates in v1 — that's F + shadow-off); `inbound_shadow_mode`
+  read + surfaced. **attach-to-existing** deferred to the threading design
+  session (v3 concern). Browser-verified end to end (matched fixture →
+  TKT-2026-0008, source=phone, priority 2, bike+contact attached, Danish
+  description; banner + back-link render), fixture cleaned. Deps: none.
 - **F. Twilio + retention (last, ~1 d)** — buy DK number, conditional
   forwarding from the workshop number (busy/no-answer), TwiML voicemail
   flow with the bilingual da/en "call is recorded" announcement (GDPR),
