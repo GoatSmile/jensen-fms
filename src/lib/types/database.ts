@@ -3501,6 +3501,7 @@ export type Database = {
         Row: {
           blocks_build: boolean
           created_at: string
+          default_supplier_id: string | null
           document_type: string
           id: string
           is_active: boolean
@@ -3512,6 +3513,7 @@ export type Database = {
         Insert: {
           blocks_build?: boolean
           created_at?: string
+          default_supplier_id?: string | null
           document_type: string
           id?: string
           is_active?: boolean
@@ -3523,6 +3525,7 @@ export type Database = {
         Update: {
           blocks_build?: boolean
           created_at?: string
+          default_supplier_id?: string | null
           document_type?: string
           id?: string
           is_active?: boolean
@@ -3531,7 +3534,15 @@ export type Database = {
           slug?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_types_default_supplier_id_fkey"
+            columns: ["default_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipments: {
         Row: {

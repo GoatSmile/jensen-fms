@@ -16,7 +16,10 @@ import { one } from "@/lib/supabase/embed";
 import { localizedName } from "@/i18n/vocab";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
-import { DEFAULT_PAINTER_NAME } from "@/lib/services/vocab";
+import {
+  PAINT_SERVICE_SLUG,
+  loadServiceTypeBySlug,
+} from "@/lib/services/vocab";
 import type {
   ColorOption,
   SupplierOption,
@@ -133,7 +136,14 @@ export default async function PaintFromSOPage({
 
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
-  const metacoat = suppliers.find((s) => s.name === DEFAULT_PAINTER_NAME);
+  // Pre-select the painting type's configured default supplier, if it's still
+  // an active supplier in the picker.
+  const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
+  const defaultSupplierId =
+    serviceType?.default_supplier_id &&
+    suppliers.some((s) => s.id === serviceType.default_supplier_id)
+      ? serviceType.default_supplier_id
+      : "";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -195,7 +205,7 @@ export default async function PaintFromSOPage({
           eligibleBikes={eligibleBikes}
           suppliers={suppliers}
           colors={colors}
-          defaultSupplierId={metacoat?.id ?? ""}
+          defaultSupplierId={defaultSupplierId}
         />
       )}
     </div>

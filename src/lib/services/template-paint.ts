@@ -26,11 +26,7 @@ import {
   tierLabel,
   type ServicePriceItem,
 } from "./pricing";
-import {
-  DEFAULT_PAINTER_NAME,
-  PAINT_SERVICE_SLUG,
-  loadServiceTypeBySlug,
-} from "./vocab";
+import { PAINT_SERVICE_SLUG, loadServiceTypeBySlug } from "./vocab";
 
 export type TemplatePaintworkRow = {
   id: string;
@@ -59,14 +55,15 @@ export type TemplatePaintEstimate = {
 };
 
 /**
- * The default painter's current list for the painting type — Metacoat by
- * name when it has one, else the sole/first current list. Null when nobody
- * has a current painting price list.
+ * The default painter's current list for the painting type — the type's
+ * configured default supplier when it has a current list, else the sole/first
+ * current list. Null when nobody has a current painting price list.
  */
 async function loadDefaultPaintList(
   supabase: SupabaseClient<Database>,
 ): Promise<{
   name: string;
+  supplierId: string | null;
   supplierName: string | null;
   currency: string;
   items: ServicePriceItem[];
@@ -78,7 +75,7 @@ async function loadDefaultPaintList(
     .from("service_price_lists")
     .select(
       `id, name, currency,
-       supplier:suppliers(name),
+       supplier:suppliers(id, name),
        items:service_price_items(
          id, service_part_type_id, supplier_item_no, tier_min, tier_max, unit_price
        )`,
@@ -90,6 +87,7 @@ async function loadDefaultPaintList(
   const lists = data
     .map((l) => ({
       name: l.name,
+      supplierId: one(l.supplier)?.id ?? null,
       supplierName: one(l.supplier)?.name ?? null,
       currency: l.currency,
       items: (l.items ?? []).map((i) => ({
@@ -103,7 +101,8 @@ async function loadDefaultPaintList(
     }))
     .sort((a, b) => (a.supplierName ?? "").localeCompare(b.supplierName ?? ""));
   return (
-    lists.find((l) => l.supplierName === DEFAULT_PAINTER_NAME) ?? lists[0]
+    lists.find((l) => l.supplierId === serviceType.default_supplier_id) ??
+    lists[0]
   );
 }
 

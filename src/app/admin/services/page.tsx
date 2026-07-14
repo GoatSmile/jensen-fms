@@ -26,6 +26,8 @@ import { localizedName } from "@/i18n/vocab";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 
+import { DefaultSuppliersForm } from "./_components/default-suppliers-form";
+
 type PriceListRow = {
   id: string;
   name: string;
@@ -71,7 +73,8 @@ export default async function AdminServicesPage() {
   ]);
   const supabase = await createClient();
 
-  const [listsRes, partTypesRes] = await Promise.all([
+  const [listsRes, partTypesRes, serviceTypesRes, suppliersRes] =
+    await Promise.all([
     supabase
       .from("service_price_lists")
       .select(
@@ -90,7 +93,25 @@ export default async function AdminServicesPage() {
       .from("service_part_types")
       .select("id, name_en, name_da, sort_order")
       .order("sort_order", { ascending: true }),
+    supabase
+      .from("service_types")
+      .select("id, name_en, name_da, default_supplier_id, sort_order")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("suppliers")
+      .select("id, name")
+      .is("deleted_at", null)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
   ]);
+
+  const serviceTypeRows = (serviceTypesRes.data ?? []).map((st) => ({
+    id: st.id,
+    name: localizedName(locale, st.name_en, st.name_da),
+    defaultSupplierId: st.default_supplier_id,
+  }));
+  const supplierRows = suppliersRes.data ?? [];
 
   if (listsRes.error) {
     throw new Error(`Failed to load price lists: ${listsRes.error.message}`);
@@ -181,6 +202,25 @@ export default async function AdminServicesPage() {
           </Link>
         </Button>
       </div>
+
+      {serviceTypeRows.length > 0 ? (
+        <section className="rounded-md border">
+          <header className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">
+              {t("defaultSuppliersHeading")}
+            </h2>
+            <p className="text-muted-foreground text-xs">
+              {t("defaultSuppliersDescription")}
+            </p>
+          </header>
+          <div className="p-4">
+            <DefaultSuppliersForm
+              serviceTypes={serviceTypeRows}
+              suppliers={supplierRows}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {groupList.length === 0 ? (
         <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm">

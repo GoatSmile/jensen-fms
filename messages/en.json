@@ -2909,7 +2909,11 @@
     "supplierLabel": "Supplier",
     "tierPcs": "{tier} pcs",
     "tierPcsCurrency": "{tier} pcs · {currency}",
-    "title": "Service price lists"
+    "title": "Service price lists",
+    "defaultSuppliersHeading": "Default suppliers",
+    "defaultSuppliersDescription": "The supplier pre-selected on new orders of each service type, and used for the template cost estimate.",
+    "noDefaultSupplier": "No default",
+    "saved": "Saved"
   },
   "adminSettings": {
     "accountingDescription": "Issued invoices push to e-conomic as draft journal vouchers — the bookkeeper reviews and books them there. API tokens live in env vars; this card holds the agreement numbers. Confirm the journal and revenue account with the revisor before the first real push.",

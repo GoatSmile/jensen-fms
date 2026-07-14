@@ -2909,7 +2909,11 @@
     "supplierLabel": "Leverandør",
     "tierPcs": "{tier} stk.",
     "tierPcsCurrency": "{tier} stk. · {currency}",
-    "title": "Serviceprislister"
+    "title": "Serviceprislister",
+    "defaultSuppliersHeading": "Standardleverandører",
+    "defaultSuppliersDescription": "Leverandøren der forudvælges på nye ordrer af hver servicetype, og bruges til skabelonens prisestimat.",
+    "noDefaultSupplier": "Ingen standard",
+    "saved": "Gemt"
   },
   "adminSettings": {
     "accountingDescription": "Udstedte fakturaer skubbes til e-conomic som kladdebilag — bogholderen gennemgår og bogfører dem der. API-tokens ligger i miljøvariabler; dette kort indeholder aftalenumrene. Bekræft journalen og omsætningskontoen med revisoren før det første rigtige push.",

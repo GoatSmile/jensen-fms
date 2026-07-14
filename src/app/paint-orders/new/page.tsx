@@ -10,7 +10,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
-import { DEFAULT_PAINTER_NAME } from "@/lib/services/vocab";
+import {
+  PAINT_SERVICE_SLUG,
+  loadServiceTypeBySlug,
+} from "@/lib/services/vocab";
 
 import {
   EMPTY_PAINT_ORDER_FORM,
@@ -43,11 +46,18 @@ export default async function NewPaintOrderPage() {
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
 
-  // Default supplier_id: Metacoat A/S if found, otherwise blank.
-  const metacoat = suppliers.find((s) => s.name === DEFAULT_PAINTER_NAME);
+  // Pre-select the painting type's configured default supplier — but only if
+  // it's still an active supplier (an archived default shouldn't preselect a
+  // row that isn't in the picker).
+  const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
+  const defaultSupplierId =
+    serviceType?.default_supplier_id &&
+    suppliers.some((s) => s.id === serviceType.default_supplier_id)
+      ? serviceType.default_supplier_id
+      : "";
   const initial = {
     ...EMPTY_PAINT_ORDER_FORM,
-    supplier_id: metacoat?.id ?? "",
+    supplier_id: defaultSupplierId,
   };
 
   return (

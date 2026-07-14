@@ -81,9 +81,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
     switch. Provider *endpoints* (base URLs) stay hardcoded in the client lib
     (you change code to add a provider anyway). First applied to the inbound
     pipeline (migration 66); the e-conomic + communication settings already
-    follow tiers 1–2. Known not-yet-migrated knob: `DEFAULT_PAINTER_NAME`
-    (code constant → should become a setting / supplier flag) — do it when it
-    next bites.
+    follow tiers 1–2. The former `DEFAULT_PAINTER_NAME` code constant was
+    migrated to `service_types.default_supplier_id` (migration 67, FK →
+    suppliers, per-service-type, editable at /admin/services "Default
+    suppliers") — the last known hardcoded config knob is now gone.
 - **App-wide defaults** live in a singleton `app_settings` row (id = 1),
   edited at `/admin/settings`. Holds: `default_transport_pct` (0.10 = 10 %,
   pre-filled into new PO line dialogs); the location-visibility pair added
@@ -225,9 +226,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
     to the painter (part type × per-bike qty; copied forward by
     clone-as-version + duplicate, editable only on the current version). A
     "Paintwork" section on the template detail prices it live against the
-    DEFAULT painter's current list (`DEFAULT_PAINTER_NAME` in vocab.ts,
-    Metacoat) at per-bike quantities (singles tier); the DKK total joins the
-    recipe box: parts + paint → cost to produce → margin.
+    painting type's default supplier's current list
+    (`service_types.default_supplier_id`, seeded Metacoat; migration 67) at
+    per-bike quantities (singles tier); the DKK total joins the recipe box:
+    parts + paint → cost to produce → margin.
   - **`/admin/services` price-list grid SHIPPED 2026-07-11** (migration 64):
     per supplier × type, the current revision as a part-type × tier grid +
     revision history; "New revision" duplicates the current grid into an

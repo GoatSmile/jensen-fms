@@ -15,13 +15,6 @@ export const PAINT_SERVICE_SLUG = "painting";
 /** The paint surface's supplier noun — "Sent to painter", "At painter". */
 export const PAINT_SUPPLIER_NOUN = "painter";
 
-/**
- * The workshop's default painter (new-order forms pre-select it; the template
- * cost-to-paint estimate prices against its current list). A supplier NAME,
- * not an id — the seed data owns the row.
- */
-export const DEFAULT_PAINTER_NAME = "Metacoat A/S";
-
 export type ServiceType = {
   id: string;
   slug: string;
@@ -29,6 +22,12 @@ export type ServiceType = {
   name_da: string;
   blocks_build: boolean;
   document_type: string;
+  /**
+   * The service type's default supplier (migration 67, admin-editable at
+   * /admin/services) — pre-selected on new-order forms and used for the
+   * template cost estimate. Replaces the old DEFAULT_PAINTER_NAME constant.
+   */
+  default_supplier_id: string | null;
 };
 
 export async function loadServiceTypeBySlug(
@@ -37,7 +36,9 @@ export async function loadServiceTypeBySlug(
 ): Promise<ServiceType | null> {
   const { data, error } = await supabase
     .from("service_types")
-    .select("id, slug, name_en, name_da, blocks_build, document_type")
+    .select(
+      "id, slug, name_en, name_da, blocks_build, document_type, default_supplier_id",
+    )
     .eq("slug", slug)
     .maybeSingle();
   if (error || !data) return null;
