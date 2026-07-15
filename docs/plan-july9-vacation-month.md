@@ -353,9 +353,17 @@ needs nothing at all.
   `channels/voicemail.ts` + transcript panel + "Process now" button.
   Record fake voicemails on a phone in Danish and English; iterate on
   quality with zero telephony cost. Deps: `AZURE_SPEECH_KEY/REGION`.
-- **C. Extract** — Claude Haiku tool-use stage (caller, org, callback
-  number, bike clues, problem, urgency, language, **intent**) +
-  extraction panel. Deps: `ANTHROPIC_API_KEY`.
+- **C. Extract — ✅ SHIPPED 2026-07-15** — `src/lib/inbound/extract.ts`
+  turns `body_text` → structured `InboundExtraction` via Claude Haiku
+  forced tool-use (thin fetch wrapper, no SDK; provider + model from
+  `app_settings`, `ANTHROPIC_API_KEY` from env; `parseExtraction`
+  backstops a bad response to nulls). Harness gained an editable
+  transcript ingress (`saveBodyText`) + "Run extraction" (`runExtraction`)
+  so C→D→E is testable on hand-typed transcripts before B ships; the
+  extraction editor re-syncs when a fresh extraction arrives; button
+  blocked-with-reason on missing key/body. Browser-verified end to end
+  (Danish voicemail → correct org/fleet/intent/urgency/language, fixture
+  cleaned). Deps: `ANTHROPIC_API_KEY`.
 - **D. Match — ✅ SHIPPED 2026-07-14** — deterministic matcher
   (`src/lib/inbound/match.ts`, channel-blind) + candidates panel. Probes
   in order: phone (from_identity / callback → contacts, normalized
