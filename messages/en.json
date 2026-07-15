@@ -3680,7 +3680,10 @@
     "inboundNoExtraction": "Add an extraction payload before running matching.",
     "inboundTicketExists": "A ticket has already been created for this message.",
     "inboundNoDetails": "(no details captured)",
-    "inboundTicketLinkFailed": "Ticket {number} was created but linking it to the message failed: {detail}"
+    "inboundTicketLinkFailed": "Ticket {number} was created but linking it to the message failed: {detail}",
+    "inboundNoBody": "There's no transcript to extract from yet.",
+    "inboundExtractionKeyMissing": "The extraction provider's API key is not set. Add ANTHROPIC_API_KEY to .env.local (and Vercel) and restart the dev server.",
+    "inboundExtractionFailed": "Extraction failed: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3744,7 +3747,14 @@
     "shadowCreateHint": "Shadow mode — ticket creation is manual; review the match first.",
     "createTicket": "Create draft ticket",
     "creatingTicket": "Creating…",
-    "createNeedsMatch": "Run matching first, then create the ticket."
+    "createNeedsMatch": "Run matching first, then create the ticket.",
+    "transcriptHarnessHint": "Paste a transcript (Danish or English) to run extraction on, until transcription is wired. When transcription ships it fills this in.",
+    "transcriptPlaceholder": "Hi, this is Anna from Hotel Skt. Petri — the red cargo bike, frame 12345, has a flat rear tyre. Please call me back on 20 12 34 56.",
+    "saveTranscript": "Save transcript",
+    "runExtraction": "Run extraction",
+    "extracting": "Extracting…",
+    "extractionKeyMissingHint": "Set ANTHROPIC_API_KEY to run extraction.",
+    "extractionNeedsBody": "Save a transcript first, then run extraction."
   },
   "inboundStatus": {
     "received": "Received",

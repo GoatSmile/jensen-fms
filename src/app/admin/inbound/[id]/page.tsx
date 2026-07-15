@@ -13,14 +13,15 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createServiceClient } from "@/lib/supabase/service";
 import { formatDateTime } from "@/lib/parts/format";
-import {
-  INBOUND_STATUS_ORDER,
-  INBOUND_STATUS_VARIANT,
-} from "@/lib/inbound/types";
+import { INBOUND_STATUS_VARIANT } from "@/lib/inbound/types";
 import type { MatchCandidates } from "@/lib/inbound/match";
-import { loadInboundSettings } from "@/lib/inbound/settings";
+import {
+  inboundSecretStatus,
+  loadInboundSettings,
+} from "@/lib/inbound/settings";
 
 import { MatchPanel } from "./_components/match-panel";
+import { TranscriptPanel } from "./_components/transcript-panel";
 import { TicketAction } from "./_components/ticket-action";
 
 /**
@@ -65,10 +66,13 @@ export default async function InboundDetailPage({
   }
 
   const meta = (msg.channel_meta ?? {}) as { original_filename?: string };
-  const currentStageIndex = INBOUND_STATUS_ORDER.indexOf(msg.status);
 
   // Shadow-mode flag + the linked ticket's number (if one was created).
-  const { shadowMode } = await loadInboundSettings(supabase);
+  const settings = await loadInboundSettings(supabase);
+  const { shadowMode } = settings;
+  const extractionReady = inboundSecretStatus(settings).extraction.every(
+    (s) => s.present,
+  );
   let ticketNumber: string | null = null;
   if (msg.ticket_id) {
     const { data: ticket } = await supabase
@@ -153,12 +157,12 @@ export default async function InboundDetailPage({
         )}
       </section>
 
-      {/* Pipeline stages — filled by later slices. */}
-      <StagePanel
-        title={t("stageTranscript")}
-        done={currentStageIndex >= INBOUND_STATUS_ORDER.indexOf("understood")}
-        pendingNote={t("stagePendingB")}
-        content={msg.body_text}
+      {/* Pipeline stages. Transcript is editable (Slice-C harness ingress);
+          extraction + match live in MatchPanel. */}
+      <TranscriptPanel
+        messageId={msg.id}
+        initialBody={msg.body_text}
+        extractionReady={extractionReady}
       />
       <MatchPanel
         messageId={msg.id}
@@ -203,40 +207,5 @@ function Fact({
       </dt>
       <dd>{children}</dd>
     </div>
-  );
-}
-
-function StagePanel({
-  title,
-  done,
-  pendingNote,
-  content,
-  mono = false,
-}: {
-  title: string;
-  done: boolean;
-  pendingNote: string;
-  content: string | null;
-  mono?: boolean;
-}) {
-  return (
-    <section className="flex flex-col gap-2 rounded-md border p-4">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      {content ? (
-        <pre
-          className={
-            mono
-              ? "bg-muted overflow-x-auto rounded p-3 text-xs"
-              : "text-sm whitespace-pre-wrap"
-          }
-        >
-          {content}
-        </pre>
-      ) : (
-        <p className="text-muted-foreground text-sm italic">
-          {done ? "—" : pendingNote}
-        </p>
-      )}
-    </section>
   );
 }

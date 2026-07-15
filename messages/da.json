@@ -3680,7 +3680,10 @@
     "inboundNoExtraction": "Tilføj en udtræk-payload før matchning køres.",
     "inboundTicketExists": "Der er allerede oprettet en sag for denne besked.",
     "inboundNoDetails": "(ingen detaljer registreret)",
-    "inboundTicketLinkFailed": "Sag {number} blev oprettet, men kunne ikke knyttes til beskeden: {detail}"
+    "inboundTicketLinkFailed": "Sag {number} blev oprettet, men kunne ikke knyttes til beskeden: {detail}",
+    "inboundNoBody": "Der er endnu ingen transskription at udtrække fra.",
+    "inboundExtractionKeyMissing": "Udbyderens API-nøgle til udtræk er ikke angivet. Tilføj ANTHROPIC_API_KEY til .env.local (og Vercel), og genstart udviklingsserveren.",
+    "inboundExtractionFailed": "Udtræk mislykkedes: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3744,7 +3747,14 @@
     "shadowCreateHint": "Skyggetilstand — sagsoprettelse er manuel; gennemse matchet først.",
     "createTicket": "Opret kladde-sag",
     "creatingTicket": "Opretter…",
-    "createNeedsMatch": "Kør matchning først, opret derefter sagen."
+    "createNeedsMatch": "Kør matchning først, opret derefter sagen.",
+    "transcriptHarnessHint": "Indsæt en transskription (dansk eller engelsk) at køre udtræk på, indtil transskription er koblet på. Når transskription kommer, udfyldes dette automatisk.",
+    "transcriptPlaceholder": "Hej, det er Anna fra Hotel Skt. Petri — den røde ladcykel, stel 12345, har en punkteret baghjul. Ring venligst tilbage på 20 12 34 56.",
+    "saveTranscript": "Gem transskription",
+    "runExtraction": "Kør udtræk",
+    "extracting": "Udtrækker…",
+    "extractionKeyMissingHint": "Angiv ANTHROPIC_API_KEY for at køre udtræk.",
+    "extractionNeedsBody": "Gem en transskription først, kør derefter udtræk."
   },
   "inboundStatus": {
     "received": "Modtaget",

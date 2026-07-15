@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Play, Save, Users } from "lucide-react";
@@ -45,6 +45,16 @@ export function MatchPanel({
   const t = useTranslations("adminInbound");
   const router = useRouter();
   const [text, setText] = useState(initialExtractionJson || TEMPLATE);
+  // Re-sync the editor when a fresh extraction arrives from the server (e.g.
+  // after Run extraction in the transcript panel), without clobbering local
+  // hand-edits on unrelated refreshes.
+  const prevInitial = useRef(initialExtractionJson);
+  useEffect(() => {
+    if (initialExtractionJson && initialExtractionJson !== prevInitial.current) {
+      setText(initialExtractionJson);
+    }
+    prevInitial.current = initialExtractionJson;
+  }, [initialExtractionJson]);
   const [error, setError] = useState<string | null>(null);
   const [savePending, startSave] = useTransition();
   const [matchPending, startMatch] = useTransition();
