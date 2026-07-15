@@ -8,6 +8,7 @@ import { parseExtraction } from "@/lib/inbound/extraction";
 import { extractInbound } from "@/lib/inbound/extract";
 import { matchInbound } from "@/lib/inbound/match";
 import { loadInboundSettings } from "@/lib/inbound/settings";
+import { transcribeVoicemail } from "@/lib/inbound/channels/voicemail";
 
 export type ProcessResult = { ok: true } | { ok: false; error: string };
 
@@ -48,6 +49,109 @@ export async function saveExtraction(
   }
   revalidatePath(`/admin/inbound/${messageId}`);
   return { ok: true };
+}
+
+/**
+ * Transcription stage (Slice B): run the selected transcription provider over
+ * the message's recording (via the voicemail channel adapter), write
+ * `body_text` + detected `language`, advance to `understood`, and clear any
+ * stale extraction/match — a fresh transcript invalidates everything
+ * downstream.
+ */
+export async function runTranscription(
+  messageId: string,
+): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  const supabase = createServiceClient();
+
+  const { data: msg, error: loadErr } = await supabase
+    .from("inbound_messages")
+    .select("id, media_path")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (loadErr) {
+    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
+  }
+  if (!msg) return { ok: false, error: t("missingId") };
+  if (!msg.media_path) return { ok: false, error: t("inboundNoAudio") };
+
+  const settings = await loadInboundSettings(supabase);
+  const result = await transcribeVoicemail(supabase, msg.media_path, settings);
+  if (!result.ok) {
+    switch (result.reason) {
+      case "no_key":
+        return { ok: false, error: t("inboundTranscriptionKeyMissing") };
+      case "no_region":
+        return { ok: false, error: t("inboundTranscriptionRegionMissing") };
+      case "unknown_provider":
+        return {
+          ok: false,
+          error: t("inboundUnknownProvider", { provider: result.detail ?? "" }),
+        };
+      case "timeout":
+        return { ok: false, error: t("inboundTranscriptionTimeout") };
+      case "empty":
+        return { ok: false, error: t("inboundTranscriptionEmpty") };
+      default:
+        return {
+          ok: false,
+          error: t("inboundTranscriptionFailed", {
+            detail: result.detail || t("inboundNoDetails"),
+          }),
+        };
+    }
+  }
+
+  const { error: saveErr } = await supabase
+    .from("inbound_messages")
+    .update({
+      body_text: result.text,
+      language: result.language,
+      status: "understood",
+      extraction: null,
+      match_candidates: null,
+      matched_organization_id: null,
+      matched_contact_id: null,
+      matched_bike_id: null,
+    })
+    .eq("id", messageId);
+  if (saveErr) {
+    return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
+  }
+  revalidatePath(`/admin/inbound/${messageId}`);
+  return { ok: true };
+}
+
+/**
+ * One-click pipeline: transcribe (when a recording is attached) → extract →
+ * match. Each stage is the same code the individual buttons run; the first
+ * failure stops the chain and returns its localized error. With no recording
+ * but a hand-typed transcript, transcription is skipped.
+ */
+export async function runPipeline(messageId: string): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  const supabase = createServiceClient();
+
+  const { data: msg, error: loadErr } = await supabase
+    .from("inbound_messages")
+    .select("id, media_path, body_text")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (loadErr) {
+    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
+  }
+  if (!msg) return { ok: false, error: t("missingId") };
+
+  if (msg.media_path) {
+    const r = await runTranscription(messageId);
+    if (!r.ok) return r;
+  } else if (!msg.body_text?.trim()) {
+    return { ok: false, error: t("inboundNoBody") };
+  }
+
+  const e = await runExtraction(messageId);
+  if (!e.ok) return e;
+  return runMatch(messageId);
 }
 
 /**

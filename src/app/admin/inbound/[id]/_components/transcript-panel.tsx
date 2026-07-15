@@ -1,55 +1,75 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Save, Sparkles } from "lucide-react";
+import { AudioLines, Play, Save, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { saveBodyText, runExtraction } from "../../_actions/process";
+import {
+  runExtraction,
+  runPipeline,
+  runTranscription,
+  saveBodyText,
+} from "../../_actions/process";
 
 type Props = {
   messageId: string;
   /** The saved `body_text`, or null until a transcript exists. */
   initialBody: string | null;
+  /** Whether a recording is attached (media_path present). */
+  hasAudio: boolean;
+  /** Whether the selected transcription provider's secret is present. */
+  transcriptionReady: boolean;
   /** Whether the selected extraction provider's secret is present. */
   extractionReady: boolean;
 };
 
 /**
- * Transcript stage of the harness. The textarea is the Slice-C ingress until
- * transcription (B) writes `body_text` for real — paste a Danish/English
- * transcript, Save it, then Run extraction. The extracted JSON lands in the
- * extraction editor below on refresh, ready for "Run matching".
+ * Transcript stage of the harness. With a recording attached, "Transcribe
+ * recording" runs the selected provider (Slice B) and "Run whole pipeline"
+ * chains transcribe → extract → match in one click. The textarea stays as
+ * the hand-typed ingress (and debugging override once transcription is
+ * live): paste a transcript, Save it, then Run extraction.
  */
 export function TranscriptPanel({
   messageId,
   initialBody,
+  hasAudio,
+  transcriptionReady,
   extractionReady,
 }: Props) {
   const t = useTranslations("adminInbound");
   const router = useRouter();
   const [text, setText] = useState(initialBody ?? "");
+  // Re-sync the editor when a fresh transcript arrives from the server
+  // (after Transcribe / Run pipeline), without clobbering local edits on
+  // unrelated refreshes.
+  const prevInitial = useRef(initialBody);
+  useEffect(() => {
+    if (initialBody && initialBody !== prevInitial.current) {
+      setText(initialBody);
+    }
+    prevInitial.current = initialBody;
+  }, [initialBody]);
   const [error, setError] = useState<string | null>(null);
   const [savePending, startSave] = useTransition();
   const [extractPending, startExtract] = useTransition();
+  const [transcribePending, startTranscribe] = useTransition();
+  const [pipelinePending, startPipeline] = useTransition();
 
   const hasSavedBody = (initialBody ?? "").trim().length > 0;
+  const anyPending =
+    savePending || extractPending || transcribePending || pipelinePending;
 
-  function onSave() {
+  function run(
+    start: typeof startSave,
+    action: () => Promise<{ ok: true } | { ok: false; error: string }>,
+  ) {
     setError(null);
-    startSave(async () => {
-      const r = await saveBodyText(messageId, text);
-      if (!r.ok) return setError(r.error);
-      router.refresh();
-    });
-  }
-
-  function onExtract() {
-    setError(null);
-    startExtract(async () => {
-      const r = await runExtraction(messageId);
+    start(async () => {
+      const r = await action();
       if (!r.ok) return setError(r.error);
       router.refresh();
     });
@@ -63,6 +83,41 @@ export function TranscriptPanel({
           {t("transcriptHarnessHint")}
         </p>
       </div>
+
+      {/* The real path: transcribe the recording / run everything at once. */}
+      {hasAudio ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => run(startTranscribe, () => runTranscription(messageId))}
+            disabled={anyPending || !transcriptionReady}
+          >
+            <AudioLines aria-hidden />
+            {transcribePending ? t("transcribing") : t("transcribeButton")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => run(startPipeline, () => runPipeline(messageId))}
+            disabled={anyPending || !transcriptionReady || !extractionReady}
+          >
+            <Play aria-hidden />
+            {pipelinePending ? t("pipelineRunning") : t("runPipeline")}
+          </Button>
+          {!transcriptionReady ? (
+            <span className="text-muted-foreground text-xs">
+              {t("transcriptionKeyMissingHint")}
+            </span>
+          ) : !extractionReady ? (
+            <span className="text-muted-foreground text-xs">
+              {t("extractionKeyMissingHint")}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -76,8 +131,8 @@ export function TranscriptPanel({
           type="button"
           size="sm"
           variant="outline"
-          onClick={onSave}
-          disabled={savePending}
+          onClick={() => run(startSave, () => saveBodyText(messageId, text))}
+          disabled={anyPending}
         >
           <Save aria-hidden />
           {savePending ? t("saving") : t("saveTranscript")}
@@ -85,8 +140,9 @@ export function TranscriptPanel({
         <Button
           type="button"
           size="sm"
-          onClick={onExtract}
-          disabled={extractPending || !extractionReady || !hasSavedBody}
+          variant={hasAudio ? "outline" : "default"}
+          onClick={() => run(startExtract, () => runExtraction(messageId))}
+          disabled={anyPending || !extractionReady || !hasSavedBody}
         >
           <Sparkles aria-hidden />
           {extractPending ? t("extracting") : t("runExtraction")}

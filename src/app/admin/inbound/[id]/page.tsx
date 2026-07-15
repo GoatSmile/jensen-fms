@@ -70,9 +70,9 @@ export default async function InboundDetailPage({
   // Shadow-mode flag + the linked ticket's number (if one was created).
   const settings = await loadInboundSettings(supabase);
   const { shadowMode } = settings;
-  const extractionReady = inboundSecretStatus(settings).extraction.every(
-    (s) => s.present,
-  );
+  const secrets = inboundSecretStatus(settings);
+  const extractionReady = secrets.extraction.every((s) => s.present);
+  const transcriptionReady = secrets.transcription.every((s) => s.present);
   let ticketNumber: string | null = null;
   if (msg.ticket_id) {
     const { data: ticket } = await supabase
@@ -162,6 +162,8 @@ export default async function InboundDetailPage({
       <TranscriptPanel
         messageId={msg.id}
         initialBody={msg.body_text}
+        hasAudio={Boolean(msg.media_path)}
+        transcriptionReady={transcriptionReady}
         extractionReady={extractionReady}
       />
       <MatchPanel

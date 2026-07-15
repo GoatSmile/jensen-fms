@@ -370,6 +370,9 @@ export async function saveInboundSettings(
         "claude-haiku-4-5-20251001",
       inbound_telephony_provider: telephony.value,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
+      inbound_phone_number_test: nullable(
+        formData.get("inbound_phone_number_test"),
+      ),
       inbound_media_retention_days: retention,
       inbound_shadow_mode: formData.get("inbound_shadow_mode") === "on",
       updated_at: new Date().toISOString(),

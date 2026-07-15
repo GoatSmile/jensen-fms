@@ -3011,14 +3011,18 @@
     "providerLabel": "Provider",
     "inboundRegionLabel": "Region",
     "inboundModelLabel": "Model",
-    "inboundPhoneLabel": "Inbound phone number",
+    "inboundPhoneLabel": "Production number",
     "inboundRetentionLabel": "Audio retention (days)",
     "secretSet": "set",
     "secretMissing": "missing",
     "saveInbound": "Save inbound settings",
     "provider_azure": "Azure Speech (EU)",
     "provider_anthropic": "Claude (Anthropic)",
-    "provider_twilio": "Twilio"
+    "provider_twilio": "Twilio",
+    "provider_gladia": "Gladia (EU)",
+    "inboundPhoneHint": "The real +45 number customers call — announcements, SMS sender, print.",
+    "inboundPhoneTestLabel": "Test number",
+    "inboundPhoneTestHint": "Twilio trial number for webhook smoke-tests; never shown to customers."
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -3683,7 +3687,13 @@
     "inboundTicketLinkFailed": "Ticket {number} was created but linking it to the message failed: {detail}",
     "inboundNoBody": "There's no transcript to extract from yet.",
     "inboundExtractionKeyMissing": "The extraction provider's API key is not set. Add ANTHROPIC_API_KEY to .env.local (and Vercel) and restart the dev server.",
-    "inboundExtractionFailed": "Extraction failed: {detail}"
+    "inboundExtractionFailed": "Extraction failed: {detail}",
+    "inboundNoAudio": "This message has no recording to transcribe.",
+    "inboundTranscriptionKeyMissing": "The transcription provider's API key is not set. Add it to .env.local (and Vercel) and restart the dev server.",
+    "inboundTranscriptionRegionMissing": "The transcription provider needs a region — set it under Admin → Settings → Calls & inbound.",
+    "inboundTranscriptionTimeout": "Transcription timed out — try again.",
+    "inboundTranscriptionEmpty": "The recording produced an empty transcript.",
+    "inboundTranscriptionFailed": "Transcription failed: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3754,7 +3764,12 @@
     "runExtraction": "Run extraction",
     "extracting": "Extracting…",
     "extractionKeyMissingHint": "Set ANTHROPIC_API_KEY to run extraction.",
-    "extractionNeedsBody": "Save a transcript first, then run extraction."
+    "extractionNeedsBody": "Save a transcript first, then run extraction.",
+    "transcribeButton": "Transcribe recording",
+    "transcribing": "Transcribing…",
+    "runPipeline": "Run whole pipeline",
+    "pipelineRunning": "Running…",
+    "transcriptionKeyMissingHint": "Set the transcription provider's API key to transcribe."
   },
   "inboundStatus": {
     "received": "Received",

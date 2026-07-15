@@ -22,6 +22,7 @@ type Props = {
   initialExtractionModel: string;
   initialTelephonyProvider: string;
   initialPhoneNumber: string;
+  initialPhoneNumberTest: string;
   initialRetentionDays: string;
   initialShadowMode: boolean;
   transcriptionProviders: string[];
@@ -61,6 +62,9 @@ export function InboundSettingsForm(props: Props) {
     props.initialTelephonyProvider,
   );
   const [phoneNumber, setPhoneNumber] = useState(props.initialPhoneNumber);
+  const [phoneNumberTest, setPhoneNumberTest] = useState(
+    props.initialPhoneNumberTest,
+  );
   const [retentionDays, setRetentionDays] = useState(props.initialRetentionDays);
   const [shadowMode, setShadowMode] = useState(props.initialShadowMode);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +86,7 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_extraction_model", extractionModel.trim());
     fd.set("inbound_telephony_provider", telephonyProvider);
     appendField(fd, "inbound_phone_number", phoneNumber.trim());
+    appendField(fd, "inbound_phone_number_test", phoneNumberTest.trim());
     appendField(fd, "inbound_media_retention_days", retentionDays.trim());
     if (shadowMode) fd.set("inbound_shadow_mode", "on");
     start(async () => {
@@ -126,17 +131,20 @@ export function InboundSettingsForm(props: Props) {
         secretSetText={t("secretSet")}
         secretMissingText={t("secretMissing")}
       >
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="inbound_transcription_region">
-            {t("inboundRegionLabel")}
-          </Label>
-          <Input
-            id="inbound_transcription_region"
-            value={transcriptionRegion}
-            onChange={(e) => setTranscriptionRegion(e.target.value)}
-            placeholder="westeurope"
-          />
-        </div>
+        {/* Region is an Azure-shaped param; Gladia needs none. */}
+        {transcriptionProvider === "azure" ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="inbound_transcription_region">
+              {t("inboundRegionLabel")}
+            </Label>
+            <Input
+              id="inbound_transcription_region"
+              value={transcriptionRegion}
+              onChange={(e) => setTranscriptionRegion(e.target.value)}
+              placeholder="westeurope"
+            />
+          </div>
+        ) : null}
       </ProviderBlock>
 
       <ProviderBlock
@@ -180,12 +188,29 @@ export function InboundSettingsForm(props: Props) {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="inbound_phone_number">
             {t("inboundPhoneLabel")}
+            <span className="text-muted-foreground block text-xs font-normal">
+              {t("inboundPhoneHint")}
+            </span>
           </Label>
           <Input
             id="inbound_phone_number"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             placeholder="+45 …"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="inbound_phone_number_test">
+            {t("inboundPhoneTestLabel")}
+            <span className="text-muted-foreground block text-xs font-normal">
+              {t("inboundPhoneTestHint")}
+            </span>
+          </Label>
+          <Input
+            id="inbound_phone_number_test"
+            value={phoneNumberTest}
+            onChange={(e) => setPhoneNumberTest(e.target.value)}
+            placeholder="+1 …"
           />
         </div>
         <div className="flex flex-col gap-1.5">

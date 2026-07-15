@@ -3011,14 +3011,18 @@
     "providerLabel": "Udbyder",
     "inboundRegionLabel": "Region",
     "inboundModelLabel": "Model",
-    "inboundPhoneLabel": "Indgående telefonnummer",
+    "inboundPhoneLabel": "Produktionsnummer",
     "inboundRetentionLabel": "Lydopbevaring (dage)",
     "secretSet": "sat",
     "secretMissing": "mangler",
     "saveInbound": "Gem indgående-indstillinger",
     "provider_azure": "Azure Speech (EU)",
     "provider_anthropic": "Claude (Anthropic)",
-    "provider_twilio": "Twilio"
+    "provider_twilio": "Twilio",
+    "provider_gladia": "Gladia (EU)",
+    "inboundPhoneHint": "Det rigtige +45-nummer kunderne ringer til — annonceringer, SMS-afsender, tryksager.",
+    "inboundPhoneTestLabel": "Testnummer",
+    "inboundPhoneTestHint": "Twilio-prøvenummer til webhook-røgtest; vises aldrig til kunder."
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -3683,7 +3687,13 @@
     "inboundTicketLinkFailed": "Sag {number} blev oprettet, men kunne ikke knyttes til beskeden: {detail}",
     "inboundNoBody": "Der er endnu ingen transskription at udtrække fra.",
     "inboundExtractionKeyMissing": "Udbyderens API-nøgle til udtræk er ikke angivet. Tilføj ANTHROPIC_API_KEY til .env.local (og Vercel), og genstart udviklingsserveren.",
-    "inboundExtractionFailed": "Udtræk mislykkedes: {detail}"
+    "inboundExtractionFailed": "Udtræk mislykkedes: {detail}",
+    "inboundNoAudio": "Denne besked har ingen optagelse at transskribere.",
+    "inboundTranscriptionKeyMissing": "Transskriptionsudbyderens API-nøgle er ikke angivet. Tilføj den til .env.local (og Vercel), og genstart udviklingsserveren.",
+    "inboundTranscriptionRegionMissing": "Transskriptionsudbyderen kræver en region — angiv den under Admin → Indstillinger → Opkald & indgående.",
+    "inboundTranscriptionTimeout": "Transskriptionen fik timeout — prøv igen.",
+    "inboundTranscriptionEmpty": "Optagelsen gav en tom transskription.",
+    "inboundTranscriptionFailed": "Transskription mislykkedes: {detail}"
   },
   "adminInbound": {
     "crumbAdmin": "Admin",
@@ -3754,7 +3764,12 @@
     "runExtraction": "Kør udtræk",
     "extracting": "Udtrækker…",
     "extractionKeyMissingHint": "Angiv ANTHROPIC_API_KEY for at køre udtræk.",
-    "extractionNeedsBody": "Gem en transskription først, kør derefter udtræk."
+    "extractionNeedsBody": "Gem en transskription først, kør derefter udtræk.",
+    "transcribeButton": "Transskribér optagelse",
+    "transcribing": "Transskriberer…",
+    "runPipeline": "Kør hele pipelinen",
+    "pipelineRunning": "Kører…",
+    "transcriptionKeyMissingHint": "Angiv transskriptionsudbyderens API-nøgle for at transskribere."
   },
   "inboundStatus": {
     "received": "Modtaget",

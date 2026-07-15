@@ -26,6 +26,10 @@ export type ProviderEntry = {
 
 /** Registered transcription adapters (audio → text). */
 export const TRANSCRIPTION_PROVIDERS: ProviderEntry[] = [
+  // EU-native (French company, 100% EU residency) — the recommended default
+  // after the 2026-07-15 re-eval; no region param needed.
+  { key: "gladia", envSecrets: ["GLADIA_API_KEY"] },
+  // US-parented but explicit EU regions; needs inbound_transcription_region.
   { key: "azure", envSecrets: ["AZURE_SPEECH_KEY"] },
 ];
 
@@ -45,13 +49,16 @@ export type InboundSettings = {
   extractionProvider: string;
   extractionModel: string;
   telephonyProvider: string;
+  /** The production number (+45) — announcements, SMS sender, print. */
   phoneNumber: string | null;
+  /** The test number (Twilio trial) — webhook smoke-testing only. */
+  phoneNumberTest: string | null;
   mediaRetentionDays: number;
   shadowMode: boolean;
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_media_retention_days, inbound_shadow_mode";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -69,6 +76,7 @@ export async function loadInboundSettings(
       data?.inbound_extraction_model ?? "claude-haiku-4-5-20251001",
     telephonyProvider: data?.inbound_telephony_provider ?? "twilio",
     phoneNumber: data?.inbound_phone_number ?? null,
+    phoneNumberTest: data?.inbound_phone_number_test ?? null,
     mediaRetentionDays: Number(data?.inbound_media_retention_days ?? 90),
     shadowMode: Boolean(data?.inbound_shadow_mode ?? true),
   };

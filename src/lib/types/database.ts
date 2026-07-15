@@ -33,6 +33,7 @@ export type Database = {
           inbound_extraction_provider: string
           inbound_media_retention_days: number
           inbound_phone_number: string | null
+          inbound_phone_number_test: string | null
           inbound_shadow_mode: boolean
           inbound_telephony_provider: string
           inbound_transcription_provider: string
@@ -64,6 +65,7 @@ export type Database = {
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number
           inbound_phone_number?: string | null
+          inbound_phone_number_test?: string | null
           inbound_shadow_mode?: boolean
           inbound_telephony_provider?: string
           inbound_transcription_provider?: string
@@ -95,6 +97,7 @@ export type Database = {
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number
           inbound_phone_number?: string | null
+          inbound_phone_number_test?: string | null
           inbound_shadow_mode?: boolean
           inbound_telephony_provider?: string
           inbound_transcription_provider?: string

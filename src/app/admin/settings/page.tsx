@@ -203,6 +203,7 @@ export default async function AdminSettingsPage() {
             initialExtractionModel={inboundSettings.extractionModel}
             initialTelephonyProvider={inboundSettings.telephonyProvider}
             initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
+            initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
             initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
             initialShadowMode={inboundSettings.shadowMode}
             transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
