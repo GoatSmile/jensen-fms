@@ -349,10 +349,21 @@ needs nothing at all.
   list + **"Upload a voicemail"** (any audio file → Storage → row) +
   detail w/ signed-URL audio player · admin tile. Browser-verified.
   Config seam added (migration 66): Admin → Settings "Calls & inbound".
-- **B. Transcribe** — Azure Speech (EU) stage in
-  `channels/voicemail.ts` + transcript panel + "Process now" button.
-  Record fake voicemails on a phone in Danish and English; iterate on
-  quality with zero telephony cost. Deps: `AZURE_SPEECH_KEY/REGION`.
+- **B. Transcribe — ✅ SHIPPED 2026-07-15** — provider re-eval flipped the
+  default to **Gladia** (EU-native company, ~$0.20/hr, no region param;
+  cleaner GDPR story than Azure's US-parent + EU-region setup).
+  `src/lib/inbound/transcribe.ts` dispatches per the registry: `gladia`
+  (async: signed URL → POST /v2/pre-recorded → poll → transcript +
+  detected language; LIVE-VERIFIED on a synthesized Danish voicemail —
+  near-perfect transcript, language=da) and `azure` (fast-transcription
+  sync REST; CONTRACT-VERIFIED, first run with a real key is the live
+  test). `channels/voicemail.ts` owns recording→text (signed URL mint).
+  Actions: `runTranscription` + `runPipeline` (transcribe → extract →
+  match, one click — the "Process now" idea, live early). Migration 68:
+  `inbound_phone_number_test` (Twilio trial +17625000850) beside the
+  production +45 number; both editable in the telephony block, region
+  input shows only for Azure. Deps: `GLADIA_API_KEY` (present) or
+  `AZURE_SPEECH_KEY`+region.
 - **C. Extract — ✅ SHIPPED 2026-07-15** — `src/lib/inbound/extract.ts`
   turns `body_text` → structured `InboundExtraction` via Claude Haiku
   forced tool-use (thin fetch wrapper, no SDK; provider + model from
