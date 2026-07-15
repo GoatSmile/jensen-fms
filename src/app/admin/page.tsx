@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   Coins,
   FolderTree,
-  Inbox,
   Layers,
   Map as MapIcon,
   Package,
@@ -53,7 +52,6 @@ export default async function AdminLandingPage() {
     familiesRes,
     orgsRes,
     priceListsRes,
-    inboundRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -108,10 +106,6 @@ export default async function AdminLandingPage() {
       .from("service_price_lists")
       .select("id", { count: "exact", head: true })
       .eq("is_current", true),
-    supabase
-      .from("inbound_messages")
-      .select("id", { count: "exact", head: true })
-      .neq("status", "actioned"),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -128,7 +122,6 @@ export default async function AdminLandingPage() {
   const activeFamilyCount = familiesRes.count ?? 0;
   const customerCount = orgsRes.count ?? 0;
   const currentPriceListCount = priceListsRes.count ?? 0;
-  const inboundToReview = inboundRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -261,13 +254,6 @@ export default async function AdminLandingPage() {
             title={t("settingsTitle")}
             description={t("settingsDesc")}
             stat={t("settingsStat", { pct: formatPct(defaultTransportPct) })}
-          />
-          <Tile
-            href="/admin/inbound"
-            icon={Inbox}
-            title={t("inboundTitle")}
-            description={t("inboundDesc")}
-            stat={t("inboundStat", { count: inboundToReview })}
           />
         </AdminGroup>
       </div>

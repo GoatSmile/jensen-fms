@@ -324,7 +324,7 @@ until a second real channel proves the shape.
   `received → understood → extracted → matched → actioned / failed`.
 - **`src/lib/inbound/`** — pipeline/extract/match are channel-blind;
   `channels/voicemail.ts` owns transcription. Harness at
-  `/admin/inbound` (channel badge on the list). Retention is designed
+  `/inbox` (moved from /admin/inbound 2026-07-15) (channel badge on the list). Retention is designed
   against `media_path`, not "call audio", so the same cron later covers
   email attachments.
 - Extraction emits **`intent`** (repair_request / order_inquiry /
@@ -345,7 +345,7 @@ needs nothing at all.
 - **A. Harness shell — ✅ SHIPPED 2026-07-13** — migration 65
   (`inbound_messages` + a `fleet_number` row in `bike_identifier_types` —
   customers' own numbering, "bike 25", big match-rate win for
-  municipalities) · private `inbound` storage bucket · `/admin/inbound`
+  municipalities) · private `inbound` storage bucket · `/inbox` (moved from /admin/inbound 2026-07-15)
   list + **"Upload a voicemail"** (any audio file → Storage → row) +
   detail w/ signed-URL audio player · admin tile. Browser-verified.
   Config seam added (migration 66): Admin → Settings "Calls & inbound".

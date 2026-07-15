@@ -37,7 +37,7 @@ import { UploadVoicemail } from "./_components/upload-voicemail";
  */
 export default async function InboundPage() {
   const [t, tCommon, tStatus, tChannel] = await Promise.all([
-    getTranslations("adminInbound"),
+    getTranslations("inbox"),
     getTranslations("common"),
     getTranslations("inboundStatus"),
     getTranslations("inboundChannel"),
@@ -67,12 +67,6 @@ export default async function InboundPage() {
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <Link href="/">{tCommon("crumbDashboard")}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/admin">{t("crumbAdmin")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
@@ -114,7 +108,7 @@ export default async function InboundPage() {
             </TableHeader>
             <TableBody>
               {rows.map((r) => {
-                const href = `/admin/inbound/${r.id}`;
+                const href = `/inbox/${r.id}`;
                 return (
                   <TableRow
                     key={r.id}

@@ -42,7 +42,7 @@ export function MatchPanel({
   matchedContactId,
   matchedBikeId,
 }: Props) {
-  const t = useTranslations("adminInbound");
+  const t = useTranslations("inbox");
   const router = useRouter();
   const [text, setText] = useState(initialExtractionJson || TEMPLATE);
   // Re-sync the editor when a fresh extraction arrives from the server (e.g.

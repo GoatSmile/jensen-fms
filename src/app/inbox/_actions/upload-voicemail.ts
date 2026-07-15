@@ -101,6 +101,6 @@ export async function uploadVoicemail(
     };
   }
 
-  revalidatePath("/admin/inbound");
+  revalidatePath("/inbox");
   return { ok: true, id: inserted.id };
 }

@@ -40,7 +40,7 @@ export function TranscriptPanel({
   transcriptionReady,
   extractionReady,
 }: Props) {
-  const t = useTranslations("adminInbound");
+  const t = useTranslations("inbox");
   const router = useRouter();
   const [text, setText] = useState(initialBody ?? "");
   // Re-sync the editor when a fresh transcript arrives from the server

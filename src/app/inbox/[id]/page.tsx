@@ -38,7 +38,7 @@ export default async function InboundDetailPage({
 }) {
   const { id } = await params;
   const [t, tCommon, tStatus, tChannel] = await Promise.all([
-    getTranslations("adminInbound"),
+    getTranslations("inbox"),
     getTranslations("common"),
     getTranslations("inboundStatus"),
     getTranslations("inboundChannel"),
@@ -95,13 +95,7 @@ export default async function InboundDetailPage({
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link href="/admin">{t("crumbAdmin")}</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/admin/inbound">{t("title")}</Link>
+              <Link href="/inbox">{t("title")}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

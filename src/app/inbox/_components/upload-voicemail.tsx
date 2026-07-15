@@ -17,7 +17,7 @@ import { uploadVoicemail } from "../_actions/upload-voicemail";
  * success we jump to the message detail so the reviewer lands on the player.
  */
 export function UploadVoicemail() {
-  const t = useTranslations("adminInbound");
+  const t = useTranslations("inbox");
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [fromIdentity, setFromIdentity] = useState("");
@@ -44,7 +44,7 @@ export function UploadVoicemail() {
       }
       setFromIdentity("");
       if (fileRef.current) fileRef.current.value = "";
-      router.push(`/admin/inbound/${res.id}`);
+      router.push(`/inbox/${res.id}`);
     });
   }
 

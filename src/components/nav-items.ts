@@ -8,6 +8,7 @@ import {
   Hammer,
   HardHat,
   Home,
+  Inbox,
   Paintbrush,
   Receipt,
   Settings,
@@ -37,6 +38,9 @@ export const NAV_GROUPS: NavItem[][] = [
     { href: "/bike-templates", labelKey: "bikeTemplates", icon: BookOpen },
     { href: "/parts", labelKey: "parts", icon: Boxes },
     { href: "/maintenance/tickets", labelKey: "maintenance", icon: Wrench },
+    // Inbound-message review queue (voicemail → ticket; more channels later).
+    // Sits by Maintenance because it feeds it.
+    { href: "/inbox", labelKey: "inbox", icon: Inbox },
     { href: "/work", labelKey: "workshopFloor", icon: HardHat },
   ],
   [

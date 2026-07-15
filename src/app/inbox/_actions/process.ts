@@ -47,7 +47,7 @@ export async function saveExtraction(
   if (error) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
   }
-  revalidatePath(`/admin/inbound/${messageId}`);
+  revalidatePath(`/inbox/${messageId}`);
   return { ok: true };
 }
 
@@ -118,7 +118,7 @@ export async function runTranscription(
   if (saveErr) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
   }
-  revalidatePath(`/admin/inbound/${messageId}`);
+  revalidatePath(`/inbox/${messageId}`);
   return { ok: true };
 }
 
@@ -179,7 +179,7 @@ export async function saveBodyText(
   if (error) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
   }
-  revalidatePath(`/admin/inbound/${messageId}`);
+  revalidatePath(`/inbox/${messageId}`);
   return { ok: true };
 }
 
@@ -245,7 +245,7 @@ export async function runExtraction(messageId: string): Promise<ProcessResult> {
   if (saveErr) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
   }
-  revalidatePath(`/admin/inbound/${messageId}`);
+  revalidatePath(`/inbox/${messageId}`);
   return { ok: true };
 }
 
@@ -295,6 +295,6 @@ export async function runMatch(messageId: string): Promise<ProcessResult> {
   if (saveErr) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
   }
-  revalidatePath(`/admin/inbound/${messageId}`);
+  revalidatePath(`/inbox/${messageId}`);
   return { ok: true };
 }

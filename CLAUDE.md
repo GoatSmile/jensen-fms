@@ -334,7 +334,7 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **Navigation / IA (set with owner 2026-06-20).** The left nav is grouped
   with subtle hairline separators between groups, most-used first:
   1. *Dashboard* (alone at the top, separated)
-  2. *Daily ops* — Bikes · Bike templates · Parts · Maintenance · Workshop floor
+  2. *Daily ops* — Bikes · Bike templates · Parts · Maintenance · Inbox · Workshop floor
   3. *Orders & commercial* — Manufacturing orders · Purchase orders · Sales
      orders · Paint orders · Invoices · Service agreements · Customers
   4. *Admin* (on its own)
@@ -1303,7 +1303,7 @@ when the work ships or the idea is rejected.
   plain `ticket_id` action column (no polymorphic action framework until
   a second action type is real). Libs in `src/lib/inbound/` —
   pipeline/extract/match channel-blind, `channels/voicemail.ts` owns
-  transcription; harness at `/admin/inbound`. Extraction emits `intent`
+  transcription; harness at `/inbox` (renamed from /admin/inbound 2026-07-15 — "Inbox"/"Indbakke", Daily ops nav; it is a review queue, not admin config). Extraction emits `intent`
   (repair_request/order_inquiry/other) from day one — v1 renders it on
   the review banner, later it's the routing key. Future channels (email,
   WhatsApp Business, agent/API ingress) are thin adapters built WHEN

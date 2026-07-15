@@ -133,7 +133,7 @@ export async function createTicketFromInbound(
     };
   }
 
-  revalidatePath(`/admin/inbound/${messageId}`);
-  revalidatePath("/admin/inbound");
+  revalidatePath(`/inbox/${messageId}`);
+  revalidatePath("/inbox");
   return { ok: true, ticketId: ticket.id, ticketNumber };
 }

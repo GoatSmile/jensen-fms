@@ -280,7 +280,8 @@
     "expandAria": "Udvid navigationen",
     "openAria": "Åbn navigationen",
     "closeAria": "Luk navigationen",
-    "title": "Navigation"
+    "title": "Navigation",
+    "inbox": "Indbakke"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -2490,10 +2491,7 @@
     "mapStat": "{count, plural, one {# kunde} other {# kunder}}",
     "settingsTitle": "Indstillinger",
     "settingsDesc": "App-dækkende standarder (transport %, primær lokation, skjul lokationsinfo).",
-    "settingsStat": "Standardtransport: {pct}",
-    "inboundTitle": "Indgående",
-    "inboundDesc": "Telefonbeskeder og andre indgående beskeder, som kladde-sager.",
-    "inboundStat": "{count, plural, =0 {intet at gennemse} one {# at gennemse} other {# at gennemse}}"
+    "settingsStat": "Standardtransport: {pct}"
   },
   "adminFx": {
     "crumb": "Valutakurser",
@@ -3695,9 +3693,8 @@
     "inboundTranscriptionEmpty": "Optagelsen gav en tom transskription.",
     "inboundTranscriptionFailed": "Transskription mislykkedes: {detail}"
   },
-  "adminInbound": {
-    "crumbAdmin": "Admin",
-    "title": "Indgående",
+  "inbox": {
+    "title": "Indbakke",
     "subtitle": "Indgående beskeder omdannet til kladde-sager — gennemse før noget stoles på. Telefonbeskeder nu; flere kanaler senere.",
     "uploadTitle": "Upload en telefonbesked",
     "uploadHint": "Læg en optaget telefonbesked ind (dansk eller engelsk) for at køre den gennem pipelinen. Testindgang indtil telefonnummeret er koblet på.",

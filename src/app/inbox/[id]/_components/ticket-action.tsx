@@ -30,7 +30,7 @@ export function TicketAction({
   canCreate,
   shadowMode,
 }: Props) {
-  const t = useTranslations("adminInbound");
+  const t = useTranslations("inbox");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
