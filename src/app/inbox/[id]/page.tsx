@@ -37,11 +37,12 @@ export default async function InboundDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tCommon, tStatus, tChannel] = await Promise.all([
+  const [t, tCommon, tStatus, tChannel, tOutcome] = await Promise.all([
     getTranslations("inbox"),
     getTranslations("common"),
     getTranslations("inboundStatus"),
     getTranslations("inboundChannel"),
+    getTranslations("inboundOutcome"),
   ]);
 
   const supabase = createServiceClient();
@@ -66,6 +67,18 @@ export default async function InboundDetailPage({
   }
 
   const meta = (msg.channel_meta ?? {}) as { original_filename?: string };
+
+  // A captured call with no message + no transcript is a contact event, not a
+  // voicemail — show its metadata, skip the pipeline panels.
+  const hasContent = Boolean(msg.media_path || msg.body_text);
+  const isCallEvent =
+    msg.call_outcome != null && msg.call_outcome !== "message_left" && !hasContent;
+  const outcomeKey = msg.call_outcome ? OUTCOME_KEY[msg.call_outcome] : null;
+  const outcomeLabel = msg.call_outcome
+    ? outcomeKey && tOutcome.has(outcomeKey)
+      ? tOutcome(outcomeKey)
+      : msg.call_outcome
+    : null;
 
   // Shadow-mode flag + the linked ticket's number (if one was created).
   const settings = await loadInboundSettings(supabase);
@@ -134,51 +147,69 @@ export default async function InboundDetailPage({
         <Fact label={t("languageLabel")}>
           {msg.language ?? <span className="text-muted-foreground">—</span>}
         </Fact>
+        {msg.duration_seconds != null ? (
+          <Fact label={t("durationLabel")}>
+            {formatDuration(msg.duration_seconds)}
+          </Fact>
+        ) : null}
+        {outcomeLabel ? (
+          <Fact label={t("outcomeLabel")}>{outcomeLabel}</Fact>
+        ) : null}
       </dl>
 
-      {/* Audio */}
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="text-sm font-semibold">{t("audioTitle")}</h2>
-        {mediaUrl ? (
-          // eslint-disable-next-line jsx-a11y/media-has-caption
-          <audio controls preload="metadata" className="w-full">
-            <source src={mediaUrl} type={msg.media_mime_type ?? undefined} />
-          </audio>
-        ) : (
-          <p className="text-muted-foreground text-sm italic">
-            {t("noAudio")}
-          </p>
-        )}
-      </section>
+      {isCallEvent ? (
+        <section className="rounded-md border p-4">
+          <p className="text-muted-foreground text-sm">{t("callEventNote")}</p>
+        </section>
+      ) : (
+        <>
+          {/* Audio */}
+          <section className="flex flex-col gap-2 rounded-md border p-4">
+            <h2 className="text-sm font-semibold">{t("audioTitle")}</h2>
+            {mediaUrl ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <audio controls preload="metadata" className="w-full">
+                <source src={mediaUrl} type={msg.media_mime_type ?? undefined} />
+              </audio>
+            ) : (
+              <p className="text-muted-foreground text-sm italic">
+                {t("noAudio")}
+              </p>
+            )}
+          </section>
 
-      {/* Pipeline stages. Transcript is editable (Slice-C harness ingress);
-          extraction + match live in MatchPanel. */}
-      <TranscriptPanel
-        messageId={msg.id}
-        initialBody={msg.body_text}
-        hasAudio={Boolean(msg.media_path)}
-        transcriptionReady={transcriptionReady}
-        extractionReady={extractionReady}
-      />
-      <MatchPanel
-        messageId={msg.id}
-        initialExtractionJson={
-          msg.extraction ? JSON.stringify(msg.extraction, null, 2) : ""
-        }
-        hasExtraction={msg.extraction != null}
-        matchCandidates={(msg.match_candidates as MatchCandidates | null) ?? null}
-        matchedOrganizationId={msg.matched_organization_id}
-        matchedContactId={msg.matched_contact_id}
-        matchedBikeId={msg.matched_bike_id}
-      />
+          {/* Pipeline stages. Transcript is editable (Slice-C harness ingress);
+              extraction + match live in MatchPanel. */}
+          <TranscriptPanel
+            messageId={msg.id}
+            initialBody={msg.body_text}
+            hasAudio={Boolean(msg.media_path)}
+            transcriptionReady={transcriptionReady}
+            extractionReady={extractionReady}
+          />
+          <MatchPanel
+            messageId={msg.id}
+            initialExtractionJson={
+              msg.extraction ? JSON.stringify(msg.extraction, null, 2) : ""
+            }
+            hasExtraction={msg.extraction != null}
+            matchCandidates={
+              (msg.match_candidates as MatchCandidates | null) ?? null
+            }
+            matchedOrganizationId={msg.matched_organization_id}
+            matchedContactId={msg.matched_contact_id}
+            matchedBikeId={msg.matched_bike_id}
+          />
 
-      <TicketAction
-        messageId={msg.id}
-        ticketId={msg.ticket_id}
-        ticketNumber={ticketNumber}
-        canCreate={msg.status === "matched"}
-        shadowMode={shadowMode}
-      />
+          <TicketAction
+            messageId={msg.id}
+            ticketId={msg.ticket_id}
+            ticketNumber={ticketNumber}
+            canCreate={msg.status === "matched"}
+            shadowMode={shadowMode}
+          />
+        </>
+      )}
 
       {msg.error ? (
         <p className="text-destructive text-sm" role="alert">
@@ -187,6 +218,23 @@ export default async function InboundDetailPage({
       ) : null}
     </div>
   );
+}
+
+/** Maps a stored call_outcome to its `inboundOutcome` message key. */
+const OUTCOME_KEY: Record<string, string> = {
+  message_left: "messageLeft",
+  no_message: "noMessage",
+  busy: "busy",
+  "no-answer": "noAnswer",
+  failed: "failed",
+  canceled: "canceled",
+};
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m ${s}s`;
 }
 
 function Fact({

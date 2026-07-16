@@ -1162,6 +1162,8 @@ export type Database = {
           received_at: string
           status: Database["public"]["Enums"]["inbound_status"]
           ticket_id: string | null
+          call_outcome: string | null
+          duration_seconds: number | null
           understanding: Json | null
           updated_at: string
         }
@@ -1186,6 +1188,8 @@ export type Database = {
           received_at?: string
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
+          call_outcome?: string | null
+          duration_seconds?: number | null
           understanding?: Json | null
           updated_at?: string
         }
@@ -1210,6 +1214,8 @@ export type Database = {
           received_at?: string
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
+          call_outcome?: string | null
+          duration_seconds?: number | null
           understanding?: Json | null
           updated_at?: string
         }

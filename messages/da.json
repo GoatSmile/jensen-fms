@@ -3021,7 +3021,8 @@
     "inboundPhoneHint": "Det rigtige +45-nummer kunderne ringer til — annonceringer, SMS-afsender, tryksager.",
     "inboundPhoneTestLabel": "Testnummer",
     "inboundPhoneTestHint": "Twilio-prøvenummer til webhook-røgtest; vises aldrig til kunder.",
-    "inboundWebhookHint": "Peg dit Twilio-nummers voice-webhook (Når et opkald kommer ind, HTTP POST) her:"
+    "inboundWebhookHint": "Peg dit Twilio-nummers voice-webhook (Når et opkald kommer ind, HTTP POST) her:",
+    "inboundStatusWebhookHint": "Og dens \"Call status changes\"-webhook (fanger alle opkald, inkl. dem hvor der lægges på uden besked):"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -3767,7 +3768,10 @@
     "transcribing": "Transskriberer…",
     "runPipeline": "Kør hele pipelinen",
     "pipelineRunning": "Kører…",
-    "transcriptionKeyMissingHint": "Angiv transskriptionsudbyderens API-nøgle for at transskribere."
+    "transcriptionKeyMissingHint": "Angiv transskriptionsudbyderens API-nøgle for at transskribere.",
+    "durationLabel": "Varighed",
+    "outcomeLabel": "Resultat",
+    "callEventNote": "Den, der ringede, lagde på uden at efterlade en besked. Registreret for en god ordens skyld — intet at behandle."
   },
   "inboundStatus": {
     "received": "Modtaget",
@@ -3779,5 +3783,13 @@
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked"
+  },
+  "inboundOutcome": {
+    "messageLeft": "Besked lagt",
+    "noMessage": "Ingen besked",
+    "busy": "Optaget",
+    "noAnswer": "Intet svar",
+    "failed": "Mislykkedes",
+    "canceled": "Annulleret"
   }
 }

@@ -3021,7 +3021,8 @@
     "inboundPhoneHint": "The real +45 number customers call — announcements, SMS sender, print.",
     "inboundPhoneTestLabel": "Test number",
     "inboundPhoneTestHint": "Twilio trial number for webhook smoke-tests; never shown to customers.",
-    "inboundWebhookHint": "Point your Twilio number's Voice webhook (A call comes in, HTTP POST) here:"
+    "inboundWebhookHint": "Point your Twilio number's Voice webhook (A call comes in, HTTP POST) here:",
+    "inboundStatusWebhookHint": "And its \"Call status changes\" webhook (captures every call, incl. hang-ups that leave no message):"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -3767,7 +3768,10 @@
     "transcribing": "Transcribing…",
     "runPipeline": "Run whole pipeline",
     "pipelineRunning": "Running…",
-    "transcriptionKeyMissingHint": "Set the transcription provider's API key to transcribe."
+    "transcriptionKeyMissingHint": "Set the transcription provider's API key to transcribe.",
+    "durationLabel": "Duration",
+    "outcomeLabel": "Outcome",
+    "callEventNote": "The caller hung up without leaving a message. Logged for the record — nothing to process."
   },
   "inboundStatus": {
     "received": "Received",
@@ -3779,5 +3783,13 @@
   },
   "inboundChannel": {
     "voicemail": "Voicemail"
+  },
+  "inboundOutcome": {
+    "messageLeft": "Message left",
+    "noMessage": "No message",
+    "busy": "Busy",
+    "noAnswer": "No answer",
+    "failed": "Failed",
+    "canceled": "Canceled"
   }
 }

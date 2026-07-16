@@ -22,15 +22,14 @@ const BUCKET = "inbound";
 
 /**
  * Twilio recording-status callback (Slice F). Fires when a voicemail
- * recording is ready. We: validate the signature, pull the audio into
- * Supabase Storage (EU), DELETE the Twilio copy immediately (the only durable
- * audio then lives in the EU bucket), create the `inbound_messages` row, and —
- * after responding — run the pipeline (transcribe → extract → match) so a
- * review row is waiting. Shadow mode: nothing reaches the customer.
+ * recording is ready. We validate the signature, pull the audio into Supabase
+ * Storage (EU), DELETE the Twilio copy immediately, converge on the call's row
+ * (created here OR already created by the call-status callback — reconciled by
+ * CallSid), and — after responding — run the pipeline so a review row is
+ * waiting. Shadow mode: nothing reaches the customer.
  *
- * Always acks with 204 once the signature is valid, even on a fetch/upload
- * hiccup — a non-2xx makes Twilio retry the callback indefinitely. Failures
- * are recorded on the row / left for the "Run whole pipeline" button instead.
+ * Always acks 204 once the signature is valid, even on a fetch/upload hiccup —
+ * a non-2xx makes Twilio retry the callback indefinitely.
  */
 export async function POST(request: Request) {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -45,20 +44,27 @@ export async function POST(request: Request) {
 
   const recordingUrl = params.RecordingUrl;
   const recordingSid = params.RecordingSid;
-  // No recording (caller hung up before the beep) → nothing to store.
+  const callSid = params.CallSid || null;
+  // No recording (caller hung up before the beep) → the status callback
+  // captures the hang-up; nothing to store here.
   if (!recordingUrl || !recordingSid) {
     return new NextResponse(null, { status: 204 });
   }
 
   const supabase = createServiceClient();
 
-  // Idempotency: Twilio retries on any non-2xx, so guard on the recording SID.
-  const { data: existing } = await supabase
-    .from("inbound_messages")
-    .select("id")
-    .eq("channel_meta->>twilio_recording_sid", recordingSid)
-    .maybeSingle();
-  if (existing) return new NextResponse(null, { status: 204 });
+  // Reconcile by CallSid: the status callback may have created a contentless
+  // row for this call first, or a retry may already have stored the recording.
+  const { data: existing } = callSid
+    ? await supabase
+        .from("inbound_messages")
+        .select("id, media_path, channel_meta")
+        .eq("channel_meta->>twilio_call_sid", callSid)
+        .maybeSingle()
+    : { data: null };
+
+  // Recording already stored on this call (Twilio retried the callback).
+  if (existing?.media_path) return new NextResponse(null, { status: 204 });
 
   // Pull the audio to EU storage, then delete the Twilio copy.
   const fetched = await fetchTwilioRecording(recordingUrl, accountSid, authToken);
@@ -81,7 +87,7 @@ export async function POST(request: Request) {
   const fromNumber = q.get("from") || params.From || null;
   const toNumber = q.get("to") || params.To || undefined;
 
-  const channelMeta: VoicemailChannelMeta = {
+  const recordingMeta: VoicemailChannelMeta = {
     source: "twilio",
     original_filename: `${recordingSid}.mp3`,
     twilio_call_sid: params.CallSid,
@@ -93,27 +99,64 @@ export async function POST(request: Request) {
     twilio_deleted: del.ok,
   };
 
-  const { data: inserted } = await supabase
-    .from("inbound_messages")
-    .insert({
-      channel: "voicemail",
-      status: "received",
-      from_identity: fromNumber,
-      media_path: objectPath,
-      media_mime_type: objectPath ? "audio/mpeg" : null,
-      channel_meta: channelMeta,
-      error: objectPath ? null : "twilio: recording fetch/upload failed",
-    })
-    .select("id")
-    .single();
+  const rowFields = {
+    from_identity: fromNumber,
+    media_path: objectPath,
+    media_mime_type: objectPath ? "audio/mpeg" : null,
+    call_outcome: "message_left",
+    status: "received" as const,
+    error: objectPath ? null : "twilio: recording fetch/upload failed",
+  };
+
+  let id: string | null = null;
+  if (existing) {
+    // The status callback created a contentless row first — attach the
+    // recording (merging its channel_meta) and flip it to a real voicemail.
+    const merged = {
+      ...((existing.channel_meta as Record<string, unknown>) ?? {}),
+      ...recordingMeta,
+    };
+    await supabase
+      .from("inbound_messages")
+      .update({ ...rowFields, channel_meta: merged })
+      .eq("id", existing.id);
+    id = existing.id;
+  } else {
+    const { data: inserted } = await supabase
+      .from("inbound_messages")
+      .insert({ channel: "voicemail", channel_meta: recordingMeta, ...rowFields })
+      .select("id")
+      .maybeSingle();
+    id = inserted?.id ?? null;
+    // Lost the race: the status callback inserted between our SELECT and
+    // INSERT (unique index on CallSid). Re-find and update that row instead.
+    if (!id && callSid) {
+      const { data: raced } = await supabase
+        .from("inbound_messages")
+        .select("id, channel_meta")
+        .eq("channel_meta->>twilio_call_sid", callSid)
+        .maybeSingle();
+      if (raced) {
+        const merged = {
+          ...((raced.channel_meta as Record<string, unknown>) ?? {}),
+          ...recordingMeta,
+        };
+        await supabase
+          .from("inbound_messages")
+          .update({ ...rowFields, channel_meta: merged })
+          .eq("id", raced.id);
+        id = raced.id;
+      }
+    }
+  }
 
   // Process after responding so Twilio gets a fast ack. Failures are stamped
   // onto the row by the pipeline; the review UI's "Run whole pipeline" retries.
-  if (inserted?.id && objectPath) {
-    const id = inserted.id;
+  if (id && objectPath) {
+    const messageId = id;
     after(async () => {
       try {
-        await runInboundPipeline(createServiceClient(), id, "da");
+        await runInboundPipeline(createServiceClient(), messageId, "da");
       } catch {
         /* pipeline stamps its own failure on the row */
       }

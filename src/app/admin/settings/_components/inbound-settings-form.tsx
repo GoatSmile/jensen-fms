@@ -67,11 +67,15 @@ export function InboundSettingsForm(props: Props) {
   );
   const [retentionDays, setRetentionDays] = useState(props.initialRetentionDays);
   const [shadowMode, setShadowMode] = useState(props.initialShadowMode);
-  // Absolute webhook URL to paste into the Twilio number's Voice config —
-  // depends on where this is deployed, so read it from the browser.
+  // Absolute webhook URLs to paste into the Twilio number's config — they
+  // depend on where this is deployed, so read the origin from the browser.
+  // Voice: the "A call comes in" webhook. Status: the "Call status changes"
+  // webhook, which captures every call (incl. hang-ups that leave no message).
   const [voiceWebhookUrl, setVoiceWebhookUrl] = useState("");
+  const [statusWebhookUrl, setStatusWebhookUrl] = useState("");
   useEffect(() => {
     setVoiceWebhookUrl(`${window.location.origin}/api/inbound/twilio/voice`);
+    setStatusWebhookUrl(`${window.location.origin}/api/inbound/twilio/status`);
   }, []);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -232,12 +236,20 @@ export function InboundSettingsForm(props: Props) {
           />
         </div>
         {telephonyProvider === "twilio" ? (
-          <p className="text-muted-foreground text-xs sm:col-span-2">
-            {t("inboundWebhookHint")}{" "}
-            <code className="font-mono break-all">
-              {voiceWebhookUrl || "…"}
-            </code>
-          </p>
+          <div className="flex flex-col gap-1 sm:col-span-2">
+            <p className="text-muted-foreground text-xs">
+              {t("inboundWebhookHint")}{" "}
+              <code className="font-mono break-all">
+                {voiceWebhookUrl || "…"}
+              </code>
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("inboundStatusWebhookHint")}{" "}
+              <code className="font-mono break-all">
+                {statusWebhookUrl || "…"}
+              </code>
+            </p>
+          </div>
         ) : null}
       </ProviderBlock>
 
