@@ -70,6 +70,28 @@ function done(messageId: string): ProcessResult {
 }
 
 /**
+ * Triage disposition (layer 5): the reviewer's override of the auto spam
+ * suspicion. 'spam' folds it, 'not_spam' forces it back to the active queue,
+ * 'pending' resets. Reversible; never destructive.
+ */
+export async function setDisposition(
+  messageId: string,
+  disposition: "pending" | "spam" | "not_spam",
+): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("inbound_messages")
+    .update({ disposition })
+    .eq("id", messageId);
+  if (error) {
+    return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
+  }
+  revalidatePath("/inbox");
+  return done(messageId);
+}
+
+/**
  * Harness ingress for Slice D: paste/edit the extraction JSON so matching can
  * be exercised before the extraction stage exists / to override it. Editing
  * extraction invalidates any prior match (clears candidates + attachments,

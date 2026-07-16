@@ -3779,7 +3779,13 @@
     "clarityGarbled": "utydelig",
     "confLow": "lav",
     "confMedium": "middel",
-    "confHigh": "høj"
+    "confHigh": "høj",
+    "spamFold": "Mulig spam ({count})",
+    "noActive": "Intet aktivt — alle nylige beskeder ligger i spam-folden nedenfor.",
+    "markSpam": "Markér som spam",
+    "notSpam": "Ikke spam",
+    "spamSuspectedTitle": "Ligner spam",
+    "spamConfirmedTitle": "Markeret som spam"
   },
   "inboundStatus": {
     "received": "Modtaget",
@@ -3799,5 +3805,12 @@
     "noAnswer": "Intet svar",
     "failed": "Mislykkedes",
     "canceled": "Annulleret"
+  },
+  "inboundSpamSignal": {
+    "unknown_number": "ukendt nummer",
+    "no_message": "ingen besked",
+    "short_call": "meget kort opkald",
+    "repeat_unknown": "gentagne opkald fra ukendt nummer",
+    "no_caller_id": "ingen nummervisning"
   }
 }

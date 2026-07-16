@@ -3779,7 +3779,13 @@
     "clarityGarbled": "garbled",
     "confLow": "low",
     "confMedium": "medium",
-    "confHigh": "high"
+    "confHigh": "high",
+    "spamFold": "Suspected spam ({count})",
+    "noActive": "Nothing active — all recent messages are in the spam fold below.",
+    "markSpam": "Mark as spam",
+    "notSpam": "Not spam",
+    "spamSuspectedTitle": "Looks like spam",
+    "spamConfirmedTitle": "Marked as spam"
   },
   "inboundStatus": {
     "received": "Received",
@@ -3799,5 +3805,12 @@
     "noAnswer": "No answer",
     "failed": "Failed",
     "canceled": "Canceled"
+  },
+  "inboundSpamSignal": {
+    "unknown_number": "unknown number",
+    "no_message": "no message left",
+    "short_call": "very short call",
+    "repeat_unknown": "repeat calls from an unknown number",
+    "no_caller_id": "no caller ID"
   }
 }

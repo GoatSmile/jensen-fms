@@ -19,6 +19,7 @@ import { parseExtraction } from "./extraction";
 import { extractInbound } from "./extract";
 import { matchInbound } from "./match";
 import { transcribeVoicemail } from "./channels/voicemail";
+import { applyTriage } from "./triage";
 import { loadInboundSettings, type InboundSettings } from "./settings";
 
 export type StageResult =
@@ -192,6 +193,9 @@ export async function runInboundPipeline(
 
   const mt = await matchStage(supabase, messageId, locale);
   if (!mt.ok) return fail(supabase, messageId, mt);
+
+  // Score spam signals now that we know who (if anyone) it matched.
+  await applyTriage(supabase, messageId);
   return { ok: true };
 }
 

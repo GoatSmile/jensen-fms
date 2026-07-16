@@ -20,9 +20,12 @@ import {
   loadInboundSettings,
 } from "@/lib/inbound/settings";
 
+import { isSpamFolded } from "@/lib/inbound/triage";
+
 import { MatchPanel } from "./_components/match-panel";
 import { TranscriptPanel } from "./_components/transcript-panel";
 import { TicketAction } from "./_components/ticket-action";
+import { DispositionAction } from "./_components/disposition-action";
 
 /**
  * Inbound message detail — the review surface. Slice A renders the raw
@@ -85,6 +88,17 @@ export default async function InboundDetailPage({
   const clarity = msg.transcript_confidence;
   const parseConfidence =
     (msg.extraction as { confidence?: string } | null)?.confidence ?? null;
+
+  // Triage (layer 5): spam signals + fold state, plus a "suspected but not
+  // yet decided" flag driving the review banner.
+  const spamSignals = Array.isArray(msg.spam_signals)
+    ? (msg.spam_signals as string[])
+    : [];
+  const spamFolded = isSpamFolded({
+    disposition: msg.disposition,
+    spam_signals: msg.spam_signals,
+    ticket_id: msg.ticket_id,
+  });
 
   // Shadow-mode flag + the linked ticket's number (if one was created).
   const settings = await loadInboundSettings(supabase);
@@ -176,6 +190,13 @@ export default async function InboundDetailPage({
           </Fact>
         ) : null}
       </dl>
+
+      <DispositionAction
+        messageId={msg.id}
+        disposition={msg.disposition}
+        isSpam={spamFolded}
+        signals={spamSignals}
+      />
 
       {isCallEvent ? (
         <section className="rounded-md border p-4">

@@ -1146,6 +1146,7 @@ export type Database = {
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta: Json
           created_at: string
+          disposition: string
           error: string | null
           extraction: Json | null
           from_identity: string | null
@@ -1160,6 +1161,7 @@ export type Database = {
           processed_at: string | null
           raw_payload: Json | null
           received_at: string
+          spam_signals: Json | null
           status: Database["public"]["Enums"]["inbound_status"]
           ticket_id: string | null
           call_outcome: string | null
@@ -1173,6 +1175,7 @@ export type Database = {
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
           created_at?: string
+          disposition?: string
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
@@ -1187,6 +1190,7 @@ export type Database = {
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string
+          spam_signals?: Json | null
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
           call_outcome?: string | null
@@ -1200,6 +1204,7 @@ export type Database = {
           channel?: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
           created_at?: string
+          disposition?: string
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
@@ -1214,6 +1219,7 @@ export type Database = {
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string
+          spam_signals?: Json | null
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
           call_outcome?: string | null

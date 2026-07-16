@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { VoicemailChannelMeta } from "@/lib/inbound/types";
+import { applyTriage } from "@/lib/inbound/triage";
 import { formParams, verifyTwilioRequest } from "@/lib/inbound/telephony/twilio";
 
 export const runtime = "nodejs";
@@ -76,21 +77,28 @@ export async function POST(request: Request) {
     twilio_call_sid: callSid,
     to_number: params.To,
   };
-  const { error } = await supabase.from("inbound_messages").insert({
-    channel: "voicemail",
-    status: "received",
-    from_identity: params.From ?? null,
-    duration_seconds: duration,
-    call_outcome: outcomeFor(callStatus),
-    channel_meta: channelMeta,
-  });
+  const { data: inserted, error } = await supabase
+    .from("inbound_messages")
+    .insert({
+      channel: "voicemail",
+      status: "received",
+      from_identity: params.From ?? null,
+      duration_seconds: duration,
+      call_outcome: outcomeFor(callStatus),
+      channel_meta: channelMeta,
+    })
+    .select("id")
+    .maybeSingle();
 
-  // Lost the race to the recording callback (unique index on CallSid) — it
-  // owns the row now; nothing more to do.
-  if (error && error.code !== "23505") {
-    // Non-conflict failure: surface as 204 anyway (don't make Twilio retry),
-    // but leave a trace in logs.
-    console.error("inbound status insert failed", error.message);
+  if (error) {
+    // Lost the race to the recording callback (unique index on CallSid) — it
+    // owns the row now; nothing more to do.
+    if (error.code !== "23505") {
+      console.error("inbound status insert failed", error.message);
+    }
+  } else if (inserted) {
+    // Score the hang-up (no pipeline runs for a contentless call).
+    await applyTriage(supabase, inserted.id);
   }
 
   return new NextResponse(null, { status: 204 });

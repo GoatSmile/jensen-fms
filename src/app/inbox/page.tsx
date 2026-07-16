@@ -26,6 +26,7 @@ import {
   INBOUND_STATUS_VARIANT,
   type InboundMessageRow,
 } from "@/lib/inbound/types";
+import { isSpamFolded } from "@/lib/inbound/triage";
 
 import { UploadVoicemail } from "./_components/upload-voicemail";
 
@@ -47,7 +48,7 @@ export default async function InboundPage() {
   const { data, error } = await supabase
     .from("inbound_messages")
     .select(
-      "id, channel, status, from_identity, received_at, ticket_id",
+      "id, channel, status, from_identity, received_at, ticket_id, disposition, spam_signals",
     )
     .order("received_at", { ascending: false })
     .limit(200);
@@ -57,8 +58,19 @@ export default async function InboundPage() {
   }
   const rows = (data ?? []) as Pick<
     InboundMessageRow,
-    "id" | "channel" | "status" | "from_identity" | "received_at" | "ticket_id"
+    | "id"
+    | "channel"
+    | "status"
+    | "from_identity"
+    | "received_at"
+    | "ticket_id"
+    | "disposition"
+    | "spam_signals"
   >[];
+
+  // Triage: park suspected/confirmed spam in a collapsed fold, active first.
+  const active = rows.filter((r) => !isSpamFolded(r));
+  const spam = rows.filter((r) => isSpamFolded(r));
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -91,75 +103,97 @@ export default async function InboundPage() {
           description={t("emptyDesc")}
         />
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thChannel")}</TableHead>
-                <TableHead>{t("thFrom")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t("thReceived")}
-                </TableHead>
-                <TableHead>{t("thStatus")}</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("thTicket")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => {
-                const href = `/inbox/${r.id}`;
-                return (
-                  <TableRow
-                    key={r.id}
-                    className="hover:bg-muted/50 cursor-pointer"
-                  >
-                    <TableCell className="p-0">
-                      <Link href={href} className="block px-4 py-2.5">
-                        <Badge variant="outline" className="font-normal">
-                          {tChannel(r.channel)}
-                        </Badge>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="p-0 font-mono text-xs">
-                      <Link href={href} className="block px-4 py-2.5">
-                        {r.from_identity ?? (
-                          <span className="text-muted-foreground">
-                            {t("unknownSender")}
-                          </span>
-                        )}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 text-sm sm:table-cell">
-                      <Link href={href} className="block px-4 py-2.5">
-                        {formatDateTime(r.received_at)}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="p-0">
-                      <Link href={href} className="block px-4 py-2.5">
-                        <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>
-                          {tStatus(r.status)}
-                        </Badge>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 text-sm md:table-cell">
-                      <Link href={href} className="block px-4 py-2.5">
-                        {r.ticket_id ? (
-                          <span className="text-emerald-600 dark:text-emerald-500">
-                            {t("ticketCreated")}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <div className="flex flex-col gap-4">
+          {active.length > 0 ? (
+            queueTable(active)
+          ) : (
+            <p className="text-muted-foreground text-sm italic">
+              {t("noActive")}
+            </p>
+          )}
+          {spam.length > 0 ? (
+            <details className="overflow-hidden rounded-md border">
+              <summary className="text-muted-foreground cursor-pointer px-4 py-2.5 text-sm font-medium">
+                {t("spamFold", { count: spam.length })}
+              </summary>
+              <div className="border-t">{queueTable(spam, true)}</div>
+            </details>
+          ) : null}
         </div>
       )}
     </div>
   );
+
+  function queueTable(list: typeof rows, nested = false) {
+    return (
+      <div className={nested ? undefined : "overflow-hidden rounded-md border"}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thChannel")}</TableHead>
+              <TableHead>{t("thFrom")}</TableHead>
+              <TableHead className="hidden sm:table-cell">
+                {t("thReceived")}
+              </TableHead>
+              <TableHead>{t("thStatus")}</TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thTicket")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.map((r) => {
+              const href = `/inbox/${r.id}`;
+              return (
+                <TableRow
+                  key={r.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                >
+                  <TableCell className="p-0">
+                    <Link href={href} className="block px-4 py-2.5">
+                      <Badge variant="outline" className="font-normal">
+                        {tChannel(r.channel)}
+                      </Badge>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0 font-mono text-xs">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {r.from_identity ?? (
+                        <span className="text-muted-foreground">
+                          {t("unknownSender")}
+                        </span>
+                      )}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="hidden p-0 text-sm sm:table-cell">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {formatDateTime(r.received_at)}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <Link href={href} className="block px-4 py-2.5">
+                      <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>
+                        {tStatus(r.status)}
+                      </Badge>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="hidden p-0 text-sm md:table-cell">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {r.ticket_id ? (
+                        <span className="text-emerald-600 dark:text-emerald-500">
+                          {t("ticketCreated")}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
 }
