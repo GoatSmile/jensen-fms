@@ -3771,7 +3771,15 @@
     "transcriptionKeyMissingHint": "Angiv transskriptionsudbyderens API-nøgle for at transskribere.",
     "durationLabel": "Varighed",
     "outcomeLabel": "Resultat",
-    "callEventNote": "Den, der ringede, lagde på uden at efterlade en besked. Registreret for en god ordens skyld — intet at behandle."
+    "callEventNote": "Den, der ringede, lagde på uden at efterlade en besked. Registreret for en god ordens skyld — intet at behandle.",
+    "clarityLabel": "Klarhed",
+    "parseLabel": "Tolkningssikkerhed",
+    "clarityClear": "klar",
+    "clarityFair": "nogenlunde",
+    "clarityGarbled": "utydelig",
+    "confLow": "lav",
+    "confMedium": "middel",
+    "confHigh": "høj"
   },
   "inboundStatus": {
     "received": "Modtaget",

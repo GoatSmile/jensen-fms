@@ -1164,6 +1164,7 @@ export type Database = {
           ticket_id: string | null
           call_outcome: string | null
           duration_seconds: number | null
+          transcript_confidence: number | null
           understanding: Json | null
           updated_at: string
         }
@@ -1190,6 +1191,7 @@ export type Database = {
           ticket_id?: string | null
           call_outcome?: string | null
           duration_seconds?: number | null
+          transcript_confidence?: number | null
           understanding?: Json | null
           updated_at?: string
         }
@@ -1216,6 +1218,7 @@ export type Database = {
           ticket_id?: string | null
           call_outcome?: string | null
           duration_seconds?: number | null
+          transcript_confidence?: number | null
           understanding?: Json | null
           updated_at?: string
         }

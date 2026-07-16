@@ -3771,7 +3771,15 @@
     "transcriptionKeyMissingHint": "Set the transcription provider's API key to transcribe.",
     "durationLabel": "Duration",
     "outcomeLabel": "Outcome",
-    "callEventNote": "The caller hung up without leaving a message. Logged for the record — nothing to process."
+    "callEventNote": "The caller hung up without leaving a message. Logged for the record — nothing to process.",
+    "clarityLabel": "Clarity",
+    "parseLabel": "Parse confidence",
+    "clarityClear": "clear",
+    "clarityFair": "fair",
+    "clarityGarbled": "garbled",
+    "confLow": "low",
+    "confMedium": "medium",
+    "confHigh": "high"
   },
   "inboundStatus": {
     "received": "Received",

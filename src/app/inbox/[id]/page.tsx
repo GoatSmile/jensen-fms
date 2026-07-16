@@ -80,6 +80,12 @@ export default async function InboundDetailPage({
       : msg.call_outcome
     : null;
 
+  // Trust signals: transcript clarity (acoustic, 0..1) and the model's own
+  // parse confidence (ordinal). Kept separate — never blended.
+  const clarity = msg.transcript_confidence;
+  const parseConfidence =
+    (msg.extraction as { confidence?: string } | null)?.confidence ?? null;
+
   // Shadow-mode flag + the linked ticket's number (if one was created).
   const settings = await loadInboundSettings(supabase);
   const { shadowMode } = settings;
@@ -155,6 +161,20 @@ export default async function InboundDetailPage({
         {outcomeLabel ? (
           <Fact label={t("outcomeLabel")}>{outcomeLabel}</Fact>
         ) : null}
+        {clarity != null ? (
+          <Fact label={t("clarityLabel")}>
+            <span className={clarity < 0.6 ? "text-amber-700 dark:text-amber-500" : undefined}>
+              {Math.round(clarity * 100)}% · {t(clarityKey(clarity))}
+            </span>
+          </Fact>
+        ) : null}
+        {parseConfidence && t.has(CONF_KEY[parseConfidence] ?? "") ? (
+          <Fact label={t("parseLabel")}>
+            <span className={parseConfidence === "low" ? "text-amber-700 dark:text-amber-500" : undefined}>
+              {t(CONF_KEY[parseConfidence])}
+            </span>
+          </Fact>
+        ) : null}
       </dl>
 
       {isCallEvent ? (
@@ -228,6 +248,20 @@ const OUTCOME_KEY: Record<string, string> = {
   "no-answer": "noAnswer",
   failed: "failed",
   canceled: "canceled",
+};
+
+/** Transcript clarity bucket → `inbox` message key. */
+function clarityKey(confidence: number): string {
+  if (confidence >= 0.85) return "clarityClear";
+  if (confidence >= 0.6) return "clarityFair";
+  return "clarityGarbled";
+}
+
+/** Extraction parse-confidence ordinal → `inbox` message key. */
+const CONF_KEY: Record<string, string> = {
+  low: "confLow",
+  medium: "confMedium",
+  high: "confHigh",
 };
 
 function formatDuration(seconds: number): string {

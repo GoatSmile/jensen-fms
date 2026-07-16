@@ -49,7 +49,7 @@ export async function extractInbound(
 
 const SYSTEM_PROMPT = `You extract structured facts from a message left for a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations; they get in touch about repairs, orders, and questions.
 
-Extract only what the message actually states — never invent or guess. Leave a field null when the message does not clearly state it. Record the message's own language as "da" or "en". Classify intent as repair_request, order_inquiry, or other. Set urgency to low, normal, or high based on how the message frames it. Call the record_understanding tool exactly once with your result.`;
+Extract only what the message actually states — never invent or guess. Leave a field null when the message does not clearly state it. Record the message's own language as "da" or "en". Classify intent as repair_request, order_inquiry, or other. Set urgency to low, normal, or high based on how the message frames it. Set confidence to how well you could make sense of the message overall — low when the text is garbled, fragmentary, or ambiguous, high when it is clear and complete. Call the record_understanding tool exactly once with your result.`;
 
 // Non-strict tool schema: nullable everywhere, every field required so the
 // model returns each key (null when unknown). parseExtraction() is the real
@@ -114,6 +114,12 @@ const EXTRACTION_TOOL = {
         enum: ["repair_request", "order_inquiry", "other", null],
         description: "The caller's intent.",
       },
+      confidence: {
+        type: ["string", "null"],
+        enum: ["low", "medium", "high", null],
+        description:
+          "How well you could make sense of the message overall (low = garbled/ambiguous, high = clear).",
+      },
     },
     required: [
       "callerName",
@@ -128,6 +134,7 @@ const EXTRACTION_TOOL = {
       "urgency",
       "language",
       "intent",
+      "confidence",
     ],
   },
 } as const;

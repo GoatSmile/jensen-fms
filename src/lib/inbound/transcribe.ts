@@ -23,7 +23,7 @@
  */
 
 export type TranscribeResult =
-  | { ok: true; text: string; language: string | null }
+  | { ok: true; text: string; language: string | null; confidence: number | null }
   | {
       ok: false;
       reason:
@@ -56,6 +56,26 @@ function caught(e: unknown): TranscribeResult {
 async function httpDetail(res: Response): Promise<TranscribeResult> {
   const text = await res.text().catch(() => "");
   return { ok: false, reason: "api_error", detail: `${res.status} ${text}`.trim() };
+}
+
+/**
+ * Aggregate per-segment acoustic confidences into one 0..1 clarity score,
+ * weighting each segment by its word count so a long clear sentence counts
+ * more than a one-word "hmm". Returns null if no segment reported confidence.
+ */
+function aggregateConfidence(
+  segments: { confidence: unknown; weight?: number }[],
+): number | null {
+  let sum = 0;
+  let weightTotal = 0;
+  for (const seg of segments) {
+    if (typeof seg.confidence === "number" && Number.isFinite(seg.confidence)) {
+      const weight = seg.weight && seg.weight > 0 ? seg.weight : 1;
+      sum += seg.confidence * weight;
+      weightTotal += weight;
+    }
+  }
+  return weightTotal > 0 ? sum / weightTotal : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +132,11 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
       status?: string;
       error_code?: unknown;
       result?: {
-        transcription?: { full_transcript?: unknown; languages?: unknown };
+        transcription?: {
+          full_transcript?: unknown;
+          languages?: unknown;
+          utterances?: { confidence?: unknown; words?: unknown[] }[];
+        };
       };
     } | null;
     if (!json) {
@@ -132,7 +156,14 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
       if (!text) return { ok: false, reason: "empty" };
       const langs = Array.isArray(t?.languages) ? t.languages : [];
       const language = typeof langs[0] === "string" ? langs[0] : null;
-      return { ok: true, text, language };
+      const utterances = Array.isArray(t?.utterances) ? t.utterances : [];
+      const confidence = aggregateConfidence(
+        utterances.map((u) => ({
+          confidence: u?.confidence,
+          weight: Array.isArray(u?.words) ? u.words.length : 1,
+        })),
+      );
+      return { ok: true, text, language, confidence };
     }
     // queued / processing → keep polling
   }
@@ -187,7 +218,7 @@ async function transcribeViaAzure(
 
   const json = (await res.json().catch(() => null)) as {
     combinedPhrases?: { text?: unknown }[];
-    phrases?: { locale?: unknown }[];
+    phrases?: { locale?: unknown; confidence?: unknown; text?: unknown }[];
   } | null;
   if (!json) {
     return { ok: false, reason: "api_error", detail: "invalid JSON response" };
@@ -200,5 +231,11 @@ async function transcribeViaAzure(
   const locale = json.phrases?.find((p) => typeof p.locale === "string")?.locale;
   // "da-DK" → "da", matching the ISO 639-1 codes Gladia returns.
   const language = typeof locale === "string" ? locale.slice(0, 2) : null;
-  return { ok: true, text, language };
+  const confidence = aggregateConfidence(
+    (json.phrases ?? []).map((p) => ({
+      confidence: p.confidence,
+      weight: typeof p.text === "string" ? p.text.split(/\s+/).length : 1,
+    })),
+  );
+  return { ok: true, text, language, confidence };
 }

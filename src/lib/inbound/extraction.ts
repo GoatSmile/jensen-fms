@@ -9,6 +9,7 @@
 
 export type InboundIntent = "repair_request" | "order_inquiry" | "other";
 export type InboundUrgency = "low" | "normal" | "high";
+export type InboundConfidence = "low" | "medium" | "high";
 
 export type InboundExtraction = {
   callerName: string | null;
@@ -27,6 +28,13 @@ export type InboundExtraction = {
   urgency: InboundUrgency | null;
   language: string | null;
   intent: InboundIntent | null;
+  /**
+   * The model's own confidence that it parsed the message correctly — how
+   * hard the audio/text was to make sense of, NOT how sure it is about any
+   * one field. Weakly calibrated by nature, so it's an ordinal hint for the
+   * reviewer, cross-read against transcript_confidence, never a gate.
+   */
+  confidence: InboundConfidence | null;
 };
 
 export const EMPTY_EXTRACTION: InboundExtraction = {
@@ -42,10 +50,12 @@ export const EMPTY_EXTRACTION: InboundExtraction = {
   urgency: null,
   language: null,
   intent: null,
+  confidence: null,
 };
 
 const INTENTS: InboundIntent[] = ["repair_request", "order_inquiry", "other"];
 const URGENCIES: InboundUrgency[] = ["low", "normal", "high"];
+const CONFIDENCES: InboundConfidence[] = ["low", "medium", "high"];
 
 function str(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -65,6 +75,7 @@ export function parseExtraction(raw: unknown): InboundExtraction {
   >;
   const intent = str(o.intent);
   const urgency = str(o.urgency);
+  const confidence = str(o.confidence);
   return {
     callerName: str(o.callerName),
     organizationName: str(o.organizationName),
@@ -81,6 +92,9 @@ export function parseExtraction(raw: unknown): InboundExtraction {
     language: str(o.language),
     intent: (INTENTS as string[]).includes(intent ?? "")
       ? (intent as InboundIntent)
+      : null,
+    confidence: (CONFIDENCES as string[]).includes(confidence ?? "")
+      ? (confidence as InboundConfidence)
       : null,
   };
 }

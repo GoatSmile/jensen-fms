@@ -54,6 +54,7 @@ export async function transcribeStage(
     .update({
       body_text: result.text,
       language: result.language,
+      transcript_confidence: result.confidence,
       status: "understood",
       extraction: null,
       match_candidates: null,
