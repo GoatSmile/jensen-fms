@@ -5,19 +5,75 @@ import { getTranslations, getLocale } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import { parseExtraction } from "@/lib/inbound/extraction";
-import { extractInbound } from "@/lib/inbound/extract";
-import { matchInbound } from "@/lib/inbound/match";
 import { loadInboundSettings } from "@/lib/inbound/settings";
-import { transcribeVoicemail } from "@/lib/inbound/channels/voicemail";
+import {
+  transcribeStage,
+  extractStage,
+  matchStage,
+  runInboundPipeline,
+  type StageResult,
+} from "@/lib/inbound/pipeline";
 
 export type ProcessResult = { ok: true } | { ok: false; error: string };
 
 /**
+ * Map a pipeline stage's stable failure `code` to a localized message. Shared
+ * by every harness action so the wording stays in one place; the Twilio
+ * webhook bypasses this and stores the raw code on `inbound_messages.error`.
+ */
+async function mapStageError(
+  fail: Extract<StageResult, { ok: false }>,
+): Promise<string> {
+  const t = await getTranslations("errors");
+  const { code, detail } = fail;
+  switch (code) {
+    case "not_found":
+      return t("missingId");
+    case "no_audio":
+      return t("inboundNoAudio");
+    case "no_body":
+    case "extract.no_body":
+      return t("inboundNoBody");
+    case "no_extraction":
+      return t("inboundNoExtraction");
+    case "transcribe.no_key":
+      return t("inboundTranscriptionKeyMissing");
+    case "transcribe.no_region":
+      return t("inboundTranscriptionRegionMissing");
+    case "transcribe.timeout":
+      return t("inboundTranscriptionTimeout");
+    case "transcribe.empty":
+      return t("inboundTranscriptionEmpty");
+    case "transcribe.api_error":
+      return t("inboundTranscriptionFailed", {
+        detail: detail || t("inboundNoDetails"),
+      });
+    case "extract.no_key":
+      return t("inboundExtractionKeyMissing");
+    case "extract.api_error":
+      return t("inboundExtractionFailed", {
+        detail: detail || t("inboundNoDetails"),
+      });
+    case "transcribe.unknown_provider":
+    case "extract.unknown_provider":
+      return t("inboundUnknownProvider", { provider: detail ?? "" });
+    default:
+      return t("inboundCouldNotSave", {
+        detail: detail ? `${code}: ${detail}` : code,
+      });
+  }
+}
+
+function done(messageId: string): ProcessResult {
+  revalidatePath(`/inbox/${messageId}`);
+  return { ok: true };
+}
+
+/**
  * Harness ingress for Slice D: paste/edit the extraction JSON so matching can
- * be exercised before the extraction stage (C) exists. Editing extraction
- * invalidates any prior match (clears candidates + attachments, drops status
- * back to `extracted`). When C ships it writes this same column and the
- * editor becomes a debugging override.
+ * be exercised before the extraction stage exists / to override it. Editing
+ * extraction invalidates any prior match (clears candidates + attachments,
+ * drops status back to `extracted`).
  */
 export async function saveExtraction(
   messageId: string,
@@ -47,119 +103,14 @@ export async function saveExtraction(
   if (error) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
   }
-  revalidatePath(`/inbox/${messageId}`);
-  return { ok: true };
+  return done(messageId);
 }
 
 /**
- * Transcription stage (Slice B): run the selected transcription provider over
- * the message's recording (via the voicemail channel adapter), write
- * `body_text` + detected `language`, advance to `understood`, and clear any
- * stale extraction/match — a fresh transcript invalidates everything
- * downstream.
- */
-export async function runTranscription(
-  messageId: string,
-): Promise<ProcessResult> {
-  const t = await getTranslations("errors");
-  const supabase = createServiceClient();
-
-  const { data: msg, error: loadErr } = await supabase
-    .from("inbound_messages")
-    .select("id, media_path")
-    .eq("id", messageId)
-    .maybeSingle();
-  if (loadErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
-  }
-  if (!msg) return { ok: false, error: t("missingId") };
-  if (!msg.media_path) return { ok: false, error: t("inboundNoAudio") };
-
-  const settings = await loadInboundSettings(supabase);
-  const result = await transcribeVoicemail(supabase, msg.media_path, settings);
-  if (!result.ok) {
-    switch (result.reason) {
-      case "no_key":
-        return { ok: false, error: t("inboundTranscriptionKeyMissing") };
-      case "no_region":
-        return { ok: false, error: t("inboundTranscriptionRegionMissing") };
-      case "unknown_provider":
-        return {
-          ok: false,
-          error: t("inboundUnknownProvider", { provider: result.detail ?? "" }),
-        };
-      case "timeout":
-        return { ok: false, error: t("inboundTranscriptionTimeout") };
-      case "empty":
-        return { ok: false, error: t("inboundTranscriptionEmpty") };
-      default:
-        return {
-          ok: false,
-          error: t("inboundTranscriptionFailed", {
-            detail: result.detail || t("inboundNoDetails"),
-          }),
-        };
-    }
-  }
-
-  const { error: saveErr } = await supabase
-    .from("inbound_messages")
-    .update({
-      body_text: result.text,
-      language: result.language,
-      status: "understood",
-      extraction: null,
-      match_candidates: null,
-      matched_organization_id: null,
-      matched_contact_id: null,
-      matched_bike_id: null,
-    })
-    .eq("id", messageId);
-  if (saveErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
-  }
-  revalidatePath(`/inbox/${messageId}`);
-  return { ok: true };
-}
-
-/**
- * One-click pipeline: transcribe (when a recording is attached) → extract →
- * match. Each stage is the same code the individual buttons run; the first
- * failure stops the chain and returns its localized error. With no recording
- * but a hand-typed transcript, transcription is skipped.
- */
-export async function runPipeline(messageId: string): Promise<ProcessResult> {
-  const t = await getTranslations("errors");
-  const supabase = createServiceClient();
-
-  const { data: msg, error: loadErr } = await supabase
-    .from("inbound_messages")
-    .select("id, media_path, body_text")
-    .eq("id", messageId)
-    .maybeSingle();
-  if (loadErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
-  }
-  if (!msg) return { ok: false, error: t("missingId") };
-
-  if (msg.media_path) {
-    const r = await runTranscription(messageId);
-    if (!r.ok) return r;
-  } else if (!msg.body_text?.trim()) {
-    return { ok: false, error: t("inboundNoBody") };
-  }
-
-  const e = await runExtraction(messageId);
-  if (!e.ok) return e;
-  return runMatch(messageId);
-}
-
-/**
- * Harness ingress for Slice C: save a transcript / message body so extraction
- * (and, before B ships, the whole C→D→E path) can be exercised on hand-typed
- * text. Writes `body_text` + status `understood`. When the transcription stage
- * (B) ships it writes this same column and this editor becomes a debugging
- * override. Clearing the text drops back to `received`.
+ * Harness ingress for Slice C: save a transcript / message body so the pipeline
+ * can be exercised on hand-typed text (or to override a real transcript).
+ * Writes `body_text` + status `understood`; clearing it drops back to
+ * `received`.
  */
 export async function saveBodyText(
   messageId: string,
@@ -179,122 +130,47 @@ export async function saveBodyText(
   if (error) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
   }
-  revalidatePath(`/inbox/${messageId}`);
-  return { ok: true };
+  return done(messageId);
 }
 
-/**
- * Extraction stage (Slice C): run the selected extraction provider over the
- * message's `body_text`, store the structured `extraction`, advance to
- * `extracted`, and clear any prior match (same reset as editing extraction by
- * hand). Guards on body present + provider secret present, mapping the lib's
- * typed failure reasons to localized messages.
- */
-export async function runExtraction(messageId: string): Promise<ProcessResult> {
-  const t = await getTranslations("errors");
+/** Transcription stage (Slice B) — recording → body_text + language. */
+export async function runTranscription(
+  messageId: string,
+): Promise<ProcessResult> {
   const supabase = createServiceClient();
-
-  const { data: msg, error: loadErr } = await supabase
-    .from("inbound_messages")
-    .select("id, body_text")
-    .eq("id", messageId)
-    .maybeSingle();
-  if (loadErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
-  }
-  if (!msg) return { ok: false, error: t("missingId") };
-
   const settings = await loadInboundSettings(supabase);
-  const result = await extractInbound(msg.body_text, {
-    provider: settings.extractionProvider,
-    model: settings.extractionModel,
-  });
-  if (!result.ok) {
-    switch (result.reason) {
-      case "no_body":
-        return { ok: false, error: t("inboundNoBody") };
-      case "no_key":
-        return { ok: false, error: t("inboundExtractionKeyMissing") };
-      case "unknown_provider":
-        return {
-          ok: false,
-          error: t("inboundUnknownProvider", { provider: result.detail ?? "" }),
-        };
-      default:
-        return {
-          ok: false,
-          error: t("inboundExtractionFailed", {
-            detail: result.detail || t("inboundNoDetails"),
-          }),
-        };
-    }
-  }
+  const r = await transcribeStage(supabase, messageId, settings);
+  if (!r.ok) return { ok: false, error: await mapStageError(r) };
+  return done(messageId);
+}
 
-  const { error: saveErr } = await supabase
-    .from("inbound_messages")
-    .update({
-      extraction: result.extraction,
-      status: "extracted",
-      match_candidates: null,
-      matched_organization_id: null,
-      matched_contact_id: null,
-      matched_bike_id: null,
-      processed_at: new Date().toISOString(),
-    })
-    .eq("id", messageId);
-  if (saveErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
-  }
-  revalidatePath(`/inbox/${messageId}`);
-  return { ok: true };
+/** Extraction stage (Slice C) — body_text → structured extraction. */
+export async function runExtraction(messageId: string): Promise<ProcessResult> {
+  const supabase = createServiceClient();
+  const settings = await loadInboundSettings(supabase);
+  const r = await extractStage(supabase, messageId, settings);
+  if (!r.ok) return { ok: false, error: await mapStageError(r) };
+  return done(messageId);
+}
+
+/** Match stage (Slice D) — deterministic; no model, no external keys. */
+export async function runMatch(messageId: string): Promise<ProcessResult> {
+  const supabase = createServiceClient();
+  const locale = await getLocale();
+  const r = await matchStage(supabase, messageId, locale);
+  if (!r.ok) return { ok: false, error: await mapStageError(r) };
+  return done(messageId);
 }
 
 /**
- * Run the deterministic matcher over the message's extraction + sender
- * identity, store candidates + any exactly-one attachments, advance to
- * `matched`. Deterministic code — no model, no external keys.
+ * One-click pipeline: transcribe (when a recording is attached) → extract →
+ * match. Stops at the first failure and stamps the message `failed` with the
+ * reason (via the shared core, same path the Twilio webhook runs).
  */
-export async function runMatch(messageId: string): Promise<ProcessResult> {
-  const t = await getTranslations("errors");
-  const locale = await getLocale();
+export async function runPipeline(messageId: string): Promise<ProcessResult> {
   const supabase = createServiceClient();
-
-  const { data: msg, error: loadErr } = await supabase
-    .from("inbound_messages")
-    .select("id, from_identity, extraction")
-    .eq("id", messageId)
-    .maybeSingle();
-  if (loadErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: loadErr.message }) };
-  }
-  if (!msg) return { ok: false, error: t("missingId") };
-  if (!msg.extraction) {
-    return { ok: false, error: t("inboundNoExtraction") };
-  }
-
-  const result = await matchInbound(
-    supabase,
-    {
-      fromIdentity: msg.from_identity,
-      extraction: parseExtraction(msg.extraction),
-    },
-    locale,
-  );
-
-  const { error: saveErr } = await supabase
-    .from("inbound_messages")
-    .update({
-      match_candidates: result.candidates,
-      matched_organization_id: result.matchedOrganizationId,
-      matched_contact_id: result.matchedContactId,
-      matched_bike_id: result.matchedBikeId,
-      status: "matched",
-      processed_at: new Date().toISOString(),
-    })
-    .eq("id", messageId);
-  if (saveErr) {
-    return { ok: false, error: t("inboundCouldNotSave", { detail: saveErr.message }) };
-  }
-  revalidatePath(`/inbox/${messageId}`);
-  return { ok: true };
+  const locale = await getLocale();
+  const r = await runInboundPipeline(supabase, messageId, locale);
+  if (!r.ok) return { ok: false, error: await mapStageError(r) };
+  return done(messageId);
 }

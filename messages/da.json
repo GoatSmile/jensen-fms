@@ -3020,7 +3020,8 @@
     "provider_gladia": "Gladia (EU)",
     "inboundPhoneHint": "Det rigtige +45-nummer kunderne ringer til — annonceringer, SMS-afsender, tryksager.",
     "inboundPhoneTestLabel": "Testnummer",
-    "inboundPhoneTestHint": "Twilio-prøvenummer til webhook-røgtest; vises aldrig til kunder."
+    "inboundPhoneTestHint": "Twilio-prøvenummer til webhook-røgtest; vises aldrig til kunder.",
+    "inboundWebhookHint": "Peg dit Twilio-nummers voice-webhook (Når et opkald kommer ind, HTTP POST) her:"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",

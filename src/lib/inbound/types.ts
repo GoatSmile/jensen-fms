@@ -50,4 +50,12 @@ export type VoicemailChannelMeta = {
   original_filename?: string;
   size_bytes?: number;
   source?: "harness_upload" | "twilio";
+  // Twilio voicemail (Slice F). The recording is pulled into Supabase EU and
+  // deleted from Twilio at webhook time; these are the identifiers + audit.
+  twilio_call_sid?: string;
+  twilio_recording_sid?: string;
+  twilio_recording_seconds?: number;
+  to_number?: string;
+  /** Whether the copy on Twilio was successfully deleted after fetch. */
+  twilio_deleted?: boolean;
 };

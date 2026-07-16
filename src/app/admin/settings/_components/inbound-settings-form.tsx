@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, X } from "lucide-react";
@@ -67,6 +67,12 @@ export function InboundSettingsForm(props: Props) {
   );
   const [retentionDays, setRetentionDays] = useState(props.initialRetentionDays);
   const [shadowMode, setShadowMode] = useState(props.initialShadowMode);
+  // Absolute webhook URL to paste into the Twilio number's Voice config —
+  // depends on where this is deployed, so read it from the browser.
+  const [voiceWebhookUrl, setVoiceWebhookUrl] = useState("");
+  useEffect(() => {
+    setVoiceWebhookUrl(`${window.location.origin}/api/inbound/twilio/voice`);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -225,6 +231,14 @@ export function InboundSettingsForm(props: Props) {
             placeholder="90"
           />
         </div>
+        {telephonyProvider === "twilio" ? (
+          <p className="text-muted-foreground text-xs sm:col-span-2">
+            {t("inboundWebhookHint")}{" "}
+            <code className="font-mono break-all">
+              {voiceWebhookUrl || "…"}
+            </code>
+          </p>
+        ) : null}
       </ProviderBlock>
 
       <div className="flex flex-wrap items-center gap-2">

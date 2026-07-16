@@ -3020,7 +3020,8 @@
     "provider_gladia": "Gladia (EU)",
     "inboundPhoneHint": "The real +45 number customers call — announcements, SMS sender, print.",
     "inboundPhoneTestLabel": "Test number",
-    "inboundPhoneTestHint": "Twilio trial number for webhook smoke-tests; never shown to customers."
+    "inboundPhoneTestHint": "Twilio trial number for webhook smoke-tests; never shown to customers.",
+    "inboundWebhookHint": "Point your Twilio number's Voice webhook (A call comes in, HTTP POST) here:"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
