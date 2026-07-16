@@ -8,12 +8,15 @@ import {
   deleteTwilioRecording,
   fetchTwilioRecording,
   formParams,
-  signedRequestUrl,
-  validateTwilioSignature,
+  verifyTwilioRequest,
 } from "@/lib/inbound/telephony/twilio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Give the after() pipeline (transcription poll + extraction) room past the
+// fast ack. Vercel clamps to the plan max; if it's cut short, the row still
+// stores and the review UI's "Run whole pipeline" reprocesses it.
+export const maxDuration = 60;
 
 const BUCKET = "inbound";
 
@@ -36,16 +39,7 @@ export async function POST(request: Request) {
   const params = formParams(form);
   const signature = request.headers.get("x-twilio-signature") ?? "";
 
-  if (
-    !authToken ||
-    !accountSid ||
-    !validateTwilioSignature(
-      authToken,
-      signedRequestUrl(request),
-      params,
-      signature,
-    )
-  ) {
+  if (!verifyTwilioRequest(request, params, signature) || !accountSid || !authToken) {
     return new NextResponse("invalid signature", { status: 403 });
   }
 

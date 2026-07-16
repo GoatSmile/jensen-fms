@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 
 import {
   formParams,
-  publicOrigin,
-  signedRequestUrl,
-  validateTwilioSignature,
+  recordingCallbackUrl,
+  verifyTwilioRequest,
   voicemailTwiml,
 } from "@/lib/inbound/telephony/twilio";
 
@@ -24,25 +23,15 @@ export const dynamic = "force-dynamic";
  * an unsigned or wrong-token request gets a 403 and no TwiML.
  */
 export async function POST(request: Request) {
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
   const form = await request.formData();
   const params = formParams(form);
   const signature = request.headers.get("x-twilio-signature") ?? "";
 
-  if (
-    !authToken ||
-    !validateTwilioSignature(
-      authToken,
-      signedRequestUrl(request),
-      params,
-      signature,
-    )
-  ) {
+  if (!verifyTwilioRequest(request, params, signature)) {
     return new NextResponse("invalid signature", { status: 403 });
   }
 
-  const callbackUrl = `${publicOrigin(request)}/api/inbound/twilio/recording`;
-  return new NextResponse(voicemailTwiml(callbackUrl), {
+  return new NextResponse(voicemailTwiml(recordingCallbackUrl(request)), {
     status: 200,
     headers: { "content-type": "text/xml; charset=utf-8" },
   });

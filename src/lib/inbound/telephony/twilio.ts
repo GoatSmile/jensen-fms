@@ -72,6 +72,61 @@ export function formParams(form: FormData): Record<string, string> {
   return params;
 }
 
+const BYPASS_PARAM = "x-vercel-protection-bypass";
+
+/**
+ * The recording-status-callback URL to hand Twilio. Same origin as the voice
+ * webhook + the `/recording` path. In prod behind Vercel Deployment
+ * Protection, the callback must ALSO carry the bypass secret or Twilio's
+ * second request hits the SSO wall — so we propagate whatever bypass param the
+ * incoming voice request carried, or add it from `VERCEL_AUTOMATION_BYPASS_SECRET`
+ * if Vercel consumed it before we saw it. No-op locally / under a tunnel.
+ */
+export function recordingCallbackUrl(request: Request): string {
+  const origin = publicOrigin(request);
+  const incoming = new URL(request.url).searchParams.get(BYPASS_PARAM);
+  const secret = incoming ?? process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null;
+  const qs = secret ? `?${BYPASS_PARAM}=${encodeURIComponent(secret)}` : "";
+  return `${origin}/api/inbound/twilio/recording${qs}`;
+}
+
+/**
+ * Candidate URLs Twilio may have signed. Twilio signs the exact URL configured
+ * in its console (which, in prod, includes `?x-vercel-protection-bypass=…`).
+ * Depending on whether Vercel forwards or strips that param before our function
+ * sees it, the signed URL is either the one we received or the same URL with
+ * the bypass param re-added — try both.
+ */
+export function signatureCandidateUrls(request: Request): string[] {
+  const asReceived = signedRequestUrl(request);
+  const urls = [asReceived];
+  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const u = new URL(request.url);
+  if (secret && !u.searchParams.has(BYPASS_PARAM)) {
+    const withBypass = new URLSearchParams(u.search);
+    withBypass.set(BYPASS_PARAM, secret);
+    urls.push(`${publicOrigin(request)}${u.pathname}?${withBypass.toString()}`);
+  }
+  return urls;
+}
+
+/**
+ * Verify an inbound Twilio webhook: valid signature over any of the candidate
+ * URLs, using the env auth token. The security gate for both routes — returns
+ * false (→ 403) if the token is unset or nothing matches.
+ */
+export function verifyTwilioRequest(
+  request: Request,
+  params: Record<string, string>,
+  signature: string,
+): boolean {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) return false;
+  return signatureCandidateUrls(request).some((url) =>
+    validateTwilioSignature(authToken, url, params, signature),
+  );
+}
+
 // ── TwiML ───────────────────────────────────────────────────────────────────
 
 const GREETING_DA =
