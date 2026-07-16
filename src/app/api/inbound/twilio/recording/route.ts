@@ -75,6 +75,12 @@ export async function POST(request: Request) {
   }
   const del = await deleteTwilioRecording(accountSid, authToken, recordingSid);
 
+  // Caller identity rides on the signed callback URL's query (the recording
+  // callback body itself has no From/To — see the voice route).
+  const q = new URL(request.url).searchParams;
+  const fromNumber = q.get("from") || params.From || null;
+  const toNumber = q.get("to") || params.To || undefined;
+
   const channelMeta: VoicemailChannelMeta = {
     source: "twilio",
     original_filename: `${recordingSid}.mp3`,
@@ -83,7 +89,7 @@ export async function POST(request: Request) {
     twilio_recording_seconds: params.RecordingDuration
       ? Number(params.RecordingDuration)
       : undefined,
-    to_number: params.To,
+    to_number: toNumber,
     twilio_deleted: del.ok,
   };
 
@@ -92,7 +98,7 @@ export async function POST(request: Request) {
     .insert({
       channel: "voicemail",
       status: "received",
-      from_identity: params.From ?? null,
+      from_identity: fromNumber,
       media_path: objectPath,
       media_mime_type: objectPath ? "audio/mpeg" : null,
       channel_meta: channelMeta,

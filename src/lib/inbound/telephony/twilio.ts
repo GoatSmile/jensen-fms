@@ -76,18 +76,32 @@ const BYPASS_PARAM = "x-vercel-protection-bypass";
 
 /**
  * The recording-status-callback URL to hand Twilio. Same origin as the voice
- * webhook + the `/recording` path. In prod behind Vercel Deployment
- * Protection, the callback must ALSO carry the bypass secret or Twilio's
- * second request hits the SSO wall — so we propagate whatever bypass param the
- * incoming voice request carried, or add it from `VERCEL_AUTOMATION_BYPASS_SECRET`
- * if Vercel consumed it before we saw it. No-op locally / under a tunnel.
+ * webhook + the `/recording` path. Two kinds of state ride along as query
+ * params (Twilio signs the full callback URL including the query string, so
+ * they arrive authenticated):
+ *   - `extra` params — caller identity (From/To). Twilio's recording callback
+ *     itself omits them, and they're the matcher's best signal, so the voice
+ *     webhook threads them through here.
+ *   - the Vercel Deployment Protection bypass secret: in prod the callback
+ *     must ALSO carry it or Twilio's second request hits the SSO wall. We
+ *     propagate whatever the incoming voice request carried, or add it from
+ *     `VERCEL_AUTOMATION_BYPASS_SECRET` if Vercel consumed it before we saw
+ *     it. No-op locally / under a tunnel.
  */
-export function recordingCallbackUrl(request: Request): string {
+export function recordingCallbackUrl(
+  request: Request,
+  extra: Record<string, string> = {},
+): string {
   const origin = publicOrigin(request);
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(extra)) {
+    if (v) qs.set(k, v);
+  }
   const incoming = new URL(request.url).searchParams.get(BYPASS_PARAM);
   const secret = incoming ?? process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null;
-  const qs = secret ? `?${BYPASS_PARAM}=${encodeURIComponent(secret)}` : "";
-  return `${origin}/api/inbound/twilio/recording${qs}`;
+  if (secret) qs.set(BYPASS_PARAM, secret);
+  const q = qs.toString();
+  return `${origin}/api/inbound/twilio/recording${q ? `?${q}` : ""}`;
 }
 
 /**

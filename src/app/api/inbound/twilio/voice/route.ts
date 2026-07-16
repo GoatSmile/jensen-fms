@@ -31,7 +31,14 @@ export async function POST(request: Request) {
     return new NextResponse("invalid signature", { status: 403 });
   }
 
-  return new NextResponse(voicemailTwiml(recordingCallbackUrl(request)), {
+  // Twilio's recording callback omits From/To, so thread the caller identity
+  // through the callback URL — Twilio signs the full URL, so it arrives
+  // authenticated. This is what lets the matcher run its phone→contact probe.
+  const callbackUrl = recordingCallbackUrl(request, {
+    from: params.From ?? "",
+    to: params.To ?? "",
+  });
+  return new NextResponse(voicemailTwiml(callbackUrl), {
     status: 200,
     headers: { "content-type": "text/xml; charset=utf-8" },
   });
