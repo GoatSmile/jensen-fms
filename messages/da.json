@@ -3785,7 +3785,15 @@
     "markSpam": "Markér som spam",
     "notSpam": "Ikke spam",
     "spamSuspectedTitle": "Ligner spam",
-    "spamConfirmedTitle": "Markeret som spam"
+    "spamConfirmedTitle": "Markeret som spam",
+    "intentLabel": "Registreret hensigt",
+    "handledLabel": "Håndteret",
+    "handledTag": "håndteret",
+    "reopen": "Genåbn",
+    "leadHint": "Ordreforespørgsel — et salgs-lead. Indbakken holder styr på det, indtil tilbudsmodulet findes; markér som håndteret, når du har fulgt op.",
+    "otherHint": "Intet at rute automatisk. Markér som håndteret efter gennemgang.",
+    "markHandled": "Markér som håndteret",
+    "createTicketInstead": "Opret en servicesag i stedet"
   },
   "inboundStatus": {
     "received": "Modtaget",
@@ -3812,5 +3820,10 @@
     "short_call": "meget kort opkald",
     "repeat_unknown": "gentagne opkald fra ukendt nummer",
     "no_caller_id": "ingen nummervisning"
+  },
+  "inboundIntent": {
+    "repair_request": "Reparation",
+    "order_inquiry": "Ordreforespørgsel",
+    "other": "Andet"
   }
 }

@@ -24,7 +24,7 @@ import { isSpamFolded } from "@/lib/inbound/triage";
 
 import { MatchPanel } from "./_components/match-panel";
 import { TranscriptPanel } from "./_components/transcript-panel";
-import { TicketAction } from "./_components/ticket-action";
+import { RoutedAction } from "./_components/routed-action";
 import { DispositionAction } from "./_components/disposition-action";
 
 /**
@@ -88,6 +88,8 @@ export default async function InboundDetailPage({
   const clarity = msg.transcript_confidence;
   const parseConfidence =
     (msg.extraction as { confidence?: string } | null)?.confidence ?? null;
+  const intent =
+    (msg.extraction as { intent?: string } | null)?.intent ?? null;
 
   // Triage (layer 5): spam signals + fold state, plus a "suspected but not
   // yet decided" flag driving the review banner.
@@ -242,13 +244,17 @@ export default async function InboundDetailPage({
             matchedBikeId={msg.matched_bike_id}
           />
 
-          <TicketAction
-            messageId={msg.id}
-            ticketId={msg.ticket_id}
-            ticketNumber={ticketNumber}
-            canCreate={msg.status === "matched"}
-            shadowMode={shadowMode}
-          />
+          {!spamFolded ? (
+            <RoutedAction
+              messageId={msg.id}
+              intent={intent}
+              ticketId={msg.ticket_id}
+              ticketNumber={ticketNumber}
+              disposition={msg.disposition}
+              canAct={msg.status === "matched"}
+              shadowMode={shadowMode}
+            />
+          ) : null}
         </>
       )}
 

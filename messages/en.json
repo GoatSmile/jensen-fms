@@ -3785,7 +3785,15 @@
     "markSpam": "Mark as spam",
     "notSpam": "Not spam",
     "spamSuspectedTitle": "Looks like spam",
-    "spamConfirmedTitle": "Marked as spam"
+    "spamConfirmedTitle": "Marked as spam",
+    "intentLabel": "Detected intent",
+    "handledLabel": "Handled",
+    "handledTag": "handled",
+    "reopen": "Reopen",
+    "leadHint": "Order inquiry — a sales lead. The inbox tracks it until the offers module exists; log it as handled once you've followed up.",
+    "otherHint": "Nothing to route automatically. Log as handled once reviewed.",
+    "markHandled": "Log as handled",
+    "createTicketInstead": "Create a maintenance ticket instead"
   },
   "inboundStatus": {
     "received": "Received",
@@ -3812,5 +3820,10 @@
     "short_call": "very short call",
     "repeat_unknown": "repeat calls from an unknown number",
     "no_caller_id": "no caller ID"
+  },
+  "inboundIntent": {
+    "repair_request": "Repair request",
+    "order_inquiry": "Order inquiry",
+    "other": "Something else"
   }
 }

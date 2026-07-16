@@ -76,7 +76,7 @@ function done(messageId: string): ProcessResult {
  */
 export async function setDisposition(
   messageId: string,
-  disposition: "pending" | "spam" | "not_spam",
+  disposition: "pending" | "spam" | "not_spam" | "handled",
 ): Promise<ProcessResult> {
   const t = await getTranslations("errors");
   const supabase = createServiceClient();

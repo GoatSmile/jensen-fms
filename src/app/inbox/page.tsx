@@ -183,6 +183,10 @@ export default async function InboundPage() {
                         <span className="text-emerald-600 dark:text-emerald-500">
                           {t("ticketCreated")}
                         </span>
+                      ) : r.disposition === "handled" ? (
+                        <span className="text-muted-foreground">
+                          {t("handledTag")}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
