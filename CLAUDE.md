@@ -1313,7 +1313,15 @@ when the work ships or the idea is rejected.
   `AZURE_SPEECH_KEY/REGION` / `ANTHROPIC_API_KEY`, D is
   key-free and doesn't wait on B/C. Full deep-dive + slice detail in
   `docs/plan-july9-vacation-month.md`; the design below remains the
-  reference.
+  reference. **ALL SLICES A–F SHIPPED and LIVE IN PRODUCTION 2026-07-16**
+  (real DK number +45 9370 3111 on the dev's own Twilio account, prod
+  Vercel webhook, first real calls processed end-to-end in shadow mode;
+  Gladia replaced Azure as the selected transcription provider). The
+  NEXT arc — capture-every-call, per-stage confidence, spam triage,
+  intent routing (order_inquiry ≠ maintenance ticket), graduation
+  criteria for leaving shadow mode, v2 live-answer — is designed in
+  **`docs/plan-inbound-triage.md`** (2026-07-16); implement with Dennis
+  in August after shadow data accumulates.
   Original design (parked June 2026, designed in-session).
   Workshop calls become maintenance tickets automatically:
   - Telephony: Twilio (conditional forwarding from the existing number),
