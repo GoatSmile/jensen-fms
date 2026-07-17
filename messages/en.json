@@ -3693,7 +3693,10 @@
     "inboundTranscriptionRegionMissing": "The transcription provider needs a region — set it under Admin → Settings → Calls & inbound.",
     "inboundTranscriptionTimeout": "Transcription timed out — try again.",
     "inboundTranscriptionEmpty": "The recording produced an empty transcript.",
-    "inboundTranscriptionFailed": "Transcription failed: {detail}"
+    "inboundTranscriptionFailed": "Transcription failed: {detail}",
+    "inboundNoCaller": "This message has no caller number to save.",
+    "inboundNoOrgForContact": "Match an organization first, then save the caller to it.",
+    "inboundNoContactName": "Enter a name for the new contact."
   },
   "inbox": {
     "title": "Inbox",
@@ -3793,7 +3796,13 @@
     "leadHint": "Order inquiry — a sales lead. The inbox tracks it until the offers module exists; log it as handled once you've followed up.",
     "otherHint": "Nothing to route automatically. Log as handled once reviewed.",
     "markHandled": "Log as handled",
-    "createTicketInstead": "Create a maintenance ticket instead"
+    "createTicketInstead": "Create a maintenance ticket instead",
+    "via_phone": "by phone",
+    "saveCallerTitle": "Save this caller",
+    "saveCallerHint": "{phone} isn't on any contact yet. Save it to {org} so the next call from this number matches automatically.",
+    "saveCallerNew": "New contact",
+    "saveCallerNamePlaceholder": "Contact name",
+    "saveCallerButton": "Save number"
   },
   "inboundStatus": {
     "received": "Received",

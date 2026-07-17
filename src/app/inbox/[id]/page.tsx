@@ -26,6 +26,7 @@ import { MatchPanel } from "./_components/match-panel";
 import { TranscriptPanel } from "./_components/transcript-panel";
 import { RoutedAction } from "./_components/routed-action";
 import { DispositionAction } from "./_components/disposition-action";
+import { SaveCallerAction } from "./_components/save-caller-action";
 
 /**
  * Inbound message detail — the review surface. Slice A renders the raw
@@ -116,6 +117,41 @@ export default async function InboundDetailPage({
       .eq("id", msg.ticket_id)
       .maybeSingle();
     ticketNumber = ticket?.ticket_number ?? null;
+  }
+
+  // Learning loop: when the org is known but the caller's number isn't on any
+  // contact, offer to link it — future calls then match automatically.
+  let saveCaller:
+    | { orgName: string; contacts: { id: string; name: string; phone: string | null }[] }
+    | null = null;
+  if (
+    !isCallEvent &&
+    msg.from_identity &&
+    !msg.matched_contact_id &&
+    msg.matched_organization_id
+  ) {
+    const [{ data: org }, { data: cs }] = await Promise.all([
+      supabase
+        .from("organizations")
+        .select("display_name_en, display_name_da, legal_name")
+        .eq("id", msg.matched_organization_id)
+        .maybeSingle(),
+      supabase
+        .from("contacts")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", msg.matched_organization_id)
+        .is("deleted_at", null)
+        .limit(50),
+    ]);
+    saveCaller = {
+      orgName:
+        org?.display_name_da || org?.display_name_en || org?.legal_name || "—",
+      contacts: (cs ?? []).map((c) => ({
+        id: c.id,
+        name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+        phone: c.phone,
+      })),
+    };
   }
 
   return (
@@ -243,6 +279,19 @@ export default async function InboundDetailPage({
             matchedContactId={msg.matched_contact_id}
             matchedBikeId={msg.matched_bike_id}
           />
+
+          {saveCaller ? (
+            <SaveCallerAction
+              messageId={msg.id}
+              fromIdentity={msg.from_identity ?? ""}
+              orgName={saveCaller.orgName}
+              orgContacts={saveCaller.contacts}
+              defaultName={
+                (msg.extraction as { callerName?: string } | null)?.callerName ??
+                ""
+              }
+            />
+          ) : null}
 
           {!spamFolded ? (
             <RoutedAction

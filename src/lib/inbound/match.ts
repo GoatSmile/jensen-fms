@@ -26,7 +26,11 @@ const FLEET_TYPE = "f1ee7000-0000-4000-8000-000000000001";
 
 const MAX_CANDIDATES = 10;
 
-export type OrgCandidate = { id: string; name: string; via: "name" | "contact" };
+export type OrgCandidate = {
+  id: string;
+  name: string;
+  via: "name" | "contact" | "phone";
+};
 export type ContactCandidate = {
   id: string;
   name: string;
@@ -111,6 +115,30 @@ export async function matchInbound(
     notes.push("phoneTooShort");
   }
 
+  // 1b) Phone → organizations. A B2C customer's number lives on the ORG
+  // record (org-level phone), not a contact — so the contacts probe above
+  // misses them entirely. Same in-memory normalization.
+  const phoneOrgIds = new Set<string>();
+  if (suffixes.length > 0) {
+    const { data: orgPhoneRows } = await supabase
+      .from("organizations")
+      .select("id, legal_name, display_name_en, display_name_da, phone")
+      .not("phone", "is", null)
+      .is("deleted_at", null)
+      .limit(5000);
+    for (const o of orgPhoneRows ?? []) {
+      const os = phoneSuffix(o.phone);
+      if (os && suffixes.includes(os)) {
+        organizations.push({
+          id: o.id,
+          name: o.display_name_da || o.display_name_en || o.legal_name,
+          via: "phone",
+        });
+        phoneOrgIds.add(o.id);
+      }
+    }
+  }
+
   // Orgs implied by matched contacts.
   const contactOrgIds = new Set(
     contacts.map((c) => c.organizationId).filter((x): x is string => !!x),
@@ -129,6 +157,7 @@ export async function matchInbound(
         )
         .limit(MAX_CANDIDATES);
       for (const o of orgRows ?? []) {
+        if (phoneOrgIds.has(o.id)) continue; // already added via phone
         organizations.push({
           id: o.id,
           name: o.display_name_da || o.display_name_en || o.legal_name,

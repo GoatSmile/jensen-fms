@@ -61,24 +61,39 @@ function normalizeDigits(s: string): string {
   return s.replace(/\D/g, "");
 }
 
-/** Trump card: does any active contact carry this phone number? */
-async function isKnownContactPhone(
+/**
+ * Trump card: is this number already in the CRM — on any active contact OR
+ * organization record (B2C customers keep their number on the org)? A known
+ * number is never spam.
+ */
+async function isKnownPhone(
   supabase: SupabaseClient,
   phone: string,
 ): Promise<boolean> {
   const target = normalizeDigits(phone);
   if (target.length < 6) return false;
   const tail = target.slice(-8);
-  const { data } = await supabase
-    .from("contacts")
-    .select("phone")
-    .not("phone", "is", null)
-    .is("deleted_at", null)
-    .limit(2000);
-  return (data ?? []).some((c) => {
-    const p = normalizeDigits((c.phone as string | null) ?? "");
-    return p.length >= 6 && (p.endsWith(tail) || target.endsWith(p.slice(-8)));
-  });
+  const matches = (rows: { phone: string | null }[] | null) =>
+    (rows ?? []).some((r) => {
+      const p = normalizeDigits(r.phone ?? "");
+      return p.length >= 6 && (p.endsWith(tail) || target.endsWith(p.slice(-8)));
+    });
+
+  const [{ data: contacts }, { data: orgs }] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("phone")
+      .not("phone", "is", null)
+      .is("deleted_at", null)
+      .limit(5000),
+    supabase
+      .from("organizations")
+      .select("phone")
+      .not("phone", "is", null)
+      .is("deleted_at", null)
+      .limit(5000),
+  ]);
+  return matches(contacts) || matches(orgs);
 }
 
 /**
@@ -102,7 +117,7 @@ export async function applyTriage(
 
   // Trump card: matched by the pipeline, or a contact carries this number.
   let known = Boolean(row.matched_contact_id || row.matched_organization_id);
-  if (!known && from) known = await isKnownContactPhone(supabase, from);
+  if (!known && from) known = await isKnownPhone(supabase, from);
 
   // A known caller is never spam — store no signals so it can't be folded.
   if (known) {

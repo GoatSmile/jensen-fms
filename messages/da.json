@@ -3693,7 +3693,10 @@
     "inboundTranscriptionRegionMissing": "Transskriptionsudbyderen kræver en region — angiv den under Admin → Indstillinger → Opkald & indgående.",
     "inboundTranscriptionTimeout": "Transskriptionen fik timeout — prøv igen.",
     "inboundTranscriptionEmpty": "Optagelsen gav en tom transskription.",
-    "inboundTranscriptionFailed": "Transskription mislykkedes: {detail}"
+    "inboundTranscriptionFailed": "Transskription mislykkedes: {detail}",
+    "inboundNoCaller": "Denne besked har intet opkaldsnummer at gemme.",
+    "inboundNoOrgForContact": "Match en organisation først, og gem så opkalderen på den.",
+    "inboundNoContactName": "Angiv et navn til den nye kontakt."
   },
   "inbox": {
     "title": "Indbakke",
@@ -3793,7 +3796,13 @@
     "leadHint": "Ordreforespørgsel — et salgs-lead. Indbakken holder styr på det, indtil tilbudsmodulet findes; markér som håndteret, når du har fulgt op.",
     "otherHint": "Intet at rute automatisk. Markér som håndteret efter gennemgang.",
     "markHandled": "Markér som håndteret",
-    "createTicketInstead": "Opret en servicesag i stedet"
+    "createTicketInstead": "Opret en servicesag i stedet",
+    "via_phone": "via telefon",
+    "saveCallerTitle": "Gem denne opkalder",
+    "saveCallerHint": "{phone} er ikke på nogen kontakt endnu. Gem det på {org}, så næste opkald fra dette nummer matcher automatisk.",
+    "saveCallerNew": "Ny kontakt",
+    "saveCallerNamePlaceholder": "Kontaktnavn",
+    "saveCallerButton": "Gem nummer"
   },
   "inboundStatus": {
     "received": "Modtaget",
