@@ -1379,6 +1379,19 @@ when the work ships or the idea is rejected.
   (schema+admin → role login+gating → person picker+assignment →
   notifications), each ~½ day.
 
+- **Munin — SEPARATE PRODUCT, designed 2026-07-17, not built.** A
+  dictate-a-task phone agent for the dev's family (call/SMS
+  +45 9370 3111 → allowlisted callers → Gladia en/ru transcript → Claude
+  tool-use agent executes actions [email via Resend, shared Google
+  Calendar event, native reminders + nudge cron] → grounded SMS
+  confirmation), munin.valent.dk, own repo/Supabase/Vercel, built by
+  copy-and-trimming the FMS inbound trunk. Founding design in
+  **`docs/plan-munin.md`** (moves to Munin's repo at scaffold time).
+  **Heads-up for FMS sessions: at Munin P1 the DK number
+  +45 9370 3111 gets repointed to Munin, and Jensen shadow-testing
+  returns to the US trial number (+1 762 500 0850)** — update the
+  inbound sections above when that happens.
+
 - **Sales track: website bike-configurator + AI lead-gen agent (parked
   2026-07-09, by the owner's own call — "lay the bottom first").** Two ideas
   from the Jul-9 call, both explicitly after the system is the daily
