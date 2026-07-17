@@ -1319,9 +1319,12 @@ when the work ships or the idea is rejected.
   key-free and doesn't wait on B/C. Full deep-dive + slice detail in
   `docs/plan-july9-vacation-month.md`; the design below remains the
   reference. **ALL SLICES A–F SHIPPED and LIVE IN PRODUCTION 2026-07-16**
-  (real DK number +45 9370 3111 on the dev's own Twilio account, prod
-  Vercel webhook, first real calls processed end-to-end in shadow mode;
-  Gladia replaced Azure as the selected transcription provider). The
+  (first real calls processed end-to-end in shadow mode; Gladia replaced
+  Azure as the selected transcription provider). **NUMBER MOVE 2026-07-17:
+  the DK number +45 9370 3111 now belongs to Munin** (its voice/status/SMS
+  webhooks point at munin.valent.dk) — Jensen shadow-testing rides the US
+  trial number **+1 762 500 0850**, whose voice/status webhooks point at
+  Jensen prod. Dennis's company number remains the FMS production plan. The
   NEXT arc — capture-every-call, per-stage confidence, spam triage,
   intent routing (order_inquiry ≠ maintenance ticket), graduation
   criteria for leaving shadow mode, v2 live-answer — is designed in
@@ -1384,8 +1387,8 @@ when the work ships or the idea is rejected.
   (schema+admin → role login+gating → person picker+assignment →
   notifications), each ~½ day.
 
-- **Munin — SEPARATE PRODUCT, designed 2026-07-17, not built.** A
-  dictate-a-task phone agent for the dev's family (call/SMS
+- **Munin — SEPARATE PRODUCT, P1 (scaffold + capture) BUILT 2026-07-17.**
+  A dictate-a-task phone agent for the dev's family (call/SMS
   +45 9370 3111 → allowlisted callers → Gladia en/ru transcript → Claude
   tool-use agent executes actions [email via Resend, shared Google
   Calendar event, native reminders + nudge cron] → grounded SMS
@@ -1394,10 +1397,9 @@ when the work ships or the idea is rejected.
   `~/workspace/code/munin` (github.com/GoatSmile/munin, private)** —
   founding design at `munin/docs/plan-munin.md`, session handoff at
   `munin/CLAUDE.md`. Munin work happens THERE (own worklog too).
-  **Heads-up for FMS sessions: at Munin P1 the DK number
-  +45 9370 3111 gets repointed to Munin, and Jensen shadow-testing
-  returns to the US trial number (+1 762 500 0850)** — update the
-  inbound sections above when that happens.
+  **The number move happened at Munin P1 (2026-07-17): +45 9370 3111 is
+  Munin's now** (see the inbound-production note above) — Jensen
+  shadow-testing is back on the US trial number +1 762 500 0850.
 
 - **Voice commands — DESIGNED 2026-07-17, not built; #2 in the
   re-sequenced July plan.** Staff dictate business tasks (call the
