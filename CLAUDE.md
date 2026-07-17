@@ -1356,6 +1356,29 @@ when the work ships or the idea is rejected.
     ~90 days, transcript/summary kept on ticket), DPAs with providers, EU
     residency. Cost ≈ under 2 kr. per 5-min call + ~50 kr./mo for the number.
 
+- **People & roles (workforce model + role-password auth v0.5) — DESIGNED
+  2026-07-17, not built.** Full design in **`docs/plan-people-roles.md`**:
+  four separated concepts (person / role / credential / assignment), five
+  tables (`people` [with `user_id` M1-bridge], `roles` [bilingual vocab +
+  `home_path` + `password_hash`], `person_roles`, `role_capabilities`,
+  `role_notifications` — capability/event keys validated against code
+  registries, the provider-registry doctrine applied to permissions).
+  Auth v0.5: one scrypt password PER ROLE (password IS the role selector,
+  no picker), signed `{role, person}` cookie extending the existing
+  `fms_auth` gate, self-claimed tap-your-name person picker, `can()`
+  gating nav (via shared nav-items ids) / routes / dashboard bands,
+  per-role `home_path` landing. Seed roles: owner, it_admin, accountant
+  (all except admin), workshop (→ /work), sales (→ /sales-orders). The
+  dangling day-one `work_orders.assigned_to` /
+  `manufacturing_orders.assigned_to_user_id` columns get FK'd to people.
+  Locked with owner-dev: workshop SEES costs (no redaction pass), sales
+  role real, tap-your-name unverified is fine, no temp automation.
+  Explicitly a UX wall not a security boundary (perimeter stays Vercel
+  SSO until M1); at M1 the role passwords die and everything else
+  survives (RLS policies written against role_capabilities). Phased 1–4
+  (schema+admin → role login+gating → person picker+assignment →
+  notifications), each ~½ day.
+
 - **Sales track: website bike-configurator + AI lead-gen agent (parked
   2026-07-09, by the owner's own call — "lay the bottom first").** Two ideas
   from the Jul-9 call, both explicitly after the system is the daily
