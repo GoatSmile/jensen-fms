@@ -1385,8 +1385,10 @@ when the work ships or the idea is rejected.
   tool-use agent executes actions [email via Resend, shared Google
   Calendar event, native reminders + nudge cron] → grounded SMS
   confirmation), munin.valent.dk, own repo/Supabase/Vercel, built by
-  copy-and-trimming the FMS inbound trunk. Founding design in
-  **`docs/plan-munin.md`** (moves to Munin's repo at scaffold time).
+  copy-and-trimming the FMS inbound trunk. **Lives in its own repo:
+  `~/workspace/code/munin` (github.com/GoatSmile/munin, private)** —
+  founding design at `munin/docs/plan-munin.md`, session handoff at
+  `munin/CLAUDE.md`. Munin work happens THERE (own worklog too).
   **Heads-up for FMS sessions: at Munin P1 the DK number
   +45 9370 3111 gets repointed to Munin, and Jensen shadow-testing
   returns to the US trial number (+1 762 500 0850)** — update the
