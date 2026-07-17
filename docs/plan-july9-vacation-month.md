@@ -243,37 +243,65 @@ and means the paint routes never need a rename at all.
 - VAT: prices assumed **ex moms** (confirm with Dennis, see asks).
 
 ### Weeks 2–3 — the two big tracks
-- **i18n, whole app to Danish** (~4–5 d) **[dev decision: whole-app
-  scope]**: next-intl foundation; worker screens first (keyed off
-  `worker_language` — covers the employee who can't work in English),
-  then sweep every module keyed off `app_language`; **`de` locale
-  scaffolded but untranslated** (German has no user yet). Customer-facing
-  documents keep their own per-document `language` — unchanged.
-  - ✅ Foundation + first worker screens SHIPPED 2026-07-11: next-intl
-    without URL routing, locale per surface from app_settings (middleware
-    stamps x-pathname; worker paths → worker_language, rest →
-    app_language), en/da/de message files with English fallback merge;
-    `/work` floor + `/scan` fully translated and browser-verified in both
-    languages. Settings still `en` — flipping worker_language to `da` at
-    admin → settings is the go-live.
-  - Remaining: `/work/[woId]` workspace + parts add screen, build
-    workbench, then the app-wide sweep.
-- **Phone→ticket pipeline v1** (~4 d) — deep dive below. Built
-  harness-first; Twilio wired last.
+- ✅ **i18n, whole app to Danish — COMPLETE 2026-07-14.** Foundation
+  (next-intl per-surface locale) → worker surfaces → app-wide sweep (all
+  modules + admin + QR + login) → server-action error strings (~560 keys
+  ×en/da) → controlled-vocab names via `localizedName`. `de` scaffolded
+  untranslated. Flipping `worker_language`/`app_language` to `da` is the
+  1-click go-live. Detail in CLAUDE.md's i18n section.
+- ✅ **Phone→ticket pipeline — COMPLETE and far BEYOND scope.** All slices
+  A–F shipped and **LIVE IN PRODUCTION 2026-07-16** (real DK number, prod
+  Vercel webhooks, first real calls processed end to end in shadow mode;
+  Gladia over Azure). Then the whole **triage arc** shipped same-day
+  (capture-every-call incl. hang-ups, per-stage confidence, spam fold +
+  dispositions, intent routing, match-org-by-phone + the
+  save-caller-to-contact learning loop). Deep dives:
+  `docs/plan-inbound-triage.md` + the section below (historical).
 
-### Week 4 — Dennis-return enablers
-- **Interim device roles** (~1 d) — design below **[dev decision:
-  cookie, no PIN]**.
-- **Global identifier search** (~1 d): one search box (header or
-  `/search?q=`) hitting `bike_identifiers` (exact/prefix), bikes (frame
-  number), parts (SKU/name trigram), organizations, invoices (number) —
-  grouped results, each row linking home. Old-system parity for the
-  daily lookup.
-- **Maintenance + workshop floor polish pass** (~1 d): walk both flows
-  in Danish on a phone, fix rough edges; QR codes printable; this is
-  Dennis's first-touch surface in August.
-- **Handover notes** (~0.5 d): a short "what changed in July + how to
-  test it" doc for Dennis's return, plus updating this plan's checkboxes.
+### Week 4+ — RE-SEQUENCED 2026-07-17 (remaining July, Jul 17 → Aug 3)
+
+Two new designs landed 2026-07-17 and reshape the tail of the month:
+**people & roles** (`docs/plan-people-roles.md` — supersedes the
+device-role-cookie item below) and **voice commands**
+(`docs/plan-voice-commands.md` — staff dictate tasks → drafted actions).
+Priority order, with the reasoning:
+
+1. **People & roles P1–P2** (~1–1.5 d) — schema + admin section, then
+   role-password login + `can()` gating + per-role landing. *Why first:
+   it's the critical path — voice commands need staff-identity-by-phone +
+   `commanded_by` provenance, and Dennis's solo August needs the
+   accountant/workshop role walls. This was the old week-4 "interim
+   device roles" item, expanded and properly designed.*
+2. **Voice commands VC-1** (~2–2.5 d) — command fork on the inbound
+   trunk, agent + resolvers, first three actions (draft customer / SO /
+   PO), CommandPlanPanel in Inbox, in-app dictate button. *Why second:
+   highest new value; every piece of infra it needs is already live; the
+   founding utterance ("15 bikes for Hotel D'Angleterre…") works end to
+   end at the demo for Dennis.*
+3. **People & roles P3–P4** (~1 d) — tap-your-name person picker, WO/
+   ticket assignee, notification events (ticket.created → workshop,
+   invoice.overdue → accountant). *Completes the role story; makes the
+   inbound pipeline actively notify instead of waiting to be checked.*
+4. **Inbound stats fold** (~½ d, from `docs/plan-inbound-triage.md`) —
+   weekly match rate / intent accuracy / clarity / spam share on the
+   dashboard. *Why now: it's the measurement that turns August's "leave
+   shadow mode?" into a data decision.*
+5. **Global identifier search** (~1 d): one search box (header or
+   `/search?q=`) hitting `bike_identifiers` (exact/prefix), bikes (frame
+   number), parts (SKU/name trigram), organizations, invoices (number) —
+   grouped results, each row linking home. Old-system parity for the
+   daily lookup.
+6. **Maintenance + workshop floor polish pass** (~1 d): walk both flows
+   in Danish on a phone, fix rough edges; QR codes printable; this is
+   Dennis's first-touch surface in August.
+7. **Handover notes** (~0.5 d): a short "what changed in July + how to
+   test it" doc for Dennis's return, plus updating this plan's checkboxes.
+
+Capacity check: ≈8 dev-days against ~11–12 vacation-pace weekdays — fits
+with slack. **Parallel personal track (not Jensen hours): Munin**
+(`~/workspace/code/munin`) — its only FMS coupling is the number move at
+Munin P1 (+45 9370 3111 → Munin; Jensen shadow-testing → the US trial
+number; update FMS docs when it happens).
 
 ## Deep dive: phone-call → ticket pipeline
 
@@ -458,7 +486,15 @@ until out of shadow mode.
 
 < 2 kr per 5-minute call end-to-end + ~50 kr/month for the number.
 
-## Interim roles — device-role cookie **[dev decision: no PIN]**
+## Interim roles — device-role cookie **[SUPERSEDED 2026-07-17]**
+
+> **This section is superseded by `docs/plan-people-roles.md`** — the
+> owner expanded the ask into a proper workforce model: a `people` table
+> (employees/owners/temps/contractors), roles as vocab with ONE PASSWORD
+> PER ROLE (the password IS the role selector), capability + notification
+> registries, per-role dashboards, tap-your-name person identity, and an
+> M1 bridge. The `can()` helper + not-a-security-boundary honesty below
+> carried over unchanged. Kept for history:
 
 **What you'll experience:** the workshop tablet shows only workshop
 screens (floor, maintenance, bikes, parts); your own devices see
@@ -506,8 +542,20 @@ Dennis's ask, minus the login nobody wants to build twice:
 - **Supplier-email go-live** — Dennis fills the 18 missing supplier
   emails (housekeeping card), `orders@valent.dk` alias created, untick
   test mode.
-- **Role matrix refinement** — per-capability decisions on the cookie
-  roles.
+- **Role matrix refinement** — per-capability decisions, now against the
+  people-&-roles model (`docs/plan-people-roles.md`): confirm the seed
+  capability sets, role passwords handed out, whether an office/sales
+  split is needed beyond the seeded `sales` role.
+- **Leave shadow mode — as a measurement** — read the inbound stats fold
+  (match rate / intent accuracy / spam share) and decide graduation
+  criteria together (`docs/plan-inbound-triage.md`); flip
+  `inbound_shadow_mode` when the data clears the bar. Includes wiring the
+  GatewayAPI SMS ack to callers.
+- **Voice commands VC-3** — Tier-B confirm flows + per-action accuracy
+  stats + first auto-applies (`docs/plan-voice-commands.md`); expand the
+  action registry against Dennis's real dictation habits.
+- **Dennis's company phone number** — his own Twilio DK number +
+  regulatory bundle with company docs; point it at the same webhooks.
 - **Service-agreement-on-bike verification** — needs real bikes in the
   system (post-migration / post data-entry).
 - **Action-items dashboard fine-tuning together** — his "what needs to be

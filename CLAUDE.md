@@ -1028,21 +1028,26 @@ the live write test, same pattern as Resend was).
 Full plan in **`docs/plan-july9-vacation-month.md`** (tracks, sequence,
 pipeline deep-dive, provider decisions). The frame: Dennis is away until
 Aug 3, Nazar leaves Aug 4 — July output must be self-serve for Dennis's
-solo August onboarding. July tracks in order: housekeeping drill-down
-links + mobile photo verify (W1) · **external-services remodel** (W1,
-~3.5–4 d: generic service_types/part-types/price-lists +
-paint_orders→service_orders promotion; painter's SIK list analyzed in
-the plan doc, 8 part types × 3 qty tiers) · **i18n whole-app
-Danish** (next-intl, worker screens first, `de` scaffolded untranslated)
-· **phone→ticket pipeline v1** (harness-first: upload-a-voicemail test
-UI + Azure Speech EU + Claude extraction + deterministic matching in
-shadow mode; Twilio wired last with fetch-and-delete recordings) ·
-**device-role cookie** (owner/workshop, `can()` helper shaped for M1) ·
-**global identifier search** · maintenance/workshop-floor polish pass.
-Explicitly deferred to mid-August with Dennis: old-system data migration
-(owner-of-record lookups), invoicing-parity workshop + "paid" remark on
-the e-conomic voucher, role matrix refinement, e-conomic production
-cutover, supplier-email go-live.
+solo August onboarding. Track status: ✅ housekeeping drill-downs +
+mobile photo (W1) · ✅ external-services remodel (W1, migs 61–64) ·
+✅ i18n whole-app Danish (closed 2026-07-14) · ✅ phone→ticket pipeline
+(A–F live in prod 2026-07-16 + the whole triage arc, way beyond plan).
+**RE-SEQUENCED 2026-07-17** for the remaining stretch (Jul 17 → Aug 3),
+in priority order: **1) people & roles P1–P2** (schema+admin, role-
+password login + `can()` gating — `docs/plan-people-roles.md`, supersedes
+the device-role-cookie item; critical path for #2 and for Dennis's
+August) · **2) voice commands VC-1** (staff dictate → drafted actions;
+`docs/plan-voice-commands.md`) · **3) people & roles P3–P4**
+(tap-your-name, assignees, notification events) · **4) inbound stats
+fold** (the shadow-mode graduation measurement) · **5) global identifier
+search** · **6) maintenance/workshop polish pass** · **7) handover
+notes**. ≈8 dev-days vs ~11–12 available. Munin is a parallel personal
+track (own repo, not Jensen hours). Deferred to mid-August with Dennis:
+old-system data migration, invoicing-parity workshop + "paid" remark on
+the e-conomic voucher, role matrix refinement (against the people-roles
+model), e-conomic production cutover, supplier-email go-live,
+leave-shadow-mode graduation, voice-commands VC-3, Dennis's company
+number.
 
 ### Carry-over data notes
 - **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
@@ -1393,6 +1398,30 @@ when the work ships or the idea is rejected.
   +45 9370 3111 gets repointed to Munin, and Jensen shadow-testing
   returns to the US trial number (+1 762 500 0850)** — update the
   inbound sections above when that happens.
+
+- **Voice commands — DESIGNED 2026-07-17, not built; #2 in the
+  re-sequenced July plan.** Staff dictate business tasks (call the
+  workshop line from a staff number, or an in-app "Dictate a command"
+  button → MediaRecorder → the same upload ingress) and a Claude
+  tool-use agent drafts the actions for review. Full design in
+  **`docs/plan-voice-commands.md`**. Founding utterance: "15 bikes from
+  Hotel D'Angleterre, March 15, red, front weave basket, white logo" →
+  offered customer creation + draft SO w/ production note + an OPEN SLOT
+  for the unspoken template. Rides the live inbound trunk
+  (`inbound_messages.kind = 'customer'|'command'`, `command_plan` jsonb,
+  `commanded_by` → people); agent calls read-only RESOLVERS first
+  (org trigram, part/template search, part-via-recipe — e.g. "motors for
+  Norma XL" resolves through the BOM), then proposes Tier-A draft
+  actions (draft SO/PO/customer/MO/ticket/invoice, notes, WO
+  parts+labor dictation) that WRAP EXISTING server actions (draft-pos.ts
+  etc.). Rules: model proposes/code disposes, never guess-create (open
+  slots instead), everything lands as provenance-bannered drafts,
+  grounded confirmations, review-first with measured graduation to
+  auto-apply. Tier B (stock receipt, transitions) = explicit confirm;
+  Tier C (issue invoice, emails, deletes, payments) = never by voice.
+  DEPENDS ON people & roles P1 (staff-identity-by-phone). Number note:
+  commands ride Jensen's line (US trial now, Dennis's DK number later) —
+  Munin owns +45 9370 3111.
 
 - **Sales track: website bike-configurator + AI lead-gen agent (parked
   2026-07-09, by the owner's own call — "lay the bottom first").** Two ideas
