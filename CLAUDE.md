@@ -408,6 +408,13 @@ cross-cutting. Original SQL files live in `/migrations/`.
   lines, must not read as demand or get consumed).
 
 ## Local environment
+- **Backups (2026-07-18)**: `~/workspace/code/backup-kit` — `backup-all` (one
+  command, drive NT_ARCHIVE plugged in) = git bundles of every repo + plain
+  mirrors of `~/workspace/code` + `~/Documents/1-Projects` + DB dumps/storage/
+  env files into an AES-256 sparsebundle on the drive; a launchd agent runs
+  nightly Supabase `pg_dump` ×3 + storage sync to `~/Backups`. Secrets in
+  `~/.backup/secrets.env`; image password in Keychain
+  (`backup-kit-secure-image`) + Bitwarden. See backup-kit/RESTORE.md.
 - Env file is `.env.local` (with the leading dot — Next.js won't auto-load
   any other name). Variables: `NEXT_PUBLIC_SUPABASE_URL`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
