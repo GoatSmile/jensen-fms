@@ -168,6 +168,56 @@ export default async function BikesPage({
     hasPartName = partRow ? `${partRow.name_en} (${partRow.internal_sku})` : null;
   }
 
+  // Global identifier search. `q` matches the frame number OR any registered
+  // identifier value — lock, battery, charger, QR, RFID, AirTag, or a
+  // customer's own fleet number. Resolve identifier hits to bike_ids and union
+  // them with the frame-number match (mirrors the bikeIdsForPart pre-resolution
+  // above; the same zero-uuid sentinel guards the empty case, since bikes.id is
+  // uuid and PostgREST rejects a non-uuid in `id.in.(…)`). identifierMatches
+  // also drives a per-row "matched via" hint so a non-frame search doesn't read
+  // as frame-only.
+  let bikeIdsForQuery: string[] | null = null;
+  const identifierMatches = new Map<
+    string,
+    { name_en: string; name_da: string; value: string }[]
+  >();
+  if (q) {
+    const [{ data: frameHits }, { data: idHits }] = await Promise.all([
+      supabase
+        .from("bikes")
+        .select("id")
+        .is("deleted_at", null)
+        .ilike("frame_number", `%${q}%`),
+      supabase
+        .from("bike_identifiers")
+        .select(
+          "identifier_value, bike_id, type:bike_identifier_types(name_en, name_da)",
+        )
+        .eq("is_active", true)
+        .ilike("identifier_value", `%${q}%`)
+        .limit(200),
+    ]);
+    const ids = new Set<string>();
+    for (const r of frameHits ?? []) ids.add(r.id);
+    for (const r of idHits ?? []) {
+      ids.add(r.bike_id);
+      const type = (Array.isArray(r.type) ? r.type[0] : r.type) as {
+        name_en: string;
+        name_da: string;
+      } | null;
+      const list = identifierMatches.get(r.bike_id) ?? [];
+      list.push({
+        name_en: type?.name_en ?? "",
+        name_da: type?.name_da ?? "",
+        value: r.identifier_value,
+      });
+      identifierMatches.set(r.bike_id, list);
+    }
+    bikeIdsForQuery = ids.size
+      ? Array.from(ids)
+      : ["00000000-0000-0000-0000-000000000000"];
+  }
+
   let bikesQuery = supabase
     .from("bikes")
     .select(
@@ -202,9 +252,7 @@ export default async function BikesPage({
   if (builtGte) bikesQuery = bikesQuery.gte("built_at", builtGte);
   if (builtLt) bikesQuery = bikesQuery.lt("built_at", builtLt);
   if (bikeIdsForPart) bikesQuery = bikesQuery.in("id", bikeIdsForPart);
-  if (q) {
-    bikesQuery = bikesQuery.ilike("frame_number", `%${q}%`);
-  }
+  if (bikeIdsForQuery) bikesQuery = bikesQuery.in("id", bikeIdsForQuery);
 
   // Sort: newest/oldest built (nulls last), else by frame number.
   if (sortFilter === "built-desc") {
@@ -399,7 +447,7 @@ export default async function BikesPage({
             id="bikes-q"
             name="q"
             defaultValue={q}
-            placeholder="JP-2026-HSB-…"
+            placeholder={t("searchAnyPlaceholder")}
             className={cn("font-mono", q && FILTER_ACTIVE_CLASS)}
           />
         </div>
@@ -632,6 +680,18 @@ export default async function BikesPage({
                   <TableCell className="p-0 text-xs">
                     <Link href={`/bikes/${b.id}`} className="block px-4 py-2.5">
                       <SegmentedId value={b.frame_number} />
+                      {(identifierMatches.get(b.id) ?? [])
+                        .filter((m) => m.value !== b.frame_number)
+                        .slice(0, 2)
+                        .map((m, i) => (
+                          <div
+                            key={i}
+                            className="text-muted-foreground mt-1 font-sans text-[11px]"
+                          >
+                            {`${localizedName(locale, m.name_en, m.name_da)}: `}
+                            <span className="font-mono">{m.value}</span>
+                          </div>
+                        ))}
                     </Link>
                   </TableCell>
                   <TableCell className="hidden p-0 md:table-cell">
