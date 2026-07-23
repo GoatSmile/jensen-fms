@@ -1,7 +1,7 @@
 # People & roles — design reference
 
-**Date:** 2026-07-17 · **Status:** P1 (schema + admin) SHIPPED 2026-07-23
-— migration 73 + `/admin/people`; P2–P4 not yet built.
+**Date:** 2026-07-17 · **Status:** P1 (schema + admin) + P2 (role login +
+gating) SHIPPED 2026-07-23; P3–P4 not yet built.
 The workforce/identity model: employees, owners, temps, contractors —
 role-scoped access, per-role dashboards, task notification routing, and a
 role-password auth v0.5 that becomes real per-user auth (M1) without rework.
@@ -192,9 +192,15 @@ passwords-per-human, not a detour.
    `/admin/people` (people CRUD, roles CRUD, capability + event
    checkboxes, write-only password set/rotate). Browser-verified en+da;
    scrypt round-trip verified.
-2. **Role login + gating** — password→role resolution, signed cookie,
-   `can()`, nav/route/dashboard gating, home_path landing. ~½–1 day.
-   *Visible payoff: accountant logs in, sees everything but admin.*
+2. ✅ **Role login + gating** — SHIPPED 2026-07-23. Password→role scrypt
+   resolution (`login/actions.ts`); self-contained HMAC session cookie
+   `{role, caps, home}` (`src/lib/auth/session.ts`, key from SITE_PASSWORD
+   + pepper — see DECISIONS 2026-07-23); Edge route gating via
+   `src/lib/people/routes.ts` (uncapable → bounce to home); nav + ScanFab
+   filtering (`filterNavGroups`, `capability` on nav-items); dashboard
+   money band requires `invoices`; SITE_PASSWORD → owner-role session,
+   legacy tokens stay valid. Verified in-browser as workshop / accountant
+   / owner-fallback. Note: capability edits apply at next login.
 3. **Person picker + assignment** — tap-your-name; FK + assignee pickers on
    WOs/tickets; "my work" filter on /work. ~½ day.
 4. **Notifications** — event registry + first two hooks (`ticket.created` →

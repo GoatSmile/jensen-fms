@@ -13,10 +13,16 @@ import { cn } from "@/lib/utils";
  * and on the public bike pages (where users are already scanning or have
  * just landed from a scan).
  */
-export function ScanFab() {
+export function ScanFab({
+  allowedCaps,
+}: {
+  /** Role capability scope; null = show everything (gate off / legacy). */
+  allowedCaps: string[] | null;
+}) {
   const pathname = usePathname();
   const t = useTranslations("scan");
   const hide =
+    (allowedCaps !== null && !allowedCaps.includes("scan")) ||
     pathname === "/scan" ||
     pathname === "/login" ||
     pathname.startsWith("/b/") ||

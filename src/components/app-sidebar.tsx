@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { Logo } from "@/components/logo";
-import { NAV_GROUPS, isNavItemActive } from "@/components/nav-items";
+import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
 import {
   Tooltip,
   TooltipContent,
@@ -18,9 +18,15 @@ import { cn } from "@/lib/utils";
 
 const COLLAPSE_KEY = "jensen-fms:sidebar-collapsed";
 
-export function AppSidebar() {
+export function AppSidebar({
+  allowedCaps,
+}: {
+  /** Role capability scope; null = show everything (gate off / legacy). */
+  allowedCaps: string[] | null;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  const groups = filterNavGroups(allowedCaps);
   // Collapsed = icon-only rail with hover tooltips. SSR renders expanded;
   // the stored preference applies after mount (the sidebar lives in the
   // root layout, so this runs once per full page load, not per navigation).
@@ -62,7 +68,7 @@ export function AppSidebar() {
       </div>
       <TooltipProvider>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
-          {NAV_GROUPS.map((group, groupIndex) => (
+          {groups.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               {groupIndex > 0 ? (
                 <div

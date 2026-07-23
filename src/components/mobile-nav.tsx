@@ -8,7 +8,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { Menu, X } from "lucide-react";
 
 import { Logo } from "@/components/logo";
-import { NAV_GROUPS, isNavItemActive } from "@/components/nav-items";
+import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +19,16 @@ import { cn } from "@/lib/utils";
  * primitives directly so we can ditch the centred-modal styles that
  * shadcn's DialogContent applies).
  */
-export function MobileNav() {
+export function MobileNav({
+  allowedCaps,
+}: {
+  /** Role capability scope; null = show everything (gate off / legacy). */
+  allowedCaps: string[] | null;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const groups = filterNavGroups(allowedCaps);
 
   // Close the drawer when the route changes — clicking a nav link navigates,
   // and the dialog state needs to follow.
@@ -86,7 +92,7 @@ export function MobileNav() {
               </DialogPrimitive.Close>
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-              {NAV_GROUPS.map((group, groupIndex) => (
+              {groups.map((group, groupIndex) => (
                 <Fragment key={groupIndex}>
                   {groupIndex > 0 ? (
                     <div

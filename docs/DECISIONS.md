@@ -207,3 +207,19 @@ DECISIONS.md (this file), OPERATIONS.md, BACKLOG.md, archive/. New rituals:
 session-end STATUS update; decision entries land in the same commit as
 their implementation. Repo README replaced (was create-next-app
 boilerplate).
+
+## 2026-07-23 — Role-session mechanics (people & roles P2, dev calls)
+The role-login cookie is **self-contained**: an HMAC-signed payload
+carrying `{role, caps, home}` frozen at login — Edge middleware does route
+gating with zero DB reads. Consequence (accepted): capability/home edits
+in admin apply at the **next login**, not live. The HMAC key derives from
+`SITE_PASSWORD` + a pepper — no new env var; rotating the shared password
+invalidates all sessions (correct in a shared-secret world); the whole
+credential layer dies at M1. Cutover compatibility: the legacy 64-hex
+shared-password token stays valid as **owner-equivalent full access**, and
+entering `SITE_PASSWORD` at login now issues an owner-role session — no
+one gets locked out by the deploy. If two roles were ever given the same
+password, lowest `sort_order` wins (admin can't detect collisions —
+hashes aren't comparable); don't do that. Rejected alternatives: DB
+lookup per request in middleware (Edge latency + coupling), a separate
+`AUTH_SECRET` env var (more setup surface for a layer M1 deletes).

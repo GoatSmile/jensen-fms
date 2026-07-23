@@ -17,11 +17,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { Capability } from "@/lib/people/capabilities";
+
 export type NavItem = {
   href: string;
   /** Key into the `nav` message namespace. */
   labelKey: string;
   icon: LucideIcon;
+  /** Which role capability shows this item (people & roles P2). */
+  capability: Capability;
   /** Match this route exactly (no prefix matching) — used for the root link. */
   exact?: boolean;
 };
@@ -32,36 +36,105 @@ export type NavItem = {
 // commercial/orders flow, then Admin. The customer Map lives under Admin,
 // so it's not here.
 export const NAV_GROUPS: NavItem[][] = [
-  [{ href: "/", labelKey: "dashboard", icon: Home, exact: true }],
   [
-    { href: "/bikes", labelKey: "bikes", icon: Bike },
-    { href: "/bike-templates", labelKey: "bikeTemplates", icon: BookOpen },
-    { href: "/parts", labelKey: "parts", icon: Boxes },
-    { href: "/maintenance/tickets", labelKey: "maintenance", icon: Wrench },
+    {
+      href: "/",
+      labelKey: "dashboard",
+      icon: Home,
+      capability: "dashboard",
+      exact: true,
+    },
+  ],
+  [
+    { href: "/bikes", labelKey: "bikes", icon: Bike, capability: "bikes" },
+    {
+      href: "/bike-templates",
+      labelKey: "bikeTemplates",
+      icon: BookOpen,
+      capability: "templates",
+    },
+    { href: "/parts", labelKey: "parts", icon: Boxes, capability: "parts" },
+    {
+      href: "/maintenance/tickets",
+      labelKey: "maintenance",
+      icon: Wrench,
+      capability: "maintenance",
+    },
     // Inbound-message review queue (voicemail → ticket; more channels later).
     // Sits by Maintenance because it feeds it.
-    { href: "/inbox", labelKey: "inbox", icon: Inbox },
-    { href: "/work", labelKey: "workshopFloor", icon: HardHat },
+    { href: "/inbox", labelKey: "inbox", icon: Inbox, capability: "inbox" },
+    {
+      href: "/work",
+      labelKey: "workshopFloor",
+      icon: HardHat,
+      capability: "work",
+    },
   ],
   [
     {
       href: "/manufacturing-orders",
       labelKey: "manufacturingOrders",
       icon: Hammer,
+      capability: "mo",
     },
-    { href: "/purchase-orders", labelKey: "purchaseOrders", icon: ClipboardList },
-    { href: "/sales-orders", labelKey: "salesOrders", icon: Receipt },
-    { href: "/paint-orders", labelKey: "paintOrders", icon: Paintbrush },
-    { href: "/invoices", labelKey: "invoices", icon: FileText },
+    {
+      href: "/purchase-orders",
+      labelKey: "purchaseOrders",
+      icon: ClipboardList,
+      capability: "po",
+    },
+    {
+      href: "/sales-orders",
+      labelKey: "salesOrders",
+      icon: Receipt,
+      capability: "so",
+    },
+    {
+      href: "/paint-orders",
+      labelKey: "paintOrders",
+      icon: Paintbrush,
+      capability: "paint",
+    },
+    {
+      href: "/invoices",
+      labelKey: "invoices",
+      icon: FileText,
+      capability: "invoices",
+    },
     {
       href: "/service-agreements",
       labelKey: "serviceAgreements",
       icon: ShieldCheck,
+      capability: "agreements",
     },
-    { href: "/organizations", labelKey: "customers", icon: Building2 },
+    {
+      href: "/organizations",
+      labelKey: "customers",
+      icon: Building2,
+      capability: "customers",
+    },
   ],
-  [{ href: "/admin", labelKey: "admin", icon: Settings }],
+  [
+    {
+      href: "/admin",
+      labelKey: "admin",
+      icon: Settings,
+      capability: "admin",
+    },
+  ],
 ];
+
+/**
+ * Scope the nav to a role's capabilities. `allowed = null` means nothing is
+ * scoped (gate off / legacy full-access login) — the pre-P2 behaviour.
+ * Groups that end up empty disappear along with their separator.
+ */
+export function filterNavGroups(allowed: string[] | null): NavItem[][] {
+  if (allowed === null) return NAV_GROUPS;
+  return NAV_GROUPS.map((group) =>
+    group.filter((item) => allowed.includes(item.capability)),
+  ).filter((group) => group.length > 0);
+}
 
 /**
  * Route-active logic shared by both navs. The Maintenance entry links to

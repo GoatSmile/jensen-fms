@@ -29,9 +29,12 @@ append.** History belongs in `docs/archive/`, decisions in
   number remains the production plan.
 
 ## In flight / next action
-- **People & roles P2 — role-password login + `can()` gating** is the next
-  piece of work (P1 schema + admin are in; design in
-  `docs/plan-people-roles.md`). Then P3–P4 per the queue below.
+- **People & roles P2 shipped 2026-07-23** (role-password login, signed
+  session cookie, route/nav/dashboard gating — see DECISIONS 2026-07-23
+  for the session mechanics). No role passwords are set yet, so behaviour
+  is unchanged in prod until they are. **Next: P3 (tap-your-name +
+  assignees)**, then P4, per the queue below. August playbook draft is the
+  other open item this session.
 
 ## July queue (re-sequenced 2026-07-17)
 Frame: Dennis is back Aug 3, Nazar leaves Aug 4 — July output must be

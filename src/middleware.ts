@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { AUTH_COOKIE, passwordToken } from "@/lib/auth/gate";
+import { verifySessionToken } from "@/lib/auth/session";
+import { routeCapability } from "@/lib/people/routes";
 
 // Stays reachable without the password: the login screen + logout, and the
 // public customer-facing flows (QR sticker landing `/b/<id>` and the report
@@ -24,6 +26,17 @@ function nextWithPathname(req: NextRequest) {
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
+/**
+ * Auth gate + role-capability routing (people & roles P2).
+ *
+ * Three token shapes share the fms_auth cookie:
+ * - legacy shared-password token (64-hex) → full access, cutover-compatible
+ * - signed role session (`v2.…`) → route gating via the caps frozen at login
+ * - anything else / missing → redirect to /login
+ *
+ * No DB access here (Edge): the session is self-contained by design —
+ * capability edits apply at next login.
+ */
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return nextWithPathname(req);
@@ -33,8 +46,25 @@ export async function middleware(req: NextRequest) {
   if (!expected) return nextWithPathname(req);
 
   const token = req.cookies.get(AUTH_COOKIE)?.value;
-  if (token && token === (await passwordToken(expected))) {
-    return nextWithPathname(req);
+  if (token) {
+    if (token === (await passwordToken(expected))) {
+      return nextWithPathname(req);
+    }
+
+    const session = await verifySessionToken(token, expected);
+    if (session) {
+      const needed = routeCapability(pathname);
+      if (!needed || session.caps.includes(needed)) {
+        return nextWithPathname(req);
+      }
+      // Uncapable route → bounce to the role's home. If home itself is the
+      // blocked path (misconfigured role), pass through rather than loop.
+      if (pathname === session.home) return nextWithPathname(req);
+      const url = req.nextUrl.clone();
+      url.pathname = session.home;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   const url = req.nextUrl.clone();

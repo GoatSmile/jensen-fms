@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { AT_SUPPLIER_STATUSES } from "@/lib/services/status";
+import { readAllowedCaps } from "@/lib/auth/read-session";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 import { createClient } from "@/lib/supabase/server";
@@ -98,6 +99,9 @@ function BandRow({
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
   const locale = await getLocale();
+  const allowedCaps = await readAllowedCaps();
+  const showMoneyBand =
+    allowedCaps === null || allowedCaps.includes("invoices");
   const supabase = await createClient();
   const today = todayISODate();
   const paintCutoff = daysAgo(PAINT_AGING_DAYS);
@@ -254,8 +258,10 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      {/* Money band — only cards with something to report are rendered. */}
-      {moneyAllClear ? (
+      {/* Money band — only cards with something to report are rendered.
+          Hidden entirely for roles without the invoices capability
+          (people & roles P2): money signals belong to money roles. */}
+      {!showMoneyBand ? null : moneyAllClear ? (
         <section className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
           <CircleCheck
             className="size-4 shrink-0 text-emerald-600 dark:text-emerald-500"

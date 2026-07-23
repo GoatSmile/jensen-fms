@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { RegisterSW } from "@/components/register-sw";
 import { ScanFab } from "@/components/scan-fab";
+import { readAllowedCaps } from "@/lib/auth/read-session";
 
 import "./globals.css";
 
@@ -65,6 +66,9 @@ export default async function RootLayout({
   // surfaces follow worker_language) — see src/i18n/request.ts.
   const locale = await getLocale();
   const messages = await getMessages();
+  // Role-session capability scope for the app chrome (people & roles P2).
+  // null = nothing scoped (gate off / legacy full-access login).
+  const allowedCaps = await readAllowedCaps();
 
   return (
     <html
@@ -74,9 +78,9 @@ export default async function RootLayout({
       <body className="bg-background text-foreground min-h-full">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <div className="flex min-h-screen">
-            <AppSidebar />
+            <AppSidebar allowedCaps={allowedCaps} />
             <div className="flex min-w-0 flex-1 flex-col">
-              <MobileNav />
+              <MobileNav allowedCaps={allowedCaps} />
               {/* pb-20 on small screens reserves space below scrollable
                   content so the floating Scan FAB never overlaps a card,
                   table row, or button at the page footer. md+ uses no
@@ -86,7 +90,7 @@ export default async function RootLayout({
               </main>
             </div>
           </div>
-          <ScanFab />
+          <ScanFab allowedCaps={allowedCaps} />
           <RegisterSW />
         </NextIntlClientProvider>
       </body>
