@@ -1,7 +1,9 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-23, end of day** (people-&-roles build session:
-P1 + P2 + P3 all shipped today, plus the August playbook).
+**Last updated: 2026-07-23, end of day** (people-&-roles P1–P4 + docs
+restructure + August playbook, then a continuation session: global
+identifier search, the perimeter audit, and voice commands VC-1 in-app
+slice — all shipped 2026-07-23).
 
 This is the session-death recovery file: a fresh session (human or LLM)
 resumes from `CLAUDE.md` + this file. **Overwrite it at session end — never
@@ -55,9 +57,17 @@ append.** History belongs in `docs/archive/`, decisions in
   not live. Guardrail shipped: `client.ts` now carries a loud DO-NOT-IMPORT
   header. Low-sev residue (XFF-spoofable rate limits, `/api/qr` error echo)
   logged in BACKLOG. See the Landmine below.
-- **Next up: VC-1 middle path** (in-app dictate slice, no phone routing) —
-  plan presented to owner 2026-07-23, awaiting go-ahead before build; then
-  the maintenance/workshop polish pass.
+- **Voice commands VC-1 shipped 2026-07-23** (Option A, text-first — owner's
+  middle-path call): the in-app dictate slice, no phone routing. Type/dictate
+  a task in `/inbox` → a Claude tool-use agent (`src/lib/inbound/command/`)
+  grounds refs via 6 read-only resolvers → proposes a plan of DRAFT actions
+  (customer / sales order / purchase order) → the CommandPlanPanel reviews +
+  applies each (open-slot pickers, customer→SO dependency), logging
+  provenance in `command_actions`. Migrations 75 (`in_app` channel) + 76
+  (`kind`/`command_plan`/`commanded_by` + `command_actions`). Founding
+  utterance verified end-to-end. Phone/audio ingress + staff-number fork are
+  VC-3 (August, with Dennis). Mechanics in DECISIONS 2026-07-23.
+- **Next up: maintenance/workshop polish pass** (July queue item 5).
 - **Deferred, needs a browser**: a live in-app confirmation of the P4
   ticket.created / wo.assigned hooks (the delivery engine itself was
   verified live via the invoice.overdue cron; the two action hooks are the
@@ -69,8 +79,8 @@ append.** History belongs in `docs/archive/`, decisions in
 Frame: Dennis is back Aug 3, Nazar leaves Aug 4 — July output must be
 self-serve for Dennis's solo August onboarding.
 1. People & roles P1 ✅ P2 ✅ P3 ✅ P4 ✅ — all 2026-07-23 (interim complete)
-2. Voice commands VC-1 (`docs/plan-voice-commands.md`; owner deferred the
-   VC-vs-August call — still open)
+2. Voice commands VC-1 ✅ 2026-07-23 — in-app text-first slice (Option A);
+   phone/audio ingress deferred to VC-3 (August)
 3. Inbound stats fold — deliberately thin (prod has only 2 shadow rows;
    real data starts when Dennis's number lands, August)
 4. Global identifier search ✅ 2026-07-23
