@@ -1143,10 +1143,12 @@ export type Database = {
       inbound_messages: {
         Row: {
           body_text: string | null
+          call_outcome: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta: Json
           created_at: string
           disposition: string
+          duration_seconds: number | null
           error: string | null
           extraction: Json | null
           from_identity: string | null
@@ -1164,18 +1166,18 @@ export type Database = {
           spam_signals: Json | null
           status: Database["public"]["Enums"]["inbound_status"]
           ticket_id: string | null
-          call_outcome: string | null
-          duration_seconds: number | null
           transcript_confidence: number | null
           understanding: Json | null
           updated_at: string
         }
         Insert: {
           body_text?: string | null
+          call_outcome?: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
           created_at?: string
           disposition?: string
+          duration_seconds?: number | null
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
@@ -1193,18 +1195,18 @@ export type Database = {
           spam_signals?: Json | null
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
-          call_outcome?: string | null
-          duration_seconds?: number | null
           transcript_confidence?: number | null
           understanding?: Json | null
           updated_at?: string
         }
         Update: {
           body_text?: string | null
+          call_outcome?: string | null
           channel?: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
           created_at?: string
           disposition?: string
+          duration_seconds?: number | null
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
@@ -1222,8 +1224,6 @@ export type Database = {
           spam_signals?: Json | null
           status?: Database["public"]["Enums"]["inbound_status"]
           ticket_id?: string | null
-          call_outcome?: string | null
-          duration_seconds?: number | null
           transcript_confidence?: number | null
           understanding?: Json | null
           updated_at?: string
@@ -1796,7 +1796,7 @@ export type Database = {
         Row: {
           actual_completion_date: string | null
           actual_start_date: string | null
-          assigned_to_user_id: string | null
+          assigned_to: string | null
           bike_template_id: string | null
           bike_type_id: string
           color_id: string | null
@@ -1818,7 +1818,7 @@ export type Database = {
         Insert: {
           actual_completion_date?: string | null
           actual_start_date?: string | null
-          assigned_to_user_id?: string | null
+          assigned_to?: string | null
           bike_template_id?: string | null
           bike_type_id: string
           color_id?: string | null
@@ -1840,7 +1840,7 @@ export type Database = {
         Update: {
           actual_completion_date?: string | null
           actual_start_date?: string | null
-          assigned_to_user_id?: string | null
+          assigned_to?: string | null
           bike_template_id?: string | null
           bike_type_id?: string
           color_id?: string | null
@@ -1860,6 +1860,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "manufacturing_orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "manufacturing_orders_bike_template_id_fkey"
             columns: ["bike_template_id"]
@@ -2671,6 +2678,90 @@ export type Database = {
           },
         ]
       }
+      people: {
+        Row: {
+          created_at: string
+          email: string | null
+          engaged_from: string | null
+          engaged_until: string | null
+          engagement: string
+          full_name: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          notify_email: boolean
+          notify_sms: boolean
+          phone: string | null
+          preferred_language: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          engaged_from?: string | null
+          engaged_until?: string | null
+          engagement?: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          notify_email?: boolean
+          notify_sms?: boolean
+          phone?: string | null
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          engaged_from?: string | null
+          engaged_until?: string | null
+          engagement?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          notify_email?: boolean
+          notify_sms?: boolean
+          phone?: string | null
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      person_roles: {
+        Row: {
+          person_id: string
+          role_id: string
+        }
+        Insert: {
+          person_id: string
+          role_id: string
+        }
+        Update: {
+          person_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_roles_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_report_attempts: {
         Row: {
           bike_id: string | null
@@ -2880,6 +2971,91 @@ export type Database = {
           id?: number
           path?: string
           visited_at?: string
+        }
+        Relationships: []
+      }
+      role_capabilities: {
+        Row: {
+          capability: string
+          role_id: string
+        }
+        Insert: {
+          capability: string
+          role_id: string
+        }
+        Update: {
+          capability?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_capabilities_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_notifications: {
+        Row: {
+          event_key: string
+          role_id: string
+        }
+        Insert: {
+          event_key: string
+          role_id: string
+        }
+        Update: {
+          event_key?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_notifications_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string
+          home_path: string
+          id: string
+          is_active: boolean
+          key: string
+          name_da: string | null
+          name_en: string
+          password_hash: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          home_path?: string
+          id?: string
+          is_active?: boolean
+          key: string
+          name_da?: string | null
+          name_en: string
+          password_hash?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          home_path?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          name_da?: string | null
+          name_en?: string
+          password_hash?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3949,6 +4125,13 @@ export type Database = {
           work_performed?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "work_orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "work_orders_bike_id_fkey"
             columns: ["bike_id"]

@@ -1372,8 +1372,18 @@ when the work ships or the idea is rejected.
     ~90 days, transcript/summary kept on ticket), DPAs with providers, EU
     residency. Cost ≈ under 2 kr. per 5-min call + ~50 kr./mo for the number.
 
-- **People & roles (workforce model + role-password auth v0.5) — DESIGNED
-  2026-07-17, not built.** Full design in **`docs/plan-people-roles.md`**:
+- **People & roles (workforce model + role-password auth v0.5) — P1 SHIPPED
+  2026-07-23** (migration 73: `people` / `roles` / `person_roles` /
+  `role_capabilities` / `role_notifications`, the dangling
+  `work_orders.assigned_to` + `manufacturing_orders.assigned_to` (renamed
+  from `assigned_to_user_id`) FK'd to people, 5 seed roles with
+  capabilities+events; code registries `src/lib/people/{capabilities,
+  notifications}.ts` + scrypt helper `password.ts`; admin at
+  `/admin/people` — people CRUD w/ role checkboxes, role CRUD w/ capability
+  + notification-event checkboxes, write-only role-password set/rotate
+  [set/missing badge, env-secret status pattern]; System tile on /admin;
+  `adminPeople` namespace en+da). **P2 (role login + `can()` gating) is
+  next; P3–P4 after.** Full design in **`docs/plan-people-roles.md`**:
   four separated concepts (person / role / credential / assignment), five
   tables (`people` [with `user_id` M1-bridge], `roles` [bilingual vocab +
   `home_path` + `password_hash`], `person_roles`, `role_capabilities`,

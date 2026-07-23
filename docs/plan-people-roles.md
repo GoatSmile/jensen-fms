@@ -1,6 +1,7 @@
 # People & roles — design reference
 
-**Date:** 2026-07-17 · **Status:** agreed design, not yet built.
+**Date:** 2026-07-17 · **Status:** P1 (schema + admin) SHIPPED 2026-07-23
+— migration 73 + `/admin/people`; P2–P4 not yet built.
 The workforce/identity model: employees, owners, temps, contractors —
 role-scoped access, per-role dashboards, task notification routing, and a
 role-password auth v0.5 that becomes real per-user auth (M1) without rework.
@@ -185,9 +186,12 @@ passwords-per-human, not a detour.
 
 ## Phasing (each shippable alone)
 
-1. **Schema + admin** — migration; "People & roles" under Admin (System
-   hue): people CRUD, roles CRUD, capability checkboxes, set/rotate role
-   password. ~½ day.
+1. ✅ **Schema + admin** — SHIPPED 2026-07-23. Migration 73 (tables per
+   this doc, assignee FKs incl. the `assigned_to_user_id` → `assigned_to`
+   rename, seed roles); registries in `src/lib/people/`; admin at
+   `/admin/people` (people CRUD, roles CRUD, capability + event
+   checkboxes, write-only password set/rotate). Browser-verified en+da;
+   scrypt round-trip verified.
 2. **Role login + gating** — password→role resolution, signed cookie,
    `can()`, nav/route/dashboard gating, home_path landing. ~½–1 day.
    *Visible payoff: accountant logs in, sees everything but admin.*

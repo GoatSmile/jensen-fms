@@ -9,6 +9,7 @@ import {
   Percent,
   Tag,
   Truck,
+  UserCog,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -52,6 +53,8 @@ export default async function AdminLandingPage() {
     familiesRes,
     orgsRes,
     priceListsRes,
+    peopleRes,
+    rolesRes,
   ] = await Promise.all([
     supabase
       .from("hs_codes")
@@ -106,6 +109,14 @@ export default async function AdminLandingPage() {
       .from("service_price_lists")
       .select("id", { count: "exact", head: true })
       .eq("is_current", true),
+    supabase
+      .from("people")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+    supabase
+      .from("roles")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
   ]);
 
   const activeHsCount = hsRes.count ?? 0;
@@ -122,6 +133,8 @@ export default async function AdminLandingPage() {
   const activeFamilyCount = familiesRes.count ?? 0;
   const customerCount = orgsRes.count ?? 0;
   const currentPriceListCount = priceListsRes.count ?? 0;
+  const activePeopleCount = peopleRes.count ?? 0;
+  const activeRoleCount = rolesRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -248,6 +261,16 @@ export default async function AdminLandingPage() {
           title={t("groupSystem")}
           tint="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
         >
+          <Tile
+            href="/admin/people"
+            icon={UserCog}
+            title={t("peopleTitle")}
+            description={t("peopleDesc")}
+            stat={t("peopleStat", {
+              people: activePeopleCount,
+              roles: activeRoleCount,
+            })}
+          />
           <Tile
             href="/admin/settings"
             icon={Percent}
