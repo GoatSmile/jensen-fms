@@ -1911,6 +1911,47 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          channel: string
+          entity_id: string | null
+          event_key: string
+          id: string
+          person_id: string | null
+          recipient: string | null
+          sent_at: string
+          test_mode: boolean
+        }
+        Insert: {
+          channel?: string
+          entity_id?: string | null
+          event_key: string
+          id?: string
+          person_id?: string | null
+          recipient?: string | null
+          sent_at?: string
+          test_mode?: boolean
+        }
+        Update: {
+          channel?: string
+          entity_id?: string | null
+          event_key?: string
+          id?: string
+          person_id?: string | null
+          recipient?: string | null
+          sent_at?: string
+          test_mode?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_lines: {
         Row: {
           bike_template_id: string | null

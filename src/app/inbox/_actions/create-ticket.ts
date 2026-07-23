@@ -5,6 +5,9 @@ import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import { parseExtraction, type InboundUrgency } from "@/lib/inbound/extraction";
+import { ticketCreatedEmail } from "@/lib/people/email-content";
+import { notifyEvent } from "@/lib/people/notify";
+import { appOrigin } from "@/lib/qr";
 
 export type CreateTicketResult =
   | { ok: true; ticketId: string; ticketNumber: string }
@@ -115,6 +118,19 @@ export async function createTicketFromInbound(
       }),
     };
   }
+
+  // P4: same ticket.created event as the app-side create — the phone
+  // pipeline's tickets reach the workshop inbox too. Never blocks.
+  await notifyEvent(supabase, {
+    eventKey: "ticket.created",
+    entityId: ticket.id,
+    buildContent: (lang) =>
+      ticketCreatedEmail(lang, {
+        ticketNumber,
+        description,
+        url: `${appOrigin()}/maintenance/tickets/${ticket.id}`,
+      }),
+  });
 
   const { error: linkErr } = await supabase
     .from("inbound_messages")

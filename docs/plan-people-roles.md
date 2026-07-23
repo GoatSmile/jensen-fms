@@ -1,8 +1,8 @@
 # People & roles — design reference
 
-**Date:** 2026-07-17 · **Status:** P1 (schema + admin) + P2 (role login +
-gating) + P3 (tap-your-name + assignment) SHIPPED 2026-07-23; P4
-(notifications) not yet built.
+**Date:** 2026-07-17 · **Status:** P1–P4 all SHIPPED 2026-07-23 — the
+interim people & roles system is complete (M1 minus per-human passwords).
+Only phase 5 (M1 credential swap) remains, and it's deliberately deferred.
 The workforce/identity model: employees, owners, temps, contractors —
 role-scoped access, per-role dashboards, task notification routing, and a
 role-password auth v0.5 that becomes real per-user auth (M1) without rework.
@@ -212,8 +212,19 @@ passwords-per-human, not a detour.
    assignee on cards; **person `preferred_language` supersedes
    `worker_language` on worker surfaces** (src/i18n/request.ts — the
    "per-user at M1" note arrived early). Verified in-browser end to end.
-4. **Notifications** — event registry + first two hooks (`ticket.created` →
-   workshop email; `invoice.overdue` → accountant). ~½ day.
+4. ✅ **Notifications** — SHIPPED 2026-07-23. Delivery engine
+   `src/lib/people/notify.ts` (`notifyEvent` / `notifyDigest`, fire-and-
+   forget, test-mode reroute, per-recipient language); `notification_log`
+   (migration 74) for audit + state-scan idempotency; bilingual bodies in
+   `email-content.ts`. Three hooks live: `ticket.created` (app + inbox
+   create → workshop), `wo.assigned` (person-targeted → assignee,
+   self-assign skipped), `invoice.overdue` (daily cron
+   `/api/cron/notify-overdue-invoices`, digest notified once → owner +
+   accountant). Engine verified live end-to-end via the cron (real
+   log rows, test-mode reroute, idempotent rerun); mechanics + rejected
+   alternatives in DECISIONS 2026-07-23. Email-only today (SMS/Web Push
+   channel flags exist, deferred). **This completes the interim
+   (M1-minus-passwords-per-human) people & roles system.**
 5. **M1** — swap the credential layer, keep the world.
 
 ## Deliberately NOT building

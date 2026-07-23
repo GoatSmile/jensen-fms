@@ -234,3 +234,30 @@ and switchable any time via the nav person chip. Assignment shipped for
 A claimed person's `preferred_language` now supersedes the shared
 `worker_language` on worker surfaces — the "per-user at M1" i18n note
 arrived early, at zero migration cost.
+
+## 2026-07-23 — Notification delivery mechanics (people & roles P4, dev calls)
+Events fire per the design (role_notifications → active people → per-person
+channel flags). Dev calls made building it:
+- **Self-contained log, not a queue.** `notification_log` (migration 74)
+  records every provider-accepted send; it doubles as the idempotency key
+  for STATE-SCAN events (invoice.overdue asks "already logged for this
+  invoice?"). Action-fired events (ticket.created, wo.assigned) fire once
+  by construction and use the log purely as audit.
+- **Fire-and-forget, never blocking.** `notifyEvent`/`notifyDigest` swallow
+  every failure and return counts — a bounced email must never fail the
+  ticket save or the assignment that triggered it.
+- **Email rides the existing test-mode reroute** (resolveRecipients), same
+  as the PO email: while `outbound_test_mode` is on, everything reroutes to
+  the test inbox with an intended-for banner + [TEST] subject. So P4 is
+  safe to ship with real subscribers before go-live.
+- **Copy lives with the hook, not in messages/*.** Notification emails are
+  per-recipient documents in the recipient's `preferred_language`
+  (src/lib/people/email-content.ts), not app chrome — same rule as invoice
+  / PO document generators.
+- **invoice.overdue is a daily digest, notified ONCE** when first seen
+  overdue (not re-nagged daily — the dashboard money band is the standing
+  reminder). wo.assigned is person-targeted and skips self-assignment.
+- Shipped hooks: ticket.created (app + inbox create paths → workshop),
+  wo.assigned (→ the assignee), invoice.overdue (daily cron → owner +
+  accountant). SMS/Web Push deferred (channel flags exist; only email
+  delivers today).

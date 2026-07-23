@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readGate } from "@/lib/auth/read-session";
 import { nullableString as nullable } from "@/lib/forms";
+import { woAssignedEmail } from "@/lib/people/email-content";
+import { notifyEvent } from "@/lib/people/notify";
 import { loadActivePeople } from "@/lib/people/queries";
+import { appOrigin } from "@/lib/qr";
 import { createClient } from "@/lib/supabase/server";
 
 export type AssigneeResult = { ok: true } | { ok: false; error: string };
@@ -37,6 +41,33 @@ export async function setWorkOrderAssignee(
     .eq("id", woId);
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+  }
+
+  // P4: person-targeted ping (design: wo.assigned is NOT role-broadcast).
+  // Self-assignment ("Assign to me") skips the email — you know already.
+  if (personId) {
+    const gate = await readGate();
+    const selfId = gate.kind === "role" ? gate.session.person : null;
+    if (personId !== selfId) {
+      const { data: wo } = await supabase
+        .from("work_orders")
+        .select("wo_number, bike:bikes!bike_id(frame_number)")
+        .eq("id", woId)
+        .maybeSingle();
+      if (wo) {
+        await notifyEvent(supabase, {
+          eventKey: "wo.assigned",
+          entityId: woId,
+          directPersonId: personId,
+          buildContent: (lang) =>
+            woAssignedEmail(lang, {
+              woNumber: wo.wo_number,
+              frameNumber: wo.bike?.frame_number ?? null,
+              url: `${appOrigin()}/work/${woId}`,
+            }),
+        });
+      }
+    }
   }
 
   revalidatePath(`/maintenance/work-orders/${woId}`);

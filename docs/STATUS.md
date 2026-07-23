@@ -22,13 +22,18 @@ append.** History belongs in `docs/archive/`, decisions in
   agreement fees); e-conomic push (verified end-to-end against a trial
   agreement); inbound voicemail → ticket pipeline **live in prod in shadow
   mode**; whole-app Danish i18n swept (locales still set to `en`).
-- **People & roles P1–P3 shipped 2026-07-23** (migration 73 +
-  `/admin/people`; role-password login + capability gating; tap-your-name
-  `/whoami` + WO assignees + /work "Mine" + per-person worker language;
-  design + per-phase notes in `docs/plan-people-roles.md`, mechanics in
-  DECISIONS 2026-07-23). **No role passwords are set in prod**, so
-  behaviour is unchanged until they are (the shared password now issues an
-  owner-role session; legacy cookies stay valid).
+- **People & roles P1–P4 all shipped 2026-07-23** — the interim system is
+  complete (migrations 73 + 74). P1 schema + `/admin/people`; P2
+  role-password login + capability gating; P3 tap-your-name `/whoami` + WO
+  assignees + /work "Mine" + per-person worker language; P4 notification
+  delivery (ticket.created, wo.assigned, invoice.overdue daily cron) via
+  `src/lib/people/notify.ts` + `notification_log`, email through the
+  test-mode reroute. Design + per-phase notes in
+  `docs/plan-people-roles.md`; mechanics in DECISIONS 2026-07-23. **No role
+  passwords are set in prod**, so login behaviour is unchanged until they
+  are (shared password → owner-role session; legacy cookies valid).
+  Notifications also stay in the test-mode reroute until email go-live, so
+  P4 sends nothing to real inboxes yet.
 - **`docs/PLAYBOOK-AUGUST.md`** — the owner-facing solo-August playbook
   (July item 7, together with the docs restructure).
 - Inbound shadow-testing rides the US trial number **+1 762 500 0850**
@@ -36,23 +41,29 @@ append.** History belongs in `docs/archive/`, decisions in
   number remains the production plan.
 
 ## In flight / next action
-- **Next: people & roles P4** (notification events — registry + the first
-  delivery hooks; subscriptions are already admin-editable, so P4 is pure
-  delivery work). Then the rest of the July queue below.
+- People & roles is done (P1–P4). **Next in the July queue: global
+  identifier search**, then the maintenance/workshop polish pass. Voice
+  commands VC-1 remains the owner's July-vs-August call.
 - **Open from the Jul-23 re-plan**: the ~1-hour perimeter check — confirm
   whether the public `/b`/`/report` pages ship the publishable key in
   their client bundle (anon_all RLS makes that key a master key; middleware
-  correctly excludes those routes from the gate, verified today).
+  correctly excludes those routes from the gate, verified). Do before leave.
+- **Deferred, needs a browser**: a live in-app confirmation of the P4
+  ticket.created / wo.assigned hooks (the delivery engine itself was
+  verified live via the invoice.overdue cron; the two action hooks are the
+  same proven path + tsc/build-green wiring, but weren't driven through the
+  UI because the preview pane couldn't reliably open the searchable bike
+  picker this session). Low risk; confirm opportunistically.
 
 ## July queue (re-sequenced 2026-07-17)
 Frame: Dennis is back Aug 3, Nazar leaves Aug 4 — July output must be
 self-serve for Dennis's solo August onboarding.
-1. People & roles P1 ✅ P2 ✅ P3 ✅ (all 2026-07-23) → **P4** (next)
+1. People & roles P1 ✅ P2 ✅ P3 ✅ P4 ✅ — all 2026-07-23 (interim complete)
 2. Voice commands VC-1 (`docs/plan-voice-commands.md`; owner deferred the
-   VC-vs-August call — revisit after P4)
+   VC-vs-August call — still open)
 3. Inbound stats fold — deliberately thin (prod has only 2 shadow rows;
    real data starts when Dennis's number lands, August)
-4. Global identifier search
+4. Global identifier search ← **next up**
 5. Maintenance/workshop polish pass
 6. Handover notes ✅ — docs restructure + `docs/PLAYBOOK-AUGUST.md`
 

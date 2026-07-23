@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { ticketCreatedEmail } from "@/lib/people/email-content";
+import { notifyEvent } from "@/lib/people/notify";
+import { appOrigin } from "@/lib/qr";
 import { createClient } from "@/lib/supabase/server";
 import {
   TICKET_PRIORITIES,
@@ -201,6 +204,18 @@ export async function createTicket(formData: FormData): Promise<SaveTicketResult
       }),
     };
   }
+
+  // P4: tell subscribed roles (workshop, per seeds). Never blocks the save.
+  await notifyEvent(supabase, {
+    eventKey: "ticket.created",
+    entityId: ticket.id,
+    buildContent: (lang) =>
+      ticketCreatedEmail(lang, {
+        ticketNumber,
+        description: parsed.payload.description,
+        url: `${appOrigin()}/maintenance/tickets/${ticket.id}`,
+      }),
+  });
 
   revalidatePath("/maintenance/tickets");
   redirect(`/maintenance/tickets/${ticket.id}`);
