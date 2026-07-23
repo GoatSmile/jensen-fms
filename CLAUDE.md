@@ -4,13 +4,51 @@ Fleet management system for Jensen Production / Logocykler — a Danish workshop
 that builds custom branded bikes for hotels, municipalities, hospitals, and
 similar organizations. Replaces fragmented Excel + paper workflows.
 
+## How the docs are organized (read this first)
+
+This file holds **durable rules only** — what must be true in every session:
+stack, invariants, conventions, vocabulary. Everything with a shorter shelf
+life lives in `docs/`:
+
+- **`docs/STATUS.md`** — where the work stands right now: what's live, what's
+  in flight, what's blocked, data-entry debts. **Read it at session start.**
+- **`docs/DECISIONS.md`** — dated, append-only log of decisions locked with
+  the owner (the why + rejected alternatives). Supersede, never edit.
+- **`docs/OPERATIONS.md`** — external accounts, where every secret lives,
+  deploy, DNS, backups, cold-start runbook, off-repo knowledge index.
+- **`docs/BACKLOG.md`** — parked ideas + hardening list ("do as it bites").
+- **`docs/plan-*.md`** — active plan documents; move to `docs/archive/`
+  when closed.
+- **`docs/archive/`** — shipped-work history (curated narratives with commit
+  refs) + closed plans. Never needed to act; exists so history survives
+  context loss.
+- **`docs/WORKLOG.md`** — hours ledger (ritual below).
+
+### Session rituals
+- **Session start (first exchange of a new working day)**: append today's
+  WORKLOG row (date · hours · one-line summary) and reconcile the previous
+  row's hours from commit timestamps (mark estimates `~`; the user corrects
+  with "log: Jul 9 was 7h"). Update the monthly total. Days without a row =
+  didn't work; never backfill gaps unasked. One line per row — it's an hours
+  ledger, not a diary.
+- **Session end**: update `docs/STATUS.md` — overwrite, don't append. A new
+  session must be able to resume from this file + STATUS.md alone.
+- **When something ships**: reduce, don't grow. Durable residue (a new
+  invariant, a new gotcha) lands here; the narrative goes to
+  `docs/archive/`; STATUS.md gets rewritten. Budget for this file: ~450
+  lines. The test for every line: *would a fresh session behave incorrectly
+  without it?*
+- **When a decision is locked with the owner**: add a dated DECISIONS.md
+  entry in the same commit as the code that implements it.
+
 ## Stack
 - Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui
 - Supabase (Postgres) — EU West (Ireland), project ref `jzlphajunfrqvpogzsiz`
 - `@supabase/ssr` for server components; `@supabase/supabase-js` elsewhere
 - Publishable key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe with RLS)
 - Secret key in `SUPABASE_SECRET_KEY` (server-only, bypasses RLS)
-- Auth not yet wired — defer until Parts module is feature-complete
+- Real auth (M1) deliberately delayed — see docs/STATUS.md. Perimeter today:
+  Vercel SSO + the people-&-roles role-password UX wall.
 
 ## Database
 Schema introspectable via the `supabase` MCP server (read-only, including
@@ -48,25 +86,32 @@ cross-cutting. Original SQL files live in `/migrations/`.
   **Frozen at purchase.** Both `transport_pct` and `tariff_pct` are snapshotted
   onto the PO line at insert — same rule as `fx_rate_to_dkk`. Editing the part's
   HS code later or changing the admin default does NOT retroactively shift cost
-  basis on historical lines.
+  basis on historical lines. The *reason* for a zero is frozen too:
+  `purchase_order_lines.import_tax_basis` (`applied | zero_rated |
+  unclassified | eu_origin | supplier_prepaid`) — a derived reason can't be
+  reconstructed later without reading mutable state. The per-line "Apply
+  import tax" default comes from `parts.origin` (`eu`/`non_eu`, NULL =
+  unclassified ⇒ no tax) and `suppliers.import_duty_prepaid_default`;
+  decision logic is pure and shared in `src/lib/purchasing/import-tax.ts`,
+  and `resolveImportTaxInputs` in `po-snapshots.ts` feeds both line writers.
 - **HS / TARIC codes** live in `hs_codes` (code unique, description,
-  `tariff_pct` decimal). `parts.hs_code_id` is optional — unclassified parts
-  snapshot `tariff_pct = 0` and skip the import-tax bucket. Admin manages the
-  list at `/admin/hs-codes`. Archiving (`is_active = false`) hides a code
-  from new-part pickers but leaves historical snapshots alone.
+  `tariff_pct`, `anti_dumping_pct`). `parts.hs_code_id` is optional —
+  unclassified parts snapshot `tariff_pct = 0` and skip the import-tax
+  bucket. Admin at `/admin/hs-codes`. Archiving (`is_active = false`) hides
+  a code from new-part pickers but leaves historical snapshots alone.
 - **Configuration doctrine — three tiers (standing rule, formalized
   2026-07-14).** Every configurable knob goes in exactly one place by its
   nature; apply this to all new config:
   1. **Secrets → env / Vercel only.** API keys, tokens, passwords. NEVER in
      the DB or UI. The admin surface may show a secret as *present/missing*
-     (a `process.env[...]` boolean, never the value) so the owner knows what
-     to set — e.g. `economicEnvReady()`, `inboundSecretStatus()`.
+     (a `process.env[...]` boolean, never the value) — e.g.
+     `economicEnvReady()`, `inboundSecretStatus()`.
   2. **Operational config → `app_settings` + `/admin/settings`.** Emails,
      phone numbers, domains/DNS, feature flags, defaults, **provider
-     selection**, and a provider's non-secret params (region, model name,
-     sender id, phone number). Read via a per-domain loader in
-     `src/lib/<domain>/settings.ts` (e.g. `loadCommunicationSettings`,
-     `loadInboundSettings`) — never `process.env` for these.
+     selection**, and a provider's non-secret params. Read via a per-domain
+     loader in `src/lib/<domain>/settings.ts` (e.g.
+     `loadCommunicationSettings`, `loadInboundSettings`) — never
+     `process.env` for these.
   3. **Vocabulary / reference data → controlled-vocab tables + `/admin/*`.**
      Colours, categories, service types, etc. (localized via `localizedName`).
   - **Swappable providers (registry pattern).** A "provider" for a swappable
@@ -76,1383 +121,330 @@ cross-cutting. Original SQL files live in `/migrations/`.
     unbuilt integration. Each capability has a registry
     (`src/lib/inbound/settings.ts` → `TRANSCRIPTION_PROVIDERS` etc.) listing
     `{ key, envSecrets[] }`; `app_settings` stores the selected key; the
-    admin card shows the selected provider's secret present/missing. Adding a
-    provider = build its adapter + add a registry entry, never a config-only
-    switch. Provider *endpoints* (base URLs) stay hardcoded in the client lib
-    (you change code to add a provider anyway). First applied to the inbound
-    pipeline (migration 66); the e-conomic + communication settings already
-    follow tiers 1–2. The former `DEFAULT_PAINTER_NAME` code constant was
-    migrated to `service_types.default_supplier_id` (migration 67, FK →
-    suppliers, per-service-type, editable at /admin/services "Default
-    suppliers") — the last known hardcoded config knob is now gone.
+    admin card shows the selected provider's secret present/missing. Adding
+    a provider = build its adapter + add a registry entry, never a
+    config-only switch. Provider *endpoints* (base URLs) stay hardcoded in
+    the client lib.
 - **App-wide defaults** live in a singleton `app_settings` row (id = 1),
-  edited at `/admin/settings`. Holds: `default_transport_pct` (0.10 = 10 %,
-  pre-filled into new PO line dialogs); the location-visibility pair added
-  in migration 47 — `primary_location_id` (FK → `inventory_locations`) and
-  `hide_location_info` (bool, see the locations note below); communication +
-  e-conomic operational config; and (migration 66) the inbound-pipeline
-  provider selection + params (`inbound_transcription_*`, `inbound_extraction_*`,
-  `inbound_telephony_*`, `inbound_phone_number`, `inbound_media_retention_days`,
-  `inbound_shadow_mode`).
-- **Single-location simplification + location visibility (migration 47).** The
-  shop runs one stock location (`WH-MAIN`), so location detail is hidden
-  app-wide by default (`app_settings.hide_location_info` seeded `true`), with
-  the design built to scale to a second location later.
-  - `resolveDefaultLocationId()` (`src/lib/inventory/default-location.ts`) is
-    the single source for
-    "which location does a consumption/receipt target" — `app_settings.
-    primary_location_id`, else first active location by code. `finishBikeBuild`
-    and work-order part consumption call it instead of each re-deriving "first
-    active". The primary location **cannot be archived** (consumption falls
-    back to it).
-  - When `hide_location_info` is on, location surfaces collapse: parts "stock by
-    location" → a single on-hand total, the movements ledger drops its location
-    column, and receive / stock-adjust forms hide the location picker and target
-    the primary location. Driven by a `hideLocations` / `primaryLocationId` prop
-    pair threaded from the server pages — not a query-time filter.
-  - **All location config lives at `/admin/locations`** (moved off
-    `/admin/settings` 2026-07-09): admin CRUD (mirrors `/admin/colors`),
-    the one-click hide/reveal toggle card (flips only
-    `hide_location_info`), and a per-row "Make primary" action on the list
-    (writes `primary_location_id`; active locations only). Settings has no
-    Locations section anymore.
+  edited at `/admin/settings`: `default_transport_pct`, the
+  location-visibility pair (`primary_location_id` + `hide_location_info`),
+  communication + e-conomic operational config, the inbound-pipeline
+  provider selection + params (`inbound_*`), and the locale pair
+  (`app_language` / `worker_language`).
+- **Single-location simplification + location visibility.** The shop runs
+  one stock location (`WH-MAIN`), so location detail is hidden app-wide by
+  default (`hide_location_info` seeded `true`), designed to scale to a
+  second location later.
+  - `resolveDefaultLocationId()` (`src/lib/inventory/default-location.ts`)
+    is the single source for "which location does a consumption/receipt
+    target" — `app_settings.primary_location_id`, else first active
+    location by code. `finishBikeBuild` and work-order part consumption
+    call it. The primary location **cannot be archived**.
+  - When `hide_location_info` is on, location surfaces collapse (single
+    on-hand total, no location column, no picker — forms target the primary
+    location). Driven by a `hideLocations` / `primaryLocationId` prop pair
+    threaded from server pages — not a query-time filter.
+  - **All location config lives at `/admin/locations`** (CRUD, hide/reveal
+    toggle, per-row "Make primary"). Settings has no Locations section.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).
 - **Kits (kitting) ≠ part categories.** `kits` ("Red 1", "Green 9" — colour +
   number sticker labels on part boxes) are an assembly-floor *picking* aid,
-  not catalog taxonomy. Full-code picking: colour+number is the identity
+  not catalog taxonomy. Colour+number is the identity
   (`UNIQUE NULLS NOT DISTINCT (sticker_color, kit_number)`); colours repeat
-  freely and the code prints big on the sticker. **The number is optional** —
-  a bare colour ("Red") is a valid code, and NULLS NOT DISTINCT means at most
-  one bare kit per colour. Bare sorts before numbered ("Red" < "Red 1") via
-  `compareKits` in `src/lib/kits/colors.ts`. `part_kits` is a plain M-to-N — parts
-  carry 0..n labels, no snapshotting (picking aid, not cost basis). The
-  sticker-colour palette is an app constant (`src/lib/kits/colors.ts`), not
-  a DB table. Labels are independent of BOMs: the "label this BOM" bulk
-  action on a template is a one-shot writer; later recipe edits don't move
-  labels. Archived kits keep their labels on parts (greyed on the part
-  detail) but drop out of pickers, pick lists, and the parts filter.
-  Admin at `/admin/kits` (+ printable sticker sheet per kit); build
-  workbench shows the bike's parts grouped by kit as a pick list.
-- Bikes have polymorphic identifiers: frame, lock, battery, charger, QR, RFID, AirTag.
+  freely. **The number is optional** — a bare colour ("Red") is a valid code;
+  NULLS NOT DISTINCT means at most one bare kit per colour. Bare sorts before
+  numbered via `compareKits` in `src/lib/kits/colors.ts`. `part_kits` is a
+  plain M-to-N — parts carry 0..n labels, no snapshotting (picking aid, not
+  cost basis). The sticker-colour palette is an app constant
+  (`src/lib/kits/colors.ts`), not a DB table. Labels are independent of
+  BOMs: the "label this BOM" bulk action is a one-shot writer; later recipe
+  edits don't move labels. Archived kits keep their labels on parts (greyed)
+  but drop out of pickers, pick lists, and filters. Admin at `/admin/kits`
+  (+ printable sticker sheet); the build workbench groups the bike's parts
+  by kit as a pick list.
+- Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
+  RFID, AirTag, fleet_number (customers' own numbering).
 - `audit_log` table exists; apply triggers per-table as needed.
-- **Product entity = `bike_templates`** (no more `bike_models` / `bike_model_variants`,
-  collapsed in migration 09). Size and color split:
-  - **Frame size** is baked into the template — `Norma S` and `Norma L` are two
-    separate templates. `bike_templates.family` groups them (e.g. "Norma").
-  - **Color** is picked at order time (per `sales_order_line.color_id`) and at
-    build time (per `manufacturing_orders.color_id`). FK to controlled-vocab
-    `colors` table; never free-text. Seeded: white, red, black.
-  - Templates remain versioned (`version` + `is_current`); the as-built BOM is
-    snapshotted into `manufacturing_order_parts.origin` so editing a template
-    doesn't rewrite history.
+- **Product entity = `bike_templates`** (models/variants collapsed,
+  migration 09). Size and color split:
+  - **Frame size** is baked into the template — `Norma S` and `Norma L` are
+    two separate templates, grouped by `bike_templates.family_id` →
+    `bike_families` (controlled vocab, admin at `/admin/families`).
+  - **Color** is picked at order time (`sales_order_line.color_id`) and at
+    build time (`manufacturing_orders.color_id`). FK to controlled-vocab
+    `colors` (carries `ral_code` + `coating`); never free-text.
+  - Templates are versioned (`version` + `is_current`); the as-built BOM is
+    snapshotted into `manufacturing_order_parts.origin` so editing a
+    template doesn't rewrite history.
 - **Two build paths**:
   - From a template — MO references `bike_template_id`, BOM expands from
     `bike_template_parts` into `manufacturing_order_parts`.
-  - One-off / by-parts — MO has `bike_template_id = NULL`, parts list is
+  - One-off / by-parts — MO has `bike_template_id = NULL`, parts list
     assembled by hand. Both paths consume inventory the same way.
 - **Per-bike parts are the source of truth at build time.** `bike_parts`
-  (one row per bike per part, with `inventory_movement_id`) records what
-  was actually consumed for a specific bike. The MO recipe
-  (`manufacturing_order_parts`) is just the default that gets copied to
-  `bike_parts` when the build starts. Implications:
-  - The **per-bike build workbench** at
+  (one row per bike per part, with `inventory_movement_id`) records what was
+  actually consumed for a specific bike. The MO recipe
+  (`manufacturing_order_parts`) is just the default copied to `bike_parts`
+  when the build starts.
+  - The **build workbench** at
     `/manufacturing-orders/<mo>/bikes/<bike>/build` lets a tech edit the
-    bike's parts before clicking *Finish build* — swap a saddle, add a
-    one-off accessory, change a quantity. The workbench writes to
-    `bike_parts`, not to the MO recipe.
-  - The bulk **"Mark X built"** shortcut on the MO bikes section still
-    works for the common case (every bike == recipe). It calls
-    `markBikeBuilt`, which now: (1) lazily copies the recipe into
-    `bike_parts` if empty, then (2) calls `finishBikeBuild` which consumes
-    from inventory per `bike_parts` row, stamps `bike.build_cost_dkk`,
-    and transitions to `in_stock`. Same final code path either way —
-    consistent ledger entries, accurate per-bike cost basis.
-  - **Batch build (2026-06-21), for N identical bikes** — splits the shared
-    work (parts = the recipe) from the per-bike-unique work (frame +
-    identifiers). Two routes off the MO bikes section ("Bulk build" + "Pick
-    list" buttons):
-    - `/manufacturing-orders/<mo>/build-batch` — a grid of the unbuilt bikes
-      with an "how many now?" count picker (number + `2/5/all` chips), one row
-      per bike: frame no. (required) + the bike type's required identifier
-      columns (`bike_type_required_identifiers`). `bulkBuildBikesWithIds`
-      (`_actions/build-batch.ts`) loops per row: `confirmBikeFrame` → register
-      identifiers → `markBikeBuilt`. Blank-frame rows skipped for later;
-      at-painter/duplicate/shortfall reported, the rest continue.
-    - `/manufacturing-orders/<mo>/pick-list/print?n=N` — a printable shelf-pick
-      sheet: MO recipe × N, grouped by kit bucket (mirrors the per-bike
-      pick-list grouping), checkbox + per-bike × batch total per line,
-      "whole bucket" vs "pick X of M" badge, loose parts separate,
-      soft-deleted parts excluded (they aren't physically picked).
-  - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are
-    frozen (qty / removal disallowed); pre-consumption rows are
-    editable.
-- **Paint is the first SERVICE TYPE in a generic external-services model**
-  (remodel SHIPPED 2026-07-10, migrations 61+62; owner approved "go all the
-  way to service_orders" 2026-07-09). Not a BOM line. One machine shared by
-  painting / future washing / priming etc.:
+    bike's parts before *Finish build* — it writes to `bike_parts`, never
+    the MO recipe.
+  - Bulk **"Mark X built"** calls `markBikeBuilt`: (1) lazily copies the
+    recipe into `bike_parts` if empty, (2) calls `finishBikeBuild`, which
+    consumes inventory per `bike_parts` row, stamps `bike.build_cost_dkk`,
+    and transitions to `in_stock`. Same final code path either way.
+  - **Batch build** (N identical bikes) splits shared work (parts = recipe)
+    from per-bike-unique work (frame + identifiers):
+    `/manufacturing-orders/<mo>/build-batch` (grid; `bulkBuildBikesWithIds`
+    loops `confirmBikeFrame` → register identifiers → `markBikeBuilt`;
+    blank-frame rows skipped, at-painter/duplicate/shortfall reported) and
+    `/manufacturing-orders/<mo>/pick-list/print?n=N` (recipe × N grouped by
+    kit bucket; soft-deleted parts excluded).
+  - **Build gates**: `finishBikeBuild` requires `frame_number_confirmed`
+    (flips only at the deliberate "Confirm frame" step — new bikes start
+    with a provisional generated frame number) and blocks at-painter bikes.
+    "At painter" is **derived** (bike ∈ service order with a blocking
+    status via `src/lib/services/at-supplier.ts`), never a bike column. No
+    silent MO auto-complete — completion is a one-click "Complete MO".
+  - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are frozen
+    (qty / removal disallowed); pre-consumption rows are editable.
+- **Paint is the first SERVICE TYPE in a generic external-services model.**
+  Not a BOM line. One machine shared by painting / future washing / priming:
   - **Vocabulary + pricing layer**: `service_types` (w/ `blocks_build` —
-    paint TRUE: bikes on a sent order are physically away and gate the build
-    floor) · `service_part_types` (stel, forgaffel… 8 today) ·
+    paint TRUE: bikes on a sent order are physically away and gate the
+    build floor) · `service_part_types` (stel, forgaffel… 8 today) ·
     `service_price_lists` (PER SUPPLIER, one row per REVISION with its own
     CURRENCY, `is_current` flip like bike_templates — never edit-in-place) ·
-    `service_price_items` (qty-tiered rows 1–9/10–19/20+, painter's item
-    numbers e.g. `J.Jensen Stel10`; seeded "SIK priser 2026" on Metacoat).
-    Pricing brain in `src/lib/services/pricing.ts`: tier basis = the part
-    type's TOTAL qty on the order, colours share a tier.
-  - **Order layer**: `service_orders`/`service_order_bikes` (renamed from
-    paint_orders; PNT number series unbroken via service_types.document_type)
-    + `service_order_items` (part type × qty × nullable color_id). Status
+    `service_price_items` (qty-tiered 1–9/10–19/20+, supplier item
+    numbers). Pricing brain in `src/lib/services/pricing.ts`: tier basis =
+    the part type's TOTAL qty on the order; colours share a tier. Tier
+    overlaps are impossible (app validation + a btree_gist EXCLUDE
+    constraint). New revisions publish via the atomic
+    `publish_service_price_list` RPC; a partial unique index forbids two
+    current lists.
+  - **Order layer**: `service_orders` / `service_order_bikes` /
+    `service_order_items` (part type × qty × nullable color_id). Status
     `planned → sent → at_supplier → received_back / cancelled`. Item lines
-    editable while `planned` with LIVE estimates from the supplier's current
-    list; **send freezes** supplier_item_no + unit_price + currency +
-    fx_rate_to_dkk onto each line (the purchase_order_lines pattern) and is
-    blocked while any line is unpriced. Libs: `src/lib/services/{vocab,
-    status,at-supplier,pricing,template-paint}.ts`; the at-supplier gate is
-    `blocks_build`-aware and backs every build gate.
+    editable while `planned` with LIVE estimates; **send freezes**
+    supplier_item_no + unit_price + currency + fx_rate_to_dkk onto each
+    line (the purchase_order_lines pattern) and is blocked while any line
+    is unpriced. Libs: `src/lib/services/{vocab,status,at-supplier,pricing,
+    template-paint}.ts`.
   - **Nav/routes are PER SERVICE TYPE, permanently** — "Paint orders" stays
-    at /paint-orders; a future washing/sandblasting gets its own nav item;
-    shared components parameterized by service type, no unified list page.
-    Known gap: the dashboard aging card + the detail page don't filter by
-    service type yet — fix when type #2 becomes real.
-  - **JP-lak SKUs are RETIRED** (soft-deleted; recipes cleaned, ledger
-    zeroed additively in migration 62). The old `isServiceSku` SKU-prefix
-    exclusion convention is gone — demand/pick surfaces skip soft-deleted
-    parts instead. Legacy `service_order_bikes.color_id`/`.scope` (std/svaj,
-    migration 51) are read-only history on old orders.
-  - **Template cost-to-paint** (migration 63, 2026-07-10):
-    `bike_template_service_parts` declares what one bike of a template sends
-    to the painter (part type × per-bike qty; copied forward by
-    clone-as-version + duplicate, editable only on the current version). A
-    "Paintwork" section on the template detail prices it live against the
-    painting type's default supplier's current list
-    (`service_types.default_supplier_id`, seeded Metacoat; migration 67) at
-    per-bike quantities (singles tier); the DKK total joins the recipe box:
-    parts + paint → cost to produce → margin.
-  - **`/admin/services` price-list grid SHIPPED 2026-07-11** (migration 64):
-    per supplier × type, the current revision as a part-type × tier grid +
-    revision history; "New revision" duplicates the current grid into an
-    editor with a live diff ("Frame 10–19: 250 → 265") and publishes via the
-    atomic `publish_service_price_list` RPC (insert non-current → seed items
-    → RPC flips is_current in one tx; the partial unique index forbids two
-    current lists). Tier overlaps now impossible: app-side validation + a
-    btree_gist EXCLUDE constraint on int4range(tier_min, tier_max). The
-    yearly price bump is the intended 5-min clerical task. Deliberately NOT
-    built: xlsx-import + parse (wait for the 2027 file to exist — the
-    editor covers the bump), editing tier boundaries in the UI (rare, SQL
-    job). Full design in `docs/plan-july9-vacation-month.md`.
+    at /paint-orders; a future service type gets its own nav item; shared
+    components parameterized by type, no unified list page.
+  - **Template cost-to-paint**: `bike_template_service_parts` declares what
+    one bike sends to the painter; priced live against the type's default
+    supplier's current list (`service_types.default_supplier_id`); joins
+    the recipe box: parts + paint → cost to produce → margin.
+  - JP-lak service SKUs are retired (soft-deleted); demand/pick surfaces
+    skip soft-deleted parts — there is no SKU-prefix exclusion convention.
+- **Inbound is a generic trunk; voicemail is just the first channel.**
+  `inbound_messages` (channel enum) with a normalized `body_text` that
+  extraction + matching read EXCLUSIVELY (never the channel payload);
+  `channel_meta` jsonb for channel-shaped data; a plain `ticket_id` action
+  column (no polymorphic action framework until a second action type is
+  real). Libs in `src/lib/inbound/` are channel-blind;
+  `channels/voicemail.ts` owns transcription (providers via the registry
+  pattern). Matching is deterministic code, not the model — attach a bike
+  only if exactly one candidate survives; otherwise store candidates for
+  the tech. Review queue at `/inbox` (Daily ops nav — a review queue, not
+  admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
+  graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
+  recording announcement, media retention days in app_settings, EU
+  residency.
+- **People & roles (auth v0.5).** Four separated concepts — person / role /
+  credential / assignment — across `people`, `roles`, `person_roles`,
+  `role_capabilities`, `role_notifications` (capability/event keys
+  validated against code registries in `src/lib/people/`). One scrypt
+  password PER ROLE (the password IS the role selector); signed
+  `{role, person}` cookie on top of the existing `fms_auth` gate; `can()`
+  gates nav (via shared nav-items ids) / routes / dashboard bands; per-role
+  `home_path` landing. Explicitly a **UX wall, not a security boundary**
+  (perimeter stays Vercel SSO until M1; at M1 the role passwords die and
+  the model survives — RLS policies get written against
+  `role_capabilities`). Design: `docs/plan-people-roles.md`; build state:
+  `docs/STATUS.md`.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
   - **Slating** during `planning` / `building` — earmark for a known
-    customer so the build floor sees who it's for. Status stays put.
-  - **Delivery** from `in_stock` — physical handover. Status transitions
-    `in_stock → assigned`, which fires `trg_bikes_state_log`.
-  - **Reassignment** from `assigned` / `in_service` — owner change in
-    place (org merger, internal transfer). Status unchanged.
-  `assignBikeToCustomer()` blocks only terminal statuses (`retired`,
-  `lost_or_stolen`) and archived bikes; the dialog copy flexes between
-  "Slate" and "Assign" based on current status. If this overloading ever
-  bites (e.g. need to distinguish "intended" vs "delivered" customer for
-  billing), promote to a separate `slated_organization_id` column.
+    customer. Status stays put.
+  - **Delivery** from `in_stock` — physical handover; transitions
+    `in_stock → assigned` (fires `trg_bikes_state_log`).
+  - **Reassignment** from `assigned` / `in_service` — owner change in place.
+  `assignBikeToCustomer()` blocks only terminal statuses and archived bikes;
+  dialog copy flexes between "Slate" and "Assign". If this overloading ever
+  bites (e.g. "intended" vs "delivered" customer for billing), promote to a
+  separate `slated_organization_id` column.
 - **Soft-archive convention is non-uniform** — three genuinely different
   concepts share the "hide from pickers" surface:
   - **`deleted_at` (soft delete)** — `parts`, `bikes`, `contacts`,
     `organizations`, `organization_units`, `suppliers`, `attachments`,
-    `part_categories`. The thing existed and is gone; audit trail kept.
-    Query with `.is("deleted_at", null)` to hide.
+    `part_categories`. Existed and is gone; audit trail kept. Hide with
+    `.is("deleted_at", null)`.
   - **`is_active` (controlled-vocab archive)** — `colors`, `vat_codes`,
     `hs_codes`, `bike_types`, `bike_identifier_types`, `bike_identifiers`,
     `customer_groups`, `customer_segments`, `inventory_locations`,
-    `tax_identifier_types`. The value is still valid for historical
-    records but shouldn't show in pickers for new entries. Query with
-    `.eq("is_active", true)`.
-  - **`is_current` (versioned)** — **only** `bike_templates`. Many
-    versions; one is current. Past versions stay queryable so old MOs
-    keep their recipe. Query with `.eq("is_current", true)`. Unreferenced
-    templates (no bikes/MOs/SO/offer/invoice lines) can be HARD deleted
-    from the template detail (`delete-template.ts`, 2026-07-09 — deleting
-    a current version promotes the newest surviving sibling). Retiring a
-    referenced-but-discontinued product would be an `is_active` archive
-    flag — designed, not built; add it when the first real case appears.
+    `tax_identifier_types`, `bike_families`, `kits`. Still valid
+    historically; hidden from new-entry pickers. Query `.eq("is_active", true)`.
+  - **`is_current` (versioned)** — `bike_templates` and
+    `service_price_lists`. Many versions, one current; past versions stay
+    queryable so history keeps its recipe/prices. Unreferenced templates can
+    be HARD deleted (deleting a current version promotes the newest
+    surviving sibling).
   - Some tables (`organizations`, `suppliers`, `part_categories`) carry
     BOTH `deleted_at` and `is_active` — "archived" vs "deleted" are
-    distinct lifecycles there. Pickers read `is_active = true`; the
-    archive UI sets both together.
+    distinct lifecycles. Pickers read `is_active = true`; the archive UI
+    sets both together.
   - **Transactional tables** (POs, MOs, SOs, invoices, work orders,
-    inventory_movements, etc.) have **no** soft-archive flag — they use
-    a status enum (`draft`, `cancelled`, `completed`, …) instead.
-  - **Reflex check before writing a query**: if you're about to add
-    `.is("deleted_at", null)` to a table that doesn't have that column,
-    Supabase silently returns zero rows — bit us once on the SO line
-    dialog's bike-templates picker (commit 98cef10).
-- **Sales orders drive slating + delivery automatically.** When an SO
-  transitions `draft → confirmed`, every unbuilt bike on linked MOs gets
-  slated to the SO's customer (owner_organization_id, owner_unit_id set;
-  status stays in build phase). When the SO transitions to `delivered`,
-  any of those bikes that are currently `in_stock` flip to `assigned` in
-  one bulk write — slating became delivery. Cancelling an SO unslates any
-  still-unbuilt bikes; built ones stay slated and the workshop unpacks
-  the orphan by hand.
-  - New bikes added to an MO whose SO is past-draft inherit the slate at
-    create time (both `addBikeToMO` and `bulkAddBikesToMO` look up the
-    SO's customer).
-  - SO line spawn-MO action lives at `src/app/sales-orders/_actions/
-    spawn-mo.ts`. v1 is one MO per template line; the schema allows N-MOs-
-    per-line, so a future "split into two batches" lives in its own action.
+    inventory_movements…) have **no** soft-archive flag — status enums only.
+  - **Reflex check before writing a query**: adding `.is("deleted_at", null)`
+    on a table without that column makes Supabase silently return zero rows
+    — bit us once (commit 98cef10).
+- **Sales orders drive slating + delivery automatically.** SO
+  `draft → confirmed` slates every unbuilt bike on linked MOs to the SO's
+  customer; SO → `delivered` flips those bikes that are `in_stock` to
+  `assigned` in one bulk write. Cancelling unslates still-unbuilt bikes;
+  built ones stay slated (workshop unpacks by hand). New bikes added to an
+  MO whose SO is past-draft inherit the slate at create time. Spawn-MO
+  lives at `src/app/sales-orders/_actions/spawn-mo.ts`; v1 is one MO per
+  template line (schema allows N).
+- **Invoicing rules**: the INV number is allocated at issue (drafts carry
+  `DRAFT-xxxx`); issued invoices are immutable — corrections are credit
+  notes (full reversals, own `CRE-` series). Deposits (`invoices.kind`)
+  and the prepayment model: see DECISIONS.md 2026-06-21.
+
+## Internationalisation (whole-app Danish; both locales currently `en`)
+- next-intl **without URL routing**. Locale comes from `app_settings`,
+  resolved per surface: `src/middleware.ts` stamps `x-pathname`;
+  `src/i18n/request.ts` maps worker surfaces (`/work`, `/scan`, build
+  workbench + batch build — see `WORKER_PATH`) to `worker_language`,
+  everything else to `app_language`. Messages in `messages/{en,da,de}.json`
+  (`de` scaffolded, untranslated); missing keys deep-merge back to English.
+- Every UI surface and server-action error string is swept. New code must
+  follow: UI strings via namespaced messages; action errors localized AT
+  THE SOURCE via the flat `errors` namespace
+  (`getTranslations("errors")` → `t("key")` / `t("key", { detail })`).
+  Only human-authored literals — verbatim DB/API messages ride along as
+  `{detail}`.
+- Enum labels are message namespaces (`bikeStatus`, `moStatus`, `poStatus`,
+  …): `t(status)` with a `t.has(status)` guard. The old `*Label()` helpers
+  are unused — don't reintroduce them (deletion queued in BACKLOG.md).
+- Controlled-vocab names render via `localizedName(locale, en, da)`
+  (`src/i18n/vocab.ts`) — never raw `name_en` on a translated surface.
+- Deliberately English: `parts.name_en` / template / family names, org
+  identity, `hs_codes.description`, kit sticker colours, `countries` lib.
+  Per-document language (not UI locale): invoice print (per
+  `invoices.language`), PO print (always English — supplier-facing), the
+  public `/b/[bikeId]` + `/report` flow.
+- Go-live = flip `app_language` / `worker_language` to `da` in app_settings.
+  Sweep history: `docs/archive/i18n-danish-sweep.md`.
 
 ## Conventions
 - **Git workflow: commit on `main` and push to `origin` every time.** No PRs,
-  no feature branches, no waiting to push — once a change is committed it goes
-  straight to GitHub so the remote always reflects local. Solo-dev shop;
-  speed beats process here.
-- **Pre-commit hygiene (TODO — not enforced yet, but the lesson is on file):**
-  `tsc --noEmit` + `next build` are necessary but not sufficient. They miss
-  RSC boundary violations and other runtime-only failures. When a CI pipeline
-  exists it should also (a) curl every route on a running dev server and
-  assert 200 + no "Runtime Error" / "TypeError" in the HTML, and (b) run a
-  Vitest suite over the server actions. Until then, manually smoke-test
-  new routes via Claude Preview before declaring a phase done. Lesson came
-  from the Phase 1.1 PO `/new` route shipping with a server-component
-  calling a `"use client"` function (commit fa1dbed).
+  no feature branches, no waiting to push. Solo-dev shop; speed beats
+  process here.
+- **Pre-commit hygiene (TODO — not enforced):** `tsc --noEmit` +
+  `next build` are necessary but not sufficient — they miss RSC boundary
+  violations and other runtime-only failures (lesson: commit fa1dbed).
+  Until the CI pipeline exists (BACKLOG.md), manually smoke-test new routes
+  in the browser before declaring a phase done.
 - Server-render initial page, client components for interactive state.
-- URL search-params drive list filters (so filtered views are shareable links).
-- shadcn/ui components by default; build custom only when shadcn lacks it.
-- **shadcn style is `radix-nova`** — composition uses Radix `Slot` and the
-  `asChild` prop (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
-  fresh; recent CLI defaults pick `base-nova` (uses `@base-ui/react` and a
-  `render` prop), which won't compose with the existing components.
+- URL search-params drive list filters (filtered views are shareable links).
+- shadcn/ui components by default; custom only when shadcn lacks it.
+- **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
+  `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
+  fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`
+  prop), which won't compose with the existing components.
 - Sentence case in UI text — never Title Case, never ALL CAPS in headings,
-  buttons, or body copy. **Accepted exception:** small "eyebrow" micro-labels
-  (dashboard KPI captions, `dt` field labels, map legend headers) rendered
-  ALL CAPS via CSS (`uppercase tracking-wide text-xs`) are a deliberate design
-  token — keep the underlying string sentence-case and let CSS uppercase it;
-  don't "fix" these to sentence case.
-- **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New part",
-  "New bike", "New MO") — not "Add X" or "Create X". Standardised June 2026.
-- **Navigation / IA (set with owner 2026-06-20).** The left nav is grouped
-  with subtle hairline separators between groups, most-used first:
-  1. *Dashboard* (alone at the top, separated)
-  2. *Daily ops* — Bikes · Bike templates · Parts · Maintenance · Inbox · Workshop floor
-  3. *Orders & commercial* — Manufacturing orders · Purchase orders · Sales
-     orders · Paint orders · Invoices · Service agreements · Customers
-  4. *Admin* (on its own)
-  - **Two nav components must stay in sync:** `src/components/app-sidebar.tsx`
-    (desktop) and `src/components/mobile-nav.tsx` (mobile drawer). They had
-    silently drifted (the mobile drawer was missing Sales orders + Admin) —
-    edit both when adding/moving a nav item.
-  - The customer **Map** (`/organizations/map`) is **not** in the sidebar — it
-    lives under the **Admin** landing page (`src/app/admin/page.tsx`), whose
-    tiles are grouped most-used-first into a 3-column grid of light-tinted
-    section cards (one hue per section): *Catalog & inventory* (part categories,
-    colours, kits, locations) · *Purchasing & landed cost* (suppliers, HS/TARIC
-    codes, FX rates) · *Customers* (customer segments, **Map**) · *System*
-    (settings). The Map page itself is unchanged.
-- **Section-tint hue vocabulary** (July 2026). Pages that stack *different
-  kinds* of sections (dispatch surfaces: `/invoices`, `/admin`,
-  `/admin/settings`, ticket + agreement details) tint each section card;
-  hues carry stable meaning app-wide — **sky = workshop/ops · emerald =
-  customers/sales/communication · violet = agreements/system · amber =
-  money/purchasing**. Class pattern:
-  `border-{hue}-200/70 bg-{hue}-50/70 dark:border-{hue}-900/40
-  dark:bg-{hue}-950/20` (shared `Section` takes `className`); inner
-  tables/chips sit on `bg-background` cards. Do NOT tint homogeneous
-  entity-detail pages (bike/PO/MO/SO/org facets) or single-list pages —
-  color is meaningful only while it's scarce. **Two entity pages carry a
-  partial tint** (July 2026) because they genuinely stack foreign domains;
-  on both, section order = descending question frequency, which makes the
-  tint bands contiguous:
-  - **Part detail**: identity → availability → sourcing → usage → selling.
-    Stock + Movements sky; Supplier offerings + Purchase history amber;
-    identity (Photos, Details, Kit labels — whose sticker-colour chips ARE
-    data) and tail (Where used, Pricing history) neutral.
-  - **SO detail**: order content → production → settlement. Production note
-    (moved below Lines; restyled amber→sky — it's an instruction TO the
-    workshop, and amber now means money on this page) + Linked MOs + Paint
-    orders sky; Payments amber; Lines/notes neutral. The workbench build-note
-    banner stays amber (tech screens don't use the tint vocabulary).
-  Checked and deliberately NOT reordered/tinted: PO (homogeneous
-  purchasing), MO (homogeneous ops), ticket (two-column workspace, rail
-  cards already tinted), agreement (already identity → scope → history). Exception: the "Push to
-  e-conomic" button wears e-conomic brand orange `#ef7d00` (hover `#e86807`)
-  plus their "spark" logo mark inlined as `EconomicMark` in
-  `economic-sync-card.tsx` (destination branding, not vocabulary; owner
-  chose e-conomic.com's identity over parent-brand Visma purple).
-- Plan-then-build: before writing code, list files you intend to create/modify
-  and wait for confirmation.
-- Time estimates are quoted as `~X human-dev-min (Y min wait)` — X is the
-  human-developer-equivalent for cross-comparison with design-review numbers,
-  Y is the user's actual wall-clock waiting time while I work.
-- **Worklog ritual (`docs/WORKLOG.md`)**: on the first exchange of a new
-  working day, append today's row (date · hours · one-line work summary)
-  and reconcile the previous row's hours from commit timestamps (mark
-  estimates `~`; the user corrects with "log: Jul 9 was 7h"). Update the
-  monthly total. Days without a row = didn't work; never backfill gaps
-  unasked. Keep rows to one line — this is an hours ledger, not a diary.
+  buttons, or body copy. **Accepted exception:** "eyebrow" micro-labels
+  (KPI captions, `dt` field labels, legend headers) rendered ALL CAPS via
+  CSS (`uppercase tracking-wide text-xs`) are a design token — keep the
+  underlying string sentence-case; don't "fix" these.
+- **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New
+  part", "New MO") — not "Add X" or "Create X".
+- **Navigation / IA (set with owner 2026-06-20).** Left nav grouped with
+  hairline separators, most-used first: *Dashboard* · *Daily ops* (Bikes ·
+  Bike templates · Parts · Maintenance · Inbox · Workshop floor) · *Orders &
+  commercial* (Manufacturing orders · Purchase orders · Sales orders · Paint
+  orders · Invoices · Service agreements · Customers) · *Admin*.
+  - Both navs render from the shared `src/components/nav-items.ts` — add or
+    move items THERE so desktop sidebar and mobile drawer can't drift.
+  - The customer **Map** (`/organizations/map`) is not in the sidebar — it
+    lives on the **Admin** landing page (`src/app/admin/page.tsx`), whose
+    tiles are grouped into tinted section cards: *Catalog & inventory* ·
+    *Purchasing & landed cost* · *Customers* (incl. Map) · *System*.
+- **Section-tint hue vocabulary.** Pages that stack *different kinds* of
+  sections (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`,
+  ticket + agreement details) tint each section card; hues carry stable
+  meaning app-wide — **sky = workshop/ops · emerald = customers/sales/
+  communication · violet = agreements/system · amber = money/purchasing**.
+  Class pattern: `border-{hue}-200/70 bg-{hue}-50/70
+  dark:border-{hue}-900/40 dark:bg-{hue}-950/20` (shared `Section` takes
+  `className`); inner tables/chips sit on `bg-background`. Do NOT tint
+  homogeneous entity-detail or single-list pages — color is meaningful only
+  while it's scarce. Two entity pages carry a partial tint (part detail, SO
+  detail) because they genuinely stack foreign domains; section order =
+  descending question frequency. Tech screens (workbench banners) don't use
+  the tint vocabulary. Exception: the "Push to e-conomic" button wears
+  e-conomic brand orange `#ef7d00` (hover `#e86807`) + the `EconomicMark`
+  logo (destination branding, not vocabulary).
+- Plan-then-build: before writing code, list files you intend to
+  create/modify and wait for confirmation.
+- Time estimates quoted as `~X human-dev-min (Y min wait)` — X is the
+  human-developer-equivalent, Y is actual wall-clock waiting time.
 
 ## Known caveats / "good enough for now" decisions
-- **Parts list pagination + stock filter** are applied in-memory in
-  `src/app/parts/page.tsx`. Fine at small scale; once the catalogue grows
-  past a few thousand rows, push stock-status filtering and pagination
-  down to SQL (an extended view or RPC).
-- **Pagination prev/next links don't preserve other filters** — the server
-  component can't read URLSearchParams. To fix, thread `searchParams`
-  through to `PartsPagination` or convert it to a client component.
+- **Parts list pagination + stock filter** are in-memory in
+  `src/app/parts/page.tsx`. Fine at small scale; past a few thousand rows,
+  push down to SQL (extended view or RPC).
+- **Pagination prev/next links don't preserve other filters** — thread
+  `searchParams` through to `PartsPagination` or make it a client component.
 - **MO stock coverage is per-MO** (`src/lib/manufacturing/coverage.ts`) —
-  two open MOs needing the same part each compare against the full on-hand
-  figure; cross-MO competition for stock isn't modelled. Fine while the
-  planner can see all open MOs at once; revisit if parallel batches grow.
+  cross-MO competition for stock isn't modelled (same for /work readiness).
   Coverage, /work readiness, pick lists, and the build-time recipe copy all
-  skip SOFT-DELETED parts (frozen history rows, e.g. the retired JP-lak
-  lines, must not read as demand or get consumed).
+  skip SOFT-DELETED parts (frozen history rows must not read as demand or
+  get consumed).
+- **PostgREST self-join embeds** (e.g. `invoices!credited_invoice_id`)
+  resolve direction-ambiguously — fetch the other side with a second query.
+- **JSX gotcha**: multi-line text after an `{expr}` can silently lose its
+  leading space — write such row copy as one template literal.
 
 ## Local environment
-- **Backups (2026-07-18)**: `~/workspace/code/backup-kit` — `backup-all` (one
-  command, drive NT_ARCHIVE plugged in) = git bundles of every repo + plain
-  mirrors of `~/workspace/code` + `~/Documents/1-Projects` + DB dumps/storage/
-  env files into an AES-256 sparsebundle, all under `BACKUP/` at the drive
-  root; a launchd agent runs nightly Supabase `pg_dump` ×3 + storage sync to
-  `~/Backups`. Secrets in `~/.backup/secrets.env`; image password in Keychain
-  (`backup-kit-secure-image`) + Bitwarden. Full handoff doc:
-  backup-kit/HANDBOOK.md (copy on the drive).
-- Env file is `.env.local` (with the leading dot — Next.js won't auto-load
-  any other name). Variables: `NEXT_PUBLIC_SUPABASE_URL`,
-  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
-  `RESEND_API_KEY` (outbound email — set locally + on Vercel 2026-07-09),
-  and `ECONOMIC_APP_SECRET_TOKEN` + `ECONOMIC_AGREEMENT_GRANT_TOKEN`
-  (e-conomic — not set yet; push/test actions return a clear error until
-  they are; also needed on Vercel. The public demo/demo pair is read-only
-  — never default to it silently).
-  Restart the dev server after editing — `.env.local` is read at startup,
-  not via HMR.
+- Env file is `.env.local` (leading dot — Next.js won't auto-load any other
+  name); it's read at startup, not via HMR — **restart the dev server after
+  editing**. The variable list, every external account, secret locations,
+  backups, and the cold-start runbook live in **`docs/OPERATIONS.md`**.
 
 ## Domain vocabulary
 - `jpNumber` — supplier's SKU (Eastek HK uses JP-prefix codes)
 - `internal_sku` — our internal item code, also JP-prefix
 - **Frame number** — unique per bike, primary physical identifier
-- **Service agreement** — customer contract; if active, covered repairs are not invoiced
-- **Customer segments** — Hospital, Municipality, Facility Management (FM), B2B, B2C, Hotel
+- **Service agreement** — customer contract; if active, covered repairs are
+  not invoiced
+- **Customer segments** — Hospital, Municipality, Facility Management (FM),
+  B2B, B2C, Hotel
 
 ## Out of scope for v1.0
-- Row-Level Security policy tightening (RLS is now ON across all 55 tables —
-  migration 50, 2026-06-24 — with a permissive `anon_all` policy that preserves
-  current behaviour. The remaining work is replacing those policies with
-  user-scoped ones once auth is wired in M1)
-- Multi-tenancy (schema assumes single bike shop)
-- Materialized views (use regular views; switch if movements exceed ~100k)
-- Full-text search beyond existing trigram indexes on `parts.name`
+- RLS policy tightening (RLS is ON across all tables — migration 50 — with a
+  permissive `anon_all` policy; user-scoped replacements land with auth/M1,
+  which is deliberately delayed — see docs/STATUS.md)
+- Multi-tenancy (schema assumes a single bike shop)
+- Materialized views (regular views; switch if movements exceed ~100k)
+- Full-text search beyond the existing trigram indexes on `parts.name`
   and `organizations.legal_name`
 
 ## Migrations
 Never modify SQL files that have already been applied. Add new ones with
-sequential numbering (`04_*.sql`, `05_*.sql`, etc.) and apply them through
-the Supabase SQL editor or via `supabase db push` once the CLI is configured.
+sequential numbering and apply them through the Supabase SQL editor or via
+`supabase db push` once the CLI is configured.
 
 ## Strategy escalation
-Architectural questions ("should this be one table or two?", "how do we model
-service-agreement billing?") get escalated to the human — these often live in
-a separate planning chat on claude.ai. Tactical implementation questions stay here.
-
-## Current status & roadmap (handoff — updated June 2026, post-MO-overhaul)
-
-This section is the cross-thread handoff. A new chat won't have prior
-conversation transcripts; it has this file + git history + the live DB.
-
-### Where we are
-- **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
-  Vercel SSO. ~25 migrations, single-tenant, solo-dev.
-- **Operationally feature-complete** for the workshop's daily job. Built and
-  working: Parts + categories + inventory ledger, Suppliers (CRUD +
-  multi-supplier offerings), Purchase orders + landed cost (FX, transport,
-  HS/TARIC tariff, anti-dumping — all additive & frozen-at-purchase), Bike
-  templates, Manufacturing orders + per-bike build workbench, Bikes +
-  lifecycle + QR, Paint orders, Sales orders (3C) + slating automation,
-  Organizations + contacts + units + customer map (geocoded), Maintenance
-  tickets + Work orders, Workshop floor technician view (M3d, with
-  voice-to-text), public customer report flow, PWA, admin section
-  (HS codes, FX rates, colours, customer segments, suppliers, settings).
-- **June 2026 session** (commits f1b437b…27ca92f): technician add-parts
-  page (`/work/<wo>/parts`, kit shortcut, retail-only enforcement on tech
-  screens); MO module overhauled for bulk — batch creation screen (template
-  cards, sibling MOs, auto-created bikes), stock coverage on creation + MO
-  detail, one-click draft POs from shortfall (per-supplier, full landed-cost
-  snapshots via `src/lib/purchasing/po-snapshots.ts`), shared green-checklist
-  recipe builder (`src/components/recipe/`) now powering both template and
-  MO editors incl. kit bulk-add, bikes section at 100-bike scale (progress
-  strip, status filters, mark-next-N). Follow-up fine-tunes: ticket picker +
-  `save-ticket.ts` now block `planning`/`building` bikes (build defects
-  belong on the build workbench); reorder-point banner on `/parts` with
-  one-click per-supplier draft POs — the demand→draft-PO engine is shared
-  in `src/lib/purchasing/draft-pos.ts` (MO shortfall + reorder both use it);
-  SO spawn-MO aligned with the batch screen (`mo_copy_template_parts` RPC +
-  `bulkAddBikesToMO`, so spawned bikes inherit the SO slate past draft and
-  the redirect lands on MO detail with coverage visible).
-
-### M1 — Auth + RLS tightening: DELAYED until further notice (owner's call)
-RLS is now enabled on all 55 tables (migration 50, 2026-06-24) with a
-permissive `anon_all` policy — Supabase's security warning is cleared and the
-boundary is explicit. What remains is the auth layer itself + replacing those
-permissive policies with user-scoped ones. Only Vercel SSO protects prod today.
-**Deliberately deferred** — do not start unless the owner re-prioritises it.
-When it resumes: Supabase auth + login + middleware + `profiles`/role table +
-drop the `anon_all` policies and add `authenticated`-scoped replacements, plus
-a `DEV_AUTH_BYPASS` escape hatch for local dev. Open decisions to confirm first:
-sign-in method (magic link vs Google Workspace vs password), and the role model.
-**Agreed trigger to reconsider: the first real invoice issued** — financial
-records behind SSO-only is the line.
-
-### Next up (handoff plan, agreed with owner June 2026)
-
-**Quick fine-tunes first** (each ≤ 1 h, independent):
-- ~~Ticket-picker guard~~, ~~reorder-point → draft PO~~, and ~~SO spawn-MO
-  alignment~~ — all shipped June 2026 (see session summary above). Note:
-  no part currently has a `reorder_point` set, so the `/parts` banner
-  stays hidden until the owner fills them in (part edit form).
-- Data entry (owner/admin, not code): fill `default_purchase_price` on
-  supplier offerings (draft POs currently come out at 0 kr. with a
-  "set price before placing" note), set `reorder_point` /
-  `reorder_quantity` on fast-moving parts so the reorder banner earns
-  its keep, classify the 5 HS-less parts, confirm inferred supplier
-  country codes.
-
-**Then the big piece: Invoicing (3D).** Schema verified ready (June 2026):
-`invoices` already has per-line VAT w/ snapshot rates, `language`,
-`issued_locked_at`, `pdf_url`, `is_reverse_charge`/`is_export`,
-`ean_number_used` (Danish public-sector e-invoicing — municipalities and
-hospitals will demand it), and `economic_voucher_id`/`economic_synced_at`
-for 3E. Two earlier roadmap notes turned out stale (verified June 2026):
-the WO↔invoice linkage **already exists** as `work_orders.invoice_id`
-(no migration needed — an invoice can cover several WOs), and the
-**service-agreements CRUD (M3c) is already built** at `/service-agreements`.
-Slices, in order:
-1. ~~**"Uninvoiced work" list**~~ — SHIPPED June 2026. `/invoices` shows
-   uninvoiced WOs (parts at retail + labor, minus agreement-covered
-   buckets), delivered SOs, agreement monthly fees; queries in
-   `src/lib/invoicing/uninvoiced.ts`.
-2. ~~**Invoice from WO**~~ — SHIPPED June 2026. One-click draft from the
-   uninvoiced list (`create-from-wo.ts`), respecting `is_billable` /
-   `covers_parts` / `covers_labor`; VAT snapshot from `DK_STANDARD`.
-   Drafts carry a `DRAFT-xxxx` placeholder number; **the sequential INV
-   number is allocated at issue** (`issueInvoice` — lock + net-14 due
-   date), so abandoned drafts never burn a number. Cancelling a draft
-   releases its WOs back to the uninvoiced list. Issued invoices are
-   immutable; un-issuing doesn't exist (that's a credit note, slice 5).
-3. ~~**Invoice from SO**~~ — SHIPPED June 2026. One-click from the
-   uninvoiced list (`create-from-so.ts`): lines copy from SO lines
-   (VAT snapshots preserved, template+colour / part+SKU fallback when an
-   SO line has no stored description), frame numbers of the bikes built
-   under the line's MOs appended bilingually ("frames:" / "stelnumre:").
-4. ~~**Print/PDF bilingual layout**~~ — SHIPPED June 2026.
-   `/invoices/<id>/print` (browser print-to-PDF, same pattern as the MO
-   parts list): all labels da/en per `invoices.language`, seller block
-   from `src/lib/invoicing/company.ts` (**CVR/bank/address are
-   placeholders — owner must fill before the first real invoice**; the
-   screen shows a warning until then), customer address + CVR + EAN,
-   UDKAST/DRAFT watermark on drafts. `issueInvoice` snapshots the org's
-   `ean_number` → `ean_number_used` and uses per-org
-   `payment_terms_days` (orgs already had EAN/CVR/payment-terms/billing
-   columns — the "customers module deepens later" note was stale too).
-5. ~~**Recurring agreement fees + credit notes**~~ — SHIPPED June 2026,
-   completing 3D. Policy (owner): fees billed **in arrears** (only fully
-   elapsed months), **one invoice per customer** (one line per
-   agreement-month), **pro-rated by days** for partial months (start and
-   end dates both cap). Engine in `src/lib/invoicing/agreement-fees.ts`;
-   "billed through" = max `billing_period_end` over live fee lines
-   (migration 37 added line-level `service_agreement_id` + period cols),
-   so re-running never double-bills and crediting a fee invoice makes its
-   months billable again. Expired (not cancelled) agreements still bill
-   their unbilled months. Credit notes are **full reversals only**:
-   one click on an issued/paid invoice → negative-mirror draft; at issue
-   it draws from its own `CRE-yyyy-xxxx` series, the original flips to
-   `credited`, and its WOs/SO return to the uninvoiced pool (partial
-   unique index allows a replacement after a cancelled CN draft).
-   Print layout renders credit notes as "Kreditnota" with a reference to
-   the original. Heads-up: PostgREST self-join embeds
-   (`invoices!credited_invoice_id`) resolve direction-ambiguously —
-   fetch the credited original with a second query instead.
-Remaining 3D-adjacent work: OIOUBL/e-invoicing transmission lands with 3E.
-
-**After that**: e-conomic push (3E), then the phone-call → ticket pipeline
-(Parked ideas below) as the parallel innovation track — v1 voicemail-only
-shadow mode is low-risk whenever a change of pace is wanted.
-
-### Dennis app-review backlog (call 2026-06-19)
-
-Requirements pulled from the 84-min Dennis app-review call, each verified
-against live code before sequencing. **Locked decisions:** first slice =
-core daily flow; RAL + coating → extend the controlled `colors` table (not
-free-text); payments & stock value → deferred to its own session; PO email
-→ **Resend** (transactional API; verify `jensenproduction.dk` DNS, from =
-`deej@jensenproduction.dk`, reply-to = his inbox). **Sending domain revised
-2026-07-08:** dev's own `valent.dk` instead (Dynadot DNS, Google Workspace
-mail, used as a Gmail send-as alias) — from/reply-to = `nazar@valent.dk`,
-live in `app_settings` (from later refined to `orders@valent.dk` — the
-mailbox needn't exist for Resend, but create it or a catch-all in Google
-Workspace before go-live so direct replies don't bounce). Resend records
-sit on their own subdomains
-(`resend._domainkey`, `send`), so the Google MX/SPF rows are untouched.
-
-**Tier 0–1 core daily flow — items 1–11 ALL SHIPPED (2026-06-19):**
-1. ✅ PO line unit price optional ([c4bb80a]) — "price pending", receiving
-   blocked until priced.
-2. ✅ Template cost-to-produce total + margin ([365fc48]).
-3. ✅ Template recipe unsaved-changes guard ([0bfb298]); reusable hook.
-4. ✅ Bike shows its sales order ([efdff9f]) — detail + list.
-5. ✅ Invoice-from-SO sets `is_export`/`is_reverse_charge` from line VAT
-   codes ([9241c78]) — Iceland export note now prints.
-6. ✅ Part-category admin CRUD at `/admin/categories` ([1760cd0]) — unblocks
-   "wheel sets"; first write-path to `part_categories`.
-
-**Core-flow items 7–11 — SHIPPED (2026-06-19):**
-7. ✅ HS-code picker → searchable combobox ([6c7ed33]). Flat searchable list;
-   no category↔HS table built (deferred — searchable list solved the gripe).
-8. ✅ Delivery as ISO week + "expected" on SO ([e73b280]) *and* MO ([912d739]).
-   `requested_delivery_precision` (migration 40) + `planned_completion_precision`
-   (migration 41); date column stores the Monday of the ISO week, precision flag
-   drives "week N YYYY" rendering. Shared `src/lib/iso-week.ts` +
-   `DeliveryWeekDateField`. spawn-mo carries SO precision → MO. Exact-date kept.
-9. ✅ RAL colour + coating on the SO line ([ef5e307]) — `coating` added to
-   `colors` (migration 39), `ral_code` surfaced; pickable controlled vocab.
-   Captured on the SO line; paint-order wiring is Tier 2.
-10. ✅ SO currency + language default from the customer ([220a6ba]) — seeded
-    from `organizations.billing_currency` / `preferred_language` on a new SO;
-    the picker already existed (Dennis just always saw the DKK default).
-11. ✅ Supplier emails ([397036e]) — form already had primary/secondary; added
-    an Email column to the supplier list ("Set email" hint flags gaps). Prep
-    for Tier 3 PO email; **owner still needs to fill the addresses** (all blank).
-
-**Follow-up tweaks (2026-06-20):** SO delivery label "Requested" → "Expected"
-([c2967af]); new SO now defaults to Week mode and the week input is clamped to
-`1–weeksInIsoYear` (re-clamps on year change) ([004f220]); MO "Planned
-completion" → "Expected completion" ([9547ac7]).
-
-**Data note (from the 2026-06-19 call):** no "Wheels / Wheel sets" category
-exists — only `Rims`, `Rim Tapes`, `Front Chainwheel`, `Front Sprocket`. Full
-wheel SKUs do exist (e.g. `JP-EWHRX010FDAB` Shimano front, `JP-EWHRX010RDACB`
-rear). Dennis can now create the category at `/admin/categories` (item 6).
-
-**Tier 2 — SO → paint → build pipeline, rebuilt around the technician
-(biggest; correctness epic). IN PROGRESS — started 2026-06-20.** Two moves:
-make the workshop floor the unified technician home (build *and* repair), and
-make the build a deliberate, gated flow. Sequenced **B → A → C → D**. Four
-design decisions locked with the owner:
-- **D1 — confirmed-frame flag.** `bikes.frame_number_confirmed` (migration 44)
-  separates a CONFIRMED real frame from the provisional auto-generated
-  placeholder (`JP-{year}-{code}-{seq}`, see `src/lib/bikes/frame-number.ts`).
-  New bikes start FALSE; bikes already past building backfilled TRUE. Flips TRUE
-  only at the deliberate build "Confirm frame" step (`confirmBikeFrame`).
-- **D2 — "at painter" is derived, not a bike status.** A bike is at-painter iff
-  it belongs to a `paint_order` with status `sent_to_painter`/`at_painter`;
-  `received_back` frees it automatically. No new bike column/status. (Phase C.)
-- **D3 — SO↔paint link + explicit subset.** add `paint_orders.sales_order_id`;
-  "paint from SO" picks a *subset* of frames, back-linked both ways. (Phase C.)
-- **D4 — deliberate completion.** No silent MO auto-complete; completion is a
-  one-click "Complete MO" (banner when every bike is built). Bulk "Mark N
-  built" SKIPS unconfirmed (and, in C, at-painter) bikes instead of bypassing
-  the gate.
-
-Phases:
-- **B — Deliberate build page ✅ SHIPPED 2026-06-20.** Migration 44; new
-  `confirmBikeFrame` action (rewrites `bikes.frame_number` + syncs the
-  `bike_identifiers` frame row); `finishBikeBuild` now gated on
-  `frame_number_confirmed`; the build workbench gained a "Frame & identifiers"
-  panel (frame confirm + reused `IdentifierDialog`; Finish disabled until
-  confirmed AND ≥1 part); `bulkMarkBikesBuilt` skips unconfirmed bikes and
-  reports the skip count; `autoAdvanceMOAfterBuild` no longer auto-completes;
-  `mo-header` shows a "Complete MO" banner once every bike is built;
-  `mo-bikes-section` shows per-row "provisional" hints, an unconfirmed note, and
-  a buildable-count bulk button. Shared `loadBikeIdentifierContext` in
-  `src/lib/bikes/identifier-context.ts`.
-- **A — Unified workshop floor ✅ SHIPPED 2026-06-20.** `/work` is now two
-  URL-driven streams (`?tab=build|repair`): "To build" (bikes in
-  planning/building on open MOs, ready-first) beside the existing "To repair".
-  New per-bike readiness helper `src/lib/manufacturing/bike-readiness.ts` →
-  `loadBuildQueue(supabase)`: a bike's requirement is its own *not-yet-consumed*
-  `bike_parts` once a build has started (consumed rows are already in the bike
-  and already out of `v_current_stock` — counting them would invent a false
-  shortage), else the MO recipe; paint service SKUs excluded; ready = no part
-  short of full on-hand (cross-bike competition NOT modelled, same as MO
-  coverage). **Frame confirmation is deliberately NOT a readiness gate** — the
-  tech confirms the real frame inside the workbench, so the card shows a "frame
-  to confirm" hint instead of blocking. Default tab = build unless build is
-  empty and repairs wait. Build cards match the repair-card visual language;
-  tap → the build workbench. (The Scan button still links to `/scan`; a
-  scan-a-frame → build-if-buildable jump is not wired here.) `blockedReason`
-  already carries a string so Phase C can add an `atPainter` block.
-- **C — Paint → build pipeline ✅ SHIPPED 2026-06-20.** D2 + D3.
-  - **D2 — at-painter gate.** "At painter" is DERIVED (no bike column): a bike
-    is at-painter iff it's in a paint_order whose current status is
-    `sent_to_painter`/`at_painter` (new `AT_PAINTER_STATUSES` in
-    `src/lib/paint/status.ts` — narrower than `OPEN_PAINT_ORDER_STATUSES`; a
-    `planned` order hasn't shipped, so its bikes stay buildable).
-    `received_back` frees frames automatically (a bike just stops matching —
-    every gate query filters on current status, so NO trigger is needed). One
-    shared helper `src/lib/paint/at-painter.ts` (`loadAtPainterBikeIds`) backs
-    every gate: `finishBikeBuild` (per-bike backstop), `bulkMarkBikesBuilt`
-    (skips + reports `skippedAtPainter` separately from unconfirmed),
-    `loadBuildQueue` (/work floor — "At painter" block takes PRECEDENCE over a
-    parts shortfall), the build workbench (`atPainterReason` prop disables
-    Finish), and the MO bikes section (excluded from buildable count, per-row
-    badge + warning).
-  - **D3 — SO↔paint link.** Migration 45 adds nullable
-    `paint_orders.sales_order_id` (ON DELETE SET NULL + index). New
-    `createPaintOrderFromSO` action (`src/app/sales-orders/_actions/paint-from-so.ts`)
-    paints a SUBSET of an SO's frames (resolves SO→MO→bikes, rejects strays +
-    frames already in an open paint order) at a dedicated route
-    `/sales-orders/[id]/paint/new` (page + `paint-from-so-form`, Metacoat
-    default, native-checkbox frame multi-select). SO detail gains a
-    "Paint orders" section (`linked-paint-orders-section`) with a "New paint
-    order" CTA (hidden when SO is cancelled/delivered); paint-order detail
-    shows a "Sales order" back-link.
-  - Verified end-to-end against temporary paint-order fixtures (gate fires on
-    floor/workbench/MO-section from both ad-hoc and SO-linked orders;
-    back-links render both ways; received-back/teardown frees frames). DB back
-    to baseline after each.
-- **D — Labeling note ✅ SHIPPED 2026-06-20.** Chose `sales_orders.production_note`
-  (per-SO, migration 46) over a per-line note — it reaches every bike of the
-  order via bike→MO→SO regardless of whether the MO was line-spawned or
-  batch-created, and matches the order-level use case (muni labeling).
-  Inline-editable on the SO detail (`ProductionNoteCard` + `saveProductionNote`
-  action) — editable mid-production (blocks only cancelled/delivered), since
-  labeling instructions often arrive after confirm; distinct from the
-  draft-only header form and from commercial `sales_orders.notes`. Surfaced to
-  techs on the `/work` build card (truncated, `buildNote` added to
-  `loadBuildQueue` via a nested SO embed) and as a full amber banner atop the
-  build workbench (`buildNote` prop). **Tier 2 (SO→paint→build, B→A→C→D) is now
-  COMPLETE.**
-
-**Tier 3 — email a PO to the supplier** (needs Resend + DNS + a PDF/print PO).
-Groundwork SHIPPED 2026-07-08 (migration 55): **communication settings** on
-`app_settings`, edited in a "Communication" section at `/admin/settings` —
-`outbound_from_email` / `outbound_reply_to_email` (seeded
-deej@jensenproduction.dk per the locked Resend decision; **switched
-2026-07-08 to `nazar@valent.dk` on domain `valent.dk`** — DB is the truth),
-`outbound_test_mode` (seeded TRUE) + `outbound_test_email` (comma-separated;
-seeded with the owner+dev inboxes), and `workshop_phone` (reserved for the
-phone-call → ticket pipeline: call routing, SMS sender). Owner's rule: all
-send-identity/phone config lives HERE, not in env vars — every future
-outbound channel must read `src/lib/communication/settings.ts`
-(`loadCommunicationSettings` + `resolveRecipients`: while test mode is on,
-ALL outbound mail reroutes to the test inboxes and the message must say who
-it was meant for; unticking test mode is the go-live switch). Migration 56
-adds `email_domain` + `email_dns_records` (jsonb) with a "Sending domain
-(DNS)" card at `/admin/settings` — a REFERENCE copy of the provider's
-verification records (type/name/value/status/note, copy buttons); the
-authoritative records live at the DNS host, and once the Resend key exists
-the card can fetch records + live status instead of manual upkeep.
-**Config-vs-secrets rule (owner, 2026-07-08): operational identifiers
-(emails, phone numbers, domains, DNS values — public data) live in admin
-config; only real secrets (Resend/Twilio API keys) live in env vars.**
-**Code side SHIPPED 2026-07-08 (migration 57):**
-- `/purchase-orders/[id]/print` — supplier-facing trade document (English;
-  suppliers span HK/DE/NL/FI/BE/SE): supplier block, "Your ref." column from
-  `part_supplier_offerings.supplier_sku`, per-currency totals, "price
-  pending" markers, DRAFT watermark. **Deliberately excludes the internal
-  cost basis AND all PO/line notes** (machine-drafted notes like "set price
-  before placing" must never reach a supplier) — enforced in the shared
-  loader `src/lib/purchasing/po-document.ts`, which the email body renders
-  from too (`po-email-html.ts`), so paper and mail always match.
-- "Email supplier" on the PO header: dialog with an optional
-  message-to-supplier (the ONLY free text that reaches them), send via
-  `src/lib/email/send.ts` (thin Resend fetch wrapper, no SDK; needs
-  `RESEND_API_KEY` in `.env.local`/Vercel), recipients through
-  `resolveRecipients` (test mode reroutes + banners the intended
-  recipients + subject gets "[TEST]"), last-send stamp on
-  `purchase_orders.emailed_at/emailed_to` ("test:"-prefixed when rerouted)
-  shown under the PO header. Blocked for cancelled/empty POs.
-**Tier 3 go-live progress (2026-07-08/09):** Resend account created,
-domain `valent.dk` VERIFIED in Resend (EU region; DKIM + send-subdomain
-MX/SPF live at Dynadot, reference copy in the admin DNS card),
-`RESEND_API_KEY` in `.env.local` AND Vercel. First real test send
-delivered 2026-07-09 (PO-2026-0059, stamp `test:nicholas.nazar@gmail.com`)
-— the pipeline is verified end to end. Remaining: fill real supplier
-emails (18 missing — surfaced on the dashboard housekeeping card), create
-the `orders@valent.dk` alias in Google Workspace (from/reply-to both point
-there; direct replies bounce until it exists), then untick test mode.
-
-**Tier 4 — payments & stock value** ✅ **SHIPPED 2026-06-21** (commits
-6a017f7, 1d33a4b, e96624a). Still get a revisor nod before the first *real*
-prepayment invoice (weighted-avg stock valuation + the deposit VAT timing).
-What was built:
-- Migration 48: `invoices.kind` (`standard|deposit|final`) + `deposit_pct`;
-  deposits/finals share the gapless INV series, `kind` drives heading/logic.
-- **Deposits** (`src/app/invoices/_actions/create-deposit.ts`): `createDeposit
-  Invoice(soId, {mode})` — `percent` / `amount` (summary line, kind A) or
-  `parts` (itemised `part_id` lines, kind B). Form at
-  `/sales-orders/[id]/deposit/new`; gated to confirmed–ready; installments
-  capped at order subtotal; VAT inherits the order's dominant code.
-- **Order % surface**: `PaymentsSection` on the SO detail (Σ live invoice
-  totals ÷ order total) + linked deposit/final list + CTA.
-- **Final** (`create-from-so.ts`): nets out every issued deposit as negative
-  lines → bills the remaining balance, self-labels `final`; deposits don't
-  block it. `uninvoiced.ts` only treats a standard/final as "invoiced".
-- **Print**: Acontofaktura / Slutfaktura headings; detail page kind badge.
-- **Stock value** (`/parts/stock-value`, linked from the parts header):
-  on-hand × weighted-avg purchase cost (from `inventory_movements` receipts),
-  MINUS stock paid via an issued part-based deposit — the deposit's `part_id`
-  lines ARE the customer-paid record (no extra flag).
-
-The decided model (reference):
-
-- **VAT timing (the question that was blocking this):** the shop takes payment
-  **before delivery**; VAT (25 %) is recognised **immediately at payment time**
-  (Danish momsloven: payment ahead of delivery sets the tax point). **Same rule
-  for both prepayment kinds below** — part-based prepayment adds no new tax
-  question, just more invoice plumbing.
-- **Every prepayment is its own deposit invoice (acontofaktura)** — numbered,
-  VAT on the prepaid amount, issued when the money is taken. **More than one is
-  allowed (installments)**: a customer can pay in several rounds before the final.
-- **A deposit invoice is one of two KINDS** (the owner uses both, per customer):
-  - **(A) amount / % on account** — a single summary line ("down payment 50 %"),
-    not tied to parts ("hotel guys pay 50 % up front"; "180 bikes → 10 % or 50 %").
-  - **(B) specific parts paid up front** — the deposit itemises actual parts at
-    their prices ("one customer pays for the frames because these are *special
-    parts* … I order them for you, put them in stock, but they're paid for").
-- **Final/settlement invoice (slutfaktura)** at delivery bills the **remaining
-  balance only**: `order total − Σ(all deposit invoices)` — NOT a fresh full
-  invoice. Shows the order, subtracts every prior deposit, charges the balance +
-  VAT on the balance, referencing the deposits. Avoids double-counting VAT.
-- **Part-based deposits (B) carry two extra effects the owner spelled out:**
-  (1) the flagged parts are **not re-charged on the final** ("only charge the
-  rest"); (2) they're **excluded from the stock-valuation total** even while
-  physically in stock ("200 paid stainless frames still on stock shouldn't count
-  in my stock value"). A **"customer-paid" flag** on the part-for-this-order is
-  the single hinge for BOTH the final-invoice exclusion and the stock report.
-- **Reflected on the bike/order, visible any time** (not just at invoice time):
-  "if they pay for a part like a frame I reflect it on the bike; if they pay a %
-  of the order I also reflect it on the bike" → an order/bike "% invoiced · paid
-  parts" surface.
-- **Delegated defaults (owner: "pick the most likely"):** export / reverse-charge
-  → deposits + final inherit the order's VAT code (a 0 %/reverse-charge order's
-  deposit also carries 0 %, like invoice-from-SO today); period straddle → VAT
-  lands in the period of each deposit's date (automatic); EAN / public sector →
-  deposits + final transmit via EAN like any invoice (with 3E); stock-valuation →
-  **weighted-average cost** of on-hand *minus customer-paid parts* (the one
-  accounting-policy choice still worth a revisor nod; FIFO is the alternative).
-- **Build pieces** (schema mostly ready — `invoices` already has per-line VAT
-  snapshots, `sales_order_id`, totals, `is_export`/`is_reverse_charge`): add
-  invoice `kind` (`standard | deposit | final`); a **customer-paid link** from a
-  part-on-an-order (or `bike_parts` row) to its deposit invoice, driving the
-  final-exclusion + stock report; `final = SO total − Σ(deposits)`; the
-  stock-valuation report (weighted-avg, excluding customer-paid parts).
-  **Suggested order:** deposit invoice kind A → order "% invoiced" surface →
-  final invoice (subtracts deposits) → print (aconto/slut headings) → kind B
-  (part-based) + customer-paid flag → stock-valuation report. Each shippable alone.
-
-**Tier 5 — deferred:** offers/quotes module (price breakdown lives here);
-service-contract → auto-add to maintenance fleet. Website/marketing copy is
-not app work. Commitment to Dennis: core flow usable "by next week".
-
-### July 2 2026 call backlog (7 items — full plan in `docs/plan-july2-meeting-backlog.md`)
-
-Second Dennis app-review call (transcript in
-`~/Documents/1-Projects/Jensen/Misc - Transcripts/`), verified against live code
-2026-07-07. Already-shipped asks from the same call (NOT below): template family
-grouping, per-PO-line transport %, category sort order + vertical picker, paint
-per-line colour/scope/finish, additive svaj pricing, test-data cleanup, AI
-part-image fetch. Explicitly **won't do**: creating a part inline from inside the
-PO add-part screen (keep part creation on the parts screen — owner+dev agreed).
-
-Build order (no-schema wins first, then two batched migrations).
-**All seven SHIPPED as of 2026-07-08, including the optional item-6 phase-2**
-— the July-2 backlog is fully closed:
-1. ✅ **Qty at template pick-time** — SHIPPED (1176597). Shared
-   `category-checklist-row.tsx` `onPick(partId, qty)` + 3 callers (template
-   recipe, MO parts, build workbench).
-2. ✅ **Back-dated purchase date on stock adjust** — SHIPPED (7b0e4c9).
-   Surfaces `inventory_movements.occurred_at`. ✅ *Phase 2* SHIPPED
-   2026-07-08: currency picker on the unit-cost field; foreign cost
-   auto-looks-up the ECB rate for the purchase date (shared `lookupFxRate`),
-   editable override, DKK computed server-side, original amount + rate +
-   ECB date appended to the movement reason (ledger stays DKK-only).
-3. ✅ **Template duplication** — SHIPPED (9c6ef6b). Copy a template into a
-   brand-new one (version=1), distinct from "save as new version".
-4. ✅ **Supplier + supplier-SKU on the new-part screen** — SHIPPED (136d0ed).
-   Optional preferred `part_supplier_offerings` row written at create; extra
-   suppliers still added on the detail page.
-5. ✅ **Family as controlled vocab** (migrations 52 + 53) — SHIPPED. New
-   `bike_families` (`name` unique, `sort_order`, `is_active`) +
-   `bike_templates.family_id` FK; backfilled from distinct `family` strings,
-   then the text column dropped (expand/contract: mig 52 additive, mig 53 drop
-   after deploy). Admin CRUD at `/admin/families` + tile; template form family
-   `<Select>`; list groups/orders by `sort_order`. ~37 read sites moved to the
-   `family:bike_families(name)` embed. Single `name` (not bilingual).
-6. ✅ **Import-tax origin model** (migration 54) — SHIPPED 2026-07-08.
-   `parts.origin` (`eu`/`non_eu`, nullable = unclassified; picker on the part
-   form) + `suppliers.import_duty_prepaid_default` (checkbox on the supplier
-   form); a per-PO-line "Apply import tax" checkbox defaulting from
-   `origin='non_eu' AND NOT supplier prepaid`, driving the snapshotted
-   `tariff_pct`/`anti_dumping_pct` to 0 (fits frozen-at-purchase; HS code stays
-   for records). Covers Dennis's "duty paid by supplier" (Shimano) + "EU vs the
-   rest" asks. Also snapshots a **frozen**
-   `purchase_order_lines.import_tax_basis` enum (`applied | zero_rated |
-   unclassified | eu_origin | supplier_prepaid`) alongside `tariff_pct` — a
-   *derived* reason can't be reconstructed later without reading mutable
-   part/supplier/HS state (would fabricate history, breaking
-   frozen-at-purchase). Lets a correct 0 (eu_origin/supplier_prepaid) read
-   differently from a data-quality gap 0 (unclassified — amber in the PO lines
-   table). Existing lines stayed `NULL` (pre-tracking). Decision logic is pure
-   and shared in `src/lib/purchasing/import-tax.ts` (UI default + hint + basis);
-   `resolveImportTaxInputs` in `po-snapshots.ts` replaced the two per-rate
-   resolvers, so both line writers (`manage-lines.ts` + `draft-pos.ts`) freeze
-   the same conclusion. Machine-drafted POs apply the derived default and
-   flag unclassified-origin lines "set the part's origin" in the line note.
-
-(Numbered by build order, not the plan doc's item numbers.)
-
-### Dashboard overhaul (2026-07-08/09, ALL 4 phases + backfill SHIPPED)
-
-Redesign around three bands: act (money/commitments) / watch (pipelines) /
-learn (trends). **Owner's hard requirement: no busy screen — sections whose
-data is too thin to be useful must fold away.** Shipped:
-- **Money band** (`src/lib/dashboard/queries.ts` + top of `src/app/page.tsx`):
-  uninvoiced work (reuses `uninvoiced.ts` + `findUnbilledFeePeriods`, incl.
-  sitting draft invoices), overdue invoices (issued past due_date, CN rows
-  excluded), agreements expiring ≤90 days, late POs (past expected_date) +
-  draft-PO count. Cards with nothing to report DON'T render; if the whole
-  band is clear it collapses to a single all-clear line.
-- **12-month trend charts** (migration 58, RPC `dashboard_monthly_stats`;
-  Recharts used directly — deliberately no shadcn chart wrapper/CLI re-init):
-  bikes sold (bike_state_log in_stock→assigned) / serviced (distinct bikes on
-  completed WOs) / fleet under agreement (documented approximation — current
-  owner projected back, no ownership history exists); invoiced DKK ex VAT
-  split sales/service/fees via line `service_agreement_id` + invoice
-  `sales_order_id`, DKK-only (non-DKK excluded, not mixed).
-- **Chart drill-down (2026-07-09):** clicking a trend-chart bar opens a
-  side sheet with the records behind that month's number (sold → bike
-  roster, serviced → completed WOs, invoiced → the month's DKK invoices
-  ex VAT, purchasing → POs w/ landed totals), loaded on demand via
-  `loadMonthDetailAction` → `src/lib/dashboard/month-detail.ts` (semantics
-  mirror the RPC incl. soft-delete + Copenhagen month buckets). Months
-  covered by the Excel backfill have no per-record history — the sheet
-  shows the legacy row's count + source note instead of an empty list.
-  The under-agreement line is deliberately not clickable (a level, not a
-  flow — no month roster exists).
-- **FoldSection** (`src/components/dashboard/fold-section.tsx`): fold state
-  has DATA-AWARE defaults (charts collapse while history is thin; the header
-  keeps a one-line text summary so folding hides detail, not signal) with a
-  per-device localStorage override (`dashboard.fold.<id>`) that always wins.
-  Children only mount while open (Recharts can't measure hidden containers).
-- **Phases 3–4 (2026-07-09):** three `PipelineCard` strips (Build:
-  planning→building→at painter→in stock, using `loadAtPainterBikeIds`;
-  Repair: tickets→WOs→done-7d; Orders in flight: SOs w/ DKK value→MOs→POs)
-  replaced the 7 flat KPI cards — parts/customers counts moved to the
-  footer reference strip beside cost basis. Purchasing trend chart
-  (landed DKK by PO order_date, aggregated app-side in
-  `loadPurchasingTrend` — no migration needed) + a "Data housekeeping"
-  fold (always default-collapsed): parts w/o origin, w/o HS code,
-  offerings w/o price, suppliers w/o email — the CLAUDE.md data-entry
-  backlog, now self-serve in-app.
-- **History backfill (2026-07-09, owner said "yes, backfill"):** migration
-  59 adds `legacy_monthly_stats` (month PK + the chart measures + source
-  text) which the RPC ADDS onto live numbers — rows must only cover
-  pre-system months (backfill ends 2026-04, live capture starts 2026-05;
-  clean boundary). Also fixed the RPC to exclude soft-deleted bikes from
-  sold/serviced (test remnants were counting). Imported: 836 bikes / 132
-  months (2012-04 → 2026-04) extracted from the owner's Excel
-  service-agreement register ("Bikes and customers.xlsx", 12
-  anniversary-month sheets, per-bike `Købt` dates; 93% sheet-month
-  consistency check). KNOWN LIMITS: agreement bikes only (undercounts
-  one-off sales); serviced + revenue columns left 0 — fillable later by
-  hand or via 3E/e-conomic. JSX gotcha hit here: multi-line text after an
-  `{expr}` can lose its leading space — write row copy as one template
-  literal.
-
-### 3E — e-conomic push (STARTED 2026-07-09, slice 1 code side SHIPPED)
-
-Design verified against the live REST API (restapi.e-conomic.com; the
-public demo/demo tokens are READ-ONLY — writes fail E02002 — so the write
-path is contract-verified from the POST schemas; the first real push is
-the live write test, same pattern as Resend was).
-- **Issued invoices push as DRAFT JOURNAL VOUCHERS** (manualCustomerInvoice
-  entries: debit customer, contra revenue account + VAT code), NOT as
-  e-conomic invoices — the FMS owns the INV number series; e-conomic
-  issuing its own numbers would fork it. The bookkeeper reviews + books
-  the voucher in e-conomic (kassekladden). One entry per distinct VAT rate
-  on the invoice; 0%-rated entries (export / reverse charge) carry no VAT
-  code; the VAT amount is deliberately NOT passed (e-conomic derives it
-  from the code — avoids sign-convention bugs). Credit notes push as
-  negative entries without the `customerInvoice` int (the INT is derived
-  from the INV number digits, e.g. INV-2026-0007 → 20260007; CRE would
-  collide). Accounting year resolved by issued_date range from
-  `/accounting-years` (fiscal-straddle safe). Idempotent via
-  `invoices.economic_voucher_id` (format "2026 J1 V123") +
-  `economic_synced_at`.
-- **Customer auto-create on first push** — e-conomic assigns the number
-  (omitted on POST) → stored in `organizations.economic_customer_number`
-  (migration 60, unique partial index). Payload uses org CVR/EAN/address/
-  email + config vocabularies. If the remote create succeeds but the local
-  mapping save fails, the error says to set the column manually (avoids a
-  duplicate customer on retry).
-- **Config vs secrets**: tokens = env (`ECONOMIC_APP_SECRET_TOKEN`,
-  `ECONOMIC_AGREEMENT_GRANT_TOKEN`); operational numbers = migration 60
-  `app_settings.economic_*`, edited at Admin → Settings → "Accounting
-  (e-conomic)" — enable toggle, journal, revenue account, outgoing VAT
-  code, customer group / VAT zone / payment terms, plus **Test connection**
-  (reads /self + journals + open accounting years so the owner copies real
-  numbers instead of guessing). Seeded/pre-filled: U25, group 1, zone 1,
-  journal 1, account 1010 (standard DK chart) — **confirm journal +
-  revenue account with the revisor before the first real push**;
-  payment terms set to 3 (Netto 14 dage) 2026-07-09 from the trial's
-  vocabulary — re-verify the number on the production agreement.
-- Files: `src/lib/economic/{client,settings,push-invoice}.ts` (thin fetch
-  wrapper, no SDK), action `src/app/invoices/_actions/push-economic.ts`,
-  `EconomicSyncCard` on the invoice detail (shows for non-draft/cancelled
-  invoices once enabled; push button blocked-with-reason on config/env
-  gaps; e-conomic errors surfaced verbatim).
-- **Live write test PASSED (2026-07-09, against a TRIAL agreement).**
-  Owner created the developer-agreement tokens; the grant is on a fresh
-  e-conomic **trial** agreement 2446940 ("Din virksomhed") — access to
-  the real production Jensen agreement isn't expected until **end of
-  July 2026**. Tokens in `.env.local`; `economic_enabled = true`,
-  `economic_payment_terms = 3` (Netto 14 dage — trial vocabulary; re-check
-  on the production agreement). Full path verified end-to-end via the
-  invoice-detail push button on a temporary fixture invoice (mixed
-  25% + 0% export lines): draft voucher `2026 J1 V1` landed in the trial's
-  kassekladde with two `manualCustomerInvoice` entries (1.250 kr w/ U25,
-  500 kr export w/o VAT code, contra 1010, due date carried), customer
-  auto-created (#1) with CVR/address/terms/zone, `economic_voucher_id` +
-  `economic_synced_at` + `economic_customer_number` all stamped locally.
-  FMS fixture deleted after; the voucher + customer #1 were left in the
-  trial for inspection (Regnskab → Kassekladde "Daglig").
-- **⚠️ Before switching tokens to the production agreement**: any
-  `organizations.economic_customer_number` and
-  `invoices.economic_voucher_id`/`economic_synced_at` stamped while
-  pointing at the trial refer to TRIAL entities and must be cleared, or
-  pushes will silently reference wrong/missing customers. Currently none
-  exist (test fixture cleaned) — keep it that way by not pushing real
-  invoices to the trial, or expect to re-clear.
-- **Remaining for 3E**: swap the grant token to the production agreement
-  (~end of July), re-run Test connection + confirm the config numbers
-  against the real books (journal / account 1010 / U25 / payment terms)
-  with the revisor, then the first push of a real issued invoice.
-  Phase 2: payment-status pull (booked-entry remainder → `paid_date`,
-  feeds the dashboard receivables card) and the EAN/OIOUBL e-invoicing
-  transmission question.
-
-### July 2026 plan — vacation month (owner call 2026-07-09)
-
-Full plan in **`docs/plan-july9-vacation-month.md`** (tracks, sequence,
-pipeline deep-dive, provider decisions). The frame: Dennis is away until
-Aug 3, Nazar leaves Aug 4 — July output must be self-serve for Dennis's
-solo August onboarding. Track status: ✅ housekeeping drill-downs +
-mobile photo (W1) · ✅ external-services remodel (W1, migs 61–64) ·
-✅ i18n whole-app Danish (closed 2026-07-14) · ✅ phone→ticket pipeline
-(A–F live in prod 2026-07-16 + the whole triage arc, way beyond plan).
-**RE-SEQUENCED 2026-07-17** for the remaining stretch (Jul 17 → Aug 3),
-in priority order: **1) people & roles P1–P2** (schema+admin, role-
-password login + `can()` gating — `docs/plan-people-roles.md`, supersedes
-the device-role-cookie item; critical path for #2 and for Dennis's
-August) · **2) voice commands VC-1** (staff dictate → drafted actions;
-`docs/plan-voice-commands.md`) · **3) people & roles P3–P4**
-(tap-your-name, assignees, notification events) · **4) inbound stats
-fold** (the shadow-mode graduation measurement) · **5) global identifier
-search** · **6) maintenance/workshop polish pass** · **7) handover
-notes**. ≈8 dev-days vs ~11–12 available. Munin is a parallel personal
-track (own repo, not Jensen hours). Deferred to mid-August with Dennis:
-old-system data migration, invoicing-parity workshop + "paid" remark on
-the e-conomic voucher, role matrix refinement (against the people-roles
-model), e-conomic production cutover, supplier-email go-live,
-leave-shadow-mode graduation, voice-commands VC-3, Dennis's company
-number.
-
-### Carry-over data notes
-- **Every part has `origin = NULL`** (post-migration-54, 2026-07-08): with the
-  new origin model, unclassified origin means new PO lines default to **no
-  import tax** (`import_tax_basis = 'unclassified'`) until the owner sets
-  origins on the part edit form — owner-confirmed behaviour ("initially
-  without tariff, click to add"), but it flips the old always-apply-HS-tariff
-  default. The line dialog nudges, machine-drafted PO lines carry a "set the
-  part's origin" note, and the PO lines table shows the amber "unclassified"
-  label. Classifying the China-sourced fast movers as `non_eu` restores
-  tariff-by-default where it matters.
-- **5 parts still unclassified** (no HS code): the Ananda M100 motor/cable
-  variants (`JP-AND-M100-PWR`, `JP-AND-M100-CS`, `JP-AND-DSP-NTC`),
-  `JP-SLFFH01B`, and `JP-SP207- 27,2 350`. They snapshot 0% tariff on new PO
-  lines until classified.
-- **"For cycle manufacture" TARIC splits**: the customs broker (DA Custom
-  Brokers) files some parts under favourable splits (e.g. 8714911077,
-  8714913072, 8714961010) to avoid the 48.5% anti-dumping. Our classification
-  uses the standard splits. Confirm with the broker before reclassifying.
-- **Anti-dumping** is modelled per HS code (`hs_codes.anti_dumping_pct`,
-  snapshotted to `purchase_order_lines.anti_dumping_pct`); currently set on
-  8714963090 + 8714991099 (48.5%). It's origin-agnostic — fine while sourcing
-  is ~all China; revisit if supplier mix diversifies.
-- **Supplier country codes** were name-inferred (migration 25); a few
-  (Herrmans→FI, RYDE→NL, SAPIM→BE, Shimano Nordic→SE, MessingschKG→DE) are
-  best-guesses worth confirming.
-- **Supplier offerings mostly lack `default_purchase_price`** (June 2026):
-  the shortfall draft-PO action falls back to 0 kr. and flags the line
-  "set price before placing". Filling prices on the part pages makes
-  drafted POs land ready to place.
-
-### Hardening backlog (do as it bites)
-- **CI smoke-test pipeline** (curl every route + Vitest over server
-  actions — see Pre-commit hygiene above). Owner reviewed June 2026 and
-  parked it deliberately: manual browser verification before every commit
-  is the safety net until then ("I like the discipline"). **Agreed
-  revisit: the auth/first-real-invoice milestone** — build it alongside
-  auth, since auth touches every page.
-- audit_log triggers (wait on auth for user_id); SQL-side pagination for the
-  parts list at scale; offline write-queue for the workshop floor; Whisper
-  voice fallback; bulk CSV import for parts/suppliers.
-
-### Parked ideas
-The durable home for ideas parked mid-session (session "chips" die with the
-app). Add new ones here with enough context to act cold; delete the entry
-when the work ships or the idea is rejected.
-
-- **Full UI internationalisation — IN PROGRESS (foundation SHIPPED
-  2026-07-11).** Scope: **whole app to Danish**, `de` scaffolded but
-  untranslated (German ops is strategic, no user yet). What's live:
-  - **Mechanism**: next-intl WITHOUT URL routing — locale comes from
-    `app_settings`, per surface. `src/middleware.ts` stamps `x-pathname`;
-    `src/i18n/request.ts` resolves worker surfaces (`/work`, `/scan`, the
-    build workbench + batch build, via `WORKER_PATH`) to `worker_language`
-    and everything else to `app_language`. Missing keys deep-merge back to
-    English (a partial translation degrades gracefully, never crashes).
-    Messages in `messages/{en,da,de}.json`, namespaced per surface;
-    `NextIntlClientProvider` in the root layout serves client components.
-  - **Translated so far**: `/work` floor + `/scan`, the WO workspace
-    cluster — `/work/[woId]` (notes, parts, photos), `/work/[woId]/parts`
-    add-parts screen, the shared `DictateButton` (namespaces `wo` /
-    `woParts` / `dictate`) — and (2026-07-11, commit 6676278) the **build
-    workbench + batch build**: workbench, pick list, batch grid + both
-    pages (namespaces `build` / `batchBuild` / `bikeStatus`), plus the
-    shared recipe components (`src/components/recipe/`) and the
-    `IdentifierDialog` (`recipe` / `identifierDialog`) — those two are
-    shared with app surfaces (template/MO editors, bike detail), where
-    they render `app_language` per the normal per-surface resolution.
-    All browser-verified in both languages. **That completes the worker
-    surfaces** — every `WORKER_PATH` screen speaks Danish.
-    Altitude fixes along the way: `loadBuildQueue` returns structured
-    `atSupplier`/`shortfallCount` instead of an English `blockedReason`,
-    and `src/lib/work/elapsed.ts` is word-free (`atTimeLabel` +
-    `elapsedShort`; screens compose "Started {time} · {elapsed} ago" from
-    messages). Both settings sit at `en` — flipping `worker_language` to
-    `da` is the 1-click go-live for the Danish worker.
-  - **App-wide sweep (keyed off `app_language`) — IN PROGRESS
-    2026-07-11**, going down the nav in most-used order, one commit per
-    cluster. Done so far: **app chrome** (2d9f7a9 — both navs now render
-    from a shared `src/components/nav-items.ts`, so they can't drift;
-    `nav` namespace), **dashboard** (67d735c — `dashboard` namespace incl.
-    the month drill-down's server side: `loadMonthDetail` +
-    `loadMonthDetailAction` translate via `getTranslations`, and chart
-    month labels use the active locale), the **bikes module**
-    (dab6c1a — `bikes` + `bikeDetail` namespaces, plus a shared `common`
-    namespace: Cancel/Saving…/Apply/Clear all/confirm-repeat/Dashboard
-    crumb — REUSE IT in later clusters), the **bike templates module**
-    (69c8b34 — `templates` + `templateDetail` namespaces: list, detail
-    incl. recipe/paintwork/kit-labelling/version-history, form), and the
-    **parts module** (908cde8 — `parts` + `partDetail` namespaces: list +
-    all filters, detail + every section, forms, stock-value report, print
-    catalog), and the **maintenance module** (f72f7f3 — `tickets` +
-    `workOrders` + `maintenance` namespaces: tickets list/detail/new/edit +
-    form + header + WO-for-ticket section; work-orders list/detail/new +
-    header + details/parts sections + add-part dialog (price preview via
-    `formatMoney`) + form), and the **manufacturing-orders module**
-    (b1ea040 — `mo` namespace for the list + batch/one-off creation forms,
-    `moDetail` for the detail page: header/status transitions, stat tiles,
-    plan, stock coverage + draft-PO, bikes section, parts recipe +
-    substitute/add dialogs, and both print pages (parts list + batch pick
-    sheet); the worker-facing build workbench + batch build were already
-    Danish), and the **purchase-orders module** (b58b0fb — `po` namespace
-    for list/new/edit/form, `poDetail` for the detail cluster: header +
-    status transitions + email-supplier dialog + cancel dialog, stat tiles,
-    lines section, line dialog (FX-lookup hints, additive landed-cost
-    breakdown, import-tax toggle hints), receive form; the supplier-facing
-    PO print stays English by design), and the **sales-orders module**
-    (c5f8b0e — `so` namespace for list/new/edit/form/header, `soDetail` for
-    the detail cluster: stat tiles, lines section + line dialog, linked-MOs
-    + linked-paint + payments + production-note sections, the deposit flow
-    and paint-from-SO flow; new `soStatus` enum namespace + a shared
-    `deliveryWeek` namespace for `DeliveryWeekDateField` week/year, used by
-    MO/SO/template forms), and the **paint-orders module** (dc0e3d1 —
-    `paintOrders` namespace for list/new/form, `paintOrderDetail` for the
-    detail cluster: header + status transitions + cancel dialog, details,
-    service-order items section + add-item dialog, bikes section + add-bike
-    dialog; new `serviceOrderStatus` enum namespace bakes in the painter
-    noun — paint is the only service type so far, so it always passes
-    `PAINT_SUPPLIER_NOUN` [revisit if a second service type lands]).
-    Converting it cleared the SO detail's linked-paint island too (now
-    Danish), and the **invoices module** (0eea3db — `invoices` namespace
-    for the list (KPIs, all four section cards, tables, empty states) + the
-    create/fee-draft buttons; `invoiceDetail` for the detail page +
-    `InvoiceActions` (issue/credit-note/mark-paid armed states, issue
-    warning) + `EconomicSyncCard`; new `invoiceStatus` enum namespace).
-    That closed the last cross-cluster island — `invoiceStatusLabel` on the
-    SO payments section is now Danish too. And the **service-agreements
-    module** (71688b7 — `serviceAgreements` namespace for the list (status
-    filters, table, expiring badges, empty state); `serviceAgreementDetail`
-    for the detail (coverage labels, fields, bikes-in-scope + covered-WO
-    sections); `serviceAgreementForm` for the new/edit pages + shared form;
-    new `saStatus` enum namespace; covered-WO status reuses `woStatus`).
-    And the **customers/orgs module** (bf91d31 — the largest cluster: new
-    namespaces `customers` (list), `customerDetail` (detail + archive
-    dialog), `assignedBikes`, `contacts` (section + dialog), `units`
-    (section + dialog), `customerForm` (org form + new/edit), `customerMap`
-    (map page + Leaflet component: view/segment chips, legend, popups,
-    empty states), plus a shared `lang` namespace for da/en language names;
-    map + assigned-bikes moved to the `bikeStatus` namespace, retiring the
-    last `bikeStatusLabel()` call sites).
-    And the **admin cluster** (84013ee — the last big cluster: nine
-    sub-modules under `/admin` — `adminCategories`, `adminColors`,
-    `adminHsCodes`, `adminKits`, `adminLocations`, `adminSegments`,
-    `adminServices`, `adminSettings`, `adminSuppliers`, 490 keys across
-    list/new/detail pages, forms, section tables + archive/restore dialogs;
-    joins the already-done `adminHome`/`adminFx`/`adminFamilies` from
-    dd80151). The shared `ReportUrlCard` (rendered only on /admin/settings)
-    was also translated under `adminSettings`, and `CopyButton` gained an
-    optional `copiedLabel` prop, so the settings page is fully Danish.
-    Country names still render via the
-    `countries` lib (a vocab concern, like colour/category names).
-    `colorFinishLabel` (RAL/finish
-    strings like "Glossy") stays English — a colours-vocab concern.
-    **Enum labels are message namespaces
-    now**, replacing the
-    English `*_LABEL` constant lookups at translated call sites: `bikeStatus`
-    (from the bikes cluster), `stockStatus` / `movementType` / `moStatus`
-    (parts cluster), `ticketStatus` / `ticketPriority` / `ticketSource`
-    / `woStatus` (maintenance cluster), `poStatus` / `importTaxBasis`
-    (PO cluster), `soStatus` (SO cluster), `serviceOrderStatus`
-    (paint cluster), `invoiceStatus` (invoices cluster), `saStatus`
-    (service-agreements cluster), plus a shared `lang` (da/en language
-    names, customers cluster). Pattern:
-    `getTranslations("moStatus")`
-    then `t(status)`, with `t.has(status)` guarding open-ended enums before
-    falling back to the raw value. The old lib helpers still stand for
-    untranslated surfaces: `bikeStatusLabel()` in `src/lib/bikes/status.ts`
-    is now UNUSED in the app (its last two call sites — org assigned-bikes
-    + customer map — moved to the `bikeStatus` namespace); `moStatusLabel()`
-    / `soStatusLabel()` / `poStatusLabel()` / `serviceOrderStatusLabel()` /
-    `invoiceStatusLabel()` / `saStatusLabel()` / `woStatusLabel()` /
-    `bikeStatusLabel()` / `IMPORT_TAX_BASIS_LABELS` are now UNUSED in the app
-    (safe to delete when
-    convenient); `movementTypeLabel()` / `STOCK_BADGE_LABEL` likewise remain
-    for not-yet-swept surfaces — convert per cluster, then delete each helper
-    when its last call site is gone.
-  - **Global-chrome leftovers DONE 2026-07-13** (0942f63): the
-    shared-password login screen (`auth` namespace) + the mobile scan FAB
-    aria-label (`scan.fabLabel`). Every visible UI surface is now swept.
-  - **Server-action error-string mop-up — COMPLETE 2026-07-13.** Every
-    English error string an action returns/throws (`{ error: "…" }` /
-    `throw new Error("…")`) is localized AT THE SOURCE: each action does
-    `const t = await getTranslations("errors")` and returns `t("key")` /
-    `t("key", { detail })`. Locale resolves per-surface in action context
-    (the action POST hits the page path, middleware stamps `x-pathname`) —
-    verified live in Danish (placing a line-less draft PO). Shared **flat
-    `errors` namespace** (~560 keys, en+da): common cross-module keys
-    (missingId, couldNotSave{detail}, pickSupplier, alreadyInState…) +
-    module-prefixed keys (`bike*`/`tpl*`/`part*`/`ticket*`/`wo*`/`mo*`/`po*`/
-    `so*`/`paint*`/`inv*`/`org*`/`sa*`/`admin*`). Rule applied throughout:
-    only human-authored string literals convert; Supabase-destructured
-    `error:` bindings, console strings, comments, page-load data-fetch
-    throws (`page.tsx`/`_components` loaders "Failed to load…"), internal
-    control-flow throws, and supplier/e-conomic verbatim API errors stay
-    as-is; raw DB/API messages ride along as the `{detail}` value (only our
-    prefix is translated). Shipped across commits fd18b1a (foundation + PO
-    transitions), c2c1df7 (bikes + templates), a2b6855 (parts + maintenance/
-    work), 6b20989 (MO + PO/SO), 847fc83 (paint + invoices), ca89d23 (orgs +
-    service-agreements), 0beeefe (admin). EXCLUDED by design (own
-    per-document language): the public `/b/[bikeId]` + `/report` action
-    files; `test-economic.ts` + `push-economic.ts` (verbatim e-conomic
-    responses). Deferred as out-of-scope: fx-rates ok:true success
-    `message:` strings (not errors). Method note: modules ran as parallel
-    agents returning a `{key:{en,da}}` map for a CENTRAL JSON merge (never
-    editing messages/*.json concurrently); a mid-sweep API session limit
-    was worked around by finishing several modules directly via an exact
-    import+replace script (`scratchpad/i18n_convert.py` pattern).
-    Customer-facing documents keep their own per-document `language`
-    (`/invoices/[id]/print` per-invoice, PO print deliberately English,
-    `/b/[bikeId]` public flow untouched). `worker_language` becomes
-    per-user at M1. See `docs/plan-july9-vacation-month.md`.
-  - **Controlled-vocab names (categories, types, colours…) — SHIPPED
-    2026-07-14.** Every controlled-vocab name now renders in the active
-    locale via the pure helper `localizedName(locale, en, da)` in
-    `src/i18n/vocab.ts` (da→`name_da||name_en`, en→`name_en||name_da`, so a
-    blank never renders empty). Locale from `getLocale()` (server) /
-    `useLocale()` (client). No migration, no data entry — the schema was
-    already bilingual and `name_da` already authored. Covered the 10 vocabs:
-    part_categories, bike_types, bike_identifier_types, tax_identifier_types,
-    vat_codes, service_types, service_part_types, customer_segments, colors,
-    inventory_locations — across ~90 files (list/detail/form/print surfaces +
-    child `_components` + `src/lib` loaders). **Patterns used:** most render
-    sites wrap `localizedName` inline after adding `name_da` to the embed;
-    where a value was pre-composed by a parent and passed to a child
-    component, the PARENT remaps `name_en → localizedName(...)` before
-    passing (MO detail, bike detail identifier options, template paintwork)
-    so the child needs no change; the parts LIST `category_name` (DB-view
-    column) is localized via a `categoryNameById` lookup against the loaded
-    category list; `flattenCategoryTree` / `buildParentOptions` gained a
-    `locale` param. **Admin vocab-management sections** (colors/categories/
-    segments/locations lists) lead with the localized name + show the OTHER
-    language as a muted subtitle (differs-only) — the maintainer keeps both.
-    **`colorFinishLabel`/`coatingLabel`** already carried da labels (Mat/
-    Blank/Klar/Satin); call sites now pass the locale (coerced `"en"|"da"` —
-    the fn doesn't accept `de`). NO message-namespace fold was needed.
-    **OUT (deliberate, still English):** `parts.name_en` (product names),
-    `bike_templates.name_en`, `bike_families.name` (single col), org
-    `display_name`/`legal_name` (identity), `hs_codes.description`, kit
-    sticker colours (app constant), the public `/b/[bikeId]` report flow
-    (own per-document language), invoice/PO document generators (own doc
-    language), and `countries` lib names (separate vocab concern). Verified
-    in the browser in Danish (categories admin, parts list + recipe, bike
-    types, org segments) then `app_language` restored to `en` — flipping it
-    to `da` is the owner's 1-click go-live.
-
-- **Phone-call → ticket AI pipeline — UNPARKED 2026-07-09, July track;
-  BUILT AS A GENERIC INBOUND SYSTEM (dev decision 2026-07-14).**
-  Provider decisions locked (Twilio w/ fetch-and-delete recordings; Azure
-  Speech EU, not plain OpenAI Whisper; Claude haiku extraction; GatewayAPI
-  SMS unchanged) and the build is **harness-first**: upload-a-voicemail
-  test UI + processing pipeline + shadow-mode tickets before any telephony
-  is wired. **Voicemail is the FIRST CHANNEL of a generic inbound trunk**
-  (the paint → service_types move again): table is `inbound_messages`
-  (NOT `calls`) with a `channel` enum (only `voicemail` seeded), a
-  normalized `body_text` ("what they said" — transcript / email body /
-  message text) that extraction + matching read exclusively (never the
-  channel payload), `channel_meta` jsonb for channel-shaped data, and a
-  plain `ticket_id` action column (no polymorphic action framework until
-  a second action type is real). Libs in `src/lib/inbound/` —
-  pipeline/extract/match channel-blind, `channels/voicemail.ts` owns
-  transcription; harness at `/inbox` (renamed from /admin/inbound 2026-07-15 — "Inbox"/"Indbakke", Daily ops nav; it is a review queue, not admin config). Extraction emits `intent`
-  (repair_request/order_inquiry/other) from day one — v1 renders it on
-  the review banner, later it's the routing key. Future channels (email,
-  WhatsApp Business, agent/API ingress) are thin adapters built WHEN
-  REAL; threading/conversations gets its own design session when the
-  first two-way channel lands. Sliced A–F (harness shell → transcribe →
-  extract → match → shadow ticket → Twilio+retention); slices B/C need
-  `AZURE_SPEECH_KEY/REGION` / `ANTHROPIC_API_KEY`, D is
-  key-free and doesn't wait on B/C. Full deep-dive + slice detail in
-  `docs/plan-july9-vacation-month.md`; the design below remains the
-  reference. **ALL SLICES A–F SHIPPED and LIVE IN PRODUCTION 2026-07-16**
-  (first real calls processed end-to-end in shadow mode; Gladia replaced
-  Azure as the selected transcription provider). **NUMBER MOVE 2026-07-17:
-  the DK number +45 9370 3111 now belongs to Munin** (its voice/status/SMS
-  webhooks point at munin.valent.dk) — Jensen shadow-testing rides the US
-  trial number **+1 762 500 0850**, whose voice/status webhooks point at
-  Jensen prod. Dennis's company number remains the FMS production plan. The
-  NEXT arc — capture-every-call, per-stage confidence, spam triage,
-  intent routing (order_inquiry ≠ maintenance ticket), graduation
-  criteria for leaving shadow mode, v2 live-answer — is designed in
-  **`docs/plan-inbound-triage.md`** (2026-07-16); implement with Dennis
-  in August after shadow data accumulates.
-  Original design (parked June 2026, designed in-session).
-  Workshop calls become maintenance tickets automatically:
-  - Telephony: Twilio (conditional forwarding from the existing number),
-    dual-channel recording (tech leg / caller leg — speaker attribution for
-    free), bilingual da/en "call is recorded" announcement (GDPR, Denmark).
-  - Webhook → store audio in Supabase Storage (EU) → per-channel
-    transcription (Whisper API or Azure Speech EU; da/en auto-detect) →
-    Claude structured extraction (caller, org, callback number, bike clues,
-    problem, urgency, language).
-  - Matching is deterministic code, not the model: caller ID →
-    `contacts.phone` → org; spoken org name → trigram on
-    `organizations.legal_name`; spoken frame/QR → `bike_identifiers` exact;
-    else owner org's fleet filtered by colour/type. Attach the bike only if
-    exactly one candidate survives; otherwise store candidates for the tech
-    to confirm on the ticket.
-  - Schema: `maintenance_tickets` is already shaped for it (nullable
-    bike_id, reported_by_contact_id/text/phone, reported_language, source
-    enum already has 'phone'). New `inbound_messages` table (channel,
-    from_identity, media_path, body_text, understanding/extraction/
-    match_candidates jsonb, matched org/contact/bike FKs, channel_meta +
-    raw_payload jsonb, status `received → understood → extracted →
-    matched → actioned / failed`, nullable ticket_id). New
-    `bike_identifiers` type `fleet_number` for customers'
-    own numbering ("bike 25") — big match-rate win for municipalities.
-  - Notifications: SMS ack to caller via GatewayAPI (Danish, alphanumeric
-    sender) including the public report link `/b/<bikeId>`; Web Push to the
-    tech PWA (needs `push_subscriptions` + service-worker handler).
-  - Phasing: v1 voicemail-only in shadow mode ("review me" banner, measure
-    match accuracy); v2 live-call bridging + recording; v3 screen-pop on
-    inbound ring, callback threading to open tickets, email ingestion.
-  - GDPR non-negotiables: recording announcement, retention policy (audio
-    ~90 days, transcript/summary kept on ticket), DPAs with providers, EU
-    residency. Cost ≈ under 2 kr. per 5-min call + ~50 kr./mo for the number.
-
-- **People & roles (workforce model + role-password auth v0.5) — P1 SHIPPED
-  2026-07-23** (migration 73: `people` / `roles` / `person_roles` /
-  `role_capabilities` / `role_notifications`, the dangling
-  `work_orders.assigned_to` + `manufacturing_orders.assigned_to` (renamed
-  from `assigned_to_user_id`) FK'd to people, 5 seed roles with
-  capabilities+events; code registries `src/lib/people/{capabilities,
-  notifications}.ts` + scrypt helper `password.ts`; admin at
-  `/admin/people` — people CRUD w/ role checkboxes, role CRUD w/ capability
-  + notification-event checkboxes, write-only role-password set/rotate
-  [set/missing badge, env-secret status pattern]; System tile on /admin;
-  `adminPeople` namespace en+da). **P2 (role login + `can()` gating) is
-  next; P3–P4 after.** Full design in **`docs/plan-people-roles.md`**:
-  four separated concepts (person / role / credential / assignment), five
-  tables (`people` [with `user_id` M1-bridge], `roles` [bilingual vocab +
-  `home_path` + `password_hash`], `person_roles`, `role_capabilities`,
-  `role_notifications` — capability/event keys validated against code
-  registries, the provider-registry doctrine applied to permissions).
-  Auth v0.5: one scrypt password PER ROLE (password IS the role selector,
-  no picker), signed `{role, person}` cookie extending the existing
-  `fms_auth` gate, self-claimed tap-your-name person picker, `can()`
-  gating nav (via shared nav-items ids) / routes / dashboard bands,
-  per-role `home_path` landing. Seed roles: owner, it_admin, accountant
-  (all except admin), workshop (→ /work), sales (→ /sales-orders). The
-  dangling day-one `work_orders.assigned_to` /
-  `manufacturing_orders.assigned_to_user_id` columns get FK'd to people.
-  Locked with owner-dev: workshop SEES costs (no redaction pass), sales
-  role real, tap-your-name unverified is fine, no temp automation.
-  Explicitly a UX wall not a security boundary (perimeter stays Vercel
-  SSO until M1); at M1 the role passwords die and everything else
-  survives (RLS policies written against role_capabilities). Phased 1–4
-  (schema+admin → role login+gating → person picker+assignment →
-  notifications), each ~½ day.
-
-- **Munin — SEPARATE PRODUCT, P1 (scaffold + capture) BUILT 2026-07-17.**
-  A dictate-a-task phone agent for the dev's family (call/SMS
-  +45 9370 3111 → allowlisted callers → Gladia en/ru transcript → Claude
-  tool-use agent executes actions [email via Resend, shared Google
-  Calendar event, native reminders + nudge cron] → grounded SMS
-  confirmation), munin.valent.dk, own repo/Supabase/Vercel, built by
-  copy-and-trimming the FMS inbound trunk. **Lives in its own repo:
-  `~/workspace/code/munin` (github.com/GoatSmile/munin, private)** —
-  founding design at `munin/docs/plan-munin.md`, session handoff at
-  `munin/CLAUDE.md`. Munin work happens THERE (own worklog too).
-  **The number move happened at Munin P1 (2026-07-17): +45 9370 3111 is
-  Munin's now** (see the inbound-production note above) — Jensen
-  shadow-testing is back on the US trial number +1 762 500 0850.
-
-- **Voice commands — DESIGNED 2026-07-17, not built; #2 in the
-  re-sequenced July plan.** Staff dictate business tasks (call the
-  workshop line from a staff number, or an in-app "Dictate a command"
-  button → MediaRecorder → the same upload ingress) and a Claude
-  tool-use agent drafts the actions for review. Full design in
-  **`docs/plan-voice-commands.md`**. Founding utterance: "15 bikes from
-  Hotel D'Angleterre, March 15, red, front weave basket, white logo" →
-  offered customer creation + draft SO w/ production note + an OPEN SLOT
-  for the unspoken template. Rides the live inbound trunk
-  (`inbound_messages.kind = 'customer'|'command'`, `command_plan` jsonb,
-  `commanded_by` → people); agent calls read-only RESOLVERS first
-  (org trigram, part/template search, part-via-recipe — e.g. "motors for
-  Norma XL" resolves through the BOM), then proposes Tier-A draft
-  actions (draft SO/PO/customer/MO/ticket/invoice, notes, WO
-  parts+labor dictation) that WRAP EXISTING server actions (draft-pos.ts
-  etc.). Rules: model proposes/code disposes, never guess-create (open
-  slots instead), everything lands as provenance-bannered drafts,
-  grounded confirmations, review-first with measured graduation to
-  auto-apply. Tier B (stock receipt, transitions) = explicit confirm;
-  Tier C (issue invoice, emails, deletes, payments) = never by voice.
-  DEPENDS ON people & roles P1 (staff-identity-by-phone). Number note:
-  commands ride Jensen's line (US trial now, Dennis's DK number later) —
-  Munin owns +45 9370 3111.
-
-- **Sales track: website bike-configurator + AI lead-gen agent (parked
-  2026-07-09, by the owner's own call — "lay the bottom first").** Two ideas
-  from the Jul-9 call, both explicitly after the system is the daily
-  workhorse (his framing: earliest next year, debt down first):
-  - Homepage configurator that talks to the app: customer designs a bike on
-    jensenproduction.dk (phone-first), colour input → closest RAL from the
-    `colors` vocab, pick paintable parts with live pricing (the per-part
-    paint catalog makes this priceable), "send me an offer" → offer/quote in
-    the FMS.
-  - Lead-gen agent: monitor for prospect signals (e.g. companies relocating
-    to nearby business parks — his DXC/Nordhavn example), identify the right
-    contact, auto-draft outreach with the configurator link. Both belong
-    with the offers/quotes module (Tier 5).
+Architectural questions ("should this be one table or two?", "how do we
+model service-agreement billing?") get escalated to the human — these often
+live in a separate planning chat on claude.ai. Tactical implementation
+questions stay here. Decisions that come back get a DECISIONS.md entry.
