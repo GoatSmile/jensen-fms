@@ -3209,6 +3209,10 @@
     "wrongPassword": "Forkert adgangskode. Prøv igen."
   },
   "errors": {
+    "commandActionNotFound": "Handlingen findes ikke længere i planen.",
+    "commandSlotsUnfilled": "Udfyld de påkrævede valg først.",
+    "commandNeedsCustomer": "Ordren har ingen kunde at knytte til.",
+    "commandApplyCustomerFirst": "Opret den nye kunde først, derefter ordren.",
     "missingId": "Manglende id.",
     "missingBikeId": "Manglende cykel-id.",
     "missingMoId": "Manglende MO-id.",
@@ -3804,6 +3808,9 @@
   "inbox": {
     "title": "Indbakke",
     "subtitle": "Indgående beskeder omdannet til kladde-sager — gennemse før noget stoles på. Telefonbeskeder nu; flere kanaler senere.",
+    "commandCrumb": "Kommando",
+    "commandTranscript": "Det du sagde",
+    "commandBadge": "Kommando",
     "uploadTitle": "Upload en telefonbesked",
     "uploadHint": "Læg en optaget telefonbesked ind (dansk eller engelsk) for at køre den gennem pipelinen. Testindgang indtil telefonnummeret er koblet på.",
     "uploadFileLabel": "Lydfil",
@@ -3915,8 +3922,36 @@
     "actioned": "Sag oprettet",
     "failed": "Fejlet"
   },
+  "inboxCommand": {
+    "planTitle": "Foreslåede handlinger",
+    "rerun": "Kør igen",
+    "rerunning": "Kører igen…",
+    "noActions": "Assistenten foreslog ingen handlinger.",
+    "notesLabel": "Noter",
+    "type_draft_customer": "Ny kunde",
+    "type_draft_sales_order": "Salgsordre (kladde)",
+    "type_draft_purchase_order": "Indkøbsordre (kladde)",
+    "applied": "Oprettet",
+    "slot_template": "Hvilken cykelmodel?",
+    "slot_segment": "Kundesegment",
+    "slot_color": "Farve",
+    "optional": "valgfri",
+    "pickPlaceholder": "Vælg…",
+    "applying": "Opretter…",
+    "apply": "Opret",
+    "applyCustomerFirst": "Opret den nye kunde ovenfor først.",
+    "soSummary": "{qty} × {model}",
+    "modelPending": "model mangler",
+    "newTitle": "Diktér en kommando",
+    "newHint": "Diktér eller skriv en opgave — en ny ordre, en kunde, dele der skal købes. Assistenten laver en kladde, du kan gennemgå; intet oprettes, før du godkender.",
+    "newPlaceholder": "f.eks. Ordre på 15 Norma S til Hotel D'Angleterre, rød, levering 15. marts, forkurv, hvidt logo",
+    "drafting": "Laver kladde…",
+    "draftActions": "Lav kladde",
+    "dictate": "Diktér"
+  },
   "inboundChannel": {
-    "voicemail": "Telefonbesked"
+    "voicemail": "Telefonbesked",
+    "in_app": "Kommando i appen"
   },
   "inboundOutcome": {
     "messageLeft": "Besked lagt",

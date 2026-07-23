@@ -3209,6 +3209,10 @@
     "wrongPassword": "Wrong password. Try again."
   },
   "errors": {
+    "commandActionNotFound": "That action is no longer in the plan.",
+    "commandSlotsUnfilled": "Fill in the required choices first.",
+    "commandNeedsCustomer": "This order has no customer to attach to.",
+    "commandApplyCustomerFirst": "Apply the new customer first, then this order.",
     "missingId": "Missing id.",
     "missingBikeId": "Missing bike id.",
     "missingMoId": "Missing MO id.",
@@ -3804,6 +3808,9 @@
   "inbox": {
     "title": "Inbox",
     "subtitle": "Incoming messages turned into draft tickets — review before anything is trusted. Voicemail today; more channels later.",
+    "commandCrumb": "Command",
+    "commandTranscript": "What you said",
+    "commandBadge": "Command",
     "uploadTitle": "Upload a voicemail",
     "uploadHint": "Drop in a recorded voicemail (Danish or English) to run it through the pipeline. Test ingress until the phone number is wired.",
     "uploadFileLabel": "Audio file",
@@ -3915,8 +3922,36 @@
     "actioned": "Ticket created",
     "failed": "Failed"
   },
+  "inboxCommand": {
+    "planTitle": "Proposed actions",
+    "rerun": "Re-run",
+    "rerunning": "Re-running…",
+    "noActions": "The agent didn't propose any actions.",
+    "notesLabel": "Notes",
+    "type_draft_customer": "New customer",
+    "type_draft_sales_order": "Draft sales order",
+    "type_draft_purchase_order": "Draft purchase order",
+    "applied": "Applied",
+    "slot_template": "Which bike model?",
+    "slot_segment": "Customer segment",
+    "slot_color": "Colour",
+    "optional": "optional",
+    "pickPlaceholder": "Choose…",
+    "applying": "Applying…",
+    "apply": "Apply",
+    "applyCustomerFirst": "Apply the new customer above first.",
+    "soSummary": "{qty} × {model}",
+    "modelPending": "model to choose",
+    "newTitle": "Dictate a command",
+    "newHint": "Dictate or type a task — a new order, a customer, parts to buy. The assistant drafts it for you to review; nothing is created until you apply it.",
+    "newPlaceholder": "e.g. Order for 15 Norma S from Hotel D'Angleterre, red, delivery March 15, front basket, white logo",
+    "drafting": "Drafting…",
+    "draftActions": "Draft actions",
+    "dictate": "Dictate"
+  },
   "inboundChannel": {
-    "voicemail": "Voicemail"
+    "voicemail": "Voicemail",
+    "in_app": "In-app command"
   },
   "inboundOutcome": {
     "messageLeft": "Message left",

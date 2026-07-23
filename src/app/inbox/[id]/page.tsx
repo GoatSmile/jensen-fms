@@ -21,7 +21,9 @@ import {
 } from "@/lib/inbound/settings";
 
 import { isSpamFolded } from "@/lib/inbound/triage";
+import { parseCommandPlan } from "@/lib/inbound/command/plan";
 
+import { CommandPlanPanel } from "./_components/command-plan-panel";
 import { MatchPanel } from "./_components/match-panel";
 import { TranscriptPanel } from "./_components/transcript-panel";
 import { RoutedAction } from "./_components/routed-action";
@@ -60,6 +62,108 @@ export default async function InboundDetailPage({
     throw new Error(`Failed to load inbound message: ${error.message}`);
   }
   if (!msg) notFound();
+
+  // Command messages (VC-1) take a different review surface: the agent's plan
+  // of proposed draft actions, applied one by one. No audio / extraction /
+  // match panels — the command agent is the whole pipeline.
+  if (msg.kind === "command") {
+    const plan = parseCommandPlan(msg.command_plan);
+    const [{ data: actions }, { data: templates }, { data: segments }, { data: colors }] =
+      await Promise.all([
+        supabase
+          .from("command_actions")
+          .select("plan_action_id, entity_table, entity_id")
+          .eq("message_id", id),
+        supabase
+          .from("bike_templates")
+          .select("id, name_en, name_da, frame_size")
+          .eq("is_current", true)
+          .order("name_en"),
+        supabase
+          .from("customer_segments")
+          .select("id, name_en, name_da")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("colors")
+          .select("id, name_en, name_da")
+          .eq("is_active", true)
+          .order("sort_order"),
+      ]);
+    const pick = (en: string | null, da: string | null) => da || en || "—";
+    const applied: Record<string, { entityTable: string | null; entityId: string | null }> = {};
+    for (const a of actions ?? []) {
+      applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id };
+    }
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/inbox">{t("title")}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{t("commandCrumb")}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <header className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold">{t("commandCrumb")}</h1>
+          <Badge variant="outline" className="font-normal">
+            {tChannel.has(msg.channel) ? tChannel(msg.channel) : msg.channel}
+          </Badge>
+          <Badge variant={INBOUND_STATUS_VARIANT[msg.status]}>
+            {tStatus(msg.status)}
+          </Badge>
+        </header>
+
+        {msg.body_text ? (
+          <section className="flex flex-col gap-1 rounded-md border p-4">
+            <h2 className="text-muted-foreground text-xs tracking-wide uppercase">
+              {t("commandTranscript")}
+            </h2>
+            <p className="text-sm whitespace-pre-wrap">{msg.body_text}</p>
+          </section>
+        ) : null}
+
+        {msg.status === "failed" ? (
+          <p className="text-destructive text-sm" role="alert">
+            {msg.error}
+          </p>
+        ) : (
+          <CommandPlanPanel
+            messageId={msg.id}
+            plan={plan}
+            applied={applied}
+            templates={(templates ?? []).map((tpl) => ({
+              id: tpl.id,
+              label: [pick(tpl.name_en, tpl.name_da), tpl.frame_size]
+                .filter(Boolean)
+                .join(" · "),
+            }))}
+            segments={(segments ?? []).map((s) => ({
+              id: s.id,
+              label: pick(s.name_en, s.name_da),
+            }))}
+            colors={(colors ?? []).map((c) => ({
+              id: c.id,
+              label: pick(c.name_en, c.name_da),
+            }))}
+          />
+        )}
+      </div>
+    );
+  }
 
   // Signed URL for playback (private bucket) — 1 h is ample for a review pass.
   let mediaUrl: string | null = null;

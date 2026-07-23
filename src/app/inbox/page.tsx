@@ -28,6 +28,7 @@ import {
 } from "@/lib/inbound/types";
 import { isSpamFolded } from "@/lib/inbound/triage";
 
+import { NewCommand } from "./_components/new-command";
 import { UploadVoicemail } from "./_components/upload-voicemail";
 
 /**
@@ -48,7 +49,7 @@ export default async function InboundPage() {
   const { data, error } = await supabase
     .from("inbound_messages")
     .select(
-      "id, channel, status, from_identity, received_at, ticket_id, disposition, spam_signals",
+      "id, channel, kind, status, from_identity, received_at, ticket_id, disposition, spam_signals",
     )
     .order("received_at", { ascending: false })
     .limit(200);
@@ -60,6 +61,7 @@ export default async function InboundPage() {
     InboundMessageRow,
     | "id"
     | "channel"
+    | "kind"
     | "status"
     | "from_identity"
     | "received_at"
@@ -92,6 +94,9 @@ export default async function InboundPage() {
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
+
+      {/* In-app command ingress (VC-1) — dictate/type a task, agent drafts it. */}
+      <NewCommand />
 
       {/* Client uploader lives here so the harness ingress is one click away. */}
       <UploadVoicemail />
@@ -151,9 +156,15 @@ export default async function InboundPage() {
                 >
                   <TableCell className="p-0">
                     <Link href={href} className="block px-4 py-2.5">
-                      <Badge variant="outline" className="font-normal">
-                        {tChannel(r.channel)}
-                      </Badge>
+                      {r.kind === "command" ? (
+                        <Badge variant="secondary" className="font-normal">
+                          {t("commandBadge")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="font-normal">
+                          {tChannel(r.channel)}
+                        </Badge>
+                      )}
                     </Link>
                   </TableCell>
                   <TableCell className="p-0 font-mono text-xs">

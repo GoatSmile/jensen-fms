@@ -1140,12 +1140,65 @@ export type Database = {
         }
         Relationships: []
       }
+      command_actions: {
+        Row: {
+          action_type: string
+          applied_at: string
+          applied_by: string | null
+          entity_id: string | null
+          entity_table: string | null
+          id: string
+          message_id: string
+          payload: Json | null
+          plan_action_id: string
+        }
+        Insert: {
+          action_type: string
+          applied_at?: string
+          applied_by?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          message_id: string
+          payload?: Json | null
+          plan_action_id: string
+        }
+        Update: {
+          action_type?: string
+          applied_at?: string
+          applied_by?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          message_id?: string
+          payload?: Json | null
+          plan_action_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_actions_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "command_actions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbound_messages: {
         Row: {
           body_text: string | null
           call_outcome: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta: Json
+          command_plan: Json | null
+          commanded_by: string | null
           created_at: string
           disposition: string
           duration_seconds: number | null
@@ -1153,6 +1206,7 @@ export type Database = {
           extraction: Json | null
           from_identity: string | null
           id: string
+          kind: string
           language: string | null
           match_candidates: Json | null
           matched_bike_id: string | null
@@ -1175,6 +1229,8 @@ export type Database = {
           call_outcome?: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
+          command_plan?: Json | null
+          commanded_by?: string | null
           created_at?: string
           disposition?: string
           duration_seconds?: number | null
@@ -1182,6 +1238,7 @@ export type Database = {
           extraction?: Json | null
           from_identity?: string | null
           id?: string
+          kind?: string
           language?: string | null
           match_candidates?: Json | null
           matched_bike_id?: string | null
@@ -1204,6 +1261,8 @@ export type Database = {
           call_outcome?: string | null
           channel?: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
+          command_plan?: Json | null
+          commanded_by?: string | null
           created_at?: string
           disposition?: string
           duration_seconds?: number | null
@@ -1211,6 +1270,7 @@ export type Database = {
           extraction?: Json | null
           from_identity?: string | null
           id?: string
+          kind?: string
           language?: string | null
           match_candidates?: Json | null
           matched_bike_id?: string | null
@@ -1229,6 +1289,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inbound_messages_commanded_by_fkey"
+            columns: ["commanded_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inbound_messages_matched_bike_id_fkey"
             columns: ["matched_bike_id"]
@@ -4554,7 +4621,7 @@ export type Database = {
         | "in_maintenance"
         | "retired"
         | "lost_or_stolen"
-      inbound_channel: "voicemail"
+      inbound_channel: "voicemail" | "in_app"
       inbound_status:
         | "received"
         | "understood"
@@ -4772,7 +4839,7 @@ export const Constants = {
         "retired",
         "lost_or_stolen",
       ],
-      inbound_channel: ["voicemail"],
+      inbound_channel: ["voicemail", "in_app"],
       inbound_status: [
         "received",
         "understood",

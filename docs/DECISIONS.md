@@ -261,3 +261,60 @@ channel flags). Dev calls made building it:
   wo.assigned (→ the assignee), invoice.overdue (daily cron → owner +
   accountant). SMS/Web Push deferred (channel flags exist; only email
   delivers today).
+
+## 2026-07-23 — Voice commands VC-1: build the in-app slice, text-first (Option A)
+The owner chose the **middle path** over both "full VC-1 now" and "defer
+everything": build the in-app dictate slice (dictate → agent → resolvers →
+three draft actions → Inbox review), and **skip the phone/telephony
+staff-number routing fork** — that folds in with VC-3 in August when
+Dennis's number and Dennis are both real. Rationale: the phone fork is the
+most time-consuming, least-valuable-right-now piece (a live Twilio seam for
+a line that isn't Dennis's yet), and the in-app slice is exactly the part
+the owner can dogfood at their desk before leaving Aug 4 — so August is
+tuning, not building.
+
+Deliberate deviations from `docs/plan-voice-commands.md` (the agreed design),
+for this slice only:
+- **Ingress is TEXT, not audio→Gladia (Option A).** The design specified
+  MediaRecorder → Gladia "for phone parity, one pipeline." For the in-app
+  slice we take dictated/typed TEXT straight to the agent (reusing the
+  existing Web-Speech `DictateButton` for voice→text + a textarea). No audio
+  upload, no bucket, no transcription cost — fastest to dogfood, Chrome/
+  desktop for the voice part (fine, it's the owner at a desk). The audio
+  path is NOT abandoned; it arrives with the phone face in VC-3, and both
+  converge on the identical agent + review surface, so nothing here is
+  wasted. New `in_app` value on the `inbound_channel` enum (migration 75)
+  is the natural consequence.
+- **`kind` values are `'customer'` (default) / `'command'`** exactly as the
+  design sketch (migration 76), so the future phone fork keys off the same
+  column with zero churn.
+
+Mechanics (all in migration 76 + `src/lib/inbound/command/*`):
+- **The model proposes, code + a human dispose.** The agent
+  (`command/agent.ts`) is a Claude tool-use LOOP on the same Anthropic
+  plumbing as extract.ts (thin fetch, key from env, model from
+  app_settings — reuses the extraction model), calling read-only RESOLVERS
+  (`command/resolvers.ts`: search_customer, resolve_customer_segment,
+  resolve_template, resolve_color, search_part, resolve_part_via_recipe) to
+  ground every reference, then emitting a `propose_plan`. It NEVER invents:
+  an unresolved template/part/colour is left null and becomes an OPEN SLOT
+  the reviewer fills; only CUSTOMERS may be offer-to-created.
+- **`command_plan` (jsonb) holds proposals; `command_actions` logs applies.**
+  parseCommandPlan (`command/plan.ts`) is the contract enforcer (à la
+  parseExtraction); open slots are DERIVED from the typed fields, never
+  trusted from the model. One `command_actions` row per applied action
+  (provenance + a unique (message, action) index = idempotent apply).
+- **Apply wraps pure draft-writers.** `insertDraftOrganization` /
+  `insertDraftSalesOrder` (`src/lib/commercial/draft-writers.ts`) are the
+  redirect-free, FormData-free cores mirroring the interactive
+  save-organization / save-so + manage-so-lines rules; draft PO reuses
+  `createDraftPOsForDemand` as-is. A sales order that references a
+  just-proposed new customer requires that customer's action applied first
+  (dependency enforced in the panel + the apply action).
+- **Command rows SKIP triage** (a staff command from an unknown number would
+  score as spam) — the agent is the whole pipeline for `kind='command'`.
+- VC-1 sales orders carry a SINGLE template line (the founding utterance);
+  multi-line voice orders + forcing a named PO supplier are VC-2 notes.
+Verified end-to-end in-browser (founding utterance → customer + SO drafts,
+dependency ordering, grounded summary). Scope/phasing unchanged in
+`docs/plan-voice-commands.md`; VC-2/VC-3 as written there.
