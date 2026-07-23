@@ -41,13 +41,23 @@ append.** History belongs in `docs/archive/`, decisions in
   number remains the production plan.
 
 ## In flight / next action
-- People & roles is done (P1–P4). **Next in the July queue: global
-  identifier search**, then the maintenance/workshop polish pass. Voice
-  commands VC-1 remains the owner's July-vs-August call.
-- **Open from the Jul-23 re-plan**: the ~1-hour perimeter check — confirm
-  whether the public `/b`/`/report` pages ship the publishable key in
-  their client bundle (anon_all RLS makes that key a master key; middleware
-  correctly excludes those routes from the gate, verified). Do before leave.
+- People & roles is done (P1–P4). **Global identifier search shipped
+  2026-07-23** (July queue item 4): `/bikes` search now matches any
+  registered identifier (lock/battery/charger/QR/RFID/AirTag/fleet no.), not
+  just frame number; result rows show a "matched via" hint; `/scan` manual
+  entry upgrades for free. Verified in-browser.
+- **Perimeter check DONE 2026-07-23 — verdict: the scary version is FALSE
+  today.** The publishable/anon key does NOT reach the browser on any route
+  (public or gated): the browser client `src/lib/supabase/client.ts` has
+  zero importers, so Next never inlines the key into client JS (confirmed by
+  a sentinel `next build` — the key landed only in `.next/server/**`, absent
+  from `.next/static/**`). The anon_all master-key risk is therefore LATENT,
+  not live. Guardrail shipped: `client.ts` now carries a loud DO-NOT-IMPORT
+  header. Low-sev residue (XFF-spoofable rate limits, `/api/qr` error echo)
+  logged in BACKLOG. See the Landmine below.
+- **Next up: VC-1 middle path** (in-app dictate slice, no phone routing) —
+  plan presented to owner 2026-07-23, awaiting go-ahead before build; then
+  the maintenance/workshop polish pass.
 - **Deferred, needs a browser**: a live in-app confirmation of the P4
   ticket.created / wo.assigned hooks (the delivery engine itself was
   verified live via the invoice.overdue cron; the two action hooks are the
@@ -63,7 +73,7 @@ self-serve for Dennis's solo August onboarding.
    VC-vs-August call — still open)
 3. Inbound stats fold — deliberately thin (prod has only 2 shadow rows;
    real data starts when Dennis's number lands, August)
-4. Global identifier search ← **next up**
+4. Global identifier search ✅ 2026-07-23
 5. Maintenance/workshop polish pass
 6. Handover notes ✅ — docs restructure + `docs/PLAYBOOK-AUGUST.md`
 
@@ -89,6 +99,16 @@ model) · e-conomic production cutover · supplier-email go-live (untick
 Dennis's company number onto the inbound trunk.
 
 ## Landmines
+- **The publishable/anon key is a DB master key — keep it out of the
+  browser.** anon_all RLS (migration 50) means the anon key can read/write
+  every table. It's safe today ONLY because nothing browser-side references
+  it (`src/lib/supabase/client.ts` is unimported dead code). The instant any
+  `"use client"` component imports that client — or any `@supabase/supabase-js`
+  browser client — the key inlines into public JS app-wide and becomes a live
+  critical exposure on `/b` + `/report`. All browser data access must go
+  through server components / server actions (`src/lib/supabase/server.ts`).
+  This resolves at M1 when user-scoped RLS replaces anon_all. (Perimeter
+  audit 2026-07-23; guardrail header in `client.ts`.)
 - **Before switching e-conomic tokens to production**: any
   `organizations.economic_customer_number` /
   `invoices.economic_voucher_id` / `economic_synced_at` stamped against the

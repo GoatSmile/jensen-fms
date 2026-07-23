@@ -17,6 +17,20 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   milestone** — build it alongside auth, since auth touches every page.
   Handover note: this is also the executable half of any team handover —
   the manual-verification discipline doesn't transfer with the repo.
+- **Public-action rate limits are IP-spoofable** (perimeter audit
+  2026-07-23, low sev). `submit-report.ts`, `submit-general-report.ts`,
+  `find-bike.ts` key their 5/hr (reports) and 30/hr (lookup) caps off the
+  leftmost `x-forwarded-for` value, which is client-controllable → an
+  attacker rotating the header floods `maintenance_tickets` + the public
+  bike-images bucket. Damage is spam/storage cost, no data or key exposure.
+  Fix: derive the key from a trusted hop (Vercel's real client IP) instead
+  of raw XFF. Do when abuse appears or with the auth milestone.
+- **`/api/qr/[bikeIdExt]` is a bike-existence oracle** (perimeter audit
+  2026-07-23, low sev). Unauthenticated (all `/api/*` is outside both the
+  SSO layer and the middleware gate); returns 404 vs 200 by row existence
+  and echoes raw Postgres error text on 500. Bounded — UUIDs are
+  unguessable, output is only a QR image, no writes/key. Fix: stop echoing
+  DB errors; consider a generic 400. Low priority.
 - `audit_log` triggers (wait on auth for user_id).
 - SQL-side pagination + stock-status filtering for the parts list at scale
   (currently in-memory in `src/app/parts/page.tsx`).
