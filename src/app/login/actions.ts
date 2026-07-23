@@ -8,6 +8,7 @@ import { AUTH_COOKIE, passwordToken, safeNextPath } from "@/lib/auth/gate";
 import { signSession, type RoleSession } from "@/lib/auth/session";
 import { isCapability } from "@/lib/people/capabilities";
 import { verifyPassword } from "@/lib/people/password";
+import { loadPeopleForRole } from "@/lib/people/queries";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { error: string | null };
@@ -102,6 +103,13 @@ export async function login(
 
   // A deep link (?next=) wins; otherwise land on the role's home page.
   // Middleware bounces uncapable targets to home, so no capability check
-  // is needed here.
-  redirect(nextRaw && next !== "/" ? next : session.home);
+  // is needed here. When the role has claimable people, stop at
+  // tap-your-name first (P3) — skippable, revisitable via the nav chip.
+  const target = nextRaw && next !== "/" ? next : session.home;
+  const claimable = await loadPeopleForRole(supabase, role.key);
+  redirect(
+    claimable.length > 0
+      ? `/whoami?next=${encodeURIComponent(target)}`
+      : target,
+  );
 }

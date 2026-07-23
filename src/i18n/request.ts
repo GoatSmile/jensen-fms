@@ -1,6 +1,8 @@
 import { getRequestConfig } from "next-intl/server";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
+import { AUTH_COOKIE } from "@/lib/auth/gate";
+import { verifySessionToken } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import da from "../../messages/da.json";
@@ -58,6 +60,29 @@ function withEnglishFallback(
 const WORKER_PATH =
   /^\/(work|scan)(\/|$)|^\/manufacturing-orders\/[^/]+\/(bikes\/[^/]+\/build|build-batch)(\/|$)/;
 
+/**
+ * P3: a claimed person's preferred_language supersedes the shared
+ * worker_language on worker surfaces — the "per-user at M1" i18n note
+ * arrives early via tap-your-name. Only role sessions carry a person.
+ */
+async function personWorkerLanguage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<string | null> {
+  const expected = process.env.SITE_PASSWORD;
+  if (!expected) return null;
+  const token = (await cookies()).get(AUTH_COOKIE)?.value;
+  if (!token || !token.startsWith("v2.")) return null;
+  const session = await verifySessionToken(token, expected);
+  if (!session?.person) return null;
+  const { data } = await supabase
+    .from("people")
+    .select("preferred_language")
+    .eq("id", session.person)
+    .maybeSingle();
+  const lang = data?.preferred_language?.trim();
+  return lang === "da" || lang === "en" ? lang : null;
+}
+
 export default getRequestConfig(async () => {
   let locale: AppLocale = "en";
   // A locale lookup must never break a page — any failure means English.
@@ -71,7 +96,7 @@ export default getRequestConfig(async () => {
       .eq("id", 1)
       .maybeSingle();
     const raw = WORKER_PATH.test(pathname)
-      ? data?.worker_language
+      ? ((await personWorkerLanguage(supabase)) ?? data?.worker_language)
       : data?.app_language;
     if (isLocale(raw)) locale = raw;
   } catch {

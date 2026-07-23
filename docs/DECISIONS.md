@@ -223,3 +223,14 @@ password, lowest `sort_order` wins (admin can't detect collisions —
 hashes aren't comparable); don't do that. Rejected alternatives: DB
 lookup per request in middleware (Edge latency + coupling), a separate
 `AUTH_SECRET` env var (more setup surface for a layer M1 deletes).
+
+## 2026-07-23 — Tap-your-name mechanics (people & roles P3, dev calls)
+The claimed person is **re-signed into the session cookie** (same
+self-contained pattern as P2 — no DB in middleware); claiming is skippable
+and switchable any time via the nav person chip. Assignment shipped for
+**work orders only**: tickets have no assignee column (the design's
+"WOs/tickets" resolved to what the schema actually carries), and the MO
+`assigned_to` FK stays ready but picker-less until a real use appears.
+A claimed person's `preferred_language` now supersedes the shared
+`worker_language` on worker surfaces — the "per-user at M1" i18n note
+arrived early, at zero migration cost.

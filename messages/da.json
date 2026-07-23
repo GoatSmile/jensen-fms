@@ -15,7 +15,9 @@
     "chipReady": "Klar",
     "chipAtPainter": "Hos lakereren",
     "chipPartsShort": "{count, plural, one {mangler 1 del} other {mangler # dele}}",
-    "chipFrameToConfirm": "bekræft stelnummer"
+    "chipFrameToConfirm": "bekræft stelnummer",
+    "filterAll": "Alle",
+    "filterMine": "Mine"
   },
   "wo": {
     "backToQueue": "Køen",
@@ -281,7 +283,8 @@
     "openAria": "Åbn navigationen",
     "closeAria": "Luk navigationen",
     "title": "Navigation",
-    "inbox": "Indbakke"
+    "inbox": "Indbakke",
+    "whoami": "Hvem arbejder?"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1270,7 +1273,11 @@
     "creating": "Opretter…",
     "createWorkOrder": "Opret arbejdsseddel",
     "crumbNew": "Ny",
-    "newSubtitle": "Selvstændige arbejdssedler er sjældne — de fleste startes fra en sag via “Start arbejdsseddel”-knappen. Brug denne, når arbejdet ikke svarer til en logget kundeindmelding."
+    "newSubtitle": "Selvstændige arbejdssedler er sjældne — de fleste startes fra en sag via “Start arbejdsseddel”-knappen. Brug denne, når arbejdet ikke svarer til en logget kundeindmelding.",
+    "assigneeTitle": "Ansvarlig",
+    "unassigned": "Ikke tildelt",
+    "assignToMe": "Tildel til mig",
+    "assigneeSavedNote": "Gemt"
   },
   "stockStatus": {
     "ok": "På lager",
@@ -3789,7 +3796,9 @@
     "adminRoleKeyExists": "Der findes allerede en rolle med denne nøgle",
     "adminRoleKeyInvalid": "Nøglen må kun bestå af små bogstaver, tal og understregninger og skal starte med et bogstav",
     "adminRoleHomePathInvalid": "Startsiden skal være en intern sti, der starter med /",
-    "adminRolePasswordTooShort": "Adgangskoden skal være på mindst 6 tegn"
+    "adminRolePasswordTooShort": "Adgangskoden skal være på mindst 6 tegn",
+    "whoamiInvalidPerson": "Denne person kan ikke vælges til denne rolle",
+    "woAssigneeInvalid": "Denne person kan ikke tildeles"
   },
   "inbox": {
     "title": "Indbakke",
@@ -3927,5 +3936,11 @@
     "repair_request": "Reparation",
     "order_inquiry": "Ordreforespørgsel",
     "other": "Andet"
+  },
+  "whoami": {
+    "title": "Hvem arbejder?",
+    "subtitle": "Tryk på dit navn — arbejde du starter, registreres under det. ({role})",
+    "currentBadge": "Dig",
+    "continueWithout": "Fortsæt uden navn"
   }
 }

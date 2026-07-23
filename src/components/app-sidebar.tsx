@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CircleUser, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
@@ -20,9 +20,14 @@ const COLLAPSE_KEY = "jensen-fms:sidebar-collapsed";
 
 export function AppSidebar({
   allowedCaps,
+  showPersonChip,
+  personName,
 }: {
   /** Role capability scope; null = show everything (gate off / legacy). */
   allowedCaps: string[] | null;
+  /** Only role sessions carry a person identity (tap-your-name, P3). */
+  showPersonChip: boolean;
+  personName: string | null;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -111,6 +116,30 @@ export function AppSidebar({
           ))}
         </nav>
         <div className="border-t p-2">
+          {showPersonChip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/whoami"
+                  aria-label={personName ?? t("whoami")}
+                  className={cn(
+                    "text-muted-foreground hover:bg-foreground/5 hover:text-foreground flex w-full items-center gap-2.5 rounded-md py-1.5 text-sm transition-colors",
+                    collapsed ? "justify-center px-0" : "px-2.5",
+                  )}
+                >
+                  <CircleUser aria-hidden className="size-4 shrink-0" />
+                  {collapsed ? null : (
+                    <span className="truncate">
+                      {personName ?? t("whoami")}
+                    </span>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" hidden={!collapsed}>
+                {personName ?? t("whoami")}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
           <Tooltip>
             <TooltipTrigger asChild>
               <button

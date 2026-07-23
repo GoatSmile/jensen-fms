@@ -19,7 +19,11 @@ import { formatMoney } from "@/lib/parts/format";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
 import { CLOSED_WO_STATUSES } from "@/lib/maintenance/work-order-status";
 
+import { readGate } from "@/lib/auth/read-session";
+import { loadActivePeople } from "@/lib/people/queries";
+
 import { WOHeader } from "./_components/wo-header";
+import { WOAssigneeSection } from "./_components/wo-assignee-section";
 import { WODetailsSection } from "./_components/wo-details-section";
 import { WOPartsSection, type WOPartRow } from "./_components/wo-parts-section";
 import type { PartChoice } from "./_components/wo-part-dialog";
@@ -43,7 +47,7 @@ export default async function WorkOrderDetailPage({
     .from("work_orders")
     .select(
       `
-        id, wo_number, status, is_billable,
+        id, wo_number, status, is_billable, assigned_to,
         diagnosis, work_performed, customer_summary_en, customer_summary_da,
         language, labor_minutes, labor_rate_dkk,
         started_at, completed_at, created_at, updated_at,
@@ -69,7 +73,7 @@ export default async function WorkOrderDetailPage({
   const status = wo.status as WorkOrderStatus;
   const readOnly = CLOSED_WO_STATUSES.includes(status);
 
-  const [woPartsRes, partsCatalogRes] = await Promise.all([
+  const [woPartsRes, partsCatalogRes, people, gate] = await Promise.all([
     supabase
       .from("work_order_parts")
       .select(
@@ -87,7 +91,25 @@ export default async function WorkOrderDetailPage({
       )
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
+    loadActivePeople(supabase),
+    readGate(),
   ]);
+
+  // Assignee options: pickable people, plus the current assignee even if
+  // since archived (so the value renders and can be changed away).
+  const assigneeOptions = people.map((p) => ({ id: p.id, label: p.full_name }));
+  if (wo.assigned_to && !assigneeOptions.some((p) => p.id === wo.assigned_to)) {
+    const { data: archived } = await supabase
+      .from("people")
+      .select("id, full_name")
+      .eq("id", wo.assigned_to)
+      .maybeSingle();
+    if (archived) {
+      assigneeOptions.push({ id: archived.id, label: archived.full_name });
+    }
+  }
+  const myPersonId =
+    gate.kind === "role" ? (gate.session.person ?? null) : null;
 
   const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
     id: p.id,
@@ -268,6 +290,14 @@ export default async function WorkOrderDetailPage({
         </div>
 
         <div className="flex flex-col gap-6">
+          <WOAssigneeSection
+            woId={wo.id}
+            options={assigneeOptions}
+            currentId={wo.assigned_to ?? null}
+            myPersonId={myPersonId}
+            readOnly={readOnly}
+          />
+
           <WOPartsSection
             woId={wo.id}
             rows={woPartRows}

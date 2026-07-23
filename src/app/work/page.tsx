@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import { ChevronRight, ScanLine, Tag } from "lucide-react";
+import { ChevronRight, CircleUser, ScanLine, Tag } from "lucide-react";
 import { localizedName } from "@/i18n/vocab";
+import { readGate } from "@/lib/auth/read-session";
 
 import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
@@ -30,13 +31,18 @@ export const dynamic = "force-dynamic";
 export default async function WorkQueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; mine?: string }>;
 }) {
-  const { tab } = await searchParams;
-  const [t, locale] = await Promise.all([
+  const { tab, mine } = await searchParams;
+  const [t, locale, gate] = await Promise.all([
     getTranslations("work"),
     getLocale(),
+    readGate(),
   ]);
+  // Tap-your-name person (P3) — enables the "Mine" filter on repairs.
+  const myPersonId =
+    gate.kind === "role" ? (gate.session.person ?? null) : null;
+  const mineActive = mine === "1" && myPersonId !== null;
   const supabase = await createClient();
 
   const [woRes, buildQueue] = await Promise.all([
@@ -44,7 +50,7 @@ export default async function WorkQueuePage({
       .from("work_orders")
       .select(
         `
-        id, wo_number, status, started_at, created_at,
+        id, wo_number, status, started_at, created_at, assigned_to,
         diagnosis,
         bike:bikes!bike_id(
           id, frame_number,
@@ -66,8 +72,27 @@ export default async function WorkQueuePage({
     throw new Error(`Failed to load work queue: ${woRes.error.message}`);
   }
 
-  // in_progress first, then open by created_at asc.
-  const repairRows = (woRes.data ?? []).slice().sort((a, b) => {
+  // Assignee names for the repair cards (one query for the set shown).
+  const assignedIds = [
+    ...new Set(
+      (woRes.data ?? []).map((r) => r.assigned_to).filter(Boolean) as string[],
+    ),
+  ];
+  const assigneeNameById = new Map<string, string>();
+  if (assignedIds.length > 0) {
+    const { data: assignees } = await supabase
+      .from("people")
+      .select("id, full_name")
+      .in("id", assignedIds);
+    for (const p of assignees ?? []) assigneeNameById.set(p.id, p.full_name);
+  }
+
+  // in_progress first, then open by created_at asc. "Mine" narrows to the
+  // session person's assignments (URL-driven, like every list filter).
+  const repairRows = (woRes.data ?? [])
+    .filter((r) => !mineActive || r.assigned_to === myPersonId)
+    .slice()
+    .sort((a, b) => {
     if (a.status !== b.status) {
       return a.status === "in_progress" ? -1 : 1;
     }
@@ -121,6 +146,21 @@ export default async function WorkQueuePage({
           sub={t("inProgressSub", { count: inProgressCount })}
         />
       </div>
+
+      {activeTab === "repair" && myPersonId ? (
+        <div className="flex items-center gap-1.5">
+          <FilterChip
+            active={!mineActive}
+            href="/work?tab=repair"
+            label={t("filterAll")}
+          />
+          <FilterChip
+            active={mineActive}
+            href="/work?tab=repair&mine=1"
+            label={t("filterMine")}
+          />
+        </div>
+      ) : null}
 
       {activeTab === "build" ? (
         <BuildStream bikes={buildQueue} t={t} />
@@ -216,6 +256,13 @@ export default async function WorkQueuePage({
                             {elapsed}
                           </span>
                         ) : null}
+                        {wo.assigned_to &&
+                        assigneeNameById.has(wo.assigned_to) ? (
+                          <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                            <CircleUser className="size-3" aria-hidden />
+                            {assigneeNameById.get(wo.assigned_to)}
+                          </span>
+                        ) : null}
                         <ChevronRight
                           className="text-muted-foreground/60 size-4 transition-transform group-hover:translate-x-0.5"
                           aria-hidden
@@ -230,6 +277,29 @@ export default async function WorkQueuePage({
         </ul>
       )}
     </div>
+  );
+}
+
+function FilterChip({
+  active,
+  href,
+  label,
+}: {
+  active: boolean;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted/50"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }
 

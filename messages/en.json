@@ -15,7 +15,9 @@
     "chipReady": "Ready",
     "chipAtPainter": "At painter",
     "chipPartsShort": "{count, plural, one {1 part short} other {# parts short}}",
-    "chipFrameToConfirm": "frame to confirm"
+    "chipFrameToConfirm": "frame to confirm",
+    "filterAll": "All",
+    "filterMine": "Mine"
   },
   "wo": {
     "backToQueue": "Queue",
@@ -281,7 +283,8 @@
     "openAria": "Open navigation",
     "closeAria": "Close navigation",
     "title": "Navigation",
-    "inbox": "Inbox"
+    "inbox": "Inbox",
+    "whoami": "Who's working?"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1270,7 +1273,11 @@
     "creating": "Creating…",
     "createWorkOrder": "Create work order",
     "crumbNew": "New",
-    "newSubtitle": "Standalone work orders are rare — most are spawned from a ticket via the “Start work order” button. Use this when the work doesn't correspond to a logged customer report."
+    "newSubtitle": "Standalone work orders are rare — most are spawned from a ticket via the “Start work order” button. Use this when the work doesn't correspond to a logged customer report.",
+    "assigneeTitle": "Assignee",
+    "unassigned": "Unassigned",
+    "assignToMe": "Assign to me",
+    "assigneeSavedNote": "Saved"
   },
   "stockStatus": {
     "ok": "In stock",
@@ -3789,7 +3796,9 @@
     "adminRoleKeyExists": "A role with this key already exists",
     "adminRoleKeyInvalid": "Key must be lowercase letters, numbers or underscores, starting with a letter",
     "adminRoleHomePathInvalid": "Home page must be an internal path starting with /",
-    "adminRolePasswordTooShort": "Password must be at least 6 characters"
+    "adminRolePasswordTooShort": "Password must be at least 6 characters",
+    "whoamiInvalidPerson": "That person can't be picked for this role",
+    "woAssigneeInvalid": "That person can't be assigned"
   },
   "inbox": {
     "title": "Inbox",
@@ -3927,5 +3936,11 @@
     "repair_request": "Repair request",
     "order_inquiry": "Order inquiry",
     "other": "Something else"
+  },
+  "whoami": {
+    "title": "Who's working?",
+    "subtitle": "Tap your name — work you start is logged under it. ({role})",
+    "currentBadge": "You",
+    "continueWithout": "Continue without a name"
   }
 }

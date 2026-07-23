@@ -7,7 +7,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { RegisterSW } from "@/components/register-sw";
 import { ScanFab } from "@/components/scan-fab";
-import { readAllowedCaps } from "@/lib/auth/read-session";
+import { readGate } from "@/lib/auth/read-session";
+import { createClient } from "@/lib/supabase/server";
 
 import "./globals.css";
 
@@ -67,8 +68,21 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
   // Role-session capability scope for the app chrome (people & roles P2).
-  // null = nothing scoped (gate off / legacy full-access login).
-  const allowedCaps = await readAllowedCaps();
+  // null = nothing scoped (gate off / legacy full-access login). The person
+  // chip (P3 tap-your-name) only exists on role sessions.
+  const gate = await readGate();
+  const allowedCaps = gate.kind === "role" ? gate.session.caps : null;
+  const showPersonChip = gate.kind === "role";
+  let personName: string | null = null;
+  if (gate.kind === "role" && gate.session.person) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("people")
+      .select("full_name")
+      .eq("id", gate.session.person)
+      .maybeSingle();
+    personName = data?.full_name ?? null;
+  }
 
   return (
     <html
@@ -78,9 +92,17 @@ export default async function RootLayout({
       <body className="bg-background text-foreground min-h-full">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <div className="flex min-h-screen">
-            <AppSidebar allowedCaps={allowedCaps} />
+            <AppSidebar
+              allowedCaps={allowedCaps}
+              showPersonChip={showPersonChip}
+              personName={personName}
+            />
             <div className="flex min-w-0 flex-1 flex-col">
-              <MobileNav allowedCaps={allowedCaps} />
+              <MobileNav
+                allowedCaps={allowedCaps}
+                showPersonChip={showPersonChip}
+                personName={personName}
+              />
               {/* pb-20 on small screens reserves space below scrollable
                   content so the floating Scan FAB never overlaps a card,
                   table row, or button at the page footer. md+ uses no

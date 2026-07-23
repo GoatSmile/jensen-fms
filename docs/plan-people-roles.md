@@ -1,7 +1,8 @@
 # People & roles — design reference
 
 **Date:** 2026-07-17 · **Status:** P1 (schema + admin) + P2 (role login +
-gating) SHIPPED 2026-07-23; P3–P4 not yet built.
+gating) + P3 (tap-your-name + assignment) SHIPPED 2026-07-23; P4
+(notifications) not yet built.
 The workforce/identity model: employees, owners, temps, contractors —
 role-scoped access, per-role dashboards, task notification routing, and a
 role-password auth v0.5 that becomes real per-user auth (M1) without rework.
@@ -201,8 +202,16 @@ passwords-per-human, not a detour.
    money band requires `invoices`; SITE_PASSWORD → owner-role session,
    legacy tokens stay valid. Verified in-browser as workshop / accountant
    / owner-fallback. Note: capability edits apply at next login.
-3. **Person picker + assignment** — tap-your-name; FK + assignee pickers on
-   WOs/tickets; "my work" filter on /work. ~½ day.
+3. ✅ **Person picker + assignment** — SHIPPED 2026-07-23. `/whoami`
+   tap-your-name (post-login when the role has claimable people;
+   skippable; person re-signed into the session cookie; switchable via a
+   person chip in both navs); WO assignee select + "Assign to me"
+   (`wo-assignee-section.tsx`; tickets have NO assignee column, so
+   assignment = WOs; the MO `assigned_to` FK is ready but its picker is
+   deferred until a real use appears); "Mine" filter on /work repairs +
+   assignee on cards; **person `preferred_language` supersedes
+   `worker_language` on worker surfaces** (src/i18n/request.ts — the
+   "per-user at M1" note arrived early). Verified in-browser end to end.
 4. **Notifications** — event registry + first two hooks (`ticket.created` →
    workshop email; `invoice.overdue` → accountant). ~½ day.
 5. **M1** — swap the credential layer, keep the world.

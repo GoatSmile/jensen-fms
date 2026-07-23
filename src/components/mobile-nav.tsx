@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { Menu, X } from "lucide-react";
+import { CircleUser, Menu, X } from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
@@ -21,9 +21,14 @@ import { cn } from "@/lib/utils";
  */
 export function MobileNav({
   allowedCaps,
+  showPersonChip,
+  personName,
 }: {
   /** Role capability scope; null = show everything (gate off / legacy). */
   allowedCaps: string[] | null;
+  /** Only role sessions carry a person identity (tap-your-name, P3). */
+  showPersonChip: boolean;
+  personName: string | null;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -123,6 +128,21 @@ export function MobileNav({
                 </Fragment>
               ))}
             </nav>
+            {showPersonChip ? (
+              <div className="border-t p-2">
+                <DialogPrimitive.Close asChild>
+                  <Link
+                    href="/whoami"
+                    className="text-muted-foreground hover:bg-foreground/5 hover:text-foreground flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
+                  >
+                    <CircleUser aria-hidden className="size-4 shrink-0" />
+                    <span className="truncate">
+                      {personName ?? t("whoami")}
+                    </span>
+                  </Link>
+                </DialogPrimitive.Close>
+              </div>
+            ) : null}
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
