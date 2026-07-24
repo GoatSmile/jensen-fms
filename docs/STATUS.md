@@ -67,7 +67,20 @@ append.** History belongs in `docs/archive/`, decisions in
   (`kind`/`command_plan`/`commanded_by` + `command_actions`). Founding
   utterance verified end-to-end. Phone/audio ingress + staff-number fork are
   VC-3 (August, with Dennis). Mechanics in DECISIONS 2026-07-23.
-- **Next up: maintenance/workshop polish pass** (July queue item 5).
+- **Maintenance/workshop polish pass shipped 2026-07-23** (July queue item
+  5): 16 items from a surveyed punch-list — shop-floor touch safety
+  (always-visible photo delete, confirm-before-finish naming the ticket it
+  resolves, two-tap parts removal, loading skeletons), office correctness
+  (cancel/complete errors surface inside the dialog, bikeless triage tickets
+  save, **WO cancel now returns consumed parts to stock**, blank-labor-rate
+  warning, desktop finish-confirm), build (honest "Print recipe" label,
+  surfaced bulk-add identifier error, clear-build arm resets), scan/i18n
+  copy. Owner calls: WO-cancel reverses inventory; blank labor rate warns
+  (doesn't auto-bill). Bike-scoped per-bike print sheet deferred to BACKLOG.
+- **July queue is now essentially complete.** Remaining: the deliberately-
+  thin inbound stats fold (item 3 — parked until real inbound data lands in
+  August) and the opportunistic P4 ticket.created/wo.assigned live
+  confirmation (below).
 - **Deferred, needs a browser**: a live in-app confirmation of the P4
   ticket.created / wo.assigned hooks (the delivery engine itself was
   verified live via the invoice.overdue cron; the two action hooks are the
@@ -84,7 +97,7 @@ self-serve for Dennis's solo August onboarding.
 3. Inbound stats fold — deliberately thin (prod has only 2 shadow rows;
    real data starts when Dennis's number lands, August)
 4. Global identifier search ✅ 2026-07-23
-5. Maintenance/workshop polish pass
+5. Maintenance/workshop polish pass ✅ 2026-07-23 (16-item punch-list)
 6. Handover notes ✅ — docs restructure + `docs/PLAYBOOK-AUGUST.md`
 
 ## Waiting on (external)
