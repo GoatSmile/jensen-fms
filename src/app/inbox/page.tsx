@@ -24,6 +24,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
 import {
   INBOUND_STATUS_VARIANT,
+  commandStatusKey,
   type InboundMessageRow,
 } from "@/lib/inbound/types";
 import { isSpamFolded } from "@/lib/inbound/triage";
@@ -38,11 +39,12 @@ import { UploadVoicemail } from "./_components/upload-voicemail";
  * second channel lands it shows here too, tagged by its channel badge.
  */
 export default async function InboundPage() {
-  const [t, tCommon, tStatus, tChannel] = await Promise.all([
+  const [t, tCommon, tStatus, tChannel, tCmd] = await Promise.all([
     getTranslations("inbox"),
     getTranslations("common"),
     getTranslations("inboundStatus"),
     getTranslations("inboundChannel"),
+    getTranslations("inboxCommand"),
   ]);
 
   const supabase = await createClient();
@@ -184,7 +186,9 @@ export default async function InboundPage() {
                   <TableCell className="p-0">
                     <Link href={href} className="block px-4 py-2.5">
                       <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>
-                        {tStatus(r.status)}
+                        {r.kind === "command"
+                          ? tCmd(commandStatusKey(r.status))
+                          : tStatus(r.status)}
                       </Badge>
                     </Link>
                   </TableCell>

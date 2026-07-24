@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createServiceClient } from "@/lib/supabase/service";
 import { formatDateTime } from "@/lib/parts/format";
-import { INBOUND_STATUS_VARIANT } from "@/lib/inbound/types";
+import { INBOUND_STATUS_VARIANT, commandStatusKey } from "@/lib/inbound/types";
 import type { MatchCandidates } from "@/lib/inbound/match";
 import {
   inboundSecretStatus,
@@ -67,6 +67,7 @@ export default async function InboundDetailPage({
   // of proposed draft actions, applied one by one. No audio / extraction /
   // match panels — the command agent is the whole pipeline.
   if (msg.kind === "command") {
+    const tc = await getTranslations("inboxCommand");
     const plan = parseCommandPlan(msg.command_plan);
     const [{ data: actions }, { data: templates }, { data: segments }, { data: colors }] =
       await Promise.all([
@@ -123,7 +124,7 @@ export default async function InboundDetailPage({
             {tChannel.has(msg.channel) ? tChannel(msg.channel) : msg.channel}
           </Badge>
           <Badge variant={INBOUND_STATUS_VARIANT[msg.status]}>
-            {tStatus(msg.status)}
+            {tc(commandStatusKey(msg.status))}
           </Badge>
         </header>
 

@@ -31,6 +31,18 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   and echoes raw Postgres error text on 500. Bounded — UUIDs are
   unguessable, output is only a QR image, no writes/key. Fix: stop echoing
   DB errors; consider a generic 400. Low priority.
+- **VC-1 command actions have no capability gate or rate limit** (review
+  2026-07-23, low). `createCommandFromText` / `rerunCommandAgent` /
+  `applyCommandAction` (src/app/inbox/_actions/command.ts) only read the
+  session to STAMP a person id — no `can()` check (consistent with the whole
+  app: server actions are POST endpoints behind Vercel SSO, roles are a UX
+  wall). A low-cap SSO'd user could POST directly and spin the agent loop
+  (Anthropic cost) or write drafts. Fix with the auth/M1 pass (cap-gate
+  server actions + a per-user rate limit on agent runs). Also:
+  `applyCommandAction` trusts client-supplied open-slot ids without checking
+  membership in the server-rendered vocab (only the DB FK guards them) — a
+  crafted request could pick a superseded (is_current=false) template. Same
+  UX-wall caveat; validate slot ids against the fetched lists when auth lands.
 - `audit_log` triggers (wait on auth for user_id).
 - SQL-side pagination + stock-status filtering for the parts list at scale
   (currently in-memory in `src/app/parts/page.tsx`).

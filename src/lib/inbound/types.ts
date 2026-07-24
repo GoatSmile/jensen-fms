@@ -42,6 +42,26 @@ export const INBOUND_STATUS_VARIANT: Record<
 };
 
 /**
+ * Command rows (kind='command') reuse the shared `inbound_status` enum, but its
+ * labels are voicemail/ticket-shaped ("Ticket created" etc.) — wrong for a
+ * command that drafts a customer / SO / PO. Map the status to an `inboxCommand`
+ * message key instead. Keeps the badge VARIANT (colour) from
+ * INBOUND_STATUS_VARIANT; only the words change.
+ */
+export function commandStatusKey(status: InboundStatus): string {
+  switch (status) {
+    case "actioned":
+      return "statusApplied";
+    case "matched":
+      return "statusReady";
+    case "failed":
+      return "statusFailed";
+    default:
+      return "statusWorking";
+  }
+}
+
+/**
  * Channel-shaped metadata we stash on `channel_meta`. Loosely typed — each
  * channel adapter owns its own keys; only the harness-upload keys are known
  * today. Never read by the channel-blind pipeline.

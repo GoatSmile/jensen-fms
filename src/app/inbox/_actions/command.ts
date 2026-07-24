@@ -43,7 +43,7 @@ async function currentPersonId(): Promise<string | null> {
 export async function createCommandFromText(text: string): Promise<CommandResult> {
   const t = await getTranslations("errors");
   const body = text.trim();
-  if (!body) return { ok: false, error: t("inboundNoBody") };
+  if (!body) return { ok: false, error: t("commandNoBody") };
 
   const supabase = createServiceClient();
   const personId = await currentPersonId();
@@ -84,6 +84,19 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
     .maybeSingle();
   if (!msg) return { ok: false, error: t("missingId") };
   if (msg.kind !== "command") return { ok: false, error: t("missingId") };
+
+  // Refuse to re-plan once anything has been applied. plan_action_ids are
+  // positional (a0, a1… by array index), so a fresh plan would reuse ids that
+  // now point at DIFFERENT actions than the persisted command_actions rows —
+  // corrupting provenance and the applied/idempotency state. Re-run is only
+  // for tuning a plan BEFORE the first apply.
+  const { count: appliedCount } = await supabase
+    .from("command_actions")
+    .select("id", { count: "exact", head: true })
+    .eq("message_id", messageId);
+  if ((appliedCount ?? 0) > 0) {
+    return { ok: false, error: t("commandRerunLocked") };
+  }
 
   await runAndStorePlan(supabase, messageId, msg.body_text ?? "");
   revalidatePath(`/inbox/${messageId}`);
@@ -149,7 +162,12 @@ export async function applyCommandAction(
   const action = plan.actions.find((a) => a.id === actionId);
   if (!action) return { ok: false, error: t("commandActionNotFound") };
 
-  // Already applied? (idempotent — the unique index also guards the race.)
+  // Already applied? Idempotent for the ordinary sequential retry (a resent
+  // request, a double-click after completion). A true CONCURRENT double-apply
+  // still races between this check and the entity write below — the unique
+  // index only protects the ledger row, so the loser gets "could not save"
+  // after its entity may have been written. Accepted for the single-user
+  // shop (see BACKLOG); revisit if multi-user editing ever lands.
   const { data: existing } = await supabase
     .from("command_actions")
     .select("entity_table, entity_id")

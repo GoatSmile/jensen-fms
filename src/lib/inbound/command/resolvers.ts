@@ -105,9 +105,17 @@ function pick(nameEn: string | null, nameDa: string | null): string {
 }
 
 function ilikeEscape(q: string): string {
-  // Neutralize LIKE wildcards in user text; PostgREST params are already safe
-  // from SQL injection, this just stops a stray % from matching everything.
-  return q.replace(/[%_]/g, (m) => `\\${m}`);
+  // These needles are interpolated into a PostgREST `.or()` filter STRING, so
+  // two hazards, both handled here:
+  //  1. LIKE wildcards (% _) and backslash — escaped so a stray char can't
+  //     match everything.
+  //  2. The or()-grammar chars (comma = OR-separator, parens = grouping) —
+  //     replaced with a % wildcard so a customer name like "Jensen, Inc." or
+  //     "Hotel (København)" neither breaks nor injects the filter, and still
+  //     matches (the wildcard spans the removed punctuation).
+  return q
+    .replace(/[%_\\]/g, (m) => `\\${m}`)
+    .replace(/[(),]/g, "%");
 }
 
 type ResolverInput = Record<string, unknown>;

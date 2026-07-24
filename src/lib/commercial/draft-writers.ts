@@ -83,15 +83,24 @@ export async function insertDraftSalesOrder(
     vatRate = Number(vc?.default_rate ?? 0);
   }
 
-  // unitPrice fallback: the template's default retail price, else 0.
+  // unitPrice fallback: the template's default retail price — but ONLY when
+  // its currency matches the order's, since the price is a bare number in the
+  // template's own currency (default DKK). Applying a DKK figure verbatim to a
+  // EUR order would be wrong money, so fall back to 0 (reviewer sets it).
   let unitPrice = input.line.unitPrice;
   if (unitPrice == null) {
     const { data: tpl } = await supabase
       .from("bike_templates")
-      .select("default_retail_price")
+      .select("default_retail_price, default_retail_currency")
       .eq("id", input.line.templateId)
       .maybeSingle();
-    unitPrice = Number(tpl?.default_retail_price ?? 0);
+    const tplCurrency = (
+      (tpl?.default_retail_currency as string | null) ?? "DKK"
+    ).toUpperCase();
+    unitPrice =
+      tplCurrency === input.currency.toUpperCase()
+        ? Number(tpl?.default_retail_price ?? 0)
+        : 0;
   }
 
   const { data: number, error: numErr } = await supabase.rpc(
@@ -142,9 +151,12 @@ export async function insertDraftSalesOrder(
     line_total: round(lineTotal),
   });
   if (lineErr) {
-    // Header exists but the line failed — surface it; the draft SO is visible
-    // and editable, so this is recoverable rather than a silent orphan.
-    return { ok: false, error: `sales order ${number} created but the line failed: ${lineErr.message}` };
+    // Line failed after the header was written. Roll the header back (same
+    // row-first/delete-on-failure pattern as upload-voicemail) so a retry
+    // doesn't pile up orphan zero-total headers + burn a new number each time.
+    // The document number is already consumed — a harmless gap.
+    await supabase.from("sales_orders").delete().eq("id", so.id);
+    return { ok: false, error: `sales order line failed: ${lineErr.message}` };
   }
 
   await supabase

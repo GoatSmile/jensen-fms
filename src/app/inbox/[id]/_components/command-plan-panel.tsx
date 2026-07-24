@@ -74,6 +74,9 @@ export function CommandPlanPanel({
       ),
     [plan.actions, applied],
   );
+  // Once anything is applied, re-planning would remint positional ids and
+  // desync the ledger — the server action refuses it, so lock the button too.
+  const anyApplied = Object.keys(applied).length > 0;
 
   return (
     <section className="flex flex-col gap-4">
@@ -87,7 +90,8 @@ export function CommandPlanPanel({
           size="sm"
           variant="outline"
           onClick={rerun}
-          disabled={rerunPending}
+          disabled={rerunPending || anyApplied}
+          title={anyApplied ? t("rerunLocked") : undefined}
         >
           <Play aria-hidden />
           {rerunPending ? t("rerunning") : t("rerun")}
@@ -225,7 +229,7 @@ function ActionCard({
 
       {/* Resolved-entity chips */}
       <div className="flex flex-wrap gap-1.5">
-        {chipsFor(action).map((c, i) => (
+        {chipsFor(action, t).map((c, i) => (
           <span
             key={i}
             className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs dark:border-emerald-800 dark:bg-emerald-950/40"
@@ -306,21 +310,25 @@ function ActionSummary({ action }: { action: CommandAction }) {
   );
 }
 
-/** Resolved references to show as emerald chips. */
-function chipsFor(action: CommandAction): { label: string; value: string }[] {
+/** Resolved references to show as emerald chips. Labels + the new-customer
+ *  marker are localized (the values are grounded data). */
+function chipsFor(
+  action: CommandAction,
+  t: (key: string) => string,
+): { label: string; value: string }[] {
   const chips: { label: string; value: string }[] = [];
   if (action.type === "draft_customer") {
-    if (action.segmentLabel) chips.push({ label: "segment", value: action.segmentLabel });
+    if (action.segmentLabel) chips.push({ label: t("chip_segment"), value: action.segmentLabel });
   }
   if (action.type === "draft_sales_order") {
     if (action.organizationLabel) {
-      chips.push({ label: "customer", value: action.organizationLabel });
+      chips.push({ label: t("chip_customer"), value: action.organizationLabel });
     } else if (action.organizationFromNewCustomer) {
-      chips.push({ label: "customer", value: "↑ new" });
+      chips.push({ label: t("chip_customer"), value: t("newCustomerMarker") });
     }
-    if (action.templateLabel) chips.push({ label: "model", value: action.templateLabel });
-    if (action.colorLabel) chips.push({ label: "colour", value: action.colorLabel });
-    if (action.productionNote) chips.push({ label: "note", value: action.productionNote });
+    if (action.templateLabel) chips.push({ label: t("chip_model"), value: action.templateLabel });
+    if (action.colorLabel) chips.push({ label: t("chip_colour"), value: action.colorLabel });
+    if (action.productionNote) chips.push({ label: t("chip_note"), value: action.productionNote });
   }
   return chips;
 }
