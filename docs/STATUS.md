@@ -77,10 +77,13 @@ append.** History belongs in `docs/archive/`, decisions in
   surfaced bulk-add identifier error, clear-build arm resets), scan/i18n
   copy. Owner calls: WO-cancel reverses inventory; blank labor rate warns
   (doesn't auto-bill). Bike-scoped per-bike print sheet deferred to BACKLOG.
-- **July queue is now essentially complete.** Remaining: the deliberately-
-  thin inbound stats fold (item 3 — parked until real inbound data lands in
-  August) and the opportunistic P4 ticket.created/wo.assigned live
-  confirmation (below).
+- **July queue is COMPLETE** (all items 1–6 shipped). The **inbound stats
+  fold shipped thin 2026-07-23** — a dashboard calibration fold (match rate
+  / ticket-conversion / low-clarity / spam / intent mix over shadow rows,
+  `inbox`-capability-gated); it's minimal by design until real inbound data
+  lands in August. The `plan-july9-vacation-month` plan is closed + archived
+  to `docs/archive/`. Only the opportunistic P4 ticket.created/wo.assigned
+  live confirmation remains (low-risk, below).
 - **Deferred, needs a browser**: a live in-app confirmation of the P4
   ticket.created / wo.assigned hooks (the delivery engine itself was
   verified live via the invoice.overdue cron; the two action hooks are the
@@ -94,7 +97,7 @@ self-serve for Dennis's solo August onboarding.
 1. People & roles P1 ✅ P2 ✅ P3 ✅ P4 ✅ — all 2026-07-23 (interim complete)
 2. Voice commands VC-1 ✅ 2026-07-23 — in-app text-first slice (Option A);
    phone/audio ingress deferred to VC-3 (August)
-3. Inbound stats fold — deliberately thin (prod has only 2 shadow rows;
+3. Inbound stats fold ✅ 2026-07-23 (thin — dashboard calibration fold;
    real data starts when Dennis's number lands, August)
 4. Global identifier search ✅ 2026-07-23
 5. Maintenance/workshop polish pass ✅ 2026-07-23 (16-item punch-list)
