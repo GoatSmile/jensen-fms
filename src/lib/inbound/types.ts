@@ -1,6 +1,6 @@
 /**
  * Generic inbound trunk — shared types (2026-07-14 decision, see
- * docs/plan-july9-vacation-month.md → "generic inbound trunk").
+ * docs/archive/plan-july9-vacation-month.md → "generic inbound trunk").
  *
  * `inbound_messages` is channel-agnostic: voicemail is the first channel,
  * email / WhatsApp / agent-API ingress are future adapters. The pipeline

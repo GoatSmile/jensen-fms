@@ -428,6 +428,66 @@ export async function loadHousekeeping(
   };
 }
 
+export type InboundStats = {
+  total: number;
+  matched: number;
+  ticketed: number;
+  garbled: number;
+  withClarity: number;
+  spam: number;
+  intents: { repair: number; order: number; other: number };
+};
+
+/**
+ * Inbound (phone→ticket) pipeline CALIBRATION stats — all-time, over
+ * customer messages (kind='customer'; VC-1 command rows excluded). Match
+ * rate, ticket-conversion, low-clarity share, spam share, and the intent
+ * MIX (not accuracy — accuracy needs human-confirmed labels, an August
+ * thing). Deliberately thin: today it's ~2 shadow rows, but it's the
+ * calibration set that turns August's "leave shadow mode?" into a
+ * measurement rather than a leap. Small enough to aggregate in-memory.
+ */
+export async function loadInboundStats(
+  supabase: SupabaseClient,
+): Promise<InboundStats> {
+  const { data } = await supabase
+    .from("inbound_messages")
+    .select(
+      "disposition, ticket_id, matched_organization_id, matched_bike_id, transcript_confidence, extraction",
+    )
+    .eq("kind", "customer");
+  const rows = data ?? [];
+  const intents = { repair: 0, order: 0, other: 0 };
+  let matched = 0;
+  let ticketed = 0;
+  let garbled = 0;
+  let withClarity = 0;
+  let spam = 0;
+  for (const r of rows) {
+    if (r.matched_organization_id || r.matched_bike_id) matched += 1;
+    if (r.ticket_id) ticketed += 1;
+    if (r.disposition === "spam") spam += 1;
+    const c = r.transcript_confidence;
+    if (c != null) {
+      withClarity += 1;
+      if (Number(c) < 0.6) garbled += 1;
+    }
+    const intent = (r.extraction as { intent?: string } | null)?.intent;
+    if (intent === "repair_request") intents.repair += 1;
+    else if (intent === "order_inquiry") intents.order += 1;
+    else if (intent) intents.other += 1;
+  }
+  return {
+    total: rows.length,
+    matched,
+    ticketed,
+    garbled,
+    withClarity,
+    spam,
+    intents,
+  };
+}
+
 export type MonthlyStat = {
   monthStart: string;
   bikesSold: number;

@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   loadHousekeeping,
+  loadInboundStats,
   loadMoneyBand,
   loadMonthlyStats,
   loadPipelines,
@@ -60,6 +61,23 @@ function trendLabel(monthStart: string, locale: string): string {
   return d.getUTCMonth() === 0
     ? `${m} ${String(d.getUTCFullYear()).slice(2)}`
     : m;
+}
+
+/** Percentage as a rounded whole-number string, e.g. "50%"; em-dash when n/a. */
+function pct(n: number, d: number): string {
+  return d > 0 ? `${Math.round((n / d) * 100)}%` : "—";
+}
+
+/** Compact stat tile for the inbox-pipeline calibration fold. */
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-background rounded-md border p-3">
+      <div className="text-muted-foreground text-xs tracking-wide uppercase">
+        {label}
+      </div>
+      <div className="text-lg font-semibold tabular-nums">{value}</div>
+    </div>
+  );
 }
 
 /** One clickable row inside a money-band card, matching the attention-list rows. */
@@ -102,6 +120,7 @@ export default async function DashboardPage() {
   const allowedCaps = await readAllowedCaps();
   const showMoneyBand =
     allowedCaps === null || allowedCaps.includes("invoices");
+  const showInbox = allowedCaps === null || allowedCaps.includes("inbox");
   const supabase = await createClient();
   const today = todayISODate();
   const paintCutoff = daysAgo(PAINT_AGING_DAYS);
@@ -118,6 +137,7 @@ export default async function DashboardPage() {
     pipelines,
     purchasing,
     housekeeping,
+    inboundStats,
   ] = await Promise.all([
     supabase
       .from("parts")
@@ -169,6 +189,7 @@ export default async function DashboardPage() {
     loadPipelines(supabase),
     loadPurchasingTrend(supabase),
     loadHousekeeping(supabase),
+    loadInboundStats(supabase),
   ]);
 
   let costBasisDkk = 0;
@@ -690,6 +711,70 @@ export default async function DashboardPage() {
             ) : null}
           </ul>
         </FoldSection>
+
+        {/* Inbox pipeline — shadow-mode calibration stats (phone→ticket).
+            Thin by design: it's the measurement that turns August's "leave
+            shadow mode?" into a data decision. Gated to the inbox capability. */}
+        {showInbox ? (
+          <FoldSection
+            storageId="inbox-stats"
+            title={t("inboxStatsTitle")}
+            summary={
+              inboundStats.total > 0
+                ? t("inboxStatsSummary", {
+                    count: inboundStats.total,
+                    pct: pct(inboundStats.matched, inboundStats.total),
+                  })
+                : t("inboxStatsEmpty")
+            }
+            defaultOpen={false}
+          >
+            {inboundStats.total === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                {t("inboxStatsEmptyBody")}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <StatTile
+                    label={t("inboxStatMessages")}
+                    value={String(inboundStats.total)}
+                  />
+                  <StatTile
+                    label={t("inboxStatMatchRate")}
+                    value={pct(inboundStats.matched, inboundStats.total)}
+                  />
+                  <StatTile
+                    label={t("inboxStatTickets")}
+                    value={String(inboundStats.ticketed)}
+                  />
+                  <StatTile
+                    label={t("inboxStatClarity")}
+                    value={
+                      inboundStats.withClarity > 0
+                        ? pct(inboundStats.garbled, inboundStats.withClarity)
+                        : "—"
+                    }
+                  />
+                  <StatTile
+                    label={t("inboxStatSpam")}
+                    value={pct(inboundStats.spam, inboundStats.total)}
+                  />
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {t("inboxStatIntentMix", {
+                    repair: inboundStats.intents.repair,
+                    order: inboundStats.intents.order,
+                    other: inboundStats.intents.other,
+                  })}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {t("inboxStatsShadowHint")}
+                </p>
+              </div>
+            )}
+          </FoldSection>
+        ) : null}
       </section>
 
       {/* Reference line — slow-moving numbers that used to be KPI cards. */}

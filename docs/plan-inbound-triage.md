@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-16 · **Status:** agreed design, implementation deferred
 (pick up with Dennis in August, after shadow-mode data accumulates).
-Companion to `docs/plan-july9-vacation-month.md` (which covers the shipped
+Companion to `docs/archive/plan-july9-vacation-month.md` (which covers the shipped
 pipeline slices A–F); this doc is the *next* arc: capture-everything,
 confidence, triage, routing, and the graduation path out of shadow mode.
 

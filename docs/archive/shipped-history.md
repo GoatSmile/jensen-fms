@@ -281,7 +281,7 @@ cost-to-paint (migration 63); `/admin/services` price-list grid with atomic
 `publish_service_price_list` RPC + tier-overlap EXCLUDE constraint
 (migration 64). The durable model lives in CLAUDE.md ("Paint is the first
 SERVICE TYPE…"); decisions in DECISIONS.md (2026-07-09/10, 2026-07-11);
-full design in `docs/plan-july9-vacation-month.md`.
+full design in `docs/archive/plan-july9-vacation-month.md`.
 
 ## 3E — e-conomic push (slice 1 shipped + live-verified 2026-07-09)
 
@@ -317,7 +317,7 @@ Integration shape recorded in `docs/DECISIONS.md` (2026-07-09). Details:
 Durable architecture in CLAUDE.md ("Inbound is a generic trunk…");
 decisions in DECISIONS.md (2026-07-14, 2026-07-16/17); next arc in
 `docs/plan-inbound-triage.md`; slice detail in
-`docs/plan-july9-vacation-month.md`. First real calls processed end-to-end
+`docs/archive/plan-july9-vacation-month.md`. First real calls processed end-to-end
 in shadow mode 2026-07-16; Gladia replaced Azure as the transcription
 provider. Review queue renamed `/admin/inbound` → `/inbox` 2026-07-15
 ("Inbox"/"Indbakke", Daily ops nav — a review queue, not admin config).

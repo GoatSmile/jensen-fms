@@ -1,5 +1,11 @@
 # July 2026 work plan — the vacation month
 
+> **STATUS: CLOSED 2026-07-23 — archived.** Every July track shipped (Weeks
+> 1–3 inline ✅; the Week 4+ list ✅ below), ahead of Dennis's Aug 3 return.
+> The August-with-Dennis backlog (bottom) carries forward. Live state lives
+> in `docs/STATUS.md`; this doc is kept as shipped-work history per the docs
+> ritual.
+
 Source: owner call 2026-07-09 (transcript in `~/Documents/1-Projects/Jensen/
 Misc - Transcripts/`), processed same day. Decisions below marked **[dev]**
 were made by Nazar 2026-07-09 when this plan was drawn up.
@@ -264,38 +270,37 @@ Two new designs landed 2026-07-17 and reshape the tail of the month:
 **people & roles** (`docs/plan-people-roles.md` — supersedes the
 device-role-cookie item below) and **voice commands**
 (`docs/plan-voice-commands.md` — staff dictate tasks → drafted actions).
-Priority order, with the reasoning:
+Priority order, with the reasoning (**all 7 shipped 2026-07-23**):
 
-1. **People & roles P1–P2** (~1–1.5 d) — schema + admin section, then
-   role-password login + `can()` gating + per-role landing. *Why first:
-   it's the critical path — voice commands need staff-identity-by-phone +
-   `commanded_by` provenance, and Dennis's solo August needs the
-   accountant/workshop role walls. This was the old week-4 "interim
-   device roles" item, expanded and properly designed.*
-2. **Voice commands VC-1** (~2–2.5 d) — command fork on the inbound
-   trunk, agent + resolvers, first three actions (draft customer / SO /
-   PO), CommandPlanPanel in Inbox, in-app dictate button. *Why second:
-   highest new value; every piece of infra it needs is already live; the
-   founding utterance ("15 bikes for Hotel D'Angleterre…") works end to
-   end at the demo for Dennis.*
-3. **People & roles P3–P4** (~1 d) — tap-your-name person picker, WO/
-   ticket assignee, notification events (ticket.created → workshop,
-   invoice.overdue → accountant). *Completes the role story; makes the
-   inbound pipeline actively notify instead of waiting to be checked.*
-4. **Inbound stats fold** (~½ d, from `docs/plan-inbound-triage.md`) —
-   weekly match rate / intent accuracy / clarity / spam share on the
-   dashboard. *Why now: it's the measurement that turns August's "leave
-   shadow mode?" into a data decision.*
-5. **Global identifier search** (~1 d): one search box (header or
-   `/search?q=`) hitting `bike_identifiers` (exact/prefix), bikes (frame
-   number), parts (SKU/name trigram), organizations, invoices (number) —
-   grouped results, each row linking home. Old-system parity for the
-   daily lookup.
-6. **Maintenance + workshop floor polish pass** (~1 d): walk both flows
-   in Danish on a phone, fix rough edges; QR codes printable; this is
-   Dennis's first-touch surface in August.
-7. **Handover notes** (~0.5 d): a short "what changed in July + how to
-   test it" doc for Dennis's return, plus updating this plan's checkboxes.
+1. ✅ **People & roles P1–P2** — SHIPPED 2026-07-23 (migrations 73–74).
+   Schema + admin section, then role-password login + `can()` gating +
+   per-role landing. *Why first: critical path — voice commands need
+   staff-identity-by-phone + `commanded_by` provenance, and Dennis's solo
+   August needs the accountant/workshop role walls.*
+2. ✅ **Voice commands VC-1** — SHIPPED 2026-07-23 (the **in-app text-first
+   slice**; the phone/staff-number fork is deferred to VC-3, owner's
+   middle-path call — DECISIONS 2026-07-23). Command fork on the inbound
+   trunk (migrations 75–76), agent + 6 resolvers, three draft actions
+   (customer / SO / PO), CommandPlanPanel in Inbox, in-app dictate button.
+   *Founding utterance verified end to end.*
+3. ✅ **People & roles P3–P4** — SHIPPED 2026-07-23. Tap-your-name person
+   picker, WO assignee, notification events (ticket.created → workshop,
+   wo.assigned → assignee, invoice.overdue → owner+accountant).
+4. ✅ **Inbound stats fold** — SHIPPED thin 2026-07-23. Dashboard
+   calibration fold (match rate / ticket-conversion / low-clarity / spam
+   share / intent mix) over shadow-mode rows, gated to the `inbox`
+   capability. Intentionally minimal until real data lands — it's the
+   measurement that turns August's "leave shadow mode?" into a decision.
+5. ✅ **Global identifier search** — SHIPPED 2026-07-23. `/bikes` search
+   now matches any registered identifier (lock/battery/charger/QR/RFID/
+   AirTag/fleet-no.) unioned with frame number + a matched-via hint;
+   `/scan` manual entry upgrades for free.
+6. ✅ **Maintenance + workshop floor polish pass** — SHIPPED 2026-07-23.
+   16-item surveyed punch-list across shop-floor touch safety, office
+   correctness (incl. WO-cancel returns parts to stock), build, scan/i18n.
+7. ✅ **Handover notes** — SHIPPED 2026-07-23 (docs restructure +
+   `docs/PLAYBOOK-AUGUST.md`), and these checkboxes ticked as this plan
+   moves to `docs/archive/`.
 
 Capacity check: ≈8 dev-days against ~11–12 vacation-pace weekdays — fits
 with slack. **Parallel personal track (not Jensen hours): Munin**
