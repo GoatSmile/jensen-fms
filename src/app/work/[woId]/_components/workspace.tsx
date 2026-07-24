@@ -34,6 +34,8 @@ type Props = {
   initialDiagnosis: string;
   initialWorkPerformed: string;
   bikeId: string | null;
+  /** Ticket number that finishing this WO will auto-resolve, else null. */
+  resolvesTicketNumber: string | null;
   partRows: WOPartRow[];
   photos: WOPhoto[];
 };
@@ -44,6 +46,7 @@ export function Workspace({
   language,
   initialDiagnosis,
   initialWorkPerformed,
+  resolvesTicketNumber,
   partRows,
   photos,
 }: Props) {
@@ -53,6 +56,10 @@ export function Workspace({
   const [workPerformed, setWorkPerformed] = useState(initialWorkPerformed);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // "Mark done" is terminal + auto-resolves the linked ticket, so it arms a
+  // confirm step (naming the ticket consequence) rather than firing on the
+  // first tap — the highest-stakes floor action shouldn't be the twitchiest.
+  const [confirmingComplete, setConfirmingComplete] = useState(false);
   const [saving, startSaving] = useTransition();
   const [transitioning, startTransitioning] = useTransition();
 
@@ -219,16 +226,50 @@ export function Workspace({
               </Button>
             ) : null}
             {status === "in_progress" ? (
-              <Button
-                type="button"
-                size="lg"
-                onClick={() => onTransition("completed")}
-                disabled={transitioning}
-                className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
-              >
-                <CheckCircle2 className="size-5" aria-hidden />
-                {transitioning ? t("saving") : t("markDone")}
-              </Button>
+              confirmingComplete ? (
+                <div className="flex w-full flex-col gap-2">
+                  <p className="text-center text-sm font-medium">
+                    {resolvesTicketNumber
+                      ? t("confirmFinishResolves", {
+                          ticket: resolvesTicketNumber,
+                        })
+                      : t("confirmFinishIrreversible")}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="lg"
+                      variant="outline"
+                      onClick={() => setConfirmingComplete(false)}
+                      disabled={transitioning}
+                      className="h-14 flex-1 text-base"
+                    >
+                      {t("cancelFinish")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={() => onTransition("completed")}
+                      disabled={transitioning}
+                      className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
+                    >
+                      <CheckCircle2 className="size-5" aria-hidden />
+                      {transitioning ? t("completing") : t("confirmFinish")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={() => setConfirmingComplete(true)}
+                  disabled={transitioning}
+                  className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
+                >
+                  <CheckCircle2 className="size-5" aria-hidden />
+                  {t("markDone")}
+                </Button>
+              )
             ) : null}
           </div>
         </div>

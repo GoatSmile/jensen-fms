@@ -142,7 +142,7 @@ export default async function TicketDetailPage({
   const contact = ticket.contact;
   const contactName = contact
     ? [contact.first_name, contact.last_name].filter(Boolean).join(" ") ||
-      "(no name)"
+      t("noName")
     : null;
   const reporterFallback = ticket.reported_by_text;
   const bikeTypeName =
@@ -385,7 +385,12 @@ export default async function TicketDetailPage({
                 ) : null}
                 {contact.phone ? (
                   <Field label={t("phone")}>
-                    <span className="text-sm">{contact.phone}</span>
+                    <a
+                      href={`tel:${contact.phone}`}
+                      className="hover:text-foreground text-sm underline-offset-4 hover:underline"
+                    >
+                      {contact.phone}
+                    </a>
                   </Field>
                 ) : null}
               </dl>

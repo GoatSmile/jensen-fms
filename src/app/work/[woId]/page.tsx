@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { type WorkOrderStatus } from "@/lib/maintenance/work-order-status";
+import {
+  OPEN_TICKET_STATUSES,
+  type TicketStatus,
+} from "@/lib/maintenance/ticket-status";
 import { atTimeLabel, elapsedShort } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
@@ -109,6 +113,13 @@ export default async function WorkspacePage({
 
   const status = wo.status as WorkOrderStatus;
   const language: "da" | "en" = wo.language === "en" ? "en" : "da";
+  // Finishing the WO auto-resolves a still-open linked ticket — surface which
+  // one so the confirm step can name that consequence.
+  const resolvesTicketNumber =
+    wo.ticket &&
+    OPEN_TICKET_STATUSES.includes(wo.ticket.status as TicketStatus)
+      ? wo.ticket.ticket_number
+      : null;
   const ownerName =
     wo.bike?.owner_organization?.display_name_da ??
     wo.bike?.owner_organization?.display_name_en ??
@@ -247,6 +258,7 @@ export default async function WorkspacePage({
         initialDiagnosis={wo.diagnosis ?? ""}
         initialWorkPerformed={wo.work_performed ?? ""}
         bikeId={wo.bike?.id ?? null}
+        resolvesTicketNumber={resolvesTicketNumber}
         partRows={partRows}
         photos={photos}
       />

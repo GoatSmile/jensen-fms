@@ -155,7 +155,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
                   type="button"
                   onClick={() => onDelete(p.id)}
                   disabled={deletingId === p.id}
-                  className="bg-background/90 hover:bg-background absolute right-1 top-1 rounded-md border p-1 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-50"
+                  className="bg-background/90 hover:bg-background absolute right-1 top-1 rounded-md border p-1 shadow-sm disabled:opacity-50"
                   aria-label={t("removePhoto")}
                 >
                   <X className="size-3.5" aria-hidden />

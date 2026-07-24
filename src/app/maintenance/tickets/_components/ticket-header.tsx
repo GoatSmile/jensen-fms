@@ -105,7 +105,10 @@ export function TicketHeader({
 
   return (
     <div className="flex flex-col gap-3">
-      {error ? (
+      {/* Header-level error is only correct when no modal is open; a
+          transition that fails FROM the cancel dialog shows its error inside
+          the dialog (else it paints behind the overlay). */}
+      {error && !transitionDialog ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
@@ -193,7 +196,11 @@ export function TicketHeader({
       <CancelReasonDialog
         pending={transitionDialog}
         isPending={pending}
-        onCancel={() => setTransitionDialog(null)}
+        error={error}
+        onCancel={() => {
+          setTransitionDialog(null);
+          setError(null);
+        }}
         onSubmit={(reason) =>
           transitionDialog && runTransition(transitionDialog.to, reason)
         }
@@ -205,11 +212,13 @@ export function TicketHeader({
 function CancelReasonDialog({
   pending,
   isPending,
+  error,
   onCancel,
   onSubmit,
 }: {
   pending: PendingTransition;
   isPending: boolean;
+  error: string | null;
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
@@ -249,6 +258,11 @@ function CancelReasonDialog({
               required
             />
           </div>
+          {error ? (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"

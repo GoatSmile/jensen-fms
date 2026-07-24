@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { createClient } from "@/lib/supabase/server";
 
 import type { BikeOption, ContactOption } from "./ticket-form";
@@ -19,6 +21,7 @@ export async function loadTicketPickables(): Promise<{
   contacts: ContactOption[];
 }> {
   const supabase = await createClient();
+  const t = await getTranslations("tickets");
 
   const [bikesRes, contactsRes] = await Promise.all([
     supabase
@@ -85,7 +88,7 @@ export async function loadTicketPickables(): Promise<{
       null;
     return {
       id: c.id,
-      full_name: fullName || "(no name)",
+      full_name: fullName || t("noName"),
       organization_id: c.organization_id,
       organization_name: orgName,
       role: c.role,

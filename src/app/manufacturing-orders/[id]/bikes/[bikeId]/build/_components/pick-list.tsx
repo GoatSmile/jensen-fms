@@ -56,7 +56,7 @@ export function PickList({
             target="_blank"
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs underline underline-offset-4"
           >
-            <Printer aria-hidden className="size-3.5" /> {t("print")}
+            <Printer aria-hidden className="size-3.5" /> {t("printRecipe")}
           </Link>
         ) : null}
       </header>

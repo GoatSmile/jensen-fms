@@ -259,6 +259,7 @@ export function BuildWorkbench({
   function onCopyRecipe() {
     setError(null);
     setSuccess(null);
+    setClearArmed(false);
     startSeed(async () => {
       const r = await copyMoRecipeToBike(moId, bikeId);
       if (!r.ok) {
@@ -274,6 +275,7 @@ export function BuildWorkbench({
     if (!partId || partId === "__placeholder__") return;
     setError(null);
     setSuccess(null);
+    setClearArmed(false);
     startSeed(async () => {
       const r = await addBikePart(moId, bikeId, partId, quantity);
       if (!r.ok) {
@@ -333,6 +335,7 @@ export function BuildWorkbench({
   function onConfirmFrame() {
     setError(null);
     setSuccess(null);
+    setClearArmed(false);
     startConfirm(async () => {
       const r = await confirmBikeFrame(moId, bikeId, frameValue);
       if (!r.ok) {
@@ -349,6 +352,7 @@ export function BuildWorkbench({
   function onFinish() {
     setError(null);
     setSuccess(null);
+    setClearArmed(false);
     startFinish(async () => {
       const r = await finishBikeBuild(moId, bikeId);
       if (!r.ok) {

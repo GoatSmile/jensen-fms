@@ -166,11 +166,26 @@ export async function bulkAddBikesToMO(
       };
     }
     if (idType) {
-      await supabase.from("bike_identifiers").insert({
+      const { error: idErr } = await supabase.from("bike_identifiers").insert({
         bike_id: bike.id,
         identifier_type_id: idType.id,
         identifier_value: frameNumber,
       });
+      if (idErr) {
+        // The bike row exists but its frame-number identifier didn't land —
+        // global identifier search wouldn't find it by frame. Surface it (the
+        // bike is created; register the identifier manually) rather than
+        // silently shipping a bike with no frame identifier.
+        return {
+          ok: false,
+          error: t("moBulkAddIdentifierFailed", {
+            created: created + 1,
+            frame: frameNumber,
+            detail: idErr.message,
+          }),
+          created: created + 1,
+        };
+      }
     }
     created += 1;
   }

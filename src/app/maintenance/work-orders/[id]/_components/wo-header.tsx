@@ -75,11 +75,18 @@ export function WOHeader({
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] =
     useState<PendingTransition>(null);
+  // Completing is terminal + auto-resolves a linked ticket, so it confirms
+  // first (naming that consequence) rather than firing straight off the
+  // dropdown — same reasoning as the floor "Mark done".
+  const [confirmComplete, setConfirmComplete] = useState(false);
 
   const nextStatuses = validNextWOStatuses(status);
 
   function startTransition(to: WorkOrderStatus) {
-    if (woTransitionRequiresReason(to)) {
+    if (to === "completed") {
+      setError(null);
+      setConfirmComplete(true);
+    } else if (woTransitionRequiresReason(to)) {
       setTransitionDialog({ to });
     } else {
       runTransition(to, null);
@@ -95,13 +102,17 @@ export function WOHeader({
         return;
       }
       setTransitionDialog(null);
+      setConfirmComplete(false);
       router.refresh();
     });
   }
 
   return (
     <div className="flex flex-col gap-3">
-      {error ? (
+      {/* Errors from a dialog transition render inside that dialog, not here
+          behind the overlay (matters especially for cancel, which now also
+          reverses consumed inventory and can fail). */}
+      {error && !transitionDialog && !confirmComplete ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
@@ -212,23 +223,91 @@ export function WOHeader({
       <CancelReasonDialog
         pending={transitionDialog}
         isPending={pending}
-        onCancel={() => setTransitionDialog(null)}
+        error={error}
+        onCancel={() => {
+          setTransitionDialog(null);
+          setError(null);
+        }}
         onSubmit={(reason) =>
           transitionDialog && runTransition(transitionDialog.to, reason)
         }
       />
+
+      <CompleteConfirmDialog
+        open={confirmComplete}
+        isPending={pending}
+        resolvesTicketNumber={ticketId ? ticketNumber : null}
+        error={error}
+        onCancel={() => {
+          setConfirmComplete(false);
+          setError(null);
+        }}
+        onConfirm={() => runTransition("completed", null)}
+      />
     </div>
+  );
+}
+
+function CompleteConfirmDialog({
+  open,
+  isPending,
+  resolvesTicketNumber,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  isPending: boolean;
+  resolvesTicketNumber: string | null;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations("workOrders");
+  return (
+    <Dialog open={open} onOpenChange={(o) => (!o ? onCancel() : undefined)}>
+      <DialogContent className="sm:max-w-md">
+        <UiDialogHeader>
+          <DialogTitle>{t("completeTitle")}</DialogTitle>
+          <DialogDescription>
+            {resolvesTicketNumber
+              ? t("completeResolvesBody", { ticket: resolvesTicketNumber })
+              : t("completeBody")}
+          </DialogDescription>
+        </UiDialogHeader>
+        {error ? (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            {t("completeKeepOpen")}
+          </Button>
+          <Button type="button" onClick={onConfirm} disabled={isPending}>
+            {isPending ? t("completing") : t("completeConfirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function CancelReasonDialog({
   pending,
   isPending,
+  error,
   onCancel,
   onSubmit,
 }: {
   pending: PendingTransition;
   isPending: boolean;
+  error: string | null;
   onCancel: () => void;
   onSubmit: (reason: string) => void;
 }) {
@@ -268,6 +347,11 @@ function CancelReasonDialog({
               required
             />
           </div>
+          {error ? (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button
               type="button"

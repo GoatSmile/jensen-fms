@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, Trash2, Wrench } from "lucide-react";
+import { Plus, Trash2, Wrench, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Money } from "@/components/money";
@@ -35,6 +35,10 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Removing a part reverses inventory + changes the invoice line, so — as on
+  // the desktop parts table — it's a two-tap arm, not a one-tap fire (the
+  // touch surface is where a fat-finger tap is likeliest).
+  const [armedId, setArmedId] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const totalCost = rows.reduce(
@@ -44,6 +48,7 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
 
   function onRemove(rowId: string) {
     setError(null);
+    setArmedId(null);
     setRemovingId(rowId);
     start(async () => {
       const r = await removePartFromWO(woId, rowId);
@@ -130,16 +135,40 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
                     ) : null}
                   </div>
                   {!readOnly ? (
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={t("removePart", { name: row.partName })}
-                      onClick={() => onRemove(row.id)}
-                      disabled={pending && removingId === row.id}
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                    </Button>
+                    armedId === row.id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          aria-label={t("confirmRemovePart", { name: row.partName })}
+                          onClick={() => onRemove(row.id)}
+                          disabled={pending && removingId === row.id}
+                        >
+                          <Trash2 className="size-4" aria-hidden />
+                          {t("confirmRemove")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={t("cancelRemove")}
+                          onClick={() => setArmedId(null)}
+                        >
+                          <X className="size-4" aria-hidden />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t("removePart", { name: row.partName })}
+                        onClick={() => setArmedId(row.id)}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
+                      </Button>
+                    )
                   ) : null}
                 </div>
               </li>

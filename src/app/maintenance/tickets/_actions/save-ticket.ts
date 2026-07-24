@@ -74,7 +74,7 @@ async function parseTicketForm(formData: FormData): Promise<
   | {
       ok: true;
       payload: {
-        bike_id: string;
+        bike_id: string | null;
         reported_by_contact_id: string | null;
         reported_by_text: string | null;
         source: TicketSource;
@@ -96,9 +96,9 @@ async function parseTicketForm(formData: FormData): Promise<
   const language = nullable(formData.get("reported_language"));
   const notes = nullable(formData.get("notes"));
 
-  if (!bike_id) {
-    return { ok: false, error: t("ticketPickBike"), field: "bike_id" };
-  }
+  // bike_id is intentionally NOT required here: a not-yet-triaged ticket
+  // (customer /report/help) legitimately has none. createTicket requires it;
+  // updateTicket allows the already-bikeless case (see below).
   if (!description) {
     return {
       ok: false,
@@ -162,9 +162,14 @@ export async function createTicket(formData: FormData): Promise<SaveTicketResult
   if (!parsed.ok) return parsed;
 
   const t = await getTranslations("errors");
+  // A ticket created from the office form is always against a real bike.
+  if (!parsed.payload.bike_id) {
+    return { ok: false, error: t("ticketPickBike"), field: "bike_id" };
+  }
+  const bikeId = parsed.payload.bike_id;
   const supabase = await createClient();
 
-  const bikeGate = await assertTicketableBike(supabase, parsed.payload.bike_id);
+  const bikeGate = await assertTicketableBike(supabase, bikeId);
   if (!bikeGate.ok) return bikeGate;
 
   const { data: ticketNumber, error: numErr } = await supabase.rpc(
@@ -246,11 +251,18 @@ export async function updateTicket(
     .select("bike_id")
     .eq("id", ticketId)
     .maybeSingle();
-  if (existing?.bike_id !== parsed.payload.bike_id) {
-    const bikeGate = await assertTicketableBike(
-      supabase,
-      parsed.payload.bike_id,
-    );
+  const existingBikeId = existing?.bike_id ?? null;
+  const newBikeId = parsed.payload.bike_id;
+  if (newBikeId == null) {
+    // A ticket that never had a bike (customer /report/help triage) stays
+    // saveable without one — that's the surface most in need of triage notes.
+    // But you can't STRIP a bike off a ticket that has one (that would
+    // un-triage it); require picking one to change it.
+    if (existingBikeId != null) {
+      return { ok: false, error: t("ticketCannotClearBike"), field: "bike_id" };
+    }
+  } else if (existingBikeId !== newBikeId) {
+    const bikeGate = await assertTicketableBike(supabase, newBikeId);
     if (!bikeGate.ok) return bikeGate;
   }
 

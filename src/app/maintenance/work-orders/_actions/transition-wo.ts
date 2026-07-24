@@ -17,6 +17,53 @@ import {
 export type WOTransitionResult = { ok: true } | { ok: false; error: string };
 
 /**
+ * Cancelling a WO returns any consumed parts to stock (owner decision
+ * 2026-07-23: the work didn't happen). Reverses the same way removePartFromWO
+ * does — delete the work_order_parts rows + their linked negative
+ * inventory_movements, so the SUM-based on-hand goes back up. Best-effort per
+ * table; a failure aborts before the status flip so the caller can retry.
+ */
+async function returnWOPartsToStock(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  woId: string,
+): Promise<WOTransitionResult> {
+  const t = await getTranslations("errors");
+  const { data: rows, error } = await supabase
+    .from("work_order_parts")
+    .select("id, inventory_movement_id")
+    .eq("work_order_id", woId);
+  if (error) {
+    return { ok: false, error: t("woCouldNotLoadRow", { detail: error.message }) };
+  }
+  if (!rows || rows.length === 0) return { ok: true };
+
+  const { error: delErr } = await supabase
+    .from("work_order_parts")
+    .delete()
+    .eq("work_order_id", woId);
+  if (delErr) {
+    return { ok: false, error: t("woCouldNotRemoveRow", { detail: delErr.message }) };
+  }
+
+  const movementIds = rows
+    .map((r) => r.inventory_movement_id)
+    .filter((x): x is string => !!x);
+  if (movementIds.length > 0) {
+    const { error: movErr } = await supabase
+      .from("inventory_movements")
+      .delete()
+      .in("id", movementIds);
+    if (movErr) {
+      return {
+        ok: false,
+        error: t("woPartRemovedMovementFailed", { detail: movErr.message }),
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/**
  * Move a work order from its current status to `toStatus`. Validates the
  * transition matrix; cancellation requires a reason which is appended to
  * `work_performed` (the WO has no notes column — this is the only free-form
@@ -72,6 +119,14 @@ export async function transitionWO(
       ok: false,
       error: t("reasonRequiredCancel"),
     };
+  }
+
+  // Cancelling frees consumed parts back to stock before we flip the status,
+  // so a reversal failure aborts the cancel cleanly (rather than leaving a
+  // cancelled WO whose parts never came back).
+  if (toStatus === "cancelled") {
+    const returned = await returnWOPartsToStock(supabase, woId);
+    if (!returned.ok) return returned;
   }
 
   const nowIso = new Date().toISOString();
@@ -132,6 +187,12 @@ export async function transitionWO(
 
   revalidatePath("/maintenance/work-orders");
   revalidatePath(`/maintenance/work-orders/${woId}`);
+  revalidatePath(`/work/${woId}`);
+  if (toStatus === "cancelled") {
+    // Stock changed — refresh the parts surfaces too.
+    revalidatePath("/parts");
+    revalidatePath(`/work/${woId}/parts`);
+  }
   if (wo.ticket_id) {
     revalidatePath(`/maintenance/tickets/${wo.ticket_id}`);
   }
