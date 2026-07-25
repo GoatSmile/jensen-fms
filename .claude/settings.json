@@ -3,10 +3,57 @@
     "allow": [
       "Bash(npm run lint)",
       "Bash(npx tsc --noEmit)",
+      "Bash(npx --no-install tsc --noEmit)",
+      "Bash(npm run build)",
+      "Bash(npm ls *)",
+      "Bash(npx eslint *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git check-ignore *)",
+      "Bash(git ls-files*)",
+      "Bash(gh auth *)",
+      "Bash(gh repo view*)",
       "mcp__55452a54-1704-4522-92ec-4ca188724da0__execute_sql",
       "mcp__55452a54-1704-4522-92ec-4ca188724da0__list_tables",
       "mcp__55452a54-1704-4522-92ec-4ca188724da0__list_projects",
+      "mcp__55452a54-1704-4522-92ec-4ca188724da0__list_migrations",
       "mcp__55452a54-1704-4522-92ec-4ca188724da0__generate_typescript_types"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/gates.sh",
+            "timeout": 600,
+            "statusMessage": "Running commit gates (tsc, build)…"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git add*)",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/git-add-guard.sh",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/claude-md-budget.sh 470",
+            "timeout": 20
+          }
+        ]
+      }
     ]
   }
 }

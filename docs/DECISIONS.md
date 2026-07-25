@@ -366,3 +366,37 @@ that history existed, only that it loaded every session).
 
 Time for this work is logged in Munin's worklog, where the audit was driven from;
 not double-counted here.
+
+## 2026-07-25 — Rituals get enforcement, not willpower
+
+The rule added two days ago — "when a decision is locked, its entry lands here in
+the same commit as the code" — had already slipped: decisions were made on 07-25
+(the provider verdict, the AI-receptionist tier) with no entry here until this
+one. Separately, a `git add -A` in this repo swept an unrelated working-tree
+change into a docs commit and pushed it to `main`, which deploys.
+
+Conclusion: **a rule with no enforcement mechanism decays.** Three hooks now live
+in `.claude/hooks/`, tracked, and shared with Munin (identical scripts; the
+CLAUDE.md budget differs per repo):
+
+- **`gates.sh`** (PreToolUse, `git commit*`) — refuses the commit unless
+  `tsc --noEmit` and `next build` pass. Runs `npm test` only where a test script
+  exists, so it is a no-op here until the CI/Vitest item in BACKLOG.md lands.
+  Docs-only commits skip everything; the build is skipped while a dev server is
+  listening, since building then corrupts `.next` and produces phantom hydration
+  stalls — the trap already recorded in WORKLOG.
+- **`git-add-guard.sh`** (PreToolUse, `git add*`) — blocks `-A` / `--all` / `.`
+  and prints everything dirty. Explicit paths only.
+- **`claude-md-budget.sh`** (PostToolUse, Write|Edit) — flags CLAUDE.md past its
+  budget. It fired immediately: this file was at **457 against its stated ~450**.
+  Budget raised to ~470 rather than cutting invariants, because the overage is the
+  per-file write rules moving inline — structural overhead, not narrative. That
+  distinction is the whole point of having a number.
+
+`settings.json` also gained the durable read-only permissions. Note for the
+record: `settings.local.json` had accumulated **171** allow entries, ~150 of them
+one-off grants (62 distinct `curl` invocations, one rule per past commit message)
+— noise that will never match again. It also holds live Trello credentials in
+plaintext and `apply_migration` pre-approved; both were left there deliberately,
+since the file is gitignored, but Trello appears nowhere in OPERATIONS.md's system
+inventory and should either be documented or removed.

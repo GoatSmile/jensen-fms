@@ -10,26 +10,26 @@ This file holds **durable rules only** — what must be true in every session:
 stack, invariants, conventions, vocabulary. Everything with a shorter shelf
 life lives in `docs/`, one job per file, each with its own write rule:
 
-- **`docs/STATUS.md`** — where the work stands right now: what's live, what's
-  in flight, what's blocked, data-entry debts. **Read it at session start.**
-  *Overwrite at session end — never append.*
-- **`docs/DECISIONS.md`** — dated, append-only log of decisions locked with
-  the owner (the why + rejected alternatives). *Supersede, never edit.*
-- **`docs/OPERATIONS.md`** — external accounts, where every secret lives,
-  scheduled jobs, deploy, DNS, backups, cold-start runbook, off-repo knowledge
-  index. *Names and locations only, never values.*
-- **`docs/BACKLOG.md`** — parked ideas + hardening list ("do as it bites").
+One job per file, each with its own write rule — that rule is what stops a file
+accreting:
+
+- **`docs/STATUS.md`** — where the work stands: live, in flight, blocked,
+  data-entry debts. **Read at session start.** *Overwrite at session end, never
+  append.*
+- **`docs/DECISIONS.md`** — dated log of decisions locked with the owner (why +
+  rejected alternatives). *Append-only; supersede, never edit.*
+- **`docs/OPERATIONS.md`** — accounts, secret locations, scheduled jobs, deploy,
+  DNS, backups, cold-start runbook, off-repo index. *Names, never values.*
+- **`docs/BACKLOG.md`** — parked ideas + hardening ("do as it bites").
   *Delete an entry when it ships or is rejected.*
-- **`docs/plan-*.md`** — active plan documents; *move to `docs/archive/`
-  when closed.*
-- **`docs/archive/`** — **`HISTORY.md`** (curated shipped-work narrative with
-  commit refs) + closed plans. Never needed to act; exists so history survives
-  context loss. *Write-once.*
+- **`docs/plan-*.md`** — active plans; *move to `docs/archive/` when closed.*
+- **`docs/archive/`** — **`HISTORY.md`** (shipped-work narrative with commit
+  refs) + closed plans. Never needed to act; survives context loss.
+  *Write-once.*
 - **`docs/WORKLOG.md`** — hours ledger (ritual below).
 
-**Munin (`~/workspace/code/munin`) uses this same seven-slot scheme with the
-same file names and write rules** (decided 2026-07-25) — the rituals below
-transfer between the two projects unchanged.
+**Munin (`~/workspace/code/munin`) uses this same seven-slot scheme**, so the
+rituals below transfer between projects unchanged.
 
 ### Session rituals
 - **Session start (first exchange of a new working day)**: append today's
@@ -42,9 +42,11 @@ transfer between the two projects unchanged.
   session must be able to resume from this file + STATUS.md alone.
 - **When something ships**: reduce, don't grow. Durable residue (a new
   invariant, a new gotcha) lands here; the narrative goes to
-  `docs/archive/`; STATUS.md gets rewritten. Budget for this file: ~450
-  lines. The test for every line: *would a fresh session behave incorrectly
-  without it?*
+  `docs/archive/`; STATUS.md gets rewritten. Budget for this file: **~470
+  lines** (raised from 450 on 2026-07-25 when the per-file write rules moved
+  inline — structural overhead, not narrative; a `.claude/hooks` check now
+  flags a breach the moment it happens). The test for every line: *would a
+  fresh session behave incorrectly without it?*
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
   entry in the same commit as the code that implements it.
 
