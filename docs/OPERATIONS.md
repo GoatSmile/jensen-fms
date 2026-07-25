@@ -19,11 +19,49 @@ every secret lives, and how to rebuild or hand over the whole thing.
 | Anthropic API | Extraction LLM (haiku) | — | `ANTHROPIC_API_KEY` → `.env.local` + Vercel |
 | GatewayAPI | SMS ack (Danish alphanumeric sender) | planned/partial | per the inbound provider registry |
 | e-conomic | Accounting push | currently a TRIAL agreement 2446940 ("Din virksomhed"); production grant expected ~end of July 2026 — see the STATUS landmine before switching | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` → `.env.local` (+ Vercel at prod cutover). The public demo/demo pair is READ-ONLY — never default to it silently |
+| ECB | FX reference rates | consumed by the FX refresh cron below (no account) | — |
+| OpenStreetMap Nominatim | Geocoding (`src/lib/geocode/nominatim.ts`) | Public endpoint, keyless, but their policy requires a contact address in the User-Agent — falls back to a hardcoded address if unset | `NEXT_PUBLIC_NOMINATIM_CONTACT` → `.env.local` + Vercel |
 
 The inbound provider registries (`TRANSCRIPTION_PROVIDERS` etc. in
 `src/lib/inbound/settings.ts`) are the authoritative list of which env
 secret each provider needs; the admin card shows present/missing per the
 config doctrine in CLAUDE.md.
+
+### Full env-var inventory
+
+The table above defers some secrets to the provider registry. For bus-factor
+purposes, here is every variable the code actually reads:
+
+| Variable | For |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` | Supabase |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio trunk + webhook signature validation |
+| `GLADIA_API_KEY` | transcription (selected provider) |
+| `AZURE_SPEECH_KEY` | fallback transcription adapter |
+| `ANTHROPIC_API_KEY` | extraction LLM |
+| `RESEND_API_KEY` | outbound email |
+| `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` | e-conomic |
+| `CRON_SECRET` | authenticates all three cron routes; **the FX route 503s without it** on any non-dev deploy |
+| `SITE_PASSWORD` | the opt-in shared-password gate (`middleware.ts`, `/whoami` person claim). Unset = gate locks nothing — prod relies on Vercel SSO |
+| `NEXT_PUBLIC_APP_URL` | base URL baked into bike QR codes (`src/lib/qr.ts`) |
+| `NEXT_PUBLIC_NOMINATIM_CONTACT` | geocoding User-Agent contact |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel Protection-Bypass propagation on inbound webhooks |
+
+`NODE_ENV` and `VERCEL` are platform-provided.
+
+## Scheduled jobs
+
+Three Vercel crons (`vercel.json`), all authenticating with
+`Authorization: Bearer ${CRON_SECRET}`:
+
+| Job | Schedule (UTC) | What breaks silently if it stops |
+|---|---|---|
+| `/api/cron/refresh-fx-rates` | `0 17 * * 1-5` — weekdays, after the ECB daily fix | New PO lines freeze a **stale FX rate** onto cost basis. Money math degrades quietly, and frozen-at-purchase means it is not retroactively fixable |
+| `/api/cron/inbound-retention` | `0 3 * * *` | Call audio outlives its retention window (GDPR exposure); transcripts are unaffected |
+| `/api/cron/notify-overdue-invoices` | `0 6 * * *` | Overdue-invoice notifications stop |
+
+The FX route deliberately **fails closed**: on any non-dev deployment a missing
+`CRON_SECRET` returns 503 rather than running unauthenticated.
 
 ## Secrets — where they live
 - **App runtime**: `.env.local` locally (leading dot — Next.js won't

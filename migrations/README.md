@@ -1,7 +1,16 @@
-# Jensen Production — FMS Schema Package v1.2
+# Jensen Production — FMS Schema Package v1.2 (historical)
 
-This package contains the proposed PostgreSQL database schema for the
-Bicycle Fleet Management System.
+> ⚠️ **This document describes the ORIGINAL schema package as proposed in
+> May 2026 — files `01`–`02`. It is not a description of today's database.**
+> The live schema is the full numbered sequence in this directory (73+
+> migrations and counting); `docs/STATUS.md` has the current count. Kept
+> because it explains the founding design of the core tables and the
+> bilingual mechanism, both of which still hold. For anything beyond that,
+> read the migrations themselves — and never modify a file that has already
+> been applied.
+
+This package contains the originally proposed PostgreSQL database schema for
+the Bicycle Fleet Management System.
 
 **v1.2 adds full Danish + English bilingual support** to every user-facing
 text field — see `CHANGES.md` for the v1.1 → v1.2 delta.

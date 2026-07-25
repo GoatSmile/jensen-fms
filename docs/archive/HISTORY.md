@@ -7,6 +7,10 @@ file preserves the narrative record: what shipped when, how, and with which
 commits. Sections are chronological. `git log` and `docs/WORKLOG.md` hold
 the finer grain.
 
+_Renamed from `shipped-history.md` on 2026-07-25 to match the docs scheme now
+shared with Munin (see `docs/DECISIONS.md`, entry 2026-07-25). Worklog rows
+written before that date refer to it by the old name._
+
 ---
 
 ## May 2026 — v0 → v0.9

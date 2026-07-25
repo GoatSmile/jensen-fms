@@ -1,16 +1,16 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-25, end of day** (live-call recording V1 shipped +
-verified on a real bridged call, deterministic speaker attribution fixed via
-Gladia's `channel` tag, telephony/transcription provider evaluation closed,
-and the AI-receptionist tier decided — all 2026-07-25. Previously:
-people-&-roles P1–P4, docs restructure, August playbook, global identifier
-search, perimeter audit, voice commands VC-1 — 2026-07-23/24.)
+**Last updated: 2026-07-25, end of day.** Most recent: live-call recording V1
+shipped and verified on a real bridged call, deterministic speaker attribution
+fixed via Gladia's `channel` tag, telephony/transcription provider evaluation
+closed, AI-receptionist tier decided.
 
 This is the session-death recovery file: a fresh session (human or LLM)
 resumes from `CLAUDE.md` + this file. **Overwrite it at session end — never
-append.** History belongs in `docs/archive/`, decisions in
-`docs/DECISIONS.md`.
+append.** That applies to this header too: what shipped in earlier sessions
+belongs in `docs/archive/HISTORY.md` and `docs/WORKLOG.md`, not in a growing
+parenthetical here. History belongs in `docs/archive/`, decisions in
+`docs/DECISIONS.md`, parked ideas in `docs/BACKLOG.md`.
 
 ## Where we are
 - **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind

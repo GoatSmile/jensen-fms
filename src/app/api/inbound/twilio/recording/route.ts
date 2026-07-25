@@ -23,7 +23,7 @@ const BUCKET = "inbound";
 /**
  * Twilio recording-status callback (Slice F). Fires when a voicemail
  * recording is ready. We validate the signature, pull the audio into Supabase
- * Storage (EU), DELETE the Twilio copy immediately, converge on the call's row
+ * Storage (EU), DELETE the Twilio copy once ours is stored, converge on the row
  * (created here OR already created by the call-status callback — reconciled by
  * CallSid), and — after responding — run the pipeline so a review row is
  * waiting. Shadow mode: nothing reaches the customer.
@@ -75,7 +75,10 @@ export async function POST(request: Request) {
     ? Number(params.RecordingChannels)
     : undefined;
 
-  // Pull the audio to EU storage, then delete the Twilio copy.
+  // Pull the audio to EU storage, then delete the Twilio copy — but ONLY once
+  // our copy actually exists. Deleting after a failed fetch/upload would leave
+  // ZERO copies of the call: fetch-and-delete exists to make Supabase the one
+  // custodian, not to destroy the audio.
   const fetched = await fetchTwilioRecording(recordingUrl, accountSid, authToken);
   let objectPath: string | null = null;
   if (fetched.ok) {
@@ -88,7 +91,15 @@ export async function POST(request: Request) {
       });
     if (uploadErr) objectPath = null;
   }
-  const del = await deleteTwilioRecording(accountSid, authToken, recordingSid);
+  // When our side failed, Twilio's copy is the only fallback, so keep it: a
+  // callback retry re-enters here (the media_path guard above only short-circuits
+  // once the audio IS stored) and can still pull it. The cost is that a kept
+  // copy sits outside our retention cron (which walks media_path) on a Twilio
+  // media URL that is unauthenticated by default — so the row carries a loud
+  // error and the Inbox shows it rather than letting it linger unnoticed.
+  const del: { ok: boolean; detail?: string } = objectPath
+    ? await deleteTwilioRecording(accountSid, authToken, recordingSid)
+    : { ok: false, detail: "kept: our copy failed" };
 
   // Caller identity rides on the signed callback URL's query (the recording
   // callback body itself has no From/To — see the voice route).
@@ -120,7 +131,9 @@ export async function POST(request: Request) {
     media_mime_type: objectPath ? "audio/mpeg" : null,
     call_outcome: isBridged ? "answered" : "message_left",
     status: "received" as const,
-    error: objectPath ? null : "twilio: recording fetch/upload failed",
+    error: objectPath
+      ? null
+      : "twilio: recording fetch/upload failed — the Twilio copy was KEPT (not deleted) so the audio is still recoverable; it is outside our retention cron until then",
   };
 
   let id: string | null = null;

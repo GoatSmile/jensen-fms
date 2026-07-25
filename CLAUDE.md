@@ -8,21 +8,28 @@ similar organizations. Replaces fragmented Excel + paper workflows.
 
 This file holds **durable rules only** — what must be true in every session:
 stack, invariants, conventions, vocabulary. Everything with a shorter shelf
-life lives in `docs/`:
+life lives in `docs/`, one job per file, each with its own write rule:
 
 - **`docs/STATUS.md`** — where the work stands right now: what's live, what's
   in flight, what's blocked, data-entry debts. **Read it at session start.**
+  *Overwrite at session end — never append.*
 - **`docs/DECISIONS.md`** — dated, append-only log of decisions locked with
-  the owner (the why + rejected alternatives). Supersede, never edit.
+  the owner (the why + rejected alternatives). *Supersede, never edit.*
 - **`docs/OPERATIONS.md`** — external accounts, where every secret lives,
-  deploy, DNS, backups, cold-start runbook, off-repo knowledge index.
+  scheduled jobs, deploy, DNS, backups, cold-start runbook, off-repo knowledge
+  index. *Names and locations only, never values.*
 - **`docs/BACKLOG.md`** — parked ideas + hardening list ("do as it bites").
-- **`docs/plan-*.md`** — active plan documents; move to `docs/archive/`
-  when closed.
-- **`docs/archive/`** — shipped-work history (curated narratives with commit
-  refs) + closed plans. Never needed to act; exists so history survives
-  context loss.
+  *Delete an entry when it ships or is rejected.*
+- **`docs/plan-*.md`** — active plan documents; *move to `docs/archive/`
+  when closed.*
+- **`docs/archive/`** — **`HISTORY.md`** (curated shipped-work narrative with
+  commit refs) + closed plans. Never needed to act; exists so history survives
+  context loss. *Write-once.*
 - **`docs/WORKLOG.md`** — hours ledger (ritual below).
+
+**Munin (`~/workspace/code/munin`) uses this same seven-slot scheme with the
+same file names and write rules** (decided 2026-07-25) — the rituals below
+transfer between the two projects unchanged.
 
 ### Session rituals
 - **Session start (first exchange of a new working day)**: append today's

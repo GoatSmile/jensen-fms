@@ -318,3 +318,51 @@ Mechanics (all in migration 76 + `src/lib/inbound/command/*`):
 Verified end-to-end in-browser (founding utterance → customer + SO drafts,
 dependency ordering, grounded summary). Scope/phasing unchanged in
 `docs/plan-voice-commands.md`; VC-2/VC-3 as written there.
+
+## 2026-07-25 — One docs scheme shared with Munin
+
+The docs restructure of 2026-07-23 (entry above) worked: this project's files
+have not re-accreted since. Munin independently hit the same wall two days
+later — its `CLAUDE.md` had reached 812 lines and contradicted itself in nine
+places, four of them phrased as live instructions. Rather than solve it twice,
+**both projects now use one scheme**, so the session rituals and muscle memory
+transfer between them.
+
+The principle, stated explicitly because it is what makes the scheme work:
+**organize docs by shelf life and write discipline, not by topic.** Accretion is
+not a discipline failure — it is the default for any file with no stated write
+rule. Every file therefore declares its own: overwrite (STATUS) · append-only,
+supersede-never-edit (DECISIONS) · delete-when-shipped (BACKLOG) ·
+names-not-values (OPERATIONS) · write-once (archive) · edit-in-place with a line
+budget (CLAUDE.md).
+
+Seven slots, one job per file. A file filling two slots is the bug.
+
+Changed here (Munin adopted the rest, which this project already had):
+- `docs/archive/shipped-history.md` → **`docs/archive/HISTORY.md`** — same name
+  in both repos. Worklog rows before today use the old name; a note in the file
+  records the rename.
+- `docs/OPERATIONS.md` gained a **Scheduled jobs** section. It had none, despite
+  three live Vercel crons — and the FX-refresh one matters most: a stale ECB rate
+  freezes onto new PO lines, so the money math degrades silently and, because
+  frozen-at-purchase is deliberate, **not retroactively fixable**. A bus-factor
+  document that omits the job whose silent failure corrupts cost basis is missing
+  the thing it exists for. Also added a full env-var inventory (nine variables
+  were unnamed, deferred to the provider registry) and two absent external
+  systems (ECB, OpenStreetMap Nominatim).
+- `docs/STATUS.md`'s header had started accreting a "Previously: …"
+  parenthetical, against its own overwrite-never-append rule. Trimmed, and the
+  rule now says explicitly that it covers the header.
+- `migrations/README.md` + `CHANGES.md` describe the **May-2026 proposed** schema
+  package ("v1.2", two files) while the live schema is 73+ numbered migrations.
+  Banner-marked historical rather than moved, since they still explain the
+  founding table design and the bilingual mechanism and they belong next to the
+  files they describe.
+
+Rejected: renaming Munin's `STATE.md` to something new in both repos (Jensen is
+older and has more docs — the cheaper migration wins), and deleting the narrative
+histories (the rationale is their whole value; the accretion problem was never
+that history existed, only that it loaded every session).
+
+Time for this work is logged in Munin's worklog, where the audit was driven from;
+not double-counted here.

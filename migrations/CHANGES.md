@@ -1,4 +1,9 @@
-# FMS Schema — v1.1 → v1.2 Changes
+# FMS Schema — v1.1 → v1.2 Changes (historical)
+
+> ⚠️ **A May-2026 delta between two drafts of the original schema package, not
+> a changelog of the live database.** Schema history since then is the numbered
+> migration sequence itself, plus `docs/archive/HISTORY.md`. See
+> `migrations/README.md`.
 
 ## Summary
 

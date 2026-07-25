@@ -30,7 +30,7 @@ secrets-location inventory.
 | `docs/OPERATIONS.md` | Accounts, secrets locations, deploy, backups, runbooks |
 | `docs/BACKLOG.md` | Parked ideas + hardening list |
 | `docs/plan-*.md` | Active plan documents |
-| `docs/archive/` | Shipped-work history + closed plans |
+| `docs/archive/` | `HISTORY.md` (shipped-work narrative) + closed plans |
 | `docs/WORKLOG.md` | Hours ledger |
 
 The database schema lives in `/migrations/` (sequentially numbered; never
