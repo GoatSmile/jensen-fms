@@ -234,9 +234,22 @@ Dennis-side whisper announcement (he's informed by policy, not by robot).
 
 ## Follow-ups
 
-- Gladia async `callback` to kill the long-call polling ceiling.
-- Deterministic attribution: `AZURE_SPEECH_KEY` + flip the call-path provider,
-  or build the self-split path to keep EU-native.
+- ~~Deterministic attribution~~ ✅ **DONE 2026-07-25** via Gladia's `channel`
+  tag — no new provider needed (see the correction above).
+- **One Danish bridged test call** — the only outstanding validation, and the
+  only evidence that should ever justify changing transcription provider. Our
+  Danish samples so far are mono voicemails at 0.51 and 0.26 clarity; the 0.26
+  one produced 96 characters of transcript, which is either bad audio or weak
+  Danish ASR and we cannot tell which from a voicemail. If Danish on a clean
+  bridged call disappoints, A/B the SAME stored recording against Azure
+  (adapter already built), Speechmatics and Deepgram before switching anything.
+- Gladia async `callback` to kill the long-call polling ceiling
+  (`GLADIA_POLL_TIMEOUT_MS` 90 s + route `maxDuration` 60 s are still sized for
+  2-minute voicemails; a 102 s call completed in 27 s end-to-end, so there is
+  headroom but not a lot).
+- Surface `callSummary` + `commitments` properly in the Inbox review panel —
+  today they're only visible in the extraction JSON, and "what we promised" is
+  the single most valuable output of a recorded call.
 - Business-hours / out-of-hours routing straight to voicemail.
 - The front-door cutover itself: publishing the Twilio number, porting or
   forwarding the shop's real number (August, with Dennis).
