@@ -206,13 +206,90 @@ proof**; the CVR number itself needs no documentation at Twilio. Telnyx is
 heavier (business-registration certificate + proof of address dated within 3
 months, business use only). Same Danish rules at every provider.
 
-### Still unfinished
-The **turnkey / AI-receptionist tier** (Tier C) was killed twice by session
-limits. Only one fact was confirmed: **Retell added Danish 2025-04-17**. The
-open question worth finishing is the **hybrid** — an AI receptionist answering in
-Danish when the owner can't, webhooking structured results into this pipeline —
-because the real pain is *missing calls*, not lacking transcription. Everything
-else in that tier is unverified and should not be treated as findings.
+### Tier C — turnkey / AI receptionist: FINISHED 2026-07-25
+
+The question: an AI answering in Danish when nobody picks up, webhooking
+structured results into this pipeline — because the real pain is *missing calls*,
+not lacking transcription. Verdict: **if we ever build it, build it ourselves on
+Twilio ConversationRelay, not on a turnkey platform. And don't build it yet —
+two gates first.**
+
+**Why not turnkey.** Every platform in this tier is US SaaS that *stores the
+conversation*, which is a regression on the most sensitive audio we handle — the
+whole point of Gladia + Supabase-EU + fetch-and-delete was that call audio never
+rests outside the EU:
+
+| Platform | Danish | Residency | Verdict |
+|---|---|---|---|
+| **Retell** | ✅ added 2025-04-17 (the one fact we had) | ❌ **US-only** (AWS us-east/us-west, GDPR via AWS DPA + SCCs); EU residency is enterprise/on-prem-SIP only | No — and its own community threads are where this is admitted |
+| **Vapi** | not confirmed | ❌ **no EU hosting**; you self-host the models (Azure/Vertex) and own the compliance | No — "raw infrastructure", so we'd do the residency work anyway *and* pay a platform |
+| **ElevenLabs Agents** | 70+ languages, Danish not separately confirmed | ⚠️ EU residency exists but is **Enterprise-only** (sales-gated) | No at our size |
+| Bland · Synthflow | — | same US-SaaS class | Not separately verified; nothing suggests a different answer |
+
+Beyond residency they duplicate what we already own — extraction, matching,
+routing, review queue — and add a fourth vendor to do it worse (their webhook
+gives us JSON we'd have to re-match against our own DB anyway).
+
+**Why ConversationRelay is the honest hybrid.** It keeps the Twilio number, the
+signed webhooks, the fetch-and-delete recording path, and our own Claude loop:
+
+- **Danish is a documented default**: `da-DK` ships as ElevenLabs TTS +
+  Google `telephony` STT. STT provider is switchable — **Deepgram Nova-3 has
+  had Danish streaming since 2025** and is the model explicitly tuned for
+  8 kHz call audio, so we are not stuck with the default.
+- **Attribution stops being a problem at all.** We own the turn structure, so
+  no diarization, no channel trick, no `channel`-tag discovery needed.
+- **The downstream is already built.** An AI receptionist is just a third
+  *ingress* onto the channel-blind trunk (voicemail → bridge → agent), landing
+  in `body_text` for the same extract → match → route → Inbox review path,
+  under the same shadow mode. This is the payoff of the generic trunk.
+- **Cost is a rounding error**: ConversationRelay **$0.07/min** + voice legs
+  (~$0.013/min class) + TTS/STT, billed separately. Turnkey platforms land
+  $0.07–0.31/min effective for less control.
+
+**The three real blockers** — none of them is price:
+
+1. **Where the WebSocket lives.** ConversationRelay needs a persistent WS
+   server. Vercel shipped native WebSockets (public beta, 2026-06-22, Fluid
+   compute, billed on active CPU) but with a **5-minute default connection
+   cap**; the 30-minute ceiling is beta and Pro/Enterprise-gated. A workshop
+   call that runs past the cap drops mid-sentence — disqualifying for a
+   receptionist. So this needs either the 30-min ceiling confirmed on our plan,
+   or the WS leg hosted outside Vercel (Fly.io/Render, EU region) — **the
+   project's first second deploy target.** That, not the per-minute rate, is
+   the true cost of Tier C.
+2. **Danish real-time ASR is unproven *for us*.** Our only Danish evidence is
+   two mono voicemails at **0.51 and 0.26** clarity. Batch transcription
+   tolerates that because a human reviews every row; a live agent must
+   understand a Danish caller in one pass with nobody watching. Published
+   Danish WERs (e.g. ElevenLabs Scribe 3.1% FLEURS) are *clean-audio* numbers —
+   the reported reality is that a 5%-benchmark model hits 15–20% on noisy
+   phone audio. **The Danish bridged test call already on the follow-up list is
+   therefore the gate for this too.**
+3. **Residency of the live path, honestly stated.** The `da-DK` real-time path
+   runs audio through Twilio's STT/TTS subprocessors (Google, ElevenLabs) while
+   our text already goes to Claude (US). Whether ConversationRelay is available
+   in Twilio's **Ireland (IE1)** home region is **undocumented — one support
+   ticket settles it** (Voice is in IE1; ConversationRelay is not listed).
+   Live audio to US STT is a step change from batch-audio-in-EU, and it is the
+   owner's call to accept knowingly, not a dev default.
+
+**Sequencing — why not now.** V1 bridging already makes Dennis's phone ring, and
+voicemail already catches what he misses. The cheapest remaining fixes for
+*missing calls* are the two already on the follow-up list — **out-of-hours
+routing** and a **missed-call SMS with a callback link** — which carry zero ASR
+risk (Danish *text*, not Danish speech recognition; note Twilio alphanumeric
+sender IDs are one-way, so replies need an SMS-enabled number — our DK number was
+bought Voice-only, and DK-specific SMS rules are unverified). An AI answering in
+Danish earns its keep only if the workshop is regularly missing calls it can't
+return within a business day — and we now record `call_outcome` on **every**
+call, so that is measurable from August's real traffic instead of guessed.
+
+**Gates before building Tier C**: (1) one clean Danish bridged call that
+transcribes well, and (2) one month of real `call_outcome` data showing missed
+calls that voicemail + bridging don't recover. Then ConversationRelay + our own
+Claude loop, WS leg hosted in the EU. Nothing in this tier is unverified residue
+any more — the tier is *decided*, not unfinished.
 
 ## Extraction: a dialogue is not a message
 
@@ -294,5 +371,12 @@ Dennis-side whisper announcement (he's informed by policy, not by robot).
   today they're only visible in the extraction JSON, and "what we promised" is
   the single most valuable output of a recorded call.
 - Business-hours / out-of-hours routing straight to voicemail.
+- **Missed-call SMS with a callback link** — the cheap answer to "we missed the
+  call", no Danish ASR in the loop. Needs SMS enabled on the DK number (bought
+  Voice-only) and the DK sender-ID rules checked.
+- **Tier C (AI receptionist) is decided, not queued** — gated on one clean
+  Danish bridged call + a month of `call_outcome` data (see the Tier C verdict
+  above). If it ever starts, it starts with confirming where the WebSocket leg
+  can live.
 - The front-door cutover itself: publishing the Twilio number, porting or
   forwarding the shop's real number (August, with Dennis).

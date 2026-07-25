@@ -1,9 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-23, end of day** (people-&-roles P1–P4 + docs
-restructure + August playbook, then a continuation session: global
-identifier search, the perimeter audit, and voice commands VC-1 in-app
-slice — all shipped 2026-07-23).
+**Last updated: 2026-07-25, end of day** (live-call recording V1 shipped +
+verified on a real bridged call, deterministic speaker attribution fixed via
+Gladia's `channel` tag, telephony/transcription provider evaluation closed,
+and the AI-receptionist tier decided — all 2026-07-25. Previously:
+people-&-roles P1–P4, docs restructure, August playbook, global identifier
+search, perimeter audit, voice commands VC-1 — 2026-07-23/24.)
 
 This is the session-death recovery file: a fresh session (human or LLM)
 resumes from `CLAUDE.md` + this file. **Overwrite it at session end — never
@@ -43,6 +45,27 @@ append.** History belongs in `docs/archive/`, decisions in
   number remains the production plan.
 
 ## In flight / next action
+- **Live-call recording V1 shipped + LIVE-VERIFIED 2026-07-25** — an incoming
+  call is bridged to the workshop phone and recorded dual-channel, voicemail
+  stays the no-answer fallback, and the conversation lands on the same inbound
+  trunk (dialogue extraction prompt + `callSummary` / `commitments`). Speaker
+  attribution reads Gladia's **`channel` tag**, never diarization (a
+  diarization bug the same day proved why). Plan + verdicts:
+  `docs/plan-live-call-recording.md`.
+  - **Outstanding validation: one Danish bridged test call.** Our only Danish
+    samples are mono voicemails at 0.51 / 0.26 clarity; that call is the only
+    evidence that should ever justify changing transcription provider — and it
+    also gates the AI-receptionist question.
+  - **Provider evaluation closed 2026-07-25: keep Twilio + Gladia + Claude.**
+    12+ telephony vendors assessed on record-time dual-channel; Telnyx is the
+    only credible alternative and removes no vendor. **AI receptionist (Tier C)
+    decided, not queued**: turnkey platforms (Retell/Vapi/ElevenLabs Agents)
+    fail on EU residency; if it's ever built it's ConversationRelay + our own
+    Claude loop, gated on the Danish call + a month of real `call_outcome`
+    data. Cheap alternatives first: out-of-hours routing, missed-call SMS.
+  - Known ceilings, not yet hit: `GLADIA_POLL_TIMEOUT_MS` (90 s) + the
+    recording route's `maxDuration` (60 s) are still voicemail-sized; the fix
+    is Gladia's async `callback`.
 - People & roles is done (P1–P4). **Global identifier search shipped
   2026-07-23** (July queue item 4): `/bikes` search now matches any
   registered identifier (lock/battery/charger/QR/RFID/AirTag/fleet no.), not
