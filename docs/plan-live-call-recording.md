@@ -171,6 +171,49 @@ Deterministic attribution (Azure, EU region + DPA) vs EU-native processing
 (Gladia) — pick when accuracy on real Danish calls is measurable. Option 3
 (self-split) gets both and is the honest long-term answer if it matters.
 
+## Provider evaluation, 2026-07-25 — verdict: keep the stack
+
+The owner asked for a wide search ("best possible, willing to pay"). Conclusion:
+**stay on Twilio + Gladia + Claude.** Transcription was settled by the `channel`
+discovery above. On telephony, twelve-plus vendors were checked and the decisive
+axis was always the same: **record-time dual-channel recording**, because that
+is what makes attribution a fact.
+
+| Vendor | Dual-channel at record time | Verdict |
+|---|---|---|
+| **Twilio** (incumbent) | ✅ `record-from-answer-dual` | **Keep** — plus signed webhooks + fetch-and-delete |
+| **Telnyx** | ✅ `channels: dual` (leg A / leg B) | Best alternative. Ed25519 signed webhooks; **EU Data Locality explicitly covers media storage**. But it removes no vendor, and our Supabase-EU pipeline already neutralises its one real edge. Revisit only if an auditor demands recordings never rest outside the EU *at the carrier*. Note: data locality "can only be changed once and cannot be undone" |
+| **Vonage** | ✅ `split: conversation` | Lateral move; recording residency undocumented |
+| **Sinch** | ⚠️ claimed in marketing, **absent from the API reference** | Genuinely attractive model — **never stores audio, uploads straight to your bucket** — but unverified on the one axis that matters. One support ticket would settle it. Danish STT listed. Keep as fallback |
+| **Plivo** | ⚠️ "stereo" documented, **per-leg split never stated**; older support doc says API recordings are mono | Regression — undocumented semantics + US S3 storage |
+| **Bandwidth** | ✅ `multiChannel` | No — self-serve is US-numbers-only, DK is sales-gated, **HTTP Basic auth instead of signed webhooks** |
+| **46elks** | ❌ mono only (one mixed WAV) | Disqualified. Cheap and dev-friendly otherwise; 72-hour retention |
+| **Infobip** | ⚠️ per-participant files; true per-channel needs a **post-hoc composition step** | No — extra stage, no documented delete API, sales-gated pricing |
+| **Telavox** | ❌ mono mp3 bytestream, no channel param | Dead end, and instructive: **no programmable call control at all** (bridge/announce is admin-portal click-ops), `GET /calls` capped at **the last 30 calls / 4 months**, notification-only unsigned webhooks, and recording lives in the **499 kr/user/month tier on a 36-month term**. Its Danish transcription *does* POST signed structured results — but via diarization, so it's a downgrade from Gladia-on-channels |
+| Ipvision→Dstny · Flexfone · Firmafon · Puzzel · Zylinc · Enreach · Telia/TDC/Telenor DK | — | All dead ends: seat-based UCaaS, docs behind sales, no public programmable-voice API |
+
+**The structural lesson:** the Nordic answer to Twilio is a CPaaS (Sinch, 46elks,
+Telnyx), never a telco or PBX vendor. Danish seat-based providers have no usable
+programmable-voice API for a solo dev, and none documents dual-channel recording.
+
+**Consolidation is a mirage here.** Keeping Gladia + Claude means swapping the
+telephony layer is 3 vendors before and 3 after — it buys nothing.
+
+### DK number regulation (not a differentiator)
+Number blocks are allocated by **Digitaliseringsstyrelsen** to *operators*, so we
+never touch that. For us, a Danish local number needs a **Danish address with
+proof**; the CVR number itself needs no documentation at Twilio. Telnyx is
+heavier (business-registration certificate + proof of address dated within 3
+months, business use only). Same Danish rules at every provider.
+
+### Still unfinished
+The **turnkey / AI-receptionist tier** (Tier C) was killed twice by session
+limits. Only one fact was confirmed: **Retell added Danish 2025-04-17**. The
+open question worth finishing is the **hybrid** — an AI receptionist answering in
+Danish when the owner can't, webhooking structured results into this pipeline —
+because the real pain is *missing calls*, not lacking transcription. Everything
+else in that tier is unverified and should not be treated as findings.
+
 ## Extraction: a dialogue is not a message
 
 `extract.ts`'s prompt says *"facts from a message left for a workshop"* and its
