@@ -399,7 +399,9 @@ one-off grants (62 distinct `curl` invocations, one rule per past commit message
 — noise that will never match again. It also holds live Trello credentials in
 plaintext and `apply_migration` pre-approved; both were left there deliberately,
 since the file is gitignored, but Trello appears nowhere in OPERATIONS.md's system
-inventory and should either be documented or removed.
+inventory and should either be documented or removed. *(Trello disposition
+SUPERSEDED 2026-07-25 — the integration was removed; see the last entry. The
+`apply_migration` pre-approval stands as written.)*
 
 **Session rituals became skills, same day.** `/session-start`, `/ship-it` and
 `/log-decision` in `.claude/skills/` hold the full procedure; `CLAUDE.md` keeps only
@@ -444,8 +446,9 @@ interesting ones were **rules that measured the wrong quantity**.
   required to run or deploy. Verified while writing it: the token is **live,
   non-expiring, and read+write across Member/Board/Organization** — account-wide,
   not board-scoped — so the entry says to rotate and scope it at handover.
-  Also recorded there: the hooks need `jq` on PATH or they exit silently and the
-  gates stop gating with no warning.
+  *(SUPERSEDED same day — the integration was removed outright rather than
+  rotated; see the last entry.)* Also recorded there: the hooks need `jq` on
+  PATH or they exit silently and the gates stop gating with no warning.
 - Smaller: STATUS claimed 73 migrations against 78 while citing 75/76 in its own
   body; `plan-voice-commands.md` still read "not yet built" three days after VC-1
   shipped; CLAUDE.md stated its own organizing sentence twice; and blank lines
@@ -455,3 +458,34 @@ The through-line: **every one of these was a doc claiming something the repo
 could have contradicted on inspection.** Cheap to check, and none of them
 surfaced on their own — which argues for re-reading the docs against the repo
 periodically, not only when writing them.
+
+## 2026-07-25 — Remove the Trello API integration (SUPERSEDES the "document or rotate" plan)
+
+Supersedes the disposition in the two entries above, which said to document
+Trello in OPERATIONS and rotate its token. **The integration is removed
+instead**: credentials deleted from `.claude/settings.local.json`, the
+reference memory dropped, OPERATIONS updated to record the removal.
+
+Why the reversal. Rotation would have bought a scoped, expiring token for a
+capability with **no demonstrated use** — nothing in `src/` ever called
+Trello, no workflow depended on scripted board access, and the boards are
+worked by hand in the browser anyway. That is a standing credential and a
+monthly rotation chore maintained for an integration nobody was using. The
+smallest secure system is the one without the credential in it.
+
+What was explicitly **not** removed: the boards themselves. "Jensen 1"
+(kanban) and "Jensen – Phase 2" (roadmap) are live, shared with Dennis, and
+untouched — this removed *programmatic access*, not the team's task
+tracking. Worth stating because "remove the Trello integration" could
+reasonably have been read the other way, and the destructive reading is
+unrecoverable.
+
+**Rejected:** rotating to a 30-day scoped token (keeps a chore alive for an
+unused capability); leaving it as-is with a handover note (a non-expiring
+account-wide read/write token is the wrong thing to hand over); deleting the
+boards (never asked for, and Dennis's items live there).
+
+The general rule this is an instance of: **an unused integration is not
+neutral — it is a credential you are choosing to keep.** When an audit finds
+one, removal is the default and rotation is the exception that needs a
+reason.

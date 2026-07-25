@@ -66,8 +66,8 @@ The FX route deliberately **fails closed**: on any non-dev deployment a missing
 ## Dev-environment tooling (not app dependencies)
 
 Nothing here is required for the app to run or deploy — it is the assistant
-harness the repo carries. Kept separate from the table above on purpose: the
-app depending on Trello would be a fact worth knowing, and it doesn't.
+harness the repo carries. Kept separate from the table above on purpose: a
+system in that table is one the app breaks without, and none of these are.
 
 - **`.claude/hooks/`** (tracked, shared with Munin) — `gates.sh` refuses a
   `git commit` unless `tsc --noEmit` + `next build` pass; `git-add-guard.sh`
@@ -81,13 +81,13 @@ app depending on Trello would be a fact worth knowing, and it doesn't.
 - **`.claude/settings.json`** (tracked) — durable read-only permissions +
   the hook wiring. **`.claude/settings.local.json` is gitignored** and holds
   personal grants; it is not part of a cold start and nothing depends on it.
-- **Trello** — board "Jensen 1", used only for the dev's own task tracking,
-  never by the app. `TRELLO_API_KEY` / `TRELLO_TOKEN` live in
-  `.claude/settings.local.json` (gitignored, never committed — verified).
-  **Caveat worth knowing at handover:** that token is non-expiring and
-  read+write across Member/Board/Organization, i.e. account-wide rather than
-  board-scoped. Rotate and scope it if this machine changes hands. Removing
-  it entirely costs nothing the app cares about.
+- **Trello — removed 2026-07-25, deliberately.** The boards ("Jensen 1"
+  kanban, "Jensen – Phase 2" roadmap, both shared with Dennis) are still
+  live and still used **by humans in the browser**; what was removed is the
+  API integration — no credentials on this machine, no scripted access.
+  Nothing in the app ever touched it. If it is ever rewired, scope the token
+  and give it an expiry: the old one was non-expiring and account-wide
+  read/write. See DECISIONS.md 2026-07-25.
 
 ## Secrets — where they live
 - **App runtime**: `.env.local` locally (leading dot — Next.js won't
