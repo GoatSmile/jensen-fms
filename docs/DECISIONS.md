@@ -400,3 +400,11 @@ one-off grants (62 distinct `curl` invocations, one rule per past commit message
 plaintext and `apply_migration` pre-approved; both were left there deliberately,
 since the file is gitignored, but Trello appears nowhere in OPERATIONS.md's system
 inventory and should either be documented or removed.
+
+**Session rituals became skills, same day.** `/session-start`, `/ship-it` and
+`/log-decision` in `.claude/skills/` hold the full procedure; `CLAUDE.md` keeps only
+the triggers and invariants, since a procedure nobody knows to invoke is worse than a
+verbose one. This buys **consistency more than context**: the saving is a few lines,
+but the checklist is now identical every time — including the steps most often
+skipped here, namely en/da parity, moving a closed plan to `docs/archive/` with its
+references repointed, and re-checking STATUS's Landmines section.

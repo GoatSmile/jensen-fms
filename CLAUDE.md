@@ -32,6 +32,9 @@ accreting:
 rituals below transfer between projects unchanged.
 
 ### Session rituals
+The full procedure for each lives in a skill — `/session-start`, `/ship-it`,
+`/log-decision`. The triggers and invariants stay here because they must always be
+known:
 - **Session start (first exchange of a new working day)**: append today's
   WORKLOG row (date · hours · one-line summary) and reconcile the previous
   row's hours from commit timestamps (mark estimates `~`; the user corrects
