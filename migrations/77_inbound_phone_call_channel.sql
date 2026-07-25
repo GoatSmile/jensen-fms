@@ -1,0 +1,13 @@
+-- ============================================================================
+-- 77 — Inbound trunk gains a 'phone_call' channel (live bridged calls)
+-- ============================================================================
+-- docs/plan-live-call-recording.md. A voicemail is a MONOLOGUE (one speaker,
+-- no attribution); a bridged call is a DIALOGUE whose transcript, extraction
+-- prompt and review copy all differ. Per the trunk doctrine that's exactly
+-- when a channel forks, so live calls get their own channel value rather than
+-- hiding inside 'voicemail'.
+--
+-- Alone in its own migration because Postgres forbids USING a freshly-added
+-- enum value in the same transaction that adds it — this guarantees it is
+-- committed before migration 78 / app code reference it.
+ALTER TYPE inbound_channel ADD VALUE IF NOT EXISTS 'phone_call';

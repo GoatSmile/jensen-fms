@@ -35,6 +35,17 @@ export type InboundExtraction = {
    * reviewer, cross-read against transcript_confidence, never a gate.
    */
   confidence: InboundConfidence | null;
+  /**
+   * Live bridged CALLS only (docs/plan-live-call-recording.md) — null for a
+   * voicemail, which is a monologue with no outcome to record.
+   *
+   * A conversation's valuable residue isn't "what they said", it's what was
+   * AGREED: `callSummary` is what the call was about + how it ended;
+   * `commitments` is what WE promised, which is the part that burns the
+   * workshop if it's forgotten.
+   */
+  callSummary: string | null;
+  commitments: string[];
 };
 
 export const EMPTY_EXTRACTION: InboundExtraction = {
@@ -51,6 +62,8 @@ export const EMPTY_EXTRACTION: InboundExtraction = {
   language: null,
   intent: null,
   confidence: null,
+  callSummary: null,
+  commitments: [],
 };
 
 const INTENTS: InboundIntent[] = ["repair_request", "order_inquiry", "other"];
@@ -96,5 +109,12 @@ export function parseExtraction(raw: unknown): InboundExtraction {
     confidence: (CONFIDENCES as string[]).includes(confidence ?? "")
       ? (confidence as InboundConfidence)
       : null,
+    callSummary: str(o.callSummary),
+    commitments: Array.isArray(o.commitments)
+      ? o.commitments
+          .map(str)
+          .filter((c): c is string => c !== null)
+          .slice(0, 10)
+      : [],
   };
 }

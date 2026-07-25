@@ -25,6 +25,10 @@ type Props = {
   initialPhoneNumberTest: string;
   initialRetentionDays: string;
   initialShadowMode: boolean;
+  initialCallMode: string;
+  initialBridgeNumber: string;
+  initialBridgeTimeout: string;
+  initialCallTranscriptionProvider: string;
   transcriptionProviders: string[];
   extractionProviders: string[];
   telephonyProviders: string[];
@@ -67,6 +71,14 @@ export function InboundSettingsForm(props: Props) {
   );
   const [retentionDays, setRetentionDays] = useState(props.initialRetentionDays);
   const [shadowMode, setShadowMode] = useState(props.initialShadowMode);
+  // Call handling: voicemail (record a message) vs bridge (ring a real phone
+  // and record the conversation) — docs/plan-live-call-recording.md.
+  const [callMode, setCallMode] = useState(props.initialCallMode);
+  const [bridgeNumber, setBridgeNumber] = useState(props.initialBridgeNumber);
+  const [bridgeTimeout, setBridgeTimeout] = useState(props.initialBridgeTimeout);
+  const [callProvider, setCallProvider] = useState(
+    props.initialCallTranscriptionProvider,
+  );
   // Absolute webhook URLs to paste into the Twilio number's config — they
   // depend on where this is deployed, so read the origin from the browser.
   // Voice: the "A call comes in" webhook. Status: the "Call status changes"
@@ -99,6 +111,10 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_phone_number_test", phoneNumberTest.trim());
     appendField(fd, "inbound_media_retention_days", retentionDays.trim());
     if (shadowMode) fd.set("inbound_shadow_mode", "on");
+    fd.set("inbound_call_mode", callMode);
+    appendField(fd, "inbound_bridge_number", bridgeNumber.trim());
+    appendField(fd, "inbound_bridge_timeout_seconds", bridgeTimeout.trim());
+    appendField(fd, "inbound_call_transcription_provider", callProvider.trim());
     start(async () => {
       const r = await saveInboundSettings(fd);
       if (!r.ok) {
@@ -235,6 +251,80 @@ export function InboundSettingsForm(props: Props) {
             placeholder="90"
           />
         </div>
+        {/* Call handling — the switch that decides what a caller reaches.
+            Bridge mode is inert without a number, so the number field is
+            required-with-reason rather than hidden. */}
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="inbound_call_mode">
+            {t("inboundCallModeLabel")}
+            <span className="text-muted-foreground block text-xs font-normal">
+              {t("inboundCallModeHint")}
+            </span>
+          </Label>
+          <select
+            id="inbound_call_mode"
+            value={callMode}
+            onChange={(e) => setCallMode(e.target.value)}
+            className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm sm:max-w-sm"
+          >
+            <option value="voicemail">{t("inboundCallModeVoicemail")}</option>
+            <option value="bridge">{t("inboundCallModeBridge")}</option>
+          </select>
+        </div>
+        {callMode === "bridge" ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="inbound_bridge_number">
+                {t("inboundBridgeNumberLabel")}
+                <span className="text-muted-foreground block text-xs font-normal">
+                  {t("inboundBridgeNumberHint")}
+                </span>
+              </Label>
+              <Input
+                id="inbound_bridge_number"
+                value={bridgeNumber}
+                onChange={(e) => setBridgeNumber(e.target.value)}
+                placeholder="+45 …"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="inbound_bridge_timeout_seconds">
+                {t("inboundBridgeTimeoutLabel")}
+                <span className="text-muted-foreground block text-xs font-normal">
+                  {t("inboundBridgeTimeoutHint")}
+                </span>
+              </Label>
+              <Input
+                id="inbound_bridge_timeout_seconds"
+                inputMode="numeric"
+                value={bridgeTimeout}
+                onChange={(e) => setBridgeTimeout(e.target.value)}
+                placeholder="20"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor="inbound_call_transcription_provider">
+                {t("inboundCallProviderLabel")}
+                <span className="text-muted-foreground block text-xs font-normal">
+                  {t("inboundCallProviderHint")}
+                </span>
+              </Label>
+              <select
+                id="inbound_call_transcription_provider"
+                value={callProvider}
+                onChange={(e) => setCallProvider(e.target.value)}
+                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm sm:max-w-sm"
+              >
+                <option value="">{t("inboundCallProviderSame")}</option>
+                {props.transcriptionProviders.map((p) => (
+                  <option key={p} value={p}>
+                    {providerLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        ) : null}
         {telephonyProvider === "twilio" ? (
           <div className="flex flex-col gap-1 sm:col-span-2">
             <p className="text-muted-foreground text-xs">

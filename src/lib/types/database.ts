@@ -29,6 +29,10 @@ export type Database = {
           email_domain: string | null
           hide_location_info: boolean
           id: number
+          inbound_bridge_number: string | null
+          inbound_bridge_timeout_seconds: number
+          inbound_call_mode: string
+          inbound_call_transcription_provider: string | null
           inbound_extraction_model: string
           inbound_extraction_provider: string
           inbound_media_retention_days: number
@@ -61,6 +65,10 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_bridge_number?: string | null
+          inbound_bridge_timeout_seconds?: number
+          inbound_call_mode?: string
+          inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number
@@ -93,6 +101,10 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_bridge_number?: string | null
+          inbound_bridge_timeout_seconds?: number
+          inbound_call_mode?: string
+          inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number
@@ -4621,7 +4633,7 @@ export type Database = {
         | "in_maintenance"
         | "retired"
         | "lost_or_stolen"
-      inbound_channel: "voicemail" | "in_app"
+      inbound_channel: "voicemail" | "in_app" | "phone_call"
       inbound_status:
         | "received"
         | "understood"
@@ -4839,7 +4851,7 @@ export const Constants = {
         "retired",
         "lost_or_stolen",
       ],
-      inbound_channel: ["voicemail", "in_app"],
+      inbound_channel: ["voicemail", "in_app", "phone_call"],
       inbound_status: [
         "received",
         "understood",

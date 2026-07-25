@@ -423,6 +423,7 @@ export default async function InboundDetailPage({
 
 /** Maps a stored call_outcome to its `inboundOutcome` message key. */
 const OUTCOME_KEY: Record<string, string> = {
+  answered: "answered",
   message_left: "messageLeft",
   no_message: "noMessage",
   busy: "busy",

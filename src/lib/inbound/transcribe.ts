@@ -23,7 +23,19 @@
  */
 
 export type TranscribeResult =
-  | { ok: true; text: string; language: string | null; confidence: number | null }
+  | {
+      ok: true;
+      text: string;
+      language: string | null;
+      confidence: number | null;
+      /**
+       * Set when the transcript carries speaker labels AND those labels were
+       * GUESSED by diarization rather than read off separate audio channels.
+       * The dialogue extraction prompt is warned when this is true, so a wrong
+       * guess degrades to "ambiguous" instead of a confident misattribution.
+       */
+      speakersInferred?: boolean;
+    }
   | {
       ok: false;
       reason:
@@ -36,13 +48,65 @@ export type TranscribeResult =
       detail?: string;
     };
 
+export type TranscribeOptions = {
+  provider: string;
+  region: string | null;
+  /**
+   * Number of audio channels worth transcribing SEPARATELY. 2 for a Twilio
+   * dual-channel bridged call, where channel 1 is the customer and channel 2
+   * is us by Twilio's contract — so per-channel transcription makes speaker
+   * attribution a fact. Providers that can't split channels fall back to
+   * diarization with a speaker-count hint (and set `speakersInferred`).
+   * Omitted / 1 → today's single-speaker voicemail path, unchanged.
+   */
+  channels?: number;
+};
+
 export async function transcribeAudio(
   audioUrl: string,
-  opts: { provider: string; region: string | null },
+  opts: TranscribeOptions,
 ): Promise<TranscribeResult> {
-  if (opts.provider === "gladia") return transcribeViaGladia(audioUrl);
-  if (opts.provider === "azure") return transcribeViaAzure(audioUrl, opts.region);
+  const twoWay = (opts.channels ?? 1) >= 2;
+  if (opts.provider === "gladia") return transcribeViaGladia(audioUrl, twoWay);
+  if (opts.provider === "azure") {
+    return transcribeViaAzure(audioUrl, opts.region, twoWay);
+  }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
+}
+
+/** "Kunde"/"Værksted" prefixes, stable across locales (the model reads these). */
+const SPEAKER_LABEL = ["Speaker 1", "Speaker 2"] as const;
+
+function speakerLabel(index: number): string {
+  return SPEAKER_LABEL[index] ?? `Speaker ${index + 1}`;
+}
+
+/**
+ * Render diarized/per-channel utterances as a readable dialogue, collapsing
+ * consecutive turns by the same speaker so the transcript reads like a
+ * conversation rather than a stutter of one-line labels.
+ */
+function renderDialogue(
+  turns: { speaker: number; text: string }[],
+): string {
+  const lines: string[] = [];
+  let current: { speaker: number; parts: string[] } | null = null;
+  for (const turn of turns) {
+    const text = turn.text.trim();
+    if (!text) continue;
+    if (current && current.speaker === turn.speaker) {
+      current.parts.push(text);
+      continue;
+    }
+    if (current) {
+      lines.push(`${speakerLabel(current.speaker)}: ${current.parts.join(" ")}`);
+    }
+    current = { speaker: turn.speaker, parts: [text] };
+  }
+  if (current) {
+    lines.push(`${speakerLabel(current.speaker)}: ${current.parts.join(" ")}`);
+  }
+  return lines.join("\n");
 }
 
 function caught(e: unknown): TranscribeResult {
@@ -86,7 +150,10 @@ const GLADIA_INIT_URL = "https://api.gladia.io/v2/pre-recorded";
 const GLADIA_POLL_INTERVAL_MS = 1_000;
 const GLADIA_POLL_TIMEOUT_MS = 90_000;
 
-async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> {
+async function transcribeViaGladia(
+  audioUrl: string,
+  twoWay = false,
+): Promise<TranscribeResult> {
   const apiKey = process.env.GLADIA_API_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
 
@@ -99,6 +166,17 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
         audio_url: audioUrl,
         // The workshop's two languages; detection picks per file.
         language_config: { languages: ["da", "en"], code_switching: false },
+        // Gladia has no per-channel mode (verified from the API reference
+        // 2026-07-23), so a two-way call gets DIARIZATION with an exact
+        // speaker count — pinning it to 2 is far more reliable than letting it
+        // guess how many people are on a phone call. Labels are a guess, hence
+        // `speakersInferred` on the result.
+        ...(twoWay
+          ? {
+              diarization: true,
+              diarization_config: { number_of_speakers: 2 },
+            }
+          : {}),
       }),
     });
   } catch (e) {
@@ -135,7 +213,12 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
         transcription?: {
           full_transcript?: unknown;
           languages?: unknown;
-          utterances?: { confidence?: unknown; words?: unknown[] }[];
+          utterances?: {
+            confidence?: unknown;
+            words?: unknown[];
+            text?: unknown;
+            speaker?: unknown;
+          }[];
         };
       };
     } | null;
@@ -151,9 +234,8 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
     }
     if (json.status === "done") {
       const t = json.result?.transcription;
-      const text =
+      const flat =
         typeof t?.full_transcript === "string" ? t.full_transcript.trim() : "";
-      if (!text) return { ok: false, reason: "empty" };
       const langs = Array.isArray(t?.languages) ? t.languages : [];
       const language = typeof langs[0] === "string" ? langs[0] : null;
       const utterances = Array.isArray(t?.utterances) ? t.utterances : [];
@@ -163,7 +245,32 @@ async function transcribeViaGladia(audioUrl: string): Promise<TranscribeResult> 
           weight: Array.isArray(u?.words) ? u.words.length : 1,
         })),
       );
-      return { ok: true, text, language, confidence };
+
+      // Two-way call: prefer the speaker-labelled dialogue over the flat
+      // transcript, so "the customer asked" and "we promised" stay distinct.
+      // Falls back to the flat transcript if diarization returned nothing
+      // usable — a transcript without labels beats no transcript.
+      if (twoWay) {
+        const turns = utterances
+          .map((u) => ({
+            speaker: typeof u?.speaker === "number" ? u.speaker : 0,
+            text: typeof u?.text === "string" ? u.text : "",
+          }))
+          .filter((u) => u.text.trim() !== "");
+        const dialogue = renderDialogue(turns);
+        if (dialogue) {
+          return {
+            ok: true,
+            text: dialogue,
+            language,
+            confidence,
+            speakersInferred: true,
+          };
+        }
+      }
+
+      if (!flat) return { ok: false, reason: "empty" };
+      return { ok: true, text: flat, language, confidence };
     }
     // queued / processing → keep polling
   }
@@ -179,6 +286,7 @@ const AZURE_API_VERSION = "2024-11-15";
 async function transcribeViaAzure(
   audioUrl: string,
   region: string | null,
+  twoWay = false,
 ): Promise<TranscribeResult> {
   const apiKey = process.env.AZURE_SPEECH_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
@@ -198,8 +306,20 @@ async function transcribeViaAzure(
   }
 
   const form = new FormData();
-  form.set("audio", audio, "voicemail");
-  form.set("definition", JSON.stringify({ locales: ["da-DK", "en-US"] }));
+  form.set("audio", audio, twoWay ? "call" : "voicemail");
+  // Two-way call: transcribe the stereo channels SEPARATELY. Twilio's contract
+  // ("the parent call will always be in the first channel") makes channel 0 the
+  // customer and channel 1 us — deterministic attribution, no diarization
+  // guess. Verified 2026-07-23: Azure supports `channels` for up to two
+  // channels, and CANNOT combine it with diarization (that's mono-only), so
+  // these are deliberately exclusive.
+  form.set(
+    "definition",
+    JSON.stringify({
+      locales: ["da-DK", "en-US"],
+      ...(twoWay ? { channels: [0, 1] } : {}),
+    }),
+  );
 
   let res: Response;
   try {
@@ -217,17 +337,22 @@ async function transcribeViaAzure(
   if (!res.ok) return httpDetail(res);
 
   const json = (await res.json().catch(() => null)) as {
-    combinedPhrases?: { text?: unknown }[];
-    phrases?: { locale?: unknown; confidence?: unknown; text?: unknown }[];
+    combinedPhrases?: { text?: unknown; channel?: unknown }[];
+    phrases?: {
+      locale?: unknown;
+      confidence?: unknown;
+      text?: unknown;
+      channel?: unknown;
+      offsetMilliseconds?: unknown;
+    }[];
   } | null;
   if (!json) {
     return { ok: false, reason: "api_error", detail: "invalid JSON response" };
   }
-  const text = (json.combinedPhrases ?? [])
+  const flat = (json.combinedPhrases ?? [])
     .map((p) => (typeof p.text === "string" ? p.text : ""))
     .join(" ")
     .trim();
-  if (!text) return { ok: false, reason: "empty" };
   const locale = json.phrases?.find((p) => typeof p.locale === "string")?.locale;
   // "da-DK" → "da", matching the ISO 639-1 codes Gladia returns.
   const language = typeof locale === "string" ? locale.slice(0, 2) : null;
@@ -237,5 +362,25 @@ async function transcribeViaAzure(
       weight: typeof p.text === "string" ? p.text.split(/\s+/).length : 1,
     })),
   );
-  return { ok: true, text, language, confidence };
+
+  // Per-channel request: interleave the two channels' phrases by time into one
+  // dialogue. Attribution is NOT inferred here — the channel IS the speaker.
+  if (twoWay) {
+    const turns = (json.phrases ?? [])
+      .filter((p) => typeof p.text === "string" && p.text.trim() !== "")
+      .map((p) => ({
+        speaker: typeof p.channel === "number" ? p.channel : 0,
+        text: String(p.text),
+        at:
+          typeof p.offsetMilliseconds === "number" ? p.offsetMilliseconds : 0,
+      }))
+      .sort((a, b) => a.at - b.at);
+    const dialogue = renderDialogue(turns);
+    if (dialogue) {
+      return { ok: true, text: dialogue, language, confidence };
+    }
+  }
+
+  if (!flat) return { ok: false, reason: "empty" };
+  return { ok: true, text: flat, language, confidence };
 }

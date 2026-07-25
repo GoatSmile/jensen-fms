@@ -51,20 +51,24 @@ export async function POST(request: Request) {
 
   const { data: existing } = await supabase
     .from("inbound_messages")
-    .select("id, media_path")
+    .select("id, media_path, channel, call_outcome")
     .eq("channel_meta->>twilio_call_sid", callSid)
     .maybeSingle();
 
   // A row for this call already exists (the recording callback got here first,
   // or created it). Stamp the whole-call duration + outcome — but never
-  // downgrade a message-left row.
+  // downgrade a message-left row, nor an ANSWERED bridged call (a conversation
+  // is not "no message" just because Twilio reports the call as completed).
   if (existing) {
+    const settled =
+      existing.channel === "phone_call" || existing.call_outcome === "answered"
+        ? "answered"
+        : existing.media_path
+          ? "message_left"
+          : outcomeFor(callStatus);
     await supabase
       .from("inbound_messages")
-      .update({
-        duration_seconds: duration,
-        call_outcome: existing.media_path ? "message_left" : outcomeFor(callStatus),
-      })
+      .update({ duration_seconds: duration, call_outcome: settled })
       .eq("id", existing.id);
     return new NextResponse(null, { status: 204 });
   }

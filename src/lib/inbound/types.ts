@@ -78,4 +78,12 @@ export type VoicemailChannelMeta = {
   to_number?: string;
   /** Whether the copy on Twilio was successfully deleted after fetch. */
   twilio_deleted?: boolean;
+  // Live bridged calls (docs/plan-live-call-recording.md). 'bridged' means a
+  // human answered and the recording is a two-way CONVERSATION — which drives
+  // the dialogue extraction prompt and the speaker-attribution strategy.
+  call_mode?: "voicemail" | "bridged";
+  /** Twilio's RecordingChannels — 2 means caller on ch1, us on ch2. */
+  recording_channels?: number;
+  /** True when speaker labels came from diarization (a guess), not channels. */
+  speakers_inferred?: boolean;
 };

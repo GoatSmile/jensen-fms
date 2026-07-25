@@ -20,6 +20,12 @@ export async function transcribeVoicemail(
   supabase: SupabaseClient,
   mediaPath: string,
   settings: InboundSettings,
+  /**
+   * Set for a live bridged call: the recording is a two-way CONVERSATION in
+   * dual channel, so it wants per-channel (or diarized) speaker attribution
+   * and the call-path provider — see docs/plan-live-call-recording.md.
+   */
+  opts: { twoWay?: boolean } = {},
 ): Promise<TranscribeResult> {
   const { data: signed, error } = await supabase.storage
     .from("inbound")
@@ -32,7 +38,10 @@ export async function transcribeVoicemail(
     };
   }
   return transcribeAudio(signed.signedUrl, {
-    provider: settings.transcriptionProvider,
+    provider: opts.twoWay
+      ? settings.callTranscriptionProvider
+      : settings.transcriptionProvider,
     region: settings.transcriptionRegion,
+    channels: opts.twoWay ? 2 : 1,
   });
 }

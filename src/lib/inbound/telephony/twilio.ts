@@ -173,6 +173,78 @@ export function voicemailTwiml(recordingCallbackUrl: string): string {
 </Response>`;
 }
 
+// Bridge-mode notice. Said BEFORE the phone rings, so the caller learns the
+// call is recorded while they can still hang up (GDPR — see the plan doc).
+// Deliberately shorter than the voicemail greeting: the caller is waiting to
+// be connected, not to be lectured.
+const BRIDGE_NOTICE_DA =
+  "Velkommen til Jensen Production. Samtalen bliver optaget. Vi stiller dig om nu.";
+const BRIDGE_NOTICE_EN =
+  "You have reached Jensen Production. This call is recorded. Connecting you now.";
+
+/**
+ * Bridge TwiML: bilingual recorded-call notice, then ring `dialNumber` and
+ * record the CONVERSATION in dual channel.
+ *
+ * Key attributes and why:
+ *   - `record="record-from-answer-dual"` — two channels, recording starts on
+ *     ANSWER (not on ringing, so we don't bank silence). Twilio's contract:
+ *     parent call (the customer) is channel 1, the dialed party is channel 2 —
+ *     which is what makes speaker attribution a fact rather than a guess.
+ *   - `answerOnBridge="true"` — the caller keeps hearing real ringback until
+ *     the phone is actually picked up, instead of dead air.
+ *   - `action` — Twilio POSTs the dial outcome here. On no-answer/busy/failed
+ *     that route returns the voicemail TwiML, so voicemail is the fallback.
+ *   - `callerId` (optional) — present the workshop number rather than the
+ *     customer's, when the account owns it; Twilio requires an owned number.
+ */
+export function bridgeTwiml(opts: {
+  dialNumber: string;
+  timeoutSeconds: number;
+  actionUrl: string;
+  recordingCallbackUrl: string;
+  callerId?: string | null;
+}): string {
+  const callerIdAttr = opts.callerId
+    ? ` callerId="${escapeXml(opts.callerId)}"`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say language="da-DK">${escapeXml(BRIDGE_NOTICE_DA)}</Say>
+  <Say language="en-US">${escapeXml(BRIDGE_NOTICE_EN)}</Say>
+  <Dial timeout="${opts.timeoutSeconds}" answerOnBridge="true" record="record-from-answer-dual" trim="trim-silence" action="${escapeXml(opts.actionUrl)}" method="POST" recordingStatusCallback="${escapeXml(opts.recordingCallbackUrl)}" recordingStatusCallbackEvent="completed"${callerIdAttr}>
+    <Number>${escapeXml(opts.dialNumber)}</Number>
+  </Dial>
+</Response>`;
+}
+
+/** Empty TwiML — ends the call without further prompts. */
+export function hangUpTwiml(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Response />`;
+}
+
+/**
+ * The `<Dial action>` URL. Same signed-query trick as the recording callback:
+ * caller identity + the Vercel bypass secret ride along so the fall-through
+ * route can rebuild the voicemail callback correctly.
+ */
+export function dialActionUrl(
+  request: Request,
+  extra: Record<string, string> = {},
+): string {
+  const origin = publicOrigin(request);
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(extra)) {
+    if (v) qs.set(k, v);
+  }
+  const incoming = new URL(request.url).searchParams.get(BYPASS_PARAM);
+  const secret = incoming ?? process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? null;
+  if (secret) qs.set(BYPASS_PARAM, secret);
+  const q = qs.toString();
+  return `${origin}/api/inbound/twilio/dial-status${q ? `?${q}` : ""}`;
+}
+
 // ── Recording media: fetch + delete ──────────────────────────────────────────
 
 function basicAuth(accountSid: string, authToken: string): string {

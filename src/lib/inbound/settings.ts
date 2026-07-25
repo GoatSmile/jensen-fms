@@ -22,16 +22,30 @@ export type ProviderEntry = {
   key: string;
   /** Env vars this adapter requires (presence-checked, never read to the UI). */
   envSecrets: string[];
+  /**
+   * Transcription only: can this adapter transcribe a STEREO recording's
+   * channels SEPARATELY? Twilio's dual-channel recording puts the caller on
+   * channel 1 and us on channel 2 by contract, so a channel-capable provider
+   * makes speaker attribution deterministic instead of a diarization guess
+   * (docs/plan-live-call-recording.md). Verified from provider docs
+   * 2026-07-23: Azure `channels:[0,1]` yes, Gladia no (diarization only).
+   */
+  supportsChannels?: boolean;
 };
 
 /** Registered transcription adapters (audio → text). */
 export const TRANSCRIPTION_PROVIDERS: ProviderEntry[] = [
   // EU-native (French company, 100% EU residency) — the recommended default
   // after the 2026-07-15 re-eval; no region param needed.
-  { key: "gladia", envSecrets: ["GLADIA_API_KEY"] },
+  { key: "gladia", envSecrets: ["GLADIA_API_KEY"], supportsChannels: false },
   // US-parented but explicit EU regions; needs inbound_transcription_region.
-  { key: "azure", envSecrets: ["AZURE_SPEECH_KEY"] },
+  { key: "azure", envSecrets: ["AZURE_SPEECH_KEY"], supportsChannels: true },
 ];
+
+/** Whether bridging is actually armed (mode chosen AND a number to ring). */
+export function bridgingReady(settings: InboundSettings): boolean {
+  return settings.callMode === "bridge" && !!settings.bridgeNumber;
+}
 
 /** Registered extraction adapters (text → structured who/what/intent). */
 export const EXTRACTION_PROVIDERS: ProviderEntry[] = [
@@ -43,12 +57,33 @@ export const TELEPHONY_PROVIDERS: ProviderEntry[] = [
   { key: "twilio", envSecrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"] },
 ];
 
+/** How an incoming call is handled (docs/plan-live-call-recording.md). */
+export type InboundCallMode = "voicemail" | "bridge";
+
 export type InboundSettings = {
   transcriptionProvider: string;
   transcriptionRegion: string | null;
+  /**
+   * Adapter for two-way CALL recordings — split from the voicemail provider
+   * because a dual-channel conversation wants per-channel (deterministic)
+   * speaker attribution, which not every provider supports. Falls back to
+   * transcriptionProvider when unset.
+   */
+  callTranscriptionProvider: string;
+  /**
+   * The stored value before the fallback is applied — NULL means "same as the
+   * voicemail provider". The admin form needs the raw state so that choice
+   * round-trips instead of hardening into an explicit pick on the next save.
+   */
+  callTranscriptionProviderRaw: string | null;
   extractionProvider: string;
   extractionModel: string;
   telephonyProvider: string;
+  /** 'voicemail' (record a message) | 'bridge' (ring a phone, record the call). */
+  callMode: InboundCallMode;
+  /** E.164 phone rung in bridge mode. Bridging is inert without it. */
+  bridgeNumber: string | null;
+  bridgeTimeoutSeconds: number;
   /** The production number (+45) — announcements, SMS sender, print. */
   phoneNumber: string | null;
   /** The test number (Twilio trial) — webhook smoke-testing only. */
@@ -58,7 +93,7 @@ export type InboundSettings = {
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -68,9 +103,19 @@ export async function loadInboundSettings(
     .select(COLUMNS)
     .eq("id", 1)
     .maybeSingle();
+  const transcriptionProvider =
+    data?.inbound_transcription_provider ?? "azure";
   return {
-    transcriptionProvider: data?.inbound_transcription_provider ?? "azure",
+    transcriptionProvider,
     transcriptionRegion: data?.inbound_transcription_region ?? null,
+    // Unset → the voicemail provider, so nothing changes until chosen.
+    callTranscriptionProvider:
+      data?.inbound_call_transcription_provider ?? transcriptionProvider,
+    callTranscriptionProviderRaw:
+      data?.inbound_call_transcription_provider ?? null,
+    callMode: data?.inbound_call_mode === "bridge" ? "bridge" : "voicemail",
+    bridgeNumber: data?.inbound_bridge_number?.trim() || null,
+    bridgeTimeoutSeconds: Number(data?.inbound_bridge_timeout_seconds ?? 20),
     extractionProvider: data?.inbound_extraction_provider ?? "anthropic",
     extractionModel:
       data?.inbound_extraction_model ?? "claude-haiku-4-5-20251001",

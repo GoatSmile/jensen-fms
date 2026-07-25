@@ -31,6 +31,20 @@ export type StageResult =
  * advancing to `understood` and clearing everything downstream (a fresh
  * transcript invalidates prior extraction + match).
  */
+/**
+ * Is this row a live bridged CALL (two-way conversation) rather than a
+ * voicemail? Read from the normalized channel + the channel_meta the Twilio
+ * recording callback stamps — see docs/plan-live-call-recording.md.
+ */
+function isTwoWayCall(row: {
+  channel?: string | null;
+  channel_meta?: unknown;
+}): boolean {
+  if (row.channel === "phone_call") return true;
+  const meta = (row.channel_meta ?? {}) as { call_mode?: unknown };
+  return meta.call_mode === "bridged";
+}
+
 export async function transcribeStage(
   supabase: SupabaseClient,
   messageId: string,
@@ -38,16 +52,34 @@ export async function transcribeStage(
 ): Promise<StageResult> {
   const { data: msg, error } = await supabase
     .from("inbound_messages")
-    .select("id, media_path")
+    .select("id, media_path, channel, channel_meta")
     .eq("id", messageId)
     .maybeSingle();
   if (error) return { ok: false, code: "save", detail: error.message };
   if (!msg) return { ok: false, code: "not_found" };
   if (!msg.media_path) return { ok: false, code: "no_audio" };
 
-  const result = await transcribeVoicemail(supabase, msg.media_path, settings);
+  const twoWay = isTwoWayCall(msg);
+  const result = await transcribeVoicemail(supabase, msg.media_path, settings, {
+    twoWay,
+  });
   if (!result.ok) {
     return { ok: false, code: `transcribe.${result.reason}`, detail: result.detail };
+  }
+
+  // Record whether the speaker labels are a diarization GUESS, so the
+  // extraction prompt (and a human reading the transcript) knows.
+  if (twoWay) {
+    const meta = (msg.channel_meta ?? {}) as Record<string, unknown>;
+    await supabase
+      .from("inbound_messages")
+      .update({
+        channel_meta: {
+          ...meta,
+          speakers_inferred: result.speakersInferred === true,
+        },
+      })
+      .eq("id", messageId);
   }
 
   const { error: saveErr } = await supabase
@@ -80,15 +112,20 @@ export async function extractStage(
 ): Promise<StageResult> {
   const { data: msg, error } = await supabase
     .from("inbound_messages")
-    .select("id, body_text")
+    .select("id, body_text, channel, channel_meta")
     .eq("id", messageId)
     .maybeSingle();
   if (error) return { ok: false, code: "save", detail: error.message };
   if (!msg) return { ok: false, code: "not_found" };
 
+  // A two-way conversation needs the dialogue prompt: it must separate what the
+  // CUSTOMER asked from what WE promised, and capture the agreed outcome.
+  const meta = (msg.channel_meta ?? {}) as { speakers_inferred?: unknown };
   const result = await extractInbound(msg.body_text, {
     provider: settings.extractionProvider,
     model: settings.extractionModel,
+    dialogue: isTwoWayCall(msg),
+    speakersInferred: meta.speakers_inferred === true,
   });
   if (!result.ok) {
     return { ok: false, code: `extract.${result.reason}`, detail: result.detail };

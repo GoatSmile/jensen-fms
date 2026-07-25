@@ -206,6 +206,12 @@ export default async function AdminSettingsPage() {
             initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
             initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
             initialShadowMode={inboundSettings.shadowMode}
+            initialCallMode={inboundSettings.callMode}
+            initialBridgeNumber={inboundSettings.bridgeNumber ?? ""}
+            initialBridgeTimeout={String(inboundSettings.bridgeTimeoutSeconds)}
+            initialCallTranscriptionProvider={
+              inboundSettings.callTranscriptionProviderRaw ?? ""
+            }
             transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
             extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
             telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}

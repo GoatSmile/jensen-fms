@@ -115,6 +115,19 @@ export async function applyTriage(
 
   const from = (row.from_identity ?? "").trim();
 
+  // Second trump card: a call a HUMAN ANSWERED and talked on is by definition
+  // not a robocall (live bridged calls — docs/plan-live-call-recording.md).
+  // Without this, an answered conversation from a first-time caller could be
+  // folded as spam whenever the status callback lands before the recording and
+  // the pipeline never re-scores it (a failed transcription, say).
+  if (row.call_outcome === "answered") {
+    await supabase
+      .from("inbound_messages")
+      .update({ spam_signals: [] })
+      .eq("id", messageId);
+    return;
+  }
+
   // Trump card: matched by the pipeline, or a contact carries this number.
   let known = Boolean(row.matched_contact_id || row.matched_organization_id);
   if (!known && from) known = await isKnownPhone(supabase, from);

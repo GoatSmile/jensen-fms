@@ -66,11 +66,20 @@ export async function POST(request: Request) {
   // Recording already stored on this call (Twilio retried the callback).
   if (existing?.media_path) return new NextResponse(null, { status: 204 });
 
+  // Bridge mode: the voice route tags the callback URL when this recording is a
+  // two-way CONVERSATION rather than a voicemail (signed query — see the voice
+  // route). It changes the channel, the outcome and the extraction prompt.
+  const query = new URL(request.url).searchParams;
+  const isBridged = query.get("mode") === "bridged";
+  const recordingChannels = params.RecordingChannels
+    ? Number(params.RecordingChannels)
+    : undefined;
+
   // Pull the audio to EU storage, then delete the Twilio copy.
   const fetched = await fetchTwilioRecording(recordingUrl, accountSid, authToken);
   let objectPath: string | null = null;
   if (fetched.ok) {
-    objectPath = `voicemail/${crypto.randomUUID()}.mp3`;
+    objectPath = `${isBridged ? "call" : "voicemail"}/${crypto.randomUUID()}.mp3`;
     const { error: uploadErr } = await supabase.storage
       .from(BUCKET)
       .upload(objectPath, fetched.bytes, {
@@ -83,9 +92,8 @@ export async function POST(request: Request) {
 
   // Caller identity rides on the signed callback URL's query (the recording
   // callback body itself has no From/To — see the voice route).
-  const q = new URL(request.url).searchParams;
-  const fromNumber = q.get("from") || params.From || null;
-  const toNumber = q.get("to") || params.To || undefined;
+  const fromNumber = query.get("from") || params.From || null;
+  const toNumber = query.get("to") || params.To || undefined;
 
   const recordingMeta: VoicemailChannelMeta = {
     source: "twilio",
@@ -97,13 +105,20 @@ export async function POST(request: Request) {
       : undefined,
     to_number: toNumber,
     twilio_deleted: del.ok,
+    call_mode: isBridged ? "bridged" : "voicemail",
+    recording_channels: recordingChannels,
   };
 
   const rowFields = {
+    // A bridged recording is a conversation, not a message left — its own
+    // channel, because the transcript shape and review copy both differ.
+    channel: (isBridged ? "phone_call" : "voicemail") as
+      | "phone_call"
+      | "voicemail",
     from_identity: fromNumber,
     media_path: objectPath,
     media_mime_type: objectPath ? "audio/mpeg" : null,
-    call_outcome: "message_left",
+    call_outcome: isBridged ? "answered" : "message_left",
     status: "received" as const,
     error: objectPath ? null : "twilio: recording fetch/upload failed",
   };
@@ -124,7 +139,7 @@ export async function POST(request: Request) {
   } else {
     const { data: inserted } = await supabase
       .from("inbound_messages")
-      .insert({ channel: "voicemail", channel_meta: recordingMeta, ...rowFields })
+      .insert({ channel_meta: recordingMeta, ...rowFields })
       .select("id")
       .maybeSingle();
     id = inserted?.id ?? null;

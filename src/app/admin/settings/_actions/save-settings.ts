@@ -356,6 +356,35 @@ export async function saveInboundSettings(
     return { ok: false, error: t("inboundRetentionRange") };
   }
 
+  // Call handling (migration 78). Bridge mode is only meaningful with a number
+  // to ring — refuse the half-configured state rather than silently answering
+  // as voicemail and leaving the owner thinking calls are being forwarded.
+  const callModeRaw = (
+    nullable(formData.get("inbound_call_mode")) ?? "voicemail"
+  ).trim();
+  const callMode = callModeRaw === "bridge" ? "bridge" : "voicemail";
+  const bridgeNumber = nullable(formData.get("inbound_bridge_number"));
+  if (callMode === "bridge" && !bridgeNumber) {
+    return { ok: false, error: t("inboundBridgeNumberRequired") };
+  }
+  const bridgeTimeout = Number(
+    (nullable(formData.get("inbound_bridge_timeout_seconds")) ?? "20").trim(),
+  );
+  if (!Number.isInteger(bridgeTimeout) || bridgeTimeout < 5 || bridgeTimeout > 120) {
+    return { ok: false, error: t("inboundBridgeTimeoutRange") };
+  }
+  // The call-path transcription provider is optional (NULL = use the voicemail
+  // provider), but when set it must map to a built adapter like the others.
+  const callProviderRaw = nullable(
+    formData.get("inbound_call_transcription_provider"),
+  );
+  if (callProviderRaw && !findProvider(TRANSCRIPTION_PROVIDERS, callProviderRaw)) {
+    return {
+      ok: false,
+      error: t("inboundUnknownProvider", { provider: callProviderRaw }),
+    };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("app_settings")
@@ -375,6 +404,10 @@ export async function saveInboundSettings(
       ),
       inbound_media_retention_days: retention,
       inbound_shadow_mode: formData.get("inbound_shadow_mode") === "on",
+      inbound_call_mode: callMode,
+      inbound_bridge_number: bridgeNumber,
+      inbound_bridge_timeout_seconds: bridgeTimeout,
+      inbound_call_transcription_provider: callProviderRaw,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
