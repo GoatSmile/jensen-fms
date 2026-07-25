@@ -399,9 +399,10 @@ one-off grants (62 distinct `curl` invocations, one rule per past commit message
 — noise that will never match again. It also holds live Trello credentials in
 plaintext and `apply_migration` pre-approved; both were left there deliberately,
 since the file is gitignored, but Trello appears nowhere in OPERATIONS.md's system
-inventory and should either be documented or removed. *(Trello disposition
-SUPERSEDED 2026-07-25 — the integration was removed; see the last entry. The
-`apply_migration` pre-approval stands as written.)*
+inventory and should either be documented or removed. *(Both dispositions
+SUPERSEDED 2026-07-25 — the Trello integration was removed, the allow-list was
+pruned 171 → 17, and the `apply_migration` pre-approval was dropped. See the
+last two entries.)*
 
 **Session rituals became skills, same day.** `/session-start`, `/ship-it` and
 `/log-decision` in `.claude/skills/` hold the full procedure; `CLAUDE.md` keeps only
@@ -489,3 +490,38 @@ The general rule this is an instance of: **an unused integration is not
 neutral — it is a credential you are choosing to keep.** When an audit finds
 one, removal is the default and rotation is the exception that needs a
 reason.
+
+## 2026-07-25 — Prune the local allow-list 171 → 17; drop the apply_migration pre-approval
+
+`.claude/settings.local.json` is gitignored personal config, so this is
+recorded here only for the one part that changes how the project is worked:
+**`apply_migration` is no longer pre-approved.** Applying a migration now
+shows the SQL in a permission prompt first. There is one Supabase project and
+no staging, so the pre-approval meant unreviewed DDL could reach production
+with nothing in front of it — the same class of failure as the `git add -A`
+that produced `git-add-guard.sh`, and the only one of the three hooks' worth
+of risk that had no guard. Cost is one click per migration. **Rejected:**
+keeping it for speed (the prompt is cheap and the failure is not), and
+building a staging project (real fix, disproportionate today).
+
+What the prune removed, for the record: 62 one-off localhost `curl` probes
+(superseded by browser-verification), 18 `python3 -c` / `pip3 install` grants
+including a blanket `python3 -c ' *`, 12 rules each matching one past commit
+message, 8 paths that no longer exist, 5 duplicates of `settings.json`, and
+~50 single-use `sed` / `grep` / `mkdir` / `kill` entries. None can ever match
+again. A stale `mcp__Claude_Preview__preview_start` was replaced with the
+current `mcp__Claude_Browser__preview_start`.
+
+What survived is broad on purpose, because a **hook** stands behind each one:
+`Bash(git add *)` is safe because `git-add-guard.sh` denies `-A`/`--all`/`.`
+regardless of the allow-list, and `Bash(git commit *)` is safe because
+`gates.sh` refuses the commit unless tsc + build pass. Verified both, rather
+than assumed: the guard still denies a blanket add with the broad allow in
+place.
+
+The durable lesson: **an allow-list that accumulates one-off grants stops
+being a policy and becomes a log.** 150 of the 171 could never match again,
+which made the ~20 that mattered unreadable — the same accretion failure as
+the 812-line `CLAUDE.md`, in a file nobody thought to re-read because it is
+gitignored. Prefer a small list of broad rules each backed by a hook over a
+long list of narrow ones backed by nothing.
