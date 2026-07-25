@@ -74,20 +74,28 @@ export async function transcribeAudio(
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
 }
 
-/** "Kunde"/"Værksted" prefixes, stable across locales (the model reads these). */
-const SPEAKER_LABEL = ["Speaker 1", "Speaker 2"] as const;
+/**
+ * Turn labels. On the CHANNEL path these are authoritative: Twilio puts the
+ * inbound caller on the first channel and the answering party on the second,
+ * so channel 0 IS the customer and channel 1 IS us (verified against a real
+ * bridged call 2026-07-25). On the diarization fallback we can't know which is
+ * which, so the neutral "Speaker N" labels are used and flagged as inferred.
+ */
+const CHANNEL_LABELS = ["Customer", "Workshop"] as const;
 
-function speakerLabel(index: number): string {
-  return SPEAKER_LABEL[index] ?? `Speaker ${index + 1}`;
+function labelFor(index: number, deterministic: boolean): string {
+  if (deterministic) return CHANNEL_LABELS[index] ?? `Channel ${index}`;
+  return `Speaker ${index + 1}`;
 }
 
 /**
- * Render diarized/per-channel utterances as a readable dialogue, collapsing
+ * Render per-channel/diarized utterances as a readable dialogue, collapsing
  * consecutive turns by the same speaker so the transcript reads like a
  * conversation rather than a stutter of one-line labels.
  */
 function renderDialogue(
   turns: { speaker: number; text: string }[],
+  deterministic = false,
 ): string {
   const lines: string[] = [];
   let current: { speaker: number; parts: string[] } | null = null;
@@ -99,12 +107,16 @@ function renderDialogue(
       continue;
     }
     if (current) {
-      lines.push(`${speakerLabel(current.speaker)}: ${current.parts.join(" ")}`);
+      lines.push(
+        `${labelFor(current.speaker, deterministic)}: ${current.parts.join(" ")}`,
+      );
     }
     current = { speaker: turn.speaker, parts: [text] };
   }
   if (current) {
-    lines.push(`${speakerLabel(current.speaker)}: ${current.parts.join(" ")}`);
+    lines.push(
+      `${labelFor(current.speaker, deterministic)}: ${current.parts.join(" ")}`,
+    );
   }
   return lines.join("\n");
 }
@@ -166,17 +178,15 @@ async function transcribeViaGladia(
         audio_url: audioUrl,
         // The workshop's two languages; detection picks per file.
         language_config: { languages: ["da", "en"], code_switching: false },
-        // Gladia has no per-channel mode (verified from the API reference
-        // 2026-07-23), so a two-way call gets DIARIZATION with an exact
-        // speaker count — pinning it to 2 is far more reliable than letting it
-        // guess how many people are on a phone call. Labels are a guess, hence
-        // `speakersInferred` on the result.
-        ...(twoWay
-          ? {
-              diarization: true,
-              diarization_config: { number_of_speakers: 2 },
-            }
-          : {}),
+        // NOTE (2026-07-25): deliberately NO diarization for two-way calls.
+        // Gladia transcribes multi-channel audio AUTOMATICALLY and tags every
+        // utterance with `channel` — which, on a Twilio dual-channel recording,
+        // IS the speaker (caller = channel 0, us = channel 1). Reading the
+        // channel is deterministic; asking for diarization on the same file
+        // returned FOUR speakers for a two-person call. So we let the automatic
+        // channel handling do the work and read `utterance.channel`.
+        // Billing note: two channels with different content bill as two audios
+        // — pennies at this volume, and worth it for real attribution.
       }),
     });
   } catch (e) {
@@ -218,6 +228,9 @@ async function transcribeViaGladia(
             words?: unknown[];
             text?: unknown;
             speaker?: unknown;
+            /** Source audio channel — present automatically for multi-channel
+             *  audio, and the deterministic speaker signal on a bridged call. */
+            channel?: unknown;
           }[];
         };
       };
@@ -246,22 +259,39 @@ async function transcribeViaGladia(
         })),
       );
 
-      // Two-way call: prefer the speaker-labelled dialogue over the flat
-      // transcript, so "the customer asked" and "we promised" stay distinct.
-      // Falls back to the flat transcript if diarization returned nothing
-      // usable — a transcript without labels beats no transcript.
+      // Two-way call: build the dialogue from the CHANNEL tag, which is a fact
+      // (Twilio's channel contract) rather than a diarization guess. Falls back
+      // to `speaker` only if the file turned out to be mono — a labelled-but-
+      // inferred transcript still beats an unlabelled one.
       if (twoWay) {
-        const turns = utterances
+        const channelTurns = utterances
+          .map((u) => ({
+            speaker: typeof u?.channel === "number" ? u.channel : -1,
+            text: typeof u?.text === "string" ? u.text : "",
+          }))
+          .filter((u) => u.speaker >= 0 && u.text.trim() !== "");
+        const distinctChannels = new Set(channelTurns.map((t) => t.speaker));
+        if (channelTurns.length > 0 && distinctChannels.size >= 2) {
+          const dialogue = renderDialogue(channelTurns, true);
+          if (dialogue) {
+            // Deterministic — no `speakersInferred` flag.
+            return { ok: true, text: dialogue, language, confidence };
+          }
+        }
+
+        // Mono (or single-channel) audio on the call path: fall back to
+        // whatever diarization the response happened to carry, clearly flagged.
+        const speakerTurns = utterances
           .map((u) => ({
             speaker: typeof u?.speaker === "number" ? u.speaker : 0,
             text: typeof u?.text === "string" ? u.text : "",
           }))
           .filter((u) => u.text.trim() !== "");
-        const dialogue = renderDialogue(turns);
-        if (dialogue) {
+        const inferred = renderDialogue(speakerTurns, false);
+        if (inferred && new Set(speakerTurns.map((t) => t.speaker)).size >= 2) {
           return {
             ok: true,
-            text: dialogue,
+            text: inferred,
             language,
             confidence,
             speakersInferred: true,
@@ -375,7 +405,7 @@ async function transcribeViaAzure(
           typeof p.offsetMilliseconds === "number" ? p.offsetMilliseconds : 0,
       }))
       .sort((a, b) => a.at - b.at);
-    const dialogue = renderDialogue(turns);
+    const dialogue = renderDialogue(turns, true);
     if (dialogue) {
       return { ok: true, text: dialogue, language, confidence };
     }

@@ -96,21 +96,48 @@ deterministic code, never the model). Exploiting it depends on the provider:
 
 | Option | Attribution | Residency | Status |
 |---|---|---|---|
-| **Azure** `channels:[0,1]` | **Deterministic** — one transcript per channel | US-parented, EU region + DPA | adapter exists, **needs `AZURE_SPEECH_KEY`** |
-| **Gladia** `diarization + number_of_speakers:2` | Probabilistic — labels two speakers, can't say which is us | **EU-native** (the 2026-07-15 reason we chose it) | key in hand, live-verified Danish |
-| **Split the stereo ourselves** → 2 mono files → 2 Gladia calls | Deterministic | EU-native | not built; 2× cost, needs PCM de-interleave + bigger media |
+| **Gladia automatic multi-channel** — read `utterance.channel` | **Deterministic** — the channel IS the speaker | **EU-native** (the 2026-07-15 reason we chose it) | ✅ **SHIPPED — no new vendor, no key, no migration** |
+| **Azure** `channels:[0,1]` | Deterministic | US-parented, EU region + DPA | adapter built + seam in place; needs `AZURE_SPEECH_KEY`. Held as a fallback |
+| **Gladia diarization** `number_of_speakers:2` | Probabilistic — and measurably bad here (see below) | EU-native | kept only as the mono fallback |
+| Split the stereo ourselves → 2 mono files | Deterministic | EU-native | unnecessary — superseded by the above |
 
-Verified 2026-07-23 from the provider docs: Gladia's pre-recorded API has **no
-per-channel option** (diarization only); Azure fast transcription supports
-`channels:[0,1]` but **cannot combine channels with diarization** (diarization
-is mono-only).
+### ⚠️ Correction, 2026-07-25 — the first reading was WRONG
 
-**V1 decision (pragmatic):** ship **Gladia + diarization(2)**, because it works
-today with the key we have and keeps EU residency. Speaker labels are marked as
-**inferred**, not asserted, and the extraction prompt is told they may be
-swapped — so a wrong guess degrades to "ambiguous", never to a confident lie.
-The `channels` seam is built into the adapter interface, so switching to
-deterministic Azure attribution is **a dropdown + a key**, no code.
+An earlier pass concluded "Gladia has no per-channel option, diarization only",
+from the init endpoint's parameter schema. **That was wrong**, and it nearly
+bought us a needless migration to Azure. Gladia's docs
+(`limits-and-specifications/multiple-channels`) state that multi-channel audio
+is transcribed **automatically** — no parameter to enable — and **every
+utterance carries a `channel` key**. Billing note: two channels with different
+content bill as two audios (pennies at this volume).
+
+**Confirmed empirically against our own recorded call** (re-transcribed the
+stored dual-channel MP3 with diarization OFF):
+
+```
+utterance keys: text, language, start, end, confidence, channel, words
+distinct channel values: 0, 1        ← exactly two, deterministic
+distinct speaker values: (none)      ← no diarization requested, none needed
+```
+
+Channel 0 held the entire customer side, channel 1 our side — matching Twilio's
+documented contract (parent call first, dialed party second). So the
+deterministic attribution **was already in the response and our code was
+discarding it**: we asked for diarization and read `utterance.speaker` when we
+should have read `utterance.channel`. That single mistake produced the
+four-speakers-for-two-people artifact.
+
+**Before → after on the same audio:** `Speaker 1 … Speaker 4` (one a pure
+artifact) → `Customer:` / `Workshop:`, correct throughout, with
+`speakers_inferred = false`. Background noise on our side is now correctly
+attributed to our channel instead of being invented as an extra person, and the
+extraction prompt is told the labels are reliable rather than warned they may be
+swapped.
+
+**Decision: stay on Gladia.** EU-native, already integrated, already paid for,
+and now deterministic. Azure remains a built-and-ready fallback if Danish
+accuracy on real calls ever disappoints — that is now the *only* open reason to
+switch, and it is a measurement, not an architecture question.
 
 ### Measured on the first real bridged call (2026-07-25)
 
@@ -120,22 +147,23 @@ A 102-second two-person call, Gladia with `number_of_speakers: 2`:
   garbled voicemail), content fully intelligible, extraction got everything
   (SDG · 10 white electric bikes · flower basket · logo · order_inquiry).
 - **Diarization invented FOUR speakers** ("Speaker 1" … "Speaker 4") for two
-  people, despite the exact-count hint. One label was pure artifact ("Ladies
-  and gentlemen"), and the customer's substantive request landed under a
-  *different* label than their opening line.
+  people, despite the exact-count hint. One label was pure artifact, and the
+  customer's substantive request landed under a *different* label than their
+  opening line. → **Root-caused and fixed the same day**: we were reading the
+  diarization guess instead of the channel tag. See the correction above.
 
-So the prediction holds with evidence: **diarization is not good enough to
-trust for attribution**, even hinted. It didn't hurt this call — the extraction
-prompt is told labels are unreliable and reasoned from content instead, and
+Lesson worth keeping: **diarization is not good enough to trust for
+attribution, even with an exact speaker-count hint** — so never use it where a
+channel tag is available. It didn't damage this call, because the extraction
+prompt was told labels were unreliable and reasoned from content instead, and
 `commitments` correctly came back EMPTY rather than inventing a promise the
-workshop never made. But "who said what" should not rest on it.
+workshop never made. That defensive design is why a provider bug degraded to
+"slightly odd transcript" rather than "wrong facts in the CRM".
 
-**This materially strengthens the Azure case**: per-channel is deterministic,
-and the channel count is a fact Twilio already gives us (`recording_channels: 2`
-was stamped on the row). Recommended next step when accuracy matters: add
-`AZURE_SPEECH_KEY`, set the call-path provider to `azure`, re-run this same
-test, and compare. If EU-native processing must be kept, build the self-split
-path instead.
+Still untested: **Danish** on the bridged path. This call was in English, and
+our only Danish samples are mono voicemails that scored 0.51 and 0.26 clarity.
+One Danish bridged test call is the outstanding validation — and it is the only
+evidence that should drive any future provider change.
 
 **The residency tension is real and is the owner's call**, not a dev default:
 conversation audio is more sensitive than a voicemail someone chose to leave.

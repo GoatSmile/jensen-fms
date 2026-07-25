@@ -78,10 +78,10 @@ Leave callSummary null and commitments empty — this is a one-way message, not 
 function dialogueSystemPrompt(speakersInferred: boolean): string {
   return `You are reading a TRANSCRIPT OF A RECORDED PHONE CONVERSATION between a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler) and a customer. The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations.
 
-Two speakers are labelled "Speaker 1" and "Speaker 2". ${
+${
     speakersInferred
-      ? 'These labels were guessed by speaker-separation software and MAY BE SWAPPED. Work out which side is the workshop from context — the workshop answers the phone, greets with the company name, quotes prices and promises dates; the customer describes a problem or places an order. If you genuinely cannot tell which side is which, leave the person/organization fields null rather than guessing wrong.'
-      : 'Speaker 1 is the CUSTOMER (the caller) and Speaker 2 is the WORKSHOP — this is reliable, taken from separate audio channels.'
+      ? 'The two sides are labelled "Speaker 1" and "Speaker 2". These labels were GUESSED by speaker-separation software and MAY BE SWAPPED. Work out which side is the workshop from context — the workshop answers the phone, greets with the company name, quotes prices and promises dates; the customer describes a problem or places an order. If you genuinely cannot tell which side is which, leave the person/organization fields null rather than guessing wrong.'
+      : 'Turns are labelled "Customer" and "Workshop". These labels are RELIABLE — they come from separate audio channels (the telephony system records each party on its own channel), not from guesswork. Trust them. Note that background noise on one side (a radio, another person in the room) is attributed to that side\'s label, so ignore anything that clearly is not part of the conversation.'
   }
 
 Extract facts about the CUSTOMER and their request — never attribute the workshop's own words to the customer. Rules:
