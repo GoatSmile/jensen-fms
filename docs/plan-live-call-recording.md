@@ -1,6 +1,10 @@
 # Live call recording — bridged calls on the inbound trunk
 
-**Date:** 2026-07-23 · **Status:** design + V1 BUILT (flag-gated, default off).
+**Date:** 2026-07-23 · **Status:** V1 BUILT + **LIVE-CALL VERIFIED 2026-07-25**
+(flag-gated; ships default off). First real bridged call: customer phone →
+Twilio → notice → rang the test mobile → 102 s conversation recorded in dual
+channel → EU storage, Twilio copy deleted → transcript → extraction → customer
+org auto-matched by phone, 27 s from hangup to `matched`. Findings below.
 Today a customer calling the Twilio number reaches a voicemail. This adds the
 other half: the call **rings a real phone** (test number now, Dennis's number
 later), the **conversation** is recorded, and it lands in the same Inbox
@@ -107,6 +111,31 @@ today with the key we have and keeps EU residency. Speaker labels are marked as
 swapped — so a wrong guess degrades to "ambiguous", never to a confident lie.
 The `channels` seam is built into the adapter interface, so switching to
 deterministic Azure attribution is **a dropdown + a key**, no code.
+
+### Measured on the first real bridged call (2026-07-25)
+
+A 102-second two-person call, Gladia with `number_of_speakers: 2`:
+
+- Transcript quality was **good** — clarity 0.80 (vs 0.51 on the earlier
+  garbled voicemail), content fully intelligible, extraction got everything
+  (SDG · 10 white electric bikes · flower basket · logo · order_inquiry).
+- **Diarization invented FOUR speakers** ("Speaker 1" … "Speaker 4") for two
+  people, despite the exact-count hint. One label was pure artifact ("Ladies
+  and gentlemen"), and the customer's substantive request landed under a
+  *different* label than their opening line.
+
+So the prediction holds with evidence: **diarization is not good enough to
+trust for attribution**, even hinted. It didn't hurt this call — the extraction
+prompt is told labels are unreliable and reasoned from content instead, and
+`commitments` correctly came back EMPTY rather than inventing a promise the
+workshop never made. But "who said what" should not rest on it.
+
+**This materially strengthens the Azure case**: per-channel is deterministic,
+and the channel count is a fact Twilio already gives us (`recording_channels: 2`
+was stamped on the row). Recommended next step when accuracy matters: add
+`AZURE_SPEECH_KEY`, set the call-path provider to `azure`, re-run this same
+test, and compare. If EU-native processing must be kept, build the self-split
+path instead.
 
 **The residency tension is real and is the owner's call**, not a dev default:
 conversation audio is more sensitive than a voicemail someone chose to leave.
