@@ -1,6 +1,11 @@
 # Voice commands — design reference
 
-**Date:** 2026-07-17 · **Status:** agreed design, not yet built.
+**Date:** 2026-07-17 · **Status:** **VC-1 SHIPPED 2026-07-23** (Option A,
+text-first — the in-app dictate slice; commits `1799d61`, `a403b12`).
+Phone/audio ingress and the staff-number fork are **VC-3**, deferred to
+August with Dennis; this doc stays live for that arc. Narrative in
+`docs/archive/HISTORY.md`, mechanics in `docs/DECISIONS.md` (2026-07-23).
+
 Staff dictate business tasks — by calling the workshop number or via an
 in-app dictate button — and the system drafts the corresponding actions
 for review. *"Just got an order for 15 bikes from Hotel D'Angleterre,
@@ -90,9 +95,10 @@ One thing needs you: which model."*
 
 ## Action catalog by risk tier
 
-Actions live in a **code registry** (`src/lib/inbound/command/actions.ts`,
-the provider-registry doctrine), each declaring its tier; tier decides
-behavior.
+Actions live in a **code registry** (the provider-registry doctrine), each
+declaring its tier; tier decides behavior. *As built in VC-1 this landed as
+`src/lib/inbound/command/{agent,plan,resolvers}.ts` — there is no
+`actions.ts`; the draft-action wrappers sit in `plan.ts`.*
 
 **Tier A — drafts & notes** (propose → one-click apply; auto-apply is the
 graduation path):

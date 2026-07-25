@@ -44,7 +44,13 @@ Rules that are easy to get wrong:
 - **Days with no row = didn't work.** Never backfill a gap unasked.
 - Rows before 2026-07-10 are reconstructed from git history and undercount planning
   calls and data entry — treat those totals as floors, not truth.
-- It is an hours ledger with a substantive summary, not a diary.
+- **Keep the summary under ~300 characters** — a headline plus one clause.
+  `.claude/hooks/worklog-row-budget.sh` flags anything longer on save. The old rule
+  said "one line per row", which caught nothing: July rows reached 4–6k characters
+  and were still one line. Detail belongs in `docs/archive/HISTORY.md`, which
+  carries commit refs; the ledger answers only *how many hours, on what*.
+- If a day's work genuinely needs a paragraph, that is the signal to write the
+  HISTORY section, not to grow the row.
 
 ## 3. Do not
 

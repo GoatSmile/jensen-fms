@@ -63,6 +63,32 @@ Three Vercel crons (`vercel.json`), all authenticating with
 The FX route deliberately **fails closed**: on any non-dev deployment a missing
 `CRON_SECRET` returns 503 rather than running unauthenticated.
 
+## Dev-environment tooling (not app dependencies)
+
+Nothing here is required for the app to run or deploy — it is the assistant
+harness the repo carries. Kept separate from the table above on purpose: the
+app depending on Trello would be a fact worth knowing, and it doesn't.
+
+- **`.claude/hooks/`** (tracked, shared with Munin) — `gates.sh` refuses a
+  `git commit` unless `tsc --noEmit` + `next build` pass; `git-add-guard.sh`
+  blocks `git add -A/--all/.`; `claude-md-budget.sh` and
+  `worklog-row-budget.sh` flag CLAUDE.md and WORKLOG rows past their budgets.
+  **They need `jq` and `lsof` on PATH** — without `jq` every hook exits
+  silently and the gates stop gating, with no warning. Rationale:
+  DECISIONS.md 2026-07-25.
+- **`.claude/skills/`** (tracked) — `/session-start`, `/ship-it`,
+  `/log-decision` hold the session rituals.
+- **`.claude/settings.json`** (tracked) — durable read-only permissions +
+  the hook wiring. **`.claude/settings.local.json` is gitignored** and holds
+  personal grants; it is not part of a cold start and nothing depends on it.
+- **Trello** — board "Jensen 1", used only for the dev's own task tracking,
+  never by the app. `TRELLO_API_KEY` / `TRELLO_TOKEN` live in
+  `.claude/settings.local.json` (gitignored, never committed — verified).
+  **Caveat worth knowing at handover:** that token is non-expiring and
+  read+write across Member/Board/Organization, i.e. account-wide rather than
+  board-scoped. Rotate and scope it if this machine changes hands. Removing
+  it entirely costs nothing the app cares about.
+
 ## Secrets — where they live
 - **App runtime**: `.env.local` locally (leading dot — Next.js won't
   auto-load any other name; read at startup, not via HMR — restart the dev

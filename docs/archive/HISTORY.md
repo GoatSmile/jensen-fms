@@ -136,8 +136,10 @@ D1–D4 recorded in `docs/DECISIONS.md` (2026-06-20).
   coverage). Frame confirmation is deliberately NOT a readiness gate — the
   card shows a "frame to confirm" hint instead of blocking. Default tab =
   build unless build is empty and repairs wait.
-- **C — Paint → build pipeline (D2 + D3).** "At painter" is derived:
-  `AT_PAINTER_STATUSES` in `src/lib/paint/status.ts` (narrower than
+- **C — Paint → build pipeline (D2 + D3).** *(Paths below are as-built at the
+  time; the external-services remodel later moved `src/lib/paint/*` to
+  `src/lib/services/*`, and `at-painter.ts` → `at-supplier.ts`.)* "At painter"
+  is derived: `AT_PAINTER_STATUSES` in `src/lib/paint/status.ts` (narrower than
   `OPEN_PAINT_ORDER_STATUSES` — a `planned` order hasn't shipped, its bikes
   stay buildable); `received_back` frees frames automatically (every gate
   query filters on current status — no trigger). One shared helper
@@ -370,4 +372,171 @@ FK'd to people; 5 seed roles (owner, it_admin, accountant, workshop →
 role CRUD w/ capability + notification-event checkboxes, write-only
 role-password set/rotate (set/missing badge, the env-secret status
 pattern); System tile on /admin; `adminPeople` namespace en+da. Design:
-`docs/plan-people-roles.md`; P2–P4 tracked in `docs/STATUS.md`.
+`docs/plan-people-roles.md`; P2–P4 below (commit `b7f3c42`).
+
+## People & roles P2–P4 (2026-07-23, migration 74)
+
+The interim people & roles system completed in one day, on top of P1.
+
+- **P2 — role-password login** (`cd99020`). scrypt password → role
+  resolution; a self-contained HMAC session cookie carrying `{role, caps,
+  home}`; Edge-route gating plus nav / ScanFab filtering and money-band
+  gating. `SITE_PASSWORD` falls back to the owner role and legacy cookies
+  stay valid, so nothing broke for existing sessions. Verified as
+  workshop / accountant / owner.
+- **P3 — tap-your-name** (`2341d7d`). `/whoami` re-signs the chosen person
+  into the cookie and shows a nav person chip; WO assignee select +
+  "Assign to me"; `/work` gains a "Mine" filter and assignee-on-card; a
+  person's `preferred_language` supersedes `worker_language` on worker
+  surfaces — verified live with `/work` in Danish while the app stayed
+  English.
+- **P4 — notification delivery** (`56c1278`). `src/lib/people/notify.ts`
+  (`notifyEvent` / `notifyDigest`, fire-and-forget, test-mode reroute,
+  per-recipient language) + migration 74 `notification_log` (audit trail
+  and state-scan idempotency) + bilingual `email-content.ts`. Three hooks:
+  `ticket.created` (app+inbox → workshop), `wo.assigned` (person-targeted,
+  self-assign skipped), `invoice.overdue` (daily cron, digest-once → owner
+  + accountant). The engine was verified live end-to-end through the cron —
+  real log rows, test-mode reroute, idempotent rerun. Email only; SMS and
+  Web Push deferred.
+
+**Interim system complete = M1 minus per-human passwords.** No role
+passwords are set in prod, so login behaviour is unchanged until they are.
+Mechanics in DECISIONS.md (three 2026-07-23 entries).
+
+## Global identifier search (2026-07-23)
+
+`/bikes` `q` now matches **any** registered identifier — lock, battery,
+charger, QR, RFID, AirTag, customer fleet number — unioned with
+`frame_number`, with a per-row "matched via" hint so the result explains
+itself. `/scan` manual entry inherited it for free. Commit `03f7285`.
+
+## Perimeter audit (2026-07-23)
+
+Verdict: **the scary version is false today.** The anon/publishable key
+does not ship to the browser on any route — the browser client
+`src/lib/supabase/client.ts` has zero importers, so Next never inlines the
+key into client JS, confirmed by a sentinel `next build` (the key landed
+only in `.next/server/**`, absent from `.next/static/**`). The `anon_all`
+master-key risk is therefore **latent, not live**, and resolves at M1.
+
+Shipped with it: a loud DO-NOT-IMPORT header on `client.ts`, the standing
+landmine in STATUS.md, and BACKLOG hardening entries for the
+XFF-spoofable rate limits and the `/api/qr` error echo. Commit `eac254d`.
+
+## Voice commands VC-1 (2026-07-23/24, migrations 75–76)
+
+Option A, text-first — the owner's middle path: the in-app dictate slice
+only, no phone routing. Type or dictate a task in `/inbox` → a Claude
+tool-use agent loop (`src/lib/inbound/command/`) grounds references via 6
+read-only resolvers → proposes a plan of DRAFT actions (customer / sales
+order / purchase order) → `CommandPlanPanel` reviews and applies each, with
+open-slot pickers and customer→SO dependency ordering, logging provenance
+in `command_actions`. Migration 75 adds the `in_app` channel; 76 adds
+`kind` / `command_plan` / `commanded_by` + `command_actions`. The founding
+utterance was verified end to end: new customer plus a draft SO with
+grounded chips and the production note filled in. Commit `1799d61`.
+
+An adversarial review of the diff produced **VC-1 review fixes** the next
+morning (`a403b12`): a rerun-lock once an action is applied, SO-header
+rollback when a line insert fails, resolver `.or()` sanitizing for customer
+names containing commas or parens, command-specific status labels, chip
+i18n, and a currency-aware unit-price fallback.
+
+Phone/audio ingress and the staff-number fork are **VC-3** (August, with
+Dennis) — `docs/plan-voice-commands.md` stays live for that arc. Mechanics
+in DECISIONS.md (2026-07-23).
+
+## Maintenance / workshop polish pass (2026-07-24)
+
+Sixteen items from a surveyed punch-list, in three groups (`7635157`):
+
+- **Shop-floor touch safety** — always-visible photo delete, a
+  mark-done confirm that names the ticket it resolves, two-tap parts
+  removal, `/work` loading skeletons.
+- **Office correctness** — cancel/complete errors render inside the
+  dialog, bikeless triage tickets save, **WO cancel returns consumed parts
+  to stock**, a blank-labor-rate warning, desktop finish-confirm.
+- **Build + scan** — an honest "Print recipe" label, the surfaced bulk-add
+  identifier error, clear-build arm reset, and scan/i18n copy broadened for
+  global identifier search plus a localized "(no name)".
+
+Two calls were the owner's, taken via AskUserQuestion: WO cancel reverses
+inventory, and a blank labor rate *warns* rather than auto-billing. The
+bike-scoped per-bike print sheet was deferred to BACKLOG.
+
+## July close-out — inbound stats fold (2026-07-24)
+
+A deliberately thin dashboard calibration fold over the shadow rows: match
+rate, ticket-conversion, low-clarity, spam, and intent mix, gated on the
+`inbox` capability. Minimal by design until real inbound data lands in
+August. Shipped with the archiving of `plan-july9-vacation-month` (marked
+closed, moved to `docs/archive/`, three references repointed), which closed
+**July queue items 1–6**. Commits `18e0017`, `303d45b`.
+
+## Live-call recording V1 (2026-07-25, migrations 77–78)
+
+The other half of the inbound trunk: a customer calling the Twilio number
+no longer only reaches voicemail. The call is announced bilingually,
+**bridged to the workshop phone**, and the conversation recorded in dual
+channel; voicemail remains the no-answer fallback, and the result lands on
+the same trunk with a dialogue extraction prompt producing `callSummary` +
+`commitments`. Answered calls skip spam scoring; the media cap went 25 → 100 MB.
+Flag-gated, ships default off. Commit `70371d6`.
+
+**Live-verified the same day** on a real bridged call (`e1e9cc6`): customer
+phone → Twilio → notice → rang the test mobile → a 102 s conversation
+recorded dual-channel → EU storage with the Twilio copy deleted →
+transcript → extraction → customer org auto-matched by phone, **27 s from
+hangup to `matched`**.
+
+Then **deterministic speaker attribution** (`8b66bfa`): a garbled transcript
+root-caused to reading Gladia's *diarization guess* instead of its
+**`channel` tag**. The durable lesson — never diarize where a channel tag
+exists — is now a rule in STATUS.md. Follow-ups refreshed in `ada6025`.
+
+Known ceilings, not yet hit: `GLADIA_POLL_TIMEOUT_MS` (90 s) and the
+recording route's `maxDuration` (60 s) are still voicemail-sized; the fix
+is Gladia's async `callback`. Plan: `docs/plan-live-call-recording.md`.
+
+## Provider evaluation + the AI-receptionist tier (2026-07-25)
+
+The wide evaluation the owner asked for: **12+ telephony vendors on one
+axis — record-time dual-channel.** Verdict: **keep Twilio + Gladia +
+Claude** (`b7695fe`). Telnyx is the only credible alternative and removes no
+vendor; Telavox is recorded as an instructive dead end; the structural
+lesson is *"the Nordic answer to Twilio is a CPaaS, never a telco."*
+
+**AI receptionist (Tier C) is decided, not queued** (`b87a1af`). Turnkey
+platforms fail on EU residency — Retell is US-only with EU enterprise-only,
+Vapi has no EU hosting, ElevenLabs Agents EU is Enterprise. If it is ever
+built it is **ConversationRelay + our own Claude loop** (~$0.07/min, `da-DK`
+a documented default, Deepgram Nova-3 Danish streaming, attribution free
+because we own the turns), gated on one clean Danish bridged call plus a
+month of real `call_outcome` data. Cheap alternatives come first:
+out-of-hours routing and missed-call SMS. The real blocker is where the
+WebSocket leg lives — Vercel's native WS beta caps connections at 5 min,
+with 30 min Pro-gated.
+
+## Docs scheme shared with Munin + ritual enforcement (2026-07-25)
+
+Three changes to how the project documents itself, all in one evening.
+
+- **One scheme, two repos** (`f2ccc21`). Munin hit the same 812-line
+  `CLAUDE.md` wall two days after this project solved it, so both now use
+  the same seven slots organized *by shelf life and write discipline, not
+  by topic*. `shipped-history.md` → `HISTORY.md`; OPERATIONS gained the
+  Scheduled jobs section and a full env-var inventory. Rationale in
+  DECISIONS.md.
+- **Rituals became hooks, not willpower** (`5a5f235`). A rule with no
+  enforcement decays — the same-commit DECISIONS rule had already slipped
+  within two days, and a `git add -A` swept an unrelated change into a docs
+  commit and pushed it to `main`, which deploys. Three tracked scripts in
+  `.claude/hooks/`: `gates.sh` (refuse a commit unless tsc + build pass),
+  `git-add-guard.sh` (no blanket adds), `claude-md-budget.sh`.
+- **Rituals became skills** (`034fa1d`). `/session-start`, `/ship-it`,
+  `/log-decision` hold the full procedure; `CLAUDE.md` keeps only triggers
+  and invariants. The win is consistency, not context: the checklist is now
+  identical every time, including the steps most often skipped — en/da
+  parity, moving a closed plan to `docs/archive/` with references
+  repointed, and re-checking STATUS's Landmines.

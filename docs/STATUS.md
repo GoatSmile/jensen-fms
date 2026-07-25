@@ -14,7 +14,7 @@ parenthetical here. History belongs in `docs/archive/`, decisions in
 
 ## Where we are
 - **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
-  Vercel SSO. 73 migrations, single-tenant, solo-dev.
+  Vercel SSO. 78 migrations, single-tenant, solo-dev.
 - **Operationally feature-complete** for the workshop's daily job: parts +
   categories + inventory ledger; suppliers + offerings; POs + additive
   frozen landed cost + email-to-supplier (test mode); bike templates

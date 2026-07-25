@@ -408,3 +408,50 @@ verbose one. This buys **consistency more than context**: the saving is a few li
 but the checklist is now identical every time — including the steps most often
 skipped here, namely en/da parity, moving a closed plan to `docs/archive/` with its
 references repointed, and re-checking STATUS's Landmines section.
+
+## 2026-07-25 — Docs audit: measure the thing that actually fails
+
+An audit of every doc, run hours after the scheme + hooks landed, on the theory
+that a scheme is only worth what its first re-read proves. Six defects, and the
+interesting ones were **rules that measured the wrong quantity**.
+
+- **The worklog rule measured lines, and the failure was characters.** *"One line
+  per row — an hours ledger, not a diary"* could never fire: the Jul 16 row is
+  5,927 characters and is still one line. May/June rows sat at 250–400; July rows
+  ran 4–6k. The rule is now **~300 characters, hook-enforced**
+  (`worklog-row-budget.sh`), and the seven bloated rows were compressed — their
+  narrative was duplicated into `docs/archive/HISTORY.md` in the same pass, so
+  nothing was lost. **Rejected:** leaving history alone and capping only new rows —
+  a hook that flags 14 historical rows on every save is a hook you learn to ignore,
+  which is how the last rule died.
+- **HISTORY.md had stopped absorbing.** It ended at "People & roles P1" while nine
+  shipped items sat unrecorded, which is *why* STATUS.md had swollen to 206 lines
+  of narrative — reduce-don't-grow only works if the destination is written.
+  Backfilled 07-23 → 07-25 with commit refs. The lesson for `/ship-it`: STATUS
+  getting long is not a STATUS problem, it is an unwritten-HISTORY problem.
+- **`docs/PLAYBOOK-AUGUST.md` was an eighth file in a seven-slot scheme.** Its own
+  rule says "a file filling two slots is the bug" but said nothing about a file
+  filling *none*. Resolved by naming the class rather than growing the scheme:
+  owner-facing dated deliverables are **not slots** — rewrite on period change,
+  archive when the period ends. **Rejected:** an eighth slot (the scheme is shared
+  with Munin, which has no such file) and archiving it (it describes a period that
+  hasn't started).
+- **Trello went into OPERATIONS as dev tooling, not as a system dependency.** The
+  previous entry said it "should either be documented or removed", which framed it
+  as a missing inventory row. It isn't: nothing in `src/` touches Trello, and
+  putting it in the app-dependency table would assert a dependency that doesn't
+  exist. New "Dev-environment tooling" section instead, explicitly marked as not
+  required to run or deploy. Verified while writing it: the token is **live,
+  non-expiring, and read+write across Member/Board/Organization** — account-wide,
+  not board-scoped — so the entry says to rotate and scope it at handover.
+  Also recorded there: the hooks need `jq` on PATH or they exit silently and the
+  gates stop gating with no warning.
+- Smaller: STATUS claimed 73 migrations against 78 while citing 75/76 in its own
+  body; `plan-voice-commands.md` still read "not yet built" three days after VC-1
+  shipped; CLAUDE.md stated its own organizing sentence twice; and blank lines
+  between WORKLOG rows had been silently splitting the July table into fragments.
+
+The through-line: **every one of these was a doc claiming something the repo
+could have contradicted on inspection.** Cheap to check, and none of them
+surfaced on their own — which argues for re-reading the docs against the repo
+periodically, not only when writing them.

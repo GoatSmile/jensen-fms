@@ -8,10 +8,8 @@ similar organizations. Replaces fragmented Excel + paper workflows.
 
 This file holds **durable rules only** — what must be true in every session:
 stack, invariants, conventions, vocabulary. Everything with a shorter shelf
-life lives in `docs/`, one job per file, each with its own write rule:
-
-One job per file, each with its own write rule — that rule is what stops a file
-accreting:
+life lives in `docs/`, one job per file, each with its own write rule — that
+rule is what stops a file accreting:
 
 - **`docs/STATUS.md`** — where the work stands: live, in flight, blocked,
   data-entry debts. **Read at session start.** *Overwrite at session end, never
@@ -31,6 +29,11 @@ accreting:
 **Munin (`~/workspace/code/munin`) uses this same seven-slot scheme**, so the
 rituals below transfer between projects unchanged.
 
+**Owner-facing deliverables are not slots.** `docs/PLAYBOOK-AUGUST.md` (for
+Dennis's solo stretch) is a dated artifact written for a human, not a session
+doc: *rewrite it when its period or audience changes; archive it when the
+period ends.* Don't grow the seven slots to hold this class of file.
+
 ### Session rituals
 The full procedure for each lives in a skill — `/session-start`, `/ship-it`,
 `/log-decision`. The triggers and invariants stay here because they must always be
@@ -39,8 +42,10 @@ known:
   WORKLOG row (date · hours · one-line summary) and reconcile the previous
   row's hours from commit timestamps (mark estimates `~`; the user corrects
   with "log: Jul 9 was 7h"). Update the monthly total. Days without a row =
-  didn't work; never backfill gaps unasked. One line per row — it's an hours
-  ledger, not a diary.
+  didn't work; never backfill gaps unasked. **Cap the summary at ~200
+  characters** (a hook flags longer) — headline plus one clause, no
+  semicolon-chains. The old "one line per row" failed because a
+  5,900-char paragraph is still one line; detail goes to `docs/archive/`.
 - **Session end**: update `docs/STATUS.md` — overwrite, don't append. A new
   session must be able to resume from this file + STATUS.md alone.
 - **When something ships**: reduce, don't grow. Durable residue (a new
