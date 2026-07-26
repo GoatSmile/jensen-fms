@@ -1,15 +1,25 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { CircleUser, Menu, X } from "lucide-react";
+import { ChevronRight, CircleUser, Menu, X } from "lucide-react";
 
 import { Logo, LogoMark } from "@/components/logo";
-import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
+import {
+  filterNavGroups,
+  isGroupActive,
+  isNavItemActive,
+} from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
+import {
+  NAV_OPEN_COOKIE,
+  NAV_OPEN_MAX_AGE,
+  serializeOpenGroups,
+  type OpenGroups,
+} from "@/lib/nav/open-groups";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,21 +28,28 @@ import { cn } from "@/lib/utils";
  * a radix Dialog rendered as a full-height left drawer (we use the radix
  * primitives directly so we can ditch the centred-modal styles that
  * shadcn's DialogContent applies).
+ *
+ * Group open/closed state is shared with the desktop rail through the same
+ * `nav_open` cookie — a person who closes Orders on the tablet finds it
+ * closed on the laptop.
  */
 export function MobileNav({
   allowedCaps,
   showPersonChip,
   personName,
+  initialOpenGroups,
 }: {
   /** Role capability scope; null = show everything (gate off / legacy). */
   allowedCaps: string[] | null;
   /** Only role sessions carry a person identity (tap-your-name, P3). */
   showPersonChip: boolean;
   personName: string | null;
+  initialOpenGroups: OpenGroups;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<OpenGroups>(initialOpenGroups);
   const groups = filterNavGroups(allowedCaps);
 
   // Close the drawer when the route changes — clicking a nav link navigates,
@@ -52,8 +69,15 @@ export function MobileNav({
     return null;
   }
 
+  function toggleGroup(id: string) {
+    // Persist outside the setState updater — see the note in app-sidebar.tsx.
+    const next = { ...openGroups, [id]: !openGroups[id] };
+    setOpenGroups(next);
+    document.cookie = `${NAV_OPEN_COOKIE}=${serializeOpenGroups(next)}; path=/; max-age=${NAV_OPEN_MAX_AGE}; samesite=lax`;
+  }
+
   return (
-    <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between border-b px-3 md:hidden print:hidden">
+    <header className="bg-background sticky top-0 z-30 flex h-12 items-center justify-between px-3 md:hidden print:hidden">
       <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
         <DialogPrimitive.Trigger asChild>
           <Button variant="ghost" size="icon-sm" aria-label={t("openAria")}>
@@ -70,7 +94,7 @@ export function MobileNav({
           />
           <DialogPrimitive.Content
             className={cn(
-              "bg-background ring-foreground/10 fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[85vw] flex-col outline-none ring-1",
+              "bg-sidebar ring-ink/10 fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[85vw] flex-col outline-none ring-1",
               "data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left",
               "duration-150",
             )}
@@ -78,7 +102,7 @@ export function MobileNav({
             <DialogPrimitive.Title className="sr-only">
               {t("title")}
             </DialogPrimitive.Title>
-            <div className="flex h-20 items-center justify-between border-b px-4">
+            <div className="flex h-20 items-center justify-between px-4">
               <Link
                 href="/"
                 aria-label={t("logoAria")}
@@ -97,43 +121,89 @@ export function MobileNav({
               </DialogPrimitive.Close>
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-              {groups.map((group, groupIndex) => (
-                <Fragment key={groupIndex}>
-                  {groupIndex > 0 ? (
-                    <div
-                      role="separator"
-                      className="border-border/60 mx-2 my-1.5 border-t"
-                    />
-                  ) : null}
-                  {group.map((item) => {
-                    const Icon = item.icon;
-                    const active = isNavItemActive(item, pathname);
-                    return (
-                      <DialogPrimitive.Close asChild key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
-                            active
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                              : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
-                          )}
-                        >
-                          <Icon aria-hidden className="size-4 shrink-0" />
-                          <span className="truncate">{t(item.labelKey)}</span>
-                        </Link>
-                      </DialogPrimitive.Close>
-                    );
-                  })}
-                </Fragment>
-              ))}
+              {groups.map((group) => {
+                const Icon = group.icon;
+                const groupLabel = t(group.labelKey);
+                const groupActive = isGroupActive(group, pathname);
+
+                if (group.items.length === 1) {
+                  const item = group.items[0];
+                  const active = isNavItemActive(item, pathname);
+                  return (
+                    <DialogPrimitive.Close asChild key={group.id}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors",
+                          active
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                            : "text-ink-2 hover:bg-ink/5 hover:text-ink",
+                        )}
+                      >
+                        <Icon aria-hidden className="size-4 shrink-0" />
+                        <span className="truncate">{groupLabel}</span>
+                      </Link>
+                    </DialogPrimitive.Close>
+                  );
+                }
+
+                const isOpen = openGroups[group.id] ?? groupActive;
+                return (
+                  <div key={group.id} className="flex flex-col">
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.id)}
+                      aria-expanded={isOpen}
+                      className="text-ink-2 hover:bg-ink/5 hover:text-ink flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors"
+                    >
+                      <Icon aria-hidden className="size-4 shrink-0" />
+                      <span className="truncate">{groupLabel}</span>
+                      {!isOpen && groupActive ? (
+                        <span
+                          className="bg-brand size-1.5 shrink-0 rounded-full"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <ChevronRight
+                        aria-hidden
+                        className={cn(
+                          "ml-auto size-3.5 shrink-0 transition-transform",
+                          isOpen ? "rotate-90" : null,
+                        )}
+                      />
+                    </button>
+                    {isOpen ? (
+                      <div className="mt-0.5 flex flex-col gap-0.5 pl-4">
+                        {group.items.map((item) => {
+                          const active = isNavItemActive(item, pathname);
+                          return (
+                            <DialogPrimitive.Close asChild key={item.href}>
+                              <Link
+                                href={item.href}
+                                className={cn(
+                                  "truncate rounded-full px-2.5 py-2 text-sm transition-colors",
+                                  active
+                                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                    : "text-ink-2 hover:bg-ink/5 hover:text-ink",
+                                )}
+                              >
+                                {t(item.labelKey)}
+                              </Link>
+                            </DialogPrimitive.Close>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </nav>
             {showPersonChip ? (
-              <div className="border-t p-2">
+              <div className="p-2">
                 <DialogPrimitive.Close asChild>
                   <Link
                     href="/whoami"
-                    className="text-muted-foreground hover:bg-foreground/5 hover:text-foreground flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
+                    className="text-ink-2 hover:bg-ink/5 hover:text-ink flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors"
                   >
                     <CircleUser aria-hidden className="size-4 shrink-0" />
                     <span className="truncate">

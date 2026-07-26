@@ -1,1 +1,20 @@
-{}
+{
+  "nav": {
+    "groupToday": "Heute",
+    "groupBikes": "Fahrräder",
+    "groupParts": "Teile",
+    "groupWork": "Arbeit",
+    "groupOrders": "Aufträge",
+    "groupCustomers": "Kunden",
+    "groupAdmin": "Verwaltung",
+    "allBikes": "Alle Fahrräder",
+    "families": "Familien",
+    "allParts": "Alle Teile",
+    "stockValue": "Lagerwert",
+    "kits": "Kits",
+    "tickets": "Tickets",
+    "workOrders": "Arbeitsaufträge",
+    "allCustomers": "Alle Kunden",
+    "customerMap": "Karte"
+  }
+}

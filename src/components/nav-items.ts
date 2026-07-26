@@ -1,18 +1,10 @@
 import {
   Bike,
-  BookOpen,
   Boxes,
   Building2,
   ClipboardList,
-  FileText,
-  Hammer,
-  HardHat,
   Home,
-  Inbox,
-  Paintbrush,
-  Receipt,
   Settings,
-  ShieldCheck,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -23,137 +15,188 @@ export type NavItem = {
   href: string;
   /** Key into the `nav` message namespace. */
   labelKey: string;
-  icon: LucideIcon;
   /** Which role capability shows this item (people & roles P2). */
   capability: Capability;
   /** Match this route exactly (no prefix matching) — used for the root link. */
   exact?: boolean;
 };
 
-// Grouped nav, shared by the desktop sidebar and the mobile drawer so the
-// two can't drift. Separators render between groups. Order set with the
-// owner (2026-06-20): Dashboard alone at the top, then daily ops, then the
-// commercial/orders flow, then Admin. The customer Map lives under Admin,
-// so it's not here.
-export const NAV_GROUPS: NavItem[][] = [
-  [
-    {
-      href: "/",
-      labelKey: "dashboard",
-      icon: Home,
-      capability: "dashboard",
-      exact: true,
-    },
-  ],
-  [
-    { href: "/bikes", labelKey: "bikes", icon: Bike, capability: "bikes" },
-    {
-      href: "/bike-templates",
-      labelKey: "bikeTemplates",
-      icon: BookOpen,
-      capability: "templates",
-    },
-    { href: "/parts", labelKey: "parts", icon: Boxes, capability: "parts" },
-    {
-      href: "/maintenance/tickets",
-      labelKey: "maintenance",
-      icon: Wrench,
-      capability: "maintenance",
-    },
-    // Inbound-message review queue (voicemail → ticket; more channels later).
-    // Sits by Maintenance because it feeds it.
-    { href: "/inbox", labelKey: "inbox", icon: Inbox, capability: "inbox" },
-    {
-      href: "/work",
-      labelKey: "workshopFloor",
-      icon: HardHat,
-      capability: "work",
-    },
-  ],
-  [
-    {
-      href: "/manufacturing-orders",
-      labelKey: "manufacturingOrders",
-      icon: Hammer,
-      capability: "mo",
-    },
-    {
-      href: "/purchase-orders",
-      labelKey: "purchaseOrders",
-      icon: ClipboardList,
-      capability: "po",
-    },
-    {
-      href: "/sales-orders",
-      labelKey: "salesOrders",
-      icon: Receipt,
-      capability: "so",
-    },
-    {
-      href: "/paint-orders",
-      labelKey: "paintOrders",
-      icon: Paintbrush,
-      capability: "paint",
-    },
-    {
-      href: "/invoices",
-      labelKey: "invoices",
-      icon: FileText,
-      capability: "invoices",
-    },
-    {
-      href: "/service-agreements",
-      labelKey: "serviceAgreements",
-      icon: ShieldCheck,
-      capability: "agreements",
-    },
-    {
-      href: "/organizations",
-      labelKey: "customers",
-      icon: Building2,
-      capability: "customers",
-    },
-  ],
-  [
-    {
-      href: "/admin",
-      labelKey: "admin",
-      icon: Settings,
-      capability: "admin",
-    },
-  ],
+export type NavGroup = {
+  /** Stable id — persisted in the `nav_open` cookie, so DO NOT rename. */
+  id: string;
+  /** Key into the `nav` message namespace. */
+  labelKey: string;
+  /** Shown as the group's marker, and as the whole group when collapsed. */
+  icon: LucideIcon;
+  /** A group with a single item is a plain link, not an expandable group. */
+  items: NavItem[];
+};
+
+/**
+ * Seven groups, set with the owner 2026-07-26 (was 14 flat items).
+ *
+ * Group names are CONCEPTS, not pages — "Orders" is what Dennis calls that
+ * part of the job; "Purchase orders" is one route inside it. The shape also
+ * stops the rail growing: CLAUDE.md fixes nav as per-service-type
+ * permanently, so Paint becomes Paint + Wash + Prime as service types are
+ * added. Flat that is a 15th, 16th, 17th line; grouped they are children and
+ * the rail stays seven.
+ *
+ * Templates, families and kits stop being Admin — kits are a floor picking
+ * aid and families group templates; neither is configuration. Nothing MOVES,
+ * though: every href below already existed, so no URL or bookmark changes.
+ *
+ * Both navs render from here so the desktop sidebar and mobile drawer can't
+ * drift.
+ */
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    id: "today",
+    labelKey: "groupToday",
+    icon: Home,
+    items: [
+      { href: "/", labelKey: "dashboard", capability: "dashboard", exact: true },
+    ],
+  },
+  {
+    id: "bikes",
+    labelKey: "groupBikes",
+    icon: Bike,
+    items: [
+      { href: "/bikes", labelKey: "allBikes", capability: "bikes" },
+      {
+        href: "/bike-templates",
+        labelKey: "bikeTemplates",
+        capability: "templates",
+      },
+      { href: "/admin/families", labelKey: "families", capability: "templates" },
+    ],
+  },
+  {
+    id: "parts",
+    labelKey: "groupParts",
+    icon: Boxes,
+    items: [
+      { href: "/parts", labelKey: "allParts", capability: "parts" },
+      {
+        href: "/parts/stock-value",
+        labelKey: "stockValue",
+        capability: "parts",
+      },
+      { href: "/admin/kits", labelKey: "kits", capability: "parts" },
+    ],
+  },
+  {
+    id: "work",
+    labelKey: "groupWork",
+    icon: Wrench,
+    items: [
+      {
+        href: "/maintenance/tickets",
+        labelKey: "tickets",
+        capability: "maintenance",
+      },
+      {
+        href: "/maintenance/work-orders",
+        labelKey: "workOrders",
+        capability: "maintenance",
+      },
+      { href: "/work", labelKey: "workshopFloor", capability: "work" },
+      { href: "/inbox", labelKey: "inbox", capability: "inbox" },
+    ],
+  },
+  {
+    id: "orders",
+    labelKey: "groupOrders",
+    icon: ClipboardList,
+    items: [
+      {
+        href: "/manufacturing-orders",
+        labelKey: "manufacturingOrders",
+        capability: "mo",
+      },
+      {
+        href: "/purchase-orders",
+        labelKey: "purchaseOrders",
+        capability: "po",
+      },
+      { href: "/sales-orders", labelKey: "salesOrders", capability: "so" },
+      { href: "/paint-orders", labelKey: "paintOrders", capability: "paint" },
+      { href: "/invoices", labelKey: "invoices", capability: "invoices" },
+    ],
+  },
+  {
+    id: "customers",
+    labelKey: "groupCustomers",
+    icon: Building2,
+    items: [
+      {
+        href: "/organizations",
+        labelKey: "allCustomers",
+        capability: "customers",
+      },
+      {
+        href: "/service-agreements",
+        labelKey: "serviceAgreements",
+        capability: "agreements",
+      },
+      {
+        href: "/organizations/map",
+        labelKey: "customerMap",
+        capability: "customers",
+      },
+    ],
+  },
+  {
+    id: "admin",
+    labelKey: "groupAdmin",
+    icon: Settings,
+    items: [{ href: "/admin", labelKey: "admin", capability: "admin" }],
+  },
 ];
+
+export const NAV_GROUP_IDS = NAV_GROUPS.map((g) => g.id);
 
 /**
  * Scope the nav to a role's capabilities. `allowed = null` means nothing is
  * scoped (gate off / legacy full-access login) — the pre-P2 behaviour.
- * Groups that end up empty disappear along with their separator.
+ * A group whose every child is filtered out disappears entirely.
  */
-export function filterNavGroups(allowed: string[] | null): NavItem[][] {
+export function filterNavGroups(allowed: string[] | null): NavGroup[] {
   if (allowed === null) return NAV_GROUPS;
-  return NAV_GROUPS.map((group) =>
-    group.filter((item) => allowed.includes(item.capability)),
-  ).filter((group) => group.length > 0);
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => allowed.includes(item.capability)),
+  })).filter((group) => group.items.length > 0);
+}
+
+const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+function pathMatches(item: NavItem, pathname: string): boolean {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
 /**
- * Route-active logic shared by both navs. The Maintenance entry links to
- * tickets but also owns work orders; Customers (/organizations) shouldn't
- * claim the customer map (/organizations/map), which lives under Admin.
+ * Route-active logic shared by both navs: LONGEST matching href wins.
+ *
+ * Grouping put parents and children side by side in the rail — `/parts` next
+ * to `/parts/stock-value`, `/admin` next to `/admin/kits`, `/organizations`
+ * next to `/organizations/map`. A plain prefix test would light up both. The
+ * old code special-cased `/organizations` by hand; longest-match generalises
+ * that, so adding a nested child later needs no new exception. Marking the
+ * parents `exact` instead would have broken every detail page (`/parts/<id>`
+ * must still highlight "All parts").
  */
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
-  if (item.exact) return pathname === item.href;
-  if (item.href === "/organizations") {
-    return (
-      pathname === item.href ||
-      (pathname.startsWith(`${item.href}/`) &&
-        pathname !== "/organizations/map")
-    );
-  }
-  return (
-    pathname === item.href ||
-    pathname.startsWith(`${item.href}/`) ||
-    (item.href === "/maintenance/tickets" &&
-      pathname.startsWith("/maintenance/work-orders"))
+  if (!pathMatches(item, pathname)) return false;
+  const best = ALL_NAV_ITEMS.filter((i) => pathMatches(i, pathname)).reduce(
+    (a, b) => (b.href.length > a.href.length ? b : a),
   );
+  return best.href === item.href;
+}
+
+/** Does this group contain the current page? Drives the closed-group dot. */
+export function isGroupActive(group: NavGroup, pathname: string): boolean {
+  return group.items.some((item) => isNavItemActive(item, pathname));
 }
