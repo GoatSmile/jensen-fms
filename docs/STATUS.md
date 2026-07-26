@@ -73,19 +73,22 @@ server-side · part detail's boxed KPI row killed · three of the four audit bug
   red painted normal progress red), and **`text-on-{hue}` on any filled hue**,
   never `text-white`. Two decorative palettes are exempt
   (`bike-templates/family-colors.ts`, `kits/colors.ts`).
-- **Contrast is measured, not eyeballed.** All 37 token pairs clear AA in both
-  themes. The ink ramp is DARKER than the mock-up's in light and LIGHTER in
-  dark, because secondary text now sits on washes, where the mock-up's values
-  failed. Re-measure on the washes, not just on the ground, if you touch it.
+- **Contrast is measured, not eyeballed.** All **78** fg/bg pairs clear AA per
+  theme — including every hue on every *foreign* wash, since a `hue` panel lets
+  any two meet. The ink ramp is DARKER than the mock-up's in light and LIGHTER
+  in dark, because secondary text now sits on washes, where the mock-up's
+  values failed. If you touch a hue, re-measure the whole matrix, not just
+  hue-on-its-own-wash — that narrower check passed while three cross pairs
+  were failing.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder, honestly**: ~140 files still hand-roll `rounded-* border`
+- **The remainder, honestly**: ~135 files still hand-roll `rounded-* border`
   surfaces. They inherit B's tokens so they read as *plainer*, not broken — that
-  property is what made truncating safe. `/admin/settings` (7 domains, ~40
-  controls, 6 raw `<section>`s), `/admin/lists` consolidation, the settings
-  sub-rail, the floor/office mode split, and form folds are all untouched. Full
-  list in plan §14.
+  property is what made truncating safe. `/admin/settings` is on `Panel` now but
+  still stacks seven domains in ~40 controls (the §9 sub-rail is the fix, and
+  isn't built). `/admin/lists` consolidation, the floor/office mode split and
+  form folds are untouched. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 

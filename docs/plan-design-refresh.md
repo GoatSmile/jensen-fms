@@ -579,21 +579,33 @@ sweep · `bd1c03b` grouped nav · `12e18ed` KPI row + ink ramp.
    (CLAUDE.md, six hues, with the caution=`money` rule and two decorative
    exemptions), Phase 1 before 31 Aug (yes), groups (shipped now, not deferred).
 
+### Also shipped in a second pass
+- **The money band's amount is a figure, not part of the eyebrow.** `Panel`
+  gained a `figure` slot; the two `{amount}` message keys are gone.
+- **All 78 fg/bg pairs per theme now measure ≥ 4.5:1** — the earlier matrices
+  only checked each hue on its OWN wash, but a `hue` panel lets any hue's text
+  land on any wash. 30 cross combinations per theme were unmeasured; three
+  failed. `--money` went darker in light, `--system` lighter in dark.
+- **`/admin/settings`**: its six raw `<section>`s are `Panel`s, hued by what
+  each one configures. `ReportUrlCard` — the audit's other boxed metric row —
+  uses `Metric` inside a `Panel`.
+- **`/parts`**: the "In stock" pill is gone from rows that are in stock (a badge
+  on 100% of rows carries no information), which also cleared the horizontal
+  table overflow. The three blank filter dropdowns are fixed — a bare
+  `<SelectValue />` cannot resolve its label while `SelectContent` is unmounted.
+
 ### Still not done — the honest list
-- **~140 files still hand-roll `rounded-* border` surfaces.** They inherit B's
+- **~135 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
   the migrated screens. This is the remaining Phase 2.
-- **`/admin/settings`** still stacks seven domains in ~40 controls (§9). Six of
-  its sections are raw `<section>` elements, not `Panel`.
-- **`/admin/lists`** consolidation (18 routes → 1) and the settings sub-rail:
-  not started (§8, §9).
+- **`/admin/settings` is prettier but still one page carrying seven domains in
+  ~40 controls.** The sub-rail from §9 — the change that actually drops its
+  perceived weight — is not built.
+- **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
 - **Floor/office mode split** (§6) — the highest-value structural idea in this
   document, and untouched.
-- **The dashboard money band** puts interpolated amounts inside 12px uppercase
-  panel titles, so "Uninvoiced work — 2.000,00 kr." renders "…2.000,00 KR."
-  The amount wants to be a figure, not part of the eyebrow.
-- **Form folds** (16/15/14-field forms) and the `/parts` "In stock" pill on
-  100% of rows (§9). Also the three empty filter dropdowns (§11 minor).
+- **Form folds** on the 16/15/14-field organisation, part and supplier forms
+  (§9), and the repeated category chips.
 - **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
 - **No unit test for the cookie logic.** The plan asked for one; there is no
   test runner in this project (`package.json` has dev/build/start/lint only),
