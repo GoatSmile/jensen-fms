@@ -306,7 +306,7 @@ export default async function DashboardPage() {
               emptyMessage=""
               viewAllHref="/invoices"
               viewAllLabel={t("goInvoice")}
-              tone="warning"
+              hue="money"
             >
               {uninvoiced.woCount > 0 ? (
                 <BandRow
@@ -368,7 +368,7 @@ export default async function DashboardPage() {
               })}
               emptyMessage=""
               viewAllHref="/invoices"
-              tone="destructive"
+              hue="money"
             >
               {overdueInvoices.rows.slice(0, ATTENTION_LIMIT).map((inv) => (
                 <BandRow
@@ -394,7 +394,7 @@ export default async function DashboardPage() {
               title={t("agreementsExpiring")}
               emptyMessage=""
               viewAllHref="/service-agreements"
-              tone="warning"
+              hue="system"
             >
               {expiringAgreements.slice(0, ATTENTION_LIMIT).map((a) => (
                 <BandRow
@@ -423,7 +423,7 @@ export default async function DashboardPage() {
               title={t("poChase")}
               emptyMessage=""
               viewAllHref="/purchase-orders"
-              tone="warning"
+              hue="buy"
             >
               {latePOs.slice(0, ATTENTION_LIMIT).map((po) => (
                 <BandRow
@@ -456,6 +456,7 @@ export default async function DashboardPage() {
           "nothing in build" is daily signal, unlike an empty attention list. */}
       <section className="grid gap-3 lg:grid-cols-3">
         <PipelineCard
+          hue="brand"
           title={t("pipeline.build")}
           stages={[
             {
@@ -481,6 +482,7 @@ export default async function DashboardPage() {
           ]}
         />
         <PipelineCard
+          hue="good"
           title={t("pipeline.repair")}
           stages={[
             {
@@ -501,6 +503,7 @@ export default async function DashboardPage() {
           ]}
         />
         <PipelineCard
+          hue="money"
           title={t("pipeline.ordersInFlight")}
           stages={[
             {
@@ -532,7 +535,7 @@ export default async function DashboardPage() {
           title={t("lowStock")}
           emptyMessage={t("lowStockEmpty")}
           viewAllHref="/parts?stock=low"
-          tone="warning"
+          hue="alert"
         >
           {lowStock.map((p) => {
             const onHand = Number(p.stock_on_hand);
@@ -570,7 +573,7 @@ export default async function DashboardPage() {
           title={t("overdueMos")}
           emptyMessage={t("overdueMosEmpty")}
           viewAllHref="/manufacturing-orders"
-          tone="destructive"
+          hue="alert"
         >
           {overdueMOs.map((mo) => {
             const overdueDays = mo.planned_completion_date
@@ -609,7 +612,7 @@ export default async function DashboardPage() {
           title={t("paintAging", { days: PAINT_AGING_DAYS })}
           emptyMessage={t("paintAgingEmpty")}
           viewAllHref="/paint-orders"
-          tone="warning"
+          hue="alert"
         >
           {paintAging.map((po) => {
             const days = po.sent_at ? diffDays(po.sent_at) : 0;

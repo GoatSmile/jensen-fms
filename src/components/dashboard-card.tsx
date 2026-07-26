@@ -1,66 +1,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, type LucideIcon } from "lucide-react";
+import { Check } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { Panel, type PanelHue } from "@/components/ui/panel";
 
-type StatProps = {
-  label: string;
-  value: string | number;
-  hint?: string | null;
-  href?: string;
-  icon?: LucideIcon;
-  className?: string;
-};
-
-/**
- * Compact KPI tile — number + label, optional hint underneath, optional link.
- * Used in the dashboard hero row.
- */
-export function StatCard({
-  label,
-  value,
-  hint,
-  href,
-  icon: Icon,
-  className,
-}: StatProps) {
-  const inner = (
-    <div
-      className={cn(
-        "flex h-full flex-col justify-between gap-3 rounded-lg border p-4 transition-colors",
-        href ? "hover:border-foreground/40" : null,
-        className,
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-          {label}
-        </span>
-        {Icon ? (
-          <Icon className="text-muted-foreground size-4" aria-hidden />
-        ) : null}
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <span className="text-3xl font-semibold tabular-nums">{value}</span>
-        {href ? (
-          <ArrowUpRight className="text-muted-foreground size-4" aria-hidden />
-        ) : null}
-      </div>
-      {hint ? (
-        <span className="text-muted-foreground text-xs">{hint}</span>
-      ) : null}
-    </div>
-  );
-  return href ? (
-    <Link href={href} className="block">
-      {inner}
-    </Link>
-  ) : (
-    inner
-  );
-}
+// `StatCard` used to live here as a bordered KPI tile. It turned out to have
+// no callers anywhere in the app (the 4-up rows on part detail and settings
+// hand-roll their own), so it is deleted rather than ported — `Metric` in
+// components/ui/metric.tsx is the replacement for new work.
 
 type PipelineStage = {
   label: string;
@@ -71,26 +19,27 @@ type PipelineStage = {
 };
 
 /**
- * Pipeline strip — a titled card showing a left-to-right flow of stage
+ * Pipeline strip — a titled panel showing a left-to-right flow of stage
  * counts (build: planning → building → …). Zeros stay visible: "nothing in
  * build" is daily signal, unlike an empty attention list.
  */
 export function PipelineCard({
   title,
   stages,
+  hue,
 }: {
   title: string;
   stages: PipelineStage[];
+  hue?: PanelHue;
 }) {
   return (
-    <section className="flex h-full flex-col gap-3 rounded-lg border p-4">
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <div className="flex flex-1 items-start">
+    <Panel title={title} hue={hue} className="h-full">
+      <div className="flex items-start">
         {stages.map((stage, i) => (
           <React.Fragment key={stage.label}>
             {i > 0 ? (
               <span
-                className="text-muted-foreground/60 mt-1.5 shrink-0 px-1 text-sm"
+                className="text-ink-3 mt-1.5 shrink-0 px-1 text-sm"
                 aria-hidden
               >
                 →
@@ -98,16 +47,16 @@ export function PipelineCard({
             ) : null}
             <Link
               href={stage.href}
-              className="hover:bg-muted/50 -my-1 flex min-w-0 flex-1 flex-col rounded px-1.5 py-1 transition-colors"
+              className="-my-1 flex min-w-0 flex-1 flex-col rounded-sm px-1.5 py-1 transition-colors hover:brightness-[0.97]"
             >
-              <span className="text-2xl font-semibold tabular-nums">
+              <span className="text-2xl font-bold tracking-[-0.02em] tabular-nums">
                 {stage.value}
               </span>
-              <span className="text-muted-foreground text-xs leading-tight">
+              <span className="text-ink-2 text-xs leading-tight">
                 {stage.label}
               </span>
               {stage.hint ? (
-                <span className="text-muted-foreground/80 text-[11px] tabular-nums">
+                <span className="text-ink-3 text-[11px] tabular-nums">
                   {stage.hint}
                 </span>
               ) : null}
@@ -115,7 +64,7 @@ export function PipelineCard({
           </React.Fragment>
         ))}
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -126,68 +75,53 @@ type AttentionProps = {
   viewAllHref?: string;
   viewAllLabel?: string;
   /**
-   * How loud this card's SUBJECT is when it has something to say — drives the
-   * left rail. It deliberately does NOT colour the empty state: an all-clear
-   * is good news whatever the card is about.
+   * Which domain this card is about — drives the wash WHILE THERE ARE ITEMS.
+   * An all-clear is good news whatever the subject, so the empty state drops
+   * the wash entirely rather than rendering "Every open MO is on schedule."
+   * inside a red block. (This is the same bug the old `tone` prop shipped: it
+   * coloured the empty message, so all-clears appeared in alarm colours.)
    */
-  tone?: "neutral" | "warning" | "destructive";
+  hue?: PanelHue;
   children: React.ReactNode;
 };
 
-const TONE_RAIL: Record<NonNullable<AttentionProps["tone"]>, string> = {
-  neutral: "border-l-border",
-  warning: "border-l-amber-500 dark:border-l-amber-400",
-  destructive: "border-l-destructive",
-};
-
 /**
- * "Needs attention" tile — header + list of items (or empty-state).
- *
- * `tone` used to be applied to the empty message, which rendered "Every open
- * MO is on schedule." in red and "No paint orders waiting longer than
- * expected." in amber — alarm colours for the all-clear. The tone describes
- * the card's subject, so it now marks the card (left rail) only while there
- * are actually items, and the empty state always reads as resolved.
+ * "Needs attention" panel — header + list of items, or an all-clear.
  */
 export function AttentionCard({
   title,
   emptyMessage,
   viewAllHref,
   viewAllLabel,
-  tone = "neutral",
+  hue,
   children,
 }: AttentionProps) {
   const t = useTranslations("dashboard");
   const hasChildren = React.Children.count(children) > 0;
   return (
-    <section
-      className={cn(
-        "flex h-full flex-col gap-3 rounded-lg border p-4",
-        hasChildren ? cn("border-l-2", TONE_RAIL[tone]) : null,
-      )}
-    >
-      <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {viewAllHref && hasChildren ? (
+    <Panel
+      title={title}
+      hue={hasChildren ? hue : undefined}
+      className="h-full"
+      action={
+        viewAllHref && hasChildren ? (
           <Link
             href={viewAllHref}
-            className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+            className="text-ink-2 hover:text-ink text-xs underline-offset-4 hover:underline"
           >
             {viewAllLabel ?? t("viewAll")}
           </Link>
-        ) : null}
-      </header>
+        ) : undefined
+      }
+    >
       {hasChildren ? (
         <ul className="flex flex-col gap-1.5">{children}</ul>
       ) : (
-        <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
-          <Check
-            className="mt-px size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
-            aria-hidden
-          />
+        <p className="text-ink-2 flex items-start gap-1.5 text-xs">
+          <Check className="text-good mt-px size-3.5 shrink-0" aria-hidden />
           {emptyMessage}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }

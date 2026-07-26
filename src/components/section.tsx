@@ -1,40 +1,15 @@
-import { cn } from "@/lib/utils";
-
 /**
- * Bordered card with a title/description header and an optional right-aligned
- * action. The single shared version of the `Section` that used to be
- * copy-pasted across detail and form pages. Header degrades to a left-aligned
- * title when there's no action; `contentClassName` lets form sections add the
- * inter-field gap (e.g. "flex flex-col gap-3").
+ * `Section` is the historical name for what is now `Panel` — the single
+ * shared surface — kept as a re-export so the files already importing it need
+ * no edit. Its old implementation (`rounded-md border` plus a `border-b`
+ * header) was one of the 345 hand-rolled boxes; `Panel` is the Direction B
+ * replacement, and everything that imports `Section` inherits it.
+ *
+ * New code should import `Panel` directly. The `className` passthrough
+ * survives mainly so the not-yet-swept pastel tint classes keep working
+ * mid-migration — prefer `hue` over a hand-written fill.
  */
-export function Section({
-  title,
-  description,
-  action,
-  className,
-  contentClassName,
-  children,
-}: {
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  /** Extra classes on the card, e.g. an admin-style section tint. */
-  className?: string;
-  contentClassName?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={cn("rounded-md border", className)}>
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{title}</h2>
-          {description ? (
-            <p className="text-muted-foreground text-xs">{description}</p>
-          ) : null}
-        </div>
-        {action ?? null}
-      </header>
-      <div className={cn("p-4", contentClassName)}>{children}</div>
-    </section>
-  );
-}
+export {
+  Panel as Section,
+  type PanelProps as SectionProps,
+} from "@/components/ui/panel";
