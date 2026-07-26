@@ -104,7 +104,7 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
     <Section
       title={t("offeringsTitle")}
       description={t("offeringsDescription")}
-      className="bg-buy-wash"
+      hue="buy"
       action={
         <Button
           size="sm"

@@ -66,7 +66,7 @@ export async function StockSection({
       <Section
         title={t("stockTitle")}
         description={t("stockDescriptionSingle")}
-        className="bg-brand-wash"
+        hue="brand"
       >
         <div className="bg-background flex items-center justify-between gap-4 rounded-md border p-4">
           <div className="flex flex-col">
@@ -101,7 +101,7 @@ export async function StockSection({
     <Section
       title={t("stockByLocation")}
       description={t("stockByLocationDescription")}
-      className="bg-brand-wash"
+      hue="brand"
     >
       {rows.length === 0 ? (
         <EmptyRow>{t("noStock")}</EmptyRow>

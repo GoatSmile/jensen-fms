@@ -146,7 +146,7 @@ export default async function ServiceAgreementDetailPage({
 
       <Section
         title={t("detailsTitle")}
-        className="bg-system-wash"
+        hue="system"
       >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <ReadField label={t("fldCustomer")} value={orgName} />
@@ -184,7 +184,7 @@ export default async function ServiceAgreementDetailPage({
             ? t("bikesDescUnit")
             : t("bikesDescOrg")
         }
-        className="bg-good-wash"
+        hue="good"
       >
         {!bikes || bikes.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -210,7 +210,7 @@ export default async function ServiceAgreementDetailPage({
       <Section
         title={t("coveredWos", { count: workOrders?.length ?? 0 })}
         description={t("coveredWosDesc")}
-        className="bg-brand-wash"
+        hue="brand"
       >
         {!workOrders || workOrders.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noWos")}</p>

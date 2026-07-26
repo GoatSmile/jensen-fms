@@ -131,7 +131,7 @@ export default async function InvoicesPage() {
       <Section
         title={t("woSectionTitle")}
         description={t("woSectionDesc")}
-        className="bg-brand-wash"
+        hue="brand"
       >
         {wos.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("woEmpty")}</p>
@@ -206,7 +206,7 @@ export default async function InvoicesPage() {
       <Section
         title={t("soSectionTitle")}
         description={t("soSectionDesc")}
-        className="bg-good-wash"
+        hue="good"
       >
         {sos.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("soEmpty")}</p>
@@ -259,7 +259,7 @@ export default async function InvoicesPage() {
       <Section
         title={t("feeSectionTitle")}
         description={t("feeSectionDesc")}
-        className="bg-system-wash"
+        hue="system"
       >
         {fees.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("feeEmpty")}</p>
@@ -325,7 +325,7 @@ export default async function InvoicesPage() {
       <Section
         title={t("invoicesSectionTitle")}
         description={t("invoicesSectionDesc")}
-        className="bg-money-wash"
+        hue="money"
       >
         {invoices.length === 0 ? (
           <EmptyState

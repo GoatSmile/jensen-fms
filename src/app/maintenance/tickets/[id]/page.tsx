@@ -308,7 +308,7 @@ export default async function TicketDetailPage({
         <div className="flex flex-col gap-6">
           <Section
             title={t("bikeTitle")}
-            className="bg-brand-wash"
+            hue="brand"
           >
             <dl className="flex flex-col gap-3">
               <Field label={t("frameNumber")}>
@@ -349,7 +349,7 @@ export default async function TicketDetailPage({
 
           <Section
             title={t("reporterTitle")}
-            className="bg-good-wash"
+            hue="good"
           >
             {contact ? (
               <dl className="flex flex-col gap-3">

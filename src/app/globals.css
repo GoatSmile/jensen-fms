@@ -107,8 +107,14 @@
   --ground: #fbfbf9;
   --surface: #ffffff;
   --ink: #1c1c1a;
-  --ink-2: #6b6b66;
-  --ink-3: #75746f; /* hints; #8A8A85 measured 3.23:1 and failed */
+  /* The ramp is darker than the mock-up's (#6B6B66 / #75746F) because those
+     were measured only against --ground and --surface. Once flat-fill panels
+     landed, secondary text sits on a WASH far more often than on the ground,
+     and #75746F fell to 4.06:1 on system-wash. Darkening ink-3 alone would
+     have collided with ink-2, so the whole ramp shifts to keep three
+     distinguishable levels that all clear 4.5:1 on all eight light surfaces. */
+  --ink-2: #5f5e59;
+  --ink-3: #6b6a65;
   --rule: #e9e9e4;
   --rule-strong: #dcdcd5;
 
@@ -203,8 +209,11 @@
   --ground: #161615;
   --surface: #1f1f1e;
   --ink: #f5f5f2;
-  --ink-2: #9c9c96;
-  --ink-3: #898983;
+  /* Mirror of the light-theme ramp shift: #898983 fell to 4.02:1 on the dark
+     money/good washes, so both steps move LIGHTER here to keep three
+     distinguishable levels that clear 4.5:1 on all eight dark surfaces. */
+  --ink-2: #a8a8a2;
+  --ink-3: #93938d;
   --rule: #2e2e2c;
   --rule-strong: #3a3a37;
 

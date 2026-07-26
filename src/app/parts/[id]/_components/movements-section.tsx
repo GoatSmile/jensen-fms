@@ -55,7 +55,7 @@ export async function MovementsSection({
     <Section
       title={t("movementsTitle")}
       description={t("movementsDescription")}
-      className="bg-brand-wash"
+      hue="brand"
     >
       {rows.length === 0 ? (
         <EmptyRow>{t("noMovements")}</EmptyRow>

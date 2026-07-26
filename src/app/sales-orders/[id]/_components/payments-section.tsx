@@ -65,7 +65,7 @@ export async function PaymentsSection({
     <Section
       title={t("paymentsTitle")}
       description={t("paymentsDesc")}
-      className="bg-money-wash"
+      hue="money"
       contentClassName="flex flex-col gap-3"
       action={
         canDeposit ? (

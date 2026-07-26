@@ -2,16 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { PanelHue } from "@/components/ui/panel";
-
-const HUE_FILL: Record<PanelHue, string> = {
-  brand: "bg-brand-wash",
-  money: "bg-money-wash",
-  good: "bg-good-wash",
-  alert: "bg-alert-wash",
-  buy: "bg-buy-wash",
-  system: "bg-system-wash",
-};
+import { HUE_FILL, type PanelHue } from "@/components/ui/panel";
 
 export type MetricProps = {
   /** Keep the string sentence-case — the ALL CAPS is a CSS design token. */

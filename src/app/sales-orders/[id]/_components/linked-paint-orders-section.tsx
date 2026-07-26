@@ -45,7 +45,7 @@ export async function LinkedPaintOrdersSection({
     <Section
       title={t("linkedPaintTitle")}
       description={t("linkedPaintDesc")}
-      className="bg-brand-wash"
+      hue="brand"
       action={
         canCreate ? (
           <Button asChild size="sm" variant="outline">

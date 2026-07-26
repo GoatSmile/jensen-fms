@@ -57,7 +57,7 @@ export async function PurchaseHistorySection({
     <Section
       title={t("purchaseHistoryTitle")}
       description={t("purchaseHistoryDescription")}
-      className="bg-buy-wash"
+      hue="buy"
     >
       {rows.length === 0 ? (
         <EmptyRow>{t("noPurchases")}</EmptyRow>

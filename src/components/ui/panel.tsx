@@ -18,7 +18,8 @@ export const PANEL_HUES = [
 
 export type PanelHue = (typeof PANEL_HUES)[number];
 
-const HUE_FILL: Record<PanelHue, string> = {
+/** Block fill for a hue. Exported so every washed surface uses one map. */
+export const HUE_FILL: Record<PanelHue, string> = {
   brand: "bg-brand-wash",
   money: "bg-money-wash",
   good: "bg-good-wash",
@@ -32,7 +33,7 @@ const HUE_FILL: Record<PanelHue, string> = {
  * pairs is measured >= 4.5:1 in both themes — a 12px bold uppercase title is
  * NOT WCAG "large text", so it needs the full ratio, not 3:1.
  */
-const HUE_TITLE: Record<PanelHue, string> = {
+export const HUE_TITLE: Record<PanelHue, string> = {
   brand: "text-brand-ink",
   money: "text-money",
   good: "text-good",
