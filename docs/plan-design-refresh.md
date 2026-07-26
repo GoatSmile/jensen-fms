@@ -580,6 +580,9 @@ sweep · `bd1c03b` grouped nav · `12e18ed` KPI row + ink ramp.
    exemptions), Phase 1 before 31 Aug (yes), groups (shipped now, not deferred).
 
 ### Also shipped in a second pass
+- **`/admin/settings` has the §9 sub-rail.** Five sections, one panel group at a
+  time, active section in `?section=`. Measured: 48 form controls rendered at
+  once before, 5 on arrival now.
 - **The money band's amount is a figure, not part of the eyebrow.** `Panel`
   gained a `figure` slot; the two `{amount}` message keys are gone.
 - **All 78 fg/bg pairs per theme now measure ≥ 4.5:1** — the earlier matrices
@@ -598,10 +601,11 @@ sweep · `bd1c03b` grouped nav · `12e18ed` KPI row + ink ramp.
 - **~135 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
   the migrated screens. This is the remaining Phase 2.
-- **`/admin/settings` is prettier but still one page carrying seven domains in
-  ~40 controls.** The sub-rail from §9 — the change that actually drops its
-  perceived weight — is not built.
 - **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
+- **The inbound panel's provider blocks don't collapse.** §9 also asked for each
+  one to reduce to a summary row — *Transcription: Gladia ✓* — expanding on
+  demand. The sub-rail got the page from 48 controls to 5 on arrival, so this is
+  now a refinement of the heaviest section rather than a rescue.
 - **Floor/office mode split** (§6) — the highest-value structural idea in this
   document, and untouched.
 - **Form folds** on the 16/15/14-field organisation, part and supplier forms
