@@ -49,9 +49,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Brand blue — used by Android Chrome's address bar and the PWA
-  // splash background.
-  themeColor: "#1e4a7a",
+  // Brand blue (--brand) — used by Android Chrome's address bar and the PWA
+  // splash. Keep in step with `theme_color` in public/manifest.webmanifest
+  // and `--brand` in globals.css; the three are one decision.
+  themeColor: "#2e5fd1",
   // Keep the viewport pinned so the iPhone form-zoom doesn't fight us.
   width: "device-width",
   initialScale: 1,
