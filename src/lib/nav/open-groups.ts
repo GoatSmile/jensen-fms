@@ -52,6 +52,19 @@ export function serializeOpenGroups(state: OpenGroups): string {
 }
 
 /**
+ * Write the state to the cookie. Client-only.
+ *
+ * A function rather than an inline `document.cookie = ...` in each nav for two
+ * reasons: the desktop rail and the mobile drawer were repeating the same
+ * cookie string, and the React Compiler lint rule rejects assigning to a
+ * property of a module-scope object inside a component ("This value cannot be
+ * modified") — which is what an inline write is, even from an event handler.
+ */
+export function persistOpenGroups(state: OpenGroups): void {
+  document.cookie = `${NAV_OPEN_COOKIE}=${serializeOpenGroups(state)}; path=/; max-age=${NAV_OPEN_MAX_AGE}; samesite=lax`;
+}
+
+/**
  * Resolve the state actually used for a render.
  *
  * - No cookie at all → every group takes its code default.

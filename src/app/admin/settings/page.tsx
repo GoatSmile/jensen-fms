@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Panel } from "@/components/ui/panel";
 import { ReportUrlCard } from "@/components/report-url-card";
+import { resolveSettingsSection } from "@/lib/admin/settings-sections";
 import { createClient } from "@/lib/supabase/server";
 
+import { SettingsSubRail } from "./_components/settings-subrail";
 import { SettingsForm } from "./_components/settings-form";
 import { CommunicationSettingsForm } from "./_components/communication-settings-form";
 import { EmailDnsCard } from "./_components/email-dns-card";
@@ -29,7 +31,12 @@ import {
   TELEPHONY_PROVIDERS,
 } from "@/lib/inbound/settings";
 
-export default async function AdminSettingsPage() {
+export default async function AdminSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ section?: string }>;
+}) {
+  const section = resolveSettingsSection((await searchParams).section);
   const [t, tCommon] = await Promise.all([
     getTranslations("adminSettings"),
     getTranslations("common"),
@@ -100,123 +107,153 @@ export default async function AdminSettingsPage() {
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      <ReportUrlCard />
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        <SettingsSubRail active={section} />
 
-      <Panel
-        title={t("languageHeading")}
-        description={t("languageDescription")}
-        hue="system"
-        contentClassName="pt-1"
-      >
-      <LanguageSettingsForm
-        initialAppLanguage={appLanguage}
-        initialWorkerLanguage={workerLanguage}
-      />
-      </Panel>
+        {/* One panel group at a time. Only the active section's markup is
+            rendered at all, which is most of the weight gone: the inbound
+            block alone is 13 inputs. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {section === "general" ? (
+            <>
+              <Panel
+                title={t("languageHeading")}
+                description={t("languageDescription")}
+                hue="system"
+                contentClassName="pt-1"
+              >
+                <LanguageSettingsForm
+                  initialAppLanguage={appLanguage}
+                  initialWorkerLanguage={workerLanguage}
+                />
+              </Panel>
+              <Panel
+                title={t("purchasingHeading")}
+                description={t("purchasingDescription")}
+                hue="buy"
+                contentClassName="pt-1"
+              >
+                <SettingsForm
+                  initialDefaultTransportPct={defaultTransportPct}
+                />
+              </Panel>
+            </>
+          ) : null}
 
-      <Panel
-        title={t("communicationHeading")}
-        description={t("communicationDescription")}
-        hue="brand"
-        contentClassName="pt-1"
-      >
-      <CommunicationSettingsForm
-        initialFromEmail={data?.outbound_from_email ?? ""}
-        initialReplyToEmail={data?.outbound_reply_to_email ?? ""}
-        initialTestMode={data?.outbound_test_mode ?? true}
-        initialTestEmail={data?.outbound_test_email ?? ""}
-        initialWorkshopPhone={data?.workshop_phone ?? ""}
-      />
-      </Panel>
+          {section === "communication" ? (
+            <>
+              <Panel
+                title={t("communicationHeading")}
+                description={t("communicationDescription")}
+                hue="brand"
+                contentClassName="pt-1"
+              >
+                <CommunicationSettingsForm
+                  initialFromEmail={data?.outbound_from_email ?? ""}
+                  initialReplyToEmail={data?.outbound_reply_to_email ?? ""}
+                  initialTestMode={data?.outbound_test_mode ?? true}
+                  initialTestEmail={data?.outbound_test_email ?? ""}
+                  initialWorkshopPhone={data?.workshop_phone ?? ""}
+                />
+              </Panel>
+              <Panel
+                title={t("dnsHeading")}
+                description={t("dnsDescription")}
+                hue="system"
+                contentClassName="pt-1"
+              >
+                <EmailDnsCard
+                  initialDomain={data?.email_domain ?? ""}
+                  initialRecords={dnsRecords}
+                />
+              </Panel>
+            </>
+          ) : null}
 
-      <Panel
-        title={t("dnsHeading")}
-        description={t("dnsDescription")}
-        hue="system"
-        contentClassName="pt-1"
-      >
-      <EmailDnsCard
-        initialDomain={data?.email_domain ?? ""}
-        initialRecords={dnsRecords}
-      />
-      </Panel>
+          {section === "accounting" ? (
+            <Panel
+              title={t("accountingHeading")}
+              description={t("accountingDescription")}
+              hue="money"
+              contentClassName="pt-1"
+            >
+              <EconomicSettingsForm
+                initialEnabled={data?.economic_enabled === true}
+                initialJournalNumber={
+                  data?.economic_journal_number != null
+                    ? String(data.economic_journal_number)
+                    : ""
+                }
+                initialRevenueAccount={
+                  data?.economic_revenue_account != null
+                    ? String(data.economic_revenue_account)
+                    : ""
+                }
+                initialVatCode={data?.economic_vat_code ?? ""}
+                initialCustomerGroup={
+                  data?.economic_customer_group != null
+                    ? String(data.economic_customer_group)
+                    : ""
+                }
+                initialVatZone={
+                  data?.economic_vat_zone != null
+                    ? String(data.economic_vat_zone)
+                    : ""
+                }
+                initialPaymentTerms={
+                  data?.economic_payment_terms != null
+                    ? String(data.economic_payment_terms)
+                    : ""
+                }
+                tokensReady={economicEnvReady()}
+              />
+            </Panel>
+          ) : null}
 
-      <Panel
-        title={t("accountingHeading")}
-        description={t("accountingDescription")}
-        hue="money"
-        contentClassName="pt-1"
-      >
-      <EconomicSettingsForm
-        initialEnabled={data?.economic_enabled === true}
-        initialJournalNumber={
-          data?.economic_journal_number != null
-            ? String(data.economic_journal_number)
-            : ""
-        }
-        initialRevenueAccount={
-          data?.economic_revenue_account != null
-            ? String(data.economic_revenue_account)
-            : ""
-        }
-        initialVatCode={data?.economic_vat_code ?? ""}
-        initialCustomerGroup={
-          data?.economic_customer_group != null
-            ? String(data.economic_customer_group)
-            : ""
-        }
-        initialVatZone={
-          data?.economic_vat_zone != null
-            ? String(data.economic_vat_zone)
-            : ""
-        }
-        initialPaymentTerms={
-          data?.economic_payment_terms != null
-            ? String(data.economic_payment_terms)
-            : ""
-        }
-        tokensReady={economicEnvReady()}
-      />
-      </Panel>
+          {section === "phone" ? (
+            <Panel
+              title={t("inboundHeading")}
+              description={t("inboundDescription")}
+              hue="brand"
+              contentClassName="pt-1"
+            >
+              <InboundSettingsForm
+                initialTranscriptionProvider={
+                  inboundSettings.transcriptionProvider
+                }
+                initialTranscriptionRegion={
+                  inboundSettings.transcriptionRegion ?? ""
+                }
+                initialExtractionProvider={inboundSettings.extractionProvider}
+                initialExtractionModel={inboundSettings.extractionModel}
+                initialTelephonyProvider={inboundSettings.telephonyProvider}
+                initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
+                initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
+                initialRetentionDays={String(
+                  inboundSettings.mediaRetentionDays,
+                )}
+                initialShadowMode={inboundSettings.shadowMode}
+                initialCallMode={inboundSettings.callMode}
+                initialBridgeNumber={inboundSettings.bridgeNumber ?? ""}
+                initialBridgeTimeout={String(
+                  inboundSettings.bridgeTimeoutSeconds,
+                )}
+                initialCallTranscriptionProvider={
+                  inboundSettings.callTranscriptionProviderRaw ?? ""
+                }
+                transcriptionProviders={TRANSCRIPTION_PROVIDERS.map(
+                  (p) => p.key,
+                )}
+                extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
+                telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
+                secrets={inboundSecrets}
+              />
+            </Panel>
+          ) : null}
 
-      <Panel
-        title={t("inboundHeading")}
-        description={t("inboundDescription")}
-        hue="brand"
-        contentClassName="pt-1"
-      >
-      <InboundSettingsForm
-        initialTranscriptionProvider={inboundSettings.transcriptionProvider}
-        initialTranscriptionRegion={inboundSettings.transcriptionRegion ?? ""}
-        initialExtractionProvider={inboundSettings.extractionProvider}
-        initialExtractionModel={inboundSettings.extractionModel}
-        initialTelephonyProvider={inboundSettings.telephonyProvider}
-        initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
-        initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
-        initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
-        initialShadowMode={inboundSettings.shadowMode}
-        initialCallMode={inboundSettings.callMode}
-        initialBridgeNumber={inboundSettings.bridgeNumber ?? ""}
-        initialBridgeTimeout={String(inboundSettings.bridgeTimeoutSeconds)}
-        initialCallTranscriptionProvider={
-          inboundSettings.callTranscriptionProviderRaw ?? ""
-        }
-        transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
-        extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
-        telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
-        secrets={inboundSecrets}
-      />
-      </Panel>
-
-      <Panel
-        title={t("purchasingHeading")}
-        description={t("purchasingDescription")}
-        hue="buy"
-        contentClassName="pt-1"
-      >
-      <SettingsForm initialDefaultTransportPct={defaultTransportPct} />
-      </Panel>
-
+          {section === "public" ? <ReportUrlCard /> : null}
+        </div>
+      </div>
     </div>
   );
 }

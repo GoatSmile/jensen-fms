@@ -3098,7 +3098,13 @@
     "inboundPhoneTestLabel": "Testnummer",
     "inboundPhoneTestHint": "Twilio-prøvenummer til webhook-røgtest; vises aldrig til kunder.",
     "inboundWebhookHint": "Peg dit Twilio-nummers voice-webhook (Når et opkald kommer ind, HTTP POST) her:",
-    "inboundStatusWebhookHint": "Og dens \"Call status changes\"-webhook (fanger alle opkald, inkl. dem hvor der lægges på uden besked):"
+    "inboundStatusWebhookHint": "Og dens \"Call status changes\"-webhook (fanger alle opkald, inkl. dem hvor der lægges på uden besked):",
+    "sectionsAria": "Indstillingsafsnit",
+    "sectionGeneral": "Generelt",
+    "sectionCommunication": "Kommunikation",
+    "sectionAccounting": "Regnskab",
+    "sectionPhone": "Telefon & indbakke",
+    "sectionPublic": "Offentlige sider"
   },
   "adminPeople": {
     "crumb": "Personer og roller",

@@ -23,12 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  NAV_OPEN_COOKIE,
-  NAV_OPEN_MAX_AGE,
-  serializeOpenGroups,
-  type OpenGroups,
-} from "@/lib/nav/open-groups";
+import { persistOpenGroups, type OpenGroups } from "@/lib/nav/open-groups";
 import { cn } from "@/lib/utils";
 
 const COLLAPSE_KEY = "jensen-fms:sidebar-collapsed";
@@ -88,7 +83,7 @@ export function AppSidebar({
     // again. Only a real toggle should write.
     const next = { ...open, [id]: !open[id] };
     setOpen(next);
-    document.cookie = `${NAV_OPEN_COOKIE}=${serializeOpenGroups(next)}; path=/; max-age=${NAV_OPEN_MAX_AGE}; samesite=lax`;
+    persistOpenGroups(next);
   }
   return (
     <aside

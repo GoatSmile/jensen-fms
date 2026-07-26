@@ -14,12 +14,7 @@ import {
   isNavItemActive,
 } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
-import {
-  NAV_OPEN_COOKIE,
-  NAV_OPEN_MAX_AGE,
-  serializeOpenGroups,
-  type OpenGroups,
-} from "@/lib/nav/open-groups";
+import { persistOpenGroups, type OpenGroups } from "@/lib/nav/open-groups";
 import { cn } from "@/lib/utils";
 
 /**
@@ -73,7 +68,7 @@ export function MobileNav({
     // Persist outside the setState updater — see the note in app-sidebar.tsx.
     const next = { ...openGroups, [id]: !openGroups[id] };
     setOpenGroups(next);
-    document.cookie = `${NAV_OPEN_COOKIE}=${serializeOpenGroups(next)}; path=/; max-age=${NAV_OPEN_MAX_AGE}; samesite=lax`;
+    persistOpenGroups(next);
   }
 
   return (

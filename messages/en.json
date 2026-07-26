@@ -3098,7 +3098,13 @@
     "inboundPhoneTestLabel": "Test number",
     "inboundPhoneTestHint": "Twilio trial number for webhook smoke-tests; never shown to customers.",
     "inboundWebhookHint": "Point your Twilio number's Voice webhook (A call comes in, HTTP POST) here:",
-    "inboundStatusWebhookHint": "And its \"Call status changes\" webhook (captures every call, incl. hang-ups that leave no message):"
+    "inboundStatusWebhookHint": "And its \"Call status changes\" webhook (captures every call, incl. hang-ups that leave no message):",
+    "sectionsAria": "Settings sections",
+    "sectionGeneral": "General",
+    "sectionCommunication": "Communication",
+    "sectionAccounting": "Accounting",
+    "sectionPhone": "Phone & inbox",
+    "sectionPublic": "Public pages"
   },
   "adminPeople": {
     "crumb": "People & roles",

@@ -73,7 +73,9 @@ export async function ReportUrlCard() {
         {/* The audit's other boxed metric row. Same treatment as part
             detail's: flat washes, no borders. `good` throughout — these are
             all "the public report page is working" counts, one subject. */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {/* Stacked on phones: three side-by-side at 375px wrapped
+            "Send-a-message visits" onto three lines. */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
           <Metric
             hue="good"
             label={t("reportUrlVisits")}

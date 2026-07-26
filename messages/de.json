@@ -20,5 +20,13 @@
   "dashboard": {
     "uninvoicedLabel": "Nicht abgerechnete Arbeit",
     "overdueLabel": "Überfällige Rechnungen"
+  },
+  "adminSettings": {
+    "sectionsAria": "Einstellungsbereiche",
+    "sectionGeneral": "Allgemein",
+    "sectionCommunication": "Kommunikation",
+    "sectionAccounting": "Buchhaltung",
+    "sectionPhone": "Telefon & Eingang",
+    "sectionPublic": "Öffentliche Seiten"
   }
 }

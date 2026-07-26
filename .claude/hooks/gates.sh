@@ -33,7 +33,24 @@ note() {
 stages_at_commit=false
 printf '%s' "$cmd" | grep -qE '(^|\s)-(a|[a-zA-Z]*a[a-zA-Z]*)(\s|$)|--all\b' && stages_at_commit=true
 
-if [ "$stages_at_commit" = false ]; then
+# This is a PreToolUse hook: it runs BEFORE the command does. So for the very
+# common `git add path && git commit` one-liner the index is still EMPTY when we
+# look at it — and the old `[ -z "$staged" ] && exit 0` read that as "nothing to
+# check" and skipped every gate. That silently disabled this hook for every
+# commit written that way (found 2026-07-26, after two React-rule lint errors
+# reached main through it). Only trust the index when the command is not about
+# to change it.
+will_stage=false
+printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])git[[:space:]]+add\b' && will_stage=true
+
+if [ "$will_stage" = true ]; then
+  # Can't know the final file list yet, so decide the docs-only skip from the
+  # whole dirty tree — a superset of what the commit can contain.
+  dirty=$(git status --porcelain | sed 's/^...//' | sed 's/.* -> //')
+  if [ -n "$dirty" ] && ! printf '%s\n' "$dirty" | grep -qvE '\.md$'; then
+    note "Gates skipped: docs-only ($(printf '%s\n' "$dirty" | wc -l | tr -d ' ') dirty path(s), all .md)."
+  fi
+elif [ "$stages_at_commit" = false ]; then
   staged=$(git diff --cached --name-only)
   [ -z "$staged" ] && exit 0   # nothing staged; let git produce its own error
   if ! printf '%s\n' "$staged" | grep -qvE '\.md$'; then
