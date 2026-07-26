@@ -47,8 +47,8 @@ export function DispositionAction({
   if (isSpam) {
     const confirmed = disposition === "spam";
     return (
-      <section className="flex flex-col gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
-        <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+      <section className="flex flex-col gap-2 rounded-md border bg-money-wash p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-alert">
           <ShieldAlert className="size-4" aria-hidden />
           {confirmed ? t("spamConfirmedTitle") : t("spamSuspectedTitle")}
         </div>

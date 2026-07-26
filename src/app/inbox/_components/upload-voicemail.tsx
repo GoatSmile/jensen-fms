@@ -51,7 +51,7 @@ export function UploadVoicemail() {
   return (
     <form
       onSubmit={onSubmit}
-      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20 flex flex-col gap-3 rounded-md border p-4"
+      className="bg-brand-wash flex flex-col gap-3 rounded-md border p-4"
     >
       <div>
         <h2 className="text-sm font-semibold">{t("uploadTitle")}</h2>

@@ -224,7 +224,7 @@ export default async function StockValuePage() {
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {r.prepaidQty > 0 ? (
-                      <span className="text-amber-700 dark:text-amber-400">
+                      <span className="text-money">
                         {formatQuantity(r.prepaidQty)}
                       </span>
                     ) : (

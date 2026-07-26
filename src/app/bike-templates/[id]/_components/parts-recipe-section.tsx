@@ -472,7 +472,7 @@ export function PartsRecipeSection({
           </p>
         ) : null}
         {success ? (
-          <p className="mb-3 text-sm text-emerald-700 dark:text-emerald-400" role="status">
+          <p className="mb-3 text-sm text-good" role="status">
             {success}
           </p>
         ) : null}
@@ -666,7 +666,7 @@ export function PartsRecipeSection({
                           (costTotal.sum + (paintEstimate?.totalDkk ?? 0)) <
                         0
                           ? "text-destructive font-medium"
-                          : "text-emerald-700 dark:text-emerald-400"
+                          : "text-good"
                       }`}
                     >
                       <span>{t("marginLabel")}</span>

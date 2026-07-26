@@ -82,7 +82,7 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
     <section className="bg-card flex flex-col gap-3 rounded-md border border-l-[3px] border-l-slate-600 p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Camera className="size-4 text-slate-600" aria-hidden />
+          <Camera className="size-4 text-ink-2" aria-hidden />
           <h2 className="text-sm font-semibold">{t("photosTitle")}</h2>
           <span className="text-muted-foreground text-xs">
             {photos.length === 0

@@ -11,6 +11,14 @@
  * Every class string is a full Tailwind literal (JIT can't see computed
  * names). `dot` is the small saturated marker; `header` tints a group-card
  * header band; `chip` styles a rounded family badge.
+ *
+ * DELIBERATELY EXEMPT from the six-hue token vocabulary in CLAUDE.md, and the
+ * only such palette in `src/` — the same exemption the kit sticker colours
+ * carry. These hues are decorative identity, not meaning: a family is not
+ * "an alert", and routing them through the semantic tokens both lies about
+ * intent and collapses eight distinguishable colours onto six (the 2026-07-26
+ * sweep did exactly that and made two families identical). If you are here to
+ * replace these with tokens, don't.
  */
 
 export type FamilyTint = {

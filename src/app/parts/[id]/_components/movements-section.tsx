@@ -55,7 +55,7 @@ export async function MovementsSection({
     <Section
       title={t("movementsTitle")}
       description={t("movementsDescription")}
-      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+      className="bg-brand-wash"
     >
       {rows.length === 0 ? (
         <EmptyRow>{t("noMovements")}</EmptyRow>
@@ -107,7 +107,7 @@ export async function MovementsSection({
                   <TableCell
                     className={`text-right tabular-nums font-medium ${
                       row.quantityDelta > 0
-                        ? "text-emerald-700 dark:text-emerald-400"
+                        ? "text-good"
                         : row.quantityDelta < 0
                           ? "text-destructive"
                           : ""

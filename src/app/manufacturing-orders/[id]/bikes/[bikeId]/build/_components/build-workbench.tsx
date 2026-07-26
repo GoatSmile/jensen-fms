@@ -423,17 +423,17 @@ export function BuildWorkbench({
 
       {/* Build-floor labeling note from the sales order (Tier 2 Phase D). */}
       {buildNote ? (
-        <section className="rounded-md border border-amber-300/60 bg-amber-50/60 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <section className="rounded-md border border-money/30 bg-money-wash px-4 py-3">
           <div className="flex items-start gap-2">
             <Tag
-              className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300"
+              className="mt-0.5 size-4 shrink-0 text-money"
               aria-hidden
             />
             <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+              <span className="text-xs font-semibold uppercase tracking-wide text-money">
                 {t("productionNote")}
               </span>
-              <p className="text-sm whitespace-pre-wrap text-amber-950 dark:text-amber-100">
+              <p className="text-sm whitespace-pre-wrap text-money">
                 {buildNote}
               </p>
             </div>
@@ -513,7 +513,7 @@ export function BuildWorkbench({
                   <span
                     className={`text-xs tabular-nums ${
                       requiredRegisteredCount < requiredIdentifierCount
-                        ? "text-amber-700 dark:text-amber-300"
+                        ? "text-money"
                         : "text-muted-foreground"
                     }`}
                   >
@@ -565,7 +565,7 @@ export function BuildWorkbench({
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="text-sm text-good" role="status">
           {success}
         </p>
       ) : null}
@@ -774,7 +774,7 @@ export function BuildWorkbench({
         {!readOnly ? (
           <footer className="border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <p
-              className={`text-xs ${atPainterReason ? "text-amber-700 dark:text-amber-300" : "text-muted-foreground"}`}
+              className={`text-xs ${atPainterReason ? "text-money" : "text-muted-foreground"}`}
             >
               {atPainterReason
                 ? atPainterReason
@@ -916,7 +916,7 @@ function KitBulkRemove({
         </p>
       ) : note ? (
         <p
-          className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400"
+          className="mt-1.5 text-xs text-good"
           role="status"
         >
           {note}
@@ -1047,7 +1047,7 @@ function RecipeLine({
           className={`tabular-nums ${
             shortfall > 0
               ? "text-destructive font-medium"
-              : "text-emerald-700 dark:text-emerald-400"
+              : "text-good"
           }`}
         >
           {shortfall > 0

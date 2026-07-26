@@ -33,7 +33,7 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
     <Section
       title={t("linkedMosTitle")}
       description={t("linkedMosDesc")}
-      className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+      className="bg-brand-wash"
     >
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm italic">{t("noMos")}</p>

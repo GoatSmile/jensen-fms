@@ -195,7 +195,7 @@ export default async function InboundPage() {
                   <TableCell className="hidden p-0 text-sm md:table-cell">
                     <Link href={href} className="block px-4 py-2.5">
                       {r.ticket_id ? (
-                        <span className="text-emerald-600 dark:text-emerald-500">
+                        <span className="text-good">
                           {t("ticketCreated")}
                         </span>
                       ) : r.disposition === "handled" ? (

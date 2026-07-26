@@ -201,7 +201,7 @@ export function ColorForm({ mode, initial, coatings }: Props) {
             )}
           </div>
           {ralUnknown ? (
-            <p className="text-xs text-amber-700 dark:text-amber-400" role="alert">
+            <p className="text-xs text-money" role="alert">
               {t("ralUnknown", { code: values.ral_code.trim() })}
             </p>
           ) : (
@@ -232,8 +232,8 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       </div>
 
       {ralConflict ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900/50 dark:bg-amber-950/30">
-          <span className="text-amber-900 dark:text-amber-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-money/30 bg-money-wash px-3 py-2 text-sm">
+          <span className="text-money">
             {t("ralConflict", { code: values.ral_code.trim(), hex: ralHex ?? "" })}
           </span>
           <Button type="button" variant="outline" size="sm" onClick={matchRal}>

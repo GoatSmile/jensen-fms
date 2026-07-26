@@ -203,7 +203,7 @@ function ActionCard({
       className={cn(
         "flex flex-col gap-2.5 rounded-md border p-3.5",
         isApplied
-          ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30"
+          ? "bg-good-wash"
           : "bg-background",
       )}
     >
@@ -212,7 +212,7 @@ function ActionCard({
           {t(`type_${action.type}`)}
         </span>
         {isApplied ? (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-xs text-good">
             <Check className="size-3.5" aria-hidden />
             {appliedPath ? (
               <Link href={appliedPath} className="font-medium underline">
@@ -232,7 +232,7 @@ function ActionCard({
         {chipsFor(action, t).map((c, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs dark:border-emerald-800 dark:bg-emerald-950/40"
+            className="inline-flex items-center gap-1 rounded border bg-good-wash px-2 py-0.5 text-xs"
           >
             <span className="text-muted-foreground">{c.label}:</span>
             <span className="font-medium">{c.value}</span>

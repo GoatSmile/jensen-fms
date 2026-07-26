@@ -312,7 +312,7 @@ export function LineDialog({
                                   ) : null}
                                 </div>
                                 {isPicked ? (
-                                  <span className="text-xs text-emerald-700 dark:text-emerald-400">
+                                  <span className="text-xs text-good">
                                     {t("selected")}
                                   </span>
                                 ) : null}
@@ -346,7 +346,7 @@ export function LineDialog({
                                 </span>
                               </div>
                               {isPicked ? (
-                                <span className="text-xs text-emerald-700 dark:text-emerald-400">
+                                <span className="text-xs text-good">
                                   {t("selected")}
                                 </span>
                               ) : null}

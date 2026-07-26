@@ -809,7 +809,7 @@ export default async function BikesPage({
                               className={cn(
                                 "block text-xs",
                                 expiring
-                                  ? "font-medium text-amber-600 dark:text-amber-500"
+                                  ? "font-medium text-money"
                                   : "text-muted-foreground",
                               )}
                             >

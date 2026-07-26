@@ -285,7 +285,7 @@ export default async function DashboardPage() {
       {!showMoneyBand ? null : moneyAllClear ? (
         <section className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-3">
           <CircleCheck
-            className="size-4 shrink-0 text-emerald-600 dark:text-emerald-500"
+            className="size-4 shrink-0 text-good"
             aria-hidden
           />
           <p className="text-muted-foreground text-sm">
@@ -401,7 +401,7 @@ export default async function DashboardPage() {
                   key={a.id}
                   href={`/service-agreements/${a.id}`}
                   right={t("inDays", { days: a.daysLeft })}
-                  rightClassName="text-amber-700 dark:text-amber-400"
+                  rightClassName="text-money"
                 >
                   <span className="truncate">
                     {a.orgName ?? a.name ?? t("agreementFallbackName")}
@@ -430,7 +430,7 @@ export default async function DashboardPage() {
                   key={po.id}
                   href={`/purchase-orders/${po.id}`}
                   right={t("daysPastExpected", { days: po.daysLate })}
-                  rightClassName="text-amber-700 dark:text-amber-400"
+                  rightClassName="text-money"
                 >
                   <span className="truncate font-mono text-xs">
                     {po.poNumber}

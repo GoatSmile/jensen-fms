@@ -104,7 +104,7 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
     <Section
       title={t("offeringsTitle")}
       description={t("offeringsDescription")}
-      className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+      className="bg-buy-wash"
       action={
         <Button
           size="sm"
@@ -245,7 +245,7 @@ function OfferingTableRow({
         {row.isPreferred ? (
           <Star
             aria-label={t("preferredAria")}
-            className="size-4 fill-amber-400 text-amber-500"
+            className="size-4 fill-amber-400 text-buy"
           />
         ) : null}
       </TableCell>

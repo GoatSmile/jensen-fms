@@ -175,7 +175,7 @@ export default async function SupplierDetailPage({
                           className="text-xs"
                         />
                         {o.is_preferred ? (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                          <span className="rounded-full bg-money-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-money">
                             {t("preferred")}
                           </span>
                         ) : null}

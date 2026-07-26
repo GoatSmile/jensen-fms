@@ -289,14 +289,14 @@ export default async function InboundDetailPage({
         ) : null}
         {clarity != null ? (
           <Fact label={t("clarityLabel")}>
-            <span className={clarity < 0.6 ? "text-amber-700 dark:text-amber-500" : undefined}>
+            <span className={clarity < 0.6 ? "text-money" : undefined}>
               {Math.round(clarity * 100)}% · {t(clarityKey(clarity))}
             </span>
           </Fact>
         ) : null}
         {parseConfidence && t.has(CONF_KEY[parseConfidence] ?? "") ? (
           <Fact label={t("parseLabel")}>
-            <span className={parseConfidence === "low" ? "text-amber-700 dark:text-amber-500" : undefined}>
+            <span className={parseConfidence === "low" ? "text-money" : undefined}>
               {t(CONF_KEY[parseConfidence])}
             </span>
           </Fact>

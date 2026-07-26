@@ -478,7 +478,7 @@ export default async function BikeDetailPage({
                     className={
                       coverageDaysLeft != null &&
                       coverageDaysLeft <= EXPIRY_WARNING_DAYS
-                        ? "text-xs font-medium text-amber-600 dark:text-amber-500"
+                        ? "text-xs font-medium text-money"
                         : "text-muted-foreground text-xs"
                     }
                   >

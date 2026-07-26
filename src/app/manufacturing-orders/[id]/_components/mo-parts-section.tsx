@@ -438,7 +438,7 @@ function RecipeLine({
           className={`tabular-nums ${
             shortfall > 0
               ? "text-destructive font-medium"
-              : "text-emerald-700 dark:text-emerald-400"
+              : "text-good"
           }`}
         >
           {shortfall > 0

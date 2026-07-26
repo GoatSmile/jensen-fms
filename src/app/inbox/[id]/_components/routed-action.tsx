@@ -101,7 +101,7 @@ export function RoutedAction({
       {ticketId ? (
         <p className="inline-flex items-center gap-2 text-sm">
           <Check
-            className="size-4 text-emerald-600 dark:text-emerald-400"
+            className="size-4 text-good"
             aria-hidden
           />
           {t("ticketCreatedLabel")}{" "}
@@ -116,7 +116,7 @@ export function RoutedAction({
         <div className="flex flex-wrap items-center gap-3">
           <p className="inline-flex items-center gap-2 text-sm">
             <CheckCheck
-              className="size-4 text-emerald-600 dark:text-emerald-400"
+              className="size-4 text-good"
               aria-hidden
             />
             {t("handledLabel")}

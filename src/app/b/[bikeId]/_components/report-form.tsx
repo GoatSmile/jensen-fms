@@ -101,8 +101,8 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
 
   if (phase.kind === "submitted") {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border bg-emerald-50 p-6 text-center dark:bg-emerald-500/10">
-        <CheckCircle2 className="text-emerald-600 dark:text-emerald-400 size-10" aria-hidden />
+      <div className="flex flex-col items-center gap-3 rounded-lg border bg-good-wash p-6 text-center">
+        <CheckCircle2 className="text-good size-10" aria-hidden />
         <h2 className="text-lg font-semibold">Thanks — we have your report.</h2>
         <p className="text-muted-foreground text-sm">
           Reference:{" "}
@@ -113,7 +113,7 @@ export function ReportForm({ bikeId, frameNumber }: Props) {
           <span className="font-mono">{frameNumber}</span>.
         </p>
         {phase.photoWarning ? (
-          <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+          <p className="mt-2 rounded-md border border-money/30 bg-money-wash px-3 py-2 text-sm text-money">
             {phase.photoWarning}
           </p>
         ) : null}

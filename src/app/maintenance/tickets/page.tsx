@@ -243,7 +243,7 @@ export default async function MaintenanceTicketsPage({
                         ) : (
                           // Customer report via /report/help — no bike id
                           // yet; staff triages from here.
-                          <div className="text-amber-700 dark:text-amber-400 text-xs italic">
+                          <div className="text-money text-xs italic">
                             {t("needsTriage")}
                           </div>
                         )}

@@ -97,7 +97,7 @@ export default async function AdminSuppliersPage({
       </header>
 
       {gap ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/20">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-buy-wash px-4 py-3 text-sm">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">
               {t("gapTitle", { count: rows.length })}

@@ -400,33 +400,34 @@ cross-cutting. Original SQL files live in `/migrations/`.
   "Emalje", locked 2026-07-26; Geist with **no display face**, so nothing
   falls back if the meanings drift). Closed list — a seventh meaning is a
   decision, not a styling choice: **`brand`** = nav / primary action ·
-  **`money`** = invoicing, revenue · **`good`** = ready, in stock, on
-  schedule · **`alert`** = overdue, blocked, out · **`buy`** = purchasing,
-  suppliers, landed cost · **`system`** = admin, agreements, config.
+  **`money`** = invoicing, revenue, **and caution** · **`good`** = ready, in
+  stock, on schedule · **`alert`** = **genuine alarm only** · **`buy`** =
+  purchasing, suppliers, landed cost · **`system`** = admin, agreements,
+  config. Amber-as-caution is `money` (ochre), never `alert` — red must stay
+  scarce or nothing reads as urgent.
   - **Use the tokens, never raw Tailwind palette colours** —
     `bg-money-wash` / `text-good` / `border-rule`, not `bg-amber-50`.
     Raw palette colours don't inherit the theme and are cooler than B's
-    measured set; that mix is what turns a colour system into fruit salad.
+    measured set — that mix is fruit salad. Text on a filled hue uses
+    `text-on-{hue}`, never `text-white`. Exempt (decorative identity, not
+    meaning): `bike-templates/family-colors.ts`, `kits/colors.ts`.
     The old four-hue tint vocabulary is **superseded**: sky/blue →
     `brand`, emerald/green → `good`, amber → `money` (or `alert` where it
     meant *warning*), violet → `system`, rose/red → `alert`.
-  - **Contrast is a gate.** Every hue/wash pair is measured ≥ 4.5:1 in
-    both themes and the values are hex on purpose (see the `globals.css`
-    header). A 12px bold uppercase eyebrow is **not** "large text". Text
-    on a filled accent uses `--on-brand` / `--on-alert`, which flip per
-    theme — never a fixed near-white.
-  - **Colour is never the only carrier**: status pills keep their text
-    labels (*Out*, *Low*).
+  - **Contrast is a gate.** Every hue/wash pair is measured ≥ 4.5:1 in both
+    themes; the values are hex on purpose (see the `globals.css` header). A
+    12px bold uppercase eyebrow is **not** "large text". And colour is never
+    the only carrier — status pills keep their labels (*Out*, *Low*).
   - `--radius` is `1rem`; buttons are pills except inside a button group.
 - **Section tinting.** Only pages stacking *different kinds* of section
   (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`, ticket +
-  agreement details) fill each section with its domain's wash; inner
-  tables/chips sit on `bg-surface`. Never tint homogeneous entity-detail or
-  single-list pages — colour is meaningful only while scarce. Part detail
-  and SO detail tint partially, since they genuinely stack foreign domains;
-  section order = descending question frequency. Workbench banners don't
-  tint. Exception: "Push to e-conomic" wears e-conomic orange `#ef7d00`
-  (hover `#e86807`) + `EconomicMark` — destination branding, not vocabulary.
+  agreement details) fill each section with its domain's wash via `hue`;
+  inner tables/chips sit on `bg-surface`. Never tint homogeneous
+  entity-detail or single-list pages — colour is meaningful only while
+  scarce. Part detail and SO detail tint partially, since they genuinely
+  stack foreign domains; section order = descending question frequency.
+  Workbench banners don't tint. Exception: "Push to e-conomic" wears
+  e-conomic orange `#ef7d00` + `EconomicMark` — destination branding.
 - Plan-then-build: before writing code, list files you intend to
   create/modify and wait for confirmation.
 - Time estimates quoted as `~X human-dev-min (Y min wait)` — X is the

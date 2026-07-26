@@ -222,7 +222,7 @@ export function BatchBuildGrid({
       {summary ? (
         <div className="flex flex-col gap-1.5 rounded-md border p-3 text-sm">
           <p>
-            <span className="font-medium text-emerald-700 dark:text-emerald-400">
+            <span className="font-medium text-good">
               {t("builtSummary", { count: summary.built })}
             </span>
             {summary.skipped > 0 ? (

@@ -65,7 +65,7 @@ export async function PaymentsSection({
     <Section
       title={t("paymentsTitle")}
       description={t("paymentsDesc")}
-      className="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+      className="bg-money-wash"
       contentClassName="flex flex-col gap-3"
       action={
         canDeposit ? (
@@ -99,7 +99,7 @@ export async function PaymentsSection({
           </div>
           <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
             <div
-              className="bg-emerald-500 h-full rounded-full transition-all"
+              className="bg-good h-full rounded-full transition-all"
               style={{ width: `${pct}%` }}
             />
           </div>

@@ -161,11 +161,11 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">
-                      <span className="size-1.5 rounded-full bg-amber-500" aria-hidden />
+                      <span className="size-1.5 rounded-full bg-money" aria-hidden />
                       {t("statusPending")}
                     </SelectItem>
                     <SelectItem value="verified">
-                      <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                      <span className="size-1.5 rounded-full bg-good" aria-hidden />
                       {t("statusVerified")}
                     </SelectItem>
                   </SelectContent>
@@ -197,7 +197,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
                   disabled={r.value.trim() === ""}
                 >
                   {copiedIdx === i ? (
-                    <Check className="text-emerald-600" aria-hidden />
+                    <Check className="text-good" aria-hidden />
                   ) : (
                     <Copy aria-hidden />
                   )}
@@ -227,7 +227,7 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="text-sm text-good" role="status">
           {success}
         </p>
       ) : null}

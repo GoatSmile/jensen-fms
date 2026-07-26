@@ -135,7 +135,7 @@ export function POHeader({
                   <span className="font-mono">
                     {emailedTo.startsWith("test:") ? (
                       <>
-                        <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                        <span className="rounded bg-money-wash px-1 py-0.5 text-[10px] font-medium text-money">
                           {t("testBadge")}
                         </span>{" "}
                         {emailedTo.slice(5)}
@@ -316,7 +316,7 @@ function EmailSupplierDialog({
             </UiDialogHeader>
 
             {testMode ? (
-              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+              <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
                 {t.rich("testModeBanner", {
                   recipients: testRecipients ?? t("noTestInbox"),
                   mono: (chunks) => (

@@ -85,7 +85,7 @@ export function EconomicSettingsForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {!tokensReady ? (
-        <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+        <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
           {t("economicTokensMissing")}
         </p>
       ) : null}
@@ -226,7 +226,7 @@ export function EconomicSettingsForm({
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
       {success ? (
         <p
-          className="text-sm text-emerald-700 dark:text-emerald-400"
+          className="text-sm text-good"
           role="status"
         >
           {success}

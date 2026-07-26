@@ -110,7 +110,7 @@ export async function SuppliersSection({ rows }: { rows: SupplierRow[] }) {
                         {row.emailPrimary ? (
                           <span className="break-all">{row.emailPrimary}</span>
                         ) : (
-                          <span className="font-sans text-amber-700 dark:text-amber-400">
+                          <span className="font-sans text-money">
                             {t("setEmail")}
                           </span>
                         )}

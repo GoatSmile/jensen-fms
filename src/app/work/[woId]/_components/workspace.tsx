@@ -128,7 +128,7 @@ export function Workspace({
           description={t("diagnosisDescription")}
           icon={
             <AlertTriangle
-              className="size-4 text-amber-600"
+              className="size-4 text-money"
               aria-hidden
             />
           }
@@ -147,7 +147,7 @@ export function Workspace({
           description={t("workPerformedDescription")}
           icon={
             <CheckCircle2
-              className="size-4 text-emerald-600"
+              className="size-4 text-good"
               aria-hidden
             />
           }
@@ -219,7 +219,7 @@ export function Workspace({
                 size="lg"
                 onClick={() => onTransition("in_progress")}
                 disabled={transitioning}
-                className="h-14 flex-1 bg-blue-600 text-base font-semibold text-white hover:bg-blue-700"
+                className="h-14 flex-1 bg-brand text-on-brand text-base font-semibold hover:bg-brand"
               >
                 <Play className="size-5" aria-hidden />
                 {transitioning ? t("starting") : t("startWork")}
@@ -251,7 +251,7 @@ export function Workspace({
                       size="lg"
                       onClick={() => onTransition("completed")}
                       disabled={transitioning}
-                      className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
+                      className="h-14 flex-1 bg-good text-on-good text-base font-semibold hover:bg-good"
                     >
                       <CheckCircle2 className="size-5" aria-hidden />
                       {transitioning ? t("completing") : t("confirmFinish")}
@@ -264,7 +264,7 @@ export function Workspace({
                   size="lg"
                   onClick={() => setConfirmingComplete(true)}
                   disabled={transitioning}
-                  className="h-14 flex-1 bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700"
+                  className="h-14 flex-1 bg-good text-on-good text-base font-semibold hover:bg-good"
                 >
                   <CheckCircle2 className="size-5" aria-hidden />
                   {t("markDone")}

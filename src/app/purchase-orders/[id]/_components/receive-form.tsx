@@ -238,7 +238,7 @@ export function ReceiveForm({
                       <TableCell
                         className={`text-right tabular-nums font-medium ${
                           outstanding === 0
-                            ? "text-emerald-700 dark:text-emerald-400"
+                            ? "text-good"
                             : ""
                         }`}
                       >
@@ -267,7 +267,7 @@ export function ReceiveForm({
                             {t("poClosed")}
                           </span>
                         ) : line.landedDkkPerUnit == null ? (
-                          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                          <span className="text-xs font-medium text-money">
                             {t("enterPriceFirst")}
                           </span>
                         ) : (
@@ -308,7 +308,7 @@ export function ReceiveForm({
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="text-sm text-good" role="status">
           {success}
         </p>
       ) : null}

@@ -96,7 +96,7 @@ export function CoverageSection({
       {result ? (
         result.ok ? (
           <div
-            className="border-b bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+            className="border-b bg-good-wash px-4 py-3 text-sm text-good"
             role="status"
           >
             <p>
@@ -150,7 +150,7 @@ export function CoverageSection({
               ))}
             </ul>
           ) : (
-            <p className="flex items-center gap-2 p-4 text-sm text-emerald-700 dark:text-emerald-400">
+            <p className="flex items-center gap-2 p-4 text-sm text-good">
               <CheckCircle2 className="size-4" aria-hidden />
               {t("stockCoversAll", { count: remainingToBuild })}
             </p>
@@ -212,7 +212,7 @@ function CoverageLine({ row, short }: { row: CoverageRow; short?: boolean }) {
             {t("shortBy", { qty: formatQuantity(row.shortfall) })}
           </span>
         ) : (
-          <span className="ml-2 text-emerald-700 dark:text-emerald-400">
+          <span className="ml-2 text-good">
             {t("ok")}
           </span>
         )}

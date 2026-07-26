@@ -199,18 +199,18 @@ export default async function TicketDetailPage({
       />
 
       {inboundMsg ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
+        <div className="rounded-md border border-money/30 bg-money-wash px-4 py-3 text-sm">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <PhoneCall
-              className="size-4 text-amber-700 dark:text-amber-500"
+              className="size-4 text-money"
               aria-hidden
             />
-            <span className="font-medium text-amber-800 dark:text-amber-300">
+            <span className="font-medium text-money">
               {t("fromInboundBanner")}
             </span>
             <Link
               href={`/inbox/${inboundMsg.id}`}
-              className="text-amber-800 underline dark:text-amber-300"
+              className="text-money underline"
             >
               {t("reviewInbound")}
             </Link>
@@ -308,7 +308,7 @@ export default async function TicketDetailPage({
         <div className="flex flex-col gap-6">
           <Section
             title={t("bikeTitle")}
-            className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+            className="bg-brand-wash"
           >
             <dl className="flex flex-col gap-3">
               <Field label={t("frameNumber")}>
@@ -349,7 +349,7 @@ export default async function TicketDetailPage({
 
           <Section
             title={t("reporterTitle")}
-            className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+            className="bg-good-wash"
           >
             {contact ? (
               <dl className="flex flex-col gap-3">

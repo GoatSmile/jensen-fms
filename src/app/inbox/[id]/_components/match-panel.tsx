@@ -219,12 +219,12 @@ function CandidateGroup({
         {rows.length === 0 ? (
           <span className="text-muted-foreground text-xs">— {noneText}</span>
         ) : matchedId ? (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-xs text-good">
             <Check className="size-3.5" aria-hidden />
             {attachedText}
           </span>
         ) : (
-          <span className="text-xs text-amber-700 dark:text-amber-500">
+          <span className="text-xs text-money">
             {reviewText} ({rows.length})
           </span>
         )}
@@ -237,7 +237,7 @@ function CandidateGroup({
               className={cn(
                 "flex items-center justify-between gap-2 rounded border px-2.5 py-1.5 text-sm",
                 r.id === matchedId
-                  ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40"
+                  ? "bg-good-wash"
                   : "bg-background",
               )}
             >

@@ -241,7 +241,7 @@ export default async function BikeTemplateDetailPage({
       </Breadcrumb>
 
       {!tpl.is_current ? (
-        <div className="bg-amber-50 text-amber-900 dark:bg-amber-500/10 dark:text-amber-300 rounded-md border border-amber-300 px-3 py-2 text-sm">
+        <div className="bg-money-wash text-money rounded-md border border-money/30 px-3 py-2 text-sm">
           {t("pastVersionBanner", { version: tpl.version })}
         </div>
       ) : null}

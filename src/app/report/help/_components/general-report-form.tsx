@@ -42,7 +42,7 @@ export function GeneralReportForm() {
 
   if (submitted) {
     return (
-      <div className="flex flex-col gap-3 rounded-md border border-green-600/30 bg-green-50 p-4 text-sm dark:bg-green-950/30">
+      <div className="flex flex-col gap-3 rounded-md border bg-good-wash p-4 text-sm">
         <h3 className="font-semibold">Thanks — we&rsquo;ll be in touch.</h3>
         <p>
           Your message has been received. We&rsquo;ll contact you using the

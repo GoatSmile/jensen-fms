@@ -65,7 +65,7 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
     <section className="bg-card flex flex-col gap-3 rounded-md border border-l-[3px] border-l-indigo-600 p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Wrench className="size-4 text-indigo-600" aria-hidden />
+          <Wrench className="size-4 text-ink-2" aria-hidden />
           <h2 className="text-sm font-semibold">{t("partsTitle")}</h2>
           <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
             {rows.length === 0 ? (

@@ -101,7 +101,7 @@ export default async function AdminSettingsPage() {
 
       <ReportUrlCard />
 
-      <section className="rounded-md border border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20">
+      <section className="rounded-md border bg-system-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("languageHeading")}</h2>
           <p className="text-muted-foreground text-xs">
@@ -116,7 +116,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+      <section className="rounded-md border bg-good-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("communicationHeading")}</h2>
           <p className="text-muted-foreground text-xs">
@@ -134,7 +134,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+      <section className="rounded-md border bg-good-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("dnsHeading")}</h2>
           <p className="text-muted-foreground text-xs">{t("dnsDescription")}</p>
@@ -147,7 +147,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
+      <section className="rounded-md border bg-buy-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("accountingHeading")}</h2>
           <p className="text-muted-foreground text-xs">
@@ -188,7 +188,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20">
+      <section className="rounded-md border bg-brand-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("inboundHeading")}</h2>
           <p className="text-muted-foreground text-xs">
@@ -220,7 +220,7 @@ export default async function AdminSettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-md border border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20">
+      <section className="rounded-md border bg-buy-wash">
         <header className="border-b px-4 py-3">
           <h2 className="text-sm font-semibold">{t("purchasingHeading")}</h2>
           <p className="text-muted-foreground text-xs">

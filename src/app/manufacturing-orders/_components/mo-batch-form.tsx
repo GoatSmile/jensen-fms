@@ -546,7 +546,7 @@ export function MOBatchForm({
                   {t("partsCoverage")}
                 </span>
                 {coverage.shortfall.length === 0 ? (
-                  <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                  <span className="font-medium text-good">
                     {t("allPartsInStock", { count: coverage.totalParts })}
                   </span>
                 ) : (

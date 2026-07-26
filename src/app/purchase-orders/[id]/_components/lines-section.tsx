@@ -210,7 +210,7 @@ export function LinesSection({
                       </TableCell>
                       <TableCell className="hidden text-right tabular-nums sm:table-cell">
                         {row.unitPrice == null ? (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                          <span className="rounded bg-money-wash px-1.5 py-0.5 text-[10px] font-medium text-money">
                             {t("pricePending")}
                           </span>
                         ) : (
@@ -258,7 +258,7 @@ export function LinesSection({
                           <div
                             className={
                               row.importTaxBasis === "unclassified"
-                                ? "text-[10px] text-amber-700 dark:text-amber-400"
+                                ? "text-[10px] text-money"
                                 : "text-muted-foreground text-[10px]"
                             }
                           >

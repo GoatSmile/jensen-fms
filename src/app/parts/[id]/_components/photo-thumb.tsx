@@ -79,7 +79,7 @@ export function PhotoThumb({
       {isHero ? (
         <Badge
           variant="default"
-          className="absolute top-1.5 left-1.5 gap-1 bg-amber-500/90 text-white"
+          className="absolute top-1.5 left-1.5 gap-1 bg-money/90 text-on-money"
         >
           <Star className="size-3 fill-current" /> {t("heroBadge")}
         </Badge>

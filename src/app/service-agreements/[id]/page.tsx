@@ -146,7 +146,7 @@ export default async function ServiceAgreementDetailPage({
 
       <Section
         title={t("detailsTitle")}
-        className="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
+        className="bg-system-wash"
       >
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <ReadField label={t("fldCustomer")} value={orgName} />
@@ -184,7 +184,7 @@ export default async function ServiceAgreementDetailPage({
             ? t("bikesDescUnit")
             : t("bikesDescOrg")
         }
-        className="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+        className="bg-good-wash"
       >
         {!bikes || bikes.length === 0 ? (
           <p className="text-muted-foreground text-sm">
@@ -210,7 +210,7 @@ export default async function ServiceAgreementDetailPage({
       <Section
         title={t("coveredWos", { count: workOrders?.length ?? 0 })}
         description={t("coveredWosDesc")}
-        className="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+        className="bg-brand-wash"
       >
         {!workOrders || workOrders.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("noWos")}</p>

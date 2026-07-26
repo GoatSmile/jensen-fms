@@ -148,7 +148,7 @@ export function CommunicationSettingsForm({
         </p>
       ) : null}
       {success ? (
-        <p className="text-sm text-emerald-700 dark:text-emerald-400" role="status">
+        <p className="text-sm text-good" role="status">
           {success}
         </p>
       ) : null}

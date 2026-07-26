@@ -77,7 +77,7 @@ export function DefaultSuppliersForm({ serviceTypes, suppliers }: Props) {
               ))}
             </select>
             {savedId === st.id && !pending ? (
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+              <span className="inline-flex items-center gap-1 text-xs text-good">
                 <Check className="size-3.5" aria-hidden />
                 {t("saved")}
               </span>

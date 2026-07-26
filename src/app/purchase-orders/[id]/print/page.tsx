@@ -68,7 +68,7 @@ export default async function PurchaseOrderPrintPage({
             ← Back to the PO
           </Link>
           {doc.hasUnpricedLines ? (
-            <span className="ml-3 text-amber-700 dark:text-amber-400">
+            <span className="ml-3 text-money">
               Some lines have no price yet — they print as “price pending”.
             </span>
           ) : null}

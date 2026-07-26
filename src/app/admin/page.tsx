@@ -160,7 +160,7 @@ export default async function AdminLandingPage() {
       <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AdminGroup
           title={t("groupCatalog")}
-          tint="border-sky-200/70 bg-sky-50/70 dark:border-sky-900/40 dark:bg-sky-950/20"
+          tint="bg-brand-wash"
         >
           <Tile
             href="/admin/categories"
@@ -201,7 +201,7 @@ export default async function AdminLandingPage() {
 
         <AdminGroup
           title={t("groupPurchasing")}
-          tint="border-amber-200/70 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20"
+          tint="bg-buy-wash"
         >
           <Tile
             href="/admin/suppliers"
@@ -239,7 +239,7 @@ export default async function AdminLandingPage() {
 
         <AdminGroup
           title={t("groupCustomers")}
-          tint="border-emerald-200/70 bg-emerald-50/70 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+          tint="bg-good-wash"
         >
           <Tile
             href="/admin/customer-segments"
@@ -259,7 +259,7 @@ export default async function AdminLandingPage() {
 
         <AdminGroup
           title={t("groupSystem")}
-          tint="border-violet-200/70 bg-violet-50/70 dark:border-violet-900/40 dark:bg-violet-950/20"
+          tint="bg-system-wash"
         >
           <Tile
             href="/admin/people"

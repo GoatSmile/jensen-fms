@@ -184,8 +184,8 @@ export function IdentifierDialog({
               <p
                 className={`text-xs ${
                   regexHint.ok
-                    ? "text-emerald-700 dark:text-emerald-400"
-                    : "text-amber-700 dark:text-amber-300"
+                    ? "text-good"
+                    : "text-alert"
                 }`}
               >
                 {regexHint.ok

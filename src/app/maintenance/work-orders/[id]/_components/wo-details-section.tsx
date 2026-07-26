@@ -210,7 +210,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
         </div>
         {Number(values.labor_minutes) > 0 && !values.labor_rate_dkk.trim() ? (
           <p
-            className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300"
+            className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money"
             role="alert"
           >
             {t("laborNoRateWarning")}
@@ -237,7 +237,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
           </p>
         ) : null}
         {success ? (
-          <p className="text-emerald-700 dark:text-emerald-400 text-sm">
+          <p className="text-good text-sm">
             {success}
           </p>
         ) : null}

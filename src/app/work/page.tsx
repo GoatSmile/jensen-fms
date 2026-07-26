@@ -207,7 +207,7 @@ export default async function WorkQueuePage({
                   <div
                     aria-hidden
                     className={`w-1.5 shrink-0 ${
-                      inProgress ? "bg-blue-600" : "bg-amber-500"
+                      inProgress ? "bg-brand" : "bg-money"
                     }`}
                   />
                   <div className="flex-1 p-4">
@@ -218,11 +218,11 @@ export default async function WorkQueuePage({
                             {wo.wo_number}
                           </span>
                           {inProgress ? (
-                            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">
+                            <span className="rounded-full bg-brand-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-ink">
                               {t("chipInProgress")}
                             </span>
                           ) : (
-                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                            <span className="rounded-full bg-money-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-money">
                               {t("chipOpen")}
                             </span>
                           )}
@@ -252,7 +252,7 @@ export default async function WorkQueuePage({
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1.5">
                         {elapsed ? (
-                          <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium tabular-nums text-blue-700">
+                          <span className="rounded-md bg-brand-wash px-2 py-0.5 text-[11px] font-medium tabular-nums text-brand-ink">
                             {elapsed}
                           </span>
                         ) : null}
@@ -360,7 +360,7 @@ function BuildStream({
             <div
               aria-hidden
               className={`w-1.5 shrink-0 ${
-                b.ready ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"
+                b.ready ? "bg-good" : "bg-ink-3"
               }`}
             />
             <div className="flex-1 p-4">
@@ -371,11 +371,11 @@ function BuildStream({
                       {b.moNumber}
                     </span>
                     {b.ready ? (
-                      <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      <span className="rounded-full bg-good-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-good">
                         {t("chipReady")}
                       </span>
                     ) : (
-                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      <span className="rounded-full bg-money-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-money">
                         {b.atSupplier
                           ? t("chipAtPainter")
                           : t("chipPartsShort", { count: b.shortfallCount })}
@@ -402,7 +402,7 @@ function BuildStream({
                     </div>
                   ) : null}
                   {b.buildNote ? (
-                    <div className="mt-1 flex items-start gap-1 text-amber-700 dark:text-amber-300">
+                    <div className="mt-1 flex items-start gap-1 text-money">
                       <Tag className="mt-0.5 size-3 shrink-0" aria-hidden />
                       <span className="line-clamp-2 text-xs" title={b.buildNote}>
                         {b.buildNote}

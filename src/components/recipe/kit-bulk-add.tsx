@@ -155,7 +155,7 @@ export function KitBulkAdd({
         </p>
       ) : note ? (
         <p
-          className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400"
+          className="mt-1.5 text-xs text-good"
           role="status"
         >
           {note}

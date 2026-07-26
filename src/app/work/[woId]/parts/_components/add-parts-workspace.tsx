@@ -194,7 +194,7 @@ export function AddPartsWorkspace({
         ) : null}
         {notice ? (
           <p
-            className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300"
+            className="rounded-md border bg-good-wash p-3 text-sm text-good"
             role="status"
           >
             {notice}

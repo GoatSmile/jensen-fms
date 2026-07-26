@@ -114,7 +114,7 @@ export function LabelBomKit({
         </p>
       ) : null}
       {success ? (
-        <p className="mt-2 text-xs text-emerald-700">{success}</p>
+        <p className="mt-2 text-xs text-good">{success}</p>
       ) : null}
     </Section>
   );

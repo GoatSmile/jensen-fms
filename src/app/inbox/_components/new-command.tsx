@@ -35,7 +35,7 @@ export function NewCommand() {
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-md border border-emerald-200/70 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+    <section className="flex flex-col gap-2 rounded-md border bg-good-wash p-4">
       <div className="flex items-center gap-2">
         <Sparkles className="text-muted-foreground size-4" aria-hidden />
         <h2 className="text-sm font-semibold">{t("newTitle")}</h2>

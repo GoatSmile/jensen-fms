@@ -103,7 +103,7 @@ export function LanguageSettingsForm({
       ) : null}
       {success ? (
         <p
-          className="text-sm text-emerald-700 dark:text-emerald-400"
+          className="text-sm text-good"
           role="status"
         >
           {success}

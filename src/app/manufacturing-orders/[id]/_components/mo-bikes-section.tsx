@@ -50,14 +50,19 @@ type Props = {
 
 /** Display order + strip colours for the per-status progress segments. */
 const STATUS_ORDER: { status: BikeStatus; barClass: string }[] = [
-  { status: "planning", barClass: "bg-slate-300 dark:bg-slate-600" },
-  { status: "building", barClass: "bg-amber-400" },
-  { status: "in_stock", barClass: "bg-emerald-500" },
-  { status: "assigned", barClass: "bg-blue-500" },
-  { status: "in_service", barClass: "bg-emerald-700" },
-  { status: "in_maintenance", barClass: "bg-amber-600" },
-  { status: "retired", barClass: "bg-slate-400" },
-  { status: "lost_or_stolen", barClass: "bg-red-500" },
+  // Eight states out of six hues: the old ladder leaned on lightness steps
+  // within a family (amber-400 vs amber-600), which tokens don't have, so the
+  // gradation comes from alpha instead. Only lost_or_stolen is a genuine
+  // alarm — `building` was amber, and painting normal progress red would say
+  // something the workshop doesn't mean.
+  { status: "planning", barClass: "bg-ink-3/40" },
+  { status: "building", barClass: "bg-brand/60" },
+  { status: "in_stock", barClass: "bg-good" },
+  { status: "assigned", barClass: "bg-brand" },
+  { status: "in_service", barClass: "bg-good/60" },
+  { status: "in_maintenance", barClass: "bg-money" },
+  { status: "retired", barClass: "bg-ink-3" },
+  { status: "lost_or_stolen", barClass: "bg-alert" },
 ];
 
 /** Rows rendered before the "Show all" expander kicks in. */
@@ -242,19 +247,19 @@ export function MOBikesSection({
       ) : null}
       {notice && !error ? (
         <p
-          className="mb-3 text-sm text-emerald-700 dark:text-emerald-400"
+          className="mb-3 text-sm text-good"
           role="status"
         >
           {notice}
         </p>
       ) : null}
       {!closed && unconfirmedCount > 0 ? (
-        <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+        <p className="mb-3 text-xs text-money">
           {t("unconfirmedNote", { count: unconfirmedCount })}
         </p>
       ) : null}
       {!closed && atPainterCount > 0 ? (
-        <p className="mb-3 text-xs text-amber-700 dark:text-amber-300">
+        <p className="mb-3 text-xs text-money">
           {t("atPainterNote", { count: atPainterCount })}
         </p>
       ) : null}
@@ -421,7 +426,7 @@ function BikeRow({
         </Link>
         {needsFrame ? (
           <span
-            className="ml-2 align-middle text-[10px] font-sans text-amber-700 dark:text-amber-300"
+            className="ml-2 align-middle text-[10px] font-sans text-money"
             title={t("provisionalTitle")}
           >
             {t("provisional")}
@@ -458,7 +463,7 @@ function BikeRow({
           className={
             row.requiredIdentifierCount > 0 &&
             row.identifierCount < row.requiredIdentifierCount
-              ? "text-amber-700 dark:text-amber-300"
+              ? "text-money"
               : "text-muted-foreground"
           }
         >

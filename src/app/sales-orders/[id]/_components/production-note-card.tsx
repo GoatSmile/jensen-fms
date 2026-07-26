@@ -59,9 +59,9 @@ export function ProductionNoteCard({
   }
 
   return (
-    <section className="rounded-md border border-sky-300/60 bg-sky-50/50 dark:border-sky-900/50 dark:bg-sky-950/20">
-      <header className="flex items-center justify-between gap-2 border-b border-sky-300/40 px-4 py-2.5 dark:border-sky-900/40">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-sky-900 dark:text-sky-200">
+    <section className="rounded-md border bg-brand-wash">
+      <header className="flex items-center justify-between gap-2 border-b border-brand/30 px-4 py-2.5">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-brand-ink">
           <Tag className="size-3.5" aria-hidden />
           {t("productionNoteTitle")}
         </h2>
@@ -104,7 +104,7 @@ export function ProductionNoteCard({
             </div>
           </div>
         ) : hasNote ? (
-          <p className="text-sm whitespace-pre-wrap text-sky-950 dark:text-sky-100">
+          <p className="text-sm whitespace-pre-wrap text-brand-ink">
             {note}
           </p>
         ) : (

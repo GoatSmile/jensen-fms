@@ -175,7 +175,7 @@ export function SubstitutePartDialog({
                             {t("alreadyOnMo")}
                           </span>
                         ) : isPicked ? (
-                          <span className="text-emerald-700 dark:text-emerald-400 text-xs">
+                          <span className="text-good text-xs">
                             {t("selected")}
                           </span>
                         ) : null}

@@ -44,7 +44,7 @@ export function DraftFeeInvoicesButton() {
       </div>
       {result ? (
         result.ok ? (
-          <p className="text-sm text-emerald-800 dark:text-emerald-300" role="status">
+          <p className="text-sm text-good" role="status">
             {t("draftedPrefix")}
             {result.invoices.map((inv, i) => (
               <span key={inv.id}>

@@ -168,7 +168,7 @@ export function ServiceOrderItemsSection({
               </div>
             ) : null}
             {unpricedCount > 0 ? (
-              <p className="text-right text-xs text-amber-600 dark:text-amber-500">
+              <p className="text-right text-xs text-money">
                 {t("unpricedWarning", { count: unpricedCount })}
               </p>
             ) : null}
@@ -177,7 +177,7 @@ export function ServiceOrderItemsSection({
       )}
 
       {canEdit && rows.length > 0 && priceListName == null ? (
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+        <p className="mt-2 text-xs text-money">
           {t("noPriceListWarning")}
         </p>
       ) : null}
@@ -337,7 +337,7 @@ function ItemRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-amber-600 dark:text-amber-500">
+          <span className="text-money">
             {t("noPrice")}
           </span>
         )}

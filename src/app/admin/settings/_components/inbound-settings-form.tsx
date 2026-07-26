@@ -345,7 +345,7 @@ export function InboundSettingsForm(props: Props) {
         {error ? <p className="text-destructive text-sm">{error}</p> : null}
         {success ? (
           <p
-            className="text-sm text-emerald-700 dark:text-emerald-400"
+            className="text-sm text-good"
             role="status"
           >
             {success}
@@ -500,7 +500,7 @@ function ModelField({
       ) : null}
 
       {!loading && !listed && value.trim() && !manual ? (
-        <p className="text-xs text-amber-700 dark:text-amber-500">
+        <p className="text-xs text-money">
           {t("inboundModelUnlistedHint")}
         </p>
       ) : null}
@@ -512,7 +512,7 @@ function ModelField({
           className={cn(
             "inline-flex items-center gap-1 text-xs",
             testResult.ok
-              ? "text-emerald-700 dark:text-emerald-400"
+              ? "text-good"
               : "text-destructive",
           )}
           role="status"
@@ -579,8 +579,8 @@ function ProviderBlock({
               className={cn(
                 "inline-flex items-center gap-1 text-xs",
                 s.present
-                  ? "text-emerald-700 dark:text-emerald-400"
-                  : "text-amber-700 dark:text-amber-500",
+                  ? "text-good"
+                  : "text-alert",
               )}
             >
               {s.present ? (

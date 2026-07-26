@@ -45,12 +45,12 @@ export function ReorderBanner({ rows }: Props) {
   }
 
   return (
-    <section className="rounded-md border border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
+    <section className="rounded-md border border-money/30 bg-money-wash">
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-2 text-left text-sm font-medium text-amber-900 dark:text-amber-200"
+          className="flex items-center gap-2 text-left text-sm font-medium text-money"
         >
           {expanded ? (
             <ChevronDown className="size-4 shrink-0" aria-hidden />
@@ -69,7 +69,7 @@ export function ReorderBanner({ rows }: Props) {
       {result ? (
         result.ok ? (
           <div
-            className="border-t border-amber-200 px-4 py-2.5 text-sm text-emerald-800 dark:border-amber-900 dark:text-emerald-300"
+            className="border-t border-money/30 px-4 py-2.5 text-sm text-good"
             role="status"
           >
             {t("draftedPrefix")}
@@ -98,7 +98,7 @@ export function ReorderBanner({ rows }: Props) {
           </div>
         ) : (
           <p
-            className="text-destructive border-t border-amber-200 px-4 py-2.5 text-sm dark:border-amber-900"
+            className="text-destructive border-t border-money/30 px-4 py-2.5 text-sm"
             role="alert"
           >
             {result.error}
@@ -107,7 +107,7 @@ export function ReorderBanner({ rows }: Props) {
       ) : null}
 
       {expanded ? (
-        <ul className="divide-y divide-amber-200/70 border-t border-amber-200 dark:divide-amber-900/50 dark:border-amber-900">
+        <ul className="divide-y divide-amber-200/70 border-t border-money/30 dark:divide-amber-900/50">
           {rows.map((r) => (
             <li
               key={r.partId}

@@ -70,14 +70,14 @@ export function CategoryChecklistRow({
     <div
       className={`flex items-center justify-between gap-3 rounded-md border px-2.5 py-1.5 transition-colors ${
         done
-          ? "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-500/10"
+          ? "bg-good-wash"
           : ""
       }`}
     >
       <div className="flex min-w-0 items-center gap-2">
         {done ? (
           <Check
-            className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+            className="size-4 shrink-0 text-good"
             aria-label={t("doneAria")}
           />
         ) : (
@@ -91,7 +91,7 @@ export function CategoryChecklistRow({
         <span
           className={`shrink-0 text-[10px] tabular-nums ${
             done
-              ? "font-medium text-emerald-700 dark:text-emerald-400"
+              ? "font-medium text-good"
               : "text-muted-foreground"
           }`}
         >
@@ -143,13 +143,13 @@ export function CategoryChecklistRow({
                   disabled={already}
                   className={
                     already
-                      ? "bg-emerald-50/80 data-disabled:opacity-100 dark:bg-emerald-500/10"
+                      ? "bg-good-wash data-disabled:opacity-100"
                       : undefined
                   }
                 >
                   {already ? (
                     <Check
-                      className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      className="size-3.5 shrink-0 text-good"
                       aria-hidden
                     />
                   ) : null}

@@ -101,8 +101,8 @@ export function MOHeader({
         </p>
       ) : null}
       {readyToComplete ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2.5 dark:border-emerald-900 dark:bg-emerald-950/40">
-          <p className="text-sm text-emerald-800 dark:text-emerald-300">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border bg-good-wash px-4 py-2.5">
+          <p className="text-sm text-good">
             {t("readyBanner")}
           </p>
           <Button

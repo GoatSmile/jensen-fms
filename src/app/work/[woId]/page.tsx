@@ -147,12 +147,12 @@ export default async function WorkspacePage({
   // than "danger / warning."
   const bannerClass =
     status === "in_progress"
-      ? "bg-blue-600 text-white"
+      ? "bg-brand text-on-brand"
       : status === "open"
-        ? "bg-amber-500 text-amber-950"
+        ? "bg-money text-on-money"
         : status === "completed"
-          ? "bg-emerald-600 text-white"
-          : "bg-slate-400 text-white";
+          ? "bg-good text-on-good"
+          : "bg-ink-3 text-surface";
 
   const bannerSubtitle =
     status === "in_progress" && wo.started_at

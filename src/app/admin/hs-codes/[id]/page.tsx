@@ -155,7 +155,7 @@ export default async function HsCodeDetailPage({
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {p.tariff_pct_override != null ? (
-                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                      <span className="rounded-full bg-money-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-money">
                         {t("tariffOverride")}
                       </span>
                     ) : null}

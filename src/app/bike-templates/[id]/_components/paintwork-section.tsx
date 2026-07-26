@@ -132,7 +132,7 @@ export function PaintworkSection({
                 </div>
               ) : null}
               {unpricedCount > 0 ? (
-                <p className="text-right text-xs text-amber-600 dark:text-amber-500">
+                <p className="text-right text-xs text-money">
                   {t("unpricedLines", { count: unpricedCount })}
                 </p>
               ) : null}
@@ -141,7 +141,7 @@ export function PaintworkSection({
         )}
 
         {rows.length > 0 && listLabel == null ? (
-          <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+          <p className="mt-2 text-xs text-money">
             {t("noPriceList")}
           </p>
         ) : null}
@@ -233,7 +233,7 @@ function PaintworkRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-amber-600 dark:text-amber-500">
+          <span className="text-money">
             {t("noPrice")}
           </span>
         )}

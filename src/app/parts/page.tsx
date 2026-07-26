@@ -418,7 +418,7 @@ export default async function PartsPage({
       <ReorderBanner rows={reorderRows} />
 
       {gap ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200/70 bg-amber-50/70 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/20">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-money-wash px-4 py-3 text-sm">
           <div className="flex flex-col gap-0.5">
             <span className="font-medium">
               {t(GAP_FILTERS[gap].titleKey, { count: totalCount })}
