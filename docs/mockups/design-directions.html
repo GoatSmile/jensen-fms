@@ -1,91 +1,77 @@
 <!doctype html>
-<html lang="en" data-style="vaerksted" data-page="dashboard" data-theme="light" data-nav="full">
+<html lang="en" data-style="emalje" data-page="dashboard" data-theme="light" data-nav="grouped">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jensen FMS — design directions</title>
+<title>Jensen FMS — direction B, and the navigation question</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   Jensen FMS — three design directions, same content.
-   Static mock-up. No app code. Real data from the running app.
+   Jensen FMS — Direction B (Emalje), set in Geist.
+   Decisions locked 2026-07-26: keep Geist · A is out · keep B's
+   colour, shading and buttons · keep the Ægte Jensen wordmark.
+   The nav toggle is the live part: 14 flat items vs 7 groups.
+   Static mock-up. No app code.
    ============================================================ */
 
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;padding:0}
 
-/* ---------- STYLE: CURRENT (today's app) ---------- */
+/* ---------- CURRENT (today's app, for comparison) ---------- */
 html[data-style="current"]{
-  --ground:#ffffff; --surface:#ffffff; --raised:#ffffff;
+  --ground:#ffffff; --surface:#ffffff;
   --ink:#252525; --ink-2:#8e8e8e; --ink-3:#a3a3a3;
   --rule:#ebebeb; --rule-strong:#e0e0e0;
   --accent:#1e4a7a; --accent-ink:#1e4a7a; --accent-wash:#eef2f8;
   --money:#a16207; --money-wash:#fffbeb;
   --good:#047857; --good-wash:#ecfdf5;
   --alert:#dc2626; --alert-wash:#fef2f2;
-  --radius:.625rem; --radius-sm:.375rem;
-  --font-display:"Geist",sans-serif; --font-ui:"Geist",sans-serif;
+  --buy:#a16207; --buy-wash:#fffbeb;
+  --radius:.625rem; --radius-sm:.375rem; --radius-btn:.375rem;
   --panel-border:1px solid var(--rule); --panel-bg:var(--surface);
   --nav-icons:inline;
-  --shadow:none;
 }
 html[data-style="current"][data-theme="dark"]{
-  --ground:#252525; --surface:#343434; --raised:#343434;
+  --ground:#252525; --surface:#343434;
   --ink:#fafafa; --ink-2:#b4b4b4; --ink-3:#8a8a8a;
   --rule:#3f3f3f; --rule-strong:#4a4a4a;
   --accent:#6f9be0; --accent-ink:#9dbcec; --accent-wash:#2b3a52;
   --money:#d9a13a; --money-wash:#3a3020;
   --good:#4ec08d; --good-wash:#1e3329;
   --alert:#f0776b; --alert-wash:#3a2422;
+  --buy:#d9a13a; --buy-wash:#3a3020;
 }
 
-/* ---------- STYLE A: VÆRKSTED (paper + ink) ---------- */
-html[data-style="vaerksted"]{
-  --ground:#FAF8F3; --surface:#FFFFFF; --raised:#FFFFFF;
-  --ink:#322D28; --ink-2:#7D766D; --ink-3:#9C948A;
-  --rule:#E6E2DA; --rule-strong:#D6D0C4;
-  --accent:#1E5057; --accent-ink:#1E5057; --accent-wash:#E7EFEF;
-  --money:#9E7340; --money-wash:#F6EFE3;
-  --good:#4A7355; --good-wash:#EAF0EA;
-  --alert:#A33A26; --alert-wash:#F7E9E5;
-  --radius:.5rem; --radius-sm:.3125rem;
-  --font-display:"Fraunces",Georgia,serif; --font-ui:"Geist",sans-serif;
-  --panel-border:0; --panel-bg:transparent;
-  --nav-icons:none;
-  --shadow:none;
-}
-html[data-style="vaerksted"][data-theme="dark"]{
-  --ground:#22201D; --surface:#2B2825; --raised:#302D29;
-  --ink:#F2EEE7; --ink-2:#A69E93; --ink-3:#867E74;
-  --rule:#3B3733; --rule-strong:#4A453F;
-  --accent:#6FB0B4; --accent-ink:#8CC4C7; --accent-wash:#26383A;
-  --money:#C9A167; --money-wash:#37301F;
-  --good:#7FA98A; --good-wash:#23301F;
-  --alert:#D07A63; --alert-wash:#3A2520;
-}
-
-/* ---------- STYLE B: EMALJE (enamel / signal) ---------- */
+/* ---------- DIRECTION B — EMALJE, in Geist ---------- */
 html[data-style="emalje"]{
-  --ground:#FBFBF9; --surface:#FFFFFF; --raised:#FFFFFF;
-  --ink:#1C1C1A; --ink-2:#6B6B66; --ink-3:#918F89;
+  --ground:#FBFBF9; --surface:#FFFFFF;
+  --ink:#1C1C1A; --ink-2:#6B6B66;
+  /* #918F89 measured 3.23:1 on white — below AA for hint text. */
+  --ink-3:#75746F;
   --rule:#E9E9E4; --rule-strong:#DCDCD5;
   --accent:#2E5FD1; --accent-ink:#2E5FD1; --accent-wash:#EAF0FD;
-  --money:#A0742A; --money-wash:#FAF2E4;
+  /* money and buy were darkened from #A0742A / #B4522A: at 12px bold uppercase
+     the panel title is NOT "large text", so it needs the full 4.5:1 on its
+     wash and the originals measured 3.76:1 and 4.43:1. */
+  --money:#8E6725; --money-wash:#FAF2E4;
   --good:#10725A; --good-wash:#E6F4F0;
   --alert:#C0392B; --alert-wash:#FBEDEB;
-  --buy:#B4522A; --buy-wash:#FCEEE8;
+  --buy:#AF5029; --buy-wash:#FCEEE8;
   --system:#7A3A96; --system-wash:#F4ECF8;
-  --radius:1rem; --radius-sm:.5rem;
-  --font-display:"Bricolage Grotesque",sans-serif; --font-ui:"Geist",sans-serif;
+  /* Text that sits ON a filled accent / alert. Must flip in dark mode: the dark
+     accent is a LIGHT blue, so white-on-accent measures 2.59:1 — unreadable. */
+  --on-accent:#FFFFFF; --on-alert:#FFFFFF;
+  --radius:1rem; --radius-sm:.5rem; --radius-btn:999px;
   --panel-border:0; --panel-bg:var(--surface);
   --nav-icons:none;
-  --shadow:none;
 }
 html[data-style="emalje"][data-theme="dark"]{
-  --ground:#161615; --surface:#1F1F1E; --raised:#262625;
-  --ink:#F5F5F2; --ink-2:#9C9C96; --ink-3:#7A7A74;
+  --ground:#161615; --surface:#1F1F1E;
+  --ink:#F5F5F2; --ink-2:#9C9C96;
+  /* #7A7A74 measured 3.82:1 on the dark surface — lightened to clear AA. */
+  --ink-3:#898983;
   --rule:#2E2E2C; --rule-strong:#3A3A37;
   --accent:#7CA0EE; --accent-ink:#9BB8F3; --accent-wash:#1E2A44;
   --money:#D5A755; --money-wash:#332A18;
@@ -93,8 +79,9 @@ html[data-style="emalje"][data-theme="dark"]{
   --alert:#E2705F; --alert-wash:#331E1B;
   --buy:#DE8259; --buy-wash:#33211A;
   --system:#B27BC9; --system-wash:#2A1E33;
+  /* The flip: dark text on the light accent (7.00:1) instead of white (2.59:1). */
+  --on-accent:#161615; --on-alert:#161615;
 }
-/* Emalje: domain-tinted panels (the one idea borrowed into A's recommendation) */
 html[data-style="emalje"] .panel[data-domain="money"]{background:var(--money-wash)}
 html[data-style="emalje"] .panel[data-domain="build"]{background:var(--accent-wash)}
 html[data-style="emalje"] .panel[data-domain="service"]{background:var(--good-wash)}
@@ -109,7 +96,7 @@ html[data-style="emalje"] .panel[data-domain="alert"] .panel-title{color:var(--a
 /* ---------- BASE ---------- */
 body{
   background:var(--ground); color:var(--ink);
-  font-family:var(--font-ui);
+  font-family:"Geist",ui-sans-serif,system-ui,sans-serif;
   font-size:15px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
   transition:background .18s ease,color .18s ease;
@@ -118,15 +105,12 @@ a{color:inherit;text-decoration:none}
 h1,h2,h3{margin:0;font-weight:600}
 ul{margin:0;padding:0;list-style:none}
 .mono{font-family:"Geist Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.num{font-variant-numeric:tabular-nums}
 
-/* ---------- CONTROL BAR (mock-up chrome, not part of the design) ---------- */
+/* ---------- CONTROL BAR (mock-up chrome) ---------- */
 .controls{
   position:sticky;top:0;z-index:50;
   display:flex;flex-wrap:wrap;gap:1.25rem;align-items:center;
-  padding:.6rem 1rem;
-  background:#111;color:#fff;font-size:12px;
-  font-family:"Geist",sans-serif;
+  padding:.6rem 1rem;background:#111;color:#fff;font-size:12px;
 }
 .controls .grp{display:flex;gap:.35rem;align-items:center}
 .controls .lbl{opacity:.5;text-transform:uppercase;letter-spacing:.06em;font-size:10px;margin-right:.15rem}
@@ -137,281 +121,211 @@ ul{margin:0;padding:0;list-style:none}
 .controls button[aria-pressed="true"]{background:#fff;color:#111;border-color:#fff;font-weight:600}
 .controls .note{margin-left:auto;opacity:.45;font-size:11px}
 
-/* ---------- SHELL ---------- */
 .shell{display:flex;min-height:calc(100vh - 42px)}
 
-/* sidebar */
+/* ---------- SIDEBAR ---------- */
 .side{
-  width:264px;flex:0 0 264px;
-  border-right:1px solid var(--rule);
-  padding:0 0 1rem;
+  width:268px;flex:0 0 268px;padding:0 0 1rem;
   display:flex;flex-direction:column;
+  border-right:1px solid var(--rule);
 }
 html[data-style="emalje"] .side{border-right:0;background:var(--surface)}
-.brand{padding:1.1rem 1.25rem;border-bottom:1px solid var(--rule);margin-bottom:.75rem}
-html[data-style="emalje"] .brand{border-bottom:0}
-.brand svg{display:block;height:34px;width:auto}
-.brand .word{font-family:var(--font-display);font-size:1.05rem;letter-spacing:-.01em;font-weight:600}
+.brand{padding:1.1rem 1.25rem 1rem}
+html[data-style="current"] .brand{border-bottom:1px solid var(--rule)}
+.brand .word{font-size:1.05rem;font-weight:600;letter-spacing:-.015em}
 .brand .sub{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-top:.15rem}
 
-.navgroup{padding:0 .6rem;margin-bottom:.35rem}
-.navgroup + .navgroup{
+.navgroup{padding:0 .6rem}
+.navgroup + .navgroup{margin-top:.9rem}
+html[data-style="current"] .navgroup + .navgroup{
   margin-top:.5rem;padding-top:.6rem;border-top:1px solid var(--rule);
 }
-html[data-style="vaerksted"] .navgroup + .navgroup,
-html[data-style="emalje"] .navgroup + .navgroup{border-top:0;margin-top:1.1rem;padding-top:0}
 .navhead{
-  display:none;
-  font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--ink-3);padding:0 .65rem .45rem;
+  display:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 .65rem .4rem;
 }
-html[data-style="vaerksted"] .navhead,
 html[data-style="emalje"] .navhead{display:block}
+
 .navitem{
-  display:flex;align-items:center;gap:.6rem;
-  padding:.42rem .65rem;border-radius:var(--radius-sm);
-  color:var(--ink-2);font-size:14.5px;
+  display:flex;align-items:center;gap:.6rem;width:100%;
+  padding:.44rem .65rem;border-radius:var(--radius-sm);
+  color:var(--ink-2);font-size:14.5px;font-family:inherit;
+  background:none;border:0;cursor:pointer;text-align:left;
 }
-html[data-style="vaerksted"] .navitem{padding:.34rem .65rem}
 .navitem svg{display:var(--nav-icons);width:16px;height:16px;flex:0 0 16px;opacity:.75}
 .navitem:hover{color:var(--ink)}
 .navitem[aria-current="page"]{color:var(--accent-ink);background:var(--accent-wash);font-weight:500}
-html[data-style="vaerksted"] .navitem[aria-current="page"]{
-  background:transparent;color:var(--ink);font-weight:600;
-  box-shadow:inset 2px 0 0 var(--accent);border-radius:0;
-}
-html[data-style="emalje"] .navitem[aria-current="page"]{
-  background:var(--accent);color:#fff;font-weight:600;
-}
-html[data-nav="grouped"] .nav-full{display:none}
-html[data-nav="full"] .nav-grouped{display:none}
+html[data-style="emalje"] .navitem[aria-current="page"]{background:var(--accent);color:var(--on-accent);font-weight:600}
 .navbadge{
   margin-left:auto;font-size:11px;padding:.05rem .4rem;border-radius:999px;
-  background:var(--alert);color:#fff;font-weight:600;
+  background:var(--alert);color:var(--on-alert);font-weight:600;
+}
+.navitem[aria-current="page"] .navbadge{background:rgba(255,255,255,.28)}
+
+/* group parent + disclosure */
+.navparent{justify-content:flex-start}
+.navparent .chev{
+  margin-left:auto;font-size:10px;color:var(--ink-3);
+  transition:transform .16s ease;flex:0 0 auto;
+}
+.navparent[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.navparent[aria-expanded="true"]{color:var(--ink);font-weight:600}
+/* A group you are inside stays marked even when shut — otherwise closing the
+   group you're working in loses all sense of place. */
+.navparent[data-inside="true"]{color:var(--ink);font-weight:600}
+.navparent[data-inside="true"]::before{
+  content:"";width:5px;height:5px;border-radius:50%;
+  background:var(--accent);flex:0 0 5px;margin-right:-.15rem;
+}
+.navparent[data-inside="true"][aria-expanded="true"]::before{opacity:.35}
+.children{display:none;margin:.15rem 0 .3rem}
+.navparent[aria-expanded="true"] + .children{display:block}
+.child{
+  display:flex;align-items:center;gap:.5rem;
+  padding:.33rem .65rem .33rem 1.5rem;border-radius:var(--radius-sm);
+  font-size:14px;color:var(--ink-2);
+}
+.child:hover{color:var(--ink);background:var(--accent-wash)}
+.child[aria-current="page"]{color:var(--accent-ink);font-weight:600;background:var(--accent-wash)}
+html[data-style="emalje"] .child[aria-current="page"]{background:var(--accent-wash);color:var(--accent)}
+.child .navbadge{background:var(--alert)}
+
+html[data-nav="grouped"] .nav-flat{display:none}
+html[data-nav="flat"] .nav-tree{display:none}
+
+.railnote{
+  margin:auto .6rem 0;padding:.7rem .75rem;border-radius:var(--radius-sm);
+  background:var(--accent-wash);color:var(--accent);font-size:11.5px;line-height:1.45;
 }
 
-/* main */
+/* ---------- MAIN ---------- */
 .main{flex:1;min-width:0;padding:1.6rem 2rem 4rem;max-width:1180px}
 .crumbs{display:flex;gap:.45rem;align-items:center;font-size:12.5px;color:var(--ink-3);margin-bottom:1rem}
 .pagehead{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.6rem}
-h1{
-  font-family:var(--font-display);
-  font-size:clamp(1.7rem,3.2vw,2.35rem);
-  line-height:1.08;letter-spacing:-.02em;font-weight:600;
-}
-html[data-style="current"] h1{font-size:1.85rem;letter-spacing:-.025em;font-weight:700}
-html[data-style="emalje"] h1{font-weight:700;letter-spacing:-.03em}
-.pagesub{color:var(--ink-2);font-size:14px;margin-top:.35rem;max-width:56ch}
+h1{font-size:1.95rem;line-height:1.1;letter-spacing:-.03em;font-weight:700}
+html[data-style="current"] h1{font-size:1.85rem;letter-spacing:-.025em}
+.pagesub{color:var(--ink-2);font-size:14px;margin-top:.35rem;max-width:58ch}
 
-/* buttons */
 .btn{
   display:inline-flex;align-items:center;gap:.4rem;
   font:inherit;font-size:13.5px;cursor:pointer;
-  padding:.42rem .8rem;border-radius:var(--radius-sm);
+  padding:.44rem .95rem;border-radius:var(--radius-btn);
   border:1px solid var(--rule-strong);background:var(--surface);color:var(--ink);
 }
-/* :not() keeps this from outranking .btn-primary on specificity — without it
-   the primary button gets a transparent background and white text. */
-html[data-style="vaerksted"] .btn:not(.btn-primary){background:transparent}
-.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
-html[data-style="emalje"] .btn{border-radius:999px}
-html[data-style="emalje"] .btn-primary{border-radius:999px}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.dactions{margin-left:auto;display:flex;gap:.5rem;flex-shrink:0}
 
-/* ---------- PANEL: the surface primitive that differs most ---------- */
 .panel{
   border:var(--panel-border);background:var(--panel-bg);
-  border-radius:var(--radius);padding:1rem 1.1rem;
+  border-radius:var(--radius);padding:1.15rem 1.25rem;
 }
-html[data-style="vaerksted"] .panel{padding:0}
-html[data-style="emalje"] .panel{padding:1.15rem 1.25rem}
 .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:.75rem;margin-bottom:.7rem}
-html[data-style="vaerksted"] .panel-head{
-  padding-bottom:.5rem;border-bottom:1px solid var(--rule);margin-bottom:.85rem;
-}
 .panel-title{font-size:14.5px;font-weight:600;letter-spacing:-.005em}
-html[data-style="vaerksted"] .panel-title{font-family:var(--font-display);font-size:15.5px;font-weight:600}
-html[data-style="emalje"] .panel-title{font-size:13px;text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+html[data-style="emalje"] .panel-title{
+  font-size:12px;text-transform:uppercase;letter-spacing:.075em;font-weight:700;
+}
 .panel-link{font-size:12.5px;color:var(--ink-2)}
 .panel-link:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 
-/* ---------- DASHBOARD ---------- */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.6rem}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-bottom:1.6rem}
-html[data-style="vaerksted"] .grid-2,
-html[data-style="vaerksted"] .grid-3{gap:2rem 2.4rem;margin-bottom:2.4rem}
-@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.4rem}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-bottom:1.4rem}
+@media(max-width:980px){.grid-2,.grid-3{grid-template-columns:1fr}}
 
 .moneyline{display:flex;align-items:baseline;gap:.5rem}
-.bignum{
-  font-family:var(--font-display);font-weight:600;
-  font-size:1.6rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
-}
-html[data-style="current"] .bignum{font-size:1.35rem;font-weight:600}
-html[data-style="emalje"] .bignum{font-weight:700;font-size:1.75rem}
-.rowlist li{
-  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
-  padding:.4rem 0;font-size:14px;
-}
+.bignum{font-weight:700;font-size:1.75rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+html[data-style="current"] .bignum{font-weight:600;font-size:1.35rem;letter-spacing:-.02em}
+.cat{color:var(--ink-2);font-size:13.5px}
+.rowlist li{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.4rem 0;font-size:14px}
 .rowlist li + li{border-top:1px solid var(--rule)}
 html[data-style="current"] .rowlist li + li{border-top:0}
-.rowlist .r-main{display:flex;align-items:baseline;gap:.55rem;min-width:0}
-.rowlist .r-sub{color:var(--ink-2);font-size:13px}
+html[data-style="emalje"] .rowlist li + li{border-top:1px solid rgba(0,0,0,.06)}
+html[data-style="emalje"][data-theme="dark"] .rowlist li + li{border-top:1px solid rgba(255,255,255,.07)}
+.r-main{display:flex;align-items:baseline;gap:.55rem;min-width:0}
+.r-sub{color:var(--ink-2);font-size:13px}
 .tag-late{color:var(--alert);font-size:13px;white-space:nowrap}
 .tag-soon{color:var(--money);font-size:13px;white-space:nowrap}
-.allclear{
-  display:flex;align-items:center;gap:.45rem;
-  font-size:13.5px;color:var(--good);
-}
+.allclear{display:flex;align-items:center;gap:.45rem;font-size:13.5px;color:var(--good)}
 .allclear .dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex:0 0 6px}
 
-/* pipeline */
 .pipe{display:flex;align-items:flex-start;gap:.2rem}
 .pipe-stage{flex:1;min-width:0;padding:.15rem .3rem}
-.pipe-num{
-  font-family:var(--font-display);font-weight:600;font-size:1.55rem;
-  letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1;
-}
-html[data-style="emalje"] .pipe-num{font-weight:700}
+.pipe-num{font-weight:700;font-size:1.6rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+html[data-style="current"] .pipe-num{font-weight:600;font-size:1.5rem}
 .pipe-lbl{font-size:12px;color:var(--ink-2);line-height:1.25;display:block;margin-top:.15rem}
 .pipe-hint{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .pipe-arrow{color:var(--ink-3);font-size:13px;padding-top:.5rem;flex:0 0 auto}
-html[data-style="vaerksted"] .pipe-arrow{color:var(--rule-strong)}
 html[data-style="emalje"] .pipe-arrow{display:none}
-html[data-style="emalje"] .pipe-stage + .pipe-stage{border-left:2px solid rgba(0,0,0,.06);padding-left:.7rem;margin-left:.2rem}
-html[data-style="emalje"][data-theme="dark"] .pipe-stage + .pipe-stage{border-left-color:rgba(255,255,255,.08)}
+html[data-style="emalje"] .pipe-stage + .pipe-stage{
+  border-left:2px solid rgba(0,0,0,.07);padding-left:.75rem;margin-left:.25rem;
+}
+html[data-style="emalje"][data-theme="dark"] .pipe-stage + .pipe-stage{border-left-color:rgba(255,255,255,.09)}
 
-/* ---------- METRICS ROW (the 4-up KPI problem) ---------- */
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.6rem}
-@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
-.metric{padding:1rem 1.1rem;border:1px solid var(--rule);border-radius:var(--radius);background:var(--surface)}
-.metric-lbl{
-  font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;
-  color:var(--ink-2);display:block;margin-bottom:.5rem;
-}
-.metric-val{
-  font-size:1.65rem;font-weight:600;letter-spacing:-.02em;
-  font-variant-numeric:tabular-nums;font-family:var(--font-display);
-}
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:980px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{padding:1.1rem 1.2rem;border:1px solid var(--rule);border-radius:var(--radius);background:var(--surface)}
+.metric-lbl{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);display:block;margin-bottom:.5rem}
+.metric-val{font-size:1.8rem;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+html[data-style="current"] .metric-val{font-weight:600;font-size:1.65rem;letter-spacing:-.02em}
 .metric-hint{display:block;font-size:12px;color:var(--ink-3);margin-top:.35rem;line-height:1.35}
-/* A: unboxed, hairline-divided */
-html[data-style="vaerksted"] .metrics{
-  border:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
-  gap:0;padding:1.15rem 0;margin-bottom:2.2rem;
-}
-html[data-style="vaerksted"] .metric{border:0;background:transparent;padding:0 1.4rem}
-html[data-style="vaerksted"] .metric + .metric{border-left:1px solid var(--rule)}
-html[data-style="vaerksted"] .metric:first-child{padding-left:0}
-html[data-style="vaerksted"] .metric-lbl{
-  text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--ink-2);font-weight:400;
-}
-html[data-style="vaerksted"] .metric-val{font-size:1.85rem}
-/* B: flat washes */
-html[data-style="emalje"] .metric{border:0;background:var(--accent-wash);border-radius:var(--radius)}
-html[data-style="emalje"] .metric:nth-child(2){background:var(--money-wash)}
+html[data-style="emalje"] .metric{border:0;background:var(--accent-wash)}
+html[data-style="emalje"] .metric:nth-child(2),
 html[data-style="emalje"] .metric:nth-child(3){background:var(--money-wash)}
 html[data-style="emalje"] .metric:nth-child(4){background:var(--good-wash)}
 html[data-style="emalje"] .metric-lbl{font-size:10.5px;letter-spacing:.08em;font-weight:700}
-html[data-style="emalje"] .metric-val{font-weight:700;font-size:1.8rem}
 
-/* ---------- TABLE ---------- */
+/* table */
 .toolbar{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;margin-bottom:1.2rem}
 .field{display:flex;flex-direction:column;gap:.3rem}
 .field label{font-size:12px;color:var(--ink-2)}
 .field input,.field select{
-  font:inherit;font-size:13.5px;padding:.4rem .6rem;color:var(--ink);
-  border:1px solid var(--rule-strong);border-radius:var(--radius-sm);background:var(--surface);
-  min-width:150px;
+  font:inherit;font-size:13.5px;padding:.44rem .6rem;color:var(--ink);
+  border:1px solid var(--rule-strong);border-radius:var(--radius-sm);
+  background:var(--surface);min-width:150px;
 }
-html[data-style="vaerksted"] .field input,html[data-style="vaerksted"] .field select{background:var(--surface)}
-
 .tablewrap{border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
-html[data-style="vaerksted"] .tablewrap{border:0;border-radius:0;background:transparent}
-html[data-style="emalje"] .tablewrap{border:0;background:var(--surface)}
+html[data-style="emalje"] .tablewrap{border:0}
 table{width:100%;border-collapse:collapse;font-size:14px}
-thead th{
-  text-align:left;font-weight:500;font-size:12px;color:var(--ink-2);
-  padding:.6rem .8rem;border-bottom:1px solid var(--rule);white-space:nowrap;
-}
-html[data-style="vaerksted"] thead th{
-  text-transform:none;letter-spacing:0;font-size:12.5px;
-  border-bottom:1px solid var(--ink-3);padding-bottom:.45rem;
-}
+thead th{text-align:left;font-weight:500;font-size:12px;color:var(--ink-2);padding:.6rem .8rem;border-bottom:1px solid var(--rule);white-space:nowrap}
 html[data-style="emalje"] thead th{
-  text-transform:uppercase;letter-spacing:.07em;font-size:10.5px;font-weight:700;
-  color:var(--ink-2);border-bottom:2px solid var(--rule-strong);
+  text-transform:uppercase;letter-spacing:.075em;font-size:10.5px;font-weight:700;
+  border-bottom:2px solid var(--rule-strong);
 }
-tbody td{padding:.7rem .8rem;border-bottom:1px solid var(--rule);vertical-align:middle}
-html[data-style="vaerksted"] tbody td{border-bottom:1px solid var(--rule);padding:.72rem .8rem}
-html[data-style="vaerksted"] tbody tr:last-child td{border-bottom:0}
+tbody td{padding:.72rem .8rem;border-bottom:1px solid var(--rule);vertical-align:middle}
 html[data-style="emalje"] tbody td{border-bottom:0}
 html[data-style="emalje"] tbody tr:nth-child(odd){background:rgba(0,0,0,.018)}
 html[data-style="emalje"][data-theme="dark"] tbody tr:nth-child(odd){background:rgba(255,255,255,.03)}
 tbody tr:hover{background:var(--accent-wash)}
-.thumb{
-  width:34px;height:34px;border-radius:var(--radius-sm);
-  background:var(--rule);flex:0 0 34px;display:grid;place-items:center;
-  color:var(--ink-3);font-size:10px;
-}
+.thumb{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--rule);display:grid;place-items:center;color:var(--ink-3);font-size:10px}
 .pname{font-weight:500}
 .psku{font-size:12.5px;color:var(--ink-2)}
-.cat{color:var(--ink-2);font-size:13.5px}
 .stock{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
-
-/* badges — the discipline difference */
-.pill{
-  display:inline-flex;align-items:center;gap:.3rem;
-  font-size:11.5px;padding:.1rem .45rem;border-radius:999px;
-  background:var(--good-wash);color:var(--good);font-weight:500;white-space:nowrap;
-}
+.pill{display:inline-flex;align-items:center;gap:.3rem;font-size:11.5px;padding:.1rem .5rem;border-radius:999px;background:var(--good-wash);color:var(--good);font-weight:500;white-space:nowrap}
 .pill-out{background:var(--alert-wash);color:var(--alert)}
 .pill-low{background:var(--money-wash);color:var(--money)}
 .pill-kit{background:var(--accent-wash);color:var(--accent-ink)}
-/* A + B: in-stock is the default state and carries no badge */
-html[data-style="vaerksted"] .pill-instock,
-html[data-style="emalje"] .pill-instock{display:none}
-html[data-style="vaerksted"] .pill{border-radius:var(--radius-sm);font-weight:500}
 html[data-style="emalje"] .pill{font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10.5px}
+html[data-style="emalje"] .pill-instock{display:none}
 
-/* ---------- DETAIL PAGE ---------- */
+/* detail */
 .dhead{display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem}
-.dhead .big-thumb{
-  width:76px;height:76px;flex:0 0 76px;border-radius:var(--radius);
-  background:var(--rule);display:grid;place-items:center;color:var(--ink-3);font-size:11px;
-}
-.dhead h1{font-size:clamp(1.4rem,2.6vw,1.95rem)}
-.chip{
-  display:inline-block;font-size:11.5px;padding:.1rem .45rem;border-radius:var(--radius-sm);
-  border:1px solid var(--rule-strong);color:var(--ink-2);
-}
-html[data-style="emalje"] .chip{border:0;background:var(--accent-wash);color:var(--accent);font-weight:600}
-.dactions{margin-left:auto;display:flex;gap:.5rem;flex-shrink:0}
+.big-thumb{width:76px;height:76px;flex:0 0 76px;border-radius:var(--radius);background:var(--rule);display:grid;place-items:center;color:var(--ink-3);font-size:11px}
+.dhead h1{font-size:1.65rem}
+.chip{display:inline-block;font-size:11.5px;padding:.1rem .5rem;border-radius:var(--radius-sm);border:1px solid var(--rule-strong);color:var(--ink-2)}
+html[data-style="emalje"] .chip{border:0;background:var(--accent-wash);color:var(--accent);font-weight:600;border-radius:999px}
 .photos{display:flex;gap:.75rem;flex-wrap:wrap}
-.photo{
-  width:150px;height:118px;border-radius:var(--radius-sm);background:var(--rule);
-  display:grid;place-items:center;color:var(--ink-3);font-size:11px;position:relative;
-}
-.photo .hero{
-  position:absolute;top:.4rem;left:.4rem;font-size:10.5px;font-weight:600;
-  padding:.1rem .4rem;border-radius:999px;background:var(--accent);color:#fff;
-}
-.fold{
-  display:flex;align-items:center;gap:.5rem;
-  padding:.85rem 0;border-top:1px solid var(--rule);cursor:pointer;
-}
+.photo{width:150px;height:118px;border-radius:var(--radius-sm);background:var(--rule);display:grid;place-items:center;color:var(--ink-3);font-size:11px;position:relative}
+.photo .hero{position:absolute;top:.4rem;left:.4rem;font-size:10.5px;font-weight:700;padding:.1rem .5rem;border-radius:999px;background:var(--accent);color:var(--on-accent);text-transform:uppercase;letter-spacing:.04em}
+.fold{display:flex;align-items:center;gap:.5rem;padding:.9rem 0;border-top:1px solid var(--rule);cursor:pointer}
 .fold .chev{color:var(--ink-3)}
 .fold-t{font-weight:600;font-size:14.5px}
-html[data-style="vaerksted"] .fold-t{font-family:var(--font-display)}
 .fold-d{font-size:13px;color:var(--ink-2)}
 .stack{display:flex;flex-direction:column;gap:1.1rem}
-html[data-style="vaerksted"] .stack{gap:2.2rem}
 
-.legend{
-  margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid var(--rule);
-  font-size:12.5px;color:var(--ink-2);max-width:70ch;line-height:1.6;
-}
+.legend{margin-top:2.4rem;padding-top:1.2rem;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-2);max-width:74ch;line-height:1.65}
 .legend strong{color:var(--ink)}
+.legend + .legend{margin-top:1rem;padding-top:0;border-top:0}
 
-/* page switching */
 html[data-page="dashboard"] .p-parts,html[data-page="dashboard"] .p-detail{display:none}
 html[data-page="parts"] .p-dash,html[data-page="parts"] .p-detail{display:none}
 html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
@@ -422,8 +336,7 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
 <div class="controls">
   <div class="grp"><span class="lbl">Style</span>
     <button data-set="style" data-val="current">Current</button>
-    <button data-set="style" data-val="vaerksted">A · Værksted</button>
-    <button data-set="style" data-val="emalje">B · Emalje</button>
+    <button data-set="style" data-val="emalje">B · Emalje (Geist)</button>
   </div>
   <div class="grp"><span class="lbl">Page</span>
     <button data-set="page" data-val="dashboard">Dashboard</button>
@@ -431,33 +344,30 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
     <button data-set="page" data-val="detail">Part detail</button>
   </div>
   <div class="grp"><span class="lbl">Nav</span>
-    <button data-set="nav" data-val="full">14 items</button>
+    <button data-set="nav" data-val="flat">14 flat items</button>
     <button data-set="nav" data-val="grouped">7 groups</button>
   </div>
   <div class="grp"><span class="lbl">Theme</span>
     <button data-set="theme" data-val="light">Light</button>
     <button data-set="theme" data-val="dark">Dark</button>
   </div>
-  <span class="note">Static mock-up · real data · no app code touched</span>
+  <span class="note">Groups are clickable — try opening one</span>
 </div>
 
 <div class="shell">
 
-  <!-- ============ SIDEBAR ============ -->
   <aside class="side">
     <div class="brand">
       <div class="word">Ægte Jensen</div>
       <div class="sub">Kvalitetscykler</div>
     </div>
 
-    <!-- 14-item nav (today's routes, restyled per direction) -->
-    <div class="nav-full">
+    <!-- ============ 14 FLAT ITEMS (today) ============ -->
+    <div class="nav-flat">
       <div class="navgroup">
-        <div class="navhead">Overview</div>
         <a class="navitem" href="#" aria-current="page"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><rect x="9" y="9" width="5" height="5"/></svg>Dashboard</a>
       </div>
       <div class="navgroup">
-        <div class="navhead">Daily</div>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="11" r="3"/><circle cx="12" cy="11" r="3"/><path d="M4 11 7 5h4"/></svg>Bikes</a>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3h10v10H3z"/><path d="M6 3v10"/></svg>Bike templates</a>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2l5 3v6l-5 3-5-3V5z"/><path d="M3 5l5 3 5-3"/></svg>Parts</a>
@@ -466,7 +376,6 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 11h12"/><path d="M4 11a4 4 0 0 1 8 0"/></svg>Workshop floor</a>
       </div>
       <div class="navgroup">
-        <div class="navhead">Orders &amp; money</div>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 13 9 7"/><path d="M8 4l4 4-2 2-4-4z"/></svg>Manufacturing orders</a>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="10" height="11"/><path d="M6 2h4v2H6z"/></svg>Purchase orders</a>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="2" width="10" height="12"/><path d="M5.5 6h5M5.5 9h5"/></svg>Sales orders</a>
@@ -476,40 +385,77 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="10" height="11"/><path d="M6 6h1M9 6h1M6 9h1M9 9h1"/></svg>Customers</a>
       </div>
       <div class="navgroup">
-        <div class="navhead">System</div>
         <a class="navitem" href="#"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.5"/><circle cx="8" cy="8" r="5.5"/></svg>Admin</a>
       </div>
+      <p class="railnote"><strong>14 items.</strong> Every destination is one click. The rail is 14 lines long, five of which are order types sitting at the same level as “Bikes”. A second service type adds a 15th.</p>
     </div>
 
-    <!-- 7-group nav (the Phase 3 proposal) -->
-    <div class="nav-grouped">
+    <!-- ============ 7 GROUPS (proposal) ============ -->
+    <div class="nav-tree">
       <div class="navgroup">
         <a class="navitem" href="#" aria-current="page">Today</a>
       </div>
+
       <div class="navgroup">
         <div class="navhead">Workshop</div>
-        <a class="navitem" href="#">Bikes</a>
-        <a class="navitem" href="#">Parts</a>
-        <a class="navitem" href="#">Work<span class="navbadge">3</span></a>
+
+        <button class="navitem navparent" aria-expanded="false" data-group="bikes">Bikes<span class="chev">›</span></button>
+        <div class="children">
+          <a class="child" href="#">All bikes</a>
+          <a class="child" href="#">Templates</a>
+          <a class="child" href="#">Families</a>
+        </div>
+
+        <button class="navitem navparent" aria-expanded="true" data-group="parts" data-inside="true">Parts<span class="chev">›</span></button>
+        <div class="children">
+          <a class="child" href="#" aria-current="page">All parts</a>
+          <a class="child" href="#">Stock value</a>
+          <a class="child" href="#">Kits</a>
+        </div>
+
+        <button class="navitem navparent" aria-expanded="false" data-group="work">Work<span class="navbadge">3</span><span class="chev">›</span></button>
+        <div class="children">
+          <a class="child" href="#">Tickets</a>
+          <a class="child" href="#">Work orders</a>
+          <a class="child" href="#">Workshop floor</a>
+          <a class="child" href="#">Inbox<span class="navbadge">3</span></a>
+        </div>
       </div>
+
       <div class="navgroup">
         <div class="navhead">Commerce</div>
-        <a class="navitem" href="#">Orders</a>
-        <a class="navitem" href="#">Customers</a>
+
+        <button class="navitem navparent" aria-expanded="false" data-group="orders">Orders<span class="chev">›</span></button>
+        <div class="children">
+          <a class="child" href="#">Manufacturing</a>
+          <a class="child" href="#">Purchase</a>
+          <a class="child" href="#">Sales</a>
+          <a class="child" href="#">Paint</a>
+          <a class="child" href="#">Invoices</a>
+        </div>
+
+        <button class="navitem navparent" aria-expanded="false" data-group="customers">Customers<span class="chev">›</span></button>
+        <div class="children">
+          <a class="child" href="#">All customers</a>
+          <a class="child" href="#">Service agreements</a>
+          <a class="child" href="#">Map</a>
+        </div>
       </div>
+
       <div class="navgroup">
         <div class="navhead">System</div>
         <a class="navitem" href="#">Admin</a>
       </div>
+
+      <p class="railnote"><strong>7 groups. Open what you use, and it stays.</strong> Each group toggles independently and the set is remembered per person, so the rail fans out the way you left it. A closed group still shows a dot when you're inside it. A second service type becomes a child, not a 15th line.</p>
     </div>
   </aside>
 
-  <!-- ============ MAIN ============ -->
   <main class="main">
 
     <!-- ---------- DASHBOARD ---------- -->
     <div class="p-dash">
-      <div class="crumbs"><span>Dashboard</span></div>
+      <div class="crumbs"><span>Today</span></div>
       <div class="pagehead">
         <div>
           <h1>Today</h1>
@@ -519,52 +465,31 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
 
       <div class="grid-2">
         <section class="panel" data-domain="money">
-          <div class="panel-head">
-            <h2 class="panel-title">Uninvoiced work</h2>
-            <a class="panel-link" href="#">Go invoice →</a>
-          </div>
+          <div class="panel-head"><h2 class="panel-title">Uninvoiced work</h2><a class="panel-link" href="#">Go invoice →</a></div>
           <div class="moneyline"><span class="bignum">2.000,00</span><span class="cat">kr.</span></div>
           <ul class="rowlist" style="margin-top:.6rem">
-            <li><span class="r-main">1 completed work order</span><span class="r-sub num">0,00 kr.</span></li>
-            <li><span class="r-main">1 agreement fee month</span><span class="r-sub num">2.000,00 kr.</span></li>
+            <li><span class="r-main">1 completed work order</span><span class="r-sub mono">0,00 kr.</span></li>
+            <li><span class="r-main">1 agreement fee month</span><span class="r-sub mono">2.000,00 kr.</span></li>
             <li><span class="r-main">1 draft invoice waiting to be issued</span><span class="r-sub">oldest 35d</span></li>
           </ul>
         </section>
-
         <section class="panel" data-domain="alert">
-          <div class="panel-head">
-            <h2 class="panel-title">Overdue invoices</h2>
-            <a class="panel-link" href="#">View all →</a>
-          </div>
+          <div class="panel-head"><h2 class="panel-title">Overdue invoices</h2><a class="panel-link" href="#">View all →</a></div>
           <div class="moneyline"><span class="bignum">2.523,04</span><span class="cat">kr.</span></div>
           <ul class="rowlist" style="margin-top:.6rem">
-            <li>
-              <span class="r-main"><span class="mono">INV-2026-0001</span><span class="r-sub">Nazar Taras · 5,54 kr.</span></span>
-              <span class="tag-late">3d late</span>
-            </li>
-            <li>
-              <span class="r-main"><span class="mono">TEST-2026-0001</span><span class="r-sub">TEST Hotel Strandvejen · 2.517,50 kr.</span></span>
-              <span class="tag-late">3d late</span>
-            </li>
+            <li><span class="r-main"><span class="mono">INV-2026-0001</span><span class="r-sub">Nazar Taras · 5,54 kr.</span></span><span class="tag-late">3d late</span></li>
+            <li><span class="r-main"><span class="mono">TEST-2026-0001</span><span class="r-sub">TEST Hotel Strandvejen · 2.517,50 kr.</span></span><span class="tag-late">3d late</span></li>
           </ul>
         </section>
       </div>
 
       <div class="grid-2">
         <section class="panel" data-domain="service">
-          <div class="panel-head">
-            <h2 class="panel-title">Agreements expiring</h2>
-            <a class="panel-link" href="#">View all →</a>
-          </div>
-          <ul class="rowlist">
-            <li><span class="r-main">Nazar Taras<span class="r-sub">5.000,00 kr./mo</span></span><span class="tag-soon">in 84d</span></li>
-          </ul>
+          <div class="panel-head"><h2 class="panel-title">Agreements expiring</h2><a class="panel-link" href="#">View all →</a></div>
+          <ul class="rowlist"><li><span class="r-main">Nazar Taras<span class="r-sub">5.000,00 kr./mo</span></span><span class="tag-soon">in 84d</span></li></ul>
         </section>
         <section class="panel" data-domain="buy">
-          <div class="panel-head">
-            <h2 class="panel-title">Purchase orders to chase</h2>
-            <a class="panel-link" href="#">View all →</a>
-          </div>
+          <div class="panel-head"><h2 class="panel-title">Purchase orders to chase</h2><a class="panel-link" href="#">View all →</a></div>
           <ul class="rowlist"><li><span class="r-main">2 draft POs waiting to be placed</span></li></ul>
         </section>
       </div>
@@ -573,32 +498,25 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
         <section class="panel" data-domain="build">
           <div class="panel-head"><h2 class="panel-title">Build</h2></div>
           <div class="pipe">
-            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">planning</span></div>
-            <span class="pipe-arrow">→</span>
-            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">building</span></div>
-            <span class="pipe-arrow">→</span>
-            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">at painter</span></div>
-            <span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">planning</span></div><span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">building</span></div><span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">at painter</span></div><span class="pipe-arrow">→</span>
             <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">in stock</span></div>
           </div>
         </section>
         <section class="panel" data-domain="service">
           <div class="panel-head"><h2 class="panel-title">Repair</h2></div>
           <div class="pipe">
-            <div class="pipe-stage"><span class="pipe-num">3</span><span class="pipe-lbl">open tickets</span></div>
-            <span class="pipe-arrow">→</span>
-            <div class="pipe-stage"><span class="pipe-num">1</span><span class="pipe-lbl">work orders</span></div>
-            <span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">3</span><span class="pipe-lbl">open tickets</span></div><span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">1</span><span class="pipe-lbl">work orders</span></div><span class="pipe-arrow">→</span>
             <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">done, 7 days</span></div>
           </div>
         </section>
         <section class="panel" data-domain="money">
           <div class="panel-head"><h2 class="panel-title">Orders in flight</h2></div>
           <div class="pipe">
-            <div class="pipe-stage"><span class="pipe-num">1</span><span class="pipe-lbl">sales orders</span><span class="pipe-hint">45.887,52 kr.</span></div>
-            <span class="pipe-arrow">→</span>
-            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">manufacturing</span></div>
-            <span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">1</span><span class="pipe-lbl">sales orders</span><span class="pipe-hint">45.887,52 kr.</span></div><span class="pipe-arrow">→</span>
+            <div class="pipe-stage"><span class="pipe-num">0</span><span class="pipe-lbl">manufacturing</span></div><span class="pipe-arrow">→</span>
             <div class="pipe-stage"><span class="pipe-num">1</span><span class="pipe-lbl">purchase orders</span></div>
           </div>
         </section>
@@ -606,10 +524,7 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
 
       <div class="grid-3">
         <section class="panel" data-domain="alert">
-          <div class="panel-head">
-            <h2 class="panel-title">Low stock</h2>
-            <a class="panel-link" href="#">View all →</a>
-          </div>
+          <div class="panel-head"><h2 class="panel-title">Low stock</h2><a class="panel-link" href="#">View all →</a></div>
           <ul class="rowlist">
             <li><span class="r-main"><span class="pill pill-out">Out</span><span class="r-sub">Sapim 271x2,33mm</span></span><span class="stock">−205</span></li>
             <li><span class="r-main"><span class="pill pill-out">Out</span><span class="r-sub">Shimano Dynamo nav</span></span><span class="stock">0</span></li>
@@ -626,182 +541,67 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
         </section>
       </div>
 
-      <p class="legend">
-        <strong>What changed on this page.</strong> Nine identically-boxed cards became a
-        hierarchy: money first, then flow, then housekeeping. The all-clear messages are
-        <em>green</em> — today they render red and amber, which is the bug in
-        <span class="mono">dashboard-card.tsx</span>. Numbers are the display face and the
-        panel titles stepped down, so the eye lands on the figure rather than the frame.
-      </p>
+      <p class="legend"><strong>Set in Geist.</strong> The display face is gone; the contrast now comes from weight and size alone — headings at 700 with tighter tracking, figures at 700 tabular. Colour, shading and the pill buttons are unchanged from what you picked.</p>
     </div>
 
-    <!-- ---------- PARTS LIST ---------- -->
+    <!-- ---------- PARTS ---------- -->
     <div class="p-parts">
-      <div class="crumbs"><span>Dashboard</span><span>›</span><span>Parts</span></div>
+      <div class="crumbs"><span>Parts</span><span>›</span><span>All parts</span></div>
       <div class="pagehead">
-        <div>
-          <h1>Parts</h1>
-          <p class="pagesub">170 parts</p>
-        </div>
+        <div><h1>Parts</h1><p class="pagesub">170 parts</p></div>
         <div class="dactions">
-          <button class="btn">Stock value</button>
-          <button class="btn">Print</button>
+          <button class="btn">Stock value</button><button class="btn">Print</button>
           <button class="btn btn-primary">New part</button>
         </div>
       </div>
-
       <div class="toolbar">
         <div class="field"><label>Search</label><input placeholder="SKU, name, supplier SKU" style="min-width:260px"></div>
         <div class="field"><label>Category</label><select><option>All categories</option></select></div>
         <div class="field"><label>Supplier</label><select><option>All suppliers</option></select></div>
         <div class="field"><label>Stock</label><select><option>Any</option></select></div>
       </div>
-
       <div class="tablewrap">
         <table>
-          <thead>
-            <tr><th style="width:46px"></th><th>SKU</th><th>Name</th><th>Category</th><th>Supplier</th><th>Kit</th><th style="text-align:right">Stock</th></tr>
-          </thead>
+          <thead><tr><th style="width:46px"></th><th>SKU</th><th>Name</th><th>Category</th><th>Supplier</th><th>Kit</th><th style="text-align:right">Stock</th></tr></thead>
           <tbody>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">11688010300381</td>
-              <td class="pname">Ananda M100 36v 250w Canbus JIS 24" speed 25</td>
-              <td class="cat">Motor</td>
-              <td class="cat">Eastek HK</td>
-              <td><span class="pill pill-kit">Green 2</span></td>
-              <td class="stock">100 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">1715-0001</td>
-              <td class="pname">Fælgbånd 22x622 – vh9mm</td>
-              <td class="cat">Rim tapes</td>
-              <td class="cat">Herrmans Bike Company Ltd</td>
-              <td class="cat">—</td>
-              <td class="stock">384 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">1715-0008</td>
-              <td class="pname">Fælgbånd 22x540 – 24" – vh9mm</td>
-              <td class="cat">Rim tapes</td>
-              <td class="cat">Herrmans Bike Company Ltd</td>
-              <td class="cat">—</td>
-              <td class="stock">399 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">1BR-ST4-RCM01</td>
-              <td class="pname">Kranksæt 48t sølv alu</td>
-              <td class="cat">Crank set</td>
-              <td class="cat">Eastek HK</td>
-              <td class="cat">—</td>
-              <td class="stock">219 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">3090-0006</td>
-              <td class="pname">Refleks for bagskærm BR7</td>
-              <td class="cat">Accessories</td>
-              <td class="cat">Herrmans Bike Company Ltd</td>
-              <td class="cat">—</td>
-              <td class="stock">547 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">4053-0005</td>
-              <td class="pname">E-bike baglygte 6-12v 50mm</td>
-              <td class="cat">Lights</td>
-              <td class="cat">Herrmans Bike Company Ltd</td>
-              <td class="cat">—</td>
-              <td class="stock">136 <span class="pill pill-instock">In stock</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">JP-SAP-271233</td>
-              <td class="pname">Sapim 271x2,33mm eger</td>
-              <td class="cat">Spokes</td>
-              <td class="cat">Eastek HK</td>
-              <td class="cat">—</td>
-              <td class="stock">−205 <span class="pill pill-out">Out</span></td>
-            </tr>
-            <tr>
-              <td><div class="thumb">img</div></td>
-              <td class="mono psku">JP-EDH-DYN01</td>
-              <td class="pname">Shimano Dynamo nav</td>
-              <td class="cat">Hubs</td>
-              <td class="cat">Shimano Nordic</td>
-              <td class="cat">—</td>
-              <td class="stock">0 <span class="pill pill-out">Out</span></td>
-            </tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">11688010300381</td><td class="pname">Ananda M100 36v 250w Canbus JIS 24" speed 25</td><td class="cat">Motor</td><td class="cat">Eastek HK</td><td><span class="pill pill-kit">Green 2</span></td><td class="stock">100 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">1715-0001</td><td class="pname">Fælgbånd 22x622 – vh9mm</td><td class="cat">Rim tapes</td><td class="cat">Herrmans Bike Company Ltd</td><td class="cat">—</td><td class="stock">384 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">1715-0008</td><td class="pname">Fælgbånd 22x540 – 24" – vh9mm</td><td class="cat">Rim tapes</td><td class="cat">Herrmans Bike Company Ltd</td><td class="cat">—</td><td class="stock">399 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">1BR-ST4-RCM01</td><td class="pname">Kranksæt 48t sølv alu</td><td class="cat">Crank set</td><td class="cat">Eastek HK</td><td class="cat">—</td><td class="stock">219 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">3090-0006</td><td class="pname">Refleks for bagskærm BR7</td><td class="cat">Accessories</td><td class="cat">Herrmans Bike Company Ltd</td><td class="cat">—</td><td class="stock">547 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">4053-0005</td><td class="pname">E-bike baglygte 6-12v 50mm</td><td class="cat">Lights</td><td class="cat">Herrmans Bike Company Ltd</td><td class="cat">—</td><td class="stock">136 <span class="pill pill-instock">In stock</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">JP-SAP-271233</td><td class="pname">Sapim 271x2,33mm eger</td><td class="cat">Spokes</td><td class="cat">Eastek HK</td><td class="cat">—</td><td class="stock">−205 <span class="pill pill-out">Out</span></td></tr>
+            <tr><td><div class="thumb">img</div></td><td class="mono psku">JP-EDH-DYN01</td><td class="pname">Shimano Dynamo nav</td><td class="cat">Hubs</td><td class="cat">Shimano Nordic</td><td class="cat">—</td><td class="stock">0 <span class="pill pill-out">Out</span></td></tr>
           </tbody>
         </table>
       </div>
-
-      <p class="legend">
-        <strong>What changed on this page.</strong> The green “In stock” pill is gone from
-        rows that are simply fine — a badge on every row carries no information. Only
-        <em>Out</em> and <em>Low</em> earn one, so the two problems jump out of eight rows
-        instead of hiding among six identical green pills. Four buttons became three, with
-        one primary. Names sit on one line, so row rhythm is even.
-      </p>
+      <p class="legend"><strong>Breadcrumb changed.</strong> With groups, the trail reads <em>Parts › All parts</em> — the group name is the first crumb, so the hierarchy is visible on the page as well as in the rail. That is how someone learns the grouping without being taught it.</p>
     </div>
 
     <!-- ---------- PART DETAIL ---------- -->
     <div class="p-detail">
-      <div class="crumbs"><span>Dashboard</span><span>›</span><span>Parts</span><span>›</span><span class="mono">11688010300381</span></div>
-
+      <div class="crumbs"><span>Parts</span><span>›</span><span>All parts</span><span>›</span><span class="mono">11688010300381</span></div>
       <div class="dhead">
         <div class="big-thumb">photo</div>
         <div style="min-width:0">
-          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem">
-            <span class="mono psku">11688010300381</span>
-            <span class="chip">Motor</span>
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
+            <span class="mono psku">11688010300381</span><span class="chip">Motor</span>
           </div>
           <h1>Ananda M100 36v 250w Canbus JIS 24" speed 25</h1>
         </div>
-        <div class="dactions">
-          <button class="btn">Edit</button>
-          <button class="btn btn-primary">Adjust stock</button>
-        </div>
+        <div class="dactions"><button class="btn">Edit</button><button class="btn btn-primary">Adjust stock</button></div>
       </div>
-
       <div class="metrics">
-        <div class="metric">
-          <span class="metric-lbl">Stock on hand</span>
-          <span class="metric-val">100</span>
-          <span class="metric-hint">across 1 location</span>
-        </div>
-        <div class="metric">
-          <span class="metric-lbl">Retail price</span>
-          <span class="metric-val">2.281,00</span>
-          <span class="metric-hint">excl. VAT — added at invoicing</span>
-        </div>
-        <div class="metric">
-          <span class="metric-lbl">Stock value</span>
-          <span class="metric-val">2.592,10</span>
-          <span class="metric-hint">on-hand × last landed cost</span>
-        </div>
-        <div class="metric">
-          <span class="metric-lbl">Suppliers</span>
-          <span class="metric-val">1</span>
-          <span class="metric-hint">Eastek HK · offering on file</span>
-        </div>
+        <div class="metric"><span class="metric-lbl">Stock on hand</span><span class="metric-val">100</span><span class="metric-hint">across 1 location</span></div>
+        <div class="metric"><span class="metric-lbl">Retail price</span><span class="metric-val">2.281,00</span><span class="metric-hint">excl. VAT — added at invoicing</span></div>
+        <div class="metric"><span class="metric-lbl">Stock value</span><span class="metric-val">2.592,10</span><span class="metric-hint">on-hand × last landed cost</span></div>
+        <div class="metric"><span class="metric-lbl">Suppliers</span><span class="metric-val">1</span><span class="metric-hint">Eastek HK · offering on file</span></div>
       </div>
-
       <div class="stack">
         <section class="panel">
-          <div class="panel-head">
-            <h2 class="panel-title">Photos</h2>
-            <button class="btn">Upload photos</button>
-          </div>
-          <div class="photos">
-            <div class="photo"><span class="hero">Hero</span>motor.webp</div>
-            <div class="photo">+ add</div>
-          </div>
+          <div class="panel-head"><h2 class="panel-title">Photos</h2><button class="btn">Upload photos</button></div>
+          <div class="photos"><div class="photo"><span class="hero">Hero</span>motor.webp</div><div class="photo">+ add</div></div>
         </section>
-
         <div>
           <div class="fold"><span class="chev">›</span><span><span class="fold-t">Details</span> <span class="fold-d">— descriptions, specs, reorder settings, attributes</span></span></div>
           <div class="fold"><span class="chev">›</span><span><span class="fold-t">Kit labels</span> <span class="fold-d">— Green 2</span></span></div>
@@ -809,14 +609,7 @@ html[data-page="detail"] .p-dash,html[data-page="detail"] .p-parts{display:none}
           <div class="fold"><span class="chev">›</span><span><span class="fold-t">Stock movements</span> <span class="fold-d">— last 30 days</span></span></div>
         </div>
       </div>
-
-      <p class="legend">
-        <strong>What changed on this page.</strong> The four boxed KPI tiles with ALL-CAPS
-        eyebrows are the most dated pattern in the app. In A they become an unboxed
-        measurement band divided by hairlines — the same information, no frames. In B they
-        become flat colour washes carrying domain meaning. Everything below the fold line
-        collapses, so the page opens at one screen instead of five.
-      </p>
+      <p class="legend"><strong>The metric row keeps its washes</strong> — blue for stock, ochre for the two money figures, green for supply. Colour is doing the grouping so the eyebrow labels can stay small.</p>
     </div>
 
   </main>
@@ -832,6 +625,45 @@ function sync(){
 document.querySelectorAll('.controls button').forEach(b => {
   b.addEventListener('click', () => { root.dataset[b.dataset.set] = b.dataset.val; sync(); });
 });
+/* ---- Group open/closed state: independent, and remembered ----
+   NOT an accordion. Opening one group must not close another, or "once it's
+   open it stays open" is broken by the next click. Each group is its own
+   toggle and the whole set is persisted, so the rail fans out exactly the way
+   the person left it.
+
+   The mock-up uses localStorage because it's a static file. THE REAL APP MUST
+   USE A COOKIE — the sidebar renders server-side in layout.tsx, so the server
+   has to know the state to emit the right markup. localStorage would render
+   every group closed and then pop them open after hydration: a layout shift
+   on every single page load. */
+const NAV_KEY = 'jensen.nav.open';
+
+function loadOpenSet(){
+  const raw = localStorage.getItem(NAV_KEY);
+  // No entry at all = never set → fall back to defaults in the markup.
+  // An empty string = deliberately all-closed. The two must stay distinct.
+  if (raw === null) return null;
+  return new Set(raw ? raw.split(',') : []);
+}
+function saveOpenSet(){
+  const open = [...document.querySelectorAll('.navparent[aria-expanded="true"]')]
+    .map(p => p.dataset.group);
+  localStorage.setItem(NAV_KEY, open.join(','));
+}
+function applyStoredNav(){
+  const stored = loadOpenSet();
+  if (!stored) return;
+  document.querySelectorAll('.navparent').forEach(p => {
+    p.setAttribute('aria-expanded', String(stored.has(p.dataset.group)));
+  });
+}
+document.querySelectorAll('.navparent').forEach(p => {
+  p.addEventListener('click', () => {
+    p.setAttribute('aria-expanded', String(p.getAttribute('aria-expanded') !== 'true'));
+    saveOpenSet();
+  });
+});
+applyStoredNav();
 sync();
 </script>
 </body>

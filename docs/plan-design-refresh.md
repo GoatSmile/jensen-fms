@@ -1,7 +1,34 @@
 # Plan — design refresh (UI / UX / IA)
 
-**Status: proposal for discussion. No code changed.** Written 2026-07-26 after
-walking the running app screen by screen.
+**Status: direction chosen 2026-07-26. No app code changed yet.** Written after
+walking the running app screen by screen; §0 records what the owner locked.
+
+## 0. Decisions locked (2026-07-26)
+
+| Question | Decision |
+|---|---|
+| Look and feel | **Direction B — "Emalje"**, the colour/shading/flat-fill system |
+| Direction A ("Værksted") | **Rejected.** Paper-and-hairlines is out |
+| Typeface | **Keep Geist.** No display face — contrast comes from weight and size alone |
+| Wordmark | **Keep** the "Ægte Jensen · KVALITETSCYKLER" lockup as set |
+| Buttons | **Keep B's** pill buttons |
+| Navigation | **7 groups**, not 14 flat items |
+| Group open/closed state | **Remembered per person and persisted.** Independent toggles — *not* an accordion |
+
+Consequences worth noting, because they change earlier sections:
+
+- §5's recommendation (A as base, borrowing from B) is **superseded** — B is the
+  base outright. Everything about paper grounds, Fraunces and hairline-instead-of-box
+  in §5 Direction A is dead; read it as rejected-alternative history only.
+- Dropping the display face means B's identity now rests **entirely** on colour,
+  shading and shape. That raises the stakes on colour governance (§5's warning
+  about B) rather than lowering them: there is no typographic fallback if the hue
+  vocabulary drifts.
+- Persisted group state **rules out the accordion.** If opening one group closed
+  another, "once it's open it stays open" would be broken by the next click. See §7.
+
+Live mock-up of the chosen direction: `docs/mockups/design-directions.html`
+(toggles Current vs B, three pages, 14-flat vs 7-group nav, light and dark).
 
 Companion: `docs/plan-cutover.md` — the 31 Aug transfer date constrains what is
 safe to do before Dennis sees this version. §10 sequences against it.
@@ -240,33 +267,95 @@ alone has 7. Five items are order types sitting at the same level as "Bikes".
 work. The customer Map — which you have described as a sales and prospecting
 tool — is hidden under Admin.
 
-### Option 1 — regroup to seven (the target)
+### The chosen shape — seven groups
 
 ```
-Today          (was Dashboard)
-Bikes          bikes · templates · families
-Parts          parts · stock value · kits
-Work           tickets · work orders · workshop floor · inbox   ← badge count
-Orders         manufacturing · purchase · sales · paint · invoices
-Customers      organisations · contacts · agreements · map
+Today
+Bikes        · all bikes · templates · families
+Parts        · all parts · stock value · kits
+Work         · tickets · work orders · workshop floor · inbox   ← badge count
+Orders       · manufacturing · purchase · sales · paint · invoices
+Customers    · all customers · service agreements · map
 Admin
 ```
 
-Each group item navigates **straight to its most-used child** and shows its
-siblings as tabs — so no extra click on the common path, and the permanent rail
-drops from 14 to 7. "Work" becomes the single place where a job lives, which is
-also where the Inbox count belongs.
+Three things this buys beyond a shorter rail:
 
-### Option 2 — keep the routes, restyle the rail (the cheap version)
+1. **Group names are concepts, not pages.** "Orders" is what Dennis calls that
+   part of the job; "Purchase orders" is one route inside it.
+2. **It stops the rail growing.** CLAUDE.md fixes nav as per-service-type
+   permanently — so Paint becomes Paint + Wash + Prime as service types are
+   added. Flat, that is a 15th, 16th, 17th line. Grouped, they are children and
+   the rail stays seven.
+3. **Templates, families and kits stop being Admin.** Kits are a floor picking
+   aid and families group templates; neither is configuration. Moving them under
+   Bikes/Parts also removes three tiles from the Admin landing.
 
-Same 14 destinations, but: drop the icons (they add colour noise and no
-recognition value for text labels this distinct), add uppercase micro-headings
-per group (*Daily · Orders · System*), lighten the weight, increase the spacing.
-Zero routing change, purely visual, done in one file.
+### How groups behave — the mechanics
 
-**Recommendation: Option 2 before the cutover, Option 1 after.** Option 1
-changes URLs and muscle memory, which is the last thing to do two weeks before
-you ask a team to switch systems.
+**Independent toggles, remembered per person.** Not an accordion. This is the
+owner's call and it is the right one: an accordion closes one group when you
+open another, which directly contradicts "once it's open it stays open". Each
+group is its own switch and the whole set persists, so the rail fans out exactly
+the way that person left it — spatial memory holds because nothing moves unless
+they move it.
+
+Click cost, honestly:
+
+| Journey | Today | Grouped |
+|---|---|---|
+| Into a group you keep open | 1 | **1** |
+| Sibling of where you are (group open) | 1 | **1** |
+| Into a group you keep closed | 1 | 2 |
+
+The only regression is groups you deliberately keep shut — which is a choice the
+person made, and the dashboard's money band already covers the common
+cross-domain entry ("Go invoice" jumps straight in).
+
+Two rules that keep it usable:
+
+- **Never force a group open on navigation.** If someone closed Orders and then
+  follows a dashboard link into a purchase order, re-opening Orders would undo
+  their setting. Respect the setting.
+- **But always mark where you are.** A closed group containing the current page
+  shows a dot, so closing your working group never costs you your sense of
+  place. Breadcrumbs carry the group as the first crumb (*Parts › All parts*),
+  which is also how the grouping teaches itself without training.
+
+### Where the state lives — use a cookie, not localStorage
+
+This is the one implementation detail that is easy to get wrong and expensive to
+retrofit. **The sidebar renders server-side** in `src/app/layout.tsx` from
+`readGate()`. With `localStorage`, the server has no idea which groups are open,
+so every page load would render everything closed and then pop groups open after
+hydration — **a layout shift on every single navigation**, which is precisely the
+kind of jank that makes an app feel cheap.
+
+So: a cookie, read in the server layout, same pattern as the existing `fms_auth`
+and role-session cookies.
+
+- **Encoding:** the set of OPEN group ids, comma-joined (`nav_open=bikes,orders`).
+- **Absent cookie ≠ empty cookie.** No cookie means "never set" → fall back to
+  code defaults (open the group containing the current page). An empty value
+  means "deliberately closed everything". Collapsing those two states is the
+  obvious bug here; the mock-up's logic is unit-tested against exactly this.
+- **Durable, not session-scoped.** The owner said "stored in a session" but also
+  "stays so until changed" — read as a lasting preference. ~1 year, not a
+  session cookie.
+- **New groups added later** are not in an existing cookie, so they take their
+  code default rather than silently arriving closed.
+
+Per-person rather than per-browser is a later upgrade: mirror onto `people` once
+role sessions carry a person in prod (they do not yet — no role passwords are
+set). Not needed for the shop today, and it does not change the cookie design.
+Worth noting the shared-tablet worry resolves itself: mechanics work in floor
+mode, which has its own reduced nav with no groups at all (§6).
+
+**Sequencing:** this changes URLs and muscle memory, so it is **not** a
+pre-cutover change. Phase 1 keeps the 14 routes and only restyles the rail (drop
+icons, add group micro-headings, lighter weight, more spacing) — zero routing
+change, one file. Groups land in Phase 3, after 31 Aug, ideally agreed with
+Dennis first since he is the one with the muscle memory.
 
 ## 8. Page count — 102 is too many, and ~19 are near-duplicates
 
@@ -358,32 +447,82 @@ before go-live.
    all-clear. Confirmed in `src/components/dashboard-card.tsx`.
 3. **The logo is illegible in the mobile header** (~20px tall detailed lockup).
    `public/icon-mark.svg` exists and should be used below a breakpoint.
+4. **Dark-mode primary buttons are below WCAG AA — 3.07:1.**
+   `--primary-foreground` stays near-white in both themes while `--primary`
+   flips to a light blue. Affects every primary button, active nav item and
+   filled badge in dark mode. Measured, not estimated; see §13 for the fix.
 
 Minor: three `/parts` filter dropdowns (Supplier, Kit, Stock) render as empty
 chevron buttons with no value shown, and the table overflows horizontally at
 1280px.
 
-## 12. What I need from you
+## 12. Still open
 
-1. **Direction A or B** — or A-with-B's-colour-fills, which is my
-   recommendation.
-2. **Accent: keep navy, or move to petrol?** Moving it touches `themeColor`,
-   the PWA splash and the icons, so it is a brand decision, not a CSS one.
-3. **Display face** — Fraunces, Bricolage Grotesque, or stay all-Geist and win
-   the contrast through scale and weight alone. Type is the one thing I would
-   not commit to from a description; see §13.
-4. **Phase 1 before 31 Aug — yes?** And is Phase 2 a September project?
-5. **Nav Option 1 later — agreed in principle?** It changes URLs, so it wants
-   your explicit blessing before I plan it.
+Answered in §0: direction, typeface, wordmark, buttons, nav shape, group-state
+persistence. What remains:
 
-## 13. Before committing: see it, don't read it
+1. **The brand accent moves, and it needs a decision.** B as drawn uses signal
+   blue **`#2E5FD1`**, noticeably brighter than today's navy `#1e4a7a`. Adopting
+   it touches `themeColor` in `layout.tsx`, the PWA splash, and the generated
+   icons — so it is a brand call, not a CSS one. Options: take B's blue, or
+   retune B's palette around the existing navy (the other five hues still work,
+   the wash set would shift slightly cooler).
+2. **Colour governance.** With no display face, the six hues carry the whole
+   identity. The vocabulary needs to be written down as a rule with one owner
+   before Phase 2 spreads it across 159 files, or it drifts into decoration.
+   CLAUDE.md already documents a four-hue section-tint vocabulary — B's set
+   supersedes it, and the two must not coexist.
+3. **Phase 1 before 31 Aug — confirm?** Tokens plus the four shared dashboard
+   components plus the rail restyle. One day, essentially one file.
+4. **Phase 3 groups — agree with Dennis first?** It changes URLs and the shape
+   he will have spent a month learning. My recommendation is to ship Phase 1's
+   restyled 14 now, let him live with it, and raise groups at a September
+   session rather than deciding it for him.
 
-Type and colour cannot honestly be judged from hex values in a document. The
-cheap next step is a **static style tile** — one self-contained page showing
-Direction A and Direction B side by side, rendering the real dashboard cards,
-a parts table row, a part-detail header and the sidebar, in both light and dark.
-No app code touched; you look, you point, and only then do we spend Phase 1 on
-the winner.
+## 13. Contrast measured — three real failures, now fixed
 
-That is roughly an hour of my time and it removes almost all the risk of
-choosing wrong. I would do that next, on your word.
+I measured all 24 hue pairs against WCAG AA rather than eyeballing them, because
+with the display face gone colour carries the whole identity. Three failed, one
+badly:
+
+| Pair | Was | Problem |
+|---|---|---|
+| **white on `--accent`, dark mode** | **2.59:1** | The dark accent is a *light* blue, so the primary button, active nav item and Hero badge were white-on-light-blue — effectively unreadable |
+| `--money` on its wash, light | 3.76:1 | At 12px bold uppercase a panel title is **not** WCAG "large text", so it needs the full 4.5:1 |
+| `--buy` on its wash, light | 4.43:1 | Marginal miss |
+| `--ink-3` hints | 3.23:1 light / 3.82:1 dark | Hint text under AA in both themes |
+
+The dark-mode button was the one worth catching — it would have shipped as a
+button nobody could read, in the theme least likely to get a careful look.
+
+**Corrected token values (all 24 pairs now ≥ 4.5:1, both themes):**
+
+```
+light   --ink-3 #75746F   --money #8E6725   --buy #AF5029
+        --on-accent #FFFFFF   --on-alert #FFFFFF
+dark    --ink-3 #898983
+        --on-accent #161615   --on-alert #161615      ← the flip
+```
+
+The structural lesson for Phase 1: **text sitting on a filled accent needs its
+own token** (`--on-accent`), not a fixed near-white.
+
+**And this is not hypothetical — the shipped app has the same bug.** In
+`src/app/globals.css`, `--primary-foreground` is `oklch(0.985 0 0)` in *both*
+themes, while `--primary` flips from `oklch(0.36 0.105 255)` to
+`oklch(0.65 0.13 245)`. Converted and measured:
+
+| Theme | Button | Ratio | |
+|---|---|---|---|
+| Light | `#FAFAFA` on `#0D3D72` | **10.47:1** | AA |
+| Dark | `#FAFAFA` on `#3F96D9` | **3.07:1** | **fails AA** |
+| Dark, fixed | `#0A0A0A` on `#3F96D9` | 6.18:1 | AA |
+
+So every primary button, active nav item and filled badge in the app's dark
+theme is currently below AA. Fix it in Phase 1 regardless of which accent wins —
+it is a two-line token change (`--primary-foreground` gets a dark value under
+`.dark`) and independent of the whole redesign.
+
+Also still true, and not a contrast matter: **colour must never be the only
+carrier.** Status pills keep their text labels (*Out*, *Low*); panel washes are
+reinforced by the title in the matching hue and by position.

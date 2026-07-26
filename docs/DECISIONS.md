@@ -611,3 +611,88 @@ Twilio, Resend, Anthropic, Dynadot DNS). A perfect backup gives Jensen the
 data and the code, not a running service or a phone number. Own decision at
 the 19-Aug session: migrate to Jensen-owned org accounts, or a written
 arrangement with credentials in a shared vault. Plan: `docs/plan-cutover.md`.
+
+## 2026-07-26 — Design direction: Emalje in Geist, grouped nav, remembered state
+Owner reviewed the two directions rendered side by side
+(`docs/mockups/design-directions.html`) and locked:
+
+- **Direction B — "Emalje"** — the colour / shading / flat-fill system, with its
+  pill buttons. **Direction A ("Værksted")** — warm paper ground, hairline rules
+  instead of boxes — **rejected.**
+- **Keep Geist.** No display face. Fraunces and Bricolage Grotesque both
+  rejected; heading contrast comes from weight and size alone.
+- **Keep the "Ægte Jensen · KVALITETSCYKLER" wordmark** as set in the mock-up.
+- **Seven grouped nav items**, not fourteen flat ones.
+
+The consequence to hold onto: dropping the display face puts the entire visual
+identity on colour, shading and shape. That *raises* the stakes on the hue
+vocabulary rather than lowering them — there is no typographic fallback if it
+drifts. B's six hues supersede the four-hue section-tint vocabulary currently
+documented in CLAUDE.md; the two must not coexist. Also live: B's accent is
+signal blue `#2E5FD1` against today's navy `#1e4a7a`, and changing it touches
+`themeColor`, the PWA splash and the generated icons — a brand decision, not CSS.
+
+## 2026-07-26 — Nav group state: independent toggles, persisted, server-read
+Owner's requirement: "once it's open, it stays open for him; if he closes it, it
+stays so until changed — the fan out looks the same how the person set it."
+
+**This rules out an accordion**, which was the mechanic first proposed. An
+accordion closes one group when another opens, so the next click would undo the
+person's setting. Each group is therefore its own toggle and the full set is
+persisted. Spatial memory is the actual goal: nothing in the rail moves unless
+the person moves it.
+
+**Persist in a COOKIE, not localStorage.** The sidebar renders server-side in
+`src/app/layout.tsx`; with localStorage the server cannot know which groups are
+open, so every load would render all-closed and pop them open after hydration —
+a layout shift on every navigation. Cookie, read in the server layout, same
+pattern as `fms_auth` and the role session.
+
+Mechanics that are easy to get wrong:
+- **Absent cookie ≠ empty cookie.** No cookie = never set → code defaults (open
+  the group containing the current page). Empty value = deliberately all closed.
+  Collapsing the two is the obvious bug; the mock-up's logic is unit-tested
+  against exactly this case, plus non-accordion toggling.
+- **Durable, not session-scoped** (~1 year). "Stored in a session" was read
+  together with "stays so until changed" as a lasting preference.
+- **Never force a group open on navigation** — that would undo the setting. But
+  always mark the group containing the current page with a dot, so closing your
+  working group doesn't cost your sense of place. Breadcrumbs carry the group as
+  the first crumb (*Parts › All parts*), which teaches the grouping unprompted.
+- **New groups** added later aren't in an existing cookie, so they take their
+  code default instead of silently arriving closed.
+
+Per-person (rather than per-browser) is a later upgrade: mirror onto `people`
+once role sessions carry a person in prod — they don't yet, no role passwords
+are set. The shared-workshop-tablet worry resolves itself, because mechanics use
+floor mode, whose reduced nav has no groups.
+
+**Sequencing unchanged:** groups change URLs and muscle memory, so they are
+Phase 3 (after the 31 Aug cutover), ideally agreed with Dennis rather than
+decided for him. Phase 1 keeps the 14 routes and only restyles the rail.
+
+## 2026-07-26 — Direction B palette corrected against WCAG AA (dev call)
+Measured all 24 hue pairs in B's palette rather than eyeballing them, because
+dropping the display face leaves colour carrying the identity alone. Four
+failures, corrected in the mock-up and recorded as the token set for Phase 1:
+
+| Pair | Was | Now |
+|---|---|---|
+| near-white on `--accent`, DARK | **2.59:1** | `--on-accent #161615` → 7.00:1 |
+| `--money` on its wash, light | 3.76:1 | `#8E6725` → 4.59:1 |
+| `--buy` on its wash, light | 4.43:1 | `#AF5029` → 4.63:1 |
+| `--ink-3` hints | 3.23 / 3.82:1 | `#75746F` / `#898983` → 4.68 / 4.69:1 |
+
+A 12px bold uppercase panel title is **not** WCAG "large text", so hue-on-wash
+needs the full 4.5:1, not 3:1. That is what caught money and buy.
+
+Two durable rules out of this:
+- **Text on a filled accent needs its own token** (`--on-accent`), never a fixed
+  near-white — because the accent's lightness flips between themes and the text
+  colour must flip with it.
+- **The shipped app already has this exact bug.** `--primary-foreground` is
+  `oklch(0.985 0 0)` in both themes while `--primary` goes
+  `oklch(0.36 0.105 255)` → `oklch(0.65 0.13 245)`. Measured: `#FAFAFA` on
+  `#3F96D9` = **3.07:1**, below AA. So every dark-mode primary button, active nav
+  item and filled badge is currently failing. Two-line fix, independent of the
+  redesign — do it in Phase 1 whichever accent wins.
