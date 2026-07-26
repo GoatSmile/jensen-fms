@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/claude-md-budget.sh 470",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/claude-md-budget.sh 485",
             "timeout": 20
           },
           {

@@ -52,88 +52,196 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Direction B "Emalje" — the six-hue vocabulary, exposed as Tailwind
+     utilities (bg-money-wash, text-good, border-rule, …). These are the
+     names the surface primitives and section fills are written against;
+     the shadcn tokens above are remapped onto them in :root so the 187
+     files that use bg-background / text-muted-foreground / border inherit
+     B without being touched. */
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-wash: var(--brand-wash);
+  --color-on-brand: var(--on-brand);
+  --color-money: var(--money);
+  --color-money-wash: var(--money-wash);
+  --color-good: var(--good);
+  --color-good-wash: var(--good-wash);
+  --color-alert: var(--alert);
+  --color-alert-wash: var(--alert-wash);
+  --color-on-alert: var(--on-alert);
+  --color-buy: var(--buy);
+  --color-buy-wash: var(--buy-wash);
+  --color-system: var(--system);
+  --color-system-wash: var(--system-wash);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Direction B — "Emalje". Locked with the owner 2026-07-26: colour /
+   shading / flat-fill on a warm off-white ground, pill buttons, Geist kept
+   with no display face. Because there is no display face, THESE SIX HUES
+   CARRY THE ENTIRE IDENTITY — see the vocabulary in CLAUDE.md before
+   introducing a colour.
+
+   Values are HEX on purpose, not oklch: all 24 foreground/background pairs
+   were measured against WCAG AA at exactly these numbers (see
+   docs/plan-design-refresh.md §13). Do not "tidy" them into oklch — the
+   round-trip moves the ratios. Anything below 4.5:1 is a bug, including
+   12px bold uppercase panel titles, which are NOT WCAG "large text".
+   ───────────────────────────────────────────────────────────────────── */
 :root {
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* Brand accent — Deep Nordic blue (#1e4a7a). Used for primary buttons,
-     focus rings, and the active sidebar item. One accent only; secondaries
-     stay neutral so the blue marks "something to click / something selected"
-     rather than decoration. */
-  --primary: oklch(0.36 0.105 255);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.025 255);          /* faint blue tint for active backgrounds */
-  --accent-foreground: oklch(0.36 0.105 255);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.5 0.105 255);
-  /* Chart palette — 5 distinct hues, anchored to the brand blue.
-     Picked for side-by-side legibility (no two within 60° on the wheel)
-     and WCAG-AA contrast on a white background. */
-  --chart-1: oklch(0.55 0.13 250);          /* brand blue */
-  --chart-2: oklch(0.7 0.16 60);            /* amber */
-  --chart-3: oklch(0.6 0.13 195);           /* teal */
-  --chart-4: oklch(0.5 0.18 320);           /* plum */
-  --chart-5: oklch(0.65 0.12 100);          /* olive */
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.36 0.105 255);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0.025 255);
-  --sidebar-accent-foreground: oklch(0.36 0.105 255);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.5 0.105 255);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Ground + ink. The page is #FBFBF9, not #FFFFFF — pure white ground is
+     one of the six things that made the old UI read as clinical. */
+  --ground: #fbfbf9;
+  --surface: #ffffff;
+  --ink: #1c1c1a;
+  --ink-2: #6b6b66;
+  --ink-3: #75746f; /* hints; #8A8A85 measured 3.23:1 and failed */
+  --rule: #e9e9e4;
+  --rule-strong: #dcdcd5;
+
+  /* The six hues + their block-fill washes. Meaning is fixed app-wide:
+     brand = navigation / primary action · money = invoicing, revenue ·
+     good = ready, in stock, on schedule · alert = overdue, blocked ·
+     buy = purchasing, supplier, landed cost · system = admin, agreements. */
+  --brand: #2e5fd1;
+  --brand-ink: #2e5fd1;
+  --brand-wash: #eaf0fd;
+  --on-brand: #ffffff;
+  --money: #8e6725; /* #A16207 measured 3.76:1 on its wash */
+  --money-wash: #faf2e4;
+  --good: #10725a;
+  --good-wash: #e6f4f0;
+  --alert: #c0392b;
+  --alert-wash: #fbedeb;
+  --on-alert: #ffffff;
+  --buy: #af5029; /* #A16207 measured 4.43:1 — marginal miss */
+  --buy-wash: #fceee8;
+  --system: #7a3a96;
+  --system-wash: #f4ecf8;
+
+  /* ── shadcn tokens, remapped onto B ─────────────────────────────────
+     Every one of these is referenced by the 187 files that hand-roll a
+     surface, so redefining them here is what makes B propagate without a
+     file sweep. Keep shadcn's SEMANTICS: its `--accent` is a hover/active
+     background, not the brand colour (that's `--brand`). Collapsing those
+     two would repaint every hover state brand-blue. */
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: #f2f2ee;
+  --secondary-foreground: var(--ink);
+  --muted: #f4f4f0;
+  --muted-foreground: var(--ink-2);
+  --accent: var(--brand-wash);
+  --accent-foreground: var(--brand-ink);
+  --destructive: var(--alert);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--brand);
+
+  /* Chart palette = the same six hues, so a chart never introduces a
+     seventh meaning. Still no two within 60° on the wheel. */
+  --chart-1: var(--brand);
+  --chart-2: var(--money);
+  --chart-3: var(--good);
+  --chart-4: var(--system);
+  --chart-5: var(--buy);
+
+  /* 0.625rem → 1rem. Rounder panels + pill buttons are B's shape signature;
+     the button primitive goes to rounded-full separately. */
+  --radius: 1rem;
+
+  /* The rail sits a step deeper than the ground so it reads as chrome
+     without needing a border. */
+  --sidebar: #f5f5f1;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--brand-wash);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--brand);
 }
 
+/* Dark theme. NOTE: nothing in the app applies `.dark` today — there is no
+   theme provider and no prefers-color-scheme wiring, so this block is
+   currently unreachable. It is kept complete and measured anyway, because
+   the moment a toggle lands an un-migrated dark set would mix B's light
+   surfaces with the old navy dark ones. Ground stays warm charcoal, never
+   pure black. `--on-brand` / `--on-alert` FLIP to dark ink here: the dark
+   hues are lighter than their light-mode counterparts, so near-white text
+   on them is the 3.07:1 failure this file used to ship. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  /* Lighter blue for visibility on dark — so the text on top must go DARK.
-     Keeping the near-white light-mode foreground here measured 3.07:1
-     (#FAFAFA on #3F96D9), below WCAG AA, on every primary button, active
-     nav item and filled badge in the dark theme. Dark ink reads 6.18:1.
-     Rule: text sitting on a filled accent needs its own per-theme token,
-     never a fixed near-white. */
-  --primary: oklch(0.65 0.13 245);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.28 0.05 250);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.13 245);
-  --chart-1: oklch(0.65 0.13 250);
-  --chart-2: oklch(0.75 0.15 60);
-  --chart-3: oklch(0.7 0.12 195);
-  --chart-4: oklch(0.6 0.16 320);
-  --chart-5: oklch(0.7 0.11 100);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.13 245);
-  --sidebar-primary-foreground: oklch(0.145 0 0);
-  --sidebar-accent: oklch(0.28 0.05 250);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.13 245);
+  --ground: #161615;
+  --surface: #1f1f1e;
+  --ink: #f5f5f2;
+  --ink-2: #9c9c96;
+  --ink-3: #898983;
+  --rule: #2e2e2c;
+  --rule-strong: #3a3a37;
+
+  --brand: #7ca0ee;
+  --brand-ink: #9bb8f3;
+  --brand-wash: #1e2a44;
+  --on-brand: #161615;
+  --money: #d5a755;
+  --money-wash: #332a18;
+  --good: #4fb197;
+  --good-wash: #14302a;
+  --alert: #e2705f;
+  --alert-wash: #331e1b;
+  --on-alert: #161615;
+  --buy: #de8259;
+  --buy-wash: #33211a;
+  --system: #b27bc9;
+  --system-wash: #2a1e33;
+
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: #292927;
+  --secondary-foreground: var(--ink);
+  --muted: #242422;
+  --muted-foreground: var(--ink-2);
+  --accent: var(--brand-wash);
+  --accent-foreground: var(--brand-ink);
+  --destructive: var(--alert);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--brand);
+
+  --chart-1: var(--brand);
+  --chart-2: var(--money);
+  --chart-3: var(--good);
+  --chart-4: var(--system);
+  --chart-5: var(--buy);
+
+  --sidebar: #1a1a19;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--on-brand);
+  --sidebar-accent: var(--brand-wash);
+  --sidebar-accent-foreground: var(--brand-ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--brand);
 }
 
 @layer base {

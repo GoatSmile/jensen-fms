@@ -44,17 +44,18 @@ known:
   with "log: Jul 9 was 7h"). Update the monthly total. Days without a row =
   didn't work; never backfill gaps unasked. **Cap the summary at ~200
   characters** (a hook flags longer) — headline plus one clause, no
-  semicolon-chains. The old "one line per row" failed because a
-  5,900-char paragraph is still one line; detail goes to `docs/archive/`.
+  semicolon-chains; detail goes to `docs/archive/`.
 - **Session end**: update `docs/STATUS.md` — overwrite, don't append. A new
   session must be able to resume from this file + STATUS.md alone.
 - **When something ships**: reduce, don't grow. Durable residue (a new
   invariant, a new gotcha) lands here; the narrative goes to
-  `docs/archive/`; STATUS.md gets rewritten. Budget for this file: **~470
-  lines** (raised from 450 on 2026-07-25 when the per-file write rules moved
-  inline — structural overhead, not narrative; a `.claude/hooks` check now
-  flags a breach the moment it happens). The test for every line: *would a
-  fresh session behave incorrectly without it?*
+  `docs/archive/`; STATUS.md gets rewritten. Budget for this file: **~485
+  lines** (450 → 470 when the per-file write rules moved inline, → 485 on
+  2026-07-26 for the six-hue colour vocabulary, which replaced the smaller
+  four-hue tint rule and now carries the whole visual identity), flagged by a
+  `.claude/hooks` check the moment it's breached. Raises are for *structural*
+  invariants only — never to make room for narrative. The test for every
+  line: *would a fresh session behave incorrectly without it?*
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
   entry in the same commit as the code that implements it.
 
@@ -350,7 +351,7 @@ cross-cutting. Original SQL files live in `/migrations/`.
   `{detail}`.
 - Enum labels are message namespaces (`bikeStatus`, `moStatus`, `poStatus`,
   …): `t(status)` with a `t.has(status)` guard. The old `*Label()` helpers
-  are unused — don't reintroduce them (deletion queued in BACKLOG.md).
+  are deleted — don't reintroduce them.
 - Controlled-vocab names render via `localizedName(locale, en, da)`
   (`src/i18n/vocab.ts`) — never raw `name_en` on a translated surface.
 - Deliberately English: `parts.name_en` / template / family names, org
@@ -395,21 +396,37 @@ cross-cutting. Original SQL files live in `/migrations/`.
     lives on the **Admin** landing page (`src/app/admin/page.tsx`), whose
     tiles are grouped into tinted section cards: *Catalog & inventory* ·
     *Purchasing & landed cost* · *Customers* (incl. Map) · *System*.
-- **Section-tint hue vocabulary.** Pages that stack *different kinds* of
-  sections (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`,
-  ticket + agreement details) tint each section card; hues carry stable
-  meaning app-wide — **sky = workshop/ops · emerald = customers/sales/
-  communication · violet = agreements/system · amber = money/purchasing**.
-  Class pattern: `border-{hue}-200/70 bg-{hue}-50/70
-  dark:border-{hue}-900/40 dark:bg-{hue}-950/20` (shared `Section` takes
-  `className`); inner tables/chips sit on `bg-background`. Do NOT tint
-  homogeneous entity-detail or single-list pages — color is meaningful only
-  while it's scarce. Two entity pages carry a partial tint (part detail, SO
-  detail) because they genuinely stack foreign domains; section order =
-  descending question frequency. Tech screens (workbench banners) don't use
-  the tint vocabulary. Exception: the "Push to e-conomic" button wears
-  e-conomic brand orange `#ef7d00` (hover `#e86807`) + the `EconomicMark`
-  logo (destination branding, not vocabulary).
+- **Colour vocabulary — six hues carry the whole identity** (direction B
+  "Emalje", locked 2026-07-26; Geist with **no display face**, so nothing
+  falls back if the meanings drift). Closed list — a seventh meaning is a
+  decision, not a styling choice: **`brand`** = nav / primary action ·
+  **`money`** = invoicing, revenue · **`good`** = ready, in stock, on
+  schedule · **`alert`** = overdue, blocked, out · **`buy`** = purchasing,
+  suppliers, landed cost · **`system`** = admin, agreements, config.
+  - **Use the tokens, never raw Tailwind palette colours** —
+    `bg-money-wash` / `text-good` / `border-rule`, not `bg-amber-50`.
+    Raw palette colours don't inherit the theme and are cooler than B's
+    measured set; that mix is what turns a colour system into fruit salad.
+    The old four-hue tint vocabulary is **superseded**: sky/blue →
+    `brand`, emerald/green → `good`, amber → `money` (or `alert` where it
+    meant *warning*), violet → `system`, rose/red → `alert`.
+  - **Contrast is a gate.** Every hue/wash pair is measured ≥ 4.5:1 in
+    both themes and the values are hex on purpose (see the `globals.css`
+    header). A 12px bold uppercase eyebrow is **not** "large text". Text
+    on a filled accent uses `--on-brand` / `--on-alert`, which flip per
+    theme — never a fixed near-white.
+  - **Colour is never the only carrier**: status pills keep their text
+    labels (*Out*, *Low*).
+  - `--radius` is `1rem`; buttons are pills except inside a button group.
+- **Section tinting.** Only pages stacking *different kinds* of section
+  (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`, ticket +
+  agreement details) fill each section with its domain's wash; inner
+  tables/chips sit on `bg-surface`. Never tint homogeneous entity-detail or
+  single-list pages — colour is meaningful only while scarce. Part detail
+  and SO detail tint partially, since they genuinely stack foreign domains;
+  section order = descending question frequency. Workbench banners don't
+  tint. Exception: "Push to e-conomic" wears e-conomic orange `#ef7d00`
+  (hover `#e86807`) + `EconomicMark` — destination branding, not vocabulary.
 - Plan-then-build: before writing code, list files you intend to
   create/modify and wait for confirmation.
 - Time estimates quoted as `~X human-dev-min (Y min wait)` — X is the
