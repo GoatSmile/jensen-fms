@@ -526,6 +526,45 @@ the 812-line `CLAUDE.md`, in a file nobody thought to re-read because it is
 gitignored. Prefer a small list of broad rules each backed by a hook over a
 long list of narrow ones backed by nothing.
 
+## 2026-07-26 — A SessionStart hook for the hours ledger
+
+The worklog ritual had the one property this project keeps proving fatal: its
+trigger was *noticing*. `/session-start` fires when the user types it or when
+the assistant recognises "first exchange of a new working day" — and today it
+recognised neither. A session opened with a docs question, ran four commits,
+and never logged a row. **The ledger was only saved because a parallel session
+happened to run its own session-end ritual and reconciled the day.** That is
+luck, and luck is not a process.
+
+`.claude/hooks/worklog-session-check.sh` (SessionStart) now states the ledger's
+state at the moment the ritual is meant to fire: whether today has a row, what
+the last row was, and — the case that actually bit — whether commits have
+already landed today without one.
+
+Design constraints, because a nagging hook gets ignored and then removed:
+- **Silent when today has a row.** The common case costs nothing.
+- **Facts, not tasks.** CLAUDE.md already rules that a day without a row means
+  you didn't work, so a missing row is reported, never demanded. The
+  no-commits wording says outright that no row may be correct.
+- **Cannot block.** SessionStart hooks are informational by nature; the worst
+  failure mode is silence.
+
+Both branches were verified by simulation (row removed → the commits-landed
+message; commits forced to zero → the quiet-day message), and the worklog was
+restored to a clean diff afterwards.
+
+**Rejected:** blocking a commit when today has no row — it would fire on
+docs-only and quick-fix days and would be trained away within a week; and
+auto-writing the row from commit timestamps, because hours are the user's to
+state and an invented estimate is worse than an absent one.
+
+This completes the pattern started 2026-07-25: every ritual in this project
+that used to depend on memory — commit gates, blanket adds, the CLAUDE.md
+budget, worklog row size, and now the worklog row itself — has a mechanism
+behind it. The remaining honour-system rule is the DECISIONS "same commit as
+the code" one, which is unenforceable by a hook because only a human knows a
+decision was made.
+
 ## 2026-07-26 — Model selection: discover it, don't type it (owner call)
 The extraction model was a **free-text box** (`inbound_extraction_model`,
 default `claude-haiku-4-5-20251001`). A typo or a retired id doesn't fail at
