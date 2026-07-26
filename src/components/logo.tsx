@@ -28,3 +28,22 @@ export function Logo({ heightClass = "h-10", className }: Props) {
     />
   );
 }
+
+/**
+ * Square lettermark, for places too small for the lockup. The detailed
+ * hand-drawn wordmark rendered ~20px tall in the mobile header and was
+ * illegible — at that size the mark is the honest choice. Same asset the
+ * PWA icons are generated from.
+ */
+export function LogoMark({ heightClass = "h-7", className }: Props) {
+  return (
+    <Image
+      src="/icon-mark.svg"
+      alt="Ægte Jensen — Kvalitetscykler"
+      width={512}
+      height={512}
+      priority
+      className={cn(heightClass, "w-auto rounded-sm", className)}
+    />
+  );
+}

@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { CircleUser, Menu, X } from "lucide-react";
 
-import { Logo } from "@/components/logo";
+import { Logo, LogoMark } from "@/components/logo";
 import { filterNavGroups, isNavItemActive } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -146,12 +146,8 @@ export function MobileNav({
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
-      <Link
-        href="/"
-        aria-label={t("logoAria")}
-        className="flex items-center"
-      >
-        <Logo heightClass="h-7" />
+      <Link href="/" aria-label={t("logoAria")} className="flex items-center">
+        <LogoMark heightClass="h-7" />
       </Link>
       {/* Right side spacer matches the hamburger size so the logo sits centred-ish. */}
       <div className="size-8" aria-hidden />

@@ -103,9 +103,14 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  /* Lighter blue for visibility on dark; foreground stays near-white. */
+  /* Lighter blue for visibility on dark — so the text on top must go DARK.
+     Keeping the near-white light-mode foreground here measured 3.07:1
+     (#FAFAFA on #3F96D9), below WCAG AA, on every primary button, active
+     nav item and filled badge in the dark theme. Dark ink reads 6.18:1.
+     Rule: text sitting on a filled accent needs its own per-theme token,
+     never a fixed near-white. */
   --primary: oklch(0.65 0.13 245);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -124,7 +129,7 @@
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.65 0.13 245);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
   --sidebar-accent: oklch(0.28 0.05 250);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);

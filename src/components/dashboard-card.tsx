@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Check, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -125,13 +125,29 @@ type AttentionProps = {
   /** Optional "see all" link in the header. */
   viewAllHref?: string;
   viewAllLabel?: string;
-  /** Tone affects the empty-state coloring — success when nothing's wrong. */
+  /**
+   * How loud this card's SUBJECT is when it has something to say — drives the
+   * left rail. It deliberately does NOT colour the empty state: an all-clear
+   * is good news whatever the card is about.
+   */
   tone?: "neutral" | "warning" | "destructive";
   children: React.ReactNode;
 };
 
+const TONE_RAIL: Record<NonNullable<AttentionProps["tone"]>, string> = {
+  neutral: "border-l-border",
+  warning: "border-l-amber-500 dark:border-l-amber-400",
+  destructive: "border-l-destructive",
+};
+
 /**
  * "Needs attention" tile — header + list of items (or empty-state).
+ *
+ * `tone` used to be applied to the empty message, which rendered "Every open
+ * MO is on schedule." in red and "No paint orders waiting longer than
+ * expected." in amber — alarm colours for the all-clear. The tone describes
+ * the card's subject, so it now marks the card (left rail) only while there
+ * are actually items, and the empty state always reads as resolved.
  */
 export function AttentionCard({
   title,
@@ -144,7 +160,12 @@ export function AttentionCard({
   const t = useTranslations("dashboard");
   const hasChildren = React.Children.count(children) > 0;
   return (
-    <section className="flex h-full flex-col gap-3 rounded-lg border p-4">
+    <section
+      className={cn(
+        "flex h-full flex-col gap-3 rounded-lg border p-4",
+        hasChildren ? cn("border-l-2", TONE_RAIL[tone]) : null,
+      )}
+    >
       <header className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">{title}</h2>
         {viewAllHref && hasChildren ? (
@@ -159,14 +180,11 @@ export function AttentionCard({
       {hasChildren ? (
         <ul className="flex flex-col gap-1.5">{children}</ul>
       ) : (
-        <p
-          className={cn(
-            "text-xs",
-            tone === "destructive" && "text-destructive",
-            tone === "warning" && "text-amber-700 dark:text-amber-400",
-            tone === "neutral" && "text-muted-foreground",
-          )}
-        >
+        <p className="text-muted-foreground flex items-start gap-1.5 text-xs">
+          <Check
+            className="mt-px size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+            aria-hidden
+          />
           {emptyMessage}
         </p>
       )}
