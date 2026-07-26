@@ -1,157 +1,120 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-26, end of day.** Most recent: the sales-lead dead end
-closed (an `order_inquiry` now drafts via the VC-1 command agent), model
-selection became a live picker + Test probe with everything moved to
-`claude-sonnet-5`, and the **cutover plan + owner brief** drafted for the
-17–21 Aug sessions with Dennis.
+**Last updated: 2026-07-26, end of day.** Most recent: the **design direction is
+locked** (B "Emalje" in Geist, grouped nav with remembered state), the **cutover
+plan + owner brief** are drafted for the 17–21 Aug sessions with Dennis, and the
+**sales-lead dead end is closed** plus model selection became a live picker.
 
-This is the session-death recovery file: a fresh session (human or LLM)
-resumes from `CLAUDE.md` + this file. **Overwrite it at session end — never
-append.** That applies to this header too: what shipped in earlier sessions
-belongs in `docs/archive/HISTORY.md` and `docs/WORKLOG.md`, not in a growing
-parenthetical here. History belongs in `docs/archive/`, decisions in
-`docs/DECISIONS.md`, parked ideas in `docs/BACKLOG.md`.
+This is the session-death recovery file: a fresh session (human or LLM) resumes
+from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
+That applies to this header too: what shipped in earlier sessions belongs in
+`docs/archive/HISTORY.md` and `docs/WORKLOG.md`, not in a growing parenthetical
+here. History belongs in `docs/archive/`, decisions in `docs/DECISIONS.md`,
+parked ideas in `docs/BACKLOG.md`.
 
 ## Where we are
 - **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
   Vercel SSO. 78 migrations, single-tenant, solo-dev.
 - **Operationally feature-complete** for the workshop's daily job: parts +
-  categories + inventory ledger; suppliers + offerings; POs + additive
-  frozen landed cost + email-to-supplier (test mode); bike templates
-  (versioned, families); MOs + build workbench + batch build; bikes +
-  lifecycle + QR; service orders (paint, on the generic external-services
-  model); sales orders + slating automation; organizations/contacts/units +
-  customer map; maintenance tickets + work orders; workshop floor (`/work`);
-  invoicing 3D complete (WO/SO invoices, deposits/finals, credit notes,
-  agreement fees); e-conomic push (verified end-to-end against a trial
-  agreement); inbound voicemail → ticket pipeline **live in prod in shadow
-  mode**; whole-app Danish i18n swept (locales still set to `en`).
-- **People & roles P1–P4 all shipped 2026-07-23** — the interim system is
-  complete (migrations 73 + 74). P1 schema + `/admin/people`; P2
-  role-password login + capability gating; P3 tap-your-name `/whoami` + WO
-  assignees + /work "Mine" + per-person worker language; P4 notification
-  delivery (ticket.created, wo.assigned, invoice.overdue daily cron) via
-  `src/lib/people/notify.ts` + `notification_log`, email through the
-  test-mode reroute. Design + per-phase notes in
-  `docs/plan-people-roles.md`; mechanics in DECISIONS 2026-07-23. **No role
-  passwords are set in prod**, so login behaviour is unchanged until they
-  are (shared password → owner-role session; legacy cookies valid).
-  Notifications also stay in the test-mode reroute until email go-live, so
-  P4 sends nothing to real inboxes yet.
-- **`docs/PLAYBOOK-AUGUST.md`** — the owner-facing solo-August playbook
-  (July item 7, together with the docs restructure).
-- Inbound shadow-testing rides the US trial number **+1 762 500 0850**
-  (the DK number +45 9370 3111 moved to Munin 2026-07-17). Dennis's company
-  number remains the production plan.
+  categories + inventory ledger; suppliers + offerings; POs + additive frozen
+  landed cost + email-to-supplier (test mode); bike templates (versioned,
+  families); MOs + build workbench + batch build; bikes + lifecycle + QR;
+  service orders (paint, on the generic external-services model); sales orders
+  + slating automation; organizations/contacts/units + customer map;
+  maintenance tickets + work orders; workshop floor (`/work`); invoicing 3D
+  complete; e-conomic push (verified against a trial agreement); inbound
+  voicemail + live-call recording → ticket pipeline **live in prod in shadow
+  mode**; whole-app Danish i18n swept (locales still `en`).
+- **People & roles P1–P4 shipped 2026-07-23** (migrations 73 + 74) — the interim
+  system is complete. **No role passwords are set in prod**, so login behaviour
+  is unchanged until they are, and P4 notifications stay in the test-mode
+  reroute (nothing reaches real inboxes yet). Design in
+  `docs/plan-people-roles.md`, mechanics in DECISIONS 2026-07-23.
+- Inbound shadow-testing rides the US trial number **+1 762 500 0850**; Dennis's
+  company number remains the production plan.
+- **The July queue is complete** and its plan is archived. Owner-facing
+  `docs/PLAYBOOK-AUGUST.md` covers Dennis's solo stretch from 3 Aug.
 
-## In flight / next action
-- **CUTOVER is now the frame for everything.** `docs/plan-cutover.md` (mine:
-  stage ladder, risks, open decisions) + `docs/CUTOVER-BRIEF.md` (Dennis's,
-  English, hand-over ready). Proposed transfer date **Mon 31 Aug**; three
-  meetings in the week of **17 Aug** (workshop 18th · Nazar's place 19th ·
-  team session on transfer day). Ladder is ordered by irreversibility:
-  internal ops → supplier email + phone → first real invoice → e-conomic.
-  Two things it surfaces that are not code: **Stage 3 trips the agreed M1-auth
-  trigger** (first real invoice), and **every account is in the dev's name**.
-  Backup to Dennis's NAS as AES-256 `.7z` (the sparsebundle is macOS-only).
-- **Sales leads no longer dead-end (P2, shipped 2026-07-26).** An
-  `order_inquiry` in `/inbox` gets "Draft from this call" →
-  `planFromInquiry` phrases the call as a staff task → the VC-1 command agent
-  proposes draft customer/sales-order actions → the same CommandPlanPanel
-  reviews and applies them. Verified on the real 0.37-clarity Gladsaxe call:
-  existing customer resolved, three lines split by bike type, October
-  delivery, template ids left as open slots citing the poor transcript,
-  service agreement reported as needing off-system follow-up. Mechanics in
-  DECISIONS 2026-07-26. Gap in BACKLOG: `quantity` isn't an editable slot.
-  **P1 (follow-up date + owner on a lead) was NOT built** — deliberately
-  deferred; leads still rely on a human acting on the plan.
-- **Model selection is now discover-or-type (shipped 2026-07-26).**
-  `src/lib/inbound/models.ts` lists the live catalogue (`GET /v1/models`),
-  the admin picks or types, and **Test** proves it with a real forced
-  tool-use call. `inbound_extraction_model` = **`claude-sonnet-5`** in prod,
-  driving BOTH extraction and the command agent (the proposed second setting
-  was rejected as premature). Aliases sort above dated snapshots on purpose.
-- **Live-call recording V1 shipped + LIVE-VERIFIED 2026-07-25** — an incoming
-  call is bridged to the workshop phone and recorded dual-channel, voicemail
-  stays the no-answer fallback, and the conversation lands on the same inbound
-  trunk (dialogue extraction prompt + `callSummary` / `commitments`). Speaker
-  attribution reads Gladia's **`channel` tag**, never diarization (a
-  diarization bug the same day proved why). Plan + verdicts:
-  `docs/plan-live-call-recording.md`.
-  - **Outstanding validation: one Danish bridged test call.** Our only Danish
-    samples are mono voicemails at 0.51 / 0.26 clarity; that call is the only
-    evidence that should ever justify changing transcription provider — and it
-    also gates the AI-receptionist question.
-  - **Provider evaluation closed 2026-07-25: keep Twilio + Gladia + Claude.**
-    12+ telephony vendors assessed on record-time dual-channel; Telnyx is the
-    only credible alternative and removes no vendor. **AI receptionist (Tier C)
-    decided, not queued**: turnkey platforms (Retell/Vapi/ElevenLabs Agents)
-    fail on EU residency; if it's ever built it's ConversationRelay + our own
-    Claude loop, gated on the Danish call + a month of real `call_outcome`
-    data. Cheap alternatives first: out-of-hours routing, missed-call SMS.
-  - Known ceilings, not yet hit: `GLADIA_POLL_TIMEOUT_MS` (90 s) + the
-    recording route's `maxDuration` (60 s) are still voicemail-sized; the fix
-    is Gladia's async `callback`.
-- People & roles is done (P1–P4). **Global identifier search shipped
-  2026-07-23** (July queue item 4): `/bikes` search now matches any
-  registered identifier (lock/battery/charger/QR/RFID/AirTag/fleet no.), not
-  just frame number; result rows show a "matched via" hint; `/scan` manual
-  entry upgrades for free. Verified in-browser.
-- **Perimeter check DONE 2026-07-23 — verdict: the scary version is FALSE
-  today.** The publishable/anon key does NOT reach the browser on any route
-  (public or gated): the browser client `src/lib/supabase/client.ts` has
-  zero importers, so Next never inlines the key into client JS (confirmed by
-  a sentinel `next build` — the key landed only in `.next/server/**`, absent
-  from `.next/static/**`). The anon_all master-key risk is therefore LATENT,
-  not live. Guardrail shipped: `client.ts` now carries a loud DO-NOT-IMPORT
-  header. Low-sev residue (XFF-spoofable rate limits, `/api/qr` error echo)
-  logged in BACKLOG. See the Landmine below.
-- **Voice commands VC-1 shipped 2026-07-23** (Option A, text-first — owner's
-  middle-path call): the in-app dictate slice, no phone routing. Type/dictate
-  a task in `/inbox` → a Claude tool-use agent (`src/lib/inbound/command/`)
-  grounds refs via 6 read-only resolvers → proposes a plan of DRAFT actions
-  (customer / sales order / purchase order) → the CommandPlanPanel reviews +
-  applies each (open-slot pickers, customer→SO dependency), logging
-  provenance in `command_actions`. Migrations 75 (`in_app` channel) + 76
-  (`kind`/`command_plan`/`commanded_by` + `command_actions`). Founding
-  utterance verified end-to-end. Phone/audio ingress + staff-number fork are
-  VC-3 (August, with Dennis). Mechanics in DECISIONS 2026-07-23.
-- **Maintenance/workshop polish pass shipped 2026-07-23** (July queue item
-  5): 16 items from a surveyed punch-list — shop-floor touch safety
-  (always-visible photo delete, confirm-before-finish naming the ticket it
-  resolves, two-tap parts removal, loading skeletons), office correctness
-  (cancel/complete errors surface inside the dialog, bikeless triage tickets
-  save, **WO cancel now returns consumed parts to stock**, blank-labor-rate
-  warning, desktop finish-confirm), build (honest "Print recipe" label,
-  surfaced bulk-add identifier error, clear-build arm resets), scan/i18n
-  copy. Owner calls: WO-cancel reverses inventory; blank labor rate warns
-  (doesn't auto-bill). Bike-scoped per-bike print sheet deferred to BACKLOG.
-- **July queue is COMPLETE** (all items 1–6 shipped). The **inbound stats
-  fold shipped thin 2026-07-23** — a dashboard calibration fold (match rate
-  / ticket-conversion / low-clarity / spam / intent mix over shadow rows,
-  `inbox`-capability-gated); it's minimal by design until real inbound data
-  lands in August. The `plan-july9-vacation-month` plan is closed + archived
-  to `docs/archive/`. Only the opportunistic P4 ticket.created/wo.assigned
-  live confirmation remains (low-risk, below).
-- **Deferred, needs a browser**: a live in-app confirmation of the P4
-  ticket.created / wo.assigned hooks (the delivery engine itself was
-  verified live via the invoice.overdue cron; the two action hooks are the
-  same proven path + tsc/build-green wiring, but weren't driven through the
-  UI because the preview pane couldn't reliably open the searchable bike
-  picker this session). Low risk; confirm opportunistically.
+## The frame: CUTOVER is now what everything serves
+`docs/plan-cutover.md` (working plan: stage ladder, risks, open decisions) +
+`docs/CUTOVER-BRIEF.md` (Dennis's, English, hand-over ready).
 
-## July queue (re-sequenced 2026-07-17)
-Frame: Dennis is back Aug 3, Nazar leaves Aug 4 — July output must be
-self-serve for Dennis's solo August onboarding.
-1. People & roles P1 ✅ P2 ✅ P3 ✅ P4 ✅ — all 2026-07-23 (interim complete)
-2. Voice commands VC-1 ✅ 2026-07-23 — in-app text-first slice (Option A);
-   phone/audio ingress deferred to VC-3 (August)
-3. Inbound stats fold ✅ 2026-07-23 (thin — dashboard calibration fold;
-   real data starts when Dennis's number lands, August)
-4. Global identifier search ✅ 2026-07-23
-5. Maintenance/workshop polish pass ✅ 2026-07-23 (16-item punch-list)
-6. Handover notes ✅ — docs restructure + `docs/PLAYBOOK-AUGUST.md`
+- **Proposed transfer date: Mon 31 Aug** — one hard line after which no new work
+  is recorded in Excel or on paper. Confirm or move it in Meeting 1.
+- **Three meetings, week of 17 Aug**: workshop Mon 18th (reality check, agree
+  the date) · Nazar's place Wed 19th (invoicing-parity workshop, revisor on the
+  phone, restore rehearsal) · team session on transfer day.
+- **Ladder, ordered by irreversibility**: internal ops → supplier email +
+  phone → first real invoice → e-conomic. e-conomic is deliberately LAST.
+- **Migrate almost nothing**: customers + bikes in the field only. Opening stock
+  is a physical count on the morning, not a data task.
+- Two things it surfaces that are not code: **Stage 3 trips the agreed M1-auth
+  trigger** (first real invoice), and **every account is in the dev's name** —
+  a backup on Dennis's NAS gives him data and code, not a running service.
+- Off-site copy to Jensen's on-site NAS as an **AES-256 `.7z`** (the backup
+  kit's sparsebundle is macOS-only, so a NAS can store it and nobody there can
+  open it). Owner's call; runbook in the plan, to be rehearsed on the 19th.
+
+## Design refresh — direction locked, not yet built
+`docs/plan-design-refresh.md` + live mock-up
+`docs/mockups/design-directions.html` (Current vs B, three pages, 14-flat vs
+7-group nav, light + dark).
+
+- **Locked**: Direction **B "Emalje"** — colour / shading / flat-fill system with
+  pill buttons. Direction A rejected. **Keep Geist, no display face.** Keep the
+  "Ægte Jensen · KVALITETSCYKLER" wordmark. **Seven grouped nav items.**
+- **Group open/closed state is remembered per person** — independent toggles,
+  **not** an accordion (an accordion would undo the setting on the next click).
+  **Persist in a COOKIE, not localStorage**: the sidebar renders server-side, so
+  localStorage means a layout shift on every navigation. Absent cookie (→ code
+  defaults) must stay distinct from empty cookie (→ deliberately all closed).
+- **Sequencing against the cutover.** Only **15 of 187 files** use the shared
+  `Section`; 159 hand-roll `rounded-* border` (345 occurrences), and shadcn
+  `Card` is imported zero times. Tokens propagate; structure does not. So:
+  **Phase 1 = tokens + the four shared dashboard components + rail restyle**
+  (one day, ~one file, revertable) is safe before Dennis. **Phase 2 = surface
+  primitives + the 159-file migration is a September project** — do NOT attempt
+  it before 31 Aug. Phase 3 = grouped nav, `/admin/lists`, settings sub-rail.
+- **Still open**: B's accent is signal blue `#2E5FD1` vs today's navy `#1e4a7a`
+  — adopting it touches `themeColor`, the PWA splash and the icons, so it is a
+  brand call. And colour governance needs one written owner before Phase 2.
+- **When Phase 1 lands, CLAUDE.md's section-tint hue vocabulary (sky/emerald/
+  violet/amber) must be replaced** by B's six hues — the two must not coexist.
+  CLAUDE.md is deliberately unchanged until then, because it still describes
+  what the code does.
+
+## Shipped this session
+- **Sales leads no longer dead-end (P2).** An `order_inquiry` in `/inbox` gets
+  "Draft from this call" → `planFromInquiry` phrases the call as a staff task →
+  the VC-1 command agent proposes draft customer / sales-order actions → the
+  same CommandPlanPanel reviews and applies them. Writes only `command_plan`
+  (status/error/processed_at belong to extract → match → triage) and carries the
+  same re-plan lock as `rerunCommandAgent`, since plan action ids are positional.
+  Verified on the real 0.37-clarity Gladsaxe call. **P1 (follow-up date + owner
+  on a lead) was NOT built** — deliberately deferred, so a lead still relies on a
+  human acting on the plan.
+- **Model selection is discover-or-type.** `src/lib/inbound/models.ts` lists the
+  live catalogue (`GET /v1/models`), the admin picks or types, and **Test**
+  proves it with a real forced tool-use call. `inbound_extraction_model` =
+  **`claude-sonnet-5`** in prod, driving BOTH extraction and the command agent
+  (the proposed second setting was rejected as premature). Aliases sort above
+  dated snapshots on purpose.
+- **Lint is now in the commit gate** (morning session), with the 4 genuine
+  errors fixed and the SSR/RSC noise silenced.
+
+## Next actions, in order
+1. **Fix the dark-mode contrast bug** — `--primary-foreground` stays near-white
+   in both themes while `--primary` flips lightness: `#FAFAFA` on `#3F96D9` =
+   **3.07:1**, below WCAG AA. Every dark-mode primary button, active nav item and
+   filled badge is failing *today*. Two-line token fix, independent of the
+   redesign. Plus the other three bugs in `plan-design-refresh.md` §11 (Scan FAB
+   overlaps the sidebar Collapse control; `AttentionCard` renders all-clear
+   messages in red/amber; the logo is illegible in the mobile header).
+2. **Decide the accent** (navy vs B's blue) — gates Phase 1.
+3. **Phase 1 design tokens** — before Dennis sees this version.
+4. **Chase the external blockers** in the cutover plan §7 (revisor in one
+   conversation with four questions; `orders@valent.dk`; e-conomic production
+   token; company CVR/bank/address).
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.

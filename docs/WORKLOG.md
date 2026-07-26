@@ -64,10 +64,10 @@ treat the early totals as floors, not truth.
 | Thu 2026-07-23 | ~18 | **People & roles P1–P4 all shipped** (migs 73–74) — interim auth complete; docs restructure for handover (CLAUDE.md 1457 → 450 lines + the docs/ scheme); global identifier search; perimeter audit; voice commands VC-1 (migs 75–76). July queue 1–5 done |
 | Sat 2026-07-25 | ~7 | **Live-call recording V1 shipped + live-verified on a real bridged call** (migs 77–78); speaker attribution fixed to Gladia's `channel` tag; provider evaluation closed (keep Twilio + Gladia + Claude); AI-receptionist tier decided, not queued |
 
-| Sun 2026-07-26 | ~3 | Lint triage (16 errors → 4 genuine) + SortHeader/dialog-identity fixes; inbox sales-lead + LLM-model-config analysis; cutover plan + owner brief drafted |
+| Sun 2026-07-26 | ~7 | Lint triage + SortHeader/dialog fixes; live model picker (→sonnet-5) + sales-lead drafting shipped; cutover plan + owner brief; design direction B locked w/ contrast fixes |
 
-**July so far: ~117 h** (17 working days)
+**July so far: ~121 h** (17 working days)
 
 ---
 
-**Project total: ~200.5 h across 33 working days (2026-05-07 → 2026-07-26)**
+**Project total: ~204.5 h across 33 working days (2026-05-07 → 2026-07-26)**
