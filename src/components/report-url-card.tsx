@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ExternalLink, MessageCircleWarning } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { CopyButton } from "@/components/copy-button";
+import { Metric } from "@/components/ui/metric";
+import { Panel } from "@/components/ui/panel";
 import { appOrigin } from "@/lib/qr";
 import { createServiceClient } from "@/lib/supabase/service";
 import { reportPageViewCount } from "@/lib/report/track-view";
@@ -40,20 +42,16 @@ export async function ReportUrlCard() {
   const ticketsCount = ticketsRes.count ?? 0;
 
   return (
-    <section className="rounded-lg border bg-card p-4 sm:p-5">
-      <header className="flex flex-col gap-1 pb-3">
-        <div className="flex items-center gap-2">
-          <MessageCircleWarning
-            className="text-muted-foreground size-4"
-            aria-hidden
-          />
-          <h2 className="text-sm font-semibold">{t("reportUrlTitle")}</h2>
-        </div>
-        <p className="text-muted-foreground text-xs">{t("reportUrlDesc")}</p>
-      </header>
-
+    <Panel
+      title={t("reportUrlTitle")}
+      description={t("reportUrlDesc")}
+      hue="good"
+      contentClassName="pt-1"
+    >
       <div className="flex flex-col gap-3">
-        <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border p-2">
+        {/* Inner surfaces sit on bg-surface, per the tinting rule — the wash
+            belongs to the panel, not to everything inside it. */}
+        <div className="bg-surface flex flex-wrap items-center gap-2 rounded-md p-2">
           <code className="flex-1 font-mono text-sm break-all">{reportUrl}</code>
           <div className="flex gap-1.5">
             <CopyButton
@@ -64,7 +62,7 @@ export async function ReportUrlCard() {
             <Link
               href="/report"
               target="_blank"
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1.5 text-xs"
+              className="text-ink-2 hover:text-ink bg-surface inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs"
             >
               <ExternalLink className="size-3.5" aria-hidden />{" "}
               {t("reportUrlOpen")}
@@ -72,25 +70,31 @@ export async function ReportUrlCard() {
           </div>
         </div>
 
+        {/* The audit's other boxed metric row. Same treatment as part
+            detail's: flat washes, no borders. `good` throughout — these are
+            all "the public report page is working" counts, one subject. */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <Stat
+          <Metric
+            hue="good"
             label={t("reportUrlVisits")}
             value={views}
             hint={t("reportUrlVisitsHint", { days: STATS_WINDOW_DAYS })}
           />
-          <Stat
+          <Metric
+            hue="good"
             label={t("reportUrlMsgVisits")}
             value={helpViews}
             hint={t("reportUrlMsgVisitsHint", { days: STATS_WINDOW_DAYS })}
           />
-          <Stat
+          <Metric
+            hue="good"
             label={t("reportUrlSubmitted")}
             value={ticketsCount}
             hint={t("reportUrlSubmittedHint", { days: STATS_WINDOW_DAYS })}
           />
         </div>
 
-        <div className="text-muted-foreground border-t pt-3 text-xs">
+        <div className="text-ink-2 border-rule border-t pt-3 text-xs">
           <p>
             {t.rich("reportUrlFallback", {
               helpUrl,
@@ -107,26 +111,7 @@ export async function ReportUrlCard() {
           </p>
         </div>
       </div>
-    </section>
+    </Panel>
   );
 }
 
-function Stat({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: number;
-  hint: string;
-}) {
-  return (
-    <div className="bg-muted/30 flex flex-col gap-1 rounded-md border p-2.5">
-      <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-        {label}
-      </span>
-      <span className="text-xl font-semibold tabular-nums">{value}</span>
-      <span className="text-muted-foreground text-[10px]">{hint}</span>
-    </div>
-  );
-}

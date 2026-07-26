@@ -220,21 +220,23 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
                   className="flex items-center justify-end gap-1.5 px-2 py-2.5 tabular-nums sm:gap-2 sm:px-4"
                 >
                   <span>{formatQuantity(row.stockOnHand)}</span>
-                  {/* "In stock" is too long for a tight phone column;
-                      shorten to "In" below sm. Badge colour still
-                      carries the meaning. */}
-                  <Badge variant={STOCK_BADGE_VARIANT[row.stockStatus]}>
-                    <span className="sm:hidden">
-                      {row.stockStatus === "ok"
-                        ? tStock("shortOk")
-                        : row.stockStatus === "low"
+                  {/* Only LOW and OUT get a pill. A badge on 100% of rows
+                      carries zero information and costs attention — the
+                      quantity beside it already says "in stock", and the
+                      exceptions are what the eye should catch. "In stock" was
+                      also the long label crowding the phone column. */}
+                  {row.stockStatus === "ok" ? null : (
+                    <Badge variant={STOCK_BADGE_VARIANT[row.stockStatus]}>
+                      <span className="sm:hidden">
+                        {row.stockStatus === "low"
                           ? tStock("shortLow")
                           : tStock("shortOut")}
-                    </span>
-                    <span className="hidden sm:inline">
-                      {tStock(row.stockStatus)}
-                    </span>
-                  </Badge>
+                      </span>
+                      <span className="hidden sm:inline">
+                        {tStock(row.stockStatus)}
+                      </span>
+                    </Badge>
+                  )}
                 </Link>
               </TableCell>
               <TableCell className="hidden p-0 text-right md:table-cell">

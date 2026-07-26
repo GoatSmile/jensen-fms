@@ -188,7 +188,14 @@ function FilterSelect({
           id={id}
           className={cn(value !== "all" && FILTER_ACTIVE_CLASS)}
         >
-          <SelectValue />
+          {/* Resolve the label ourselves rather than leaving <SelectValue />
+              empty. Radix reads the selected item's text from the mounted
+              SelectContent, which doesn't exist while the menu is closed — so
+              a bare <SelectValue /> rendered these three triggers as blank
+              chevron buttons with no value shown. Children always win. */}
+          <SelectValue>
+            {options.find((o) => o.value === value)?.label ?? label}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {options.map((opt) => (

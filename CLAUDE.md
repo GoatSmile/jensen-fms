@@ -414,11 +414,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
     The old four-hue tint vocabulary is **superseded**: sky/blue →
     `brand`, emerald/green → `good`, amber → `money` (or `alert` where it
     meant *warning*), violet → `system`, rose/red → `alert`.
-  - **Contrast is a gate.** All 78 fg/bg pairs measure ≥ 4.5:1 per theme —
-    including every hue on every *foreign* wash, since a `hue` panel lets any
-    of them meet. Values are hex on purpose (see the `globals.css` header). A
-    12px bold uppercase eyebrow is **not** "large text". And colour is never
-    the only carrier — status pills keep their labels (*Out*, *Low*).
+  - **Contrast is a gate.** All 78 fg/bg pairs measure ≥ 4.5:1 per theme, incl.
+    every hue on every *foreign* wash (a `hue` panel lets any two meet). Values
+    are hex on purpose (see `globals.css`). A 12px bold uppercase eyebrow is
+    **not** "large text"; colour is never the only carrier (*Out*, *Low*).
   - `--radius` is `1rem`; buttons are pills except inside a button group.
 - **Section tinting.** Only pages stacking *different kinds* of section
   (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`, ticket +

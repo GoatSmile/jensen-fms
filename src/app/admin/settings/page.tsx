@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
 import { ReportUrlCard } from "@/components/report-url-card";
 import { createClient } from "@/lib/supabase/server";
 
@@ -101,136 +102,120 @@ export default async function AdminSettingsPage() {
 
       <ReportUrlCard />
 
-      <section className="rounded-md border bg-system-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("languageHeading")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("languageDescription")}
-          </p>
-        </header>
-        <div className="p-4">
-          <LanguageSettingsForm
-            initialAppLanguage={appLanguage}
-            initialWorkerLanguage={workerLanguage}
-          />
-        </div>
-      </section>
+      <Panel
+        title={t("languageHeading")}
+        description={t("languageDescription")}
+        hue="system"
+        contentClassName="pt-1"
+      >
+      <LanguageSettingsForm
+        initialAppLanguage={appLanguage}
+        initialWorkerLanguage={workerLanguage}
+      />
+      </Panel>
 
-      <section className="rounded-md border bg-good-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("communicationHeading")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("communicationDescription")}
-          </p>
-        </header>
-        <div className="p-4">
-          <CommunicationSettingsForm
-            initialFromEmail={data?.outbound_from_email ?? ""}
-            initialReplyToEmail={data?.outbound_reply_to_email ?? ""}
-            initialTestMode={data?.outbound_test_mode ?? true}
-            initialTestEmail={data?.outbound_test_email ?? ""}
-            initialWorkshopPhone={data?.workshop_phone ?? ""}
-          />
-        </div>
-      </section>
+      <Panel
+        title={t("communicationHeading")}
+        description={t("communicationDescription")}
+        hue="brand"
+        contentClassName="pt-1"
+      >
+      <CommunicationSettingsForm
+        initialFromEmail={data?.outbound_from_email ?? ""}
+        initialReplyToEmail={data?.outbound_reply_to_email ?? ""}
+        initialTestMode={data?.outbound_test_mode ?? true}
+        initialTestEmail={data?.outbound_test_email ?? ""}
+        initialWorkshopPhone={data?.workshop_phone ?? ""}
+      />
+      </Panel>
 
-      <section className="rounded-md border bg-good-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("dnsHeading")}</h2>
-          <p className="text-muted-foreground text-xs">{t("dnsDescription")}</p>
-        </header>
-        <div className="p-4">
-          <EmailDnsCard
-            initialDomain={data?.email_domain ?? ""}
-            initialRecords={dnsRecords}
-          />
-        </div>
-      </section>
+      <Panel
+        title={t("dnsHeading")}
+        description={t("dnsDescription")}
+        hue="system"
+        contentClassName="pt-1"
+      >
+      <EmailDnsCard
+        initialDomain={data?.email_domain ?? ""}
+        initialRecords={dnsRecords}
+      />
+      </Panel>
 
-      <section className="rounded-md border bg-buy-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("accountingHeading")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("accountingDescription")}
-          </p>
-        </header>
-        <div className="p-4">
-          <EconomicSettingsForm
-            initialEnabled={data?.economic_enabled === true}
-            initialJournalNumber={
-              data?.economic_journal_number != null
-                ? String(data.economic_journal_number)
-                : ""
-            }
-            initialRevenueAccount={
-              data?.economic_revenue_account != null
-                ? String(data.economic_revenue_account)
-                : ""
-            }
-            initialVatCode={data?.economic_vat_code ?? ""}
-            initialCustomerGroup={
-              data?.economic_customer_group != null
-                ? String(data.economic_customer_group)
-                : ""
-            }
-            initialVatZone={
-              data?.economic_vat_zone != null
-                ? String(data.economic_vat_zone)
-                : ""
-            }
-            initialPaymentTerms={
-              data?.economic_payment_terms != null
-                ? String(data.economic_payment_terms)
-                : ""
-            }
-            tokensReady={economicEnvReady()}
-          />
-        </div>
-      </section>
+      <Panel
+        title={t("accountingHeading")}
+        description={t("accountingDescription")}
+        hue="money"
+        contentClassName="pt-1"
+      >
+      <EconomicSettingsForm
+        initialEnabled={data?.economic_enabled === true}
+        initialJournalNumber={
+          data?.economic_journal_number != null
+            ? String(data.economic_journal_number)
+            : ""
+        }
+        initialRevenueAccount={
+          data?.economic_revenue_account != null
+            ? String(data.economic_revenue_account)
+            : ""
+        }
+        initialVatCode={data?.economic_vat_code ?? ""}
+        initialCustomerGroup={
+          data?.economic_customer_group != null
+            ? String(data.economic_customer_group)
+            : ""
+        }
+        initialVatZone={
+          data?.economic_vat_zone != null
+            ? String(data.economic_vat_zone)
+            : ""
+        }
+        initialPaymentTerms={
+          data?.economic_payment_terms != null
+            ? String(data.economic_payment_terms)
+            : ""
+        }
+        tokensReady={economicEnvReady()}
+      />
+      </Panel>
 
-      <section className="rounded-md border bg-brand-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("inboundHeading")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("inboundDescription")}
-          </p>
-        </header>
-        <div className="p-4">
-          <InboundSettingsForm
-            initialTranscriptionProvider={inboundSettings.transcriptionProvider}
-            initialTranscriptionRegion={inboundSettings.transcriptionRegion ?? ""}
-            initialExtractionProvider={inboundSettings.extractionProvider}
-            initialExtractionModel={inboundSettings.extractionModel}
-            initialTelephonyProvider={inboundSettings.telephonyProvider}
-            initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
-            initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
-            initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
-            initialShadowMode={inboundSettings.shadowMode}
-            initialCallMode={inboundSettings.callMode}
-            initialBridgeNumber={inboundSettings.bridgeNumber ?? ""}
-            initialBridgeTimeout={String(inboundSettings.bridgeTimeoutSeconds)}
-            initialCallTranscriptionProvider={
-              inboundSettings.callTranscriptionProviderRaw ?? ""
-            }
-            transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
-            extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
-            telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
-            secrets={inboundSecrets}
-          />
-        </div>
-      </section>
+      <Panel
+        title={t("inboundHeading")}
+        description={t("inboundDescription")}
+        hue="brand"
+        contentClassName="pt-1"
+      >
+      <InboundSettingsForm
+        initialTranscriptionProvider={inboundSettings.transcriptionProvider}
+        initialTranscriptionRegion={inboundSettings.transcriptionRegion ?? ""}
+        initialExtractionProvider={inboundSettings.extractionProvider}
+        initialExtractionModel={inboundSettings.extractionModel}
+        initialTelephonyProvider={inboundSettings.telephonyProvider}
+        initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
+        initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}
+        initialRetentionDays={String(inboundSettings.mediaRetentionDays)}
+        initialShadowMode={inboundSettings.shadowMode}
+        initialCallMode={inboundSettings.callMode}
+        initialBridgeNumber={inboundSettings.bridgeNumber ?? ""}
+        initialBridgeTimeout={String(inboundSettings.bridgeTimeoutSeconds)}
+        initialCallTranscriptionProvider={
+          inboundSettings.callTranscriptionProviderRaw ?? ""
+        }
+        transcriptionProviders={TRANSCRIPTION_PROVIDERS.map((p) => p.key)}
+        extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
+        telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
+        secrets={inboundSecrets}
+      />
+      </Panel>
 
-      <section className="rounded-md border bg-buy-wash">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("purchasingHeading")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("purchasingDescription")}
-          </p>
-        </header>
-        <div className="p-4">
-          <SettingsForm initialDefaultTransportPct={defaultTransportPct} />
-        </div>
-      </section>
+      <Panel
+        title={t("purchasingHeading")}
+        description={t("purchasingDescription")}
+        hue="buy"
+        contentClassName="pt-1"
+      >
+      <SettingsForm initialDefaultTransportPct={defaultTransportPct} />
+      </Panel>
 
     </div>
   );
