@@ -59,12 +59,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 - Bulk CSV import for parts/suppliers.
 - Dashboard service-order aging card + the service-order detail page don't
   filter by service type — fix when service type #2 becomes real.
-- **Lint is not in the commit gate.** `gates.sh` runs `tsc` + `next build`;
-  `npm run lint` has never been part of it, which is how 16 errors
-  accumulated unseen (found 2026-07-26). They are now triaged — 4 genuine
-  (one root cause), 12 SSR/RSC-pattern noise the rule can't see through.
-  Fix the genuine ones, then add lint to the gate; gating first would block
-  every commit.
 
 ## Parked product ideas
 - **Sales track: website bike-configurator + AI lead-gen agent** (parked

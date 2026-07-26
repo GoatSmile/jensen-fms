@@ -101,6 +101,17 @@ parked ideas in `docs/BACKLOG.md`.
   dated snapshots on purpose.
 - **Lint is now in the commit gate** (morning session), with the 4 genuine
   errors fixed and the SSR/RSC noise silenced.
+- **The session rituals are fully mechanised.** A docs audit corrected six
+  things the repo contradicted (the stack said Next 15 on 16; STATUS said 73
+  migrations on 78), backfilled `HISTORY.md` for 07-23 → 07-25, removed the
+  unused Trello integration, and pruned `settings.local.json` 171 → 17 —
+  dropping the `apply_migration` pre-approval, so **a migration now shows its
+  SQL in a prompt before it runs**. Two hooks joined the three from 07-25:
+  `worklog-row-budget.sh` (rows past ~300 chars — the old "one line per row"
+  couldn't catch a 5,900-char line) and `worklog-session-check.sh`
+  (SessionStart; today proved the ritual's trigger was "notice it's a new
+  working day", and it didn't). Only the DECISIONS same-commit rule is still
+  honour-system — no hook can know a decision was made.
 
 ## Next actions, in order
 1. **Fix the dark-mode contrast bug** — `--primary-foreground` stays near-white
