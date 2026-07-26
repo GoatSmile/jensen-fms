@@ -107,24 +107,3 @@ export function formatPct(pct: number | null | undefined): string {
   if (pct == null || Number.isNaN(pct)) return "—";
   return pctFormatter.format(pct);
 }
-
-/**
- * Human-friendly label for the inventory_movement_type enum.
- * Kept as a flat lookup so unknown values (future enum additions) fall through
- * to the raw value rather than blowing up.
- */
-export const MOVEMENT_TYPE_LABEL: Record<string, string> = {
-  received: "Received",
-  consumed_build: "Consumed (build)",
-  consumed_maintenance: "Consumed (maintenance)",
-  returned_to_supplier: "Returned to supplier",
-  adjustment: "Adjustment",
-  transfer_in: "Transfer in",
-  transfer_out: "Transfer out",
-  disposed: "Disposed",
-};
-
-export function movementTypeLabel(type: string | null | undefined): string {
-  if (!type) return "—";
-  return MOVEMENT_TYPE_LABEL[type] ?? type;
-}

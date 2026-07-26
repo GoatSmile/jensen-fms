@@ -50,11 +50,6 @@ export const TICKET_STATUS_VARIANT: Record<TicketStatus, BadgeVariant> = {
   cancelled: "destructive",
 };
 
-export function ticketStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return TICKET_STATUS_LABEL[s as TicketStatus] ?? s;
-}
-
 const TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
   open: ["in_diagnosis", "cancelled"],
   in_diagnosis: ["awaiting_parts", "in_repair", "resolved", "cancelled"],
@@ -92,15 +87,6 @@ export type TicketSource =
   | "scheduled"
   | "other";
 
-export const TICKET_SOURCE_LABEL: Record<TicketSource, string> = {
-  email: "Email",
-  phone: "Phone",
-  app: "App",
-  in_person: "In person",
-  scheduled: "Scheduled",
-  other: "Other",
-};
-
 export const TICKET_SOURCES: TicketSource[] = [
   "email",
   "phone",
@@ -110,11 +96,6 @@ export const TICKET_SOURCES: TicketSource[] = [
   "other",
 ];
 
-export function ticketSourceLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return TICKET_SOURCE_LABEL[s as TicketSource] ?? s;
-}
-
 /* ---------- priority ----------------------------------------------------- */
 
 /**
@@ -122,14 +103,6 @@ export function ticketSourceLabel(s: string | null | undefined): string {
  * Default is 3 (Normal). Schema column is `smallint NOT NULL DEFAULT 3`.
  */
 export type TicketPriority = 1 | 2 | 3 | 4 | 5;
-
-export const TICKET_PRIORITY_LABEL: Record<TicketPriority, string> = {
-  1: "Urgent",
-  2: "High",
-  3: "Normal",
-  4: "Low",
-  5: "Minor",
-};
 
 export const TICKET_PRIORITY_VARIANT: Record<TicketPriority, BadgeVariant> = {
   1: "destructive",
@@ -140,11 +113,6 @@ export const TICKET_PRIORITY_VARIANT: Record<TicketPriority, BadgeVariant> = {
 };
 
 export const TICKET_PRIORITIES: TicketPriority[] = [1, 2, 3, 4, 5];
-
-export function ticketPriorityLabel(p: number | null | undefined): string {
-  if (p == null) return "—";
-  return TICKET_PRIORITY_LABEL[p as TicketPriority] ?? String(p);
-}
 
 export function ticketPriorityVariant(
   p: number | null | undefined,

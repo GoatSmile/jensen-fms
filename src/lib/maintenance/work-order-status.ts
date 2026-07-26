@@ -38,11 +38,6 @@ export const WO_STATUS_VARIANT: Record<WorkOrderStatus, BadgeVariant> = {
   cancelled: "destructive",
 };
 
-export function woStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return WO_STATUS_LABEL[s as WorkOrderStatus] ?? s;
-}
-
 const TRANSITIONS: Record<WorkOrderStatus, WorkOrderStatus[]> = {
   open: ["in_progress", "cancelled"],
   in_progress: ["completed", "cancelled"],

@@ -24,15 +24,6 @@ export type InvoiceStatus =
   | "credited"
   | "cancelled";
 
-export const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {
-  draft: "Draft",
-  issued: "Issued",
-  paid: "Paid",
-  overdue: "Overdue",
-  credited: "Credited",
-  cancelled: "Cancelled",
-};
-
 type BadgeVariant =
   | "default"
   | "secondary"
@@ -50,11 +41,6 @@ export const INVOICE_STATUS_VARIANT: Record<InvoiceStatus, BadgeVariant> = {
   credited: "secondary",
   cancelled: "destructive",
 };
-
-export function invoiceStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return INVOICE_STATUS_LABEL[s as InvoiceStatus] ?? s;
-}
 
 const TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   draft: ["issued", "cancelled"],

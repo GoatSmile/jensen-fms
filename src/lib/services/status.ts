@@ -22,14 +22,6 @@ export type ServiceOrderStatus =
   | "received_back"
   | "cancelled";
 
-const STATUS_LABEL: Record<ServiceOrderStatus, string> = {
-  planned: "Planned",
-  sent: "Sent",
-  at_supplier: "At supplier",
-  received_back: "Received back",
-  cancelled: "Cancelled",
-};
-
 export const SERVICE_ORDER_STATUS_VARIANT: Record<
   ServiceOrderStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -40,23 +32,6 @@ export const SERVICE_ORDER_STATUS_VARIANT: Record<
   received_back: "success",
   cancelled: "destructive",
 };
-
-/**
- * Status label, optionally flavoured with the type's supplier noun so the
- * paint surface reads "Sent to painter" / "At painter" instead of the
- * generic "Sent" / "At supplier".
- */
-export function serviceOrderStatusLabel(
-  s: string | null | undefined,
-  supplierNoun?: string,
-): string {
-  if (!s) return "—";
-  if (supplierNoun) {
-    if (s === "sent") return `Sent to ${supplierNoun}`;
-    if (s === "at_supplier") return `At ${supplierNoun}`;
-  }
-  return STATUS_LABEL[s as ServiceOrderStatus] ?? s;
-}
 
 const TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
   planned: ["sent", "cancelled"],

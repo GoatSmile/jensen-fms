@@ -1,11 +1,5 @@
 export type ServiceAgreementStatus = "active" | "expired" | "cancelled";
 
-export const SA_STATUS_LABEL: Record<ServiceAgreementStatus, string> = {
-  active: "Active",
-  expired: "Expired",
-  cancelled: "Cancelled",
-};
-
 export const SA_STATUS_VARIANT: Record<
   ServiceAgreementStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -14,11 +8,6 @@ export const SA_STATUS_VARIANT: Record<
   expired: "secondary",
   cancelled: "destructive",
 };
-
-export function saStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return SA_STATUS_LABEL[s as ServiceAgreementStatus] ?? s;
-}
 
 /** Days until an agreement's end_date; null if no end date. */
 export function daysUntil(endDate: string | null, today: string): number | null {

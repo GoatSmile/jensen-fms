@@ -18,15 +18,6 @@ export type MOStatus =
   | "completed"
   | "cancelled";
 
-export const MO_STATUS_LABEL: Record<MOStatus, string> = {
-  planned: "Planned",
-  released: "Released",
-  in_progress: "In progress",
-  on_hold: "On hold",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
 export const MO_STATUS_VARIANT: Record<
   MOStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -38,11 +29,6 @@ export const MO_STATUS_VARIANT: Record<
   completed: "success",
   cancelled: "destructive",
 };
-
-export function moStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return MO_STATUS_LABEL[s as MOStatus] ?? s;
-}
 
 const TRANSITIONS: Record<MOStatus, MOStatus[]> = {
   planned: ["released", "cancelled"],

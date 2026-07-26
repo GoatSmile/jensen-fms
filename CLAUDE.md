@@ -59,7 +59,7 @@ known:
   entry in the same commit as the code that implements it.
 
 ## Stack
-- Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui
+- Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui
 - Supabase (Postgres) — EU West (Ireland), project ref `jzlphajunfrqvpogzsiz`
 - `@supabase/ssr` for server components; `@supabase/supabase-js` elsewhere
 - Publishable key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe with RLS)

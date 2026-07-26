@@ -27,15 +27,6 @@ export type SOStatus =
   | "delivered"
   | "cancelled";
 
-export const SO_STATUS_LABEL: Record<SOStatus, string> = {
-  draft: "Draft",
-  confirmed: "Confirmed",
-  in_production: "In production",
-  ready: "Ready",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
 export const SO_STATUS_VARIANT: Record<
   SOStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -47,11 +38,6 @@ export const SO_STATUS_VARIANT: Record<
   delivered: "success",
   cancelled: "destructive",
 };
-
-export function soStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return SO_STATUS_LABEL[s as SOStatus] ?? s;
-}
 
 const TRANSITIONS: Record<SOStatus, SOStatus[]> = {
   draft: ["confirmed", "cancelled"],

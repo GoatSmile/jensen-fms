@@ -38,17 +38,6 @@ export type BikeStatus =
   | "retired"
   | "lost_or_stolen";
 
-export const BIKE_STATUS_LABEL: Record<BikeStatus, string> = {
-  planning: "Planning",
-  building: "Building",
-  in_stock: "In stock",
-  assigned: "Assigned",
-  in_service: "In service",
-  in_maintenance: "In maintenance",
-  retired: "Retired",
-  lost_or_stolen: "Lost / stolen",
-};
-
 export const BIKE_STATUS_VARIANT: Record<
   BikeStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -62,11 +51,6 @@ export const BIKE_STATUS_VARIANT: Record<
   retired: "outline",
   lost_or_stolen: "destructive",
 };
-
-export function bikeStatusLabel(status: string | null | undefined): string {
-  if (!status) return "—";
-  return BIKE_STATUS_LABEL[status as BikeStatus] ?? status;
-}
 
 const FORWARD_TRANSITIONS: Record<BikeStatus, BikeStatus[]> = {
   planning: ["building"],

@@ -10,14 +10,6 @@ export type PurchaseOrderStatus =
   | "received"
   | "cancelled";
 
-export const PO_STATUS_LABEL: Record<PurchaseOrderStatus, string> = {
-  draft: "Draft",
-  placed: "Placed",
-  partially_received: "Partial",
-  received: "Received",
-  cancelled: "Cancelled",
-};
-
 export const PO_STATUS_VARIANT: Record<
   PurchaseOrderStatus,
   "default" | "secondary" | "warning" | "success" | "destructive" | "outline"
@@ -28,11 +20,6 @@ export const PO_STATUS_VARIANT: Record<
   received: "success",
   cancelled: "destructive",
 };
-
-export function poStatusLabel(s: string | null | undefined): string {
-  if (!s) return "—";
-  return PO_STATUS_LABEL[s as PurchaseOrderStatus] ?? s;
-}
 
 /**
  * Statuses considered "open" — i.e. still in play in the workshop. A PO that's

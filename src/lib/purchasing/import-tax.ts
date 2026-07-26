@@ -34,15 +34,6 @@ export type ImportTaxBasis =
   | "eu_origin"
   | "supplier_prepaid";
 
-/** Short labels for surfacing a zero-tariff line's basis in tables. */
-export const IMPORT_TAX_BASIS_LABELS: Record<ImportTaxBasis, string> = {
-  applied: "applied",
-  zero_rated: "zero-rated",
-  unclassified: "unclassified",
-  eu_origin: "EU origin",
-  supplier_prepaid: "duty prepaid by supplier",
-};
-
 /** Everything the snapshot decision needs to know about a (part, supplier). */
 export type ImportTaxInputs = {
   origin: PartOrigin | null;
