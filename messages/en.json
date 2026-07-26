@@ -316,7 +316,6 @@
     "subtitle": "Daily pulse — money on the table, counts, low stock, and anything that has been sitting too long.",
     "viewAll": "View all",
     "moneyAllClear": "Money side is clear — nothing uninvoiced, no overdue invoices, no agreements expiring within 90 days, no late purchase orders.",
-    "uninvoicedTitle": "Uninvoiced work — {amount}",
     "invoicingToFinish": "Invoicing to finish",
     "goInvoice": "Go invoice",
     "completedWo": "{count, plural, one {1 completed work order} other {# completed work orders}}",
@@ -325,7 +324,6 @@
     "feeMonths": "{count, plural, one {1 agreement fee month} other {# agreement fee months}}",
     "draftInvoices": "{count, plural, one {1 draft invoice} other {# draft invoices}} waiting to be issued",
     "oldestDays": "oldest {days}d",
-    "overdueTitle": "Overdue invoices — {amount}",
     "daysLate": "{days}d late",
     "agreementsExpiring": "Agreements expiring",
     "agreementFallbackName": "Service agreement",
@@ -414,7 +412,9 @@
       "noRecords": "No records for this month.",
       "invalidSelection": "Invalid month selection.",
       "loadError": "Could not load the month's records."
-    }
+    },
+    "uninvoicedLabel": "Uninvoiced work",
+    "overdueLabel": "Overdue invoices"
   },
   "common": {
     "crumbDashboard": "Dashboard",

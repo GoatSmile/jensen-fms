@@ -16,5 +16,9 @@
     "workOrders": "Arbeitsaufträge",
     "allCustomers": "Alle Kunden",
     "customerMap": "Karte"
+  },
+  "dashboard": {
+    "uninvoicedLabel": "Nicht abgerechnete Arbeit",
+    "overdueLabel": "Überfällige Rechnungen"
   }
 }

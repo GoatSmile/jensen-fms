@@ -316,7 +316,6 @@
     "subtitle": "Dagens puls — penge på bordet, nøgletal, lav lagerbeholdning og alt, der har ligget for længe.",
     "viewAll": "Se alle",
     "moneyAllClear": "Pengesiden er klar — intet ufaktureret, ingen forfaldne fakturaer, ingen aftaler der udløber inden for 90 dage, ingen forsinkede indkøbsordrer.",
-    "uninvoicedTitle": "Ufaktureret arbejde — {amount}",
     "invoicingToFinish": "Fakturering, der skal afsluttes",
     "goInvoice": "Gå til fakturering",
     "completedWo": "{count, plural, one {1 afsluttet arbejdskort} other {# afsluttede arbejdskort}}",
@@ -325,7 +324,6 @@
     "feeMonths": "{count, plural, one {1 måned med aftalegebyr} other {# måneder med aftalegebyr}}",
     "draftInvoices": "{count, plural, one {1 fakturakladde venter på udstedelse} other {# fakturakladder venter på udstedelse}}",
     "oldestDays": "ældste {days}d",
-    "overdueTitle": "Forfaldne fakturaer — {amount}",
     "daysLate": "{days}d forsinket",
     "agreementsExpiring": "Aftaler, der udløber",
     "agreementFallbackName": "Serviceaftale",
@@ -414,7 +412,9 @@
       "noRecords": "Ingen poster for denne måned.",
       "invalidSelection": "Ugyldigt månedsvalg.",
       "loadError": "Månedens poster kunne ikke indlæses."
-    }
+    },
+    "uninvoicedLabel": "Ufaktureret arbejde",
+    "overdueLabel": "Forfaldne fakturaer"
   },
   "common": {
     "crumbDashboard": "Dashboard",

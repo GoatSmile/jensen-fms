@@ -125,7 +125,10 @@
   --brand: #2e5fd1;
   --brand-ink: #2e5fd1;
   --brand-wash: #eaf0fd;
-  --money: #8e6725; /* #A16207 measured 3.76:1 on its wash */
+  /* #A16207 measured 3.76:1 on its own wash; #8E6725 fixed that but still
+     failed on FOREIGN washes (4.42:1 on system-wash). A `hue` panel lets any
+     hue's text land on any wash, so all 30 cross pairs are measured too. */
+  --money: #8a6423;
   --money-wash: #faf2e4;
   --good: #10725a;
   --good-wash: #e6f4f0;
@@ -228,7 +231,9 @@
   --alert-wash: #331e1b;
   --buy: #de8259;
   --buy-wash: #33211a;
-  --system: #b27bc9;
+  /* Lightened from #B27BC9, which failed on the dark brand/money/good washes
+     (4.42:1) — the dark-theme mirror of the light-theme `money` fix. */
+  --system: #b886ce;
   --system-wash: #2a1e33;
 
   /* All six flip to dark ink — the dark hues are LIGHTER than their

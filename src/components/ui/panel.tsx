@@ -45,6 +45,15 @@ export const HUE_TITLE: Record<PanelHue, string> = {
 export type PanelProps = {
   title?: string;
   description?: string;
+  /**
+   * A headline number for this panel, shown under the title in large type.
+   *
+   * Exists because the title is a 12px uppercase eyebrow, and interpolating a
+   * value into it renders "UNINVOICED WORK — 2.000,00 KR." — CSS uppercases the
+   * currency unit along with the label. A figure is not a label; it wants its
+   * own line, its own size and its natural casing.
+   */
+  figure?: React.ReactNode;
   /** Right-aligned header slot — a link or a button. */
   action?: React.ReactNode;
   /** Domain fill. Omit for a plain surface panel. */
@@ -69,6 +78,7 @@ export type PanelProps = {
 export function Panel({
   title,
   description,
+  figure,
   action,
   hue,
   className,
@@ -84,9 +94,14 @@ export function Panel({
         className,
       )}
     >
-      {title || action ? (
-        <header className="mb-3 flex items-baseline justify-between gap-3">
-          <div className="flex flex-col gap-1">
+      {title || figure || action ? (
+        <header
+          className={cn(
+            "flex justify-between gap-3",
+            figure ? "mb-3 items-start" : "mb-3 items-baseline",
+          )}
+        >
+          <div className="flex min-w-0 flex-col gap-1">
             {title ? (
               <h2
                 className={cn(
@@ -96,6 +111,11 @@ export function Panel({
               >
                 {title}
               </h2>
+            ) : null}
+            {figure ? (
+              <p className="text-[1.8rem] font-bold leading-none tracking-[-0.03em] tabular-nums">
+                {figure}
+              </p>
             ) : null}
             {description ? (
               <p className="text-ink-2 text-xs normal-case">{description}</p>

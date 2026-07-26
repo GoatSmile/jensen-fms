@@ -70,6 +70,8 @@ export function PipelineCard({
 
 type AttentionProps = {
   title: string;
+  /** Headline number for this card — see `Panel`'s `figure`. */
+  figure?: React.ReactNode;
   emptyMessage: string;
   /** Optional "see all" link in the header. */
   viewAllHref?: string;
@@ -90,6 +92,7 @@ type AttentionProps = {
  */
 export function AttentionCard({
   title,
+  figure,
   emptyMessage,
   viewAllHref,
   viewAllLabel,
@@ -101,6 +104,7 @@ export function AttentionCard({
   return (
     <Panel
       title={title}
+      figure={figure}
       hue={hasChildren ? hue : undefined}
       className="h-full"
       action={

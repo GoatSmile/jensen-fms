@@ -298,10 +298,13 @@ export default async function DashboardPage() {
             <AttentionCard
               title={
                 uninvoiced.total > 0
-                  ? t("uninvoicedTitle", {
-                      amount: formatPrice(uninvoiced.total, "DKK"),
-                    })
+                  ? t("uninvoicedLabel")
                   : t("invoicingToFinish")
+              }
+              figure={
+                uninvoiced.total > 0
+                  ? formatPrice(uninvoiced.total, "DKK")
+                  : undefined
               }
               emptyMessage=""
               viewAllHref="/invoices"
@@ -363,9 +366,8 @@ export default async function DashboardPage() {
 
           {hasOverdue ? (
             <AttentionCard
-              title={t("overdueTitle", {
-                amount: formatPrice(overdueInvoices.totalDkk, "DKK"),
-              })}
+              title={t("overdueLabel")}
+              figure={formatPrice(overdueInvoices.totalDkk, "DKK")}
               emptyMessage=""
               viewAllHref="/invoices"
               hue="money"
@@ -401,7 +403,7 @@ export default async function DashboardPage() {
                   key={a.id}
                   href={`/service-agreements/${a.id}`}
                   right={t("inDays", { days: a.daysLeft })}
-                  rightClassName="text-money"
+                  rightClassName="text-system"
                 >
                   <span className="truncate">
                     {a.orgName ?? a.name ?? t("agreementFallbackName")}
@@ -430,7 +432,7 @@ export default async function DashboardPage() {
                   key={po.id}
                   href={`/purchase-orders/${po.id}`}
                   right={t("daysPastExpected", { days: po.daysLate })}
-                  rightClassName="text-money"
+                  rightClassName="text-buy"
                 >
                   <span className="truncate font-mono text-xs">
                     {po.poNumber}
