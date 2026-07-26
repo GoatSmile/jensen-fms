@@ -63,6 +63,15 @@ export function ContactsSection({ organizationId, rows }: Props) {
     [rows, editingId],
   );
 
+  // Memoized because ContactDialog resets its form whenever `initial` changes
+  // identity. Built inline in JSX it was a fresh object every render, so any
+  // re-render of this section while the dialog was open wiped what the user
+  // had typed.
+  const editingValues = useMemo(
+    () => (editingRow ? contactRowToValues(editingRow) : null),
+    [editingRow],
+  );
+
   // The edit dialog reads from a row each time it opens; close on stale id.
   function handleEditOpenChange(next: boolean) {
     if (!next) setEditingId(null);
@@ -131,14 +140,14 @@ export function ContactsSection({ organizationId, rows }: Props) {
         organizationId={organizationId}
         initial={EMPTY_CONTACT}
       />
-      {editingRow ? (
+      {editingRow && editingValues ? (
         <ContactDialog
           open={editingId !== null}
           onOpenChange={handleEditOpenChange}
           mode="edit"
           organizationId={organizationId}
           contactId={editingRow.id}
-          initial={contactRowToValues(editingRow)}
+          initial={editingValues}
         />
       ) : null}
     </section>

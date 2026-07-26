@@ -47,7 +47,10 @@ export default async function CustomerMapPage() {
   const today = new Date().toISOString().slice(0, 10);
   // Agreements ending within 90 days count as "expiring soon" — the
   // prospecting/renewal signal on the map.
-  const soonCutoff = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+  const soonCutoff = new Date(
+    // eslint-disable-next-line react-hooks/purity -- async server component: this runs once per request, not in a React render, so Date.now() is correct here.
+    Date.now() + 90 * 24 * 60 * 60 * 1000,
+  )
     .toISOString()
     .slice(0, 10);
 

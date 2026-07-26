@@ -50,6 +50,13 @@ export function UnitsSection({ organizationId, rows }: Props) {
     [rows, editingId],
   );
 
+  // Memoized because UnitDialog resets its form whenever `initial` changes
+  // identity — see the same note in contacts-section.tsx.
+  const editingValues = useMemo(
+    () => (editingRow ? unitRowToValues(editingRow) : null),
+    [editingRow],
+  );
+
   function handleEditOpenChange(next: boolean) {
     if (!next) setEditingId(null);
   }
@@ -115,14 +122,14 @@ export function UnitsSection({ organizationId, rows }: Props) {
         organizationId={organizationId}
         initial={EMPTY_UNIT}
       />
-      {editingRow ? (
+      {editingRow && editingValues ? (
         <UnitDialog
           open={editingId !== null}
           onOpenChange={handleEditOpenChange}
           mode="edit"
           organizationId={organizationId}
           unitId={editingRow.id}
-          initial={unitRowToValues(editingRow)}
+          initial={editingValues}
         />
       ) : null}
     </section>

@@ -362,6 +362,7 @@ export function MOBatchForm({
                       <button
                         key={t.id}
                         type="button"
+                        // eslint-disable-next-line react-hooks/refs -- addRow bumps nextKeyRef, but it is only ever reached from this click handler, never during render.
                         onClick={() => addRow(t.id)}
                         className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                           inBatch > 0

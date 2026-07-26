@@ -43,6 +43,58 @@ type SortKey = "hierarchy" | "name" | "parts" | "status" | "order";
 type SortDir = "asc" | "desc";
 
 /**
+ * Module scope, not nested in the section: a component declared inside render
+ * is a new type on every render, so React remounts it and it loses state.
+ * The state it used to close over is passed in instead.
+ */
+function SortHeader({
+  col,
+  label,
+  className,
+  align = "left",
+  sortKey,
+  sortDir,
+  onToggle,
+}: {
+  col: Exclude<SortKey, "hierarchy">;
+  label: string;
+  className?: string;
+  align?: "left" | "right";
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onToggle: (col: Exclude<SortKey, "hierarchy">) => void;
+}) {
+  const active = sortKey === col;
+  return (
+    <TableHead
+      className={className}
+      aria-sort={
+        active ? (sortDir === "asc" ? "ascending" : "descending") : "none"
+      }
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(col)}
+        className={`hover:text-foreground -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 ${
+          align === "right" ? "flex-row-reverse" : ""
+        } ${active ? "text-foreground" : ""}`}
+      >
+        {label}
+        {active ? (
+          sortDir === "asc" ? (
+            <ArrowUp className="size-3.5" aria-hidden />
+          ) : (
+            <ArrowDown className="size-3.5" aria-hidden />
+          )
+        ) : (
+          <ChevronsUpDown className="size-3.5 opacity-40" aria-hidden />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
+/**
  * Rows are <Link>s into /admin/categories/[id]; edit + archive live on the
  * detail page (matching /admin/hs-codes, /admin/colors). Rows arrive
  * pre-flattened depth-first (by sort_order, then name) so `depth` drives
@@ -112,47 +164,6 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
     }
   }
 
-  function SortHeader({
-    col,
-    label,
-    className,
-    align = "left",
-  }: {
-    col: Exclude<SortKey, "hierarchy">;
-    label: string;
-    className?: string;
-    align?: "left" | "right";
-  }) {
-    const active = sortKey === col;
-    return (
-      <TableHead
-        className={className}
-        aria-sort={
-          active ? (sortDir === "asc" ? "ascending" : "descending") : "none"
-        }
-      >
-        <button
-          type="button"
-          onClick={() => toggleSort(col)}
-          className={`hover:text-foreground -mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 ${
-            align === "right" ? "flex-row-reverse" : ""
-          } ${active ? "text-foreground" : ""}`}
-        >
-          {label}
-          {active ? (
-            sortDir === "asc" ? (
-              <ArrowUp className="size-3.5" aria-hidden />
-            ) : (
-              <ArrowDown className="size-3.5" aria-hidden />
-            )
-          ) : (
-            <ChevronsUpDown className="size-3.5 opacity-40" aria-hidden />
-          )}
-        </button>
-      </TableHead>
-    );
-  }
-
   return (
     <section className="rounded-md border">
       <header className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -200,19 +211,37 @@ export function CategoriesSection({ rows }: { rows: CategoryRow[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortHeader col="name" label={t("colName")} />
+                <SortHeader
+                  col="name"
+                  label={t("colName")}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onToggle={toggleSort}
+                />
                 <SortHeader
                   col="parts"
                   label={t("colParts")}
                   align="right"
                   className="hidden [&>button]:justify-end md:table-cell md:text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onToggle={toggleSort}
                 />
-                <SortHeader col="status" label={t("colStatus")} />
+                <SortHeader
+                  col="status"
+                  label={t("colStatus")}
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onToggle={toggleSort}
+                />
                 <SortHeader
                   col="order"
                   label={t("colOrder")}
                   align="right"
                   className="[&>button]:justify-end text-right"
+                  sortKey={sortKey}
+                  sortDir={sortDir}
+                  onToggle={toggleSort}
                 />
                 <TableHead className="w-[36px]" />
               </TableRow>

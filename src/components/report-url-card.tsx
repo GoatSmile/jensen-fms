@@ -25,6 +25,7 @@ export async function ReportUrlCard() {
   // bike" general reports use the same source enum).
   const supabase = createServiceClient();
   const sinceIso = new Date(
+    // eslint-disable-next-line react-hooks/purity -- async server component: this runs once per request, not in a React render, so Date.now() is correct here.
     Date.now() - STATS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
   const [views, helpViews, ticketsRes] = await Promise.all([
