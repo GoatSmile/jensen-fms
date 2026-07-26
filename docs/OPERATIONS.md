@@ -16,7 +16,7 @@ every secret lives, and how to rebuild or hand over the whole thing.
 | Google Workspace | `valent.dk` mail | `orders@valent.dk` alias/catch-all **still to create** — direct replies bounce until it exists | Google account (dev's) |
 | Twilio | Telephony (inbound trunk) | US trial number `+1 762 500 0850` → Jensen prod webhooks; recordings are fetch-and-delete. `+45 9370 3111` belongs to Munin (since 2026-07-17) | per the inbound provider registry (below) |
 | Gladia | Transcription (selected provider) | EU | per the inbound provider registry |
-| Anthropic API | Extraction LLM (haiku) | — | `ANTHROPIC_API_KEY` → `.env.local` + Vercel |
+| Anthropic API | Extraction LLM + command agent (`claude-sonnet-5`) | Model is admin-selected from the live `GET /v1/models` list at `/admin/settings`, with a Test probe; free text still allowed | `ANTHROPIC_API_KEY` → `.env.local` + Vercel |
 | GatewayAPI | SMS ack (Danish alphanumeric sender) | planned/partial | per the inbound provider registry |
 | e-conomic | Accounting push | currently a TRIAL agreement 2446940 ("Din virksomhed"); production grant expected ~end of July 2026 — see the STATUS landmine before switching | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` → `.env.local` (+ Vercel at prod cutover). The public demo/demo pair is READ-ONLY — never default to it silently |
 | ECB | FX reference rates | consumed by the FX refresh cron below (no account) | — |

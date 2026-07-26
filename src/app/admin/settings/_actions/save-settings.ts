@@ -9,6 +9,7 @@ import {
   TRANSCRIPTION_PROVIDERS,
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
+  DEFAULT_EXTRACTION_MODEL,
   findProvider,
 } from "@/lib/inbound/settings";
 
@@ -396,7 +397,7 @@ export async function saveInboundSettings(
       inbound_extraction_provider: extraction.value,
       inbound_extraction_model:
         nullable(formData.get("inbound_extraction_model")) ??
-        "claude-haiku-4-5-20251001",
+        DEFAULT_EXTRACTION_MODEL,
       inbound_telephony_provider: telephony.value,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
       inbound_phone_number_test: nullable(

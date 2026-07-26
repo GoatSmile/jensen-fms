@@ -12,6 +12,8 @@ import { appendField } from "@/lib/forms";
 import { cn } from "@/lib/utils";
 
 import { saveInboundSettings } from "../_actions/save-settings";
+import { fetchModelOptions, testExtractionModel } from "../_actions/model-actions";
+import type { ModelOption } from "@/lib/inbound/models";
 
 type SecretStatus = { envVar: string; present: boolean };
 
@@ -185,18 +187,11 @@ export function InboundSettingsForm(props: Props) {
         secretSetText={t("secretSet")}
         secretMissingText={t("secretMissing")}
       >
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="inbound_extraction_model">
-            {t("inboundModelLabel")}
-          </Label>
-          <Input
-            id="inbound_extraction_model"
-            value={extractionModel}
-            onChange={(e) => setExtractionModel(e.target.value)}
-            placeholder="claude-haiku-4-5-20251001"
-            className="font-mono"
-          />
-        </div>
+        <ModelField
+          provider={extractionProvider}
+          value={extractionModel}
+          onChange={setExtractionModel}
+        />
       </ProviderBlock>
 
       <ProviderBlock
@@ -358,6 +353,175 @@ export function InboundSettingsForm(props: Props) {
         ) : null}
       </div>
     </form>
+  );
+}
+
+/**
+ * Model picker — pick from the live catalogue, or type an id.
+ *
+ * Both halves are load-bearing. The LIST (Models API, ./models.ts) means a new
+ * model is selectable the day it ships with no code change, and that nobody
+ * has to transcribe an id from the docs. FREE TEXT means discovery being down
+ * — no key, offline, a provider with no catalogue endpoint — can never block
+ * saving an id the admin knows is right. Discovery is an aid, not a gate.
+ *
+ * The saved value is always offered as an option even when the catalogue does
+ * not list it: a <select> whose value has no matching <option> renders blank
+ * and would silently overwrite the stored model on the next change.
+ */
+function ModelField({
+  provider,
+  value,
+  onChange,
+}: {
+  provider: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const t = useTranslations("adminSettings");
+  // One state object stamped with the provider it describes, so "loading" is
+  // DERIVED from whether we hold a result for the current provider rather than
+  // being a flag an effect has to reset synchronously on every change.
+  const [loaded, setLoaded] = useState<{
+    provider: string;
+    models: ModelOption[];
+    error: string | null;
+  } | null>(null);
+  const [manual, setManual] = useState(false);
+  const [testing, startTest] = useTransition();
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const fresh = loaded?.provider === provider ? loaded : null;
+  const loading = fresh === null;
+  const models = fresh?.models ?? [];
+  const listError = fresh?.error ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchModelOptions(provider).then((r) => {
+      if (cancelled) return;
+      if (r.ok) {
+        setLoaded({ provider, models: r.models, error: null });
+      } else {
+        // Discovery failed — fall back to free text rather than trapping the
+        // admin behind an empty dropdown.
+        setLoaded({ provider, models: [], error: r.error });
+        setManual(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [provider]);
+
+  const listed = models.some((m) => m.id === value);
+  const selected = models.find((m) => m.id === value) ?? null;
+
+  function runTest() {
+    setTestResult(null);
+    startTest(async () => {
+      const r = await testExtractionModel(provider, value);
+      setTestResult(r.ok ? { ok: true, text: t("inboundModelOk") } : { ok: false, text: r.error });
+    });
+  }
+
+  function update(next: string) {
+    setTestResult(null);
+    onChange(next);
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 sm:col-span-2">
+      <Label htmlFor="inbound_extraction_model">
+        {t("inboundModelLabel")}
+        <span className="text-muted-foreground block text-xs font-normal">
+          {t("inboundModelHint")}
+        </span>
+      </Label>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {manual ? (
+          <Input
+            id="inbound_extraction_model"
+            value={value}
+            onChange={(e) => update(e.target.value)}
+            placeholder="claude-sonnet-5"
+            className="font-mono sm:max-w-sm"
+          />
+        ) : (
+          <select
+            id="inbound_extraction_model"
+            value={value}
+            onChange={(e) => update(e.target.value)}
+            disabled={loading}
+            className="border-input bg-background h-9 w-full rounded-md border px-2 font-mono text-sm sm:max-w-sm"
+          >
+            {loading ? <option value={value}>{t("inboundModelLoading")}</option> : null}
+            {!loading && !listed ? (
+              <option value={value}>
+                {value || "—"} {t("inboundModelUnlisted")}
+              </option>
+            ) : null}
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.displayName} — {m.id}
+                {m.isAlias ? "" : ` ${t("inboundModelSnapshot")}`}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setManual((v) => !v)}
+          className="text-muted-foreground text-xs underline"
+        >
+          {manual ? t("inboundModelUseList") : t("inboundModelTypeIt")}
+        </button>
+
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={runTest}
+          disabled={testing || !value.trim()}
+        >
+          {testing ? t("inboundModelTesting") : t("inboundModelTest")}
+        </Button>
+      </div>
+
+      {selected?.maxInputTokens ? (
+        <p className="text-muted-foreground text-xs">
+          {t("inboundModelContext", {
+            input: Math.round(selected.maxInputTokens / 1000),
+            output: Math.round((selected.maxTokens ?? 0) / 1000),
+          })}
+        </p>
+      ) : null}
+
+      {!loading && !listed && value.trim() && !manual ? (
+        <p className="text-xs text-amber-700 dark:text-amber-500">
+          {t("inboundModelUnlistedHint")}
+        </p>
+      ) : null}
+
+      {listError ? <p className="text-muted-foreground text-xs">{listError}</p> : null}
+
+      {testResult ? (
+        <p
+          className={cn(
+            "inline-flex items-center gap-1 text-xs",
+            testResult.ok
+              ? "text-emerald-700 dark:text-emerald-400"
+              : "text-destructive",
+          )}
+          role="status"
+        >
+          {testResult.ok ? <Check className="size-3.5" aria-hidden /> : <X className="size-3.5" aria-hidden />}
+          {testResult.text}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

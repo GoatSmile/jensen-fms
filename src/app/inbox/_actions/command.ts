@@ -8,6 +8,8 @@ import type { Json } from "@/lib/types/database";
 import { readGate } from "@/lib/auth/read-session";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import { runCommandAgent } from "@/lib/inbound/command/agent";
+import { buildInquiryTask } from "@/lib/inbound/command/inquiry";
+import { parseExtraction } from "@/lib/inbound/extraction";
 import {
   parseCommandPlan,
   type CommandAction,
@@ -100,6 +102,78 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
 
   await runAndStorePlan(supabase, messageId, msg.body_text ?? "");
   revalidatePath(`/inbox/${messageId}`);
+  return { ok: true, id: messageId };
+}
+
+/**
+ * Sales enquiry → a plan of draft actions (P2).
+ *
+ * The lead path used to dead-end: an `order_inquiry` reaching /inbox could
+ * only be marked handled, so the most valuable call the shop can receive left
+ * no customer, no order and no trace. Rather than build a second action
+ * system, this phrases the call as a staff task and reuses the VC-1 command
+ * agent + CommandPlanPanel wholesale.
+ *
+ * Unlike `runAndStorePlan` this writes ONLY `command_plan`: the row is a real
+ * pipeline message whose `status`, `error` and `processed_at` belong to
+ * extract → match → triage, and must not be rewritten by the planner.
+ */
+export async function planFromInquiry(messageId: string): Promise<CommandResult> {
+  const t = await getTranslations("errors");
+  const supabase = createServiceClient();
+
+  const { data: msg } = await supabase
+    .from("inbound_messages")
+    .select("id, kind, body_text, extraction, transcript_confidence, from_identity")
+    .eq("id", messageId)
+    .maybeSingle();
+  if (!msg) return { ok: false, error: t("missingId") };
+  // Command rows have their own ingress; this is for pipeline messages.
+  if (msg.kind === "command") return { ok: false, error: t("missingId") };
+  if (!msg.body_text?.trim()) return { ok: false, error: t("commandNoBody") };
+
+  // Same lock as rerunCommandAgent, same reason: plan action ids are
+  // positional, so re-planning after an apply would repoint existing
+  // command_actions rows at different actions and corrupt provenance.
+  const { count: appliedCount } = await supabase
+    .from("command_actions")
+    .select("id", { count: "exact", head: true })
+    .eq("message_id", messageId);
+  if ((appliedCount ?? 0) > 0) {
+    return { ok: false, error: t("commandRerunLocked") };
+  }
+
+  const clarity =
+    msg.transcript_confidence === null ? null : Number(msg.transcript_confidence);
+  const task = buildInquiryTask({
+    transcript: msg.body_text,
+    extraction: parseExtraction(msg.extraction),
+    clarity: clarity !== null && Number.isFinite(clarity) ? clarity : null,
+    fromIdentity: msg.from_identity,
+  });
+
+  const settings = await loadInboundSettings(supabase);
+  const result = await runCommandAgent(supabase, task, {
+    model: settings.extractionModel,
+    today: today(),
+  });
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: t("inboundModelApiError", { detail: result.detail ?? result.reason }),
+    };
+  }
+
+  const { error: updErr } = await supabase
+    .from("inbound_messages")
+    .update({ command_plan: result.plan })
+    .eq("id", messageId);
+  if (updErr) {
+    return { ok: false, error: t("couldNotSave", { detail: updErr.message }) };
+  }
+
+  revalidatePath(`/inbox/${messageId}`);
+  revalidatePath("/inbox");
   return { ok: true, id: messageId };
 }
 

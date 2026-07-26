@@ -525,3 +525,89 @@ which made the ~20 that mattered unreadable — the same accretion failure as
 the 812-line `CLAUDE.md`, in a file nobody thought to re-read because it is
 gitignored. Prefer a small list of broad rules each backed by a hook over a
 long list of narrow ones backed by nothing.
+
+## 2026-07-26 — Model selection: discover it, don't type it (owner call)
+The extraction model was a **free-text box** (`inbound_extraction_model`,
+default `claude-haiku-4-5-20251001`). A typo or a retired id doesn't fail at
+save time — it fails inside the pipeline as a generic `api_error`, and in
+shadow mode nobody sees that for days.
+
+Owner's question was "do I just type in the name of the model?", and the
+answer is now: either. `src/lib/inbound/models.ts` fetches the live catalogue
+(`GET /v1/models` — id, display name, context window, output cap), the admin
+picks from it, and a **Test** button proves the pick with a real forced
+tool-use call before it can be relied on. Verified in-browser against the
+live API: 10 models listed, and `claude-sonnet-9-nope` returns a visible 404
+at pick time instead of silently later.
+
+Three rules the implementation encodes, because "how do we pick correctly
+when we upgrade?" is the durable question behind the immediate one:
+- **The list is live, never a hardcoded array** — a new model is selectable
+  the day it ships, with no code change and no deploy.
+- **Aliases beat dated snapshots.** `claude-sonnet-5`, not
+  `claude-sonnet-5-20xxxxxx`: aliases roll forward, snapshots pin and
+  eventually retire. The picker sorts aliases first and labels snapshots.
+- **Free text is never removed.** Discovery failing (no key, offline, a
+  provider with no catalogue endpoint) falls back to typing an id — discovery
+  is an aid, not a gate. This is also why `/v1/models` is provider-scoped:
+  it does not exist on Bedrock/Vertex/Foundry, so a future adapter brings its
+  own lister.
+
+**Model moved to `claude-sonnet-5` for BOTH jobs** (owner: "move all to
+claude-sonnet-5"), so the proposed split into a second `inbound_command_model`
+setting was **rejected as premature** — one setting, relabelled to say it
+drives extraction *and* the command agent. The split stays available if the
+two ever diverge. Sized for the harder job: the command agent is a 6-resolver,
+up-to-8-iteration tool loop, where Haiku was under-powered. Cost is not the
+constraint at this volume (Haiku $1/$5, Sonnet 5 $3/$15 per MTok) — capability
+is. Price is deliberately NOT read from the API, because the API doesn't
+publish it; that stays a human judgement.
+
+## 2026-07-26 — Sales leads reuse the command agent, not a new action system
+An `order_inquiry` reaching `/inbox` could only be "logged as handled" — so
+the highest-value call the shop can receive (the 25-Jul Gladsaxe test call:
+~25 bikes for hjemmeplejen, October, plus a recurring service agreement) left
+no customer, no order and no trace. The code comment admitted it: *"a sales
+lead the inbox tracks until the offers module exists."*
+
+Decision: **an inbound sales enquiry is an implicit staff command**, so
+`planFromInquiry` phrases the call as a task and hands it to the VC-1 command
+agent. The reviewer gets the same CommandPlanPanel — proposed DRAFT actions,
+open slots, applied one at a time, nothing auto-written. Rejected: a second
+bespoke lead-action system (duplicates the resolver + apply + provenance
+machinery), and building the offers module now (still parked behind the sales
+track in BACKLOG.md).
+
+Two mechanics worth keeping:
+- It writes **only** `command_plan`. `status`, `error` and `processed_at`
+  belong to extract → match → triage and must not be rewritten by the planner
+  — unlike the command path's `runAndStorePlan`, which owns those fields.
+- It carries the same **re-plan lock** as `rerunCommandAgent`: plan action ids
+  are positional, so re-planning after an apply would repoint existing
+  `command_actions` rows at different actions and corrupt provenance.
+
+The task text passes the raw transcript *and* the extraction as hints, and
+tells the agent when clarity is low (below 0.6) to leave fields null rather
+than guess. Verified on the real 0.37-clarity Danish call: it resolved
+Gladsaxe Kommune as an existing customer, split three sales-order lines by
+bike type, set October delivery, left every template id as an **open slot**
+citing the poor transcription, and reported in `notes` that the service
+agreement can't be drafted and needs follow-up outside the system. Known gap:
+`quantity` is a filled field, not an editable slot, so per-type counts the
+caller never stated ("nogle få", "et par") land as 1 and are fixed on the
+draft after applying.
+
+## 2026-07-26 — Owner's copy of the system: AES-256, and the bigger question
+Off-site copy goes to Jensen's **on-site NAS**, as an **AES-256** archive
+(owner's call). The backup kit's existing `secure.sparsebundle` is AES-256 and
+correct but **macOS-native** — a NAS can store it and nobody there can open
+it, so the Dennis copy is produced as an AES-256 `.7z` instead: cross-platform,
+and every IT person he might call already knows it. Archive password lives in
+Jensen's own password manager, never beside the archive.
+
+The point that matters more, recorded so it doesn't get lost behind the
+backup task: **every account is in the dev's name** (GitHub, Vercel, Supabase,
+Twilio, Resend, Anthropic, Dynadot DNS). A perfect backup gives Jensen the
+data and the code, not a running service or a phone number. Own decision at
+the 19-Aug session: migrate to Jensen-owned org accounts, or a written
+arrangement with credentials in a shared vault. Plan: `docs/plan-cutover.md`.

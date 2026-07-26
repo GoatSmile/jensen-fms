@@ -69,33 +69,7 @@ export default async function InboundDetailPage({
   if (msg.kind === "command") {
     const tc = await getTranslations("inboxCommand");
     const plan = parseCommandPlan(msg.command_plan);
-    const [{ data: actions }, { data: templates }, { data: segments }, { data: colors }] =
-      await Promise.all([
-        supabase
-          .from("command_actions")
-          .select("plan_action_id, entity_table, entity_id")
-          .eq("message_id", id),
-        supabase
-          .from("bike_templates")
-          .select("id, name_en, name_da, frame_size")
-          .eq("is_current", true)
-          .order("name_en"),
-        supabase
-          .from("customer_segments")
-          .select("id, name_en, name_da")
-          .eq("is_active", true)
-          .order("sort_order"),
-        supabase
-          .from("colors")
-          .select("id, name_en, name_da")
-          .eq("is_active", true)
-          .order("sort_order"),
-      ]);
-    const pick = (en: string | null, da: string | null) => da || en || "—";
-    const applied: Record<string, { entityTable: string | null; entityId: string | null }> = {};
-    for (const a of actions ?? []) {
-      applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id };
-    }
+    const ctx = await loadPlanContext(supabase, id);
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
         <Breadcrumb>
@@ -145,21 +119,10 @@ export default async function InboundDetailPage({
           <CommandPlanPanel
             messageId={msg.id}
             plan={plan}
-            applied={applied}
-            templates={(templates ?? []).map((tpl) => ({
-              id: tpl.id,
-              label: [pick(tpl.name_en, tpl.name_da), tpl.frame_size]
-                .filter(Boolean)
-                .join(" · "),
-            }))}
-            segments={(segments ?? []).map((s) => ({
-              id: s.id,
-              label: pick(s.name_en, s.name_da),
-            }))}
-            colors={(colors ?? []).map((c) => ({
-              id: c.id,
-              label: pick(c.name_en, c.name_da),
-            }))}
+            applied={ctx.applied}
+            templates={ctx.templates}
+            segments={ctx.segments}
+            colors={ctx.colors}
           />
         )}
       </div>
@@ -207,6 +170,12 @@ export default async function InboundDetailPage({
     spam_signals: msg.spam_signals,
     ticket_id: msg.ticket_id,
   });
+
+  // P2: a sales enquiry can carry a plan of proposed DRAFT actions, reviewed
+  // in the same panel the VC-1 command surface uses. Only fetch the open-slot
+  // vocabulary when there is actually a plan to render.
+  const leadPlan = msg.command_plan ? parseCommandPlan(msg.command_plan) : null;
+  const leadCtx = leadPlan ? await loadPlanContext(supabase, id) : null;
 
   // Shadow-mode flag + the linked ticket's number (if one was created).
   const settings = await loadInboundSettings(supabase);
@@ -407,6 +376,18 @@ export default async function InboundDetailPage({
               disposition={msg.disposition}
               canAct={msg.status === "matched"}
               shadowMode={shadowMode}
+              hasPlan={Boolean(leadPlan)}
+            />
+          ) : null}
+
+          {leadPlan && leadCtx && !spamFolded ? (
+            <CommandPlanPanel
+              messageId={msg.id}
+              plan={leadPlan}
+              applied={leadCtx.applied}
+              templates={leadCtx.templates}
+              segments={leadCtx.segments}
+              colors={leadCtx.colors}
             />
           ) : null}
         </>
@@ -419,6 +400,60 @@ export default async function InboundDetailPage({
       ) : null}
     </div>
   );
+}
+
+type PlanContext = {
+  applied: Record<string, { entityTable: string | null; entityId: string | null }>;
+  templates: { id: string; label: string }[];
+  segments: { id: string; label: string }[];
+  colors: { id: string; label: string }[];
+};
+
+/**
+ * Open-slot vocabulary + applied-state for the CommandPlanPanel. Shared by
+ * both surfaces that render a plan: the VC-1 command page, and a sales
+ * enquiry's plan on an ordinary inbound message (P2).
+ */
+async function loadPlanContext(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+): Promise<PlanContext> {
+  const [{ data: actions }, { data: templates }, { data: segments }, { data: colors }] =
+    await Promise.all([
+      supabase
+        .from("command_actions")
+        .select("plan_action_id, entity_table, entity_id")
+        .eq("message_id", messageId),
+      supabase
+        .from("bike_templates")
+        .select("id, name_en, name_da, frame_size")
+        .eq("is_current", true)
+        .order("name_en"),
+      supabase
+        .from("customer_segments")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order"),
+      supabase
+        .from("colors")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order"),
+    ]);
+  const pick = (en: string | null, da: string | null) => da || en || "—";
+  const applied: PlanContext["applied"] = {};
+  for (const a of actions ?? []) {
+    applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id };
+  }
+  return {
+    applied,
+    templates: (templates ?? []).map((tpl) => ({
+      id: tpl.id,
+      label: [pick(tpl.name_en, tpl.name_da), tpl.frame_size].filter(Boolean).join(" · "),
+    })),
+    segments: (segments ?? []).map((s) => ({ id: s.id, label: pick(s.name_en, s.name_da) })),
+    colors: (colors ?? []).map((c) => ({ id: c.id, label: pick(c.name_en, c.name_da) })),
+  };
 }
 
 /** Maps a stored call_outcome to its `inboundOutcome` message key. */

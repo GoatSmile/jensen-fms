@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, CheckCheck, TicketPlus } from "lucide-react";
+import { Check, CheckCheck, TicketPlus, Wand2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 import { createTicketFromInbound } from "../../_actions/create-ticket";
+import { planFromInquiry } from "../../_actions/command";
 import { setDisposition } from "../../_actions/process";
 
 type Props = {
@@ -21,14 +22,23 @@ type Props = {
   /** Whether the message is matched (has an extraction to act on). */
   canAct: boolean;
   shadowMode: boolean;
+  /** A command plan already exists — the panel below owns the lead from here. */
+  hasPlan: boolean;
 };
 
 /**
- * Intent-routed review action (layer 4). A repair_request drafts a maintenance
- * ticket; an order_inquiry (or anything else) is a sales lead the inbox tracks
- * until the offers module exists, so its primary action is "log as handled" —
- * with a muted "create a ticket instead" override, because the model's intent
- * can be wrong and the reviewer decides. Nothing auto-creates (shadow mode).
+ * Intent-routed review action (layer 4).
+ *
+ * A `repair_request` drafts a maintenance ticket. An `order_inquiry` is a
+ * sales lead, and its primary action is to DRAFT from the call (P2): it hands
+ * the call to the VC-1 command agent, whose plan of proposed draft actions is
+ * reviewed in the CommandPlanPanel below. Before P2 this branch could only
+ * "log as handled", which silently lost the most valuable calls the shop
+ * receives. Anything else keeps the plain handled/not-handled disposition.
+ *
+ * "Create a ticket instead" stays available on every non-repair intent,
+ * because the model's intent can be wrong and the reviewer decides. Nothing
+ * auto-creates, and nothing is written until an action is applied.
  */
 export function RoutedAction({
   messageId,
@@ -38,6 +48,7 @@ export function RoutedAction({
   disposition,
   canAct,
   shadowMode,
+  hasPlan,
 }: Props) {
   const t = useTranslations("inbox");
   const tIntent = useTranslations("inboundIntent");
@@ -63,8 +74,18 @@ export function RoutedAction({
     });
   }
 
+  function draftFromCall() {
+    setError(null);
+    start(async () => {
+      const r = await planFromInquiry(messageId);
+      if (!r.ok) return setError(r.error);
+      router.refresh();
+    });
+  }
+
   const intentLabel = intent && tIntent.has(intent) ? tIntent(intent) : null;
   const isRepair = intent === "repair_request";
+  const isLead = intent === "order_inquiry";
 
   return (
     <section className="flex flex-col gap-2 rounded-md border p-4">
@@ -126,12 +147,26 @@ export function RoutedAction({
       ) : (
         <>
           <p className="text-muted-foreground text-xs">
-            {intent === "order_inquiry" ? t("leadHint") : t("otherHint")}
+            {isLead && !hasPlan
+              ? t("leadDraftHint")
+              : intent === "order_inquiry"
+                ? t("leadHint")
+                : t("otherHint")}
           </p>
           <div className="flex flex-wrap items-center gap-3">
+            {/* A sales enquiry's primary action is to DRAFT, not to dismiss —
+                the plan lands in the panel below for review before anything
+                is written. Marking handled stays available but demoted. */}
+            {isLead && !hasPlan ? (
+              <Button type="button" size="sm" onClick={draftFromCall} disabled={pending}>
+                <Wand2 aria-hidden />
+                {pending ? t("leadDrafting") : t("leadDraft")}
+              </Button>
+            ) : null}
             <Button
               type="button"
               size="sm"
+              variant={isLead && !hasPlan ? "outline" : "default"}
               onClick={() => dispose("handled")}
               disabled={pending}
             >

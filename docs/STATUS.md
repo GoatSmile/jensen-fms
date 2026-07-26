@@ -1,9 +1,10 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-25, end of day.** Most recent: live-call recording V1
-shipped and verified on a real bridged call, deterministic speaker attribution
-fixed via Gladia's `channel` tag, telephony/transcription provider evaluation
-closed, AI-receptionist tier decided.
+**Last updated: 2026-07-26, end of day.** Most recent: the sales-lead dead end
+closed (an `order_inquiry` now drafts via the VC-1 command agent), model
+selection became a live picker + Test probe with everything moved to
+`claude-sonnet-5`, and the **cutover plan + owner brief** drafted for the
+17–21 Aug sessions with Dennis.
 
 This is the session-death recovery file: a fresh session (human or LLM)
 resumes from `CLAUDE.md` + this file. **Overwrite it at session end — never
@@ -45,6 +46,32 @@ parenthetical here. History belongs in `docs/archive/`, decisions in
   number remains the production plan.
 
 ## In flight / next action
+- **CUTOVER is now the frame for everything.** `docs/plan-cutover.md` (mine:
+  stage ladder, risks, open decisions) + `docs/CUTOVER-BRIEF.md` (Dennis's,
+  English, hand-over ready). Proposed transfer date **Mon 31 Aug**; three
+  meetings in the week of **17 Aug** (workshop 18th · Nazar's place 19th ·
+  team session on transfer day). Ladder is ordered by irreversibility:
+  internal ops → supplier email + phone → first real invoice → e-conomic.
+  Two things it surfaces that are not code: **Stage 3 trips the agreed M1-auth
+  trigger** (first real invoice), and **every account is in the dev's name**.
+  Backup to Dennis's NAS as AES-256 `.7z` (the sparsebundle is macOS-only).
+- **Sales leads no longer dead-end (P2, shipped 2026-07-26).** An
+  `order_inquiry` in `/inbox` gets "Draft from this call" →
+  `planFromInquiry` phrases the call as a staff task → the VC-1 command agent
+  proposes draft customer/sales-order actions → the same CommandPlanPanel
+  reviews and applies them. Verified on the real 0.37-clarity Gladsaxe call:
+  existing customer resolved, three lines split by bike type, October
+  delivery, template ids left as open slots citing the poor transcript,
+  service agreement reported as needing off-system follow-up. Mechanics in
+  DECISIONS 2026-07-26. Gap in BACKLOG: `quantity` isn't an editable slot.
+  **P1 (follow-up date + owner on a lead) was NOT built** — deliberately
+  deferred; leads still rely on a human acting on the plan.
+- **Model selection is now discover-or-type (shipped 2026-07-26).**
+  `src/lib/inbound/models.ts` lists the live catalogue (`GET /v1/models`),
+  the admin picks or types, and **Test** proves it with a real forced
+  tool-use call. `inbound_extraction_model` = **`claude-sonnet-5`** in prod,
+  driving BOTH extraction and the command agent (the proposed second setting
+  was rejected as premature). Aliases sort above dated snapshots on purpose.
 - **Live-call recording V1 shipped + LIVE-VERIFIED 2026-07-25** — an incoming
   call is bridged to the workshop phone and recorded dual-channel, voicemail
   stays the no-answer fallback, and the conversation lands on the same inbound

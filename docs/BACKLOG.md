@@ -43,6 +43,14 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   membership in the server-rendered vocab (only the DB FK guards them) — a
   crafted request could pick a superseded (is_current=false) template. Same
   UX-wall caveat; validate slot ids against the fetched lists when auth lands.
+- **Command-plan `quantity` is not an editable open slot** (found 2026-07-26
+  building the sales-lead path). `DraftSalesOrderAction.quantity` is a filled
+  number, so when a caller states a total but no per-type counts ("ca. 25
+  cykler… nogle få elcykler… et par ladcykler"), each proposed line lands at
+  qty 1 and the reviewer has to fix it on the draft SO after applying. The
+  agent does say so in the line note, so nothing is silently wrong. Fix:
+  promote `quantity` to a slot the CommandPlanPanel can edit before Apply —
+  worth doing the first time a real multi-quantity enquiry arrives.
 - `audit_log` triggers (wait on auth for user_id).
 - SQL-side pagination + stock-status filtering for the parts list at scale
   (currently in-memory in `src/app/parts/page.tsx`).

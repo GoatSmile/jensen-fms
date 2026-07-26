@@ -52,6 +52,15 @@ export const EXTRACTION_PROVIDERS: ProviderEntry[] = [
   { key: "anthropic", envSecrets: ["ANTHROPIC_API_KEY"] },
 ];
 
+/**
+ * Fallback model when `app_settings` carries none. One setting serves two
+ * jobs — the single forced-tool extraction call AND the multi-turn command
+ * agent (6 resolvers, up to 8 iterations) — so it is sized for the harder of
+ * the two. Always a rolling ALIAS: a dated snapshot pins us to a model that
+ * eventually retires. Discovery + the "Test" probe live in ./models.ts.
+ */
+export const DEFAULT_EXTRACTION_MODEL = "claude-sonnet-5";
+
 /** Registered telephony adapters (phone number + recording webhook). */
 export const TELEPHONY_PROVIDERS: ProviderEntry[] = [
   { key: "twilio", envSecrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"] },
@@ -117,8 +126,9 @@ export async function loadInboundSettings(
     bridgeNumber: data?.inbound_bridge_number?.trim() || null,
     bridgeTimeoutSeconds: Number(data?.inbound_bridge_timeout_seconds ?? 20),
     extractionProvider: data?.inbound_extraction_provider ?? "anthropic",
-    extractionModel:
-      data?.inbound_extraction_model ?? "claude-haiku-4-5-20251001",
+    // Drives BOTH the extraction call and the VC-1 command agent. A rolling
+    // alias, never a dated snapshot — snapshots pin us and eventually retire.
+    extractionModel: data?.inbound_extraction_model ?? DEFAULT_EXTRACTION_MODEL,
     telephonyProvider: data?.inbound_telephony_provider ?? "twilio",
     phoneNumber: data?.inbound_phone_number ?? null,
     phoneNumberTest: data?.inbound_phone_number_test ?? null,
