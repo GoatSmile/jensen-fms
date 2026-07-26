@@ -735,3 +735,85 @@ Two durable rules out of this:
   `#3F96D9` = **3.07:1**, below AA. So every dark-mode primary button, active nav
   item and filled badge is currently failing. Two-line fix, independent of the
   redesign — do it in Phase 1 whichever accent wins.
+
+## 2026-07-26 — Design refresh promoted to NOW and built (owner call)
+The owner moved the refresh up the plan: Dennis returns from vacation **Mon 3
+Aug**, and the new look had to be live for him. Four calls locked, all as
+recommended:
+
+| Question | Decision |
+|---|---|
+| Scope before 3 Aug | Phase 1 + surface primitives + the screens Dennis opens daily |
+| Accent | **B's signal blue `#2E5FD1`** — the palette that actually got the yes in the mock-up |
+| Grouped nav | **Ship now**, not September |
+| Delivery | Prod on `main` + a "What looks different" section in the August playbook |
+
+**Why grouping moved earlier than the plan said.** The plan treated it as
+post-cutover because it "changes URLs and muscle memory". It changes neither:
+every child href already existed, so nothing moves and no bookmark breaks. And
+right now Dennis is the only person with muscle memory, after a month away —
+after 31 Aug the whole workshop has it. This is the cheapest moment the change
+will ever have.
+
+**The plan's cost model had a third category it missed.** It split the work
+into "tokens propagate, structure doesn't". But 517 raw Tailwind palette
+colours across 79 files inherit *nothing*, and B has no display face, so
+colour IS the identity. Left alone those screens would read as broken, not
+merely plainer — the fruit-salad failure the plan itself warned about for B.
+So the sweep was promoted ahead of structural card-soup removal, which is now
+the part that truncates if time runs short.
+
+**Amber forced a vocabulary call.** Its 215 uses carried two meanings: the
+documented money/purchasing section tint, and ~64 mid-severity cautions. B's
+six hues have no warning tone, and there is no room for a seventh warm one — a
+warn-amber lands at ~`#B45309`, colliding with `buy` `#AF5029`, and `money`
+`#8E6725` is an adjacent ochre. So **caution reuses `money`'s ochre and
+`alert` is reserved for genuine alarms.** Mapping cautions to red was tried
+first and was wrong: it painted normal progress (`building`, `open`, "at
+painter") red — the same error as the all-clear-in-red bug fixed the same day.
+Severity is carried by treatment instead: filled wash = critical, inline text
+= caution.
+
+**Rejected:** removing the families/kits/map tiles from `/admin` as the plan
+suggested. Dennis's muscle memory says Admin, a duplicate path during a
+transition is useful, and the Admin clutter it addressed is a Phase-3 IA
+concern, not a look-and-feel one.
+
+**Two decorative palettes are exempt from the vocabulary** —
+`bike-templates/family-colors.ts` and `kits/colors.ts`. Their hues are
+identity, not meaning: a family is not "an alert". The sweep made
+family-colors semantic and collapsed two families onto the same colour before
+this was caught.
+
+**Contrast: the plan's §13 work was necessary but not sufficient.** It
+measured the ink ramp against `--ground` and `--surface` only. Once flat-fill
+panels landed, secondary text sits on a **wash** far more often, where
+`#75746F` fell to 4.06:1. Darkening `--ink-3` alone collided with `--ink-2`
+(`#6B6B66` vs `#6B6A65` — the same colour), so **the whole ink ramp shifted in
+both themes** to keep three distinguishable levels that clear 4.5:1 on all
+eight surfaces. Every filled hue also gained an `--on-{hue}` token; the rule
+generalises to "never `text-white` on a fill".
+
+**Two corrections to the audit's own findings.** §11 bug 1 (Scan FAB over the
+sidebar Collapse control) **is not real** — the FAB is `md:hidden` and the
+sidebar is `hidden md:flex`, so they never coexist; measured at 1280×800 the
+FAB is `display:none`. What the audit saw was the Next.js dev-tools badge,
+which never ships. And bug 4's dark-mode contrast failure was **latent, not
+live**: nothing in the app applies `.dark` — there is no theme provider and no
+`prefers-color-scheme` wiring — so the dark theme is currently unreachable.
+The tokens are kept correct and measured anyway, because the moment a toggle
+lands a stale dark set would mix B's light surfaces with the old navy ones.
+**No dark-mode toggle was built** — not asked for, and verifying 20 screens in
+an unreachable theme is not where the pre-3-Aug budget belongs.
+
+**`nav_open` cookie encoding differs from the plan on purpose.** The note
+specified a comma-joined list of OPEN group ids, which cannot satisfy all
+three of its own requirements: absent = defaults, empty = deliberately all
+closed, and a group added later takes its code default. With open-ids-only a
+new group is simply missing, indistinguishable from closed. Explicit
+`id:1|0` pairs keep "unmentioned" free to mean "new".
+
+**CLAUDE.md budget raised 470 → 485** for the six-hue vocabulary, which
+replaced the smaller four-hue tint rule and now carries the whole visual
+identity. The raise rule is now written down in the file: structural
+invariants only, never to make room for narrative.

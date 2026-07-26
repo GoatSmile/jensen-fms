@@ -5,17 +5,67 @@ Dev/ops detail lives in `docs/OPERATIONS.md`; this is what to *do*.
 
 ## First day back — 10-minute orientation
 
-What shipped while you were away, in one breath: the whole app now speaks
-Danish (switch not flipped yet — your call, see switches below); phone
-calls to the test number become transcribed, pre-filled tickets waiting in
-**Inbox** (shadow mode — a human always reviews); paint became a general
-"services" model with your price lists in admin; the dashboard got the
-money band + trend charts; and there's a new **Admin → People & roles**
+**The app looks different.** That's the first thing you'll notice, so it's
+first here. Everything works the same — nothing moved, no page changed
+address, your bookmarks still land where they did. Details below.
+
+What else shipped while you were away, in one breath: the whole app now
+speaks Danish (switch not flipped yet — your call, see switches below);
+phone calls to the test number become transcribed, pre-filled tickets
+waiting in **Inbox** (shadow mode — a human always reviews); paint became a
+general "services" model with your price lists in admin; the dashboard got
+the money band + trend charts; and there's a new **Admin → People & roles**
 where each role (workshop, accountant, sales…) can get its own login that
 only shows their part of the app.
 
 Nothing about your daily flow changed: bikes, orders, tickets, invoicing
 all work exactly as before, same password.
+
+## What looks different
+
+The old look was fine but generic — it could have been any company's admin
+tool. This version is built around your own colours and shapes instead.
+
+**Colour now means something, consistently.** Six colours, same meaning on
+every screen:
+
+| Colour | Means |
+|---|---|
+| Blue | navigation, the main button, what's selected |
+| Sand / gold | money — invoicing, prices, revenue. Also "worth a look" |
+| Green | ready, in stock, on schedule |
+| Red | genuinely wrong — overdue, blocked, out of stock |
+| Rust | buying — suppliers, purchase orders, landed cost |
+| Purple | admin, agreements, settings |
+
+Red is deliberately rare. If you see red, something actually needs you. The
+softer sand colour is the "keep an eye on this" level — a part shortfall, a
+job waiting at the painter.
+
+**Boxes are gone.** Sections used to be white cards with grey outlines
+stacked on white. Now each section is a soft block of its own colour, which
+is why the screen reads faster: you can see at a glance which parts of a
+page are about money and which are about the workshop.
+
+**The left menu is seven items instead of fourteen.** They group the way you
+talk about the job — *Bikes · Parts · Work · Orders · Customers*, with
+Dashboard and Admin on their own. Click a group to open it; **it stays how
+you leave it**, on this machine, until you change it again. If you close a
+group while you're working inside it, a small dot on the group reminds you
+that's where you are.
+
+Two things worth knowing:
+- **Templates, families and kits are now under Bikes and Parts**, not buried
+  in Admin. They're still on the Admin page too, so either route works.
+- **Stock value** and **work orders** now have their own menu entries rather
+  than being reachable only through another page.
+
+**A fix worth mentioning:** the dashboard used to show good news in alarm
+colours — "Every open MO is on schedule." appeared in red. That was a bug.
+All-clear messages now show a green tick.
+
+If anything looks wrong rather than just new, send a screenshot (see "If
+something looks wrong" below). Nothing about the look changed any data.
 
 ## Reading the dashboard (the 30-second morning check)
 

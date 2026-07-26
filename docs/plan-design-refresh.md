@@ -1,7 +1,10 @@
 # Plan — design refresh (UI / UX / IA)
 
-**Status: direction chosen 2026-07-26. No app code changed yet.** Written after
-walking the running app screen by screen; §0 records what the owner locked.
+**Status: BUILT AND SHIPPED 2026-07-26.** The owner promoted this to now so the
+new look would be live before Dennis returns **Mon 3 Aug**. Read §14 first — it
+records what actually shipped and where this document is now wrong. §§1–13 are
+the original audit, kept because the diagnosis and the measurements are still
+the reasoning behind the code; the *sequencing* in §10 is superseded.
 
 ## 0. Decisions locked (2026-07-26)
 
@@ -526,3 +529,74 @@ it is a two-line token change (`--primary-foreground` gets a dark value under
 Also still true, and not a contrast matter: **colour must never be the only
 carrier.** Status pills keep their text labels (*Out*, *Low*); panel washes are
 reinforced by the title in the matching hue and by position.
+
+---
+
+## 14. What actually shipped (2026-07-26) — and where §§1–13 are now wrong
+
+Six commits on `main`, in order: `e635849` audit bugs · `ed81643` tokens +
+vocabulary · `f5fbf97` brand assets · `7a0c3ee` primitives · `4445c2f` colour
+sweep · `bd1c03b` grouped nav · `12e18ed` KPI row + ink ramp.
+
+### Shipped
+- **Direction B tokens** in signal blue `#2E5FD1`, hex not oklch (the values
+  are contrast-measured; converting moves the ratios). B's palette lives under
+  its own hue names and the shadcn tokens are remapped onto it — that remap is
+  what makes 187 files inherit B untouched.
+- **`Panel` / `Metric` / `Rule`** primitives. `Section` is now a re-export of
+  `Panel`, so all 19 files importing it inherited the new surface with no edit.
+  `StatCard` was deleted — it had no callers.
+- **517 raw palette colours swept** onto the six hues across 79 files.
+- **Seven grouped nav items** with `nav_open` cookie state, resolved
+  server-side.
+- **Part detail's boxed four-across KPI row** replaced with flat washes; 17
+  `className` washes converted to `hue` so titles match their fill.
+- **Three of the four §11 bugs**; pill buttons; `themeColor` + PWA splash.
+
+### Corrections to this document
+1. **§10's phasing is superseded.** "Phase 2 = a September project, do NOT
+   attempt before 31 Aug" was written against the cutover date, but the sharper
+   constraint was the dev being away 3 Aug → mid-Aug. The primitives landed
+   anyway because they turned out to be *additive* — `Section`→`Panel` gave 19
+   files the new surface without a 159-file sweep.
+2. **§10's cost model missed a third category.** "Tokens propagate, structure
+   doesn't" omitted 517 raw palette colours, which inherit nothing. On a
+   direction whose identity is colour, that is not cosmetic.
+3. **§11 bug 1 is not real.** The Scan FAB is `md:hidden`, the sidebar is
+   `hidden md:flex`; measured at 1280×800 the FAB is `display:none` while
+   Collapse sits at (8, 760). The audit saw the Next.js dev-tools badge.
+4. **§11 bug 4 was latent, not live.** Nothing applies `.dark` — no theme
+   provider, no `prefers-color-scheme` wiring — so the dark theme is
+   unreachable and no user was seeing 3.07:1. Fixed regardless.
+5. **§13 was necessary but not sufficient.** It measured the ink ramp on
+   `--ground`/`--surface` only. On the washes `--ink-3` fell to 4.06:1, and
+   darkening it alone collided with `--ink-2`, so the whole ramp moved in both
+   themes. Every hue also gained an `--on-{hue}` token.
+6. **§7's sequencing was too cautious.** Grouping changes no URLs — every child
+   href already existed. It also uses longest-match active logic now, which
+   retires §7's hand-written `/organizations` exception.
+7. **§12's open questions are closed** — accent (B's blue), colour governance
+   (CLAUDE.md, six hues, with the caution=`money` rule and two decorative
+   exemptions), Phase 1 before 31 Aug (yes), groups (shipped now, not deferred).
+
+### Still not done — the honest list
+- **~140 files still hand-roll `rounded-* border` surfaces.** They inherit B's
+  tokens so they read as *plainer*, not broken, but card soup survives outside
+  the migrated screens. This is the remaining Phase 2.
+- **`/admin/settings`** still stacks seven domains in ~40 controls (§9). Six of
+  its sections are raw `<section>` elements, not `Panel`.
+- **`/admin/lists`** consolidation (18 routes → 1) and the settings sub-rail:
+  not started (§8, §9).
+- **Floor/office mode split** (§6) — the highest-value structural idea in this
+  document, and untouched.
+- **The dashboard money band** puts interpolated amounts inside 12px uppercase
+  panel titles, so "Uninvoiced work — 2.000,00 kr." renders "…2.000,00 KR."
+  The amount wants to be a figure, not part of the eyebrow.
+- **Form folds** (16/15/14-field forms) and the `/parts` "In stock" pill on
+  100% of rows (§9). Also the three empty filter dropdowns (§11 minor).
+- **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
+- **No unit test for the cookie logic.** The plan asked for one; there is no
+  test runner in this project (`package.json` has dev/build/start/lint only),
+  and inventing one days before a cutover is the wrong trade. The
+  absent/empty/new-group cases were verified in the browser instead. CI is
+  already parked in BACKLOG.md.

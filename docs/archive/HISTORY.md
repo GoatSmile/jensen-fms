@@ -540,3 +540,76 @@ Three changes to how the project documents itself, all in one evening.
   identical every time, including the steps most often skipped — en/da
   parity, moving a closed plan to `docs/archive/` with references
   repointed, and re-checking STATUS's Landmines.
+
+## 2026-07-26 — The design refresh, built in one day
+
+Morning: lint into the commit gate, sales-lead drafting via the VC-1 command
+agent, the live model picker (`claude-sonnet-5` in prod), the cutover plan +
+owner brief, and a docs audit that mechanised the session rituals.
+
+Then the owner moved the design refresh from "September project" to "now":
+Dennis returns from vacation **Mon 3 Aug** and the new look had to greet him.
+Seven commits, `e635849` → `12e18ed`.
+
+**What made it possible in a day** was a property nobody had noticed: the
+shadcn token layer is referenced by all 187 files that hand-roll a surface, so
+redefining those variables in terms of Direction B propagated the whole palette
+without touching a single page. `Section` — the one shared surface component —
+became a re-export of the new `Panel`, which handed 19 more files the new
+borderless flat-fill look for free. The audit's own cost model had assumed a
+159-file sweep was the price of entry; it wasn't.
+
+**What the audit had missed** was a third category between "tokens propagate"
+and "structure doesn't": 517 raw Tailwind palette colours across 79 files,
+which inherit nothing. On a direction that deliberately has no display face —
+where colour carries the entire identity — those would have read as broken
+rather than merely dated. Sweeping them onto the six hues became the priority,
+ahead of structural card-soup removal, which is the part that got truncated.
+
+**The judgment call that took the longest** was amber. Its 215 uses meant two
+different things, and B's six hues have no warning tone. There is no room for a
+seventh warm hue either: a warn-amber lands next to `buy`, and `money` is an
+adjacent ochre. Mapping cautions to `alert` was tried first and was plainly
+wrong — it painted `building`, `open` and "at painter" in red, which is the same
+error as the all-clear-in-red bug fixed that morning. Caution became `money`'s
+ochre, red got reserved for genuine alarms, and severity is now carried by
+treatment: filled wash = critical, inline text = caution.
+
+**Three bugs the work introduced and caught.** An unanchored regex matched
+`-50` inside `-500` and produced fifteen `bg-*-wash0` classes. A saturated
+amber badge became `bg-alert text-alert` — invisible — which forced the useful
+generalisation that *every* filled hue needs an `--on-{hue}` token, not just
+the accent. And the sweep made `family-colors.ts` semantic, collapsing two bike
+families onto the same colour; that palette is decorative identity, not
+meaning, and is now documented as exempt.
+
+**The contrast work went deeper than the plan's §13.** That section measured
+the ink ramp against the ground and the surface only. Once flat-fill panels
+existed, secondary text sat on a *wash* far more often, where `#75746F` fell to
+4.06:1. Darkening `--ink-3` alone collided with `--ink-2` — `#6B6B66` against
+`#6B6A65` is the same colour — so the whole ramp shifted in both themes to keep
+three distinguishable levels clearing AA on all eight surfaces. Final state: 37
+token pairs, both themes, zero failures, verified in the browser rather than
+asserted.
+
+**Two of the audit's four bugs turned out to be less than claimed.** The Scan
+FAB cannot overlap the sidebar Collapse control — the FAB is `md:hidden`, the
+sidebar `hidden md:flex`; what the screenshots showed was the Next.js dev-tools
+badge, which never ships. And the dark-mode 3.07:1 failure was latent rather
+than live: nothing in the app applies `.dark`, so the dark theme is unreachable.
+Both were fixed or recorded anyway.
+
+**Grouping cost far less than feared.** The plan had deferred it past the
+cutover on the grounds that it "changes URLs and muscle memory". Every child
+href already existed, so nothing moved and no bookmark broke. Cookie state is
+resolved in the server layout, because the rail is server-rendered and
+localStorage would have meant a layout shift on every navigation. The encoding
+is explicit `id:1|0` pairs rather than the plan's list-of-open-ids, which
+couldn't distinguish "a group added later" from "closed". A cookie write sitting
+inside a `setState` updater was found during verification — two toggles in one
+tick persisted only the first.
+
+Left undone, deliberately: ~140 files still hand-roll their surfaces (they read
+as plainer, not broken, which is what made stopping safe), `/admin/settings`,
+the `/admin/lists` consolidation, the floor/office mode split, and any dark-mode
+toggle.

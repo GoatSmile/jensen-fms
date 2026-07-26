@@ -1,9 +1,10 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-26, end of day.** Most recent: the **design direction is
-locked** (B "Emalje" in Geist, grouped nav with remembered state), the **cutover
-plan + owner brief** are drafted for the 17–21 Aug sessions with Dennis, and the
-**sales-lead dead end is closed** plus model selection became a live picker.
+**Last updated: 2026-07-26, end of day.** Most recent: the **design refresh is
+built and live in prod** — direction B in signal blue, surface primitives, the
+517-colour sweep and the seven-group nav all shipped so Dennis meets the new
+look when he returns **Mon 3 Aug**. Earlier the same day: cutover plan + owner
+brief, sales-lead drafting, live model picker.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -55,77 +56,75 @@ parked ideas in `docs/BACKLOG.md`.
   kit's sparsebundle is macOS-only, so a NAS can store it and nobody there can
   open it). Owner's call; runbook in the plan, to be rehearsed on the 19th.
 
-## Design refresh — direction locked, not yet built
-`docs/plan-design-refresh.md` + live mock-up
-`docs/mockups/design-directions.html` (Current vs B, three pages, 14-flat vs
-7-group nav, light + dark).
+## Design refresh — SHIPPED, with a known remainder
+`docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
+where this doc is now wrong" list. Decisions in DECISIONS 2026-07-26. Mock-up
+`docs/mockups/design-directions.html` is now history, not the target.
 
-- **Locked**: Direction **B "Emalje"** — colour / shading / flat-fill system with
-  pill buttons. Direction A rejected. **Keep Geist, no display face.** Keep the
-  "Ægte Jensen · KVALITETSCYKLER" wordmark. **Seven grouped nav items.**
-- **Group open/closed state is remembered per person** — independent toggles,
-  **not** an accordion (an accordion would undo the setting on the next click).
-  **Persist in a COOKIE, not localStorage**: the sidebar renders server-side, so
-  localStorage means a layout shift on every navigation. Absent cookie (→ code
-  defaults) must stay distinct from empty cookie (→ deliberately all closed).
-- **Sequencing against the cutover.** Only **15 of 187 files** use the shared
-  `Section`; 159 hand-roll `rounded-* border` (345 occurrences), and shadcn
-  `Card` is imported zero times. Tokens propagate; structure does not. So:
-  **Phase 1 = tokens + the four shared dashboard components + rail restyle**
-  (one day, ~one file, revertable) is safe before Dennis. **Phase 2 = surface
-  primitives + the 159-file migration is a September project** — do NOT attempt
-  it before 31 Aug. Phase 3 = grouped nav, `/admin/lists`, settings sub-rail.
-- **Still open**: B's accent is signal blue `#2E5FD1` vs today's navy `#1e4a7a`
-  — adopting it touches `themeColor`, the PWA splash and the icons, so it is a
-  brand call. And colour governance needs one written owner before Phase 2.
-- **When Phase 1 lands, CLAUDE.md's section-tint hue vocabulary (sky/emerald/
-  violet/amber) must be replaced** by B's six hues — the two must not coexist.
-  CLAUDE.md is deliberately unchanged until then, because it still describes
-  what the code does.
+Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` (Geist kept, no
+display face, pill buttons) · `Panel`/`Metric`/`Rule` primitives with `Section`
+re-exporting `Panel` · 517 raw palette colours swept onto six hues across 79
+files · **seven grouped nav items** with `nav_open` cookie state resolved
+server-side · part detail's boxed KPI row killed · three of the four audit bugs.
+
+- **The colour vocabulary is now in CLAUDE.md and is load-bearing.** Six hues,
+  closed list. Two rules that are easy to get wrong: **caution is `money`'s
+  ochre, not `alert`** (red is reserved for genuine alarms — mapping cautions to
+  red painted normal progress red), and **`text-on-{hue}` on any filled hue**,
+  never `text-white`. Two decorative palettes are exempt
+  (`bike-templates/family-colors.ts`, `kits/colors.ts`).
+- **Contrast is measured, not eyeballed.** All 37 token pairs clear AA in both
+  themes. The ink ramp is DARKER than the mock-up's in light and LIGHTER in
+  dark, because secondary text now sits on washes, where the mock-up's values
+  failed. Re-measure on the washes, not just on the ground, if you touch it.
+- **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
+  wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
+  a toggle was deliberately not built. If one lands, it should just work.
+- **The remainder, honestly**: ~140 files still hand-roll `rounded-* border`
+  surfaces. They inherit B's tokens so they read as *plainer*, not broken — that
+  property is what made truncating safe. `/admin/settings` (7 domains, ~40
+  controls, 6 raw `<section>`s), `/admin/lists` consolidation, the settings
+  sub-rail, the floor/office mode split, and form folds are all untouched. Full
+  list in plan §14.
+- **Turbopack bit once during this work**: the served CSS had new light-theme
+  values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
 ## Shipped this session
-- **Sales leads no longer dead-end (P2).** An `order_inquiry` in `/inbox` gets
-  "Draft from this call" → `planFromInquiry` phrases the call as a staff task →
-  the VC-1 command agent proposes draft customer / sales-order actions → the
-  same CommandPlanPanel reviews and applies them. Writes only `command_plan`
-  (status/error/processed_at belong to extract → match → triage) and carries the
-  same re-plan lock as `rerunCommandAgent`, since plan action ids are positional.
-  Verified on the real 0.37-clarity Gladsaxe call. **P1 (follow-up date + owner
-  on a lead) was NOT built** — deliberately deferred, so a lead still relies on a
-  human acting on the plan.
-- **Model selection is discover-or-type.** `src/lib/inbound/models.ts` lists the
-  live catalogue (`GET /v1/models`), the admin picks or types, and **Test**
-  proves it with a real forced tool-use call. `inbound_extraction_model` =
-  **`claude-sonnet-5`** in prod, driving BOTH extraction and the command agent
-  (the proposed second setting was rejected as premature). Aliases sort above
-  dated snapshots on purpose.
-- **Lint is now in the commit gate** (morning session), with the 4 genuine
-  errors fixed and the SSR/RSC noise silenced.
-- **The session rituals are fully mechanised.** A docs audit corrected six
-  things the repo contradicted (the stack said Next 15 on 16; STATUS said 73
-  migrations on 78), backfilled `HISTORY.md` for 07-23 → 07-25, removed the
-  unused Trello integration, and pruned `settings.local.json` 171 → 17 —
-  dropping the `apply_migration` pre-approval, so **a migration now shows its
-  SQL in a prompt before it runs**. Two hooks joined the three from 07-25:
-  `worklog-row-budget.sh` (rows past ~300 chars — the old "one line per row"
-  couldn't catch a 5,900-char line) and `worklog-session-check.sh`
-  (SessionStart; today proved the ritual's trigger was "notice it's a new
-  working day", and it didn't). Only the DECISIONS same-commit rule is still
-  honour-system — no hook can know a decision was made.
+- **The design refresh, built and live** — see the section above and plan §14.
+  Seven commits: audit bugs · tokens + vocabulary · brand assets · primitives ·
+  colour sweep · grouped nav · KPI row + ink ramp.
+- **Three real audit bugs fixed, one retired as a misdiagnosis.** All-clear
+  dashboard messages no longer render in red/amber; the mobile header uses the
+  lettermark instead of an illegible 20px lockup; text on a filled accent got
+  per-theme tokens. The Scan-FAB-over-Collapse bug **does not exist** — the FAB
+  is `md:hidden` and the sidebar `hidden md:flex`; the audit saw the Next.js
+  dev-tools badge.
+- **`StatCard` deleted** (no callers anywhere) and the hue→fill map
+  de-duplicated. `Section` is now a re-export of `Panel`.
+- **Earlier the same day** (morning session): lint into the commit gate with the
+  4 genuine errors fixed; sales-lead drafting from an `order_inquiry` via the
+  VC-1 command agent (P1 follow-up date/owner deliberately NOT built); model
+  selection as a live discover-or-type picker with `inbound_extraction_model` =
+  **`claude-sonnet-5`** in prod; a docs audit that corrected six repo
+  contradictions, backfilled HISTORY for 07-23 → 07-25, removed the unused
+  Trello integration, pruned `settings.local.json` 171 → 17 (so **a migration
+  now shows its SQL in a prompt before it runs**), and added the
+  `worklog-row-budget` + `worklog-session-check` hooks. Only the DECISIONS
+  same-commit rule is still honour-system.
 
 ## Next actions, in order
-1. **Fix the dark-mode contrast bug** — `--primary-foreground` stays near-white
-   in both themes while `--primary` flips lightness: `#FAFAFA` on `#3F96D9` =
-   **3.07:1**, below WCAG AA. Every dark-mode primary button, active nav item and
-   filled badge is failing *today*. Two-line token fix, independent of the
-   redesign. Plus the other three bugs in `plan-design-refresh.md` §11 (Scan FAB
-   overlaps the sidebar Collapse control; `AttentionCard` renders all-clear
-   messages in red/amber; the logo is illegible in the mobile header).
-2. **Decide the accent** (navy vs B's blue) — gates Phase 1.
-3. **Phase 1 design tokens** — before Dennis sees this version.
-4. **Chase the external blockers** in the cutover plan §7 (revisor in one
+1. **Look at the shipped refresh with fresh eyes before 3 Aug** and decide
+   whether any of the remainder is worth doing while Dennis is still away. The
+   two highest-value items: the **dashboard money band** (interpolated amounts
+   inside 12px uppercase panel titles render "…2.000,00 KR."; the amount wants
+   to be a figure, not part of the eyebrow) and **`/admin/settings`**, still the
+   most overwhelming screen in the app.
+2. **Chase the external blockers** in the cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
+3. **Phase 2 proper — after 31 Aug**: surface primitives across the remaining
+   ~140 files, then the floor/office mode split (plan §6), which is still the
+   highest-value structural idea nobody has built.
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.
