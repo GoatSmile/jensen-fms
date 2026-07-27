@@ -86,9 +86,15 @@ arrival now) · three of the four audit bugs.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder, honestly**: ~135 files still hand-roll `rounded-* border`
-  surfaces. They inherit B's tokens so they read as *plainer*, not broken — that
-  property is what made truncating safe. Untouched: the `/admin/lists`
+- **The remainder, honestly — card soup is barely dented.** Re-measured
+  2026-07-27: **~274 hand-rolled bordered surfaces across 192 files** (205
+  `rounded-md border`, 44 dashed, 25 `rounded-lg border`). That is essentially
+  unchanged from the audit's 345/187 — an earlier "~135 files left" note in this
+  file was an estimate and was wrong. What did change: shared-surface adoption
+  went 15 → 26 files, and those 26 are the screens Dennis opens daily. The rest
+  inherit B's tokens so they read as *plainer*, not broken — that property is
+  what made stopping safe, but the structural half of the refresh is roughly
+  10% done, not 80%. Untouched: the `/admin/lists`
   consolidation (18 routes → 1), the floor/office mode split (§6 — still the
   highest-value structural idea nobody has built), form folds on the 16/15/14-
   field forms, and the inbound panel's provider blocks collapsing to summary
