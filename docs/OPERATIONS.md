@@ -110,12 +110,24 @@ system in that table is one the app breaks without, and none of these are.
    Vercel SSO protection, push to `main`.
 
 ## Backups
-`~/workspace/code/backup-kit` — `backup-all` (one command, NT_ARCHIVE drive
-plugged in) = git bundles of every repo + plain mirrors of
-`~/workspace/code` + `~/Documents/1-Projects` + DB dumps/storage/env files
-into an AES-256 sparsebundle under `BACKUP/` at the drive root. A launchd
-agent runs nightly Supabase `pg_dump` ×3 + storage sync to `~/Backups`.
-**Full handoff doc: `backup-kit/HANDBOOK.md`** (a copy lives on the drive).
+`~/workspace/code/backup-kit`. Three moving parts:
+- **Nightly** (launchd 02:30, no drive) — Supabase `pg_dump` ×3 + storage sync
+  to `~/Backups`. Notifies **on failure only**. Does not catch up: a Mac asleep
+  or off-network at 02:30 misses that night (happened 2026-07-21 / 07-23).
+- **On drive mount** (launchd `StartOnMount`) — plugging in NT_ARCHIVE runs
+  `backup-all` by itself and notifies when it's safe to eject; `backup-all`
+  still works by hand. Git bundles of every repo + plain mirrors of
+  `~/workspace/code` + `~/Documents/1-Projects` + DB dumps/storage/env files
+  into an AES-256 sparsebundle under `BACKUP/` at the drive root.
+- **Owner's copy** — `handoff.sh` builds Jensen's cross-platform AES-256 `.7z`
+  (headers encrypted, checksum sidecar, plain `README-FIRST.txt`), **Jensen
+  material only**. Monthly + before the handover. Per DECISIONS 2026-07-26.
+
+**Everyday card: `backup-kit/MANUAL.md`. Full handoff doc:
+`backup-kit/HANDBOOK.md`** (a copy lives on the drive) — incl. §7f, the
+quarterly restore drill that tests whether the *Bitwarden* password actually
+opens the encrypted image. Nothing else tests that; every automatic run uses
+the Keychain.
 
 ## Go-live switches (deliberately OFF today — sequencing in docs/STATUS.md)
 - `outbound_test_mode` (`app_settings`, `/admin/settings`) — while TRUE,
