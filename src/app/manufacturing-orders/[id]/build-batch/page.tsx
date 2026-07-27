@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
@@ -134,13 +135,14 @@ export default async function BuildBatchPage({
       </header>
 
       {moClosed ? (
-        <p className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
+        // `bg-ground` is the fill for an empty state INSIDE a panel. At page
+        // level the page is already ground, so the same fill is invisible —
+        // a page-level notice needs the surface, i.e. a panel of its own.
+        <Panel contentClassName="text-ink-3 text-sm">
           {t("moClosed", { status: t(`moStatus.${mo.status}`) })}
-        </p>
+        </Panel>
       ) : bikes.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed p-6 text-sm">
-          {t("noUnbuilt")}
-        </p>
+        <Panel contentClassName="text-ink-3 text-sm">{t("noUnbuilt")}</Panel>
       ) : (
         <BatchBuildGrid
           moId={moId}

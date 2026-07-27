@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { countryName } from "@/lib/countries";
 import { localizedName } from "@/i18n/vocab";
@@ -206,9 +207,9 @@ export default async function OrganizationsPage({
 
       {rows.length === 0 ? (
         filterDescriptors.length > 0 ? (
-          <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+          <Panel contentClassName="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm">
             {t("noMatch")}
-          </div>
+          </Panel>
         ) : (
           <EmptyState
             icon={Building2}
@@ -218,7 +219,7 @@ export default async function OrganizationsPage({
           />
         )
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -326,7 +327,7 @@ export default async function OrganizationsPage({
               })}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

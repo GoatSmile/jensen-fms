@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import {
   STOCK_BADGE_VARIANT,
@@ -65,9 +66,9 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
   ]);
   if (rows.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+      <Panel contentClassName="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm">
         {t("noMatch")}
-      </div>
+      </Panel>
     );
   }
 
@@ -75,7 +76,7 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
     // overflow-x-auto on mobile lets the user swipe sideways when a row
     // doesn't quite fit (long SKUs are stubborn mono strings); md+ has
     // room and we hide-overflow for the rounded corners.
-    <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+    <Panel>
       <Table>
         <TableHeader>
           <TableRow>
@@ -251,6 +252,6 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
           ))}
         </TableBody>
       </Table>
-    </div>
+    </Panel>
   );
 }

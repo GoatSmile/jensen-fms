@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
@@ -173,7 +174,7 @@ export default async function MaintenanceTicketsPage({
           />
         )
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -289,7 +290,7 @@ export default async function MaintenanceTicketsPage({
               })}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

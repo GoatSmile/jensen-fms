@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/money";
 import { formatDkk, formatQuantity } from "@/lib/parts/stock";
 
@@ -139,13 +140,11 @@ export function ReceiveForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <section className="rounded-md border">
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("receiveTitle")}</h2>
-            <p className="text-muted-foreground text-xs">{t("receiveDesc")}</p>
-          </div>
-          {isClosed ? null : (
+      <Panel
+        title={t("receiveTitle")}
+        description={t("receiveDesc")}
+        action={
+          isClosed ? undefined : (
             <Button
               type="button"
               size="sm"
@@ -155,152 +154,149 @@ export function ReceiveForm({
             >
               {t("receiveAllRemaining")}
             </Button>
-          )}
-        </header>
-
-        <div className="flex flex-col gap-4 p-4">
-          {hideLocation ? null : (
-            <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="receive-location">{t("receiveInto")}</Label>
-                <Select
-                  value={locationId}
-                  onValueChange={setLocationId}
-                  disabled={isClosed || locations.length <= 1}
-                >
-                  <SelectTrigger id="receive-location">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map((loc) => (
-                      <SelectItem key={loc.id} value={loc.id}>
-                        {loc.name}
-                        <span className="text-muted-foreground ml-1.5 text-xs">
-                          ({loc.code})
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          )
+        }
+        contentClassName="flex flex-col gap-4"
+      >
+        {hideLocation ? null : (
+          <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="receive-location">{t("receiveInto")}</Label>
+              <Select
+                value={locationId}
+                onValueChange={setLocationId}
+                disabled={isClosed || locations.length <= 1}
+              >
+                <SelectTrigger id="receive-location">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                      <span className="text-muted-foreground ml-1.5 text-xs">
+                        ({loc.code})
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("part")}</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">
-                    {t("thOrdered")}
-                  </TableHead>
-                  <TableHead className="hidden text-right md:table-cell">
-                    {t("thAlreadyReceived")}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t("thOutstanding")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("unitPrice")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("landedDkkUnit")}
-                  </TableHead>
-                  <TableHead className="w-[140px] sm:w-[180px]">
-                    {t("thReceiveNow")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lines.map((line) => {
-                  const outstanding = line.quantity - line.receivedQuantity;
-                  return (
-                    <TableRow key={line.id}>
-                      <TableCell className="min-w-0 whitespace-normal">
-                        <div className="flex flex-col">
-                          <Link
-                            href={`/parts/${line.partId}`}
-                            className="font-medium break-words hover:underline"
-                          >
-                            {line.partName}
-                          </Link>
-                          <span className="text-muted-foreground font-mono text-xs break-all">
-                            {line.partSku}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums md:table-cell">
-                        {formatQuantity(line.quantity)}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums md:table-cell">
-                        {formatQuantity(line.receivedQuantity)}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right tabular-nums font-medium ${
-                          outstanding === 0
-                            ? "text-good"
-                            : ""
-                        }`}
-                      >
-                        {formatQuantity(outstanding)}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        <Money
-                          amount={line.unitPrice}
-                          currency={line.currency}
-                          fractionDigits={4}
-                          bold={false}
-                        />
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {line.landedDkkPerUnit == null
-                          ? "—"
-                          : formatDkk(line.landedDkkPerUnit)}
-                      </TableCell>
-                      <TableCell>
-                        {outstanding === 0 ? (
-                          <span className="text-muted-foreground text-xs">
-                            {t("fullyReceived")}
-                          </span>
-                        ) : isClosed ? (
-                          <span className="text-muted-foreground text-xs">
-                            {t("poClosed")}
-                          </span>
-                        ) : line.landedDkkPerUnit == null ? (
-                          <span className="text-xs font-medium text-money">
-                            {t("enterPriceFirst")}
-                          </span>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <Input
-                              inputMode="decimal"
-                              value={drafts[line.id] ?? ""}
-                              onChange={(e) => setDraft(line.id, e.target.value)}
-                              placeholder="0"
-                              className="h-8 w-[80px]"
-                              aria-label={t("receiveQtyAria", {
-                                sku: line.partSku,
-                              })}
-                            />
-                            <Button
-                              type="button"
-                              size="xs"
-                              variant="ghost"
-                              onClick={() => fillRemaining(line)}
-                            >
-                              {t("allBtn")}
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
           </div>
-        </div>
-      </section>
+        )}
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("part")}</TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  {t("thOrdered")}
+                </TableHead>
+                <TableHead className="hidden text-right md:table-cell">
+                  {t("thAlreadyReceived")}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t("thOutstanding")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("unitPrice")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("landedDkkUnit")}
+                </TableHead>
+                <TableHead className="w-[140px] sm:w-[180px]">
+                  {t("thReceiveNow")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lines.map((line) => {
+                const outstanding = line.quantity - line.receivedQuantity;
+                return (
+                  <TableRow key={line.id}>
+                    <TableCell className="min-w-0 whitespace-normal">
+                      <div className="flex flex-col">
+                        <Link
+                          href={`/parts/${line.partId}`}
+                          className="font-medium break-words hover:underline"
+                        >
+                          {line.partName}
+                        </Link>
+                        <span className="text-muted-foreground font-mono text-xs break-all">
+                          {line.partSku}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums md:table-cell">
+                      {formatQuantity(line.quantity)}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums md:table-cell">
+                      {formatQuantity(line.receivedQuantity)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums font-medium ${
+                        outstanding === 0
+                          ? "text-good"
+                          : ""
+                      }`}
+                    >
+                      {formatQuantity(outstanding)}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                      <Money
+                        amount={line.unitPrice}
+                        currency={line.currency}
+                        fractionDigits={4}
+                        bold={false}
+                      />
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                      {line.landedDkkPerUnit == null
+                        ? "—"
+                        : formatDkk(line.landedDkkPerUnit)}
+                    </TableCell>
+                    <TableCell>
+                      {outstanding === 0 ? (
+                        <span className="text-muted-foreground text-xs">
+                          {t("fullyReceived")}
+                        </span>
+                      ) : isClosed ? (
+                        <span className="text-muted-foreground text-xs">
+                          {t("poClosed")}
+                        </span>
+                      ) : line.landedDkkPerUnit == null ? (
+                        <span className="text-xs font-medium text-money">
+                          {t("enterPriceFirst")}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            inputMode="decimal"
+                            value={drafts[line.id] ?? ""}
+                            onChange={(e) => setDraft(line.id, e.target.value)}
+                            placeholder="0"
+                            className="h-8 w-[80px]"
+                            aria-label={t("receiveQtyAria", {
+                              sku: line.partSku,
+                            })}
+                          />
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => fillRemaining(line)}
+                          >
+                            {t("allBtn")}
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+      </Panel>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

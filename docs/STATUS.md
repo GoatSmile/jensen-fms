@@ -94,17 +94,20 @@ arrival now) · three of the four audit bugs.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder — card soup is dented, not cleared.** Phase 2 ran four
+- **The remainder — card soup is dented, not cleared.** Phase 2 ran five
   slices on 2026-07-27 (see below). Across `src/**/*.tsx`: `rounded-md border`
-  occurrences **298 → 240**, dashed **46 → 37**, files with any hand-rolled
-  bordered surface **184 → 159**. The counting method differs from the audit's
-  345/187, so trust the delta, not the absolute. The rest inherit B's tokens
-  so they read as *plainer*, not broken. Still untouched: the **unmigrated
-  list pages** (sales orders, MOs, `admin/kits`, the PO receive form, the
-  batch-build grid — the biggest single block left), the `/admin/lists`
-  consolidation (18 routes → 1), the floor/office mode split (§6 — still the
-  highest-value structural idea nobody has built), and §9's repeated category
-  chips. Full list in plan §14.
+  occurrences **298 → 208**, dashed **46 → 28**, files with any hand-rolled
+  bordered surface **184 → 156**. The counting method differs from the audit's
+  345/187 (and drifts a little between sessions), so trust the delta, not the
+  absolute. The rest inherit B's tokens so they read as *plainer*, not broken.
+  **Every list page is now on `Panel`.** What is left is concentrated in
+  **forms and detail sections** — `mo-batch-form`, `build-workbench`,
+  `paint-from-so-form`, the sales-order lines section, contacts/units,
+  `admin/people`, `admin/fx-rates`, and the six entity forms' own
+  `<section className="rounded-md border">` shells. Also still open: the
+  `/admin/lists` consolidation (18 routes → 1), the floor/office mode split
+  (§6 — still the highest-value structural idea nobody has built), and §9's
+  repeated category chips. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
@@ -168,9 +171,19 @@ Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
 
 **Two things real data still cannot verify**: no bike template has paintwork
 rows, and **all 25 bikes were soft-deleted on 2026-07-01** (`/bikes` is empty
-by design, not broken), so bike-detail empty states and the template paint box
-have only ever been seen with stub props. No inbound message is spam-flagged
-either — the banner's `money` hue is code-verified only.
+by design, not broken), so bike-detail empty states, the template paint box and
+the batch-build grid have only ever been seen with stub props. No inbound
+message is spam-flagged either — the banner's `money` hue is code-verified only.
+
+### Fifth slice (late) — every list page is on `Panel`
+Eleven list surfaces (the plan named three; the rest were the same one-line
+change), the shared `TableSkeleton`, the PO **receive form** and PO **lines
+section**, and the batch-build grid. The batch grid's raw `<table>` stays raw
+on purpose — it carries per-row inputs and the scan handlers, so the scroller
+lives on the panel body via `contentClassName`. **Keep this rule:** `bg-ground`
+is the fill for an empty state *inside* a panel; at page level the page already
+IS ground, so that fill renders as nothing — a page-level notice needs its own
+`Panel`. A green `tsc` / `lint` / build said nothing about it.
 
 ## Next actions, in order
 1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
@@ -182,9 +195,13 @@ either — the banner's `money` hue is code-verified only.
 
 ### The Phase 2 queue, in the order it is worth taking
 Nothing here needs owner input except where noted.
-1. **The unmigrated list pages** — sales orders, MOs, `admin/kits`, the PO
-   receive form, the batch-build grid. Biggest single block of the ~159 files
-   left, and the same mechanical shape as this session's slices.
+1. **The forms and detail sections** — the rest of the ~156 files, now that the
+   list pages are done: `mo-batch-form`, `build-workbench`,
+   `paint-from-so-form`, the sales-order lines section, contacts/units,
+   `admin/people`, `admin/fx-rates`, and the six entity forms' own
+   `<section className="rounded-md border">` shells. Same mechanical shape as
+   the fifth slice; the form shells are the `FormSection`/`Panel` pattern that
+   already exists.
 2. **§9's repeated category chips** — the last §9 line, small.
 3. **`/admin/lists` consolidation** (18 routes → 1) — **ask first.** It
    changes IA Dennis navigates by.

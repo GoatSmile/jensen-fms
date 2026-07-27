@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { createClient } from "@/lib/supabase/server";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
 
@@ -84,11 +85,11 @@ export default async function KitsPage() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+        <Panel contentClassName="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm">
           {t("empty")}
-        </div>
+        </Panel>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -144,7 +145,7 @@ export default async function KitsPage() {
               })}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

@@ -752,3 +752,39 @@ skipped the local build gate, because a dev server held :3000 the entire time.
 Two things real data still cannot show: no template has paintwork rows, and all
 25 bikes were soft-deleted on 2026-07-01, so bike-detail empty states remain
 unverified against anything but stubs.
+
+### 2026-07-27, late — Phase 2's fifth slice: the unmigrated list pages
+Eleven list surfaces still wrapped their table in a hand-rolled
+`overflow-x-auto rounded-md border` box. The plan named three; the rest are the
+same shape and the same one-line change, so the owner took all eleven rather
+than leave the app reading half-migrated. The wrapper was redundant twice over
+— shadcn's `Table` renders its own `overflow-x-auto` container, so the box was
+both a second scroller and the boxed-table-in-a-surface the convention forbids.
+
+Two things surfaced while verifying. The shared `TableSkeleton` was still a
+bordered box, so every navigation to a migrated list page flashed a boxed table
+that dissolved into a borderless one a moment later — one component, eleven
+routes fixed. And the PO detail page turned out to have *two* unmigrated
+surfaces: the receive form that was on the list, and the lines section right
+above it, which would have left that screen split down the middle. Both are
+panels now.
+
+The batch-build grid's count bar, table and result summary became panels; its
+raw `<table>` stayed raw markup on purpose, because it carries per-row inputs
+and the scan handlers, so swapping in the primitive is behaviour risk on a
+workshop-critical screen for no visual gain. Prod has no bike on a live MO
+(all 25 were soft-deleted on 2026-07-01), so the grid was verified through a
+throwaway stub route, deleted before the commit — the same technique the
+morning's session used.
+
+**The browser caught one real regression that three green gates did not.** The
+bulk-build page's "nothing left to build" notice was converted to a `bg-ground`
+fill, which is correct *inside* a panel — but at page level the page background
+already **is** `--ground`, so the fill rendered as nothing at all and the
+notice read as floating text with mysterious padding. Page-level notices need a
+panel of their own. `tsc`, `lint` and `next build` were all clean while it
+looked broken.
+
+Measured across `src/**/*.tsx`: `rounded-md border` 234 → 208, dashed 36 → 28,
+files carrying a hand-rolled bordered surface 163 → 156. What remains is
+concentrated in forms and detail sections rather than lists.

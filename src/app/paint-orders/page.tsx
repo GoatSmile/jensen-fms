@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { ColorChip } from "@/components/color-swatch";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
@@ -179,9 +180,9 @@ export default async function PaintOrdersPage({
 
       {(rows ?? []).length === 0 ? (
         statusFilter ? (
-          <div className="text-muted-foreground flex h-40 items-center justify-center rounded-md border border-dashed text-sm">
+          <Panel contentClassName="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm">
             {t("noMatchFilter")}
-          </div>
+          </Panel>
         ) : (
           <EmptyState
             icon={Paintbrush}
@@ -191,7 +192,7 @@ export default async function PaintOrdersPage({
           />
         )
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -313,7 +314,7 @@ export default async function PaintOrdersPage({
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

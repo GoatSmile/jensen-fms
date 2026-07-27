@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { Money } from "@/components/money";
@@ -110,7 +111,7 @@ export default async function PurchaseOrdersPage() {
           action={{ label: t("newPo"), href: "/purchase-orders/new" }}
         />
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -201,7 +202,7 @@ export default async function PurchaseOrdersPage() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

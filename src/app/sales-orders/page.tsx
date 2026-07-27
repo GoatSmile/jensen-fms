@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { SegmentedId } from "@/components/segmented-id";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
@@ -90,7 +91,7 @@ export default async function SalesOrdersListPage() {
           action={{ label: t("newSo"), href: "/sales-orders/new" }}
         />
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <Panel>
           <Table>
             <TableHeader>
               <TableRow>
@@ -159,7 +160,7 @@ export default async function SalesOrdersListPage() {
               })}
             </TableBody>
           </Table>
-        </div>
+        </Panel>
       )}
     </div>
   );

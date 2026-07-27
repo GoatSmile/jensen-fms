@@ -9,6 +9,7 @@ import { Printer, ScanLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import {
   bulkBuildBikesWithIds,
   type BatchBuildEntry,
@@ -95,7 +96,7 @@ export function BatchBuildGrid({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="bg-muted/30 flex flex-wrap items-center gap-3 rounded-md border p-3">
+      <Panel contentClassName="flex flex-wrap items-center gap-3">
         <label htmlFor="batch-count" className="text-sm font-medium">
           {t("howMany")}
         </label>
@@ -138,9 +139,12 @@ export function BatchBuildGrid({
           <Printer aria-hidden className="size-3.5" />{" "}
           {t("printPickList", { count: n })}
         </a>
-      </div>
+      </Panel>
 
-      <div className="overflow-x-auto rounded-md border">
+      {/* Raw <table>, not the shadcn primitive — it carries per-row inputs and
+          the scan handlers. So the scroller has to live on the panel body,
+          where the primitive would have brought its own. */}
+      <Panel contentClassName="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left">
@@ -211,7 +215,7 @@ export function BatchBuildGrid({
             ))}
           </tbody>
         </table>
-      </div>
+      </Panel>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">
@@ -220,7 +224,7 @@ export function BatchBuildGrid({
       ) : null}
 
       {summary ? (
-        <div className="flex flex-col gap-1.5 rounded-md border p-3 text-sm">
+        <Panel contentClassName="flex flex-col gap-1.5 text-sm">
           <p>
             <span className="font-medium text-good">
               {t("builtSummary", { count: summary.built })}
@@ -246,7 +250,7 @@ export function BatchBuildGrid({
           >
             {t("backTo", { mo: moNumber })}
           </Link>
-        </div>
+        </Panel>
       ) : null}
 
       <footer className="flex flex-wrap items-center justify-between gap-3">

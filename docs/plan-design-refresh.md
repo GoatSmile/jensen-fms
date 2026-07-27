@@ -639,10 +639,48 @@ secret is missing starts open. Seven label hints on the same form were
 rendering beside their labels rather than under them — `Label` is
 `flex items-center gap-2` — and now stack. DECISIONS 2026-07-27 (later still).
 
+### Phase 2, fifth slice (2026-07-27) — the unmigrated list pages
+Eleven list surfaces were still wrapping their table in a hand-rolled
+`overflow-x-auto rounded-md border` box: sales orders, MOs, POs, paint orders,
+service agreements, bikes, customers, tickets, work orders, `admin/kits` and
+the parts table. The plan named three of them; the other eight are the same
+shape and the same one-line change, so all eleven went together rather than
+leaving the app half-migrated. shadcn's `Table` already renders its own
+`overflow-x-auto` container, so that wrapper was a redundant scroller *and*
+the boxed-table-in-a-surface the convention forbids.
+
+Five *filtered-to-nothing* states (paint orders, bikes, customers, kits, parts)
+became `bg-ground` fills inside the same panel, so the page keeps its shape
+while you filter. The shared `TableSkeleton` moved onto `Panel` too — while it
+was a bordered box, every navigation to a migrated list page flashed a boxed
+table that then dissolved into a borderless one.
+
+Also in this slice: the **PO receive form** and the **PO lines section** (the
+latter found while verifying the former — leaving it boxed would have split
+that screen down the middle), and the **batch-build grid**, whose count bar,
+table and result summary are now panels. Its raw `<table>` was deliberately
+left as raw markup: it carries per-row inputs and the scan handlers, so
+swapping in the primitive is behaviour risk on a workshop-critical screen for
+no visual gain — the scroller lives on the panel body instead.
+
+**One lesson worth keeping:** `bg-ground` is the fill for an empty state
+*inside* a panel. At page level the page is already `--ground`, so the same
+fill is invisible — a page-level notice needs a panel of its own. Caught in
+the browser on the bulk-build screen, after `tsc`, `lint` and the build were
+all green.
+
+Measured across `src/**/*.tsx` (occurrences of the literal class pair, this
+session's method): `rounded-md border` **234 → 208**, dashed **36 → 28**,
+files carrying any hand-rolled bordered surface **163 → 156**.
+
 ### Still not done — the honest list
-- **~159 files still hand-roll `rounded-* border` surfaces.** They inherit B's
+- **~156 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
-  the migrated screens. This is the remaining Phase 2.
+  the migrated screens. This is the remaining Phase 2. The list pages are done
+  (fifth slice); what is left is concentrated in **forms and detail sections** —
+  `mo-batch-form`, `build-workbench`, `paint-from-so-form`, the sales-order
+  lines section, contacts/units sections, `admin/people`, `admin/fx-rates`, and
+  the six entity forms' own `<section className="rounded-md border">` shells.
 
 - **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
 

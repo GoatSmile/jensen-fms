@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/money";
 import { formatFxRate, formatPct } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
@@ -130,13 +131,11 @@ export function LinesSection({
         : t("descLocked");
 
   return (
-    <section className="rounded-md border">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("linesTitle")}</h2>
-          <p className="text-muted-foreground text-xs">{description}</p>
-        </div>
-        {isDraft ? (
+    <Panel
+      title={t("linesTitle")}
+      description={description}
+      action={
+        isDraft ? (
           <Button
             size="sm"
             variant="outline"
@@ -144,166 +143,162 @@ export function LinesSection({
           >
             <Plus aria-hidden /> {t("addLine")}
           </Button>
-        ) : null}
-      </header>
+        ) : undefined
+      }
+    >
+      {error ? (
+        <p className="text-destructive mb-3 text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-      <div className="p-4">
-        {error ? (
-          <p className="text-destructive mb-3 text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        {rows.length === 0 ? (
-          <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-            {isDraft ? t("noLinesDraft") : t("noLines")}
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("part")}</TableHead>
-                  <TableHead className="text-right">{t("thQty")}</TableHead>
-                  {/* Unit price is just a step on the way to landed DKK.
-                      Hide on phones; show on sm+. */}
-                  <TableHead className="hidden text-right sm:table-cell">
-                    {t("unitPrice")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("thFxRate")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("thTransport")}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t("landedDkkUnit")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("thReceived")}
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("notes")}
-                  </TableHead>
-                  {isDraft ? <TableHead className="w-[40px]" /> : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => {
-                  const foreignCurrency =
-                    totalCurrency && row.currency !== totalCurrency;
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="min-w-0 whitespace-normal">
-                        <Link
-                          href={`/parts/${row.partId}`}
-                          className="font-medium break-words hover:underline"
-                        >
-                          {row.partName}
-                        </Link>
-                        <div className="text-muted-foreground font-mono text-xs break-all">
-                          {row.partSku}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatQuantity(row.quantity)}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                        {row.unitPrice == null ? (
-                          <span className="rounded bg-money-wash px-1.5 py-0.5 text-[10px] font-medium text-money">
-                            {t("pricePending")}
-                          </span>
-                        ) : (
-                          <>
-                            <div>
-                              <Money
-                                amount={row.unitPrice}
-                                currency={row.currency}
-                                fractionDigits={4}
-                                bold={false}
-                              />
+      {rows.length === 0 ? (
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
+          {isDraft ? t("noLinesDraft") : t("noLines")}
+        </div>
+      ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("part")}</TableHead>
+                <TableHead className="text-right">{t("thQty")}</TableHead>
+                {/* Unit price is just a step on the way to landed DKK.
+                    Hide on phones; show on sm+. */}
+                <TableHead className="hidden text-right sm:table-cell">
+                  {t("unitPrice")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("thFxRate")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("thTransport")}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t("landedDkkUnit")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("thReceived")}
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("notes")}
+                </TableHead>
+                {isDraft ? <TableHead className="w-[40px]" /> : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => {
+                const foreignCurrency =
+                  totalCurrency && row.currency !== totalCurrency;
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell className="min-w-0 whitespace-normal">
+                      <Link
+                        href={`/parts/${row.partId}`}
+                        className="font-medium break-words hover:underline"
+                      >
+                        {row.partName}
+                      </Link>
+                      <div className="text-muted-foreground font-mono text-xs break-all">
+                        {row.partSku}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatQuantity(row.quantity)}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      {row.unitPrice == null ? (
+                        <span className="rounded bg-money-wash px-1.5 py-0.5 text-[10px] font-medium text-money">
+                          {t("pricePending")}
+                        </span>
+                      ) : (
+                        <>
+                          <div>
+                            <Money
+                              amount={row.unitPrice}
+                              currency={row.currency}
+                              fractionDigits={4}
+                              bold={false}
+                            />
+                          </div>
+                          {foreignCurrency ? (
+                            <div className="text-muted-foreground text-[10px]">
+                              {t("inCurrency", { currency: row.currency })}
                             </div>
-                            {foreignCurrency ? (
-                              <div className="text-muted-foreground text-[10px]">
-                                {t("inCurrency", { currency: row.currency })}
-                              </div>
-                            ) : null}
-                          </>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatFxRate(row.fxRateToDkk)}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatPct(row.transportPct)}
-                        {row.tariffPct > 0 ? (
-                          <div className="text-muted-foreground text-[10px]">
-                            {t("plusTariff", { pct: formatPct(row.tariffPct) })}
-                          </div>
-                        ) : null}
-                        {row.antiDumpingPct > 0 ? (
-                          <div className="text-destructive text-[10px]">
-                            {t("plusAntiDumping", {
-                              pct: formatPct(row.antiDumpingPct),
-                            })}
-                          </div>
-                        ) : null}
-                        {/* Why a line carries no import tax — a correct zero
-                            (EU origin / duty prepaid / zero-rated) reads
-                            differently from a data-quality gap (unclassified,
-                            amber: understates landed cost). */}
-                        {row.tariffPct === 0 &&
-                        row.importTaxBasis != null &&
-                        row.importTaxBasis !== "applied" ? (
-                          <div
-                            className={
-                              row.importTaxBasis === "unclassified"
-                                ? "text-[10px] text-money"
-                                : "text-muted-foreground text-[10px]"
-                            }
-                          >
-                            {t("noImportTax", {
-                              reason: tBasis(row.importTaxBasis),
-                            })}
-                          </div>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatPrice(row.landedDkkPerUnit, "DKK")}
-                      </TableCell>
-                      <TableCell className="hidden text-right tabular-nums lg:table-cell">
-                        {formatQuantity(row.receivedQuantity)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden max-w-[180px] truncate text-xs md:table-cell">
-                        {row.notes ?? "—"}
-                      </TableCell>
-                      {isDraft ? (
-                        <TableCell className="text-right">
-                          <RowActions
-                            row={row}
-                            onEdit={() =>
-                              setDialog({
-                                kind: "edit",
-                                initial: rowToInitial(row),
-                              })
-                            }
-                            confirming={pendingDeleteId === row.id}
-                            pending={
-                              isDeleting && pendingDeleteId === row.id
-                            }
-                            onAskDelete={() => setPendingDeleteId(row.id)}
-                            onConfirmDelete={() => runDelete(row.id)}
-                          />
-                        </TableCell>
+                          ) : null}
+                        </>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                      {formatFxRate(row.fxRateToDkk)}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                      {formatPct(row.transportPct)}
+                      {row.tariffPct > 0 ? (
+                        <div className="text-muted-foreground text-[10px]">
+                          {t("plusTariff", { pct: formatPct(row.tariffPct) })}
+                        </div>
                       ) : null}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+                      {row.antiDumpingPct > 0 ? (
+                        <div className="text-destructive text-[10px]">
+                          {t("plusAntiDumping", {
+                            pct: formatPct(row.antiDumpingPct),
+                          })}
+                        </div>
+                      ) : null}
+                      {/* Why a line carries no import tax — a correct zero
+                          (EU origin / duty prepaid / zero-rated) reads
+                          differently from a data-quality gap (unclassified,
+                          amber: understates landed cost). */}
+                      {row.tariffPct === 0 &&
+                      row.importTaxBasis != null &&
+                      row.importTaxBasis !== "applied" ? (
+                        <div
+                          className={
+                            row.importTaxBasis === "unclassified"
+                              ? "text-[10px] text-money"
+                              : "text-muted-foreground text-[10px]"
+                          }
+                        >
+                          {t("noImportTax", {
+                            reason: tBasis(row.importTaxBasis),
+                          })}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatPrice(row.landedDkkPerUnit, "DKK")}
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums lg:table-cell">
+                      {formatQuantity(row.receivedQuantity)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden max-w-[180px] truncate text-xs md:table-cell">
+                      {row.notes ?? "—"}
+                    </TableCell>
+                    {isDraft ? (
+                      <TableCell className="text-right">
+                        <RowActions
+                          row={row}
+                          onEdit={() =>
+                            setDialog({
+                              kind: "edit",
+                              initial: rowToInitial(row),
+                            })
+                          }
+                          confirming={pendingDeleteId === row.id}
+                          pending={
+                            isDeleting && pendingDeleteId === row.id
+                          }
+                          onAskDelete={() => setPendingDeleteId(row.id)}
+                          onConfirmDelete={() => runDelete(row.id)}
+                        />
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+      )}
 
       {dialog.kind !== "closed" ? (
         <LineDialog
@@ -342,7 +337,7 @@ export function LinesSection({
           }
         />
       ) : null}
-    </section>
+    </Panel>
   );
 }
 

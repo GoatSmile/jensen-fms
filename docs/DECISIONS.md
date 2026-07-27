@@ -1004,3 +1004,33 @@ directly; what it protects is `main` from the sessions that *do* push — and
 today's commits would have skipped the local build gate entirely, since a dev
 server held :3000 the whole time. Tier 2 (runtime + Vitest, needs secrets)
 stays in BACKLOG for auth/M1.
+
+## 2026-07-27 (late) — the list-page slice, and the two calls inside it
+**All eleven, not the three the plan named.** Sales orders, MOs and
+`admin/kits` were on the list; POs, paint orders, service agreements, bikes,
+customers, tickets, work orders and the parts table turned out to be the
+identical `overflow-x-auto rounded-md border` wrapper around a `Table`. Owner
+took all eleven: same one-line change, and stopping at three would leave the
+app reading half-migrated. The wrapper was redundant twice — shadcn's `Table`
+brings its own `overflow-x-auto` container — which is why removing it costs
+nothing at 390 px.
+
+**The batch-build grid keeps its raw `<table>`.** Its rows carry inputs and the
+scan handlers; swapping in the `Table` primitive is behaviour risk on a
+workshop-critical screen for no visual gain. The consequence is that the
+scroller has to live on the panel body (`contentClassName="overflow-x-auto"`)
+where the primitive would have supplied its own — worth a comment in the file,
+since it looks like an oversight otherwise.
+
+**Scope crept by exactly one file, deliberately.** The PO **lines section**
+was not on the list, but it sits directly above the receive form that was, and
+leaving it boxed would have split that screen down the middle. Finishing a page
+I had already changed is inside the approved scope; the ~20 remaining
+form/detail shells are not, and stayed untouched.
+
+**`bg-ground` is an in-panel fill, not a page-level one.** Converting the
+bulk-build "nothing left to build" notice from a dashed box to a `bg-ground`
+fill made it invisible: the page background already IS `--ground`. Page-level
+notices get their own `Panel`. Recorded because `tsc`, `lint` and `next build`
+were all green while the screen looked broken — the same class of miss as the
+morning's client-reference bug, caught the same way (in a browser).
