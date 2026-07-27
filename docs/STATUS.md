@@ -161,6 +161,10 @@ Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
 - **Tier 1 CI**: `.github/workflows/ci.yml` runs `npm ci` → `tsc --noEmit` →
   `npm run lint` on every push. Next 16 does **not** run ESLint during
   `next build`, so this is the only thing catching that class before prod.
+  Green as of `e765bdc`; the 14 lint warnings show as run annotations.
+  **Pinned to Node 24 / npm 11 on purpose** — npm 10 rejects our lock file
+  (`Missing: @swc/helpers@0.5.23`). A CI failure naming `@swc/helpers` is the
+  pre-existing tree inconsistency in `docs/BACKLOG.md`, not your code.
 
 **Two things real data still cannot verify**: no bike template has paintwork
 rows, and **all 25 bikes were soft-deleted on 2026-07-01** (`/bikes` is empty
