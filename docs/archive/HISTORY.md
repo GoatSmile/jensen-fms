@@ -613,3 +613,90 @@ Left undone, deliberately: ~140 files still hand-roll their surfaces (they read
 as plainer, not broken, which is what made stopping safe), `/admin/settings`,
 the `/admin/lists` consolidation, the floor/office mode split, and any dark-mode
 toggle.
+
+---
+
+## 2026-07-27 — Design refresh Phase 2, in four slices
+
+Commits `4149809` · `0d21cd6` · `944e434` · `9455c85`, all on
+`claude/ui-ux-improvements-l2m8r6`. Phase 1 had shipped the tokens, the
+primitives and the colour sweep the day before but left the *structural* half
+roughly 10 % done. This day took the four pieces that needed no owner input.
+
+**Slice 1 — the two skipped screens.** `/inbox` and `/bike-templates` were
+100 % hand-rolled `rounded-md border` boxes, which made them the cheapest
+place to settle conventions Phase 1 had left open. Both list pages, both
+detail pages and eleven components moved onto `Panel`. No new message keys,
+no route or data change.
+
+Three calls came out of it. **A table inside a panel gets no wrapper box** —
+`Table` already renders its own overflow container and row rules, so the
+wrapper was a box inside a box, which is exactly what the panel replaced.
+**Family colour moved from a tinted header band to the title dot**: family
+hues are decorative identity, explicitly exempt from the six-hue contrast
+matrix, and a wash behind panel text would have dragged them into it. **The
+spam banner was a caution wearing an alarm's ink** — `bg-money-wash` filled
+but `text-alert` titled — and is now `money` throughout. `Panel` gained `id`
+for anchor targets and `ReactNode` titles/descriptions, which absorbed the
+family dot and the recipe's inline cost/retail/margin summary without a
+second primitive.
+
+**Slice 2 — the convention, applied.** Settling a rule and applying it to two
+screens left the app teaching two shapes at once, so the other twenty files
+followed the same day: SO detail, MO bikes + parts, WO parts, paint orders,
+the invoices list and detail, part detail ×6, bike detail ×3. Each was a
+wrapper `<div>` deletion rather than layout work. Zero boxed tables remain
+inside a `Panel`. The exception written into the rule: on a *hued* panel the
+container stays — CLAUDE.md wants inner tables on `bg-surface` — and only the
+hairline goes; those wrappers had been on `bg-background`, which resolves to
+`--ground`, so they were wrong on that count too. Seven in-panel dashed empty
+states became `bg-ground` fills. Left alone deliberately: boxed tables that
+are not inside a panel at all (sales-orders list, MO list, `admin/kits`, the
+PO receive form, the batch-build grid) — those screens are unmigrated and
+belong to the wider sweep, not to this convention. DECISIONS carries a
+supersede note, because the first entry had said the older screens would be
+fixed as they were touched.
+
+**Slice 3 — §9's form folds.** Organisation (21 fields), part (15) and
+supplier (14) presented every field at once. `src/components/form-section.tsx`
+is now one component replacing the identical local helper four forms had each
+copy-pasted.
+
+The interesting decision was the default. Copying `CollapsibleSection`'s
+localStorage memory looked obvious and is wrong for a form: a remembered
+"Address closed" would hide the address of the *next* customer opened. Each
+section instead opens on arrival if that record already holds something in it,
+so an edit form shows what is filled and a create form shows only what is
+required; fields carrying defaults (currency DKK, terms 30, unit `pcs`) do not
+count as content, or Billing and Specs would be open on every new record.
+Folded sections unmount — safe because all three forms build their FormData
+from React state rather than the DOM, and a mounted-but-hidden `required`
+input would make submit fail silently on a control the browser cannot focus.
+The cost is that an error inside a fold would be invisible, so `forceOpen`
+unfolds the section owning the failed field, derived rather than pushed by an
+effect so it snaps back to the user's own choice once the error clears.
+Supplier's flat form gained the two sections it never had.
+`CollapsibleSection` moved onto `Panel` in the same pass so the app has one
+fold, not two that look different.
+
+**Slice 4 — §9's provider summary rows.** The inbound panel's three capability
+blocks were bordered cards holding thirteen inputs between them. They are now
+summary rows — *Transcription · Gladia (EU) · ✓ Ready* — so
+`/admin/settings?section=phone` arrives at two controls instead of thirteen. A
+row whose secret is missing starts open, the same record-driven default as the
+form folds. A pre-existing bug surfaced there: `Label` is
+`flex items-center gap-2`, so the seven `<span className="block text-xs">`
+hints inside labels were rendering as flex *items* beside the label, squeezing
+"Production number" onto two lines. That pattern existed only in this file.
+
+**Measured across `src/**/*.tsx`**: `rounded-md border` occurrences 298 → 240,
+dashed 46 → 37, files carrying any hand-rolled bordered surface 184 → 159.
+The counting method differs from the audit's 345/187 in plan §1, so the delta
+is the honest number, not the absolute.
+
+**Verification has a hole worth remembering.** The container had no
+`.env.local`, so no data-driven page was ever rendered against real data.
+Client components were screenshotted through a throwaway `/ui-preview` route
+with stub props (deleted before each commit) — layout, hues, contrast and both
+fold states confirmed there; everything server-rendered was confirmed by
+`next build` and review only.

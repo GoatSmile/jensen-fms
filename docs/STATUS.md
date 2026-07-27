@@ -1,9 +1,16 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-27.** Most recent: **Phase 2 of the design refresh
-started** — `/inbox` and `/bike-templates`, the two screens the first pass
-deliberately skipped, are now on the shared `Panel` surface. `npm run build`
-passes clean (exit 0, 52 static pages); `tsc` and lint clean.
+**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2, four
+slices in one day** — `/inbox` + `/bike-templates` onto `Panel`, the
+panel-table convention applied app-wide, §9's form folds, and §9's inbound
+provider summary rows. **Plan §9 is closed except the category chips.** Gates
+green: `tsc` clean, lint 0 errors (14 long-standing warnings), `npm run build`
+exit 0 / 52 static pages. Narrative + commit refs in
+`docs/archive/HISTORY.md`; the four decisions in `docs/DECISIONS.md`.
+
+**Work is on `claude/ui-ux-improvements-l2m8r6`, not `main`** — four commits
+(`4149809`, `0d21cd6`, `944e434`, `9455c85`), pushed. Nothing has reached prod
+from this session; merging the branch is what deploys it.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -11,6 +18,7 @@ That applies to this header too: what shipped in earlier sessions belongs in
 `docs/archive/HISTORY.md` and `docs/WORKLOG.md`, not in a growing parenthetical
 here. History belongs in `docs/archive/`, decisions in `docs/DECISIONS.md`,
 parked ideas in `docs/BACKLOG.md`.
+
 ## Where we are
 - **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
   Vercel SSO. 78 migrations, single-tenant, solo-dev.
@@ -84,94 +92,81 @@ arrival now) · three of the four audit bugs.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder — card soup is dented, not cleared.** Phase 2 started
-  2026-07-27 in four slices: `/inbox` + `/bike-templates`, the panel-table
-  convention applied app-wide, §9's form folds, and §9's inbound provider
-  summary rows (see below). **§9 is now closed except the category chips.** Across `src/**/*.tsx`:
-  `rounded-md border` occurrences **298 → 240**, dashed **46 → 37**, files with
-  any hand-rolled bordered surface **184 → 159**. Note the counting method
-  differs from the audit's 345/187 — trust the delta, not the absolute. The rest
-  inherit B's tokens so they read as *plainer*, not broken. Untouched: the
-  `/admin/lists` consolidation (18 routes → 1), the floor/office mode split
-  (§6 — still the highest-value structural idea nobody has built), form folds
-  on the 16/15/14-field forms, and the inbound panel's provider blocks
-  collapsing to summary rows. Full list in plan §14.
+- **The remainder — card soup is dented, not cleared.** Phase 2 ran four
+  slices on 2026-07-27 (see below). Across `src/**/*.tsx`: `rounded-md border`
+  occurrences **298 → 240**, dashed **46 → 37**, files with any hand-rolled
+  bordered surface **184 → 159**. The counting method differs from the audit's
+  345/187, so trust the delta, not the absolute. The rest inherit B's tokens
+  so they read as *plainer*, not broken. Still untouched: the **unmigrated
+  list pages** (sales orders, MOs, `admin/kits`, the PO receive form, the
+  batch-build grid — the biggest single block left), the `/admin/lists`
+  consolidation (18 routes → 1), the floor/office mode split (§6 — still the
+  highest-value structural idea nobody has built), and §9's repeated category
+  chips. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
-## Shipped this session
-- **`/inbox` and `/bike-templates` onto `Panel`** — both list pages, both
-  detail pages, and eleven components (inbound review stages, parts recipe,
-  paintwork, version history, template form). No new message keys; no route
-  or data change; behaviour identical.
-- **Three conventions settled** while doing it, all in DECISIONS 2026-07-27
-  and the first of them now a CLAUDE.md rule:
-  - **A table inside a `Panel` gets no wrapper box.** `Table` already draws
-    its own row rules and overflow container.
-  - **Family colour rides the title dot**, not a tinted header band. Family
-    hues are decorative identity and exempt from the six-hue contrast matrix;
-    a wash behind panel text would have dragged them into it.
-  - **Suspected spam is `money`, not `alert`** — it was filling money-ochre
-    and titling in alert-red, a caution wearing an alarm's ink.
-- **`Panel` gained `id`** (anchor targets like `#family-<id>`) and now takes
-  `ReactNode` for `title` / `description` (the family dot; the recipe's
-  inline cost/retail/margin summary). No second primitive.
-- **The convention then applied everywhere** — a second slice across 20 files
-  (SO detail, MO bikes + parts, WO parts, paint orders, invoices list +
-  detail, part detail ×6, bike detail ×3). **Zero boxed tables remain inside
-  a panel.** Seven in-panel dashed empty states became `bg-ground` fills.
-  One exception, per CLAUDE.md: on a *hued* panel the table keeps a
-  `bg-surface` container and loses only the hairline. Supersede note in
-  DECISIONS 2026-07-27 (later) — the first entry had said these would be
-  fixed as touched.
-- **§9's form folds shipped** — organisation (21 fields), part (15) and
-  supplier (14) show their required fields and fold the rest behind a shared
-  `FormSection` (`src/components/form-section.tsx`), which also replaces the
-  local helper four forms had each copy-pasted. **The default is per record,
-  not remembered**: a section opens on arrival only if that record already
-  holds something in it, so an edit form shows what is filled and a create
-  form shows only what is required — deliberately unlike
-  `CollapsibleSection`, whose localStorage memory would hide the *next*
-  customer's address. Folded sections unmount (the forms build FormData from
-  React state, so nothing is lost), and `forceOpen` unfolds whichever section
-  owns a failed field. `CollapsibleSection` moved onto `Panel` in the same
-  pass. Reasoning: DECISIONS 2026-07-27 (later).
-- **§9's inbound provider rows shipped** — the three capability blocks
-  (transcription, extraction, telephony) are summary rows that expand on
-  demand, so `/admin/settings?section=phone` arrives at **2 controls instead
-  of 13**. A row whose secret is missing starts open. Rows separated by
-  hairlines, expanded body on `bg-surface` (the panel is hued). Also fixed
-  there: seven label hints were rendering *beside* their labels rather than
-  under them — `Label` is `flex items-center gap-2`, so a `block` span
-  becomes a flex item. That pattern existed only in this file.
-- **Verified in a browser, with a caveat.** This container has no Supabase
-  credentials, so the two data-driven pages could not be rendered against
-  real data. The converted client components were rendered and screenshotted
-  through a throwaway `/ui-preview` route with stub props (deleted before
-  commit) — layout, hues, contrast and every fold state confirmed there
-  (create-mode folded, edit-mode auto-open); the server-rendered pages were
-  confirmed by build + review only. **Worth a real look at `/inbox`,
-  `/bike-templates`, a part/customer/supplier edit form and one hued detail
-  page on the next machine with `.env.local`.**
+## Shipped this session (2026-07-27) — design-refresh Phase 2
+Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
+(four entries). What a fresh session needs to know:
+
+- **`/inbox` + `/bike-templates` are on `Panel`** (commit `4149809`) — both
+  list pages, both detail pages, eleven components. No new message keys, no
+  route or data change.
+- **Zero boxed tables remain inside a `Panel`** (`0d21cd6`, 20 more files).
+  The rule is in CLAUDE.md. Its one exception: on a *hued* panel the table
+  keeps a `bg-surface` container and loses only the hairline. Boxed tables
+  that are NOT in a panel were left alone on purpose — those screens are
+  unmigrated and belong to the wider sweep.
+- **`src/components/form-section.tsx`** (`944e434`) is the shared form
+  section, replacing the local helper four forms had copy-pasted.
+  Organisation / part / supplier now fold. **A section's default is computed
+  from the record, not remembered** — unlike `CollapsibleSection`, whose
+  localStorage memory would hide the next customer's address. Folded sections
+  unmount (safe: the forms build FormData from React state), and `forceOpen`
+  unfolds whichever section owns a failed field.
+- **The inbound provider blocks are summary rows** (`9455c85`) —
+  `/admin/settings?section=phone` arrives at 2 controls instead of 13; a row
+  whose secret is missing starts open.
+- **`Panel` grew two props**: `id` (anchor targets) and `ReactNode`
+  `title` / `description`.
+- **Two colour corrections**: suspected spam is `money`, not `alert`; family
+  colour rides the title dot rather than a tinted header band (decorative
+  hues stay out of the six-hue contrast matrix).
+
+**Verification has one hole.** This container had no `.env.local`, so **no
+data-driven page was rendered against real data**. Client components were
+screenshotted through a throwaway `/ui-preview` route with stub props (deleted
+before each commit) — layout, hues, contrast and both fold states confirmed
+there. Everything server-rendered was confirmed by `next build` + review only.
 
 ## Next actions, in order
-1. **Open the touched screens against real data** — `/inbox`,
-   `/bike-templates`, an edit form for a part / customer / supplier (check a
-   record with an address opens its fold), `/admin/settings?section=phone`,
-   and one hued detail page. The one gap in this session's verification;
-   cheap, and it closes the loop.
-2. **Walk the rest of the app with fresh eyes before 3 Aug.** The refresh was
-   built and verified in one long day; a second look on rested eyes is the
-   cheapest quality step left. Specifically: whether the six hues still read
-   as a system across a whole working session rather than screen by screen.
-3. **Chase the external blockers** in the cutover plan §7 (revisor in one
+1. **Open the touched screens against real data.** The one gap in this
+   session's verification, and cheap to close: `/inbox` · `/bike-templates` ·
+   an **edit** form for a part / customer / supplier (a record that already
+   has an address should arrive with its fold open — that is the branch the
+   preview stubbed rather than fetched) · `/admin/settings?section=phone`
+   (in prod all three secrets are set, so expect three *closed* rows) · one
+   hued detail page (`/parts/<id>`, an SO, `/invoices`).
+2. **Merge `claude/ui-ux-improvements-l2m8r6`.** Nothing from this session is
+   in prod until it lands on `main`.
+3. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
+   hues still read as a system across a whole working session rather than
+   screen by screen.
+4. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
-4. **Phase 2, continued — after 31 Aug**: the remaining ~159 files (the
-   unmigrated list pages are the biggest block — sales orders, MOs, kits,
-   the PO receive form, the batch-build grid), then the
-   floor/office mode split (plan §6), still the highest-value structural idea
-   nobody has built.
+
+### The Phase 2 queue, in the order it is worth taking
+Nothing here needs owner input except where noted.
+1. **The unmigrated list pages** — sales orders, MOs, `admin/kits`, the PO
+   receive form, the batch-build grid. Biggest single block of the ~159 files
+   left, and the same mechanical shape as this session's slices.
+2. **§9's repeated category chips** — the last §9 line, small.
+3. **`/admin/lists` consolidation** (18 routes → 1) — **ask first.** It
+   changes IA Dennis navigates by.
+4. **Floor/office mode split** (plan §6) — **ask first**, and not before
+   31 Aug. Highest-value structural idea in the plan, and the largest.
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.

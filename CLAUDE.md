@@ -454,6 +454,9 @@ cross-cutting. Original SQL files live in `/migrations/`.
   resolve direction-ambiguously — fetch the other side with a second query.
 - **JSX gotcha**: multi-line text after an `{expr}` can silently lose its
   leading space — write such row copy as one template literal.
+- **`Label` is `flex items-center gap-2`**, so a hint `<span className="block
+  text-xs">` inside it becomes a flex ITEM beside the label, not a line under
+  it. Add `className="flex-col items-start gap-0.5"` to the `Label`.
 
 ## Local environment
 - Env file is `.env.local` (leading dot — Next.js won't auto-load any other
