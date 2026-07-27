@@ -21,9 +21,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           # Node 24 LTS, which bundles npm 11 — the major that WROTE
           # package-lock.json. On Node 22 (npm 10) `npm ci` refuses the lock
