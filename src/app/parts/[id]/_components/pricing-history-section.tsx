@@ -33,42 +33,40 @@ export async function PricingHistorySection({ rows }: { rows: PricingRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>{t("noPricing")}</EmptyRow>
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]" />
-                <TableHead className="text-right">{t("thPrice")}</TableHead>
-                <TableHead>{t("thFrom")}</TableHead>
-                <TableHead>{t("thTo")}</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[120px]" />
+              <TableHead className="text-right">{t("thPrice")}</TableHead>
+              <TableHead>{t("thFrom")}</TableHead>
+              <TableHead>{t("thTo")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>
+                  {row.isCurrent ? (
+                    <Badge variant="success">{t("currentBadge")}</Badge>
+                  ) : null}
+                </TableCell>
+                <TableCell className="text-right tabular-nums font-medium">
+                  <Money
+                    amount={row.price}
+                    currency={row.currency}
+                    bold={false}
+                  />
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs">
+                  {formatDate(row.effectiveFrom)}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-xs">
+                  {row.effectiveTo ? formatDate(row.effectiveTo) : "—"}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>
-                    {row.isCurrent ? (
-                      <Badge variant="success">{t("currentBadge")}</Badge>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">
-                    <Money
-                      amount={row.price}
-                      currency={row.currency}
-                      bold={false}
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {formatDate(row.effectiveFrom)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {row.effectiveTo ? formatDate(row.effectiveTo) : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Section>
   );

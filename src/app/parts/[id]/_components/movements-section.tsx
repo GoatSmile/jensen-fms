@@ -60,7 +60,7 @@ export async function MovementsSection({
       {rows.length === 0 ? (
         <EmptyRow>{t("noMovements")}</EmptyRow>
       ) : (
-        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-surface overflow-hidden rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>

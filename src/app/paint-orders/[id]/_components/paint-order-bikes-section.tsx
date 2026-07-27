@@ -87,42 +87,40 @@ export function PaintOrderBikesSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           {t("noBikes")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thFrameNumber")}</TableHead>
-                <TableHead>{t("thTemplate")}</TableHead>
-                {hasLegacyColumns ? (
-                  <TableHead className="hidden sm:table-cell">
-                    {t("thLegacy")}
-                  </TableHead>
-                ) : null}
-                <TableHead className="hidden md:table-cell">
-                  {t("thBikeStatus")}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thFrameNumber")}</TableHead>
+              <TableHead>{t("thTemplate")}</TableHead>
+              {hasLegacyColumns ? (
+                <TableHead className="hidden sm:table-cell">
+                  {t("thLegacy")}
                 </TableHead>
-                <TableHead className="w-[60px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <BikeRow
-                  key={r.bikeId}
-                  serviceOrderId={serviceOrderId}
-                  row={r}
-                  showLegacy={hasLegacyColumns}
-                  canEdit={canEdit}
-                  onError={setError}
-                  onChange={() => router.refresh()}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              ) : null}
+              <TableHead className="hidden md:table-cell">
+                {t("thBikeStatus")}
+              </TableHead>
+              <TableHead className="w-[60px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <BikeRow
+                key={r.bikeId}
+                serviceOrderId={serviceOrderId}
+                row={r}
+                showLegacy={hasLegacyColumns}
+                canEdit={canEdit}
+                onError={setError}
+                onChange={() => router.refresh()}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Section>
   );

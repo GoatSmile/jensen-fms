@@ -300,7 +300,7 @@ export function MOPartsSection({
             </span>
           </div>
           {rows.length === 0 ? (
-            <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
+            <div className="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm italic">
               {t("noPartsYet")}
             </div>
           ) : (

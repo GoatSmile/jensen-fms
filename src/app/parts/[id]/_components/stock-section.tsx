@@ -106,7 +106,7 @@ export async function StockSection({
       {rows.length === 0 ? (
         <EmptyRow>{t("noStock")}</EmptyRow>
       ) : (
-        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-surface overflow-hidden rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>

@@ -131,7 +131,7 @@ export function PhotosSection({ bikeId, photos }: Props) {
       ) : null}
 
       {photos.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           <span className="flex items-center gap-2">
             <Camera aria-hidden className="size-4" />
             {t("noPhotos")}

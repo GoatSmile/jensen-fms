@@ -31,60 +31,58 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>{t("empty")}</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[140px] sm:w-[180px]">
-                  {t("thWhen")}
-                </TableHead>
-                <TableHead>{t("thTransition")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t("thReason")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="text-muted-foreground text-xs">
-                    {formatDateTime(row.occurredAt)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {row.fromStatus ? (
-                        <Badge
-                          variant={
-                            BIKE_STATUS_VARIANT[row.fromStatus as BikeStatus] ??
-                            "outline"
-                          }
-                        >
-                          {tStatus(row.fromStatus)}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">
-                          {t("created")}
-                        </span>
-                      )}
-                      <ArrowRight aria-hidden className="size-3" />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[140px] sm:w-[180px]">
+                {t("thWhen")}
+              </TableHead>
+              <TableHead>{t("thTransition")}</TableHead>
+              <TableHead className="hidden sm:table-cell">
+                {t("thReason")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="text-muted-foreground text-xs">
+                  {formatDateTime(row.occurredAt)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {row.fromStatus ? (
                       <Badge
                         variant={
-                          BIKE_STATUS_VARIANT[row.toStatus as BikeStatus] ??
+                          BIKE_STATUS_VARIANT[row.fromStatus as BikeStatus] ??
                           "outline"
                         }
                       >
-                        {tStatus(row.toStatus)}
+                        {tStatus(row.fromStatus)}
                       </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs sm:table-cell">
-                    {row.reason ?? "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        {t("created")}
+                      </span>
+                    )}
+                    <ArrowRight aria-hidden className="size-3" />
+                    <Badge
+                      variant={
+                        BIKE_STATUS_VARIANT[row.toStatus as BikeStatus] ??
+                        "outline"
+                      }
+                    >
+                      {tStatus(row.toStatus)}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs sm:table-cell">
+                  {row.reason ?? "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Section>
   );

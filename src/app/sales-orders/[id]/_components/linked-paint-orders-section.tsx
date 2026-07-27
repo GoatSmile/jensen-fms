@@ -62,7 +62,7 @@ export async function LinkedPaintOrdersSection({
           {canCreate ? t("noPaintOrdersCta") : "."}
         </p>
       ) : (
-        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-surface overflow-hidden rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>

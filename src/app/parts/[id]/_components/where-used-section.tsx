@@ -66,46 +66,44 @@ export async function WhereUsedSection({
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
                 {t("currentTemplates")}
               </h3>
-              <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("thTemplate")}</TableHead>
-                      <TableHead className="hidden sm:table-cell">
-                        {t("thTemplateType")}
-                      </TableHead>
-                      <TableHead className="text-right">
-                        {t("thQtyPerBike")}
-                      </TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("thTemplate")}</TableHead>
+                    <TableHead className="hidden sm:table-cell">
+                      {t("thTemplateType")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("thQtyPerBike")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {templates.map((t) => (
+                    <TableRow key={t.templateId}>
+                      <TableCell className="min-w-0 whitespace-normal">
+                        <Link
+                          href={`/bike-templates/${t.templateId}`}
+                          className="font-medium break-words hover:underline"
+                        >
+                          {[t.family, t.frameSize, t.templateName]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </Link>
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                          v{t.templateVersion}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
+                        {t.bikeTypeName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {t.qtyPerBike}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {templates.map((t) => (
-                      <TableRow key={t.templateId}>
-                        <TableCell className="min-w-0 whitespace-normal">
-                          <Link
-                            href={`/bike-templates/${t.templateId}`}
-                            className="font-medium break-words hover:underline"
-                          >
-                            {[t.family, t.frameSize, t.templateName]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </Link>
-                          <span className="text-muted-foreground ml-1.5 text-xs">
-                            v{t.templateVersion}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
-                          {t.bikeTypeName ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {t.qtyPerBike}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : null}
 
@@ -114,53 +112,51 @@ export async function WhereUsedSection({
               <h3 className="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
                 {t("openMos")}
               </h3>
-              <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("thMoNumber")}</TableHead>
-                      <TableHead>{t("thStatus")}</TableHead>
-                      <TableHead className="hidden text-right md:table-cell">
-                        {t("thQtyPerBike")}
-                      </TableHead>
-                      <TableHead className="hidden text-right md:table-cell">
-                        {t("thOutstanding")}
-                      </TableHead>
-                      <TableHead className="text-right">
-                        {t("thTotalNeeded")}
-                      </TableHead>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("thMoNumber")}</TableHead>
+                    <TableHead>{t("thStatus")}</TableHead>
+                    <TableHead className="hidden text-right md:table-cell">
+                      {t("thQtyPerBike")}
+                    </TableHead>
+                    <TableHead className="hidden text-right md:table-cell">
+                      {t("thOutstanding")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("thTotalNeeded")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mos.map((mo) => (
+                    <TableRow key={mo.moId}>
+                      <TableCell className="font-mono text-xs">
+                        <Link
+                          href={`/manufacturing-orders/${mo.moId}`}
+                          className="hover:underline"
+                        >
+                          {mo.moNumber}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={MO_STATUS_VARIANT[mo.status] ?? "outline"}>
+                          {tMoStatus(mo.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums md:table-cell">
+                        {mo.qtyPerBike}
+                      </TableCell>
+                      <TableCell className="hidden text-right tabular-nums md:table-cell">
+                        {mo.outstandingBikes}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">
+                        {mo.qtyPerBike * mo.outstandingBikes}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mos.map((mo) => (
-                      <TableRow key={mo.moId}>
-                        <TableCell className="font-mono text-xs">
-                          <Link
-                            href={`/manufacturing-orders/${mo.moId}`}
-                            className="hover:underline"
-                          >
-                            {mo.moNumber}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={MO_STATUS_VARIANT[mo.status] ?? "outline"}>
-                            {tMoStatus(mo.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden text-right tabular-nums md:table-cell">
-                          {mo.qtyPerBike}
-                        </TableCell>
-                        <TableCell className="hidden text-right tabular-nums md:table-cell">
-                          {mo.outstandingBikes}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">
-                          {mo.qtyPerBike * mo.outstandingBikes}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : null}
 

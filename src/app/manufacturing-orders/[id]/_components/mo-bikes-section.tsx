@@ -265,7 +265,7 @@ export function MOBikesSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           {t("noBikesYet")}
         </div>
       ) : (
@@ -322,34 +322,32 @@ export function MOBikesSection({
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("thFrameNumber")}</TableHead>
-                  <TableHead>{t("thStatus")}</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("thSlatedFor")}
-                  </TableHead>
-                  <TableHead className="hidden text-right sm:table-cell">
-                    {t("thIdentifiers")}
-                  </TableHead>
-                  <TableHead className="w-[100px] text-right sm:w-[120px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visible.map((row) => (
-                  <BikeRow
-                    key={row.id}
-                    moId={moId}
-                    row={row}
-                    closed={closed}
-                    onError={setError}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("thFrameNumber")}</TableHead>
+                <TableHead>{t("thStatus")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thSlatedFor")}
+                </TableHead>
+                <TableHead className="hidden text-right sm:table-cell">
+                  {t("thIdentifiers")}
+                </TableHead>
+                <TableHead className="w-[100px] text-right sm:w-[120px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map((row) => (
+                <BikeRow
+                  key={row.id}
+                  moId={moId}
+                  row={row}
+                  closed={closed}
+                  onError={setError}
+                />
+              ))}
+            </TableBody>
+          </Table>
           {filtered.length > visible.length ? (
             <Button
               type="button"

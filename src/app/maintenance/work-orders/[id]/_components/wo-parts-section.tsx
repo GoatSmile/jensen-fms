@@ -76,76 +76,74 @@ export function WOPartsSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           {t("noParts")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thPart")}</TableHead>
-                <TableHead className="text-right">{t("thQty")}</TableHead>
-                {/* On phones, the Total column is most useful; hide the
-                    per-unit price and installed-at date. */}
-                <TableHead className="hidden text-right sm:table-cell">
-                  {t("thUnitPrice")}
-                </TableHead>
-                <TableHead className="text-right">{t("thTotal")}</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("thInstalled")}
-                </TableHead>
-                {readOnly ? null : <TableHead className="w-[40px]" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => {
-                const total =
-                  row.unitPrice != null ? row.quantity * row.unitPrice : null;
-                return (
-                  <TableRow key={row.id}>
-                    <TableCell className="min-w-0 whitespace-normal">
-                      <Link
-                        href={`/parts/${row.partId}`}
-                        className="font-medium break-words hover:underline"
-                      >
-                        {row.partName}
-                      </Link>
-                      <div className="text-muted-foreground font-mono text-xs break-all">
-                        {row.partSku}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.quantity}
-                    </TableCell>
-                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                      <Money
-                        amount={row.unitPrice}
-                        currency="DKK"
-                        bold={false}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thPart")}</TableHead>
+              <TableHead className="text-right">{t("thQty")}</TableHead>
+              {/* On phones, the Total column is most useful; hide the
+                  per-unit price and installed-at date. */}
+              <TableHead className="hidden text-right sm:table-cell">
+                {t("thUnitPrice")}
+              </TableHead>
+              <TableHead className="text-right">{t("thTotal")}</TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thInstalled")}
+              </TableHead>
+              {readOnly ? null : <TableHead className="w-[40px]" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => {
+              const total =
+                row.unitPrice != null ? row.quantity * row.unitPrice : null;
+              return (
+                <TableRow key={row.id}>
+                  <TableCell className="min-w-0 whitespace-normal">
+                    <Link
+                      href={`/parts/${row.partId}`}
+                      className="font-medium break-words hover:underline"
+                    >
+                      {row.partName}
+                    </Link>
+                    <div className="text-muted-foreground font-mono text-xs break-all">
+                      {row.partSku}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {row.quantity}
+                  </TableCell>
+                  <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                    <Money
+                      amount={row.unitPrice}
+                      currency="DKK"
+                      bold={false}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <Money amount={total} currency="DKK" bold={false} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
+                    {formatDate(row.installedAt)}
+                  </TableCell>
+                  {readOnly ? null : (
+                    <TableCell className="text-right">
+                      <RemoveButton
+                        woId={woId}
+                        rowId={row.id}
+                        onError={setError}
                       />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <Money amount={total} currency="DKK" bold={false} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
-                      {formatDate(row.installedAt)}
-                    </TableCell>
-                    {readOnly ? null : (
-                      <TableCell className="text-right">
-                        <RemoveButton
-                          woId={woId}
-                          rowId={row.id}
-                          onError={setError}
-                        />
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                  )}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
       {dialogOpen ? (

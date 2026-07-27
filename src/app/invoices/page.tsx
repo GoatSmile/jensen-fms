@@ -136,7 +136,7 @@ export default async function InvoicesPage() {
         {wos.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("woEmpty")}</p>
         ) : (
-          <div className="bg-background overflow-hidden rounded-md border">
+          <div className="bg-surface overflow-hidden rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -211,7 +211,7 @@ export default async function InvoicesPage() {
         {sos.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("soEmpty")}</p>
         ) : (
-          <div className="bg-background overflow-hidden rounded-md border">
+          <div className="bg-surface overflow-hidden rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -266,7 +266,7 @@ export default async function InvoicesPage() {
         ) : (
           <div className="flex flex-col gap-3">
             <DraftFeeInvoicesButton />
-            <div className="bg-background overflow-hidden rounded-md border">
+            <div className="bg-surface overflow-hidden rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -334,7 +334,7 @@ export default async function InvoicesPage() {
             description={t("emptyDesc")}
           />
         ) : (
-          <div className="bg-background overflow-hidden rounded-md border">
+          <div className="bg-surface overflow-hidden rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>

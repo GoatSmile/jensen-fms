@@ -32,53 +32,51 @@ export function PartsInstalledSection({ rows }: { rows: InstalledPartRow[] }) {
       {rows.length === 0 ? (
         <EmptyRow>{t("empty")}</EmptyRow>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thPart")}</TableHead>
-                <TableHead className="text-right">{t("thQty")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t("thInstalled")}
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("thNotes")}
-                </TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thPart")}</TableHead>
+              <TableHead className="text-right">{t("thQty")}</TableHead>
+              <TableHead className="hidden sm:table-cell">
+                {t("thInstalled")}
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thNotes")}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id} className={r.removedAt ? "opacity-60" : ""}>
+                <TableCell className="min-w-0 whitespace-normal">
+                  <Link
+                    href={`/parts/${r.partId}`}
+                    className="font-medium break-words hover:underline"
+                  >
+                    {r.partName}
+                  </Link>
+                  <div className="text-muted-foreground font-mono text-xs break-all">
+                    {r.partSku}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {r.quantity}
+                </TableCell>
+                <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
+                  {formatDateTime(r.installedAt)}
+                  {r.removedAt ? (
+                    <span className="ml-2">
+                      {t("removed", { date: formatDateTime(r.removedAt) })}
+                    </span>
+                  ) : null}
+                </TableCell>
+                <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
+                  {r.notes ?? "—"}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.id} className={r.removedAt ? "opacity-60" : ""}>
-                  <TableCell className="min-w-0 whitespace-normal">
-                    <Link
-                      href={`/parts/${r.partId}`}
-                      className="font-medium break-words hover:underline"
-                    >
-                      {r.partName}
-                    </Link>
-                    <div className="text-muted-foreground font-mono text-xs break-all">
-                      {r.partSku}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {r.quantity}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
-                    {formatDateTime(r.installedAt)}
-                    {r.removedAt ? (
-                      <span className="ml-2">
-                        {t("removed", { date: formatDateTime(r.removedAt) })}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
-                    {r.notes ?? "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       )}
       {rows.length > 0 && active.length !== rows.length ? (
         <p className="text-muted-foreground mt-2 text-xs">

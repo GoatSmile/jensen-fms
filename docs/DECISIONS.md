@@ -854,3 +854,13 @@ stack genuinely different kinds of section.
 (`#family-<id>`) had nowhere to land, and two callers need a mark inside the
 eyebrow (the family dot, a status glyph) or inline figures in the description
 (the recipe's cost/retail/margin summary). Widening beats a second primitive.
+
+## 2026-07-27 (later) — the older panels were swept, not left to attrition
+Supersedes the closing line of the entry above ("the older screens still carry
+the old shape and can follow when they are next touched"). They were done the
+same day instead: **zero boxed tables remain inside a `Panel`** anywhere in
+`src`. Leaving them would have meant the app teaching two shapes at once, and
+the change turned out to be a wrapper `<div>` deletion per table — no layout
+reasoning, since `Table` already brings its own overflow container and row
+rules. On a *hued* panel the container stays (CLAUDE.md: inner tables sit on
+`bg-surface`) and only the hairline goes.

@@ -611,14 +611,21 @@ colour rides the title dot, not a header wash; suspected spam is `money`, not
 `alert`. `Panel` gained `id` and `ReactNode` titles/descriptions to absorb
 both screens without a second primitive.
 
+### Phase 2, second slice (2026-07-27) — the panel-table convention, applied
+The 20 files that still boxed a `Table` inside a `Panel` are done: sales-order
+detail (payments, linked MOs, linked paint orders), MO bikes + parts, WO parts,
+paint-order bikes + items, invoices list (4 sections) + detail, part detail
+(stock, offerings, movements, purchase history, pricing history, where-used ×2),
+bike detail (identifiers, parts installed, state log). Seven in-panel dashed
+empty states became `bg-ground` fills at the same time. **Zero boxed tables
+remain inside a panel.** Occurrences 269 → 240, dashed 44 → 37, files 174 →
+159. Rationale + the hued-panel exception: DECISIONS 2026-07-27 (later).
+
 ### Still not done — the honest list
-- **~174 files still hand-roll `rounded-* border` surfaces.** They inherit B's
+- **~159 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
   the migrated screens. This is the remaining Phase 2.
-- **The older migrated screens still box their tables.** bikes, parts,
-  invoices and the paint/MO/WO detail sections put a `rounded-md border`
-  around a `Table` *inside* a `Panel`. The convention says no; they predate
-  it. Fix them as they are next touched, not in a sweep.
+
 - **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
 - **The inbound panel's provider blocks don't collapse.** §9 also asked for each
   one to reduce to a summary row — *Transcription: Gladia ✓* — expanding on

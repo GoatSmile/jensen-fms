@@ -275,47 +275,45 @@ export default async function InvoiceDetailPage({
                 : t("linesDescDraft")
         }
       >
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">#</TableHead>
-                <TableHead>{t("thDescription")}</TableHead>
-                <TableHead className="text-right">{t("thQty")}</TableHead>
-                <TableHead className="text-right">{t("thUnitPrice")}</TableHead>
-                <TableHead className="text-right">{t("thVat")}</TableHead>
-                <TableHead className="text-right">{t("thTotal")}</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">#</TableHead>
+              <TableHead>{t("thDescription")}</TableHead>
+              <TableHead className="text-right">{t("thQty")}</TableHead>
+              <TableHead className="text-right">{t("thUnitPrice")}</TableHead>
+              <TableHead className="text-right">{t("thVat")}</TableHead>
+              <TableHead className="text-right">{t("thTotal")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lines.map((l) => (
+              <TableRow key={l.id}>
+                <TableCell className="text-muted-foreground text-xs tabular-nums">
+                  {l.line_number}
+                </TableCell>
+                <TableCell className="text-sm">
+                  {danish ? l.description_da : l.description_en}
+                  <div className="text-muted-foreground text-xs">
+                    {danish ? l.description_en : l.description_da}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right text-sm tabular-nums">
+                  {Number(l.quantity)}
+                </TableCell>
+                <TableCell className="text-right text-sm tabular-nums">
+                  {formatDkk(Number(l.unit_price))}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-right text-xs tabular-nums">
+                  {Number(l.vat_rate)} %
+                </TableCell>
+                <TableCell className="text-right text-sm font-medium tabular-nums">
+                  {formatDkk(Number(l.line_total))}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {lines.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="text-muted-foreground text-xs tabular-nums">
-                    {l.line_number}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {danish ? l.description_da : l.description_en}
-                    <div className="text-muted-foreground text-xs">
-                      {danish ? l.description_en : l.description_da}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
-                    {Number(l.quantity)}
-                  </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
-                    {formatDkk(Number(l.unit_price))}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-right text-xs tabular-nums">
-                    {Number(l.vat_rate)} %
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-medium tabular-nums">
-                    {formatDkk(Number(l.line_total))}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
 
         <dl className="ml-auto mt-3 flex w-full max-w-xs flex-col gap-1 text-sm">
           <div className="flex justify-between">

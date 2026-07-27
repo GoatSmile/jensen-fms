@@ -118,11 +118,11 @@ export function ServiceOrderItemsSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           {canEdit ? t("noItemsEdit") : t("noItems")}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="overflow-x-auto md:overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left text-xs">

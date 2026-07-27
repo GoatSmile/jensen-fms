@@ -90,37 +90,35 @@ export function IdentifiersSection({
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
           {t("noneYet")}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thType")}</TableHead>
-                <TableHead>{t("thValue")}</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  {t("thStatus")}
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("thRegistered")}
-                </TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <IdentifierTableRow
-                  key={row.id}
-                  bikeId={bikeId}
-                  row={row}
-                  onError={setError}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thType")}</TableHead>
+              <TableHead>{t("thValue")}</TableHead>
+              <TableHead className="hidden sm:table-cell">
+                {t("thStatus")}
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thRegistered")}
+              </TableHead>
+              <TableHead className="w-[40px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <IdentifierTableRow
+                key={row.id}
+                bikeId={bikeId}
+                row={row}
+                onError={setError}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
     </Section>
   );

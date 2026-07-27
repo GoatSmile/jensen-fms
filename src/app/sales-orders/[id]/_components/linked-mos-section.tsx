@@ -38,7 +38,7 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
       {rows.length === 0 ? (
         <p className="text-muted-foreground text-sm italic">{t("noMos")}</p>
       ) : (
-        <div className="bg-background overflow-x-auto rounded-md border md:overflow-hidden">
+        <div className="bg-surface overflow-hidden rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>

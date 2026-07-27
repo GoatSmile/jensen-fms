@@ -85,10 +85,11 @@ arrival now) · three of the four audit bugs.
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
 - **The remainder — card soup is dented, not cleared.** Phase 2 started
-  2026-07-27 with `/inbox` and `/bike-templates` (see below). Across
-  `src/**/*.tsx`: `rounded-md border` occurrences **298 → 269**, files with any
-  hand-rolled bordered surface **184 → 174**. Note the counting method differs
-  from the audit's 345/187 — trust the delta, not the absolute. The rest
+  2026-07-27 in two slices: `/inbox` + `/bike-templates`, then the panel-table
+  convention applied app-wide (see below). Across `src/**/*.tsx`:
+  `rounded-md border` occurrences **298 → 240**, dashed **46 → 37**, files with
+  any hand-rolled bordered surface **184 → 159**. Note the counting method
+  differs from the audit's 345/187 — trust the delta, not the absolute. The rest
   inherit B's tokens so they read as *plainer*, not broken. Untouched: the
   `/admin/lists` consolidation (18 routes → 1), the floor/office mode split
   (§6 — still the highest-value structural idea nobody has built), form folds
@@ -105,9 +106,7 @@ arrival now) · three of the four audit bugs.
 - **Three conventions settled** while doing it, all in DECISIONS 2026-07-27
   and the first of them now a CLAUDE.md rule:
   - **A table inside a `Panel` gets no wrapper box.** `Table` already draws
-    its own row rules and overflow container. The older migrated screens
-    (bikes, parts, invoices, the paint/MO/WO sections) still box theirs —
-    they predate the rule; fix as touched, not in a sweep.
+    its own row rules and overflow container.
   - **Family colour rides the title dot**, not a tinted header band. Family
     hues are decorative identity and exempt from the six-hue contrast matrix;
     a wash behind panel text would have dragged them into it.
@@ -116,6 +115,14 @@ arrival now) · three of the four audit bugs.
 - **`Panel` gained `id`** (anchor targets like `#family-<id>`) and now takes
   `ReactNode` for `title` / `description` (the family dot; the recipe's
   inline cost/retail/margin summary). No second primitive.
+- **The convention then applied everywhere** — a second slice across 20 files
+  (SO detail, MO bikes + parts, WO parts, paint orders, invoices list +
+  detail, part detail ×6, bike detail ×3). **Zero boxed tables remain inside
+  a panel.** Seven in-panel dashed empty states became `bg-ground` fills.
+  One exception, per CLAUDE.md: on a *hued* panel the table keeps a
+  `bg-surface` container and loses only the hairline. Supersede note in
+  DECISIONS 2026-07-27 (later) — the first entry had said these would be
+  fixed as touched.
 - **Verified in a browser, with a caveat.** This container has no Supabase
   credentials, so the two data-driven pages could not be rendered against
   real data. The converted client components were rendered and screenshotted
@@ -134,7 +141,9 @@ arrival now) · three of the four audit bugs.
 3. **Chase the external blockers** in the cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
-4. **Phase 2, continued — after 31 Aug**: the remaining ~174 files, then the
+4. **Phase 2, continued — after 31 Aug**: the remaining ~159 files (the
+   unmigrated list pages are the biggest block — sales orders, MOs, kits,
+   the PO receive form, the batch-build grid), then the
    floor/office mode split (plan §6), still the highest-value structural idea
    nobody has built.
 
