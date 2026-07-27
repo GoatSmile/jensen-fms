@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
@@ -169,131 +170,133 @@ export default async function BikeTemplatesPage({
         <div className="flex flex-col gap-6">
           {orderedGroupKeys.map((key) => {
             const group = groups.get(key)!;
-            // Each family is one card with a gently tinted header band —
-            // the same hue this family carries everywhere (detail chip, MO
-            // batch cards). The id anchor lets other screens deep-link here.
+            // One panel per family. The family's colour rides the title dot
+            // rather than a tinted header band — the hue is decorative
+            // identity (exempt from the six-hue vocabulary), so it marks the
+            // group without claiming a domain meaning. The id anchor lets
+            // other screens deep-link here.
             const tint = familyTint(key === UNGROUPED_KEY ? null : key);
             return (
-              <section
+              <Panel
                 key={key}
                 id={`family-${key}`}
-                className="scroll-mt-20 overflow-hidden rounded-md border"
-              >
-                <header
-                  className={`flex items-baseline gap-2 border-b px-4 py-2.5 ${tint.header}`}
-                >
-                  <span
-                    className={`size-2 shrink-0 self-center rounded-full ${tint.dot}`}
-                    aria-hidden
-                  />
-                  <h2 className="text-sm font-semibold">{group.label}</h2>
-                  <span className="text-muted-foreground text-xs">
+                className="scroll-mt-20"
+                title={
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      className={`size-2 shrink-0 rounded-full ${tint.dot}`}
+                      aria-hidden
+                    />
+                    {group.label}
+                  </span>
+                }
+                action={
+                  <span className="text-ink-3 text-xs">
                     {t("groupCount", { count: group.rows.length })}
                   </span>
-                </header>
-                <div className="overflow-x-auto md:overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("thTemplate")}</TableHead>
-                        <TableHead>{t("thSize")}</TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          {t("thType")}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {t("thRetail")}
-                        </TableHead>
-                        <TableHead className="hidden text-right md:table-cell">
-                          {t("thVersion")}
-                        </TableHead>
-                        <TableHead className="hidden text-right md:table-cell">
-                          {t("thParts")}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.rows.map((tpl) => (
-                        <TableRow
-                          key={tpl.id}
-                          className="hover:bg-muted/50 cursor-pointer"
-                        >
-                          <TableCell className="p-0">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              <div className="font-medium">{tpl.name_en}</div>
-                              {tpl.name_da && tpl.name_da !== tpl.name_en ? (
-                                <div className="text-muted-foreground text-xs">
-                                  {tpl.name_da}
-                                </div>
-                              ) : null}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="p-0 text-sm tabular-nums">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              {tpl.frame_size}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="hidden p-0 sm:table-cell">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              <Badge variant="outline" className="font-normal">
-                                {tpl.bike_type
-                                  ? localizedName(
-                                      locale,
-                                      tpl.bike_type.name_en,
-                                      tpl.bike_type.name_da,
-                                    )
-                                  : "—"}
+                }
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("thTemplate")}</TableHead>
+                      <TableHead>{t("thSize")}</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        {t("thType")}
+                      </TableHead>
+                      <TableHead className="text-right">
+                        {t("thRetail")}
+                      </TableHead>
+                      <TableHead className="hidden text-right md:table-cell">
+                        {t("thVersion")}
+                      </TableHead>
+                      <TableHead className="hidden text-right md:table-cell">
+                        {t("thParts")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.rows.map((tpl) => (
+                      <TableRow
+                        key={tpl.id}
+                        className="hover:bg-muted/50 cursor-pointer"
+                      >
+                        <TableCell className="p-0">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            <div className="font-medium">{tpl.name_en}</div>
+                            {tpl.name_da && tpl.name_da !== tpl.name_en ? (
+                              <div className="text-ink-3 text-xs">
+                                {tpl.name_da}
+                              </div>
+                            ) : null}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="p-0 text-sm tabular-nums">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            {tpl.frame_size}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="hidden p-0 sm:table-cell">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            <Badge variant="outline" className="font-normal">
+                              {tpl.bike_type
+                                ? localizedName(
+                                    locale,
+                                    tpl.bike_type.name_en,
+                                    tpl.bike_type.name_da,
+                                  )
+                                : "—"}
+                            </Badge>
+                          </Link>
+                        </TableCell>
+                        <TableCell className="p-0 text-right text-sm tabular-nums">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            {formatPrice(
+                              tpl.default_retail_price == null
+                                ? null
+                                : Number(tpl.default_retail_price),
+                              tpl.default_retail_currency,
+                            )}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            v{tpl.version}
+                            {tpl.is_current ? (
+                              <Badge variant="success" className="ml-2">
+                                {t("currentBadge")}
                               </Badge>
-                            </Link>
-                          </TableCell>
-                          <TableCell className="p-0 text-right text-sm tabular-nums">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              {formatPrice(
-                                tpl.default_retail_price == null
-                                  ? null
-                                  : Number(tpl.default_retail_price),
-                                tpl.default_retail_currency,
-                              )}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              v{tpl.version}
-                              {tpl.is_current ? (
-                                <Badge variant="success" className="ml-2">
-                                  {t("currentBadge")}
-                                </Badge>
-                              ) : null}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
-                            <Link
-                              href={`/bike-templates/${tpl.id}`}
-                              className="block px-4 py-2.5"
-                            >
-                              {partCountByTemplate.get(tpl.id) ?? 0}
-                            </Link>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </section>
+                            ) : null}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
+                          <Link
+                            href={`/bike-templates/${tpl.id}`}
+                            className="block px-2 py-2.5"
+                          >
+                            {partCountByTemplate.get(tpl.id) ?? 0}
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Panel>
             );
           })}
         </div>

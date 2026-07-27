@@ -51,11 +51,11 @@ known:
   invariant, a new gotcha) lands here; the narrative goes to `docs/archive/`;
   STATUS.md gets rewritten. The test for every line: *would a fresh session
   behave incorrectly without it?*
-- **Length: ~490 lines is a soft target, not a limit.** A `.claude/hooks` check
+- **Length: ~495 lines is a soft target, not a limit.** A `.claude/hooks` check
   nudges past it; it has never blocked anything. When it fires, ask only
   whether the new lines are narrative or invariants — narrative moves out,
-  invariants stay and the target moves with them (450 → 470 → 485 → 490, each
-  time for a structural rule). **Never delete a real rule to hit the number**:
+  invariants stay and the target moves with them (450 → 470 → 485 → 490 →
+  495, each time for a structural rule). **Never delete a rule to hit it**:
   that was tried on 2026-07-26 and the number was raised straight afterwards
   anyway, so the only outcome was lost content.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
@@ -430,6 +430,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
   stack foreign domains; section order = descending question frequency.
   Workbench banners don't tint. Exception: "Push to e-conomic" wears
   e-conomic orange `#ef7d00` + `EconomicMark` — destination branding.
+- **A table inside a `Panel` gets no wrapper box.** `Table` already draws its
+  own row rules and its own overflow container; boxing it again is the card
+  soup the panel replaced. Same for a panel's empty state — `bg-ground`, not
+  a dashed border.
 - Plan-then-build: before writing code, list files you intend to
   create/modify and wait for confirmation.
 - Time estimates quoted as `~X human-dev-min (Y min wait)` — X is the

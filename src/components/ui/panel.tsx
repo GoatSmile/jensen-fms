@@ -43,8 +43,14 @@ export const HUE_TITLE: Record<PanelHue, string> = {
 };
 
 export type PanelProps = {
-  title?: string;
-  description?: string;
+  /**
+   * Usually a plain string. `ReactNode` is allowed for the two cases that
+   * genuinely need a mark inside the eyebrow — a family's colour dot, a
+   * status glyph. Keep the string sentence-case; the caps are a CSS token.
+   */
+  title?: React.ReactNode;
+  /** A node, not just a string, so a summary line can carry inline figures. */
+  description?: React.ReactNode;
   /**
    * A headline number for this panel, shown under the title in large type.
    *
@@ -58,6 +64,8 @@ export type PanelProps = {
   action?: React.ReactNode;
   /** Domain fill. Omit for a plain surface panel. */
   hue?: PanelHue;
+  /** Anchor target, so other screens can deep-link to one panel on a page. */
+  id?: string;
   className?: string;
   contentClassName?: string;
   children: React.ReactNode;
@@ -81,12 +89,14 @@ export function Panel({
   figure,
   action,
   hue,
+  id,
   className,
   contentClassName,
   children,
 }: PanelProps) {
   return (
     <section
+      id={id}
       data-hue={hue}
       className={cn(
         "rounded-lg p-5",

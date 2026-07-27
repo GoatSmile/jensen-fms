@@ -7,6 +7,7 @@ import { UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 
 import { saveCallerToContact } from "../../_actions/save-caller";
 
@@ -55,18 +56,16 @@ export function SaveCallerAction({
   const disabled = pending || (choice === "new" && !name.trim());
 
   return (
-    <section className="flex flex-col gap-2 rounded-md border p-4">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-sm font-semibold">{t("saveCallerTitle")}</h2>
-        <p className="text-muted-foreground text-xs">
-          {t("saveCallerHint", { phone: fromIdentity, org: orgName })}
-        </p>
-      </div>
+    <Panel
+      title={t("saveCallerTitle")}
+      description={t("saveCallerHint", { phone: fromIdentity, org: orgName })}
+      contentClassName="flex flex-col gap-2"
+    >
       <div className="grid gap-2 sm:grid-cols-2">
         <select
           value={choice}
           onChange={(e) => setChoice(e.target.value)}
-          className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+          className="border-rule bg-ground h-9 rounded-md border px-2 text-sm"
         >
           <option value="new">{t("saveCallerNew")}</option>
           {orgContacts.map((c) => (
@@ -95,6 +94,6 @@ export function SaveCallerAction({
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }

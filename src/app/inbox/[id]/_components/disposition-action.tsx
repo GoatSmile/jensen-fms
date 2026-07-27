@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 
 import { setDisposition } from "../../_actions/process";
 
@@ -46,19 +47,24 @@ export function DispositionAction({
 
   if (isSpam) {
     const confirmed = disposition === "spam";
+    // Suspected spam is a caution, not an alarm — `money`'s ochre, per the
+    // colour vocabulary. Red stays reserved for genuine alarms.
     return (
-      <section className="flex flex-col gap-2 rounded-md border bg-money-wash p-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-alert">
-          <ShieldAlert className="size-4" aria-hidden />
-          {confirmed ? t("spamConfirmedTitle") : t("spamSuspectedTitle")}
-        </div>
-        {signals.length > 0 ? (
-          <p className="text-muted-foreground text-xs">
-            {signals
-              .map((s) => (tSig.has(s) ? tSig(s) : s))
-              .join(" · ")}
-          </p>
-        ) : null}
+      <Panel
+        hue="money"
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldAlert className="size-3.5" aria-hidden />
+            {confirmed ? t("spamConfirmedTitle") : t("spamSuspectedTitle")}
+          </span>
+        }
+        description={
+          signals.length > 0
+            ? signals.map((s) => (tSig.has(s) ? tSig(s) : s)).join(" · ")
+            : undefined
+        }
+        contentClassName="flex flex-col gap-2"
+      >
         <div>
           <Button
             type="button"
@@ -76,7 +82,7 @@ export function DispositionAction({
             {error}
           </p>
         ) : null}
-      </section>
+      </Panel>
     );
   }
 

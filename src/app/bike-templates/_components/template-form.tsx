@@ -6,6 +6,7 @@ import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -157,7 +158,7 @@ export function TemplateForm({
           error={errorField === "bike_type_id" ? error : null}
         >
           {isEdit ? (
-            <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
+            <p className="bg-ground text-ink-2 rounded-md px-3 py-2 text-sm">
               {(() => {
                 const bt = bikeTypes.find(
                   (opt) => opt.id === values.bike_type_id,
@@ -353,15 +354,13 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="flex flex-col gap-3 p-4">{children}</div>
-    </section>
+    <Panel
+      title={title}
+      description={description}
+      contentClassName="flex flex-col gap-3"
+    >
+      {children}
+    </Panel>
   );
 }
 

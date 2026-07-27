@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/parts/format";
@@ -112,107 +113,100 @@ export default async function InboundPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {active.length > 0 ? (
-            queueTable(active)
+            <Panel>{queueTable(active)}</Panel>
           ) : (
-            <p className="text-muted-foreground text-sm italic">
-              {t("noActive")}
-            </p>
+            <p className="text-ink-2 text-sm italic">{t("noActive")}</p>
           )}
           {spam.length > 0 ? (
-            <details className="overflow-hidden rounded-md border">
-              <summary className="text-muted-foreground cursor-pointer px-4 py-2.5 text-sm font-medium">
-                {t("spamFold", { count: spam.length })}
-              </summary>
-              <div className="border-t">{queueTable(spam, true)}</div>
-            </details>
+            <Panel>
+              <details>
+                <summary className="text-ink-2 cursor-pointer text-sm font-medium">
+                  {t("spamFold", { count: spam.length })}
+                </summary>
+                <div className="mt-3">{queueTable(spam)}</div>
+              </details>
+            </Panel>
           ) : null}
         </div>
       )}
     </div>
   );
 
-  function queueTable(list: typeof rows, nested = false) {
+  /**
+   * The queue itself. No wrapper box — the panel is the surface, and the
+   * table draws its own row rules.
+   */
+  function queueTable(list: typeof rows) {
     return (
-      <div className={nested ? undefined : "overflow-hidden rounded-md border"}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("thChannel")}</TableHead>
-              <TableHead>{t("thFrom")}</TableHead>
-              <TableHead className="hidden sm:table-cell">
-                {t("thReceived")}
-              </TableHead>
-              <TableHead>{t("thStatus")}</TableHead>
-              <TableHead className="hidden md:table-cell">
-                {t("thTicket")}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.map((r) => {
-              const href = `/inbox/${r.id}`;
-              return (
-                <TableRow
-                  key={r.id}
-                  className="hover:bg-muted/50 cursor-pointer"
-                >
-                  <TableCell className="p-0">
-                    <Link href={href} className="block px-4 py-2.5">
-                      {r.kind === "command" ? (
-                        <Badge variant="secondary" className="font-normal">
-                          {t("commandBadge")}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="font-normal">
-                          {tChannel(r.channel)}
-                        </Badge>
-                      )}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="p-0 font-mono text-xs">
-                    <Link href={href} className="block px-4 py-2.5">
-                      {r.from_identity ?? (
-                        <span className="text-muted-foreground">
-                          {t("unknownSender")}
-                        </span>
-                      )}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="hidden p-0 text-sm sm:table-cell">
-                    <Link href={href} className="block px-4 py-2.5">
-                      {formatDateTime(r.received_at)}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="p-0">
-                    <Link href={href} className="block px-4 py-2.5">
-                      <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>
-                        {r.kind === "command"
-                          ? tCmd(commandStatusKey(r.status))
-                          : tStatus(r.status)}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("thChannel")}</TableHead>
+            <TableHead>{t("thFrom")}</TableHead>
+            <TableHead className="hidden sm:table-cell">
+              {t("thReceived")}
+            </TableHead>
+            <TableHead>{t("thStatus")}</TableHead>
+            <TableHead className="hidden md:table-cell">
+              {t("thTicket")}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {list.map((r) => {
+            const href = `/inbox/${r.id}`;
+            return (
+              <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer">
+                <TableCell className="p-0">
+                  <Link href={href} className="block px-2 py-2.5">
+                    {r.kind === "command" ? (
+                      <Badge variant="secondary" className="font-normal">
+                        {t("commandBadge")}
                       </Badge>
-                    </Link>
-                  </TableCell>
-                  <TableCell className="hidden p-0 text-sm md:table-cell">
-                    <Link href={href} className="block px-4 py-2.5">
-                      {r.ticket_id ? (
-                        <span className="text-good">
-                          {t("ticketCreated")}
-                        </span>
-                      ) : r.disposition === "handled" ? (
-                        <span className="text-muted-foreground">
-                          {t("handledTag")}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+                    ) : (
+                      <Badge variant="outline" className="font-normal">
+                        {tChannel(r.channel)}
+                      </Badge>
+                    )}
+                  </Link>
+                </TableCell>
+                <TableCell className="p-0 font-mono text-xs">
+                  <Link href={href} className="block px-2 py-2.5">
+                    {r.from_identity ?? (
+                      <span className="text-ink-3">{t("unknownSender")}</span>
+                    )}
+                  </Link>
+                </TableCell>
+                <TableCell className="hidden p-0 text-sm sm:table-cell">
+                  <Link href={href} className="block px-2 py-2.5">
+                    {formatDateTime(r.received_at)}
+                  </Link>
+                </TableCell>
+                <TableCell className="p-0">
+                  <Link href={href} className="block px-2 py-2.5">
+                    <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>
+                      {r.kind === "command"
+                        ? tCmd(commandStatusKey(r.status))
+                        : tStatus(r.status)}
+                    </Badge>
+                  </Link>
+                </TableCell>
+                <TableCell className="hidden p-0 text-sm md:table-cell">
+                  <Link href={href} className="block px-2 py-2.5">
+                    {r.ticket_id ? (
+                      <span className="text-good">{t("ticketCreated")}</span>
+                    ) : r.disposition === "handled" ? (
+                      <span className="text-ink-3">{t("handledTag")}</span>
+                    ) : (
+                      <span className="text-ink-3">—</span>
+                    )}
+                  </Link>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     );
   }
 }

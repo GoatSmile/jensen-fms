@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { DictateButton } from "@/components/dictate-button";
 
 import { createCommandFromText } from "../_actions/command";
@@ -35,18 +36,22 @@ export function NewCommand() {
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-md border bg-good-wash p-4">
-      <div className="flex items-center gap-2">
-        <Sparkles className="text-muted-foreground size-4" aria-hidden />
-        <h2 className="text-sm font-semibold">{t("newTitle")}</h2>
-      </div>
-      <p className="text-muted-foreground text-xs">{t("newHint")}</p>
+    <Panel
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles className="size-3.5" aria-hidden />
+          {t("newTitle")}
+        </span>
+      }
+      description={t("newHint")}
+      contentClassName="flex flex-col gap-2"
+    >
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
         placeholder={t("newPlaceholder")}
-        className="border-input bg-background w-full rounded-md border p-3 text-sm"
+        className="border-rule bg-ground w-full rounded-md border p-3 text-sm"
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" onClick={submit} disabled={pending || !text.trim()}>
@@ -63,6 +68,6 @@ export function NewCommand() {
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }

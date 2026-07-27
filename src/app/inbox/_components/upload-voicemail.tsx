@@ -8,6 +8,7 @@ import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Panel } from "@/components/ui/panel";
 
 import { uploadVoicemail } from "../_actions/upload-voicemail";
 
@@ -49,47 +50,42 @@ export function UploadVoicemail() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="bg-brand-wash flex flex-col gap-3 rounded-md border p-4"
-    >
-      <div>
-        <h2 className="text-sm font-semibold">{t("uploadTitle")}</h2>
-        <p className="text-muted-foreground text-xs">{t("uploadHint")}</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="vm-file">{t("uploadFileLabel")}</Label>
-          <Input
-            ref={fileRef}
-            id="vm-file"
-            type="file"
-            accept="audio/*,video/mp4,.m4a,.mp3,.wav,.ogg,.webm"
-            className="bg-background"
-          />
+    <Panel title={t("uploadTitle")} description={t("uploadHint")}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="vm-file">{t("uploadFileLabel")}</Label>
+            <Input
+              ref={fileRef}
+              id="vm-file"
+              type="file"
+              accept="audio/*,video/mp4,.m4a,.mp3,.wav,.ogg,.webm"
+              className="bg-ground"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="vm-from">{t("uploadFromLabel")}</Label>
+            <Input
+              id="vm-from"
+              value={fromIdentity}
+              onChange={(e) => setFromIdentity(e.target.value)}
+              placeholder="+45 12 34 56 78"
+              className="bg-ground"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="vm-from">{t("uploadFromLabel")}</Label>
-          <Input
-            id="vm-from"
-            value={fromIdentity}
-            onChange={(e) => setFromIdentity(e.target.value)}
-            placeholder="+45 12 34 56 78"
-            className="bg-background"
-          />
+        {error ? (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div>
+          <Button type="submit" disabled={isPending} size="sm">
+            <Upload aria-hidden />
+            {isPending ? t("uploading") : t("uploadButton")}
+          </Button>
         </div>
-      </div>
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <div>
-        <Button type="submit" disabled={isPending} size="sm">
-          <Upload aria-hidden />
-          {isPending ? t("uploading") : t("uploadButton")}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Panel>
   );
 }

@@ -13,6 +13,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
@@ -241,7 +242,7 @@ export default async function BikeTemplateDetailPage({
       </Breadcrumb>
 
       {!tpl.is_current ? (
-        <div className="bg-money-wash text-money rounded-md border border-money/30 px-3 py-2 text-sm">
+        <div className="bg-money-wash text-money rounded-lg px-4 py-3 text-sm">
           {t("pastVersionBanner", { version: tpl.version })}
         </div>
       ) : null}
@@ -304,9 +305,9 @@ export default async function BikeTemplateDetailPage({
       </div>
 
       {tpl.notes ? (
-        <p className="text-muted-foreground bg-muted/30 rounded-md border p-3 text-sm">
-          {tpl.notes}
-        </p>
+        <Panel title={tTpl("notesLabel")}>
+          <p className="text-ink-2 text-sm whitespace-pre-wrap">{tpl.notes}</p>
+        </Panel>
       ) : null}
 
       <PartsRecipeSection

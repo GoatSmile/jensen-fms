@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Check, CheckCheck, TicketPlus, Wand2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 
 import { createTicketFromInbound } from "../../_actions/create-ticket";
 import { planFromInquiry } from "../../_actions/command";
@@ -88,16 +89,17 @@ export function RoutedAction({
   const isLead = intent === "order_inquiry";
 
   return (
-    <section className="flex flex-col gap-2 rounded-md border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">{t("actionTitle")}</h2>
-        {intentLabel ? (
-          <span className="text-muted-foreground text-xs">
+    <Panel
+      title={t("actionTitle")}
+      action={
+        intentLabel ? (
+          <span className="text-ink-2 text-xs">
             {t("intentLabel")}: {intentLabel}
           </span>
-        ) : null}
-      </div>
-
+        ) : null
+      }
+      contentClassName="flex flex-col gap-2"
+    >
       {ticketId ? (
         <p className="inline-flex items-center gap-2 text-sm">
           <Check
@@ -190,6 +192,6 @@ export function RoutedAction({
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }

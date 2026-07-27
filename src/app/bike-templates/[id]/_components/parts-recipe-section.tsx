@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
 import {
@@ -385,58 +386,58 @@ export function PartsRecipeSection({
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("recipeTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("recipeParts", { count: rows.length })} ·{" "}
-            {t("recipeUnits", { count: totalUnitsPerBike })}
-            {rows.length > 0 ? (
-              <>
-                {" · "}
-                <span className="text-foreground font-medium tabular-nums">
-                  {t("partsCostInline", { amount: formatDkk(costTotal.sum) })}
-                </span>
-                {costTotal.uncosted > 0
-                  ? ` ${t("uncostedN", { count: costTotal.uncosted })}`
-                  : null}
-                {" · "}
-                <span className="tabular-nums">
-                  {t("partsRetailInline", {
-                    amount: formatDkk(retailTotal.sum),
-                  })}
-                </span>
-                {retailTotal.unpriced > 0
-                  ? ` ${t("unpricedN", { count: retailTotal.unpriced })}`
-                  : null}
-                {templateRetailDkk != null ? (
-                  <>
-                    {" · "}
-                    <span className="tabular-nums">
-                      {t("salePriceInline", {
-                        amount: formatDkk(templateRetailDkk),
-                      })}
-                    </span>
-                    {" · "}
-                    <span
-                      className={`tabular-nums ${
-                        templateRetailDkk - retailTotal.sum < 0
-                          ? "text-destructive font-medium"
-                          : ""
-                      }`}
-                    >
-                      {t("retailDifferenceInline", {
-                        amount: formatDkk(templateRetailDkk - retailTotal.sum),
-                      })}
-                    </span>
-                  </>
-                ) : null}
-              </>
-            ) : null}
-          </p>
-        </div>
-        {canEdit ? (
+    <Panel
+      title={t("recipeTitle")}
+      description={
+        <>
+          {t("recipeParts", { count: rows.length })} ·{" "}
+          {t("recipeUnits", { count: totalUnitsPerBike })}
+          {rows.length > 0 ? (
+            <>
+              {" · "}
+              <span className="text-ink font-medium tabular-nums">
+                {t("partsCostInline", { amount: formatDkk(costTotal.sum) })}
+              </span>
+              {costTotal.uncosted > 0
+                ? ` ${t("uncostedN", { count: costTotal.uncosted })}`
+                : null}
+              {" · "}
+              <span className="tabular-nums">
+                {t("partsRetailInline", {
+                  amount: formatDkk(retailTotal.sum),
+                })}
+              </span>
+              {retailTotal.unpriced > 0
+                ? ` ${t("unpricedN", { count: retailTotal.unpriced })}`
+                : null}
+              {templateRetailDkk != null ? (
+                <>
+                  {" · "}
+                  <span className="tabular-nums">
+                    {t("salePriceInline", {
+                      amount: formatDkk(templateRetailDkk),
+                    })}
+                  </span>
+                  {" · "}
+                  <span
+                    className={`tabular-nums ${
+                      templateRetailDkk - retailTotal.sum < 0
+                        ? "text-alert font-medium"
+                        : ""
+                    }`}
+                  >
+                    {t("retailDifferenceInline", {
+                      amount: formatDkk(templateRetailDkk - retailTotal.sum),
+                    })}
+                  </span>
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </>
+      }
+      action={
+        canEdit ? (
           <div className="flex gap-2">
             <Button
               type="button"
@@ -456,12 +457,12 @@ export function PartsRecipeSection({
               {isPending ? tCommon("saving") : t("saveChanges")}
             </Button>
           </div>
-        ) : null}
-      </header>
-
-      <div className="p-4">
+        ) : null
+      }
+    >
+      <div>
         {!canEdit ? (
-          <p className="bg-muted text-muted-foreground mb-3 rounded-md border px-3 py-2 text-xs">
+          <p className="bg-ground text-ink-2 mb-3 rounded-md px-3 py-2 text-xs">
             {t("pastVersionNote")}
           </p>
         ) : null}
@@ -522,7 +523,7 @@ export function PartsRecipeSection({
             ))}
 
             {empty.length > 0 ? (
-              <div className="mt-2 rounded-md border border-dashed">
+              <div className="border-rule mt-2 rounded-md border border-dashed">
                 <button
                   type="button"
                   onClick={() => setShowEmpty((v) => !v)}
@@ -557,7 +558,7 @@ export function PartsRecipeSection({
               {t("selectedParts")}
             </div>
             {rows.length === 0 ? (
-              <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
+              <div className="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-md text-sm italic">
                 {t("pickFromLeft")}
               </div>
             ) : (
@@ -585,7 +586,7 @@ export function PartsRecipeSection({
                     return (
                       <div
                         key={catKey}
-                        className="overflow-hidden rounded-md border shadow-xs"
+                        className="border-rule overflow-hidden rounded-md border"
                       >
                         <div className="bg-muted/40 flex items-center justify-between gap-2 border-b px-3 py-1.5">
                           <span className="text-xs font-medium uppercase tracking-wide">
@@ -618,7 +619,7 @@ export function PartsRecipeSection({
                     customer prices; margin compares the template sale price to
                     the full produce cost. An unpriceable paint estimate falls
                     back to parts only rather than mixing currencies. */}
-                <div className="bg-muted/20 flex flex-col gap-1 rounded-md border px-3 py-2 text-sm">
+                <div className="bg-ground flex flex-col gap-1 rounded-md px-3 py-2 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className={paintEstimate ? "" : "font-medium"}>
                       {t("partsCostLabel")}
@@ -750,7 +751,7 @@ export function PartsRecipeSection({
           </div>
         ) : null}
       </div>
-    </section>
+    </Panel>
   );
 }
 

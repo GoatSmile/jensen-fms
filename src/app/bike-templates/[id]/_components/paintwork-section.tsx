@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -60,25 +61,21 @@ export function PaintworkSection({
   const addablePartTypes = partTypes.filter((pt) => !declaredIds.has(pt.id));
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("paintworkTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("paintworkDescription")}
-          </p>
-        </div>
-        {canEdit ? (
+    <Panel
+      title={t("paintworkTitle")}
+      description={t("paintworkDescription")}
+      action={
+        canEdit ? (
           <AddPaintworkRow
             templateId={templateId}
             partTypes={addablePartTypes}
             onError={setError}
             onChange={() => router.refresh()}
           />
-        ) : null}
-      </header>
-
-      <div className="p-4">
+        ) : null
+      }
+    >
+      <div>
         {error ? (
           <p className="text-destructive mb-3 text-sm" role="alert">
             {error}
@@ -86,11 +83,11 @@ export function PaintworkSection({
         ) : null}
 
         {rows.length === 0 ? (
-          <div className="text-muted-foreground flex h-16 items-center justify-center rounded-md border border-dashed text-sm">
+          <div className="text-ink-3 bg-ground flex h-16 items-center justify-center rounded-md text-sm">
             {canEdit ? t("paintworkEmptyEdit") : t("paintworkEmptyReadOnly")}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-md border md:overflow-hidden">
+          <div className="overflow-x-auto md:overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b text-left text-xs">
@@ -146,7 +143,7 @@ export function PaintworkSection({
           </p>
         ) : null}
       </div>
-    </section>
+    </Panel>
   );
 }
 

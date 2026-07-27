@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Check, Play, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
 import { openSlotsFor } from "@/lib/inbound/command/plan";
@@ -79,12 +80,14 @@ export function CommandPlanPanel({
   const anyApplied = Object.keys(applied).length > 0;
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-muted-foreground size-4" aria-hidden />
-          <h2 className="text-sm font-semibold">{t("planTitle")}</h2>
-        </div>
+    <Panel
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles className="size-3.5" aria-hidden />
+          {t("planTitle")}
+        </span>
+      }
+      action={
         <Button
           type="button"
           size="sm"
@@ -96,10 +99,11 @@ export function CommandPlanPanel({
           <Play aria-hidden />
           {rerunPending ? t("rerunning") : t("rerun")}
         </Button>
-      </div>
-
+      }
+      contentClassName="flex flex-col gap-4"
+    >
       {plan.summary ? (
-        <p className="text-muted-foreground rounded-md border bg-muted/30 p-3 text-sm">
+        <p className="text-ink-2 bg-ground rounded-md p-3 text-sm">
           {plan.summary}
         </p>
       ) : null}
@@ -138,7 +142,7 @@ export function CommandPlanPanel({
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }
 
@@ -201,10 +205,8 @@ function ActionCard({
   return (
     <li
       className={cn(
-        "flex flex-col gap-2.5 rounded-md border p-3.5",
-        isApplied
-          ? "bg-good-wash"
-          : "bg-background",
+        "border-rule flex flex-col gap-2.5 rounded-md border p-3.5",
+        isApplied ? "bg-good-wash" : "bg-ground",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -252,7 +254,7 @@ function ActionCard({
               <select
                 value={picks[slot.key] ?? ""}
                 onChange={(e) => onPick(slot.key, e.target.value)}
-                className="border-input bg-background h-9 rounded-md border px-2 text-sm"
+                className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
               >
                 <option value="">{t("pickPlaceholder")}</option>
                 {vocabFor(slot.kind).map((v) => (

@@ -817,3 +817,40 @@ new group is simply missing, indistinguishable from closed. Explicit
 replaced the smaller four-hue tint rule and now carries the whole visual
 identity. The raise rule is now written down in the file: structural
 invariants only, never to make room for narrative.
+
+## 2026-07-27 — Phase 2, first slice: `/inbox` and `/bike-templates` onto `Panel`
+The two screens STATUS flagged as "deliberately left out of the migration".
+Both were 100 % hand-rolled `rounded-md border` boxes, so they were the
+cheapest place to settle the conventions the first pass had left open.
+
+**A table inside a panel gets no wrapper box.** The already-migrated detail
+screens (bikes, parts, invoices) kept a `rounded-md border` around tables
+*inside* a `Panel` — a box inside a box, which is the pattern the panel was
+built to delete. `Table` already renders its own `overflow-x-auto` container
+and its own row rules, so the wrapper adds nothing but a hairline. Settled as
+a convention in CLAUDE.md rather than left to taste; the older screens still
+carry the old shape and can follow when they are next touched.
+
+**Family colour moves from a tinted header band to the title dot.** The
+templates list used `familyTint().header` as a wash behind each family's
+header row. On a `Panel` that wash would have to meet the six-hue contrast
+matrix — but family colours are *decorative identity*, explicitly exempt from
+the vocabulary, so measuring them into it would either constrain the palette
+or quietly break the guarantee. The dot carries the same identity (it is what
+the detail chip already uses) at no contrast cost.
+
+**Suspected spam is `money`, not `alert`.** The triage banner filled with
+`bg-money-wash` but titled in `text-alert` — a caution wearing an alarm's ink.
+Now a `hue="money"` panel throughout, per the vocabulary's amber-as-caution
+rule. Red stays scarce.
+
+**Rejected: keeping the two ingress forms tinted.** `/inbox` had a brand-wash
+uploader next to a good-wash command box, two hues that carried no domain
+meaning between them. Both are plain surface panels now — `/inbox` is a
+single-purpose queue, and the tinting rule reserves washes for pages that
+stack genuinely different kinds of section.
+
+**`Panel` gained `id` and took `ReactNode` titles/descriptions.** Anchors
+(`#family-<id>`) had nowhere to land, and two callers need a mark inside the
+eyebrow (the family dot, a status glyph) or inline figures in the description
+(the recipe's cost/retail/margin summary). Widening beats a second primitive.

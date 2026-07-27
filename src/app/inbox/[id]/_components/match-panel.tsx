@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Check, Play, Save, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { MatchCandidates } from "@/lib/inbound/match";
 
@@ -84,19 +85,17 @@ export function MatchPanel({
   return (
     <div className="flex flex-col gap-4">
       {/* Extraction editor — harness ingress until Slice C writes this. */}
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("extractionTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("extractionHarnessHint")}
-          </p>
-        </div>
+      <Panel
+        title={t("extractionTitle")}
+        description={t("extractionHarnessHint")}
+        contentClassName="flex flex-col gap-2"
+      >
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           spellCheck={false}
           rows={10}
-          className="border-input bg-muted/30 w-full rounded-md border p-3 font-mono text-xs"
+          className="border-rule bg-ground w-full rounded-md border p-3 font-mono text-xs"
         />
         <div>
           <Button
@@ -110,12 +109,12 @@ export function MatchPanel({
             {savePending ? t("saving") : t("saveExtraction")}
           </Button>
         </div>
-      </section>
+      </Panel>
 
       {/* Match */}
-      <section className="flex flex-col gap-3 rounded-md border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">{t("matchTitle")}</h2>
+      <Panel
+        title={t("matchTitle")}
+        action={
           <Button
             type="button"
             size="sm"
@@ -125,8 +124,9 @@ export function MatchPanel({
             <Play aria-hidden />
             {matchPending ? t("matching") : t("runMatch")}
           </Button>
-        </div>
-
+        }
+        contentClassName="flex flex-col gap-3"
+      >
         {!hasExtraction ? (
           <p className="text-muted-foreground text-sm italic">
             {t("matchNeedsExtraction")}
@@ -181,7 +181,7 @@ export function MatchPanel({
             ) : null}
           </div>
         )}
-      </section>
+      </Panel>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

@@ -597,10 +597,28 @@ sweep · `bd1c03b` grouped nav · `12e18ed` KPI row + ink ramp.
   table overflow. The three blank filter dropdowns are fixed — a bare
   `<SelectValue />` cannot resolve its label while `SelectContent` is unmounted.
 
+### Phase 2, first slice (2026-07-27) — `/inbox` + `/bike-templates`
+The two screens this document's second pass skipped are now on `Panel`: both
+list pages, both detail pages, and all eleven of their components (the inbound
+review stages, the parts recipe, paintwork, version history, the template
+form). Measured across `src/**/*.tsx`: `rounded-md border` occurrences 298 →
+269, files carrying any hand-rolled bordered surface 184 → 174. (These counts
+use a different method from the audit's 345/187 in §1 — occurrences of the
+literal class pair, not the audit's tally — so read the delta, not the
+absolute.) Three conventions were settled while doing it and are recorded in
+DECISIONS 2026-07-27: no wrapper box around a table inside a panel; family
+colour rides the title dot, not a header wash; suspected spam is `money`, not
+`alert`. `Panel` gained `id` and `ReactNode` titles/descriptions to absorb
+both screens without a second primitive.
+
 ### Still not done — the honest list
-- **~135 files still hand-roll `rounded-* border` surfaces.** They inherit B's
+- **~174 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
   the migrated screens. This is the remaining Phase 2.
+- **The older migrated screens still box their tables.** bikes, parts,
+  invoices and the paint/MO/WO detail sections put a `rounded-md border`
+  around a `Table` *inside* a `Panel`. The convention says no; they predate
+  it. Fix them as they are next touched, not in a sweep.
 - **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
 - **The inbound panel's provider blocks don't collapse.** §9 also asked for each
   one to reduce to a summary row — *Transcription: Gladia ✓* — expanding on

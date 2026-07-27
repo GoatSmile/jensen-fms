@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AudioLines, Play, Save, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 
 import {
   runExtraction,
@@ -76,14 +77,11 @@ export function TranscriptPanel({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-md border p-4">
-      <div className="flex flex-col gap-0.5">
-        <h2 className="text-sm font-semibold">{t("stageTranscript")}</h2>
-        <p className="text-muted-foreground text-xs">
-          {t("transcriptHarnessHint")}
-        </p>
-      </div>
-
+    <Panel
+      title={t("stageTranscript")}
+      description={t("transcriptHarnessHint")}
+      contentClassName="flex flex-col gap-2"
+    >
       {/* The real path: transcribe the recording / run everything at once. */}
       {hasAudio ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -124,7 +122,7 @@ export function TranscriptPanel({
         rows={5}
         spellCheck={false}
         placeholder={t("transcriptPlaceholder")}
-        className="border-input bg-muted/30 w-full rounded-md border p-3 text-sm"
+        className="border-rule bg-ground w-full rounded-md border p-3 text-sm"
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -162,6 +160,6 @@ export function TranscriptPanel({
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }

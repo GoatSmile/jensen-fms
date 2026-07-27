@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
 import { createServiceClient } from "@/lib/supabase/service";
 import { formatDateTime } from "@/lib/parts/format";
 import { INBOUND_STATUS_VARIANT, commandStatusKey } from "@/lib/inbound/types";
@@ -103,12 +104,9 @@ export default async function InboundDetailPage({
         </header>
 
         {msg.body_text ? (
-          <section className="flex flex-col gap-1 rounded-md border p-4">
-            <h2 className="text-muted-foreground text-xs tracking-wide uppercase">
-              {t("commandTranscript")}
-            </h2>
+          <Panel title={t("commandTranscript")}>
             <p className="text-sm whitespace-pre-wrap">{msg.body_text}</p>
-          </section>
+          </Panel>
         ) : null}
 
         {msg.status === "failed" ? (
@@ -263,7 +261,8 @@ export default async function InboundDetailPage({
       </header>
 
       {/* Facts */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-md border p-4 text-sm sm:grid-cols-3">
+      <Panel contentClassName="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+        <dl className="contents">
         <Fact label={t("fromLabel")}>
           <span className="font-mono">
             {msg.from_identity ?? (
@@ -301,7 +300,8 @@ export default async function InboundDetailPage({
             </span>
           </Fact>
         ) : null}
-      </dl>
+        </dl>
+      </Panel>
 
       <DispositionAction
         messageId={msg.id}
@@ -311,25 +311,22 @@ export default async function InboundDetailPage({
       />
 
       {isCallEvent ? (
-        <section className="rounded-md border p-4">
-          <p className="text-muted-foreground text-sm">{t("callEventNote")}</p>
-        </section>
+        <Panel>
+          <p className="text-ink-2 text-sm">{t("callEventNote")}</p>
+        </Panel>
       ) : (
         <>
           {/* Audio */}
-          <section className="flex flex-col gap-2 rounded-md border p-4">
-            <h2 className="text-sm font-semibold">{t("audioTitle")}</h2>
+          <Panel title={t("audioTitle")}>
             {mediaUrl ? (
               // eslint-disable-next-line jsx-a11y/media-has-caption
               <audio controls preload="metadata" className="w-full">
                 <source src={mediaUrl} type={msg.media_mime_type ?? undefined} />
               </audio>
             ) : (
-              <p className="text-muted-foreground text-sm italic">
-                {t("noAudio")}
-              </p>
+              <p className="text-ink-3 text-sm italic">{t("noAudio")}</p>
             )}
-          </section>
+          </Panel>
 
           {/* Pipeline stages. Transcript is editable (Slice-C harness ingress);
               extraction + match live in MatchPanel. */}

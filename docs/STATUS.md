@@ -1,11 +1,9 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-27.** Most recent: the **design refresh is built and
-live in prod** — direction B in signal blue, surface primitives, the
-517-colour sweep, the seven-group nav and the settings sub-rail all shipped so
-Dennis meets the new look when he returns **Mon 3 Aug**. `npm run build` passes
-clean (exit 0, 52 static pages), which matters because the commit gate had been
-skipping it — see Landmines.
+**Last updated: 2026-07-27.** Most recent: **Phase 2 of the design refresh
+started** — `/inbox` and `/bike-templates`, the two screens the first pass
+deliberately skipped, are now on the shared `Panel` surface. `npm run build`
+passes clean (exit 0, 52 static pages); `tsc` and lint clean.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -13,7 +11,6 @@ That applies to this header too: what shipped in earlier sessions belongs in
 `docs/archive/HISTORY.md` and `docs/WORKLOG.md`, not in a growing parenthetical
 here. History belongs in `docs/archive/`, decisions in `docs/DECISIONS.md`,
 parked ideas in `docs/BACKLOG.md`.
-
 ## Where we are
 - **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
   Vercel SSO. 78 migrations, single-tenant, solo-dev.
@@ -59,7 +56,8 @@ parked ideas in `docs/BACKLOG.md`.
 
 ## Design refresh — SHIPPED, with a known remainder
 `docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
-where this doc is now wrong" list. Decisions in DECISIONS 2026-07-26. Mock-up
+where this doc is now wrong" list. Decisions in DECISIONS 2026-07-26 +
+2026-07-27. Mock-up
 `docs/mockups/design-directions.html` is now history, not the target.
 
 Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` (Geist kept, no
@@ -86,62 +84,59 @@ arrival now) · three of the four audit bugs.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder, honestly — card soup is barely dented.** Re-measured
-  2026-07-27: **~274 hand-rolled bordered surfaces across 192 files** (205
-  `rounded-md border`, 44 dashed, 25 `rounded-lg border`). That is essentially
-  unchanged from the audit's 345/187 — an earlier "~135 files left" note in this
-  file was an estimate and was wrong. What did change: shared-surface adoption
-  went 15 → 26 files, and those 26 are the screens Dennis opens daily. The rest
-  inherit B's tokens so they read as *plainer*, not broken — that property is
-  what made stopping safe, but the structural half of the refresh is roughly
-  10% done, not 80%. Untouched: the `/admin/lists`
-  consolidation (18 routes → 1), the floor/office mode split (§6 — still the
-  highest-value structural idea nobody has built), form folds on the 16/15/14-
-  field forms, and the inbound panel's provider blocks collapsing to summary
-  rows. Full list in plan §14.
+- **The remainder — card soup is dented, not cleared.** Phase 2 started
+  2026-07-27 with `/inbox` and `/bike-templates` (see below). Across
+  `src/**/*.tsx`: `rounded-md border` occurrences **298 → 269**, files with any
+  hand-rolled bordered surface **184 → 174**. Note the counting method differs
+  from the audit's 345/187 — trust the delta, not the absolute. The rest
+  inherit B's tokens so they read as *plainer*, not broken. Untouched: the
+  `/admin/lists` consolidation (18 routes → 1), the floor/office mode split
+  (§6 — still the highest-value structural idea nobody has built), form folds
+  on the 16/15/14-field forms, and the inbound panel's provider blocks
+  collapsing to summary rows. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
 ## Shipped this session
-- **The design refresh, built and live** — see the section above and plan §14.
-  Eleven commits: audit bugs · tokens + vocabulary · brand assets · primitives ·
-  colour sweep · grouped nav · KPI row + ink ramp · money-band figure ·
-  settings/parts information design · settings sub-rail · docs.
-- **Three real audit bugs fixed, one retired as a misdiagnosis.** All-clear
-  dashboard messages no longer render in red/amber; the mobile header uses the
-  lettermark instead of an illegible 20px lockup; text on a filled accent got
-  per-theme tokens for all six hues. The Scan-FAB-over-Collapse bug **does not
-  exist** — the FAB is `md:hidden` and the sidebar `hidden md:flex`; the audit
-  saw the Next.js dev-tools badge.
-- **Two dead things deleted** (`StatCard`, the local `Stat` in ReportUrlCard)
-  and the hue→fill map de-duplicated. `Section` is a re-export of `Panel`.
-- **The commit gate was found inert and fixed** — see Landmines. The production
-  build has now actually been run: exit 0, 52 static pages, no warnings.
-- **Earlier the same day** (morning session): lint into the commit gate with the
-  4 genuine errors fixed; sales-lead drafting from an `order_inquiry` via the
-  VC-1 command agent (P1 follow-up date/owner deliberately NOT built); model
-  selection as a live discover-or-type picker with `inbound_extraction_model` =
-  **`claude-sonnet-5`** in prod; a docs audit that corrected six repo
-  contradictions, backfilled HISTORY for 07-23 → 07-25, removed the unused
-  Trello integration, pruned `settings.local.json` 171 → 17 (so **a migration
-  now shows its SQL in a prompt before it runs**), and added the
-  `worklog-row-budget` + `worklog-session-check` hooks. Only the DECISIONS
-  same-commit rule is still honour-system.
+- **`/inbox` and `/bike-templates` onto `Panel`** — both list pages, both
+  detail pages, and eleven components (inbound review stages, parts recipe,
+  paintwork, version history, template form). No new message keys; no route
+  or data change; behaviour identical.
+- **Three conventions settled** while doing it, all in DECISIONS 2026-07-27
+  and the first of them now a CLAUDE.md rule:
+  - **A table inside a `Panel` gets no wrapper box.** `Table` already draws
+    its own row rules and overflow container. The older migrated screens
+    (bikes, parts, invoices, the paint/MO/WO sections) still box theirs —
+    they predate the rule; fix as touched, not in a sweep.
+  - **Family colour rides the title dot**, not a tinted header band. Family
+    hues are decorative identity and exempt from the six-hue contrast matrix;
+    a wash behind panel text would have dragged them into it.
+  - **Suspected spam is `money`, not `alert`** — it was filling money-ochre
+    and titling in alert-red, a caution wearing an alarm's ink.
+- **`Panel` gained `id`** (anchor targets like `#family-<id>`) and now takes
+  `ReactNode` for `title` / `description` (the family dot; the recipe's
+  inline cost/retail/margin summary). No second primitive.
+- **Verified in a browser, with a caveat.** This container has no Supabase
+  credentials, so the two data-driven pages could not be rendered against
+  real data. The converted client components were rendered and screenshotted
+  through a throwaway `/ui-preview` route with stub props (deleted before
+  commit) — layout, hues and contrast confirmed there; the server list pages
+  were confirmed by build + review only. **Worth a real look at `/inbox` and
+  `/bike-templates` on the next machine with `.env.local`.**
 
 ## Next actions, in order
-1. **Walk the app with fresh eyes before 3 Aug.** The refresh was built and
-   verified in one long day; a second look on rested eyes is the cheapest
-   quality step left, and there is a week of slack before Dennis returns. The
-   things I'd look at first: `/inbox` and `/bike-templates` (the two screens
-   deliberately left out of the migration), and whether the six hues still read
-   as a system once you see them across a whole working session rather than
-   screen by screen.
-2. **Chase the external blockers** in the cutover plan §7 (revisor in one
+1. **Open `/inbox` and `/bike-templates` against real data** — the one gap in
+   this session's verification (see above). Cheap, and it closes the loop.
+2. **Walk the rest of the app with fresh eyes before 3 Aug.** The refresh was
+   built and verified in one long day; a second look on rested eyes is the
+   cheapest quality step left. Specifically: whether the six hues still read
+   as a system across a whole working session rather than screen by screen.
+3. **Chase the external blockers** in the cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
-3. **Phase 2 proper — after 31 Aug**: surface primitives across the remaining
-   ~135 files, then the floor/office mode split (plan §6), which is still the
-   highest-value structural idea nobody has built.
+4. **Phase 2, continued — after 31 Aug**: the remaining ~174 files, then the
+   floor/office mode split (plan §6), still the highest-value structural idea
+   nobody has built.
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.
