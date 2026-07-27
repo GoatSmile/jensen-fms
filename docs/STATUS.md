@@ -8,9 +8,11 @@ green: `tsc` clean, lint 0 errors (14 long-standing warnings), `npm run build`
 exit 0 / 52 static pages. Narrative + commit refs in
 `docs/archive/HISTORY.md`; the four decisions in `docs/DECISIONS.md`.
 
-**Work is on `claude/ui-ux-improvements-l2m8r6`, not `main`** — four commits
-(`4149809`, `0d21cd6`, `944e434`, `9455c85`), pushed. Nothing has reached prod
-from this session; merging the branch is what deploys it.
+**Merged to `main` and deployed** (fast-forward from `ae5ad23`, five commits).
+**It went to prod BEFORE the real-data checks below were run** — a deliberate
+call by the owner, not an oversight. If a screen is wrong, the revert is
+`git revert --no-commit ae5ad23..HEAD` or a reset to `ae5ad23`; nothing in
+this session touched the schema or any data, so a revert is pure UI.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -141,19 +143,18 @@ before each commit) — layout, hues, contrast and both fold states confirmed
 there. Everything server-rendered was confirmed by `next build` + review only.
 
 ## Next actions, in order
-1. **Open the touched screens against real data.** The one gap in this
-   session's verification, and cheap to close: `/inbox` · `/bike-templates` ·
+1. **Open the touched screens against real data — now the top priority,
+   because this is already live.** The one gap in this session's
+   verification: `/inbox` · `/bike-templates` ·
    an **edit** form for a part / customer / supplier (a record that already
    has an address should arrive with its fold open — that is the branch the
    preview stubbed rather than fetched) · `/admin/settings?section=phone`
    (in prod all three secrets are set, so expect three *closed* rows) · one
    hued detail page (`/parts/<id>`, an SO, `/invoices`).
-2. **Merge `claude/ui-ux-improvements-l2m8r6`.** Nothing from this session is
-   in prod until it lands on `main`.
-3. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
+2. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
    hues still read as a system across a whole working session rather than
    screen by screen.
-4. **Chase the external blockers** in cutover plan §7 (revisor in one
+3. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
 
