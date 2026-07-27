@@ -6,6 +6,16 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **The dependency tree is internally inconsistent** (surfaced by CI's first
+  run, 2026-07-27, pre-existing). `npm ls` reports *invalid*:
+  `next-intl@4.13.2` pulls `@swc/core@1.15.43`, which wants
+  `@swc/helpers >=0.5.17`, while the lock pins the `0.5.15` that `next@16.2.5`
+  brought. npm 11 tolerates it (both `npm install` and `npm ci` are clean, and
+  `next build` passes), npm 10's `npm ci` refuses the lock outright — which is
+  why `ci.yml` pins Node 24 / npm 11. Untangling it means re-resolving a
+  transitive peer range, i.e. a dependency bump on live code: worth its own
+  session, not a tail-end fix. Symptom to watch: a CI failure naming
+  `@swc/helpers` is this, not a code change.
 - **CI Tier 2 — the runtime layer, with auth/M1.** Tier 1 (`tsc` + `lint` on
   push) shipped 2026-07-27 as `.github/workflows/ci.yml`, so the lint class no
   longer reaches prod unchecked. What is still uncovered is anything that only

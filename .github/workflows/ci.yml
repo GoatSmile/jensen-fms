@@ -25,9 +25,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Node 22 LTS. Not the local version (25.x) on purpose — tsc and
-          # eslint are not version-sensitive, and LTS keeps the runner boring.
-          node-version: 22
+          # Node 24 LTS, which bundles npm 11 — the major that WROTE
+          # package-lock.json. On Node 22 (npm 10) `npm ci` refuses the lock
+          # outright ("Missing: @swc/helpers@0.5.23"), because npm 10 and 11
+          # resolve next-intl's @swc/core peer range differently. Locally
+          # `npm ci` is clean under npm 11. If this step starts failing on the
+          # lock again, check the npm major before touching dependencies.
+          node-version: 24
           cache: npm
 
       - run: npm ci
