@@ -1,10 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-26, end of day.** Most recent: the **design refresh is
-built and live in prod** — direction B in signal blue, surface primitives, the
-517-colour sweep and the seven-group nav all shipped so Dennis meets the new
-look when he returns **Mon 3 Aug**. Earlier the same day: cutover plan + owner
-brief, sales-lead drafting, live model picker.
+**Last updated: 2026-07-27.** Most recent: the **design refresh is built and
+live in prod** — direction B in signal blue, surface primitives, the
+517-colour sweep, the seven-group nav and the settings sub-rail all shipped so
+Dennis meets the new look when he returns **Mon 3 Aug**. `npm run build` passes
+clean (exit 0, 52 static pages), which matters because the commit gate had been
+skipping it — see Landmines.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -65,7 +66,9 @@ Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` (Geist kept, no
 display face, pill buttons) · `Panel`/`Metric`/`Rule` primitives with `Section`
 re-exporting `Panel` · 517 raw palette colours swept onto six hues across 79
 files · **seven grouped nav items** with `nav_open` cookie state resolved
-server-side · part detail's boxed KPI row killed · three of the four audit bugs.
+server-side · both boxed KPI rows killed · the **`/admin/settings` sub-rail**
+(five sections, `?section=`; 48 form controls rendered at once before, 5 on
+arrival now) · three of the four audit bugs.
 
 - **The colour vocabulary is now in CLAUDE.md and is load-bearing.** Six hues,
   closed list. Two rules that are easy to get wrong: **caution is `money`'s
@@ -85,25 +88,29 @@ server-side · part detail's boxed KPI row killed · three of the four audit bug
   a toggle was deliberately not built. If one lands, it should just work.
 - **The remainder, honestly**: ~135 files still hand-roll `rounded-* border`
   surfaces. They inherit B's tokens so they read as *plainer*, not broken — that
-  property is what made truncating safe. `/admin/settings` is on `Panel` now but
-  still stacks seven domains in ~40 controls (the §9 sub-rail is the fix, and
-  isn't built). `/admin/lists` consolidation, the floor/office mode split and
-  form folds are untouched. Full list in plan §14.
+  property is what made truncating safe. Untouched: the `/admin/lists`
+  consolidation (18 routes → 1), the floor/office mode split (§6 — still the
+  highest-value structural idea nobody has built), form folds on the 16/15/14-
+  field forms, and the inbound panel's provider blocks collapsing to summary
+  rows. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
 ## Shipped this session
 - **The design refresh, built and live** — see the section above and plan §14.
-  Seven commits: audit bugs · tokens + vocabulary · brand assets · primitives ·
-  colour sweep · grouped nav · KPI row + ink ramp.
+  Eleven commits: audit bugs · tokens + vocabulary · brand assets · primitives ·
+  colour sweep · grouped nav · KPI row + ink ramp · money-band figure ·
+  settings/parts information design · settings sub-rail · docs.
 - **Three real audit bugs fixed, one retired as a misdiagnosis.** All-clear
   dashboard messages no longer render in red/amber; the mobile header uses the
   lettermark instead of an illegible 20px lockup; text on a filled accent got
-  per-theme tokens. The Scan-FAB-over-Collapse bug **does not exist** — the FAB
-  is `md:hidden` and the sidebar `hidden md:flex`; the audit saw the Next.js
-  dev-tools badge.
-- **`StatCard` deleted** (no callers anywhere) and the hue→fill map
-  de-duplicated. `Section` is now a re-export of `Panel`.
+  per-theme tokens for all six hues. The Scan-FAB-over-Collapse bug **does not
+  exist** — the FAB is `md:hidden` and the sidebar `hidden md:flex`; the audit
+  saw the Next.js dev-tools badge.
+- **Two dead things deleted** (`StatCard`, the local `Stat` in ReportUrlCard)
+  and the hue→fill map de-duplicated. `Section` is a re-export of `Panel`.
+- **The commit gate was found inert and fixed** — see Landmines. The production
+  build has now actually been run: exit 0, 52 static pages, no warnings.
 - **Earlier the same day** (morning session): lint into the commit gate with the
   4 genuine errors fixed; sales-lead drafting from an `order_inquiry` via the
   VC-1 command agent (P1 follow-up date/owner deliberately NOT built); model
@@ -116,17 +123,18 @@ server-side · part detail's boxed KPI row killed · three of the four audit bug
   same-commit rule is still honour-system.
 
 ## Next actions, in order
-1. **Look at the shipped refresh with fresh eyes before 3 Aug** and decide
-   whether any of the remainder is worth doing while Dennis is still away. The
-   two highest-value items: the **dashboard money band** (interpolated amounts
-   inside 12px uppercase panel titles render "…2.000,00 KR."; the amount wants
-   to be a figure, not part of the eyebrow) and **`/admin/settings`**, still the
-   most overwhelming screen in the app.
+1. **Walk the app with fresh eyes before 3 Aug.** The refresh was built and
+   verified in one long day; a second look on rested eyes is the cheapest
+   quality step left, and there is a week of slack before Dennis returns. The
+   things I'd look at first: `/inbox` and `/bike-templates` (the two screens
+   deliberately left out of the migration), and whether the six hues still read
+   as a system once you see them across a whole working session rather than
+   screen by screen.
 2. **Chase the external blockers** in the cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
 3. **Phase 2 proper — after 31 Aug**: surface primitives across the remaining
-   ~140 files, then the floor/office mode split (plan §6), which is still the
+   ~135 files, then the floor/office mode split (plan §6), which is still the
    highest-value structural idea nobody has built.
 
 ## Waiting on (external)
@@ -151,6 +159,16 @@ model) · e-conomic production cutover · supplier-email go-live (untick
 Dennis's company number onto the inbound trunk.
 
 ## Landmines
+- **The commit gate was inert for `git add … && git commit` one-liners**
+  (found + fixed 2026-07-27). `gates.sh` is a PreToolUse hook, so it runs
+  BEFORE the command: with that idiom the index is still empty when it looks,
+  and `[ -z "$staged" ] && exit 0` skipped tsc, lint, tests and build entirely.
+  Two React-rule lint errors reached main through it. Fixed — the hook now
+  detects a pending `git add` and decides the docs-only skip from the dirty
+  tree. **Still true regardless: the gate skips `npm run build` whenever a dev
+  server holds :3000**, and that is the class tsc and lint both miss (RSC
+  boundary violations). Stop the dev server and build before trusting a run of
+  commits.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references
