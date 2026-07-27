@@ -85,8 +85,9 @@ arrival now) · three of the four audit bugs.
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
 - **The remainder — card soup is dented, not cleared.** Phase 2 started
-  2026-07-27 in three slices: `/inbox` + `/bike-templates`, the panel-table
-  convention applied app-wide, then §9's form folds (see below). Across `src/**/*.tsx`:
+  2026-07-27 in four slices: `/inbox` + `/bike-templates`, the panel-table
+  convention applied app-wide, §9's form folds, and §9's inbound provider
+  summary rows (see below). **§9 is now closed except the category chips.** Across `src/**/*.tsx`:
   `rounded-md border` occurrences **298 → 240**, dashed **46 → 37**, files with
   any hand-rolled bordered surface **184 → 159**. Note the counting method
   differs from the audit's 345/187 — trust the delta, not the absolute. The rest
@@ -135,6 +136,14 @@ arrival now) · three of the four audit bugs.
   React state, so nothing is lost), and `forceOpen` unfolds whichever section
   owns a failed field. `CollapsibleSection` moved onto `Panel` in the same
   pass. Reasoning: DECISIONS 2026-07-27 (later).
+- **§9's inbound provider rows shipped** — the three capability blocks
+  (transcription, extraction, telephony) are summary rows that expand on
+  demand, so `/admin/settings?section=phone` arrives at **2 controls instead
+  of 13**. A row whose secret is missing starts open. Rows separated by
+  hairlines, expanded body on `bg-surface` (the panel is hued). Also fixed
+  there: seven label hints were rendering *beside* their labels rather than
+  under them — `Label` is `flex items-center gap-2`, so a `block` span
+  becomes a flex item. That pattern existed only in this file.
 - **Verified in a browser, with a caveat.** This container has no Supabase
   credentials, so the two data-driven pages could not be rendered against
   real data. The converted client components were rendered and screenshotted
@@ -148,8 +157,9 @@ arrival now) · three of the four audit bugs.
 ## Next actions, in order
 1. **Open the touched screens against real data** — `/inbox`,
    `/bike-templates`, an edit form for a part / customer / supplier (check a
-   record with an address opens its fold), and one hued detail page. The one
-   gap in this session's verification; cheap, and it closes the loop.
+   record with an address opens its fold), `/admin/settings?section=phone`,
+   and one hued detail page. The one gap in this session's verification;
+   cheap, and it closes the loop.
 2. **Walk the rest of the app with fresh eyes before 3 Aug.** The refresh was
    built and verified in one long day; a second look on rested eyes is the
    cheapest quality step left. Specifically: whether the six hues still read

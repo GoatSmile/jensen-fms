@@ -3104,7 +3104,9 @@
     "sectionCommunication": "Communication",
     "sectionAccounting": "Accounting",
     "sectionPhone": "Phone & inbox",
-    "sectionPublic": "Public pages"
+    "sectionPublic": "Public pages",
+    "inboundBlockReady": "Ready",
+    "inboundBlockMissing": "{count, plural, one {1 secret missing} other {# secrets missing}}"
   },
   "adminPeople": {
     "crumb": "People & roles",

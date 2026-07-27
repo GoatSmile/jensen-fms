@@ -3104,7 +3104,9 @@
     "sectionCommunication": "Kommunikation",
     "sectionAccounting": "Regnskab",
     "sectionPhone": "Telefon & indbakke",
-    "sectionPublic": "Offentlige sider"
+    "sectionPublic": "Offentlige sider",
+    "inboundBlockReady": "Klar",
+    "inboundBlockMissing": "{count, plural, one {1 nøgle mangler} other {# nøgler mangler}}"
   },
   "adminPeople": {
     "crumb": "Personer og roller",

@@ -631,16 +631,21 @@ two sections it never had. `CollapsibleSection` moved onto `Panel` in the same
 pass, so the app has one fold rather than two that look different. Reasoning
 in DECISIONS 2026-07-27 (later).
 
+### Phase 2, fourth slice (2026-07-27) — §9's provider summary rows
+The last §9 item. The inbound panel's three provider blocks are summary rows
+that expand on demand (*Transcription · Gladia (EU) · ✓ Ready*): the Phone &
+inbox section now arrives at two controls instead of thirteen. A row whose
+secret is missing starts open. Seven label hints on the same form were
+rendering beside their labels rather than under them — `Label` is
+`flex items-center gap-2` — and now stack. DECISIONS 2026-07-27 (later still).
+
 ### Still not done — the honest list
 - **~159 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
   the migrated screens. This is the remaining Phase 2.
 
 - **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
-- **The inbound panel's provider blocks don't collapse.** §9 also asked for each
-  one to reduce to a summary row — *Transcription: Gladia ✓* — expanding on
-  demand. The sub-rail got the page from 48 controls to 5 on arrival, so this is
-  now a refinement of the heaviest section rather than a rescue.
+
 - **Floor/office mode split** (§6) — the highest-value structural idea in this
   document, and untouched.
 - **The repeated category chips** (§9). Form folds are done — see the third

@@ -897,3 +897,24 @@ section snaps back to the user's own choice as soon as the error clears.
 
 `CollapsibleSection` moved onto `Panel` in the same pass so the app has one
 fold, not two that look different.
+
+## 2026-07-27 (later still) — the inbound provider blocks are rows, not cards
+Plan §9's remaining piece. The three capability blocks (transcription,
+extraction, telephony) were bordered cards holding 13 inputs between them,
+inside the settings panel the sub-rail had already narrowed to one section.
+
+**They are now summary rows that expand on demand** — *Transcription · Gladia
+(EU) · ✓ Ready* — so the arrival state of the Phone & inbox section is two
+controls (shadow mode, Save) instead of thirteen. Rows separated by hairlines
+rather than a third generation of nested boxes; the expanded body sits on
+`bg-surface`, which is what the tinting rule asks for inside a hued panel.
+
+**A row with a missing secret starts open.** Same record-driven default as the
+form folds: the one state an admin opens this page to fix should not also need
+a click to find. Everything healthy stays shut.
+
+**Also fixed here, pre-existing:** `Label` is `flex items-center gap-2`, so the
+seven `<span className="block text-xs">` hints inside labels on this form were
+rendering as flex ITEMS beside the label — squeezing "Production number" onto
+two lines and giving the hint half the row. They stack now. The pattern existed
+only in this file.
