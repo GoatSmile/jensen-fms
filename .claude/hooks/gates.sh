@@ -15,6 +15,22 @@ set -uo pipefail
 payload=$(cat)
 cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
 
+# Is this actually a commit? The hook is registered against the `Bash` matcher,
+# so it sees EVERY command. This guard was missing entirely: the only thing that
+# stopped `ls` from triggering a full tsc+lint+build was an empty staging area,
+# which is an accident rather than a design — with anything staged, unrelated
+# commands paid the whole gate.
+#
+# Deliberately a loose substring match rather than a precise regex, because the
+# two failure modes are not symmetric: a false positive only runs the gate on
+# something harmless (slow, safe), while a false negative silently skips it —
+# which is the entire bug this file has already had once. A tighter regex here
+# missed `git -c key=value commit`, since the flag's value is its own token.
+case "$cmd" in
+  *git*commit*) ;;   # `git commit`, `git add … && git commit`, `git -c … commit`
+  *) exit 0 ;;
+esac
+
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 cd "$root" || exit 0
 
@@ -28,34 +44,15 @@ note() {
   exit 0
 }
 
-# `git commit -a` stages at commit time, so the index is not yet the whole
-# story — fall through to the full gates in that case.
-stages_at_commit=false
-printf '%s' "$cmd" | grep -qE '(^|\s)-(a|[a-zA-Z]*a[a-zA-Z]*)(\s|$)|--all\b' && stages_at_commit=true
-
-# This is a PreToolUse hook: it runs BEFORE the command does. So for the very
-# common `git add path && git commit` one-liner the index is still EMPTY when we
-# look at it — and the old `[ -z "$staged" ] && exit 0` read that as "nothing to
-# check" and skipped every gate. That silently disabled this hook for every
-# commit written that way (found 2026-07-26, after two React-rule lint errors
-# reached main through it). Only trust the index when the command is not about
-# to change it.
-will_stage=false
-printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])git[[:space:]]+add\b' && will_stage=true
-
-if [ "$will_stage" = true ]; then
-  # Can't know the final file list yet, so decide the docs-only skip from the
-  # whole dirty tree — a superset of what the commit can contain.
-  dirty=$(git status --porcelain | sed 's/^...//' | sed 's/.* -> //')
-  if [ -n "$dirty" ] && ! printf '%s\n' "$dirty" | grep -qvE '\.md$'; then
-    note "Gates skipped: docs-only ($(printf '%s\n' "$dirty" | wc -l | tr -d ' ') dirty path(s), all .md)."
-  fi
-elif [ "$stages_at_commit" = false ]; then
-  staged=$(git diff --cached --name-only)
-  [ -z "$staged" ] && exit 0   # nothing staged; let git produce its own error
-  if ! printf '%s\n' "$staged" | grep -qvE '\.md$'; then
-    note "Gates skipped: docs-only commit ($(printf '%s\n' "$staged" | wc -l | tr -d ' ') file(s), all .md)."
-  fi
+# Everything this commit could possibly contain: staged, unstaged or untracked.
+# `git status --porcelain` covers all three, which is why this needs no
+# special-casing — not for `git add … && git commit` (a PreToolUse hook runs
+# BEFORE the command, so the index is still empty when we look), and not for
+# `commit -a` (stages at commit time). Guessing at the index instead is what
+# silently disabled this whole gate until 2026-07-27.
+touched=$(git status --porcelain | sed 's/^...//;s/.* -> //')
+if [ -n "$touched" ] && ! printf '%s\n' "$touched" | grep -qvE '\.md$'; then
+  note "Gates skipped: docs-only ($(printf '%s\n' "$touched" | wc -l | tr -d ' ') path(s), all .md)."
 fi
 
 if ! out=$(npx --no-install tsc --noEmit 2>&1); then
