@@ -85,8 +85,8 @@ arrival now) · three of the four audit bugs.
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
 - **The remainder — card soup is dented, not cleared.** Phase 2 started
-  2026-07-27 in two slices: `/inbox` + `/bike-templates`, then the panel-table
-  convention applied app-wide (see below). Across `src/**/*.tsx`:
+  2026-07-27 in three slices: `/inbox` + `/bike-templates`, the panel-table
+  convention applied app-wide, then §9's form folds (see below). Across `src/**/*.tsx`:
   `rounded-md border` occurrences **298 → 240**, dashed **46 → 37**, files with
   any hand-rolled bordered surface **184 → 159**. Note the counting method
   differs from the audit's 345/187 — trust the delta, not the absolute. The rest
@@ -123,17 +123,33 @@ arrival now) · three of the four audit bugs.
   `bg-surface` container and loses only the hairline. Supersede note in
   DECISIONS 2026-07-27 (later) — the first entry had said these would be
   fixed as touched.
+- **§9's form folds shipped** — organisation (21 fields), part (15) and
+  supplier (14) show their required fields and fold the rest behind a shared
+  `FormSection` (`src/components/form-section.tsx`), which also replaces the
+  local helper four forms had each copy-pasted. **The default is per record,
+  not remembered**: a section opens on arrival only if that record already
+  holds something in it, so an edit form shows what is filled and a create
+  form shows only what is required — deliberately unlike
+  `CollapsibleSection`, whose localStorage memory would hide the *next*
+  customer's address. Folded sections unmount (the forms build FormData from
+  React state, so nothing is lost), and `forceOpen` unfolds whichever section
+  owns a failed field. `CollapsibleSection` moved onto `Panel` in the same
+  pass. Reasoning: DECISIONS 2026-07-27 (later).
 - **Verified in a browser, with a caveat.** This container has no Supabase
   credentials, so the two data-driven pages could not be rendered against
   real data. The converted client components were rendered and screenshotted
   through a throwaway `/ui-preview` route with stub props (deleted before
-  commit) — layout, hues and contrast confirmed there; the server list pages
-  were confirmed by build + review only. **Worth a real look at `/inbox` and
-  `/bike-templates` on the next machine with `.env.local`.**
+  commit) — layout, hues, contrast and every fold state confirmed there
+  (create-mode folded, edit-mode auto-open); the server-rendered pages were
+  confirmed by build + review only. **Worth a real look at `/inbox`,
+  `/bike-templates`, a part/customer/supplier edit form and one hued detail
+  page on the next machine with `.env.local`.**
 
 ## Next actions, in order
-1. **Open `/inbox` and `/bike-templates` against real data** — the one gap in
-   this session's verification (see above). Cheap, and it closes the loop.
+1. **Open the touched screens against real data** — `/inbox`,
+   `/bike-templates`, an edit form for a part / customer / supplier (check a
+   record with an address opens its fold), and one hued detail page. The one
+   gap in this session's verification; cheap, and it closes the loop.
 2. **Walk the rest of the app with fresh eyes before 3 Aug.** The refresh was
    built and verified in one long day; a second look on rested eyes is the
    cheapest quality step left. Specifically: whether the six hues still read

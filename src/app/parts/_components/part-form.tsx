@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Field } from "@/components/field";
+import { FormSection } from "@/components/form-section";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -218,6 +219,28 @@ export function PartForm({
     else router.push("/parts");
   }
 
+  // A section opens on arrival only if this part already has something in
+  // it. Unit of measure and currency carry defaults, so they don't count as
+  // content — otherwise Specs would be open on every new part.
+  const hasDescription = Boolean(
+    initial.description_en || initial.description_da || initial.notes,
+  );
+  const hasSpecs = Boolean(
+    initial.weight_grams ||
+      initial.default_retail_price ||
+      initial.reorder_point ||
+      initial.reorder_quantity ||
+      initial.attributes.length > 0 ||
+      initial.unit_of_measure !== "pcs",
+  );
+  const SPEC_FIELDS = [
+    "unit_of_measure",
+    "weight_grams",
+    "default_retail_price",
+    "reorder_point",
+    "reorder_quantity",
+  ];
+
   const submitLabel = mode === "create" ? t("createPart") : t("saveChanges");
 
   return (
@@ -384,6 +407,8 @@ export function PartForm({
       <FormSection
         title={t("formDescription")}
         description={t("formDescriptionDesc")}
+        collapsible
+        defaultOpen={hasDescription}
       >
         <Field label={t("descriptionEn")} htmlFor="description_en">
           <Textarea
@@ -415,6 +440,9 @@ export function PartForm({
       <FormSection
         title={t("formSpecs")}
         description={t("formSpecsDesc")}
+        collapsible
+        defaultOpen={hasSpecs}
+        forceOpen={SPEC_FIELDS.includes(errorField ?? "")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
@@ -530,7 +558,7 @@ export function PartForm({
             })}
           </p>
           {values.attributes.length === 0 ? (
-            <p className="text-muted-foreground rounded-md border border-dashed p-3 text-center text-xs">
+            <p className="text-ink-3 bg-ground rounded-lg p-3 text-center text-xs">
               {t("noAttributes")}
             </p>
           ) : (
@@ -589,26 +617,3 @@ export function PartForm({
     </form>
   );
 }
-
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="flex flex-col gap-3 p-4">{children}</div>
-    </section>
-  );
-}
-

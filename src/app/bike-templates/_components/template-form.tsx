@@ -6,7 +6,7 @@ import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Panel } from "@/components/ui/panel";
+import { FormSection } from "@/components/form-section";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -343,24 +343,3 @@ export function TemplateForm({
     </form>
   );
 }
-
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Panel
-      title={title}
-      description={description}
-      contentClassName="flex flex-col gap-3"
-    >
-      {children}
-    </Panel>
-  );
-}
-

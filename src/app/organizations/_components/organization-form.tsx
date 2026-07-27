@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
+import { FormSection } from "@/components/form-section";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -121,6 +122,29 @@ export function OrganizationForm({
   const locale = useLocale();
   const router = useRouter();
   const [values, setValues] = useState<OrganizationFormValues>(initial);
+
+  // A section opens on arrival only if this record already has something in
+  // it: an edit form shows what is filled, a create form shows what is
+  // required. `initial`, not `values` — this is a mount-time default, not a
+  // rule that should re-fold the section under the user as they type.
+  const hasTax = Boolean(
+    initial.cvr_number || initial.ean_number || initial.vat_number,
+  );
+  const hasContact = Boolean(initial.email || initial.phone || initial.website);
+  const hasAddress = Boolean(
+    initial.address_line1 ||
+      initial.address_line2 ||
+      initial.zip_code ||
+      initial.city ||
+      initial.state_province,
+  );
+  // Currency and terms carry defaults, so "filled" here means "moved off
+  // them" — otherwise billing would be open on every new customer.
+  const hasBilling = Boolean(
+    initial.default_vat_code ||
+      initial.billing_currency !== "DKK" ||
+      initial.payment_terms_days !== "30",
+  );
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -273,6 +297,8 @@ export function OrganizationForm({
       <FormSection
         title={t("secTax")}
         description={t("secTaxDesc")}
+        collapsible
+        defaultOpen={hasTax}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t("fldCvr")} htmlFor="org-cvr">
@@ -308,6 +334,9 @@ export function OrganizationForm({
       <FormSection
         title={t("secContact")}
         description={t("secContactDesc")}
+        collapsible
+        defaultOpen={hasContact}
+        forceOpen={errorField === "email"}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
@@ -362,6 +391,8 @@ export function OrganizationForm({
       <FormSection
         title={t("secAddress")}
         description={t("secAddressDesc")}
+        collapsible
+        defaultOpen={hasAddress}
       >
         <Field label={t("fldAddr1")} htmlFor="org-addr1">
           <Input
@@ -442,6 +473,9 @@ export function OrganizationForm({
       <FormSection
         title={t("secBilling")}
         description={t("secBillingDesc")}
+        collapsible
+        defaultOpen={hasBilling}
+        forceOpen={errorField === "payment_terms_days"}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label={t("fldBillingCurrency")} htmlFor="org-currency">
@@ -503,6 +537,8 @@ export function OrganizationForm({
       <FormSection
         title={t("secNotes")}
         description={t("secNotesDesc")}
+        collapsible
+        defaultOpen={Boolean(initial.notes)}
       >
         <Field label={t("fldNotes")} htmlFor="org-notes">
           <Textarea
@@ -520,7 +556,7 @@ export function OrganizationForm({
         </p>
       ) : null}
 
-      <div className="flex justify-end gap-2 border-t pt-4">
+      <div className="border-rule flex justify-end gap-2 border-t pt-4">
         <Button
           type="button"
           variant="outline"
@@ -540,26 +576,3 @@ export function OrganizationForm({
     </form>
   );
 }
-
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="flex flex-col gap-3 p-4">{children}</div>
-    </section>
-  );
-}
-

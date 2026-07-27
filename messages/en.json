@@ -3259,7 +3259,11 @@
     "statusArchived": "Archived",
     "subtitle": "The vendors parts are bought from. Used by part offerings, purchase orders, and paint orders. Archived suppliers stay on historical records but drop out of new pickers.",
     "termsPlaceholder": "e.g. 30",
-    "upToDate": "Up to date"
+    "upToDate": "Up to date",
+    "secMain": "Supplier",
+    "secMainDesc": "Name, default currency and payment terms.",
+    "secMore": "More details",
+    "secMoreDesc": "Contact details, address and notes — filled once, rarely changed."
   },
   "qr": {
     "crumbBikes": "Bikes",

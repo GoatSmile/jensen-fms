@@ -864,3 +864,36 @@ the change turned out to be a wrapper `<div>` deletion per table — no layout
 reasoning, since `Table` already brings its own overflow container and row
 rules. On a *hued* panel the container stays (CLAUDE.md: inner tables sit on
 `bg-surface`) and only the hairline goes.
+
+## 2026-07-27 (later) — long forms fold; the default is per record, not per user
+Plan §9's last open item: organisation (21 fields), part (15) and supplier
+(14) all presented every field at once. Required fields now stay visible and
+the rest sit behind folded sections — `FormSection` in
+`src/components/form-section.tsx`, one shared component replacing the
+identical local helper that four forms had each copy-pasted.
+
+**A section's default state is computed from the record, not remembered from
+last time.** `CollapsibleSection` (the part-detail fold) persists the user's
+choice in localStorage, and copying that here looked obvious — but a form's
+right answer changes per record. A remembered "Address closed" would hide the
+address of the *next* customer you opened. Instead each section opens on
+arrival if that record already holds something in it, so an edit form shows
+what is filled and a create form shows only what is required. Fields with
+defaults (currency DKK, terms 30, unit `pcs`) don't count as content, or
+Billing and Specs would be open on every new record.
+
+**Folded sections unmount their children.** Safe because all three forms build
+their FormData from React state, never from the DOM — nothing is lost, and a
+mounted-but-hidden `required` input would make submit fail silently on a
+control the browser cannot focus. The consequence is that a validation error
+inside a folded section would be invisible, so `forceOpen` unfolds the
+section owning the failed field (organisation: email, payment terms; part:
+the five spec fields). It is derived, not an effect that pushes state, so the
+section snaps back to the user's own choice as soon as the error clears.
+
+**Supplier's flat form gained the two sections it never had** — *Supplier*
+(name, currency, terms, primary email, duty-prepaid, active) and a folded
+*More details*. Four new message keys, en + da.
+
+`CollapsibleSection` moved onto `Panel` in the same pass so the app has one
+fold, not two that look different.

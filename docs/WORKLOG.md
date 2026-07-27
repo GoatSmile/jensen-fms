@@ -64,10 +64,10 @@ treat the early totals as floors, not truth.
 | Thu 2026-07-23 | ~18 | **People & roles P1–P4 all shipped** (migs 73–74) — interim auth complete; docs restructure for handover (CLAUDE.md 1457 → 450 lines + the docs/ scheme); global identifier search; perimeter audit; voice commands VC-1 (migs 75–76). July queue 1–5 done |
 | Sat 2026-07-25 | ~7 | **Live-call recording V1 shipped + live-verified on a real bridged call** (migs 77–78); speaker attribution fixed to Gladia's `channel` tag; provider evaluation closed (keep Twilio + Gladia + Claude); AI-receptionist tier decided, not queued |
 | Sun 2026-07-26 | ~10 | **Design refresh built and shipped** — B tokens in signal blue, Panel/Metric primitives, 517-colour sweep onto six hues, 7-group nav w/ cookie state, settings sub-rail; 21 commits, 10:16–20:39 |
-| Mon 2026-07-27 | ~4 | Production build verified clean; **design-refresh Phase 2 opened** — /inbox + /bike-templates onto Panel, three conventions settled, then the panel-table rule applied across 20 more files |
+| Mon 2026-07-27 | ~5.5 | Production build verified clean; **design-refresh Phase 2 in three slices** — /inbox + /bike-templates onto Panel, the panel-table rule applied app-wide, §9's form folds on the three long forms |
 
-**July so far: ~128 h** (18 working days)
+**July so far: ~129.5 h** (18 working days)
 
 ---
 
-**Project total: ~211.5 h across 34 working days (2026-05-07 → 2026-07-27)**
+**Project total: ~213 h across 34 working days (2026-05-07 → 2026-07-27)**

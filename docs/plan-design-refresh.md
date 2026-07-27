@@ -621,6 +621,16 @@ empty states became `bg-ground` fills at the same time. **Zero boxed tables
 remain inside a panel.** Occurrences 269 → 240, dashed 44 → 37, files 174 →
 159. Rationale + the hued-panel exception: DECISIONS 2026-07-27 (later).
 
+### Phase 2, third slice (2026-07-27) — §9's form folds
+Organisation (21 fields), part (15) and supplier (14) now show their required
+fields and fold the rest. One shared `FormSection` (`src/components/`)
+replaces the local helper four forms had each copy-pasted; a section opens on
+arrival only if the record already holds something in it, and `forceOpen`
+unfolds whichever section owns a failed field. Supplier's flat form gained the
+two sections it never had. `CollapsibleSection` moved onto `Panel` in the same
+pass, so the app has one fold rather than two that look different. Reasoning
+in DECISIONS 2026-07-27 (later).
+
 ### Still not done — the honest list
 - **~159 files still hand-roll `rounded-* border` surfaces.** They inherit B's
   tokens so they read as *plainer*, not broken, but card soup survives outside
@@ -633,8 +643,8 @@ remain inside a panel.** Occurrences 269 → 240, dashed 44 → 37, files 174 �
   now a refinement of the heaviest section rather than a rescue.
 - **Floor/office mode split** (§6) — the highest-value structural idea in this
   document, and untouched.
-- **Form folds** on the 16/15/14-field organisation, part and supplier forms
-  (§9), and the repeated category chips.
+- **The repeated category chips** (§9). Form folds are done — see the third
+  slice above.
 - **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
 - **No unit test for the cookie logic.** The plan asked for one; there is no
   test runner in this project (`package.json` has dev/build/start/lint only),

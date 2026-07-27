@@ -3259,7 +3259,11 @@
     "statusArchived": "Arkiveret",
     "subtitle": "De leverandører, varer købes fra. Bruges af varetilbud, indkøbsordrer og malingsordrer. Arkiverede leverandører forbliver på historiske poster, men falder ud af nye vælgere.",
     "termsPlaceholder": "f.eks. 30",
-    "upToDate": "Opdateret"
+    "upToDate": "Opdateret",
+    "secMain": "Leverandør",
+    "secMainDesc": "Navn, standardvaluta og betalingsbetingelser.",
+    "secMore": "Flere detaljer",
+    "secMoreDesc": "Kontaktoplysninger, adresse og noter — udfyldes én gang, ændres sjældent."
   },
   "qr": {
     "crumbBikes": "Cykler",
