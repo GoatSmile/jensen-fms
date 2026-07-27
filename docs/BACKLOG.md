@@ -6,36 +6,21 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
-- **CI on push — September.** Two tiers; do the first on its own, it is small.
+- **CI Tier 2 — the runtime layer, with auth/M1.** Tier 1 (`tsc` + `lint` on
+  push) shipped 2026-07-27 as `.github/workflows/ci.yml`, so the lint class no
+  longer reaches prod unchecked. What is still uncovered is anything that only
+  fails at *runtime*: curl every route against a running server (assert 200 +
+  no "Runtime Error"/"TypeError" in the HTML) and a Vitest suite over the
+  server actions. Needs the Supabase env vars as repo secrets, which is why it
+  waits. Two lessons behind it, both the same shape: commit `fa1dbed` (a server
+  component calling a `"use client"` function) and the 2026-07-27 shell bug (a
+  server component *spreading* a `"use client"` export — `tsc`, `lint` and
+  `next build` were all green while five create forms shipped blank defaults).
+  Build it alongside auth, since auth touches every page.
 
-  **What you already have, so don't build it twice:** Vercel builds every push
-  to `main` on a clean machine. A broken `next build` fails the deploy and prod
-  keeps serving the last good version. That covers type errors, RSC boundary
-  violations and forgot-to-commit-a-file.
-
-  **The actual gap, measured 2026-07-27:** `next build` does **NOT** run ESLint
-  in Next 16 (verified — a known React-rule error in the tree still built with
-  exit 0). So the lint class reaches production unchecked, and that is precisely
-  the class that slipped on 2026-07-26. The local hook is not a substitute: it
-  runs on your machine, it can fail open (it silently did for a day — see
-  STATUS Landmines), and it skips `npm run build` whenever a dev server holds
-  :3000.
-
-  - **Tier 1 (~1 h, do first):** a GitHub Actions workflow on push running
-    `npm ci && npx tsc --noEmit && npm run lint`. No secrets needed — none of
-    those three touch the network. ~20 lines, free on a private repo. This is
-    the whole of the gap above. Note `.github/workflows/` does not exist yet.
-  - **Tier 2 (with auth/M1):** the runtime layer — curl every route against a
-    running server (assert 200 + no "Runtime Error"/"TypeError" in the HTML) and
-    a Vitest suite over the server actions. Needs the Supabase env vars as repo
-    secrets. Lesson behind it: commit fa1dbed, a server component calling a
-    `"use client"` function. Build it alongside auth, since auth touches every
-    page.
-
-  Owner parked all of this deliberately in June 2026 — manual browser
-  verification before every commit is the safety net ("I like the discipline").
-  Handover note: Tier 2 is the executable half of any team handover; the
-  manual-verification discipline does not transfer with the repo.
+  Handover note: Tier 2 is the executable half of any team handover — the
+  manual browser-verification discipline the owner relies on ("I like the
+  discipline") does not transfer with the repo.
 - **Public-action rate limits are IP-spoofable** (perimeter audit
   2026-07-23, low sev). `submit-report.ts`, `submit-general-report.ts`,
   `find-bike.ts` key their 5/hr (reports) and 30/hr (lookup) caps off the

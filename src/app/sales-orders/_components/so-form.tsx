@@ -54,7 +54,7 @@ export type SOFormValues = {
   notes: string;
 };
 
-export const EMPTY_SO_FORM: SOFormValues = {
+const EMPTY_SO_FORM: SOFormValues = {
   organization_id: "",
   organization_unit_id: "",
   contact_id: "",
@@ -74,7 +74,8 @@ const NO_CONTACT = "__none__";
 type Props = {
   mode: "create" | "edit";
   soId?: string;
-  initial: SOFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_SO_FORM. */
+  initial?: Partial<SOFormValues>;
   organizations: OrgOption[];
   units: OrgUnitOption[];
   contacts: ContactOption[];
@@ -93,7 +94,11 @@ export function SOForm({
   const t = useTranslations("so");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [values, setValues] = useState<SOFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: SOFormValues = { ...EMPTY_SO_FORM, ...initial };
+  const [values, setValues] = useState<SOFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [pending, start] = useTransition();

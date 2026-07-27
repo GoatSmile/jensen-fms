@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { DEFAULT_COUNTRY_CODE, groupedCountries } from "@/lib/countries";
+import { DEFAULT_PAYMENT_TERMS_DAYS } from "@/lib/invoicing/status";
 
 import {
   createOrganization,
@@ -70,7 +71,7 @@ export type OrganizationFormValues = {
   notes: string;
 };
 
-export const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
+const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
   legal_name: "",
   display_name_en: "",
   display_name_da: "",
@@ -90,7 +91,9 @@ export const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
   email: "",
   website: "",
   billing_currency: "DKK",
-  payment_terms_days: "30",
+  // Net 14 is the schema default (migration 01) and what invoicing falls back
+  // to, so the create form must not offer a different number.
+  payment_terms_days: String(DEFAULT_PAYMENT_TERMS_DAYS),
   default_vat_code: "",
   notes: "",
 };
@@ -102,7 +105,8 @@ const NO_VAT_CODE = "__none__";
 type Props = {
   mode: "create" | "edit";
   organizationId?: string;
-  initial: OrganizationFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_ORGANIZATION_SHELL. */
+  initial?: Partial<OrganizationFormValues>;
   segments: SegmentOption[];
   currencies: CurrencyOption[];
   vatCodes: VatCodeOption[];
@@ -121,29 +125,41 @@ export function OrganizationForm({
   const tLang = useTranslations("lang");
   const locale = useLocale();
   const router = useRouter();
-  const [values, setValues] = useState<OrganizationFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: OrganizationFormValues = {
+    ...EMPTY_ORGANIZATION_SHELL,
+    ...initial,
+  };
+  const [values, setValues] = useState<OrganizationFormValues>(seed);
 
   // A section opens on arrival only if this record already has something in
   // it: an edit form shows what is filled, a create form shows what is
-  // required. `initial`, not `values` — this is a mount-time default, not a
+  // required. `seed`, not `values` — this is a mount-time default, not a
   // rule that should re-fold the section under the user as they type.
   const hasTax = Boolean(
-    initial.cvr_number || initial.ean_number || initial.vat_number,
+    seed.cvr_number || seed.ean_number || seed.vat_number,
   );
-  const hasContact = Boolean(initial.email || initial.phone || initial.website);
+  const hasContact = Boolean(seed.email || seed.phone || seed.website);
   const hasAddress = Boolean(
-    initial.address_line1 ||
-      initial.address_line2 ||
-      initial.zip_code ||
-      initial.city ||
-      initial.state_province,
+    seed.address_line1 ||
+      seed.address_line2 ||
+      seed.zip_code ||
+      seed.city ||
+      seed.state_province,
   );
   // Currency and terms carry defaults, so "filled" here means "moved off
-  // them" — otherwise billing would be open on every new customer.
+  // them" — otherwise billing would be open on every customer. Compare
+  // against the SHELL, never a literal: this read "!== 30" while the schema
+  // default (and 531 of 535 real customers) sat on 14, so every record in
+  // prod opened this section. A blank terms field is untouched, not content.
   const hasBilling = Boolean(
-    initial.default_vat_code ||
-      initial.billing_currency !== "DKK" ||
-      initial.payment_terms_days !== "30",
+    seed.default_vat_code ||
+      seed.billing_currency !== EMPTY_ORGANIZATION_SHELL.billing_currency ||
+      (seed.payment_terms_days !== "" &&
+        seed.payment_terms_days !==
+          EMPTY_ORGANIZATION_SHELL.payment_terms_days),
   );
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -336,7 +352,7 @@ export function OrganizationForm({
         description={t("secContactDesc")}
         collapsible
         defaultOpen={hasContact}
-        forceOpen={errorField === "email"}
+        forceOpen={errorField === "email" || errorField === "website"}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field
@@ -362,7 +378,11 @@ export function OrganizationForm({
               placeholder={t("phonePlaceholder")}
             />
           </Field>
-          <Field label={t("fldWebsite")} htmlFor="org-website">
+          <Field
+            label={t("fldWebsite")}
+            htmlFor="org-website"
+            error={errorField === "website" ? error : null}
+          >
             <Input
               id="org-website"
               type="url"
@@ -538,7 +558,7 @@ export function OrganizationForm({
         title={t("secNotes")}
         description={t("secNotesDesc")}
         collapsible
-        defaultOpen={Boolean(initial.notes)}
+        defaultOpen={Boolean(seed.notes)}
       >
         <Field label={t("fldNotes")} htmlFor="org-notes">
           <Textarea

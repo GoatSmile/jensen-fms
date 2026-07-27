@@ -47,7 +47,7 @@ export type SupplierFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
+const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   name: "",
   address_line1: "",
   address_line2: "",
@@ -73,7 +73,8 @@ type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
 type Props = {
   mode: Mode;
-  initial: SupplierFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_SUPPLIER_FORM. */
+  initial?: Partial<SupplierFormValues>;
   currencies: CurrencyOption[];
 };
 
@@ -81,7 +82,11 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
   const router = useRouter();
   const t = useTranslations("adminSuppliers");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<SupplierFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: SupplierFormValues = { ...EMPTY_SUPPLIER_FORM, ...initial };
+  const [values, setValues] = useState<SupplierFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -148,15 +153,15 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
   // Everything past name / currency / terms / primary email is filled once
   // and rarely revisited — folded unless this supplier already has some.
   const hasMore = Boolean(
-    initial.phone ||
-      initial.website ||
-      initial.email_secondary ||
-      initial.address_line1 ||
-      initial.address_line2 ||
-      initial.zip_code ||
-      initial.town ||
-      initial.province ||
-      initial.notes,
+    seed.phone ||
+      seed.website ||
+      seed.email_secondary ||
+      seed.address_line1 ||
+      seed.address_line2 ||
+      seed.zip_code ||
+      seed.town ||
+      seed.province ||
+      seed.notes,
   );
 
   return (

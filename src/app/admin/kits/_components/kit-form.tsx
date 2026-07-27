@@ -25,7 +25,7 @@ export type KitFormValues = {
   description: string;
 };
 
-export const EMPTY_KIT: KitFormValues = {
+const EMPTY_KIT: KitFormValues = {
   sticker_color: "",
   kit_number: "",
   description: "",
@@ -34,14 +34,19 @@ export const EMPTY_KIT: KitFormValues = {
 type Props = {
   mode: "create" | "edit";
   kitId?: string;
-  initial: KitFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_KIT. */
+  initial?: Partial<KitFormValues>;
 };
 
 export function KitForm({ mode, kitId, initial }: Props) {
   const t = useTranslations("adminKits");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [values, setValues] = useState<KitFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: KitFormValues = { ...EMPTY_KIT, ...initial };
+  const [values, setValues] = useState<KitFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, start] = useTransition();

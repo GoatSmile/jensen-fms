@@ -47,7 +47,7 @@ export type WOFormValues = {
   work_performed: string;
 };
 
-export const EMPTY_WO_FORM: WOFormValues = {
+const EMPTY_WO_FORM: WOFormValues = {
   bike_id: "",
   ticket_id: TICKET_NONE,
   language: "da",
@@ -56,7 +56,8 @@ export const EMPTY_WO_FORM: WOFormValues = {
 };
 
 type Props = {
-  initial: WOFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_WO_FORM. */
+  initial?: Partial<WOFormValues>;
   bikes: BikeOption[];
   tickets: TicketOption[];
 };
@@ -72,7 +73,11 @@ export function WOForm({ initial, bikes, tickets }: Props) {
   const locale = useLocale();
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [values, setValues] = useState<WOFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: WOFormValues = { ...EMPTY_WO_FORM, ...initial };
+  const [values, setValues] = useState<WOFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

@@ -1,18 +1,18 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2, four
-slices in one day** — `/inbox` + `/bike-templates` onto `Panel`, the
-panel-table convention applied app-wide, §9's form folds, and §9's inbound
-provider summary rows. **Plan §9 is closed except the category chips.** Gates
-green: `tsc` clean, lint 0 errors (14 long-standing warnings), `npm run build`
-exit 0 / 52 static pages. Narrative + commit refs in
-`docs/archive/HISTORY.md`; the four decisions in `docs/DECISIONS.md`.
+**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2 (four
+slices) plus the real-data verification pass that followed it** — `/inbox` +
+`/bike-templates` onto `Panel`, the panel-table convention applied app-wide,
+§9's form folds, §9's inbound provider summary rows, then eight checks against
+the production DB in a real browser. **Plan §9 is closed except the category
+chips.** Gates green: `tsc` clean, lint 0 errors (14 long-standing warnings),
+`npm run build` exit 0 / 52 static pages. Narrative + commit refs in
+`docs/archive/HISTORY.md`; the decisions in `docs/DECISIONS.md`.
 
-**Merged to `main` and deployed** (fast-forward from `ae5ad23`, five commits).
-**It went to prod BEFORE the real-data checks below were run** — a deliberate
-call by the owner, not an oversight. If a screen is wrong, the revert is
-`git revert --no-commit ae5ad23..HEAD` or a reset to `ae5ad23`; nothing in
-this session touched the schema or any data, so a revert is pure UI.
+**Phase 2 is verified against real data and no revert was needed.** Five of
+the eight checks passed untouched. Four findings were fixed forward, one of
+them pre-existing and much older than Phase 2 (the client-reference shell bug
+below). **Tier 1 CI shipped** in the same pass, pulled forward from September.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -108,9 +108,9 @@ arrival now) · three of the four audit bugs.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
-## Shipped this session (2026-07-27) — design-refresh Phase 2
+## Shipped 2026-07-27 — design-refresh Phase 2 + its verification pass
 Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
-(four entries). What a fresh session needs to know:
+(nine entries). What a fresh session needs to know:
 
 - **`/inbox` + `/bike-templates` are on `Panel`** (commit `4149809`) — both
   list pages, both detail pages, eleven components. No new message keys, no
@@ -136,25 +136,43 @@ Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
   colour rides the title dot rather than a tinted header band (decorative
   hues stay out of the six-hue contrast matrix).
 
-**Verification has one hole.** This container had no `.env.local`, so **no
-data-driven page was rendered against real data**. Client components were
-screenshotted through a throwaway `/ui-preview` route with stub props (deleted
-before each commit) — layout, hues, contrast and both fold states confirmed
-there. Everything server-rendered was confirmed by `next build` + review only.
+### What the verification pass fixed (evening)
+- **Create-form defaults were silently dropped app-wide — pre-existing, not
+  Phase 2.** A `"use client"` module's exports are *client references* in a
+  server component, so a page spreading an `EMPTY_*` shell got `{}`: one-off
+  MO had a blank required Target quantity, tickets no Source/Priority, work
+  orders no Language, templates no Currency, customers none of their five
+  defaults. Fixed at all 20 create forms — the shell is module-local now, so a
+  page **cannot** import it; `initial` is a `Partial` of overrides and the
+  component merges `seed`. **The rule is in CLAUDE.md; keep it.**
+- **Customer payment terms are net 14 everywhere** (schema + invoicing +
+  531/535 rows). The Billing fold compared against `"30"`, so every customer
+  opened that section; the create form pre-filled 30 too. Both read
+  `DEFAULT_PAYMENT_TERMS_DAYS` now. Copy + placeholder say 14 (en + da).
+  **Owner-visible change:** a new customer is pre-filled with 14, not 30.
+- **A folded section disables native HTML validation** (`type="email"`,
+  `type="url"`, `min`) because it unmounts its inputs — `x@` in a collapsed
+  Contact section used to save. Customer + supplier actions now check shape
+  (`looksLikeEmail` / `looksLikeUrl` in `src/lib/forms.ts`); the customer one
+  returns `field`, so Contact unfolds with the error inline.
+- **`#family-<id>` anchors** worked on full load, not on client-side nav
+  (Next scrolls before the target renders). `src/components/hash-scroll.tsx`
+  scrolls after the first paint; it is generic, reuse it for future anchors.
+- **Tier 1 CI**: `.github/workflows/ci.yml` runs `npm ci` → `tsc --noEmit` →
+  `npm run lint` on every push. Next 16 does **not** run ESLint during
+  `next build`, so this is the only thing catching that class before prod.
+
+**Two things real data still cannot verify**: no bike template has paintwork
+rows, and **all 25 bikes were soft-deleted on 2026-07-01** (`/bikes` is empty
+by design, not broken), so bike-detail empty states and the template paint box
+have only ever been seen with stub props. No inbound message is spam-flagged
+either — the banner's `money` hue is code-verified only.
 
 ## Next actions, in order
-1. **Open the touched screens against real data — now the top priority,
-   because this is already live.** The one gap in this session's
-   verification: `/inbox` · `/bike-templates` ·
-   an **edit** form for a part / customer / supplier (a record that already
-   has an address should arrive with its fold open — that is the branch the
-   preview stubbed rather than fetched) · `/admin/settings?section=phone`
-   (in prod all three secrets are set, so expect three *closed* rows) · one
-   hued detail page (`/parts/<id>`, an SO, `/invoices`).
-2. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
+1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
    hues still read as a system across a whole working session rather than
    screen by screen.
-3. **Chase the external blockers** in cutover plan §7 (revisor in one
+2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
 
@@ -200,7 +218,12 @@ Dennis's company number onto the inbound trunk.
   tree. **Still true regardless: the gate skips `npm run build` whenever a dev
   server holds :3000**, and that is the class tsc and lint both miss (RSC
   boundary violations). Stop the dev server and build before trusting a run of
-  commits.
+  commits. Tier 1 CI (2026-07-27) now re-runs tsc + lint on every push, so a
+  skipped local gate no longer means *nothing* checked — but CI does not build.
+- **A green toolchain does not mean the page works.** `tsc`, `lint` and
+  `next build` were all clean while five create forms shipped blank defaults
+  for weeks (the client-reference shell bug — rule now in CLAUDE.md). This
+  class only shows up in a browser against real data.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references
@@ -253,7 +276,8 @@ Self-serve via the dashboard "Data housekeeping" fold:
   resumes: Supabase auth + login + middleware + user-scoped policies
   (written against `role_capabilities`) + a `DEV_AUTH_BYPASS` escape hatch;
   open decisions: sign-in method, role-model refinement.
-- **CI smoke-test pipeline** — parked; build alongside auth (details in
-  `docs/BACKLOG.md`).
+- **CI Tier 2 (runtime routes + Vitest over the actions)** — parked; needs the
+  Supabase env vars as repo secrets, so it lands alongside auth/M1 (details in
+  `docs/BACKLOG.md`). Tier 1 (tsc + lint on push) shipped 2026-07-27.
 - **Sales track** (configurator + lead-gen) — parked by the owner; earliest
   next year (`docs/BACKLOG.md`).

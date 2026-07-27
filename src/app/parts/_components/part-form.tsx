@@ -71,7 +71,7 @@ const NO_SUPPLIER = "__none__";
 /** And for the origin picker's "unclassified". */
 const NO_ORIGIN = "__none__";
 
-export const EMPTY_PART_FORM: PartFormValues = {
+const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
   name_en: "",
   name_da: "",
@@ -96,7 +96,8 @@ export const EMPTY_PART_FORM: PartFormValues = {
 type Props = {
   mode: "create" | "edit";
   partId?: string;
-  initial: PartFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_PART_FORM. */
+  initial?: Partial<PartFormValues>;
   categories: CategoryOption[];
   currencies: CurrencyOption[];
   hsCodes: HsCodeOption[];
@@ -117,7 +118,11 @@ export function PartForm({
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const [values, setValues] = useState<PartFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: PartFormValues = { ...EMPTY_PART_FORM, ...initial };
+  const [values, setValues] = useState<PartFormValues>(seed);
   const categoryNodes = useMemo(
     () => flattenCategoryTree(categories, locale),
     [categories, locale],
@@ -223,15 +228,17 @@ export function PartForm({
   // it. Unit of measure and currency carry defaults, so they don't count as
   // content — otherwise Specs would be open on every new part.
   const hasDescription = Boolean(
-    initial.description_en || initial.description_da || initial.notes,
+    seed.description_en || seed.description_da || seed.notes,
   );
   const hasSpecs = Boolean(
-    initial.weight_grams ||
-      initial.default_retail_price ||
-      initial.reorder_point ||
-      initial.reorder_quantity ||
-      initial.attributes.length > 0 ||
-      initial.unit_of_measure !== "pcs",
+    seed.weight_grams ||
+      seed.default_retail_price ||
+      seed.reorder_point ||
+      seed.reorder_quantity ||
+      seed.attributes.length > 0 ||
+      // Against the shell, never a literal — that drift is what made the
+      // customer Billing fold open on every record (CLAUDE.md).
+      seed.unit_of_measure !== EMPTY_PART_FORM.unit_of_measure,
   );
   const SPEC_FIELDS = [
     "unit_of_measure",

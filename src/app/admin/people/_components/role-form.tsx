@@ -23,7 +23,7 @@ export type RoleFormValues = {
   events: string[];
 };
 
-export const EMPTY_ROLE_FORM: RoleFormValues = {
+const EMPTY_ROLE_FORM: RoleFormValues = {
   key: "",
   name_en: "",
   name_da: "",
@@ -49,14 +49,19 @@ export function RoleForm({
   eventOptions,
 }: {
   mode: Mode;
-  initial: RoleFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_ROLE_FORM. */
+  initial?: Partial<RoleFormValues>;
   capabilityOptions: { key: string; label: string }[];
   eventOptions: { key: string; label: string }[];
 }) {
   const router = useRouter();
   const t = useTranslations("adminPeople");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<RoleFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: RoleFormValues = { ...EMPTY_ROLE_FORM, ...initial };
+  const [values, setValues] = useState<RoleFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

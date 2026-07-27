@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { loadWOPickables } from "../_components/load-pickables";
-import { EMPTY_WO_FORM, WOForm } from "../_components/wo-form";
+import { WOForm } from "../_components/wo-form";
 
 type SearchParams = {
   bike?: string;
@@ -66,9 +66,10 @@ export default async function NewWorkOrderPage({
       </div>
       <WOForm
         initial={{
-          ...EMPTY_WO_FORM,
           bike_id: sp.bike ?? "",
-          ticket_id: sp.ticket ?? EMPTY_WO_FORM.ticket_id,
+          // Omitted when there is no ?ticket — the form's own default is the
+          // "no ticket" sentinel, which only it knows about.
+          ...(sp.ticket ? { ticket_id: sp.ticket } : {}),
         }}
         bikes={bikes}
         tickets={tickets}

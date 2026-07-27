@@ -51,11 +51,11 @@ known:
   invariant, a new gotcha) lands here; the narrative goes to `docs/archive/`;
   STATUS.md gets rewritten. The test for every line: *would a fresh session
   behave incorrectly without it?*
-- **Length: ~495 lines is a soft target, not a limit.** A `.claude/hooks` check
+- **Length: ~520 lines is a soft target, not a limit.** A `.claude/hooks` check
   nudges past it; it has never blocked anything. When it fires, ask only
   whether the new lines are narrative or invariants — narrative moves out,
   invariants stay and the target moves with them (450 → 470 → 485 → 490 →
-  495, each time for a structural rule). **Never delete a rule to hit it**:
+  495 → 520, each time for a structural rule). **Never delete a rule to hit it**:
   that was tried on 2026-07-26 and the number was raised straight afterwards
   anyway, so the only outcome was lost content.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
@@ -337,6 +337,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
   `DRAFT-xxxx`); issued invoices are immutable — corrections are credit
   notes (full reversals, own `CRE-` series). Deposits (`invoices.kind`)
   and the prepayment model: see DECISIONS.md 2026-06-21.
+  **Payment terms are net 14** — the schema default (migration 01), what
+  531 of 535 real customers hold, and `DEFAULT_PAYMENT_TERMS_DAYS` in
+  `src/lib/invoicing/status.ts`. Never hardcode a different number in a form
+  or a placeholder; read that constant.
 
 ## Internationalisation (whole-app Danish; both locales currently `en`)
 - next-intl **without URL routing**. Locale comes from `app_settings`,
@@ -368,11 +372,31 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **Git workflow: commit on `main` and push to `origin` every time.** No PRs,
   no feature branches, no waiting to push. Solo-dev shop; speed beats
   process here.
-- **Pre-commit hygiene (TODO — not enforced):** `tsc --noEmit` +
-  `next build` are necessary but not sufficient — they miss RSC boundary
-  violations and other runtime-only failures (lesson: commit fa1dbed).
-  Until the CI pipeline exists (BACKLOG.md), manually smoke-test new routes
-  in the browser before declaring a phase done.
+- **Pre-commit hygiene:** `tsc --noEmit`, `npm run lint` and `next build` are
+  necessary but not sufficient — they miss RSC boundary violations and other
+  runtime-only failures (lessons: commit fa1dbed, and the shell bug below).
+  `.github/workflows/ci.yml` runs tsc + lint on every push (Next 16 does NOT
+  run ESLint during `next build`); the runtime half is Tier 2 in BACKLOG.md.
+  **Manually smoke-test new routes in the browser before declaring a phase
+  done** — that is still the only check that catches this class.
+- **Never import a VALUE from a `"use client"` module into a server
+  component.** Its exports are *client references* there, not the real
+  objects: `Object.keys()` is `[]`, so `{...SHELL}` silently evaluates to
+  `{}` and property reads are `undefined`. Nothing warns — tsc, lint and
+  `next build` all pass (found 2026-07-27, five create forms had been
+  shipping blank defaults). Components are fine (that is what references are
+  for); types are fine (erased). Concretely: **a form's defaults live in the
+  form.** `EMPTY_*` shells are module-local `const`s, `initial` is a
+  `Partial<…>` of overrides, and the client component merges
+  `{ ...EMPTY_X, ...initial }` into a `seed` — which is also what fold
+  defaults must read. Un-exporting the shell is the enforcement: a page
+  cannot import what isn't exported.
+- **A folded `FormSection` unmounts its inputs, so native HTML validation
+  stops applying** (`type="email"`, `type="url"`, `min`). Any format rule on
+  a field inside a collapsible section must be enforced in the server action
+  and returned with its `field` so `forceOpen` unfolds the offending
+  section. Shape helpers: `looksLikeEmail` / `looksLikeUrl` in
+  `src/lib/forms.ts`.
 - Server-render initial page, client components for interactive state.
 - URL search-params drive list filters (filtered views are shareable links).
 - shadcn/ui components by default; custom only when shadcn lacks it.

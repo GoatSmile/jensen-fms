@@ -14,7 +14,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import { loadTicketPickables } from "../../_components/load-pickables";
 import {
-  EMPTY_TICKET_FORM,
   TicketForm,
 } from "../../_components/ticket-form";
 
@@ -92,7 +91,6 @@ export default async function EditTicketPage({
       </div>
       <TicketForm
         initial={{
-          ...EMPTY_TICKET_FORM,
           // bike_id can be null for "unidentified bike" customer reports.
           // The form treats "" as unset; staff edits then assign the bike.
           bike_id: ticket.bike_id ?? "",

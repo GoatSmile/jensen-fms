@@ -35,7 +35,7 @@ export type PersonFormValues = {
   role_ids: string[];
 };
 
-export const EMPTY_PERSON_FORM: PersonFormValues = {
+const EMPTY_PERSON_FORM: PersonFormValues = {
   full_name: "",
   email: "",
   phone: "",
@@ -65,14 +65,19 @@ export function PersonForm({
   roleOptions,
 }: {
   mode: Mode;
-  initial: PersonFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_PERSON_FORM. */
+  initial?: Partial<PersonFormValues>;
   roleOptions: { id: string; label: string }[];
 }) {
   const router = useRouter();
   const t = useTranslations("adminPeople");
   const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
-  const [values, setValues] = useState<PersonFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: PersonFormValues = { ...EMPTY_PERSON_FORM, ...initial };
+  const [values, setValues] = useState<PersonFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

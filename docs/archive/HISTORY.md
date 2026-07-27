@@ -700,3 +700,55 @@ Client components were screenshotted through a throwaway `/ui-preview` route
 with stub props (deleted before each commit) — layout, hues, contrast and both
 fold states confirmed there; everything server-rendered was confirmed by
 `next build` and review only.
+
+### 2026-07-27, evening — the verification pass that closed that hole
+Eight checks against the production database in a real browser, highest risk
+first. Five passed with nothing to change: the supplier form round-tripped all
+sixteen fields (its reorder had not broken the FormData builder),
+`/admin/settings?section=phone` arrived exactly as designed with three closed
+"Ready" rows and two controls, hued panels kept their `bg-surface` table
+containers on `/invoices`, part detail and SO detail, the seven converted empty
+states render as `bg-ground` fills, and 390 px produced no page-level
+horizontal scroll anywhere — every table's own wrapper is `overflow-x: auto`.
+`forceOpen` earned its keep: submitting `-5` payment terms with Billing
+collapsed unfolded the section, showed the error inline and wrote no row. No
+revert was needed.
+
+**The one that mattered.** `/organizations/new` arrived with Billing open and
+its terms field empty, which made no sense against a shell that clearly said
+`"30"`. It was not a fold bug. `EMPTY_ORGANIZATION_SHELL` is exported from a
+`"use client"` module, and a server component importing it gets a *client
+reference* — a probe put `Object.keys()` at `[]`, so the page's
+`{...EMPTY_ORGANIZATION_SHELL}` had been evaluating to `{}`. Twenty create
+pages did some version of this. Where the page spread the shell the defaults
+were gone for good: the one-off MO form had a **blank required Target
+quantity**, tickets had no Source or Priority, work orders no Language,
+templates no Currency. Where the page passed the shell straight through as a
+prop the client resolved it and nobody noticed. Nothing in the toolchain sees
+any of this — `tsc`, `lint` and `next build` were green throughout, which is
+the same lesson as commit `fa1dbed` wearing different clothes.
+
+The fix moves the merge into the component and makes the shell module-local, so
+a page cannot import it at all; `initial` became a `Partial` of overrides and
+fold defaults read the merged `seed`. Sentinels the page used to hand over
+(`ONE_OFF_VALUE`) became props. All twenty sites, on the owner's call.
+
+**Three smaller findings.** The customer Billing fold compared terms against
+`"30"` while the schema, invoicing's `DEFAULT_PAYMENT_TERMS_DAYS` and 531 of
+535 customers all say **14** — so every customer in prod opened that section;
+it now compares against the shell, and the copy and placeholder say 14. The
+`#family-<id>` anchor worked on a full page load but not on client-side
+navigation, where Next scrolls before the target exists — a small `HashScroll`
+component scrolls after the first paint. And folding a section silently
+disabled `type="email"` / `type="url"` validation, so `x@` in a collapsed
+Contact section saved unchallenged; both the customer and supplier actions
+check shape now, the customer one returning `field` so Contact unfolds.
+
+**Tier 1 CI shipped in the same pass**, pulled forward from September:
+`.github/workflows/ci.yml`, `npm ci` → `tsc` → `lint`, no secrets. The
+motivation held up under checking — this session's own commits would have
+skipped the local build gate, because a dev server held :3000 the entire time.
+
+Two things real data still cannot show: no template has paintwork rows, and all
+25 bikes were soft-deleted on 2026-07-01, so bike-detail empty states remain
+unverified against anything but stubs.

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import {
-  EMPTY_SEGMENT_FORM,
   SegmentForm,
 } from "../_components/segment-form";
 
@@ -53,7 +52,7 @@ export default async function NewCustomerSegmentPage() {
         <p className="text-muted-foreground text-sm">{t("newDescription")}</p>
       </header>
 
-      <SegmentForm mode={{ kind: "create" }} initial={EMPTY_SEGMENT_FORM} />
+      <SegmentForm mode={{ kind: "create" }} />
     </div>
   );
 }

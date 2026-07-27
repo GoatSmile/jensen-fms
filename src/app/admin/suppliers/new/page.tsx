@@ -12,7 +12,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_SUPPLIER_FORM,
   SupplierForm,
   type CurrencyOption,
 } from "../_components/supplier-form";
@@ -65,7 +64,6 @@ export default async function NewSupplierPage() {
 
       <SupplierForm
         mode={{ kind: "create" }}
-        initial={EMPTY_SUPPLIER_FORM}
         currencies={currencies}
       />
     </div>

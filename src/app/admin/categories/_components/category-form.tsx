@@ -23,7 +23,7 @@ export type CategoryFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_CATEGORY_FORM: CategoryFormValues = {
+const EMPTY_CATEGORY_FORM: CategoryFormValues = {
   name_en: "",
   name_da: "",
   parent_id: "",
@@ -40,7 +40,8 @@ type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
 type Props = {
   mode: Mode;
-  initial: CategoryFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_CATEGORY_FORM. */
+  initial?: Partial<CategoryFormValues>;
   parentOptions: ParentOption[];
 };
 
@@ -48,7 +49,11 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
   const t = useTranslations("adminCategories");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [values, setValues] = useState<CategoryFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: CategoryFormValues = { ...EMPTY_CATEGORY_FORM, ...initial };
+  const [values, setValues] = useState<CategoryFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

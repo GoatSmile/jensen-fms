@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { nullableString as nullable } from "@/lib/forms";
+import {
+  looksLikeEmail,
+  looksLikeUrl,
+  nullableString as nullable,
+} from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SupplierResult = { ok: true } | { ok: false; error: string };
@@ -58,6 +62,19 @@ function parseFormData(
   const rawCurrency = nullable(formData.get("default_currency"));
   const default_currency = rawCurrency ? rawCurrency.toUpperCase() : null;
 
+  // "More details" folds, and a folded section unmounts its inputs, so
+  // `type="email"` / `type="url"` never run. A bad supplier address is the
+  // difference between a PO arriving and vanishing — check it here.
+  const email_primary = nullable(formData.get("email_primary"));
+  const email_secondary = nullable(formData.get("email_secondary"));
+  for (const addr of [email_primary, email_secondary]) {
+    if (addr && !looksLikeEmail(addr))
+      return { ok: false, error: t("adminSupplierInvalidEmail", { addr }) };
+  }
+  const website = nullable(formData.get("website"));
+  if (website && !looksLikeUrl(website))
+    return { ok: false, error: t("adminSupplierInvalidWebsite") };
+
   return {
     ok: true,
     values: {
@@ -69,9 +86,9 @@ function parseFormData(
       province: nullable(formData.get("province")),
       country_code,
       phone: nullable(formData.get("phone")),
-      email_primary: nullable(formData.get("email_primary")),
-      email_secondary: nullable(formData.get("email_secondary")),
-      website: nullable(formData.get("website")),
+      email_primary,
+      email_secondary,
+      website,
       default_currency,
       payment_terms_days: pt.value,
       import_duty_prepaid_default:

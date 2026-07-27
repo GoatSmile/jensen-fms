@@ -1,0 +1,39 @@
+# Tier 1 CI — the gap Vercel does NOT cover.
+#
+# Vercel already builds every push on a clean machine, so a broken
+# `next build` fails the deploy and prod keeps serving the last good version.
+# What it misses is ESLint: Next 16 no longer runs it during `next build`, so
+# lint errors reach production unchecked — that is the class that slipped on
+# 2026-07-26 (two React-rule errors on main). The local `gates.sh` hook is not
+# a substitute: it runs on one machine, it has failed open once, and it skips
+# the build whenever a dev server holds :3000.
+#
+# Deliberately no secrets: none of these three steps touch the network or the
+# database. The runtime half (curl every route, Vitest over the server
+# actions) is Tier 2 and lands with auth/M1 — see docs/BACKLOG.md.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Node 22 LTS. Not the local version (25.x) on purpose — tsc and
+          # eslint are not version-sensitive, and LTS keeps the runner boring.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint

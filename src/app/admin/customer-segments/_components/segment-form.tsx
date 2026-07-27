@@ -26,7 +26,7 @@ export type SegmentFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_SEGMENT_FORM: SegmentFormValues = {
+const EMPTY_SEGMENT_FORM: SegmentFormValues = {
   name_en: "",
   name_da: "",
   slug: "",
@@ -40,14 +40,19 @@ type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
 type Props = {
   mode: Mode;
-  initial: SegmentFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_SEGMENT_FORM. */
+  initial?: Partial<SegmentFormValues>;
 };
 
 export function SegmentForm({ mode, initial }: Props) {
   const t = useTranslations("adminSegments");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const [values, setValues] = useState<SegmentFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: SegmentFormValues = { ...EMPTY_SEGMENT_FORM, ...initial };
+  const [values, setValues] = useState<SegmentFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

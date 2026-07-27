@@ -14,9 +14,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_MO_FORM,
   MOForm,
-  ONE_OFF_VALUE,
   type BikeTypeOption,
   type ColorOption,
   type TemplateOption,
@@ -213,11 +211,8 @@ export default async function NewManufacturingOrderPage({
       </div>
       {isOneOff ? (
         <MOForm
-          initial={{
-            ...EMPTY_MO_FORM,
-            bike_template_id: ONE_OFF_VALUE,
-            bike_type_id: defaultBikeTypeId,
-          }}
+          oneOff
+          initial={{ bike_type_id: defaultBikeTypeId }}
           templates={templates}
           bikeTypes={bikeTypes}
           colors={colors}

@@ -73,7 +73,7 @@ export type MOFormValues = {
   notes: string;
 };
 
-export const EMPTY_MO_FORM: MOFormValues = {
+const EMPTY_MO_FORM: MOFormValues = {
   bike_template_id: "",
   bike_type_id: "",
   color_id: "",
@@ -84,21 +84,39 @@ export const EMPTY_MO_FORM: MOFormValues = {
   notes: "",
 };
 
-export const ONE_OFF_VALUE = "__none__";
+/** Sentinel — the Select needs a non-empty value for "no template". */
+const ONE_OFF_VALUE = "__none__";
 
 type Props = {
-  initial: MOFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_MO_FORM. */
+  initial?: Partial<MOFormValues>;
+  /** Start on the template-less path. The sentinel stays private here. */
+  oneOff?: boolean;
   templates: TemplateOption[];
   bikeTypes: BikeTypeOption[];
   colors: ColorOption[];
 };
 
-export function MOForm({ initial, templates, bikeTypes, colors }: Props) {
+export function MOForm({
+  initial,
+  oneOff = false,
+  templates,
+  bikeTypes,
+  colors,
+}: Props) {
   const t = useTranslations("mo");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const [values, setValues] = useState<MOFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: MOFormValues = {
+    ...EMPTY_MO_FORM,
+    ...(oneOff ? { bike_template_id: ONE_OFF_VALUE } : {}),
+    ...initial,
+  };
+  const [values, setValues] = useState<MOFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

@@ -18,7 +18,7 @@ export type FamilyFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_FAMILY_FORM: FamilyFormValues = {
+const EMPTY_FAMILY_FORM: FamilyFormValues = {
   name: "",
   sort_order: "100",
   is_active: true,
@@ -36,12 +36,17 @@ export function FamilyForm({
   initial,
 }: {
   mode: Mode;
-  initial: FamilyFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_FAMILY_FORM. */
+  initial?: Partial<FamilyFormValues>;
 }) {
   const router = useRouter();
   const t = useTranslations("adminFamilies");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<FamilyFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: FamilyFormValues = { ...EMPTY_FAMILY_FORM, ...initial };
+  const [values, setValues] = useState<FamilyFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

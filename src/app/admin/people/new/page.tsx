@@ -12,7 +12,7 @@ import {
 import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
-import { EMPTY_PERSON_FORM, PersonForm } from "../_components/person-form";
+import { PersonForm } from "../_components/person-form";
 
 export default async function NewPersonPage() {
   const supabase = await createClient();
@@ -61,7 +61,6 @@ export default async function NewPersonPage() {
 
       <PersonForm
         mode={{ kind: "create" }}
-        initial={EMPTY_PERSON_FORM}
         roleOptions={(roles ?? []).map((r) => ({
           id: r.id,
           label: localizedName(locale, r.name_en, r.name_da),

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 
-import { EMPTY_PART_FORM, PartForm } from "../_components/part-form";
+import { PartForm } from "../_components/part-form";
 
 export default async function NewPartPage() {
   const [t, tCommon] = await Promise.all([
@@ -88,7 +88,6 @@ export default async function NewPartPage() {
 
       <PartForm
         mode="create"
-        initial={EMPTY_PART_FORM}
         categories={categoriesRes.data ?? []}
         currencies={currenciesRes.data ?? []}
         hsCodes={hsCodes}

@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { EMPTY_KIT, KitForm } from "../_components/kit-form";
+import { KitForm } from "../_components/kit-form";
 
 export default async function NewKitPage() {
   const [t, tCommon] = await Promise.all([
@@ -50,7 +50,7 @@ export default async function NewKitPage() {
         <p className="text-muted-foreground text-sm">{t("newKitSubtitle")}</p>
       </header>
 
-      <KitForm mode="create" initial={EMPTY_KIT} />
+      <KitForm mode="create" />
     </div>
   );
 }

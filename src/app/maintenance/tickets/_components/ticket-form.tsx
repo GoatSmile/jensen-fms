@@ -56,7 +56,7 @@ export type TicketFormValues = {
   notes: string;
 };
 
-export const EMPTY_TICKET_FORM: TicketFormValues = {
+const EMPTY_TICKET_FORM: TicketFormValues = {
   bike_id: "",
   reported_by_contact_id: "",
   reported_by_text: "",
@@ -70,7 +70,8 @@ export const EMPTY_TICKET_FORM: TicketFormValues = {
 type Mode = { kind: "create" } | { kind: "edit"; ticketId: string };
 
 type Props = {
-  initial: TicketFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_TICKET_FORM. */
+  initial?: Partial<TicketFormValues>;
   bikes: BikeOption[];
   contacts: ContactOption[];
   mode: Mode;
@@ -83,7 +84,11 @@ export function TicketForm({ initial, bikes, contacts, mode }: Props) {
   const tSource = useTranslations("ticketSource");
   const tPriority = useTranslations("ticketPriority");
   const router = useRouter();
-  const [values, setValues] = useState<TicketFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: TicketFormValues = { ...EMPTY_TICKET_FORM, ...initial };
+  const [values, setValues] = useState<TicketFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { loadTicketPickables } from "../_components/load-pickables";
-import { EMPTY_TICKET_FORM, TicketForm } from "../_components/ticket-form";
+import { TicketForm } from "../_components/ticket-form";
 
 type SearchParams = {
   bike?: string;
@@ -60,7 +60,6 @@ export default async function NewTicketPage({
       </div>
       <TicketForm
         initial={{
-          ...EMPTY_TICKET_FORM,
           bike_id: sp.bike ?? "",
         }}
         bikes={bikes}

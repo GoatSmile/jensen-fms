@@ -16,7 +16,6 @@ import {
 } from "@/lib/services/vocab";
 
 import {
-  EMPTY_PAINT_ORDER_FORM,
   PaintOrderForm,
   type ColorOption,
   type SupplierOption,
@@ -56,7 +55,6 @@ export default async function NewPaintOrderPage() {
       ? serviceType.default_supplier_id
       : "";
   const initial = {
-    ...EMPTY_PAINT_ORDER_FORM,
     supplier_id: defaultSupplierId,
   };
 

@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
-import { nullableString as nullable } from "@/lib/forms";
+import {
+  looksLikeEmail,
+  looksLikeUrl,
+  nullableString as nullable,
+} from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
@@ -76,6 +80,17 @@ function parseOrganization(
   const pt = parsePaymentTerms(nullable(formData.get("payment_terms_days")), t);
   if (!pt.ok) return { error: pt.error, field: "payment_terms_days" };
 
+  // Checked here, not left to `type="email"` / `type="url"`: the Contact
+  // section folds, and a folded section unmounts its inputs, so the browser
+  // never sees them. `field` unfolds the section that owns the mistake.
+  const email = nullable(formData.get("email"));
+  if (email && !looksLikeEmail(email))
+    return { error: t("orgInvalidEmail"), field: "email" };
+
+  const website = nullable(formData.get("website"));
+  if (website && !looksLikeUrl(website))
+    return { error: t("orgInvalidWebsite"), field: "website" };
+
   const rawCountry = nullable(formData.get("country_code"));
   const country_code = rawCountry ? rawCountry.toUpperCase() : null;
 
@@ -106,8 +121,8 @@ function parseOrganization(
     state_province: nullable(formData.get("state_province")),
     country_code,
     phone: nullable(formData.get("phone")),
-    email: nullable(formData.get("email")),
-    website: nullable(formData.get("website")),
+    email,
+    website,
     billing_currency: nullable(formData.get("billing_currency")),
     payment_terms_days: pt.value,
     default_vat_code: nullable(formData.get("default_vat_code")),

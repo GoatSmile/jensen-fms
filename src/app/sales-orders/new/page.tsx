@@ -12,7 +12,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_SO_FORM,
   SOForm,
   type ContactOption,
   type CurrencyOption,
@@ -99,7 +98,6 @@ export default async function NewSOPage() {
 
       <SOForm
         mode="create"
-        initial={EMPTY_SO_FORM}
         organizations={organizations}
         units={units}
         contacts={contacts}

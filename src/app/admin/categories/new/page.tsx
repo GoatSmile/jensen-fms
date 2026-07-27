@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   CategoryForm,
-  EMPTY_CATEGORY_FORM,
 } from "../_components/category-form";
 import { buildParentOptions, type CategoryInput } from "../_lib/tree";
 
@@ -71,7 +70,6 @@ export default async function NewCategoryPage() {
 
       <CategoryForm
         mode={{ kind: "create" }}
-        initial={EMPTY_CATEGORY_FORM}
         parentOptions={parentOptions}
       />
     </div>

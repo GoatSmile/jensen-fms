@@ -52,7 +52,7 @@ export type BikeFormValues = {
   notes: string;
 };
 
-export const EMPTY_BIKE_FORM: BikeFormValues = {
+const EMPTY_BIKE_FORM: BikeFormValues = {
   bike_type_id: "",
   template_id: "",
   color_id: "",
@@ -61,7 +61,8 @@ export const EMPTY_BIKE_FORM: BikeFormValues = {
 };
 
 type Props = {
-  initial: BikeFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_BIKE_FORM. */
+  initial?: Partial<BikeFormValues>;
   bikeTypes: BikeTypeOption[];
   templates: TemplateOption[];
   colors: ColorOption[];
@@ -72,7 +73,11 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const [values, setValues] = useState<BikeFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: BikeFormValues = { ...EMPTY_BIKE_FORM, ...initial };
+  const [values, setValues] = useState<BikeFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();

@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import {
-  EMPTY_HS_CODE_FORM,
   HsCodeForm,
 } from "../_components/hs-code-form";
 
@@ -53,7 +52,7 @@ export default async function NewHsCodePage() {
         <p className="text-muted-foreground text-sm">{t("newDescription")}</p>
       </header>
 
-      <HsCodeForm mode={{ kind: "create" }} initial={EMPTY_HS_CODE_FORM} />
+      <HsCodeForm mode={{ kind: "create" }} />
     </div>
   );
 }

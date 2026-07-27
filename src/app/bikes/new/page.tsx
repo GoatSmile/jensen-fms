@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   BikeForm,
-  EMPTY_BIKE_FORM,
   type BikeTypeOption,
   type ColorOption,
   type TemplateOption,
@@ -103,7 +102,7 @@ export default async function NewBikePage() {
         </p>
       </div>
       <BikeForm
-        initial={{ ...EMPTY_BIKE_FORM, bike_type_id: defaultBikeTypeId }}
+        initial={{ bike_type_id: defaultBikeTypeId }}
         bikeTypes={bikeTypes}
         templates={templates}
         colors={colors}

@@ -15,7 +15,7 @@ import {
   NOTIFICATION_EVENT_LABEL_KEYS,
 } from "@/lib/people/notifications";
 
-import { EMPTY_ROLE_FORM, RoleForm } from "../../_components/role-form";
+import { RoleForm } from "../../_components/role-form";
 
 export default async function NewRolePage() {
   const [t, tNav] = await Promise.all([
@@ -56,7 +56,6 @@ export default async function NewRolePage() {
 
       <RoleForm
         mode={{ kind: "create" }}
-        initial={EMPTY_ROLE_FORM}
         capabilityOptions={CAPABILITIES.map((c) => ({
           key: c.key,
           label: c.navLabelKey ? tNav(c.navLabelKey) : t("capScan"),

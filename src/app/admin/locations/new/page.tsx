@@ -12,7 +12,6 @@ import {
 
 import {
   LocationForm,
-  EMPTY_LOCATION_FORM,
 } from "../_components/location-form";
 
 export default async function NewLocationPage() {
@@ -54,7 +53,7 @@ export default async function NewLocationPage() {
         <p className="text-muted-foreground text-sm">{t("newSubtitle")}</p>
       </header>
 
-      <LocationForm mode={{ kind: "create" }} initial={EMPTY_LOCATION_FORM} />
+      <LocationForm mode={{ kind: "create" }} />
     </div>
   );
 }

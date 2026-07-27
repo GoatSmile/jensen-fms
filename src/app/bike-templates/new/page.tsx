@@ -12,7 +12,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_TEMPLATE_SHELL,
   TemplateForm,
   type BikeTypeOption,
   type CurrencyOption,
@@ -85,7 +84,7 @@ export default async function NewBikeTemplatePage() {
       </div>
       <TemplateForm
         mode="create"
-        initial={{ ...EMPTY_TEMPLATE_SHELL, bike_type_id: defaultBikeTypeId }}
+        initial={{ bike_type_id: defaultBikeTypeId }}
         bikeTypes={bikeTypes}
         currencies={currencies}
         families={families}

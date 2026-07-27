@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
-import { EMPTY_FAMILY_FORM, FamilyForm } from "../_components/family-form";
+import { FamilyForm } from "../_components/family-form";
 
 export default async function NewFamilyPage() {
   const t = await getTranslations("adminFamilies");
@@ -43,7 +43,7 @@ export default async function NewFamilyPage() {
         <p className="text-muted-foreground mt-1 text-sm">{t("newSubtitle")}</p>
       </div>
 
-      <FamilyForm mode={{ kind: "create" }} initial={EMPTY_FAMILY_FORM} />
+      <FamilyForm mode={{ kind: "create" }} />
     </div>
   );
 }

@@ -26,7 +26,7 @@ export type ColorFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_COLOR_FORM: ColorFormValues = {
+const EMPTY_COLOR_FORM: ColorFormValues = {
   name_en: "",
   name_da: "",
   slug: "",
@@ -43,7 +43,8 @@ export type CoatingChoice = { slug: string; label: string };
 
 type Props = {
   mode: Mode;
-  initial: ColorFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_COLOR_FORM. */
+  initial?: Partial<ColorFormValues>;
   /** Active coating finishes from the managed vocab (admin/colors). */
   coatings: CoatingChoice[];
 };
@@ -63,7 +64,11 @@ export function ColorForm({ mode, initial, coatings }: Props) {
   const router = useRouter();
   const t = useTranslations("adminColors");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<ColorFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: ColorFormValues = { ...EMPTY_COLOR_FORM, ...initial };
+  const [values, setValues] = useState<ColorFormValues>(seed);
 
   // Keep an already-stored finish selectable even if it's since been archived,
   // so editing an old colour doesn't silently drop its coating.

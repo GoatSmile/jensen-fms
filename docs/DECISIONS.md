@@ -918,3 +918,89 @@ seven `<span className="block text-xs">` hints inside labels on this form were
 rendering as flex ITEMS beside the label — squeezing "Production number" onto
 two lines and giving the hint half the row. They stack now. The pattern existed
 only in this file.
+
+## 2026-07-27 (evening) — the real-data verification pass, and what it found
+Phase 2 shipped to prod before any data-driven page had been rendered against
+real data (the container had no `.env.local`). This pass closed that gap: eight
+checks against the production DB, in a browser, highest-risk first. Five passed
+untouched — the supplier form round-tripped all 16 fields, `/admin/settings?
+section=phone` arrived exactly as designed (three closed rows, three "Ready",
+two controls, save a no-op), hued panels kept their `bg-surface` table
+containers, the seven converted empty states render as `bg-ground` fills, and
+390 px showed no page-level horizontal scroll anywhere. `forceOpen` works: an
+invalid payment term with Billing collapsed unfolded the section and wrote
+nothing. **No revert was needed.** Four findings, all fixed forward.
+
+Two gaps the data cannot close: **no bike template has paintwork rows** and
+**every bike (25) was soft-deleted 2026-07-01**, so bike-detail empty states
+and the template paint box have never been seen with real data. The spam banner
+has no data either — its `hue="money"` was confirmed by reading the code.
+
+## 2026-07-27 (evening) — a form's defaults belong to the form, not the page
+**The bug.** `EMPTY_*` shells were exported from `"use client"` form modules and
+spread in server pages. A client module's exports are *client references* on the
+server: `Object.keys(EMPTY_ORGANIZATION_SHELL)` returns `[]`, so
+`{...EMPTY_ORGANIZATION_SHELL, …}` evaluated to `{}` and every default was
+dropped. Live consequences, all pre-existing and all invisible to the gates:
+one-off MO arrived with a **blank required Target quantity**, ticket Source and
+Priority blank, work-order Language blank, template Currency blank, and every
+customer default (country, lifecycle, language, currency, terms) blank.
+
+**Fix (all 20 sites, owner's call over the 8 broken ones).** The shell is now a
+module-local `const` — a page *cannot* import it, which is the enforcement, not
+a convention — `initial` is a `Partial<…>` of overrides, and the component
+merges `{ ...EMPTY_X, ...initial }` into `seed`. Fold defaults read `seed`, so
+they see merged values rather than raw overrides. Rejected: extracting 20 plain
+`*-form-values.ts` modules (fixes the import but leaves the footgun exported)
+and re-exporting the type from the client module (same trap, one indirection
+away). Sentinels a page used to pass (`ONE_OFF_VALUE`) became props (`oneOff`).
+
+**Why it is worth a CLAUDE.md invariant:** this is the third instance of one
+shape — `fa1dbed` (server component *calling* a client function), and now
+spreading and property-reading a client export. `tsc`, `lint` and `next build`
+are all green every time.
+
+## 2026-07-27 (evening) — customer payment terms are net 14, in one place
+The fold rule asked "has the user moved off the default?" against the literal
+`"30"`, while the schema default (migration 01) is **14**, invoicing already
+had `DEFAULT_PAYMENT_TERMS_DAYS = 14`, and 531 of 535 customers hold 14 (3 hold
+NULL, 1 holds 8). Every customer in prod therefore opened Billing. The form now
+reads that constant for its shell value, and the fold compares against the
+shell rather than a literal, so the two cannot drift again. Placeholder and the
+"default to net 30" copy (en + da) corrected to 14.
+
+Deliberate: this changes what a *new* customer is pre-filled with, from 30 to
+14. That aligns the create form with the schema, with invoicing, and with every
+existing customer — the 30 was the outlier, and nothing in prod was written
+with it (the shell bug above meant the field posted empty and the DB default
+applied). Flagged to the owner rather than treated as invisible.
+
+## 2026-07-27 (evening) — folding a section removes native validation
+`<Input type="email">` and `type="url"` only validate while mounted, and a
+folded `FormSection` unmounts its children — so from the moment the long forms
+started folding, an invalid address inside a collapsed section reached the DB
+unchallenged. Neither the customer nor the supplier action validated either
+field. Both do now, via shape-only `looksLikeEmail` / `looksLikeUrl` in
+`src/lib/forms.ts` (loose on purpose: `sales@büchel.de` and intranet hosts must
+pass), and the customer action returns `field` so Contact unfolds with the
+error inline. The supplier form has no per-field error channel, so its banner
+names the offending value instead — worth a row, not a refactor.
+
+Numbers were already safe: every numeric field in these forms is parsed and
+rejected server-side with a `field`, which is why `min="0"` being bypassed
+showed up as a clean inline error rather than a bad row.
+
+## 2026-07-27 (evening) — Tier 1 CI pulled forward from September
+BACKLOG had it parked for September. Shipped now as `.github/workflows/ci.yml`
+(~20 lines, `npm ci` → `tsc --noEmit` → `npm run lint`, no secrets, Node 22
+LTS): Next 16 does **not** run ESLint during `next build`, confirmed again in
+this session — the repo has 14 lint warnings that `npm run lint` prints and the
+build never mentions. So Vercel deploys lint errors, and that is exactly the
+class that reached `main` on 2026-07-26.
+
+**The honest argument is narrower than "it protects Dennis while you are
+away".** Nobody pushes while the dev is unreachable, so CI buys Dennis little
+directly; what it protects is `main` from the sessions that *do* push — and
+today's commits would have skipped the local build gate entirely, since a dev
+server held :3000 the whole time. Tier 2 (runtime + Vitest, needs secrets)
+stays in BACKLOG for auth/M1.

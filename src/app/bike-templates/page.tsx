@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { HashScroll } from "@/components/hash-scroll";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
 import { createClient } from "@/lib/supabase/server";
@@ -115,6 +116,8 @@ export default async function BikeTemplatesPage({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
+      {/* Family chips on a template detail page link to #family-<id> here. */}
+      <HashScroll />
       <header className="flex flex-col gap-3">
         <Breadcrumb>
           <BreadcrumbList>

@@ -12,7 +12,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_AGREEMENT,
   ServiceAgreementForm,
   type OrgOption,
   type UnitOption,
@@ -60,7 +59,6 @@ export default async function NewServiceAgreementPage() {
       <div className="max-w-3xl">
         <ServiceAgreementForm
           mode="create"
-          initial={EMPTY_AGREEMENT}
           organizations={organizations as OrgOption[]}
           units={units as UnitOption[]}
         />

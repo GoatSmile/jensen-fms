@@ -20,7 +20,7 @@ export type LocationFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_LOCATION_FORM: LocationFormValues = {
+const EMPTY_LOCATION_FORM: LocationFormValues = {
   code: "",
   name_en: "",
   name_da: "",
@@ -40,12 +40,17 @@ export function LocationForm({
   initial,
 }: {
   mode: Mode;
-  initial: LocationFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_LOCATION_FORM. */
+  initial?: Partial<LocationFormValues>;
 }) {
   const router = useRouter();
   const t = useTranslations("adminLocations");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<LocationFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: LocationFormValues = { ...EMPTY_LOCATION_FORM, ...initial };
+  const [values, setValues] = useState<LocationFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

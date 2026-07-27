@@ -14,7 +14,6 @@ import { createClient } from "@/lib/supabase/server";
 
 import {
   ColorForm,
-  EMPTY_COLOR_FORM,
   type CoatingChoice,
 } from "../_components/color-form";
 
@@ -69,7 +68,6 @@ export default async function NewColorPage() {
 
       <ColorForm
         mode={{ kind: "create" }}
-        initial={EMPTY_COLOR_FORM}
         coatings={coatings}
       />
     </div>

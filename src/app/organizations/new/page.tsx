@@ -12,7 +12,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import {
-  EMPTY_ORGANIZATION_SHELL,
   OrganizationForm,
   type CurrencyOption,
   type SegmentOption,
@@ -88,7 +87,6 @@ export default async function NewOrganizationPage() {
       <OrganizationForm
         mode="create"
         initial={{
-          ...EMPTY_ORGANIZATION_SHELL,
           customer_segment_id: defaultSegmentId,
         }}
         segments={segments}

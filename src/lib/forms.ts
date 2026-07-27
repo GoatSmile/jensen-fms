@@ -38,3 +38,28 @@ export function appendField(
   }
   fd.append(key, typeof value === "string" ? value : String(value));
 }
+
+/**
+ * Format checks for the two field kinds that used to lean on the browser.
+ *
+ * `<Input type="email">` and `type="url"` only validate while they are IN the
+ * DOM, and a folded `FormSection` unmounts its children — so once the long
+ * forms started folding (2026-07-27), an invalid address inside a collapsed
+ * section reached the DB unchallenged. Actions must check these themselves.
+ *
+ * Deliberately loose: shape only, no deliverability theatre. A supplier's
+ * `sales@büchel.de` or a customer's intranet host must not be rejected.
+ */
+export function looksLikeEmail(v: string): boolean {
+  // one @, something either side, a dot in the domain, no whitespace
+  return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v);
+}
+
+export function looksLikeUrl(v: string): boolean {
+  try {
+    const u = new URL(v.includes("://") ? v : `https://${v}`);
+    return u.hostname.includes(".") && !/\s/.test(v);
+  } catch {
+    return false;
+  }
+}

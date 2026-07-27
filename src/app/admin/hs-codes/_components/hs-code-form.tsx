@@ -26,7 +26,7 @@ export type HsCodeFormValues = {
   is_active: boolean;
 };
 
-export const EMPTY_HS_CODE_FORM: HsCodeFormValues = {
+const EMPTY_HS_CODE_FORM: HsCodeFormValues = {
   code: "",
   description: "",
   tariff: "",
@@ -39,14 +39,19 @@ type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
 type Props = {
   mode: Mode;
-  initial: HsCodeFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_HS_CODE_FORM. */
+  initial?: Partial<HsCodeFormValues>;
 };
 
 export function HsCodeForm({ mode, initial }: Props) {
   const router = useRouter();
   const t = useTranslations("adminHsCodes");
   const tCommon = useTranslations("common");
-  const [values, setValues] = useState<HsCodeFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: HsCodeFormValues = { ...EMPTY_HS_CODE_FORM, ...initial };
+  const [values, setValues] = useState<HsCodeFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pending, start] = useTransition();

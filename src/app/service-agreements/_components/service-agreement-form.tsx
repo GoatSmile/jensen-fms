@@ -41,7 +41,7 @@ export type ServiceAgreementFormValues = {
   notes: string;
 };
 
-export const EMPTY_AGREEMENT: ServiceAgreementFormValues = {
+const EMPTY_AGREEMENT: ServiceAgreementFormValues = {
   organization_id: "",
   organization_unit_id: "",
   name: "",
@@ -61,7 +61,8 @@ const NO_UNIT = "__org_wide__";
 type Props = {
   mode: "create" | "edit";
   agreementId?: string;
-  initial: ServiceAgreementFormValues;
+  /** Overrides only — unset fields fall back to EMPTY_AGREEMENT. */
+  initial?: Partial<ServiceAgreementFormValues>;
   organizations: OrgOption[];
   units: UnitOption[];
 };
@@ -77,7 +78,11 @@ export function ServiceAgreementForm({
   const tCommon = useTranslations("common");
   const tSaStatus = useTranslations("saStatus");
   const router = useRouter();
-  const [values, setValues] = useState<ServiceAgreementFormValues>(initial);
+  // Defaults are merged HERE, not in the server page: this module is
+  // `"use client"`, so its exports are client references on the server and
+  // a page that spread the shell got `{}` (see CLAUDE.md).
+  const seed: ServiceAgreementFormValues = { ...EMPTY_AGREEMENT, ...initial };
+  const [values, setValues] = useState<ServiceAgreementFormValues>(seed);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, start] = useTransition();
