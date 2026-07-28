@@ -66,10 +66,10 @@ treat the early totals as floors, not truth.
 | Sun 2026-07-26 | ~10 | **Design refresh built and shipped** — B tokens in signal blue, Panel/Metric primitives, 517-colour sweep onto six hues, 7-group nav w/ cookie state, settings sub-rail; 21 commits, 10:16–20:39 |
 | Mon 2026-07-27 | ~8 | **Phase 2 (5 slices) + its real-data verification pass** — 4 fixes incl. the client-reference bug that blanked create-form defaults app-wide, plus Tier 1 CI and every list page onto Panel |
 
-| Tue 2026-07-28 | ~1 | Adopted Munin's CLAUDE.md doctrine review: deleted the line-count hook (4 raises in 3 days, 0 refusals), replaced with a monthly consolidation pass + a no-counts rule; fixed the stale ~200-char worklog cap |
+| Tue 2026-07-28 | ~5 | CLAUDE.md doctrine: line-count hook → a monthly consolidation pass. **Design-refresh Phase 2 slices A–E** — 6/7/8 duplicated components collapsed into three shared ones, 25 sections + dialogs + /work onto Panel, last raw palette colours onto hues; /admin/lists + floor/office approved |
 
-**July so far: ~133 h** (19 working days)
+**July so far: ~137 h** (19 working days)
 
 ---
 
-**Project total: ~216.5 h across 35 working days (2026-05-07 → 2026-07-28)**
+**Project total: ~220.5 h across 35 working days (2026-05-07 → 2026-07-28)**

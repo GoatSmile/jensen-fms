@@ -1,15 +1,12 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-28.** Most recent: **docs doctrine — no behaviour
-changed** (one source comment in `admin/page.tsx`). The CLAUDE.md line-count
-hook is deleted and replaced by a monthly consolidation read (DECISIONS
-2026-07-28), and the **first pass ran the same day** — it corrected the stale
-nav IA and stripped four live tallies; see next-action 3. The session before it
-shipped design-refresh
-Phase 2 (every list page on `Panel`) + Tier 1 CI — details below and in
-`docs/archive/HISTORY.md`. Gates green as of `4956f76`: `tsc` clean, lint 0
-errors (14 long-standing warnings), `npm run build` exit 0 / 52 static pages,
-CI green.
+**Last updated: 2026-07-28.** Most recent: **design-refresh Phase 2 slices
+A–E** — four commits (`85b668a`, `843a4dd`, `1293bb5`, `38b6eae`) that took the
+remaining card soup out of the forms, detail sections, dialogs and `/work`, and
+found that most of it was *duplication* rather than styling. Both "ask first"
+gates on the queue are now cleared by the owner (DECISIONS 2026-07-28). Gates
+green as of `38b6eae`: `tsc` clean, lint 0 errors (14 long-standing warnings),
+`npm run build` exit 0, CI green.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -61,125 +58,84 @@ parked ideas in `docs/BACKLOG.md`.
   kit's sparsebundle is macOS-only, so a NAS can store it and nobody there can
   open it). Owner's call; runbook in the plan, to be rehearsed on the 19th.
 
-## Design refresh — SHIPPED, with a known remainder
+## Design refresh — Phase 2 essentially done; slice F is what's left
 `docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
-where this doc is now wrong" list. Decisions in DECISIONS 2026-07-26 +
-2026-07-27. Mock-up
-`docs/mockups/design-directions.html` is now history, not the target.
+where this doc is now wrong" list; **§15** holds the build plans for the two
+newly-approved items. Decisions in DECISIONS 2026-07-26 / -27 / -28. Mock-up
+`docs/mockups/design-directions.html` is history, not the target.
 
-Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` (Geist kept, no
-display face, pill buttons) · `Panel`/`Metric`/`Rule` primitives with `Section`
-re-exporting `Panel` · 517 raw palette colours swept onto six hues across 79
-files · **seven grouped nav items** with `nav_open` cookie state resolved
-server-side · both boxed KPI rows killed · the **`/admin/settings` sub-rail**
-(five sections, `?section=`; 48 form controls rendered at once before, 5 on
-arrival now) · three of the four audit bugs.
+Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` · `Panel` /
+`Metric` / `Rule` primitives · six hues, closed list · **seven grouped nav
+items** with `nav_open` cookie state · the `/admin/settings` sub-rail · every
+list page, detail section, admin form and dialog on `Panel`.
 
-- **The colour vocabulary is now in CLAUDE.md and is load-bearing.** Six hues,
-  closed list. Two rules that are easy to get wrong: **caution is `money`'s
-  ochre, not `alert`** (red is reserved for genuine alarms — mapping cautions to
-  red painted normal progress red), and **`text-on-{hue}` on any filled hue**,
-  never `text-white`. Two decorative palettes are exempt
-  (`bike-templates/family-colors.ts`, `kits/colors.ts`).
-- **Contrast is measured, not eyeballed.** All **78** fg/bg pairs clear AA per
-  theme — including every hue on every *foreign* wash, since a `hue` panel lets
-  any two meet. The ink ramp is DARKER than the mock-up's in light and LIGHTER
-  in dark, because secondary text now sits on washes, where the mock-up's
-  values failed. If you touch a hue, re-measure the whole matrix, not just
-  hue-on-its-own-wash — that narrower check passed while three cross pairs
-  were failing.
+- **The remaining card soup was mostly duplication.** Three clusters, each
+  identical down to the class list, are now one component each — and a new copy
+  of any of them is a regression: `FormSection` (six local copies),
+  `ArchivePanel` (seven), `FormSaveBar` (eight). They are listed in CLAUDE.md's
+  Conventions so a fresh session reaches for them.
+- **A `rounded-md border` is NOT automatically card soup.** Nine of the last
+  sweep's hits are native `<select>` / `<input>` elements styled to match
+  shadcn's `Input`; plus print routes, photo-thumb frames and button groups.
+  Those borders belong to the control. **The count will never reach zero and
+  should not be driven there** — read each hit before changing it.
+- **Contrast: a destructive control constrains the surface under it.** The
+  archive footer's caution wash measured 4.25:1 behind its destructive button
+  against the 4.5:1 gate, so it ships untinted. And when measuring a
+  *translucent* pill, composite it on a canvas and read the pixel —
+  `getComputedStyle` hands back an un-normalised `oklab()` and hand-parsing it
+  produces confident wrong numbers (it did, twice).
+- **Zero raw Tailwind palette colours remain** outside the two exempt
+  decorative palettes (`bike-templates/family-colors.ts`, `kits/colors.ts`).
+  `/work`'s four accent bars were the last, and they were never deliberate
+  exceptions — the original sweep's pattern just missed `border-l-*`, `from-*`
+  and `fill-*`.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
-- **The remainder — card soup is dented, not cleared.** Phase 2 ran five
-  slices on 2026-07-27 (see below). Across `src/**/*.tsx`: `rounded-md border`
-  occurrences **298 → 208**, dashed **46 → 28**, files with any hand-rolled
-  bordered surface **184 → 156**. The counting method differs from the audit's
-  345/187 (and drifts a little between sessions), so trust the delta, not the
-  absolute. The rest inherit B's tokens so they read as *plainer*, not broken.
-  **Every list page is now on `Panel`.** What is left is concentrated in
-  **forms and detail sections** — `mo-batch-form`, `build-workbench`,
-  `paint-from-so-form`, the sales-order lines section, contacts/units,
-  `admin/people`, `admin/fx-rates`, and the six entity forms' own
-  `<section className="rounded-md border">` shells. Also still open: the
-  `/admin/lists` consolidation (18 routes → 1), the floor/office mode split
-  (§6 — still the highest-value structural idea nobody has built), and §9's
-  repeated category chips. Full list in plan §14.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
-
-## Shipped 2026-07-27 — design-refresh Phase 2, five slices + verification
-Narrative and commit refs in `docs/archive/HISTORY.md`; the ten decisions in
-`docs/DECISIONS.md`. **The durable rules all live in `CLAUDE.md`** (panel-table
-convention, `bg-ground` is in-panel only, no value imports from a `"use client"`
-module, folded sections lose native validation, net-14 payment terms). What a
-fresh session needs beyond those:
-
-- **Slices 1–4**: `/inbox` + `/bike-templates` onto `Panel`; the panel-table
-  convention applied app-wide (zero boxed tables inside a panel); §9's form
-  folds (`src/components/form-section.tsx`, shared by organisation / part /
-  supplier — a section's default is computed from the record, never
-  remembered); §9's inbound provider summary rows. **Plan §9 is closed except
-  the category chips.**
-- **Slice 5**: every list page is on `Panel` (eleven surfaces), plus the shared
-  `TableSkeleton`, the PO receive form + lines section, and the batch-build
-  grid.
-- **The verification pass** ran eight checks against the production DB in a
-  browser. Five passed untouched; four findings were fixed forward, the largest
-  pre-existing and much older than Phase 2 — `EMPTY_*` shells spread in server
-  pages evaluated to `{}`, so five create forms had been shipping blank
-  defaults (fixed at all 20 forms). **No revert was needed.**
-- **Owner-visible behaviour change**: a new customer now pre-fills payment terms
-  of 14 days, not 30. Net 14 is the schema default, what invoicing uses, and
-  what 531 of 535 existing customers hold.
-- **Tier 1 CI is live** — `.github/workflows/ci.yml`, `npm ci` → `tsc` →
-  `lint` on every push, green since `e765bdc`; the 14 lint warnings show as run
-  annotations. Next 16 does **not** run ESLint during `next build`, so this is
-  the only thing catching that class before prod. **Pinned to Node 24 / npm 11
-  on purpose**: npm 10 rejects our lock file, and a CI failure naming
-  `@swc/helpers` is the pre-existing tree inconsistency in `docs/BACKLOG.md`,
-  not your code.
 
 **Three things real data cannot verify** (so they have only ever been seen with
 stub props): no bike template has paintwork rows; **all 25 bikes were
 soft-deleted 2026-07-01**, so `/bikes` is empty by design, not broken, and both
 bike-detail empty states and the batch-build grid are unexercised; and no
 inbound message is spam-flagged, so that banner's `money` hue is code-verified
-only.
+only. Add to that: **the archive/restore round trip has never been clicked** —
+there is one Supabase project and no staging copy, so exercising it flips
+`is_active` in production.
 
 ## Next actions, in order
 1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
    hues still read as a system across a whole working session rather than
-   screen by screen.
+   screen by screen. Judgement, not mechanics, and it is the one item with a
+   date pressing on it.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
 3. **Next `CLAUDE.md` consolidation: first session of September** — step 3 of
    `/session-start`, and the only instrument pointing at that file now the
-   line-count hook is gone. The first pass ran 2026-07-28 (pulled forward) and
-   found what no counter could: the **nav IA bullet still described the
-   superseded four-group layout** two days after the seven-group refresh
-   shipped, including "the Map is not in the sidebar" when it is. Root cause is
-   now a rule — a decision that supersedes doctrine must edit `CLAUDE.md` in
-   the same commit, not just append to DECISIONS. Four live tallies were also
-   de-numbered (all four were accurate; they were stripped because they drift).
-   The file is ~550 lines and the honest reduction is extracting narrative to
+   line-count hook is gone. The 2026-07-28 pass found what no counter could
+   (a nav IA bullet describing a superseded layout two days after the refresh
+   shipped). The honest reduction is extracting narrative to
    `docs/archive/HISTORY.md` — **never deleting a rule.**
 
-### The Phase 2 queue, in the order it is worth taking
-Nothing here needs owner input except where noted.
-1. **The forms and detail sections** — the rest of the ~156 files, now that the
-   list pages are done: `mo-batch-form`, `build-workbench`,
-   `paint-from-so-form`, the sales-order lines section, contacts/units,
-   `admin/people`, `admin/fx-rates`, and the six entity forms' own
-   `<section className="rounded-md border">` shells. Same mechanical shape as
-   the fifth slice; the form shells are the `FormSection`/`Panel` pattern that
-   already exists.
-2. **§9's repeated category chips** — the last §9 line, small.
-3. **`/admin/lists` consolidation** (18 routes → 1) — **ask first.** It
-   changes IA Dennis navigates by.
-4. **Floor/office mode split** (plan §6) — **ask first**, and not before
-   31 Aug. Highest-value structural idea in the plan, and the largest.
+### The design-refresh queue, in the order it is worth taking
+1. **Slice F — the behaviour-carrying workbenches.** Deliberately last:
+   `build-workbench` (11 bordered surfaces), `mo-batch-form` (7),
+   `add-parts-workspace` (7), `paint-from-so-form`, `deposit-form`, `scanner`,
+   the build `pick-list`. These carry scan handlers and per-row inputs on
+   workshop-critical screens, so it is **one file per commit, browser-verified
+   individually** — not a batch. Two of them cannot be exercised against real
+   data (see above), which is the main reason to go slowly.
+2. **`/admin/lists`** (18 routes → 1) — **approved 2026-07-28**, build plan in
+   plan §15. Not a sweep: the six vocabularies' fields genuinely differ, so it
+   needs a descriptor layer, and the entity-specific archive copy needs a home
+   in a row-based UI.
+3. **Floor/office mode** (plan §6) — **approved 2026-07-28 but deliberately
+   NOT before 31 Aug.** Largest item in the plan, and it reshapes the screen
+   mechanics use daily; do not ship it into Dennis's solo stretch. Build plan
+   and the contrast-re-measurement requirement in plan §15.
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.
@@ -214,12 +170,15 @@ Dennis's company number onto the inbound trunk.
   boundary violations). Stop the dev server and build before trusting a run of
   commits. Tier 1 CI (2026-07-27) now re-runs tsc + lint on every push, so a
   skipped local gate no longer means *nothing* checked — but CI does not build.
-- **A green toolchain does not mean the page works.** Twice on 2026-07-27:
-  `tsc`, `lint` and `next build` were all clean while five create forms had
-  been shipping blank defaults for weeks (the client-reference shell bug), and
-  again while a page-level notice rendered as invisible text (`bg-ground` on a
-  ground background). Both rules are in CLAUDE.md now. This class only shows up
-  in a browser, against real data.
+- **Blanket `git add -A` is blocked by a hook** and should stay blocked: it once
+  swept an unrelated change into a docs commit, and push-to-`main` deploys.
+  Stage explicit paths; `git status` first.
+- **A green toolchain does not mean the page works.** Four times in three days
+  now: five create forms shipping blank defaults (the client-reference shell
+  bug), a page-level notice rendering as invisible text (`bg-ground` on a ground
+  background), a contrast gate failure behind a destructive button, and
+  `bg-ground` chips inside hue-washed panels. All four were found in a browser
+  against real data, with `tsc`, `lint` and `next build` clean.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references
@@ -268,7 +227,7 @@ Self-serve via the dashboard "Data housekeeping" fold:
 - **M1 auth + RLS tightening — DELAYED (owner's call).** RLS is ON across
   all tables (migration 50) with a permissive `anon_all` policy; only
   Vercel SSO protects prod. Do not start unless the owner re-prioritises.
-  Agreed trigger to reconsider: **the first real invoice issued**. When it
+  Agreed trigger to reconsider: **the first real invoice issued.** When it
   resumes: Supabase auth + login + middleware + user-scoped policies
   (written against `role_capabilities`) + a `DEV_AUTH_BYPASS` escape hatch;
   open decisions: sign-in method, role-model refinement.

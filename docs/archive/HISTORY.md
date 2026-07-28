@@ -788,3 +788,73 @@ looked broken.
 Measured across `src/**/*.tsx`: `rounded-md border` 234 → 208, dashed 36 → 28,
 files carrying a hand-rolled bordered surface 163 → 156. What remains is
 concentrated in forms and detail sections rather than lists.
+
+## 2026-07-28 (afternoon/evening) — Phase 2 slices A–E: the card soup is mostly gone
+Commits `85b668a`, `843a4dd`, `1293bb5`, `38b6eae`. Four browser-verified
+passes, gates green at the 14-warning baseline throughout.
+
+**The finding that reframed the whole remainder: it was duplication, not
+styling.** Slice A went looking for six entity forms with bordered section
+shells and found that all six carried their *own local copy* of the
+`FormSection` helper — byte-identical to each other and to the shared component
+slice 3 had already extracted for the organisation / part / supplier / template
+forms. Delete six, import one. That pattern then repeated twice more: seven
+archive/restore footers (identical down to the class list, and using the same
+six message keys in seven different namespaces) became
+`src/components/archive-panel.tsx`, and eight form save bars became
+`src/components/form-save-bar.tsx`. Roughly 900 lines deleted for 500 added.
+
+Slice B put 25 detail sections onto `Panel` — sales-order lines and payments,
+org contacts and units, MO coverage and parts, part stock, WO details, the
+ticket work-orders list, the template recipe editor, `/work`'s parts and photos,
+the six admin vocab sections, `admin/people`, `admin/fx-rates`. `EmptyState`
+gained an `inPanel` flag, because three of those render it *inside* the panel
+where its dashed box was the boxed-thing-in-a-box the panel replaced.
+
+**`/work` was left half-migrated for one commit, and that was a mistake worth
+recording.** The slice boundary cut through a single screen: parts and photos
+became panels with eyebrow titles while diagnosis and work-performed stayed
+bordered cards with semibold headers, so four sections that had matched no
+longer did. It was flagged rather than quietly shipped, and closed in the next
+commit — which also mapped the four accent bars onto the six hues. Those bars
+turned out to be the last raw Tailwind palette colours in the app, and *not*
+deliberate exceptions: the 517-colour sweep's pattern had simply never matched
+`border-l-*`, `from-*` or `fill-*`. The intended mapping was already sitting in
+the code beside them — the diagnosis icon was already `text-money`, the queue
+stripe already `bg-brand`.
+
+Finishing `/work` needed one genuine design decision. The note sections' title
+is the textarea's own `<Label htmlFor>`, so it could not become `Panel`'s
+`title` prop — that renders an `<h2>` and would have cost the technician the
+tap-the-label-to-focus target on a phone. The `<Label>` stayed and wears the
+eyebrow's classes by hand; a browser check confirmed clicking it still focuses
+the field. Same trade was then made for the three `<fieldset>`/`<legend>`
+checkbox groups in the people and role forms.
+
+**The browser caught two things three green gates did not** — the pattern of
+the previous two days, again. First, the extracted archive footer shipped with
+`hue="money"`, which is right on its own terms (archiving is reversible, so it
+is a caution, and caution is money's ochre). Measured, the destructive button's
+own translucent pill over that wash gives **4.25:1** against the 4.5:1 gate,
+where plain `bg-surface` gives 4.69:1 — so it ships untinted. Getting a
+trustworthy number took three attempts, because the pill's background is an
+`oklab()` with alpha that neither `getComputedStyle` nor `canvas.fillStyle`
+normalises; the first two figures were garbage produced by hand-parsing it. The
+method that works is painting the wash on a 1×1 canvas, compositing the pill,
+and reading the pixel. Second, the `/admin/settings` chips were given
+`bg-ground` before noticing those panels are hue-washed, where an inner chip
+belongs on `bg-surface` — ground on a wash reads as muddy near-white.
+
+**And a counter-rule that cost real time to establish:** a `rounded-md border`
+is not automatically card soup. Nine of slice D's 31 hits are native
+`<select>` / `<input>` elements styled to match shadcn's `Input`, plus a
+drawer's input-shaped filter chips and the recipe quantity stepper — a button
+group, which the conventions already exempt. Sweeping by pattern alone would
+have broken how those forms read.
+
+Measured across `src/**/*.tsx` over the four commits: files carrying a
+hand-rolled bordered surface **127 → 71**, `rounded-md border` **208 → 124**,
+dashed **28 → 16**. Zero raw palette colours remain outside the two exempt
+decorative palettes. What is left is slice F — the behaviour-carrying
+workbenches — plus a long tail of single-hit files that are mostly correct as
+they are.

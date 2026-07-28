@@ -1084,3 +1084,97 @@ with no number attached.
 file in the same breath as removing its size gate is how a session ends up
 shaving earned doctrine to hit a number. The first monthly pass owns it, and
 the honest fix is extracting narrative to `docs/archive/HISTORY.md`.
+
+## 2026-07-28 (later) — /work's accent bars map onto the six hues
+The four colour-coded left bars on the work-order workspace were the last raw
+Tailwind palette colours in the app, and they turned out **not** to be
+deliberate exceptions: the 517-colour sweep's pattern simply never matched
+`border-l-*`, `from-*` or `fill-*`. The intended mapping was already sitting in
+the code beside them — the Diagnosis icon was already `text-money`, Work
+performed already `text-good`, the queue card's stripe already `bg-brand`.
+
+`amber-500 → money` (diagnosis is caution, and caution is money's ochre — a
+bike needing diagnosis is normal work, not an alarm) · `emerald-600 → good`
+(done) · `indigo-600 → buy` (parts consumption is the cost side of a job:
+those lines carry money and draw down stock) · `slate-600 → rule-strong`
+(photos are evidence, not a domain — a neutral rule identifies the section
+without spending a seventh meaning) · `blue-600 → brand` (queue gradient) ·
+`amber-400 → buy` (the preferred-supplier star's fill; its stroke was already
+`text-buy`).
+
+**Rejected:** full hue *washes* on all four sections — four washed panels in a
+column means none of them reads as emphasised, and the doctrine is that colour
+is meaningful only while scarce. The bar is the right carrier. Also rejected:
+inventing a seventh meaning for photos.
+
+No hue value changed, so the contrast matrix needed no re-measurement, and the
+bars are never the only carrier (every section has a text title and an icon).
+
+## 2026-07-28 (later) — the archive footer ships untinted: caution + destructive fails AA
+`ArchivePanel` (extracted from seven copies) first used `hue="money"`, which is
+correct on its own terms — archiving is reversible, so it is a caution, and
+caution is money's ochre rather than alert's red.
+
+**Measured, it fails.** The destructive button's own `alert/10` pill composited
+over the money wash gives **4.25:1**; on plain `bg-surface` the same button
+gives **4.69:1**. The gate is 4.5:1 and the button's label (12.8px, weight 500)
+is not WCAG large text. So the panel ships with no hue, and the reason lives in
+its doc comment so the next person doesn't re-derive the tint.
+
+This is the cross-hue trap `CLAUDE.md` already names — "a `hue` panel lets any
+two meet" — with a specific lesson worth keeping: **the caution-hue mapping is
+not free next to a destructive control.** The destructive button already
+carries the weight of the act; the surface does not need to shout.
+
+**Measurement gotcha:** two earlier attempts produced garbage (3.86, then
+3.91) because the button's background is an `oklab()` with alpha that neither
+`getComputedStyle` nor `canvas.fillStyle` normalises to sRGB. The trustworthy
+method is to paint the wash on a 1×1 canvas, composite the pill over it, and
+read the pixel back.
+
+## 2026-07-28 (later) — shared surfaces beat per-entity copies; a control border is not card soup
+Phase 2's remaining sweep found three duplication clusters, each identical down
+to the class list, and each now one component:
+
+- **six** local `FormSection` helpers in the MO / PO / paint-order / ticket /
+  WO / bike forms → the shared `src/components/form-section.tsx` that slice 3
+  had already extracted for the other four forms
+- **seven** archive/restore footers → `src/components/archive-panel.tsx`
+- **eight** form save bars → `src/components/form-save-bar.tsx`
+
+`ArchivePanel` takes a message **namespace**, because all seven callers'
+namespaces provably hold the same six keys. `FormSaveBar` takes rendered
+**strings** instead, because those namespaces have drifted: six say `savedAt` /
+`saveChanges` while `adminColors` and `adminHsCodes` say `savedStatus` /
+`submitEdit` for the same two things. Passing strings avoided an i18n rename
+across three locale files for a layout change. **The drift is real and should be
+normalised the next time those messages are touched.**
+
+`EmptyState` gained an `inPanel` flag rather than a per-call-site override,
+because three sections render it *inside* a panel where its dashed box is the
+boxed-thing-in-a-box the panel replaced.
+
+**And the counter-rule, which cost real time to establish:** a `rounded-md
+border` is **not** automatically card soup. Nine of slice D's 31 hits are
+native `<select>` / `<input>` elements styled to match shadcn's `Input`
+(`border-input bg-background h-9 rounded-md border`), plus `category-drawer`'s
+input-shaped filter chips and the recipe quantity stepper (a button group,
+which the conventions already exempt). Those borders belong to the control and
+must stay. Sweeping by pattern alone would have broken how the forms read.
+
+## 2026-07-28 (later) — /admin/lists approved; floor/office approved but scheduled after cutover
+Both gates on the design-refresh queue are cleared by the owner.
+
+**`/admin/lists`** (plan §8, 18 routes → 1) is approved to build. It is
+admin-only, so Dennis's exposure is limited to a surface he visits to configure
+vocabularies, not one he works in daily.
+
+**Floor/office mode** (plan §6) is approved *in principle* and deliberately
+**not scheduled before the 31 Aug cutover.** It is the largest item in the plan
+and it reshapes the screen mechanics use every day; shipping it into Dennis's
+solo stretch (from 3 Aug) means he absorbs a changed floor UI with no developer
+on hand. The concern was raised, the approval stood, and the timing is the
+compromise: build it after the cutover, when there is someone to watch it land.
+
+**Superseded:** `docs/STATUS.md`'s Phase 2 queue items 3 and 4, which both read
+"ask first". They no longer need asking; item 4 needs scheduling.

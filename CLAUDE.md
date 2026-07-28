@@ -427,6 +427,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - Server-render initial page, client components for interactive state.
 - URL search-params drive list filters (filtered views are shareable links).
 - shadcn/ui components by default; custom only when shadcn lacks it.
+- **Reach for the app's own shared surfaces before hand-rolling one** — every
+  one of these replaced 6–8 identical copies, so a new copy is a regression:
+  `FormSection` (a form's titled/foldable section) · `Panel` / `Section` ·
+  `ArchivePanel` (a vocab detail page's archive-restore footer) · `FormSaveBar`
+  (a form's status + Cancel + submit row) · `EmptyState` (pass `inPanel` inside
+  a `Panel`) · `TableSkeleton`.
 - **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
   `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`
@@ -481,6 +487,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     every hue on every *foreign* wash (a `hue` panel lets any two meet). Values
     are hex on purpose (see `globals.css`). A 12px bold uppercase eyebrow is
     **not** "large text"; colour is never the only carrier (*Out*, *Low*).
+    A **destructive control constrains the surface under it**: a `money` wash
+    behind a `destructive` button measured 4.25:1 vs 4.69:1 on `bg-surface`, so
+    the caution hue — right on its own terms — is not free there (2026-07-28).
+    When you measure a **translucent** pill, paint the wash on a 1×1 canvas,
+    composite the pill, and read the pixel: `getComputedStyle` and
+    `canvas.fillStyle` both hand back an un-normalised `oklab()` and every
+    hand-parse of it is wrong.
   - `--radius` is `1rem`; buttons are pills except inside a button group.
 - **Section tinting.** Only pages stacking *different kinds* of section
   (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`, ticket +
@@ -500,7 +513,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - **`bg-ground` is an IN-PANEL fill only.** The page background already *is*
     `--ground`, so the same fill at page level renders as nothing and the
     notice reads as floating text. A page-level empty state or notice gets its
-    own `Panel` (found 2026-07-27, with tsc/lint/build all green).
+    own `Panel` (found 2026-07-27, with tsc/lint/build all green). Two
+    corollaries: inside a **hued** panel an inner chip/well is `bg-surface`, not
+    `bg-ground` (ground on a wash is muddy near-white — see Section tinting);
+    and `bg-ground` DOES work inside a dialog or sheet, because `DialogContent`
+    / `SheetContent` are `bg-popover` → `--surface`.
   - A **loading skeleton must match the migrated shape** — while
     `TableSkeleton` was a bordered box, every navigation to a list page
     flashed a box that then dissolved.

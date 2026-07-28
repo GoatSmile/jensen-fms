@@ -673,24 +673,109 @@ Measured across `src/**/*.tsx` (occurrences of the literal class pair, this
 session's method): `rounded-md border` **234 → 208**, dashed **36 → 28**,
 files carrying any hand-rolled bordered surface **163 → 156**.
 
+### Phase 2, slices A–E (2026-07-28) — the forms, sections, dialogs and /work
+Four commits: `85b668a` (A+B), `843a4dd` (/work), `1293bb5` (C), `38b6eae`
+(D+E). Narrative in `docs/archive/HISTORY.md`; the four decisions in
+`docs/DECISIONS.md` under 2026-07-28 (later).
+
+The finding that shaped all of it: **the remaining card soup was mostly
+duplication, not styling.** Three clusters, each identical down to the class
+list — six local `FormSection` helpers, seven archive footers, eight form save
+bars — collapsed into `form-section.tsx`, `archive-panel.tsx` and
+`form-save-bar.tsx`. 25 detail sections went onto `Panel`, the dialogs onto
+`bg-ground` wells, and `/work`'s four accent bars onto the six hues (the last
+raw palette colours in the app).
+
+Two corrections earned in the browser, both with tsc/lint/build green: the
+archive footer's caution wash **failed the contrast gate** next to its
+destructive button (4.25:1), and the settings chips wanted `bg-surface` rather
+than `bg-ground` because those panels are hue-washed.
+
+And a counter-rule worth carrying: **a `rounded-md border` is not automatically
+card soup.** Nine of slice D's hits are native `<select>`/`<input>` elements
+styled to match shadcn's `Input`; those borders belong to the control.
+
 ### Still not done — the honest list
-- **~156 files still hand-roll `rounded-* border` surfaces.** They inherit B's
-  tokens so they read as *plainer*, not broken, but card soup survives outside
-  the migrated screens. This is the remaining Phase 2. The list pages are done
-  (fifth slice); what is left is concentrated in **forms and detail sections** —
-  `mo-batch-form`, `build-workbench`, `paint-from-so-form`, the sales-order
-  lines section, contacts/units sections, `admin/people`, `admin/fx-rates`, and
-  the six entity forms' own `<section className="rounded-md border">` shells.
-
-- **`/admin/lists`** consolidation (18 routes → 1): not started (§8).
-
-- **Floor/office mode split** (§6) — the highest-value structural idea in this
-  document, and untouched.
-- **The repeated category chips** (§9). Form folds are done — see the third
-  slice above.
+- **~71 files still hand-roll `rounded-* border` surfaces**, down from 184 at
+  the audit and 127 at the start of 2026-07-28. What remains is **slice F**: the
+  behaviour-carrying workbenches, which were deliberately left for last because
+  they carry scan handlers and per-row inputs on workshop-critical screens —
+  `build-workbench` (11), `mo-batch-form` (7), `add-parts-workspace` (7),
+  `paint-from-so-form`, `deposit-form`, `scanner`, the build `pick-list`. One
+  file per commit, browser-verified individually; not a batch.
+  Plus a long tail of single-hit files (print routes, photo-thumb frames and
+  other decorative or control borders) that are mostly **correct as they are** —
+  the count will never reach zero and should not be driven there.
+- **`/admin/lists`** (§8) and **floor/office mode** (§6): both approved
+  2026-07-28. See §15 for the build plans.
 - **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
 - **No unit test for the cookie logic.** The plan asked for one; there is no
   test runner in this project (`package.json` has dev/build/start/lint only),
   and inventing one days before a cutover is the wrong trade. The
   absent/empty/new-group cases were verified in the browser instead. CI is
   already parked in BACKLOG.md.
+- **`adminColors` / `adminHsCodes` message drift** — they say `savedStatus` /
+  `submitEdit` where the other six vocab namespaces say `savedAt` /
+  `saveChanges`. `FormSaveBar` works around it by taking strings; normalise it
+  the next time those messages are touched.
+
+## 15. Approved 2026-07-28, not yet built
+
+### §8 — `/admin/lists`: 18 routes → 1
+Approved to build. Admin-only, so the owner's daily surfaces are untouched.
+
+**Shape.** One page, a vocabulary switcher (`?vocab=`, matching the
+`/admin/settings` sub-rail precedent — server-resolved, shareable), inline row
+editing. Six vocabularies: `part_categories`, `colors`, `customer_segments`,
+`bike_families`, `hs_codes`, `inventory_locations`.
+
+**The four things that make it more than a table.** Worth naming before
+starting, because each is a place the naive "one form" collapses:
+1. **The fields are not actually the same set.** Colours carry `ral_code` +
+   `coating` + hex, HS codes carry `tariff_pct` + `anti_dumping_pct`, locations
+   carry `code` + the primary flag, categories carry `parent_id` (hierarchical).
+   The shared subset is only `{name_en, name_da, is_active, sort_order}`. So the
+   row editor needs per-vocab extra columns — a descriptor per vocabulary, not
+   one hardcoded form.
+2. **The archive copy is entity-specific and load-bearing.** Today each detail
+   page explains its own consequence (HS codes talk about snapshotted tariffs,
+   locations about consumption fallback, kits about greyed labels). `ArchivePanel`
+   already takes that text as a prop, so it survives — but it needs somewhere to
+   live in a row-based UI. Probably an expanded row, not a tooltip.
+3. **The primary location cannot be archived** and categories have a parent
+   cycle to prevent. Row-level validation, not just field-level.
+4. **`/admin/kits` is NOT one of the six** — kits are a floor picking aid with
+   a sticker sheet, and CLAUDE.md is explicit they are not Admin config. It
+   keeps its own pages.
+
+**Sequence.** (a) a vocab descriptor table in `src/lib/admin/vocabularies.ts`
+(fields, labels, validation, archive copy) → (b) the page + switcher reading
+descriptors → (c) inline row editing against the existing server actions,
+unchanged → (d) redirect the 18 old routes → (e) collapse the six Admin
+landing tiles into one. Old routes redirect rather than 404, because Dennis may
+have them bookmarked.
+
+**Do not** fold in the secondary `[id]/edit`-as-drawer idea from §8. That was
+already scoped as "selectively, not as a rule", and a 16-field organisation
+form in a drawer is worse, not better.
+
+### §6 — floor/office mode: approved in principle, scheduled AFTER the cutover
+The concern was raised and the approval stood; the timing is the compromise.
+**Not before 31 Aug.** It is the largest item in this document and it reshapes
+the screen mechanics use every day — shipping it into Dennis's solo stretch
+(from 3 Aug) means he absorbs a changed floor UI with no developer on hand.
+Build it when there is someone to watch it land.
+
+**The mechanism is half-built already, which is why this is worth doing.**
+`src/i18n/request.ts` maps exactly the right set of surfaces (`WORKER_PATH`) to
+`worker_language`; the same predicate can stamp `data-mode="floor"` on `<html>`.
+So: (a) lift the path predicate out of `request.ts` into a shared
+`src/lib/ui/mode.ts` so locale and mode cannot drift apart · (b) stamp the
+attribute in `layout.tsx` from `middleware.ts`'s existing `x-pathname` ·
+(c) a `:root[data-mode="floor"]` token block in `globals.css` (body size,
+min touch target, raised contrast) · (d) the nav trim — 4 items + Scan — via
+the existing `can()` + `nav-items.ts` ids, NOT a second nav component.
+
+**Re-measure the contrast matrix for floor mode.** Raised contrast means new
+values, and per this document's §13 that is a fresh measurement pass, not an
+eyeball. The 2026-07-28 lesson applies: measure translucent pills on a canvas.
