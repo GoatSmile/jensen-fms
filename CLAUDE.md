@@ -69,7 +69,12 @@ known:
   Nothing else has ever found either — a counter cannot, and "when it feels
   heavy" never fires.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
-  entry in the same commit as the code that implements it.
+  entry in the same commit as the code that implements it — **and if it
+  supersedes a rule in this file, edit that rule in the same commit.**
+  Appending to DECISIONS is not enough on its own: the 2026-07-26 seven-group
+  nav decision was logged correctly and implemented in code, while the
+  Conventions bullet here went on describing the superseded four-group IA
+  (caught 2026-07-28 by reading, two days later).
 
 ## Stack
 - Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui
@@ -82,7 +87,7 @@ known:
 
 ## Database
 Schema introspectable via the `supabase` MCP server (read-only, including
-`execute_sql` for ad-hoc inspection). Nine domains: reference, catalog,
+`execute_sql` for ad-hoc inspection). Domains: reference, catalog,
 suppliers/purchasing, inventory, customers, bikes, commercial, maintenance,
 cross-cutting. Original SQL files live in `/migrations/`.
 
@@ -245,7 +250,7 @@ cross-cutting. Original SQL files live in `/migrations/`.
   Not a BOM line. One machine shared by painting / future washing / priming:
   - **Vocabulary + pricing layer**: `service_types` (w/ `blocks_build` —
     paint TRUE: bikes on a sent order are physically away and gate the
-    build floor) · `service_part_types` (stel, forgaffel… 8 today) ·
+    build floor) · `service_part_types` (stel, forgaffel, …) ·
     `service_price_lists` (PER SUPPLIER, one row per REVISION with its own
     CURRENCY, `is_current` flip like bike_templates — never edit-in-place) ·
     `service_price_items` (qty-tiered 1–9/10–19/20+, supplier item
@@ -281,8 +286,8 @@ cross-cutting. Original SQL files live in `/migrations/`.
   `channels/voicemail.ts` owns transcription (providers via the registry
   pattern). Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
-  the tech. Review queue at `/inbox` (Daily ops nav — a review queue, not
-  admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
+  the tech. Review queue at `/inbox` (in the *Work* nav group — it is a review
+  queue, not admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
   residency.
@@ -348,7 +353,7 @@ cross-cutting. Original SQL files live in `/migrations/`.
   notes (full reversals, own `CRE-` series). Deposits (`invoices.kind`)
   and the prepayment model: see DECISIONS.md 2026-06-21.
   **Payment terms are net 14** — the schema default (migration 01), what
-  531 of 535 real customers hold, and `DEFAULT_PAYMENT_TERMS_DAYS` in
+  virtually every real customer holds, and `DEFAULT_PAYMENT_TERMS_DAYS` in
   `src/lib/invoicing/status.ts`. Never hardcode a different number in a form
   or a placeholder; read that constant.
 
@@ -421,17 +426,25 @@ cross-cutting. Original SQL files live in `/migrations/`.
   underlying string sentence-case; don't "fix" these.
 - **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New
   part", "New MO") — not "Add X" or "Create X".
-- **Navigation / IA (set with owner 2026-06-20).** Left nav grouped with
-  hairline separators, most-used first: *Dashboard* · *Daily ops* (Bikes ·
-  Bike templates · Parts · Maintenance · Inbox · Workshop floor) · *Orders &
-  commercial* (Manufacturing orders · Purchase orders · Sales orders · Paint
-  orders · Invoices · Service agreements · Customers) · *Admin*.
+- **Navigation / IA — collapsible groups** (reset with the owner 2026-07-26,
+  replacing the flat list agreed 2026-06-20): *Today* (Dashboard) · *Bikes*
+  (All bikes · Bike templates · Families) · *Parts* (All parts · Stock value ·
+  Kits) · *Work* (Tickets · Work orders · Workshop floor · Inbox) · *Orders*
+  (Manufacturing / Purchase / Sales / Paint orders · Invoices) · *Customers*
+  (All customers · Service agreements · Map) · *Admin*.
+  - **Group names are CONCEPTS, not pages, and the rail does not grow.** A new
+    service type becomes another child of *Orders* (nav is per-service-type
+    permanently), never a new group. `nav_open` cookie state is resolved
+    server-side.
   - Both navs render from the shared `src/components/nav-items.ts` — add or
     move items THERE so desktop sidebar and mobile drawer can't drift.
-  - The customer **Map** (`/organizations/map`) is not in the sidebar — it
-    lives on the **Admin** landing page (`src/app/admin/page.tsx`), whose
-    tiles are grouped into tinted section cards: *Catalog & inventory* ·
-    *Purchasing & landed cost* · *Customers* (incl. Map) · *System*.
+  - **Templates, families and kits are NOT Admin.** Kits are a floor picking
+    aid and families group templates; neither is configuration.
+  - The customer **Map** (`/organizations/map`) is in the nav under
+    *Customers* **and** on the **Admin** landing page
+    (`src/app/admin/page.tsx`), whose tiles are grouped into tinted section
+    cards: *Catalog & inventory* · *Purchasing & landed cost* · *Customers* ·
+    *System*.
 - **Colour vocabulary — six hues carry the whole identity** (direction B
   "Emalje", locked 2026-07-26; Geist with **no display face**, so nothing
   falls back if the meanings drift). Closed list — a seventh meaning is a
@@ -450,7 +463,7 @@ cross-cutting. Original SQL files live in `/migrations/`.
     The old four-hue tint vocabulary is **superseded**: sky/blue →
     `brand`, emerald/green → `good`, amber → `money` (or `alert` where it
     meant *warning*), violet → `system`, rose/red → `alert`.
-  - **Contrast is a gate.** All 78 fg/bg pairs measure ≥ 4.5:1 per theme, incl.
+  - **Contrast is a gate.** EVERY fg/bg pair measures ≥ 4.5:1 per theme, incl.
     every hue on every *foreign* wash (a `hue` panel lets any two meet). Values
     are hex on purpose (see `globals.css`). A 12px bold uppercase eyebrow is
     **not** "large text"; colour is never the only carrier (*Out*, *Low*).

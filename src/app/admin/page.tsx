@@ -31,8 +31,10 @@ import { cn } from "@/lib/utils";
 /**
  * Admin landing — tiles for each subsection, grouped by domain (catalog &
  * inventory, purchasing & landed cost, customers, system) with the lists you
- * touch most near the top. The customer Map lives here too (moved out of the
- * primary nav).
+ * touch most near the top. The customer Map is reachable here too; it was
+ * pulled out of the primary nav in June and put back under the Customers
+ * group by the 2026-07-26 seven-group refresh, so both entry points are
+ * deliberate.
  */
 export default async function AdminLandingPage() {
   const supabase = await createClient();

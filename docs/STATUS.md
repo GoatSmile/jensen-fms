@@ -1,9 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-28.** Most recent: **harness doctrine only — no app
-code changed.** The CLAUDE.md line-count hook is deleted and replaced by a
-monthly consolidation read (DECISIONS 2026-07-28); two stale counts it could
-never have caught were fixed. The session before it shipped design-refresh
+**Last updated: 2026-07-28.** Most recent: **docs doctrine — no behaviour
+changed** (one source comment in `admin/page.tsx`). The CLAUDE.md line-count
+hook is deleted and replaced by a monthly consolidation read (DECISIONS
+2026-07-28), and the **first pass ran the same day** — it corrected the stale
+nav IA and stripped four live tallies; see next-action 3. The session before it
+shipped design-refresh
 Phase 2 (every list page on `Panel`) + Tier 1 CI — details below and in
 `docs/archive/HISTORY.md`. Gates green as of `4956f76`: `tsc` clean, lint 0
 errors (14 long-standing warnings), `npm run build` exit 0 / 52 static pages,
@@ -152,14 +154,17 @@ only.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
-3. **First session of August: consolidate `CLAUDE.md`** — step 3 of
-   `/session-start`. Read it end to end for rules that contradict each other
-   and counts that have drifted. **This is now the only instrument pointing at
-   that file**; the line-count hook was deleted 2026-07-28 on the grounds that
-   it never refused anything, so if this pass slips, the trade becomes "removed
-   the gate, kept nothing". The file is 537 lines and the honest reduction is
-   extracting narrative to `docs/archive/HISTORY.md` — **never deleting a
-   rule.**
+3. **Next `CLAUDE.md` consolidation: first session of September** — step 3 of
+   `/session-start`, and the only instrument pointing at that file now the
+   line-count hook is gone. The first pass ran 2026-07-28 (pulled forward) and
+   found what no counter could: the **nav IA bullet still described the
+   superseded four-group layout** two days after the seven-group refresh
+   shipped, including "the Map is not in the sidebar" when it is. Root cause is
+   now a rule — a decision that supersedes doctrine must edit `CLAUDE.md` in
+   the same commit, not just append to DECISIONS. Four live tallies were also
+   de-numbered (all four were accurate; they were stripped because they drift).
+   The file is ~550 lines and the honest reduction is extracting narrative to
+   `docs/archive/HISTORY.md` — **never deleting a rule.**
 
 ### The Phase 2 queue, in the order it is worth taking
 Nothing here needs owner input except where noted.
