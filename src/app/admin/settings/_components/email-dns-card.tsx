@@ -110,13 +110,16 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
       </div>
 
       {records.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed p-3 text-center text-xs">
+        <p className="text-ink-3 bg-surface rounded-lg p-3 text-center text-xs">
           {t("dnsEmpty")}
         </p>
       ) : (
         <div className="flex flex-col gap-3">
           {records.map((r, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-md border p-3">
+            <div
+              key={i}
+              className="bg-surface flex flex-col gap-2 rounded-lg p-3"
+            >
               <div className="flex items-center gap-2">
                 <Select
                   value={r.type}

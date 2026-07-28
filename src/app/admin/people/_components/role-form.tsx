@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 
 import { Field } from "@/components/field";
-import { Button } from "@/components/ui/button";
+import { FormSaveBar } from "@/components/form-save-bar";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
 
@@ -56,7 +55,6 @@ export function RoleForm({
 }) {
   const router = useRouter();
   const t = useTranslations("adminPeople");
-  const tCommon = useTranslations("common");
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
   // a page that spread the shell got `{}` (see CLAUDE.md).
@@ -188,8 +186,12 @@ export function RoleForm({
         </Field>
       </div>
 
-      <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">
+      {/* Still a fieldset/legend, not a Panel: these are groups of related
+          checkboxes, and the grouping is what a screen reader announces. The
+          legend wears the eyebrow's classes by hand — `px-1` is gone with the
+          border it used to notch. */}
+      <fieldset className="bg-surface flex flex-col gap-2 rounded-lg p-4">
+        <legend className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase">
           {t("capabilitiesLegend")}
         </legend>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -213,8 +215,12 @@ export function RoleForm({
         <p className="text-muted-foreground text-xs">{t("capabilitiesHint")}</p>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">
+      {/* Still a fieldset/legend, not a Panel: these are groups of related
+          checkboxes, and the grouping is what a screen reader announces. The
+          legend wears the eyebrow's classes by hand — `px-1` is gone with the
+          border it used to notch. */}
+      <fieldset className="bg-surface flex flex-col gap-2 rounded-lg p-4">
+        <legend className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase">
           {t("eventsLegend")}
         </legend>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -252,29 +258,24 @@ export function RoleForm({
         </p>
       ) : null}
 
-      <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
-        <span className="text-muted-foreground text-xs">
-          {savedAt
+      <FormSaveBar
+        pending={pending}
+        cancelHref="/admin/people"
+        status={
+          savedAt
             ? t("savedAt", {
                 time: new Date(savedAt).toLocaleTimeString("da-DK"),
               })
             : mode.kind === "create"
               ? t("notYetSaved")
-              : t("upToDate")}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/people">{tCommon("cancel")}</Link>
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? tCommon("saving")
-              : mode.kind === "create"
-                ? t("addRole")
-                : t("saveChanges")}
-          </Button>
-        </div>
-      </div>
+              : t("upToDate")
+        }
+        submitLabel={
+          mode.kind === "create"
+            ? t("addRole")
+            : t("saveChanges")
+        }
+      />
     </form>
   );
 }

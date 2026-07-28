@@ -157,7 +157,7 @@ export function OfferingDialog({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="offering-supplier">{t("supplier")}</Label>
             {lockSupplier ? (
-              <p className="bg-muted text-muted-foreground rounded-md border px-3 py-2 text-sm">
+              <p className="bg-ground text-ink-2 rounded-lg px-3 py-2 text-sm">
                 {supplierName}
               </p>
             ) : (

@@ -55,7 +55,7 @@ export function EconomicSyncCard({
 
   if (syncedLabel) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-4 py-3 text-sm">
+      <div className="bg-surface flex items-center justify-between gap-3 rounded-lg px-4 py-3 text-sm">
         <span className="text-muted-foreground">
           {t("economicPushedAs")}
         </span>
@@ -65,7 +65,7 @@ export function EconomicSyncCard({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border px-4 py-3">
+    <div className="bg-surface flex flex-col gap-2 rounded-lg px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-muted-foreground text-sm">
           {t("economicNotPushed")}

@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-import { Button } from "@/components/ui/button";
+import { FormSaveBar } from "@/components/form-save-bar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
@@ -47,7 +46,6 @@ type Props = {
 
 export function CategoryForm({ mode, initial, parentOptions }: Props) {
   const t = useTranslations("adminCategories");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
@@ -190,29 +188,24 @@ export function CategoryForm({ mode, initial, parentOptions }: Props) {
         </p>
       ) : null}
 
-      <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
-        <span className="text-muted-foreground text-xs">
-          {savedAt
+      <FormSaveBar
+        pending={pending}
+        cancelHref="/admin/categories"
+        status={
+          savedAt
             ? t("savedAt", {
                 time: new Date(savedAt).toLocaleTimeString("da-DK"),
               })
             : mode.kind === "create"
               ? t("notYetSaved")
-              : t("upToDate")}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/categories">{tCommon("cancel")}</Link>
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? tCommon("saving")
-              : mode.kind === "create"
-                ? t("addCategory")
-                : t("saveChanges")}
-          </Button>
-        </div>
-      </div>
+              : t("upToDate")
+        }
+        submitLabel={
+          mode.kind === "create"
+            ? t("addCategory")
+            : t("saveChanges")
+        }
+      />
     </form>
   );
 }

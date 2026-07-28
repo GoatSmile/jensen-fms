@@ -141,7 +141,7 @@ export function SubstitutePartDialog({
             placeholder={t("filterParts")}
           />
 
-          <div className="max-h-72 overflow-y-auto rounded-md border">
+          <div className="bg-ground max-h-72 overflow-y-auto rounded-lg">
             {filtered.length === 0 ? (
               <p className="text-muted-foreground p-3 text-center text-sm">
                 {t("noPartsMatch")}

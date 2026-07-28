@@ -98,7 +98,9 @@ export function CommunicationSettingsForm({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 rounded-md border p-3">
+      {/* bg-surface, not bg-ground: /admin/settings sections are hue-washed, and
+          an inner chip on a hued panel sits on surface (CLAUDE.md). */}
+      <div className="bg-surface flex flex-col gap-1.5 rounded-lg p-3">
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"

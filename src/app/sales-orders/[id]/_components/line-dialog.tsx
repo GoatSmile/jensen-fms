@@ -263,7 +263,7 @@ export function LineDialog({
               {kind === "template" ? t("bikeTemplate") : t("part")}
             </Label>
             {partLocked ? (
-              <div className="bg-muted/40 rounded-md border px-3 py-2 text-sm italic">
+              <div className="bg-ground rounded-lg px-3 py-2 text-sm italic">
                 {t("lockedEditMode")}
               </div>
             ) : (
@@ -274,7 +274,7 @@ export function LineDialog({
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder={t("filterPlaceholder")}
                 />
-                <div className="max-h-56 overflow-y-auto rounded-md border">
+                <div className="bg-ground max-h-56 overflow-y-auto rounded-lg">
                   {kind === "template" ? (
                     filteredTemplates.length === 0 ? (
                       <p className="text-muted-foreground p-3 text-center text-sm">
@@ -476,7 +476,7 @@ export function LineDialog({
             </div>
           </div>
 
-          <div className="bg-muted/30 flex flex-col gap-1.5 rounded-md border px-3 py-2 text-xs">
+          <div className="bg-ground flex flex-col gap-1.5 rounded-lg px-3 py-2 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("subtotal")}</span>
               <span className="tabular-nums">

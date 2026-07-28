@@ -4,9 +4,8 @@ import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { FormSaveBar } from "@/components/form-save-bar";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
 
@@ -41,7 +40,6 @@ export function FamilyForm({
 }) {
   const router = useRouter();
   const t = useTranslations("adminFamilies");
-  const tCommon = useTranslations("common");
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
   // a page that spread the shell got `{}` (see CLAUDE.md).
@@ -131,29 +129,24 @@ export function FamilyForm({
         </p>
       ) : null}
 
-      <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
-        <span className="text-muted-foreground text-xs">
-          {savedAt
+      <FormSaveBar
+        pending={pending}
+        cancelHref="/admin/families"
+        status={
+          savedAt
             ? t("savedAt", {
                 time: new Date(savedAt).toLocaleTimeString("da-DK"),
               })
             : mode.kind === "create"
               ? t("notYetSaved")
-              : t("upToDate")}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/families">{tCommon("cancel")}</Link>
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? tCommon("saving")
-              : mode.kind === "create"
-                ? t("addFamily")
-                : t("saveChanges")}
-          </Button>
-        </div>
-      </div>
+              : t("upToDate")
+        }
+        submitLabel={
+          mode.kind === "create"
+            ? t("addFamily")
+            : t("saveChanges")
+        }
+      />
     </form>
   );
 }

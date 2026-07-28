@@ -85,7 +85,7 @@ export function EconomicSettingsForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {!tokensReady ? (
-        <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
+        <p className="bg-money-wash text-money rounded-lg px-3 py-2 text-xs">
           {t("economicTokensMissing")}
         </p>
       ) : null}
@@ -196,7 +196,7 @@ export function EconomicSettingsForm({
 
       {probe ? (
         probe.ok ? (
-          <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+          <div className="bg-surface rounded-lg px-3 py-2 text-xs">
             <p>
               {t("probeConnectedPrefix")}{" "}
               <span className="font-medium">{probe.company}</span>{" "}

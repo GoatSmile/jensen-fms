@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import { Field } from "@/components/field";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import { FormSaveBar } from "@/components/form-save-bar";
 import { ColorSwatch } from "@/components/color-swatch";
 import { Input } from "@/components/ui/input";
 import { appendField } from "@/lib/forms";
@@ -63,7 +63,6 @@ type Props = {
 export function ColorForm({ mode, initial, coatings }: Props) {
   const router = useRouter();
   const t = useTranslations("adminColors");
-  const tCommon = useTranslations("common");
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
   // a page that spread the shell got `{}` (see CLAUDE.md).
@@ -237,7 +236,7 @@ export function ColorForm({ mode, initial, coatings }: Props) {
       </div>
 
       {ralConflict ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-money/30 bg-money-wash px-3 py-2 text-sm">
+        <div className="bg-money-wash flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm">
           <span className="text-money">
             {t("ralConflict", { code: values.ral_code.trim(), hex: ralHex ?? "" })}
           </span>
@@ -296,29 +295,24 @@ export function ColorForm({ mode, initial, coatings }: Props) {
         </p>
       ) : null}
 
-      <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
-        <span className="text-muted-foreground text-xs">
-          {savedAt
+      <FormSaveBar
+        pending={pending}
+        cancelHref="/admin/colors"
+        status={
+          savedAt
             ? t("savedStatus", {
                 time: new Date(savedAt).toLocaleTimeString("da-DK"),
               })
             : mode.kind === "create"
               ? t("notYetSaved")
-              : t("upToDate")}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/colors">{tCommon("cancel")}</Link>
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? tCommon("saving")
-              : mode.kind === "create"
-                ? t("addColour")
-                : t("submitEdit")}
-          </Button>
-        </div>
-      </div>
+              : t("upToDate")
+        }
+        submitLabel={
+          mode.kind === "create"
+            ? t("addColour")
+            : t("submitEdit")
+        }
+      />
     </form>
   );
 }

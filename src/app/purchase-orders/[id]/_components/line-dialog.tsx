@@ -365,7 +365,7 @@ export function LineDialog({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="line-part-filter">{t("part")}</Label>
             {partLocked ? (
-              <div className="bg-muted/40 rounded-md border px-3 py-2 text-sm">
+              <div className="bg-ground rounded-lg px-3 py-2 text-sm">
                 <span className="font-medium">
                   {mode.kind === "edit" ? mode.initial.partLabel : ""}
                 </span>
@@ -378,7 +378,7 @@ export function LineDialog({
                   onChange={(e) => setFilter(e.target.value)}
                   placeholder={t("filterPartsPlaceholder")}
                 />
-                <div className="max-h-56 overflow-y-auto rounded-md border">
+                <div className="bg-ground max-h-56 overflow-y-auto rounded-lg">
                   {filteredParts.length === 0 ? (
                     <p className="text-muted-foreground p-3 text-center text-sm">
                       {t("noPartsMatch")}
@@ -565,7 +565,7 @@ export function LineDialog({
           </div>
 
           {/* Live preview of the additive landed-cost breakdown. */}
-          <div className="bg-muted/30 flex flex-col gap-1.5 rounded-md border px-3 py-2 text-xs">
+          <div className="bg-ground flex flex-col gap-1.5 rounded-lg px-3 py-2 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 {t("lineTotalNative", { currency })}

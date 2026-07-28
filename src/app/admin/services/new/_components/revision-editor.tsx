@@ -8,6 +8,7 @@ import { localizedName } from "@/i18n/vocab";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -274,7 +275,7 @@ export function RevisionEditor({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-md border p-4">
+      <Panel>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {source ? (
             <>
@@ -355,16 +356,15 @@ export function RevisionEditor({
             </Select>
           </div>
         </div>
-      </section>
+      </Panel>
 
-      <section className="rounded-md border">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("pricesHeading")}</h2>
-            <p className="text-muted-foreground text-xs">
-              {t("pricesDescription")}
-            </p>
-          </div>
+      <Panel
+        title={t("pricesHeading")}
+        description={t("pricesDescription")}
+        // A raw <table> with per-row inputs, so it has no scroller of its own —
+        // the overflow lives on the panel body (the batch-build-grid precedent).
+        contentClassName="overflow-x-auto"
+        action={
           <div className="flex items-center gap-2">
             <Select value={addPartTypeId} onValueChange={setAddPartTypeId}>
               <SelectTrigger
@@ -398,10 +398,9 @@ export function RevisionEditor({
               <Plus aria-hidden /> {t("addRow")}
             </Button>
           </div>
-        </header>
-
-        <div className="overflow-x-auto p-4">
-          <table className="w-full text-sm">
+        }
+      >
+        <table className="w-full text-sm">
             <thead>
               <tr className="text-muted-foreground border-b text-left text-xs">
                 <th className="px-2 py-2 font-medium">{t("partColumn")}</th>
@@ -477,20 +476,16 @@ export function RevisionEditor({
               ))}
             </tbody>
           </table>
-        </div>
-      </section>
+      </Panel>
 
       {source ? (
-        <section className="rounded-md border p-4">
-          <h2 className="text-sm font-semibold">
-            {t("changesVs", { name: source.name, version: source.version })}
-          </h2>
+        <Panel
+          title={t("changesVs", { name: source.name, version: source.version })}
+        >
           {diff.length === 0 ? (
-            <p className="text-muted-foreground mt-2 text-sm">
-              {t("noChangesYet")}
-            </p>
+            <p className="text-muted-foreground text-sm">{t("noChangesYet")}</p>
           ) : (
-            <ul className="mt-2 flex flex-col gap-1 text-sm">
+            <ul className="flex flex-col gap-1 text-sm">
               {diff.map((line, i) => (
                 <li key={`${i}-${line}`} className="tabular-nums">
                   {line}
@@ -498,7 +493,7 @@ export function RevisionEditor({
               ))}
             </ul>
           )}
-        </section>
+        </Panel>
       ) : null}
 
       {error ? (

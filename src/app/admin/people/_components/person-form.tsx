@@ -3,10 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 
 import { Field } from "@/components/field";
-import { Button } from "@/components/ui/button";
+import { FormSaveBar } from "@/components/form-save-bar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -71,7 +70,6 @@ export function PersonForm({
 }) {
   const router = useRouter();
   const t = useTranslations("adminPeople");
-  const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
@@ -230,8 +228,11 @@ export function PersonForm({
         </Field>
       </div>
 
-      <fieldset className="flex flex-col gap-2 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">{t("rolesLegend")}</legend>
+      {/* fieldset/legend kept for the grouping semantics; see role-form. */}
+      <fieldset className="bg-surface flex flex-col gap-2 rounded-lg p-4">
+        <legend className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase">
+          {t("rolesLegend")}
+        </legend>
         {roleOptions.length === 0 ? (
           <p className="text-muted-foreground text-sm italic">
             {t("noRolesYet")}
@@ -303,29 +304,24 @@ export function PersonForm({
         </p>
       ) : null}
 
-      <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
-        <span className="text-muted-foreground text-xs">
-          {savedAt
+      <FormSaveBar
+        pending={pending}
+        cancelHref="/admin/people"
+        status={
+          savedAt
             ? t("savedAt", {
                 time: new Date(savedAt).toLocaleTimeString("da-DK"),
               })
             : mode.kind === "create"
               ? t("notYetSaved")
-              : t("upToDate")}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild type="button" variant="outline" disabled={pending}>
-            <Link href="/admin/people">{tCommon("cancel")}</Link>
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {pending
-              ? tCommon("saving")
-              : mode.kind === "create"
-                ? t("addPerson")
-                : t("saveChanges")}
-          </Button>
-        </div>
-      </div>
+              : t("upToDate")
+        }
+        submitLabel={
+          mode.kind === "create"
+            ? t("addPerson")
+            : t("saveChanges")
+        }
+      />
     </form>
   );
 }

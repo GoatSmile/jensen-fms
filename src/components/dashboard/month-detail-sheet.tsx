@@ -86,7 +86,7 @@ export function MonthDetailSheet({
           ) : (
             <>
               {detail.rows.length > 0 ? (
-                <ul className="flex flex-col overflow-hidden rounded-md border">
+                <ul className="bg-ground flex flex-col overflow-hidden rounded-lg">
                   {detail.rows.map((row) => (
                     <li key={row.id} className="border-b last:border-b-0">
                       <Link
@@ -118,7 +118,7 @@ export function MonthDetailSheet({
                 </p>
               ) : null}
               {detail.legacyNote ? (
-                <p className="text-muted-foreground bg-muted/40 rounded-md border p-3 text-xs">
+                <p className="text-ink-3 bg-ground rounded-lg p-3 text-xs">
                   {detail.legacyNote}
                 </p>
               ) : null}
