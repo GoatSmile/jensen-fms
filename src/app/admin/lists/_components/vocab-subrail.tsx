@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import {
-  SETTINGS_SECTIONS,
-  type SettingsSectionId,
-} from "@/lib/admin/settings-sections";
 import { SubRailScroller } from "@/components/subrail-scroller";
+import { VOCABULARIES, type VocabId } from "@/lib/admin/vocabularies";
 import { cn } from "@/lib/utils";
 
 const HUE_DOT: Record<string, string> = {
@@ -18,32 +15,29 @@ const HUE_DOT: Record<string, string> = {
 };
 
 /**
- * Left rail for `/admin/settings` — a server component, so the active section
- * is correct on the first frame and there is nothing to hydrate.
+ * Vocabulary rail for `/admin/lists` — deliberately the same shape as
+ * `SettingsSubRail`: a server component, so the active vocabulary is correct on
+ * the first frame and there is nothing to hydrate, and `scroll={false}` so
+ * switching swaps the panel rather than jumping the viewport to the top (which
+ * reads as a page reload).
  *
- * `scroll={false}` matters: without it, switching sections jumps the viewport
- * to the top of the document, which on a settings page reads as the page
- * reloading rather than as a panel swapping.
- *
- * Below `md` the rail becomes a horizontal scroller above the panel, because a
- * vertical rail plus a form in a phone-width column leaves neither enough room.
+ * Not merged with `SettingsSubRail` into one generic rail: they share ~20 lines
+ * of markup but differ in route, param name and label namespace, and a rail
+ * abstracted over all three is harder to read than two short components. The
+ * duplication worth removing was the scroller, and that is now shared.
  */
-export async function SettingsSubRail({
-  active,
-}: {
-  active: SettingsSectionId;
-}) {
-  const t = await getTranslations("adminSettings");
+export async function VocabSubRail({ active }: { active: VocabId }) {
+  const t = await getTranslations("adminLists");
   return (
-    <nav aria-label={t("sectionsAria")} className="md:w-52 md:shrink-0">
+    <nav aria-label={t("vocabulariesAria")} className="md:w-52 md:shrink-0">
       <SubRailScroller>
         <ul className="flex gap-1 md:flex-col">
-          {SETTINGS_SECTIONS.map((section) => {
-            const isActive = section.id === active;
+          {VOCABULARIES.map((vocab) => {
+            const isActive = vocab.id === active;
             return (
-              <li key={section.id} className="shrink-0 md:shrink">
+              <li key={vocab.id} className="shrink-0 md:shrink">
                 <Link
-                  href={`/admin/settings?section=${section.id}`}
+                  href={`/admin/lists?vocab=${vocab.id}`}
                   scroll={false}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
@@ -56,12 +50,12 @@ export async function SettingsSubRail({
                   <span
                     className={cn(
                       "size-1.5 shrink-0 rounded-full",
-                      HUE_DOT[section.hue],
+                      HUE_DOT[vocab.hue],
                       isActive ? null : "opacity-40",
                     )}
                     aria-hidden
                   />
-                  {t(section.labelKey)}
+                  {t(vocab.labelKey)}
                 </Link>
               </li>
             );

@@ -37,6 +37,7 @@ export function ArchivePanel({
   description,
   onToggle,
   blocked = false,
+  variant = "panel",
 }: {
   /** Message namespace holding the six shared archive/restore keys. */
   namespace: string;
@@ -47,6 +48,15 @@ export function ArchivePanel({
   onToggle: () => Promise<string | null>;
   /** Disables the action. The description must then say why. */
   blocked?: boolean;
+  /**
+   * `"panel"` is the detail-page footer. `"inline"` drops the `Panel` wrapper for
+   * callers that are already inside one — `/admin/lists` expands a row into an
+   * editor, and a Panel nested in a table cell inside a Panel is exactly the card
+   * soup the panel convention replaced. Added as a variant rather than letting
+   * that page hand-roll an eighth copy of this control: the pending/error
+   * handling and the six shared message keys stay in one place.
+   */
+  variant?: "panel" | "inline";
 }) {
   const t = useTranslations(namespace);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +69,46 @@ export function ArchivePanel({
     });
   }
 
+  const button = (
+    <Button
+      type="button"
+      size="sm"
+      variant={isActive ? "destructive" : "outline"}
+      onClick={onClick}
+      disabled={pending || blocked}
+    >
+      {isActive ? (
+        <>
+          <Archive className="size-4" aria-hidden />
+          {pending ? t("archiving") : t("archive")}
+        </>
+      ) : (
+        <>
+          <ArchiveRestore className="size-4" aria-hidden />
+          {pending ? t("restoring") : t("restore")}
+        </>
+      )}
+    </Button>
+  );
+
+  const errorLine = error ? (
+    <p className="text-destructive text-xs" role="alert">
+      {error}
+    </p>
+  ) : null;
+
+  if (variant === "inline") {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-ink-2 text-xs">{description}</p>
+          <div className="shrink-0">{button}</div>
+        </div>
+        {errorLine}
+      </div>
+    );
+  }
+
   return (
     <Panel
       title={isActive ? t("archiveTitle") : t("restoreTitle")}
@@ -67,33 +117,9 @@ export function ArchivePanel({
       // then all the padding the panel needs — p-5 under an empty body reads as
       // a lopsided box (same trade as FormSection's folded state).
       className={error ? undefined : "pb-2"}
-      action={
-        <Button
-          type="button"
-          size="sm"
-          variant={isActive ? "destructive" : "outline"}
-          onClick={onClick}
-          disabled={pending || blocked}
-        >
-          {isActive ? (
-            <>
-              <Archive className="size-4" aria-hidden />
-              {pending ? t("archiving") : t("archive")}
-            </>
-          ) : (
-            <>
-              <ArchiveRestore className="size-4" aria-hidden />
-              {pending ? t("restoring") : t("restore")}
-            </>
-          )}
-        </Button>
-      }
+      action={button}
     >
-      {error ? (
-        <p className="text-destructive text-xs" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {errorLine}
     </Panel>
   );
 }
