@@ -69,7 +69,9 @@ was rejected. See the `log-decision` skill.
 
 Only if this changed a **rule**, or added an invariant, gotcha, or vocabulary term.
 The test: *would a fresh session behave incorrectly without this line?* Edit in
-place; never append a dated paragraph. Budget ~470 lines, and a hook warns past it.
+place; never append a dated paragraph. There is **no size budget and no hook** —
+that gate was deleted 2026-07-28 (DECISIONS.md); keep the file short by moving
+narrative out and editing rules in place, and never by deleting a real rule.
 
 Money, stock and soft-archive invariants live under "Architectural decisions — do
 not silently change these". If you touched one of those, updating it is mandatory.

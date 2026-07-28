@@ -1,11 +1,13 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2 — five
-slices, then the real-data verification pass that Phase 2 had shipped without.**
-Every list page is now on `Panel`; the pass found four things and fixed them
-forward, no revert. **Tier 1 CI shipped alongside**, pulled forward from
-September. Gates green at the last commit: `tsc` clean, lint 0 errors (14
-long-standing warnings), `npm run build` exit 0 / 52 static pages, CI green.
+**Last updated: 2026-07-28.** Most recent: **harness doctrine only — no app
+code changed.** The CLAUDE.md line-count hook is deleted and replaced by a
+monthly consolidation read (DECISIONS 2026-07-28); two stale counts it could
+never have caught were fixed. The session before it shipped design-refresh
+Phase 2 (every list page on `Panel`) + Tier 1 CI — details below and in
+`docs/archive/HISTORY.md`. Gates green as of `4956f76`: `tsc` clean, lint 0
+errors (14 long-standing warnings), `npm run build` exit 0 / 52 static pages,
+CI green.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -150,6 +152,14 @@ only.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
+3. **First session of August: consolidate `CLAUDE.md`** — step 3 of
+   `/session-start`. Read it end to end for rules that contradict each other
+   and counts that have drifted. **This is now the only instrument pointing at
+   that file**; the line-count hook was deleted 2026-07-28 on the grounds that
+   it never refused anything, so if this pass slips, the trade becomes "removed
+   the gate, kept nothing". The file is 537 lines and the honest reduction is
+   extracting narrative to `docs/archive/HISTORY.md` — **never deleting a
+   rule.**
 
 ### The Phase 2 queue, in the order it is worth taking
 Nothing here needs owner input except where noted.
