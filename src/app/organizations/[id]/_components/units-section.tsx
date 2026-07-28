@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
+import { Panel } from "@/components/ui/panel";
 
 import { archiveUnit } from "../_actions/manage-units";
 import { EMPTY_UNIT, UnitDialog, type UnitDialogValues } from "./unit-dialog";
@@ -62,57 +63,56 @@ export function UnitsSection({ organizationId, rows }: Props) {
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">{t("title")}</h2>
-          <span className="text-muted-foreground text-xs">
-            {t("count", { count: rows.length })}
-          </span>
-        </div>
+    <Panel
+      title={t("title")}
+      description={t("count", { count: rows.length })}
+      action={
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
           {t("addSubUnit")}
         </Button>
-      </header>
-
+      }
+    >
       {error ? (
-        <p className="text-destructive border-b px-4 py-2 text-sm" role="alert">
+        <p className="text-destructive mb-3 text-sm" role="alert">
           {error}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="p-4">
-          <EmptyState
-            icon={Building2}
-            title={t("emptyTitle")}
-            description={t("emptyDesc")}
-          />
-        </div>
+        <EmptyState
+          inPanel
+          icon={Building2}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+        />
       ) : (
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thName")}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t("thCode")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("thAddress")}</TableHead>
-                <TableHead className="w-[80px] text-right">{t("thBikes")}</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <UnitTableRow
-                  key={row.id}
-                  row={row}
-                  onEdit={() => setEditingId(row.id)}
-                  onError={setError}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thName")}</TableHead>
+              <TableHead className="hidden lg:table-cell">
+                {t("thCode")}
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thAddress")}
+              </TableHead>
+              <TableHead className="w-[80px] text-right">
+                {t("thBikes")}
+              </TableHead>
+              <TableHead className="w-[40px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <UnitTableRow
+                key={row.id}
+                row={row}
+                onEdit={() => setEditingId(row.id)}
+                onError={setError}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <UnitDialog
@@ -132,7 +132,7 @@ export function UnitsSection({ organizationId, rows }: Props) {
           initial={editingValues}
         />
       ) : null}
-    </section>
+    </Panel>
   );
 }
 

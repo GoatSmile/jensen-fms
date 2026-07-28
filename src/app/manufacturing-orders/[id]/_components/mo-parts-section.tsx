@@ -263,7 +263,7 @@ export function MOPartsSection({
           ))}
 
           {empty.length > 0 ? (
-            <div className="mt-2 rounded-md border border-dashed">
+            <div className="bg-ground mt-2 rounded-lg">
               <button
                 type="button"
                 onClick={() => setShowEmpty((v) => !v)}
@@ -315,8 +315,11 @@ export function MOPartsSection({
                   const catName =
                     catRows[0]?.categoryName ?? t("uncategorised");
                   return (
-                    <div key={catKey} className="rounded-md border">
-                      <div className="bg-muted/30 border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
+                    <div
+                      key={catKey}
+                      className="bg-ground overflow-hidden rounded-lg"
+                    >
+                      <div className="border-rule border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
                         {catName}
                       </div>
                       <ul className="divide-y">

@@ -523,7 +523,7 @@ export function PartsRecipeSection({
             ))}
 
             {empty.length > 0 ? (
-              <div className="border-rule mt-2 rounded-md border border-dashed">
+              <div className="bg-ground mt-2 rounded-lg">
                 <button
                   type="button"
                   onClick={() => setShowEmpty((v) => !v)}
@@ -586,9 +586,9 @@ export function PartsRecipeSection({
                     return (
                       <div
                         key={catKey}
-                        className="border-rule overflow-hidden rounded-md border"
+                        className="bg-ground overflow-hidden rounded-lg"
                       >
-                        <div className="bg-muted/40 flex items-center justify-between gap-2 border-b px-3 py-1.5">
+                        <div className="border-rule flex items-center justify-between gap-2 border-b px-3 py-1.5">
                           <span className="text-xs font-medium uppercase tracking-wide">
                             {catName}
                           </span>

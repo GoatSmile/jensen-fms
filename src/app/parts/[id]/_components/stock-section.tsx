@@ -68,7 +68,7 @@ export async function StockSection({
         description={t("stockDescriptionSingle")}
         hue="brand"
       >
-        <div className="bg-background flex items-center justify-between gap-4 rounded-md border p-4">
+        <div className="bg-surface flex items-center justify-between gap-4 rounded-lg p-4">
           <div className="flex flex-col">
             <span className="text-muted-foreground text-xs">
               {t("onHand")}

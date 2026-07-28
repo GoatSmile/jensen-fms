@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
 import {
   Table,
   TableBody,
@@ -115,203 +116,197 @@ export default async function AdminPeoplePage() {
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      <section className="rounded-md border">
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-semibold">{t("peopleSection")}</h2>
-            <span className="text-muted-foreground text-xs">
-              {t("countSummary", { active: activePeople, total: people.length })}
-            </span>
-          </div>
+      <Panel
+        title={t("peopleSection")}
+        description={t("countSummary", {
+          active: activePeople,
+          total: people.length,
+        })}
+        action={
           <Button asChild size="sm" variant="outline">
             <Link href="/admin/people/new">
               <Plus aria-hidden /> {t("newPerson")}
             </Link>
           </Button>
-        </header>
-
+        }
+      >
         {people.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-sm italic">
+          <p className="text-muted-foreground text-sm italic">
             {t("emptyPeople")}
           </p>
         ) : (
-          <div className="overflow-x-auto md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colName")}</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("colEngagement")}
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    {t("colRoles")}
-                  </TableHead>
-                  <TableHead>{t("colStatus")}</TableHead>
-                  <TableHead className="w-[36px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {people.map((row) => {
-                  const href = `/admin/people/${row.id}`;
-                  return (
-                    <TableRow
-                      key={row.id}
-                      className={`hover:bg-muted/50 cursor-pointer ${row.is_active ? "" : "opacity-60"}`}
-                    >
-                      <TableCell className="p-0 font-medium">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {row.full_name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden p-0 md:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {t(`engagement_${row.engagement}`)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden p-0 lg:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {(rolesByPerson.get(row.id) ?? []).join(" · ") || "—"}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {row.is_active ? (
-                            <Badge variant="success">{t("statusActive")}</Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              {t("statusArchived")}
-                            </Badge>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0 text-right">
-                        <Link
-                          href={href}
-                          className="text-muted-foreground block px-3 py-2.5"
-                          aria-label={t("openAria", { name: row.full_name })}
-                        >
-                          <ChevronRight className="size-4" aria-hidden />
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("colName")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("colEngagement")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("colRoles")}
+                </TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead className="w-[36px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {people.map((row) => {
+                const href = `/admin/people/${row.id}`;
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={`hover:bg-muted/50 cursor-pointer ${row.is_active ? "" : "opacity-60"}`}
+                  >
+                    <TableCell className="p-0 font-medium">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.full_name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 md:table-cell">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {t(`engagement_${row.engagement}`)}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden p-0 lg:table-cell">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {(rolesByPerson.get(row.id) ?? []).join(" · ") || "—"}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.is_active ? (
+                          <Badge variant="success">{t("statusActive")}</Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            {t("statusArchived")}
+                          </Badge>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0 text-right">
+                      <Link
+                        href={href}
+                        className="text-muted-foreground block px-3 py-2.5"
+                        aria-label={t("openAria", { name: row.full_name })}
+                      >
+                        <ChevronRight className="size-4" aria-hidden />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Panel>
 
-      <section className="rounded-md border">
-        <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-sm font-semibold">{t("rolesSection")}</h2>
-            <span className="text-muted-foreground text-xs">
-              {t("countSummary", { active: activeRoles, total: roles.length })}
-            </span>
-          </div>
+      <Panel
+        title={t("rolesSection")}
+        description={t("countSummary", {
+          active: activeRoles,
+          total: roles.length,
+        })}
+        action={
           <Button asChild size="sm" variant="outline">
             <Link href="/admin/people/roles/new">
               <Plus aria-hidden /> {t("newRole")}
             </Link>
           </Button>
-        </header>
-
+        }
+      >
         {roles.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-sm italic">
+          <p className="text-muted-foreground text-sm italic">
             {t("emptyRoles")}
           </p>
         ) : (
-          <div className="overflow-x-auto md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colRole")}</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("colHome")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("colCapabilities")}
-                  </TableHead>
-                  <TableHead className="hidden text-right lg:table-cell">
-                    {t("colPeople")}
-                  </TableHead>
-                  <TableHead>{t("colPassword")}</TableHead>
-                  <TableHead>{t("colStatus")}</TableHead>
-                  <TableHead className="w-[36px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.map((row) => {
-                  const href = `/admin/people/roles/${row.id}`;
-                  const name = localizedName(locale, row.name_en, row.name_da);
-                  return (
-                    <TableRow
-                      key={row.id}
-                      className={`hover:bg-muted/50 cursor-pointer ${row.is_active ? "" : "opacity-60"}`}
-                    >
-                      <TableCell className="p-0 font-medium">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden p-0 md:table-cell">
-                        <Link
-                          href={href}
-                          className="block px-4 py-2.5 font-mono text-xs"
-                        >
-                          {row.home_path}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden p-0 text-right tabular-nums lg:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {capsByRole.get(row.id) ?? 0}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden p-0 text-right tabular-nums lg:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {membersByRole.get(row.id) ?? 0}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {row.password_hash ? (
-                            <Badge variant="success">{t("passwordSet")}</Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              {t("passwordNotSet")}
-                            </Badge>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {row.is_active ? (
-                            <Badge variant="success">{t("statusActive")}</Badge>
-                          ) : (
-                            <Badge variant="outline">
-                              {t("statusArchived")}
-                            </Badge>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0 text-right">
-                        <Link
-                          href={href}
-                          className="text-muted-foreground block px-3 py-2.5"
-                          aria-label={t("openAria", { name })}
-                        >
-                          <ChevronRight className="size-4" aria-hidden />
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("colRole")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("colHome")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("colCapabilities")}
+                </TableHead>
+                <TableHead className="hidden text-right lg:table-cell">
+                  {t("colPeople")}
+                </TableHead>
+                <TableHead>{t("colPassword")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead className="w-[36px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {roles.map((row) => {
+                const href = `/admin/people/roles/${row.id}`;
+                const name = localizedName(locale, row.name_en, row.name_da);
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={`hover:bg-muted/50 cursor-pointer ${row.is_active ? "" : "opacity-60"}`}
+                  >
+                    <TableCell className="p-0 font-medium">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 md:table-cell">
+                      <Link
+                        href={href}
+                        className="block px-4 py-2.5 font-mono text-xs"
+                      >
+                        {row.home_path}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 text-right tabular-nums lg:table-cell">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {capsByRole.get(row.id) ?? 0}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 text-right tabular-nums lg:table-cell">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {membersByRole.get(row.id) ?? 0}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.password_hash ? (
+                          <Badge variant="success">{t("passwordSet")}</Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            {t("passwordNotSet")}
+                          </Badge>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0">
+                      <Link href={href} className="block px-4 py-2.5">
+                        {row.is_active ? (
+                          <Badge variant="success">{t("statusActive")}</Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            {t("statusArchived")}
+                          </Badge>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0 text-right">
+                      <Link
+                        href={href}
+                        className="text-muted-foreground block px-3 py-2.5"
+                        aria-label={t("openAria", { name })}
+                      >
+                        <ChevronRight className="size-4" aria-hidden />
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

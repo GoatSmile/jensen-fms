@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/empty-state";
+import { Panel } from "@/components/ui/panel";
 
 import { archiveContact } from "../_actions/manage-contacts";
 import {
@@ -78,59 +79,58 @@ export function ContactsSection({ organizationId, rows }: Props) {
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-sm font-semibold">{t("title")}</h2>
-          <span className="text-muted-foreground text-xs">
-            {t("count", { count: rows.length })}
-          </span>
-        </div>
+    <Panel
+      title={t("title")}
+      description={t("count", { count: rows.length })}
+      action={
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
           {t("addContact")}
         </Button>
-      </header>
-
+      }
+    >
       {error ? (
-        <p className="text-destructive border-b px-4 py-2 text-sm" role="alert">
+        <p className="text-destructive mb-3 text-sm" role="alert">
           {error}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <div className="p-4">
-          <EmptyState
-            icon={UserRound}
-            title={t("emptyTitle")}
-            description={t("emptyDesc")}
-          />
-        </div>
+        <EmptyState
+          inPanel
+          icon={UserRound}
+          title={t("emptyTitle")}
+          description={t("emptyDesc")}
+        />
       ) : (
-        <div className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thName")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("thRole")}</TableHead>
-                <TableHead>{t("thEmail")}</TableHead>
-                <TableHead className="hidden lg:table-cell">{t("thPhone")}</TableHead>
-                <TableHead className="hidden md:table-cell">{t("thLanguage")}</TableHead>
-                <TableHead className="w-[80px]">{t("thPrimary")}</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <ContactTableRow
-                  key={row.id}
-                  row={row}
-                  onEdit={() => setEditingId(row.id)}
-                  onError={setError}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thName")}</TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thRole")}
+              </TableHead>
+              <TableHead>{t("thEmail")}</TableHead>
+              <TableHead className="hidden lg:table-cell">
+                {t("thPhone")}
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thLanguage")}
+              </TableHead>
+              <TableHead className="w-[80px]">{t("thPrimary")}</TableHead>
+              <TableHead className="w-[40px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <ContactTableRow
+                key={row.id}
+                row={row}
+                onEdit={() => setEditingId(row.id)}
+                onError={setError}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <ContactDialog
@@ -150,7 +150,7 @@ export function ContactsSection({ organizationId, rows }: Props) {
           initial={editingValues}
         />
       ) : null}
-    </section>
+    </Panel>
   );
 }
 

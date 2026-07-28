@@ -210,7 +210,7 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
         </div>
         {Number(values.labor_minutes) > 0 && !values.labor_rate_dkk.trim() ? (
           <p
-            className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money"
+            className="bg-money-wash text-money rounded-lg px-3 py-2 text-xs"
             role="alert"
           >
             {t("laborNoRateWarning")}

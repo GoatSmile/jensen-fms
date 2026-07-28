@@ -8,6 +8,7 @@ import { KeyRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 
 import { setRolePassword } from "../_actions/manage-roles";
 
@@ -50,19 +51,22 @@ export function RolePasswordCard({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border p-4">
-      <header className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <KeyRound className="text-muted-foreground size-4" aria-hidden />
+    <Panel
+      title={
+        <span className="flex items-center gap-2">
+          <KeyRound className="size-3.5" aria-hidden />
           {t("passwordTitle")}
-        </h2>
-        {hasPassword ? (
+        </span>
+      }
+      action={
+        hasPassword ? (
           <Badge variant="success">{t("passwordSet")}</Badge>
         ) : (
           <Badge variant="outline">{t("passwordNotSet")}</Badge>
-        )}
-      </header>
-
+        )
+      }
+      contentClassName="flex flex-col gap-3"
+    >
       <p className="text-muted-foreground text-sm">
         {hasPassword ? t("passwordStatusSet") : t("passwordStatusMissing")}
       </p>
@@ -100,6 +104,6 @@ export function RolePasswordCard({
       <p className="text-muted-foreground text-xs">
         {t("passwordWriteOnlyHint")}
       </p>
-    </section>
+    </Panel>
   );
 }

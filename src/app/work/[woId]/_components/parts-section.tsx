@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Plus, Trash2, Wrench, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/money";
 import { removePartFromWO } from "@/app/maintenance/work-orders/[id]/_actions/manage-wo-parts";
 
@@ -62,31 +63,38 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
   }
 
   return (
-    <section className="bg-card flex flex-col gap-3 rounded-md border border-l-[3px] border-l-indigo-600 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Wrench className="size-4 text-ink-2" aria-hidden />
-          <h2 className="text-sm font-semibold">{t("partsTitle")}</h2>
-          <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-            {rows.length === 0 ? (
-              t("noneYet")
-            ) : (
-              <>
-                {rows.length} ·{" "}
-                <Money amount={totalCost} currency="DKK" bold={false} />
-              </>
-            )}
-          </span>
-        </div>
-        {!readOnly ? (
+    <Panel
+      // See photos-section: the /work accent bars are one system, kept verbatim.
+      className="border-l-[3px] border-l-indigo-600"
+      title={
+        <span className="flex items-center gap-2">
+          <Wrench className="size-3.5" aria-hidden />
+          {t("partsTitle")}
+        </span>
+      }
+      description={
+        <span className="flex items-center gap-1.5">
+          {rows.length === 0 ? (
+            t("noneYet")
+          ) : (
+            <>
+              {rows.length} ·{" "}
+              <Money amount={totalCost} currency="DKK" bold={false} />
+            </>
+          )}
+        </span>
+      }
+      action={
+        !readOnly ? (
           <Button asChild size="sm" variant="outline">
             <Link href={`/work/${woId}/parts`}>
               <Plus className="size-4" aria-hidden /> {t("addParts")}
             </Link>
           </Button>
-        ) : null}
-      </div>
-
+        ) : undefined
+      }
+      contentClassName="flex flex-col gap-3"
+    >
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -176,6 +184,6 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
           })}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

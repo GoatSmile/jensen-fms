@@ -14,6 +14,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { formatQuantity } from "@/lib/parts/stock";
 import type { CoverageRow } from "@/lib/manufacturing/coverage";
 
@@ -61,11 +62,15 @@ export function CoverageSection({
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <PackageSearch className="text-muted-foreground size-4" aria-hidden />
-          <h2 className="text-sm font-semibold">{t("coverageTitle")}</h2>
+    <Panel
+      title={
+        <span className="flex items-center gap-2">
+          <PackageSearch className="size-3.5" aria-hidden />
+          {t("coverageTitle")}
+        </span>
+      }
+      action={
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {remainingToBuild === 0 ? (
             <Badge variant="outline">{t("nothingLeft")}</Badge>
           ) : allCovered ? (
@@ -77,26 +82,26 @@ export function CoverageSection({
               {t("partsShort", { count: shortfall.length })}
             </Badge>
           )}
+          {!readOnly && shortfall.length > 0 && remainingToBuild > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onDraftPOs}
+              disabled={isPending}
+            >
+              <ShoppingCart className="size-4" aria-hidden />
+              {isPending
+                ? t("drafting")
+                : t("draftPoShortfall", { count: shortfall.length })}
+            </Button>
+          ) : null}
         </div>
-        {!readOnly && shortfall.length > 0 && remainingToBuild > 0 ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={onDraftPOs}
-            disabled={isPending}
-          >
-            <ShoppingCart className="size-4" aria-hidden />
-            {isPending
-              ? t("drafting")
-              : t("draftPoShortfall", { count: shortfall.length })}
-          </Button>
-        ) : null}
-      </header>
-
+      }
+    >
       {result ? (
         result.ok ? (
           <div
-            className="border-b bg-good-wash px-4 py-3 text-sm text-good"
+            className="bg-good-wash text-good mb-3 rounded-lg px-4 py-3 text-sm"
             role="status"
           >
             <p>
@@ -128,17 +133,14 @@ export function CoverageSection({
             ) : null}
           </div>
         ) : (
-          <p
-            className="text-destructive border-b px-4 py-3 text-sm"
-            role="alert"
-          >
+          <p className="text-destructive mb-3 text-sm" role="alert">
             {result.error}
           </p>
         )
       ) : null}
 
       {remainingToBuild === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm italic">
+        <p className="text-muted-foreground text-sm italic">
           {t("coverageNotApply")}
         </p>
       ) : (
@@ -150,7 +152,7 @@ export function CoverageSection({
               ))}
             </ul>
           ) : (
-            <p className="flex items-center gap-2 p-4 text-sm text-good">
+            <p className="text-good flex items-center gap-2 py-2 text-sm">
               <CheckCircle2 className="size-4" aria-hidden />
               {t("stockCoversAll", { count: remainingToBuild })}
             </p>
@@ -161,7 +163,7 @@ export function CoverageSection({
               <button
                 type="button"
                 onClick={() => setShowCovered((v) => !v)}
-                className="hover:bg-muted/30 flex w-full items-center gap-2 px-4 py-2 text-left text-xs"
+                className="hover:bg-muted/30 flex w-full items-center gap-2 rounded py-2 text-left text-xs"
               >
                 {showCovered ? (
                   <ChevronDown className="size-3.5" aria-hidden />
@@ -183,14 +185,14 @@ export function CoverageSection({
           ) : null}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function CoverageLine({ row, short }: { row: CoverageRow; short?: boolean }) {
   const t = useTranslations("moDetail");
   return (
-    <li className="flex items-center justify-between gap-3 px-4 py-2">
+    <li className="flex items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-sm">{row.name}</span>
         <span className="text-muted-foreground font-mono text-[10px]">

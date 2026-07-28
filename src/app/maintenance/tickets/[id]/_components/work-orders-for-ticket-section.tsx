@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/money";
 import { SegmentedId } from "@/components/segmented-id";
 import { formatDate } from "@/lib/parts/format";
@@ -80,108 +81,97 @@ export function WorkOrdersForTicketSection({
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("workOrdersTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("workOrdersDesc")}
-          </p>
-        </div>
-        {showStart ? (
+    <Panel
+      title={t("workOrdersTitle")}
+      description={t("workOrdersDesc")}
+      action={
+        showStart ? (
           <Button size="sm" onClick={onStart} disabled={isPending}>
             <Plus aria-hidden />{" "}
             {isPending ? t("starting") : t("startWorkOrder")}
           </Button>
-        ) : null}
-      </header>
-      <div className="p-4">
-        {error ? (
-          <p className="text-destructive mb-3 text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
+        ) : undefined
+      }
+    >
+      {error ? (
+        <p className="text-destructive mb-3 text-sm" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-        {rows.length === 0 ? (
-          <div className="text-muted-foreground flex h-20 items-center justify-center rounded-md border border-dashed text-sm">
-            {t("noWorkOrders")}
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("thWorkOrder")}</TableHead>
-                  <TableHead>{t("thStatus")}</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("thStarted")}
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    {t("thCompleted")}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t("thPartsTotal")}
-                  </TableHead>
+      {rows.length === 0 ? (
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
+          {t("noWorkOrders")}
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("thWorkOrder")}</TableHead>
+              <TableHead>{t("thStatus")}</TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thStarted")}
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thCompleted")}
+              </TableHead>
+              <TableHead className="text-right">{t("thPartsTotal")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((wo) => {
+              const href = `/maintenance/work-orders/${wo.id}`;
+              return (
+                <TableRow key={wo.id} className="hover:bg-muted/50">
+                  <TableCell className="p-0 text-xs">
+                    <Link href={href} className="block px-4 py-2.5">
+                      <SegmentedId value={wo.wo_number} />
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <Link href={href} className="block px-4 py-2.5">
+                      <Badge variant={WO_STATUS_VARIANT[wo.status] ?? "outline"}>
+                        {tWoStatus(wo.status)}
+                      </Badge>
+                      {!wo.is_billable ? (
+                        <Badge
+                          variant="secondary"
+                          className="ml-1.5 font-normal"
+                        >
+                          {t("covered")}
+                        </Badge>
+                      ) : null}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {formatDate(wo.started_at)}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {formatDate(wo.completed_at)}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0 text-right tabular-nums">
+                    <Link href={href} className="block px-4 py-2.5">
+                      {wo.parts_total_dkk > 0 ? (
+                        <Money
+                          amount={wo.parts_total_dkk}
+                          currency="DKK"
+                          bold={false}
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </Link>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((wo) => {
-                  const href = `/maintenance/work-orders/${wo.id}`;
-                  return (
-                    <TableRow key={wo.id} className="hover:bg-muted/50">
-                      <TableCell className="p-0 text-xs">
-                        <Link href={href} className="block px-4 py-2.5">
-                          <SegmentedId value={wo.wo_number} />
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0">
-                        <Link href={href} className="block px-4 py-2.5">
-                          <Badge
-                            variant={WO_STATUS_VARIANT[wo.status] ?? "outline"}
-                          >
-                            {tWoStatus(wo.status)}
-                          </Badge>
-                          {!wo.is_billable ? (
-                            <Badge
-                              variant="secondary"
-                              className="ml-1.5 font-normal"
-                            >
-                              {t("covered")}
-                            </Badge>
-                          ) : null}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {formatDate(wo.started_at)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground hidden p-0 text-xs md:table-cell">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {formatDate(wo.completed_at)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="p-0 text-right tabular-nums">
-                        <Link href={href} className="block px-4 py-2.5">
-                          {wo.parts_total_dkk > 0 ? (
-                            <Money
-                              amount={wo.parts_total_dkk}
-                              currency="DKK"
-                              bold={false}
-                            />
-                          ) : (
-                            "—"
-                          )}
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
-    </section>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
+    </Panel>
   );
 }

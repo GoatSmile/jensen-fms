@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 
@@ -99,15 +100,11 @@ export function LinesSection({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold">{t("linesTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {editable ? t("linesDescEditable") : t("linesDescLocked")}
-          </p>
-        </div>
-        {editable ? (
+    <Panel
+      title={t("linesTitle")}
+      description={editable ? t("linesDescEditable") : t("linesDescLocked")}
+      action={
+        editable ? (
           <Button
             size="sm"
             variant="outline"
@@ -115,70 +112,68 @@ export function LinesSection({
           >
             <Plus aria-hidden /> {t("addLine")}
           </Button>
-        ) : null}
-      </header>
-
+        ) : undefined
+      }
+    >
       {error ? (
-        <p className="text-destructive border-b px-4 py-2 text-sm" role="alert">
+        <p className="text-destructive mb-3 text-sm" role="alert">
           {error}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="text-muted-foreground p-4 text-sm italic">
+        <p className="text-muted-foreground text-sm italic">
           {editable ? t("noLinesEditable") : t("noLines")}
         </p>
       ) : (
-        <div className="overflow-x-auto md:overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[36px]">#</TableHead>
-                <TableHead>{t("thItem")}</TableHead>
-                <TableHead className="text-right">{t("thQty")}</TableHead>
-                <TableHead className="hidden text-right md:table-cell">
-                  {t("thUnitPrice")}
-                </TableHead>
-                <TableHead className="hidden text-right lg:table-cell">
-                  {t("thVat")}
-                </TableHead>
-                <TableHead className="text-right">{t("thLineTotal")}</TableHead>
-                <TableHead className="w-[40px]" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <SOLineTableRow
-                  key={row.id}
-                  soId={soId}
-                  row={row}
-                  currency={currency}
-                  editable={editable}
-                  canSpawn={canSpawn}
-                  onEdit={() =>
-                    setDialog({
-                      kind: "edit",
-                      initial: {
-                        lineId: row.id,
-                        kind: row.kind,
-                        partId: row.partId,
-                        bikeTemplateId: row.bikeTemplateId,
-                        quantity: row.quantity,
-                        unitPrice: row.unitPrice,
-                        vatCode: row.vatCode,
-                        colorId: row.colorId,
-                        descriptionEn: row.descriptionEn,
-                        descriptionDa: row.descriptionDa,
-                      },
-                    })
-                  }
-                  onError={setError}
-                  onAfterAction={() => router.refresh()}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[36px]">#</TableHead>
+              <TableHead>{t("thItem")}</TableHead>
+              <TableHead className="text-right">{t("thQty")}</TableHead>
+              <TableHead className="hidden text-right md:table-cell">
+                {t("thUnitPrice")}
+              </TableHead>
+              <TableHead className="hidden text-right lg:table-cell">
+                {t("thVat")}
+              </TableHead>
+              <TableHead className="text-right">{t("thLineTotal")}</TableHead>
+              <TableHead className="w-[40px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <SOLineTableRow
+                key={row.id}
+                soId={soId}
+                row={row}
+                currency={currency}
+                editable={editable}
+                canSpawn={canSpawn}
+                onEdit={() =>
+                  setDialog({
+                    kind: "edit",
+                    initial: {
+                      lineId: row.id,
+                      kind: row.kind,
+                      partId: row.partId,
+                      bikeTemplateId: row.bikeTemplateId,
+                      quantity: row.quantity,
+                      unitPrice: row.unitPrice,
+                      vatCode: row.vatCode,
+                      colorId: row.colorId,
+                      descriptionEn: row.descriptionEn,
+                      descriptionDa: row.descriptionDa,
+                    },
+                  })
+                }
+                onError={setError}
+                onAfterAction={() => router.refresh()}
+              />
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {dialog.kind !== "closed" ? (
@@ -213,7 +208,7 @@ export function LinesSection({
           colors={colors}
         />
       ) : null}
-    </section>
+    </Panel>
   );
 }
 

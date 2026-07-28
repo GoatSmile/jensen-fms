@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Camera, ImageOff, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { resizeImageForUpload, toUploadFile } from "@/lib/parts/image";
 
 import { uploadWorkOrderImage } from "../_actions/upload-wo-image";
@@ -79,49 +80,58 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
   }
 
   return (
-    <section className="bg-card flex flex-col gap-3 rounded-md border border-l-[3px] border-l-slate-600 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Camera className="size-4 text-ink-2" aria-hidden />
-          <h2 className="text-sm font-semibold">{t("photosTitle")}</h2>
-          <span className="text-muted-foreground text-xs">
-            {photos.length === 0
-              ? t("noneYet")
-              : t("photoCount", { count: photos.length })}
-          </span>
-        </div>
-        {!readOnly ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="size-4 animate-spin" aria-hidden />{" "}
-                {t("uploading")}
-              </>
-            ) : (
-              <>
-                <Camera className="size-4" aria-hidden /> {t("takePhoto")}
-              </>
-            )}
-          </Button>
-        ) : null}
-        {/* No `capture` attr — with it, iOS forces the camera and blocks
-            the photo library; without it the OS sheet offers both "Take
-            photo" and gallery, which is what the tech actually needs. */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onFile}
-        />
-      </div>
-
+    <Panel
+      // The left accent bar identifies each workspace section on the floor.
+      // Kept verbatim — the four /work bars are one system and re-hueing them
+      // is a colour-vocabulary decision, not a styling tidy-up.
+      className="border-l-[3px] border-l-slate-600"
+      title={
+        <span className="flex items-center gap-2">
+          <Camera className="size-3.5" aria-hidden />
+          {t("photosTitle")}
+        </span>
+      }
+      description={
+        photos.length === 0
+          ? t("noneYet")
+          : t("photoCount", { count: photos.length })
+      }
+      action={
+        <>
+          {!readOnly ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />{" "}
+                  {t("uploading")}
+                </>
+              ) : (
+                <>
+                  <Camera className="size-4" aria-hidden /> {t("takePhoto")}
+                </>
+              )}
+            </Button>
+          ) : null}
+          {/* No `capture` attr — with it, iOS forces the camera and blocks
+              the photo library; without it the OS sheet offers both "Take
+              photo" and gallery, which is what the tech actually needs. */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onFile}
+          />
+        </>
+      }
+      contentClassName="flex flex-col gap-3"
+    >
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
@@ -165,6 +175,6 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
           ))}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }

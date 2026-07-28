@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Field } from "@/components/field";
+import { FormSection } from "@/components/form-section";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 
@@ -361,28 +362,6 @@ export function MOForm({
         </Button>
       </div>
     </form>
-  );
-}
-
-function FormSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {description ? (
-          <p className="text-muted-foreground text-xs">{description}</p>
-        ) : null}
-      </header>
-      <div className="flex flex-col gap-3 p-4">{children}</div>
-    </section>
   );
 }
 

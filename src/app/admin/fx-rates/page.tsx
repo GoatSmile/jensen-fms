@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
 import {
   Table,
   TableBody,
@@ -89,10 +90,10 @@ export default async function FxRatesPage() {
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
-      <section className="rounded-md border">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("latestTitle")}</h2>
-          <p className="text-muted-foreground text-xs">
+      <Panel
+        title={t("latestTitle")}
+        description={
+          <>
             {t("latestDesc")}
             {totalCount > 0 ? (
               <span>
@@ -103,63 +104,56 @@ export default async function FxRatesPage() {
                 })}
               </span>
             ) : null}
-          </p>
-        </header>
+          </>
+        }
+      >
         {rows.length === 0 ? (
-          <p className="text-muted-foreground p-4 text-sm italic">
+          <p className="text-muted-foreground text-sm italic">
             {t("emptyState")}
           </p>
         ) : (
-          <div className="overflow-x-auto md:overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("colPair")}</TableHead>
-                  <TableHead className="text-right">{t("colRate")}</TableHead>
-                  <TableHead>{t("colAsOf")}</TableHead>
-                  <TableHead className="hidden sm:table-cell">
-                    {t("colSource")}
-                  </TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("colPair")}</TableHead>
+                <TableHead className="text-right">{t("colRate")}</TableHead>
+                <TableHead>{t("colAsOf")}</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("colSource")}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={`${r.from}-${r.to}`}>
+                  <TableCell className="font-mono text-xs">
+                    {r.from} → {r.to}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">
+                    {formatFxRate(r.rate)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {formatDate(r.rateDate)}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {r.source ? (
+                      <Badge variant="outline" className="font-normal">
+                        {r.source}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((r) => (
-                  <TableRow key={`${r.from}-${r.to}`}>
-                    <TableCell className="font-mono text-xs">
-                      {r.from} → {r.to}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">
-                      {formatFxRate(r.rate)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {formatDate(r.rateDate)}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {r.source ? (
-                        <Badge variant="outline" className="font-normal">
-                          {r.source}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Panel>
 
-      <section className="rounded-md border">
-        <header className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("actionsTitle")}</h2>
-          <p className="text-muted-foreground text-xs">{t("actionsDesc")}</p>
-        </header>
-        <div className="p-4">
-          <FxActions />
-        </div>
-      </section>
+      <Panel title={t("actionsTitle")} description={t("actionsDesc")}>
+        <FxActions />
+      </Panel>
     </div>
   );
 }

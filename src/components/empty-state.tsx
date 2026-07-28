@@ -17,6 +17,14 @@ type Props = {
   action?: Action;
   /** Secondary CTA, rendered as outline next to primary. */
   secondaryAction?: Action;
+  /**
+   * Set when this sits INSIDE a `Panel`. The panel already draws the surface,
+   * so the dashed box would be the boxed-thing-in-a-box the panel replaced;
+   * fill with `bg-ground` instead. Do NOT set it at page level — the page
+   * background already is `--ground`, so the fill renders as nothing and the
+   * state reads as floating text (CLAUDE.md).
+   */
+  inPanel?: boolean;
   className?: string;
 };
 
@@ -30,12 +38,14 @@ export function EmptyState({
   description,
   action,
   secondaryAction,
+  inPanel = false,
   className,
 }: Props) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-md border border-dashed px-6 py-12 text-center",
+        "flex flex-col items-center justify-center gap-3 px-6 py-12 text-center",
+        inPanel ? "bg-ground rounded-lg" : "rounded-md border border-dashed",
         className,
       )}
     >

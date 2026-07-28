@@ -78,7 +78,7 @@ export async function PaymentsSection({
       }
     >
       {soTotal > 0 ? (
-        <div className="bg-background flex flex-col gap-1.5 rounded-md border px-4 py-3">
+        <div className="bg-surface flex flex-col gap-1.5 rounded-lg px-4 py-3">
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="text-muted-foreground text-xs tracking-wide uppercase">
               {t("pctInvoiced", { pct: pct.toFixed(0) })}

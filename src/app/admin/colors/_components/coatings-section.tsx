@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import {
   Table,
   TableBody,
@@ -120,132 +121,126 @@ export function CoatingsSection({ rows }: { rows: CoatingRow[] }) {
   }
 
   return (
-    <section className="rounded-md border">
-      <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">{t("coatingsTitle")}</h2>
-        <p className="text-muted-foreground text-xs">
-          {t("coatingsDescription")}
-        </p>
-      </header>
-
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("thFinishEnglish")}</TableHead>
-              <TableHead className="hidden sm:table-cell">{t("thDanish")}</TableHead>
-              <TableHead className="hidden md:table-cell">{t("slug")}</TableHead>
-              <TableHead className="w-[80px]">{t("thSort")}</TableHead>
-              <TableHead className="w-[160px] text-right">{t("thActions")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => {
-              const e = edits[r.id];
-              const dirty = isDirty(r);
-              return (
-                <TableRow key={r.id} className={r.isActive ? "" : "opacity-60"}>
-                  <TableCell>
-                    <Input
-                      value={e?.labelEn ?? ""}
-                      onChange={(ev) => setEdit(r.id, { labelEn: ev.target.value })}
-                      className="h-8"
-                    />
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Input
-                      value={e?.labelDa ?? ""}
-                      onChange={(ev) => setEdit(r.id, { labelDa: ev.target.value })}
-                      className="h-8"
-                    />
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <span className="text-muted-foreground font-mono text-xs">
-                      {r.slug}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      inputMode="numeric"
-                      value={e?.sortOrder ?? ""}
-                      onChange={(ev) =>
-                        setEdit(r.id, { sortOrder: ev.target.value })
-                      }
-                      className="h-8 w-16"
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      {dirty ? (
-                        <Button
-                          type="button"
-                          size="xs"
-                          onClick={() => onSave(r)}
-                          disabled={pending}
-                        >
-                          {t("save")}
-                        </Button>
-                      ) : !r.isActive ? (
-                        <Badge variant="outline">{t("statusArchived")}</Badge>
-                      ) : null}
+    <Panel
+      title={t("coatingsTitle")}
+      description={t("coatingsDescription")}
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("thFinishEnglish")}</TableHead>
+            <TableHead className="hidden sm:table-cell">{t("thDanish")}</TableHead>
+            <TableHead className="hidden md:table-cell">{t("slug")}</TableHead>
+            <TableHead className="w-[80px]">{t("thSort")}</TableHead>
+            <TableHead className="w-[160px] text-right">{t("thActions")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => {
+            const e = edits[r.id];
+            const dirty = isDirty(r);
+            return (
+              <TableRow key={r.id} className={r.isActive ? "" : "opacity-60"}>
+                <TableCell>
+                  <Input
+                    value={e?.labelEn ?? ""}
+                    onChange={(ev) => setEdit(r.id, { labelEn: ev.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <Input
+                    value={e?.labelDa ?? ""}
+                    onChange={(ev) => setEdit(r.id, { labelDa: ev.target.value })}
+                    className="h-8"
+                  />
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {r.slug}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    inputMode="numeric"
+                    value={e?.sortOrder ?? ""}
+                    onChange={(ev) =>
+                      setEdit(r.id, { sortOrder: ev.target.value })
+                    }
+                    className="h-8 w-16"
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1.5">
+                    {dirty ? (
                       <Button
                         type="button"
                         size="xs"
-                        variant="ghost"
-                        onClick={() => onToggleActive(r)}
+                        onClick={() => onSave(r)}
                         disabled={pending}
                       >
-                        {r.isActive ? t("archive") : t("restore")}
+                        {t("save")}
                       </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    ) : !r.isActive ? (
+                      <Badge variant="outline">{t("statusArchived")}</Badge>
+                    ) : null}
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => onToggleActive(r)}
+                      disabled={pending}
+                    >
+                      {r.isActive ? t("archive") : t("restore")}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
 
-            {/* Add a new finish */}
-            <TableRow>
-              <TableCell>
-                <Input
-                  value={newEn}
-                  onChange={(e) => setNewEn(e.target.value)}
-                  placeholder={t("newFinishEnglishPlaceholder")}
-                  className="h-8"
-                />
-              </TableCell>
-              <TableCell className="hidden sm:table-cell">
-                <Input
-                  value={newDa}
-                  onChange={(e) => setNewDa(e.target.value)}
-                  placeholder={t("danishOptionalPlaceholder")}
-                  className="h-8"
-                />
-              </TableCell>
-              <TableCell className="hidden md:table-cell">
-                <span className="text-muted-foreground text-xs">{t("auto")}</span>
-              </TableCell>
-              <TableCell />
-              <TableCell className="text-right">
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="outline"
-                  onClick={onAdd}
-                  disabled={pending || !newEn.trim()}
-                >
-                  {t("addFinish")}
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+          {/* Add a new finish */}
+          <TableRow>
+            <TableCell>
+              <Input
+                value={newEn}
+                onChange={(e) => setNewEn(e.target.value)}
+                placeholder={t("newFinishEnglishPlaceholder")}
+                className="h-8"
+              />
+            </TableCell>
+            <TableCell className="hidden sm:table-cell">
+              <Input
+                value={newDa}
+                onChange={(e) => setNewDa(e.target.value)}
+                placeholder={t("danishOptionalPlaceholder")}
+                className="h-8"
+              />
+            </TableCell>
+            <TableCell className="hidden md:table-cell">
+              <span className="text-muted-foreground text-xs">{t("auto")}</span>
+            </TableCell>
+            <TableCell />
+            <TableCell className="text-right">
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={onAdd}
+                disabled={pending || !newEn.trim()}
+              >
+                {t("addFinish")}
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
       {error ? (
         <p className="text-destructive px-4 py-2 text-sm" role="alert">
           {error}
         </p>
       ) : null}
-    </section>
+    </Panel>
   );
 }
