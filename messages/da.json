@@ -3353,6 +3353,7 @@
     "bikeCouldNotLoadAttachment": "Kunne ikke indlæse vedhæftning: {detail}",
     "bikeAttachmentNotFound": "Vedhæftning ikke fundet eller allerede slettet.",
     "bikeCannotMove": "Kan ikke skifte fra \"{from}\" til \"{to}\".",
+    "bikeBuildNeedsMo": "En cykel skal høre til en produktionsordre, før den kan bygges — uden en produktionsordre kan den ikke komme videre fra “bygger”. Opret en produktionsordre for den først.",
     "bikeReasonRequiredRetire": "En begrundelse er påkrævet, når en cykel udrangeres eller markeres som mistet/stjålet.",
     "bikeCouldNotUpdateStatus": "Kunne ikke opdatere status: {detail}",
     "bikeNoFileReceived": "Ingen fil modtaget.",

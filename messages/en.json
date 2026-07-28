@@ -3353,6 +3353,7 @@
     "bikeCouldNotLoadAttachment": "Could not load attachment: {detail}",
     "bikeAttachmentNotFound": "Attachment not found or already deleted.",
     "bikeCannotMove": "Cannot move from \"{from}\" to \"{to}\".",
+    "bikeBuildNeedsMo": "A bike needs a manufacturing order before it can be built — a bike without one has no way out of “building”. Create a manufacturing order for it first.",
     "bikeReasonRequiredRetire": "A reason is required when retiring a bike or marking it lost/stolen.",
     "bikeCouldNotUpdateStatus": "Could not update status: {detail}",
     "bikeNoFileReceived": "No file received.",

@@ -59,6 +59,10 @@
      the shadcn tokens above are remapped onto them in :root so the 187
      files that use bg-background / text-muted-foreground / border inherit
      B without being touched. */
+  /* Generates the `shadow-popover` utility. Points at a runtime var (like every
+     --color-* below) so it flips with the theme instead of being baked in. */
+  --shadow-popover: var(--elevation-popover);
+
   --color-ground: var(--ground);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
@@ -117,6 +121,26 @@
   --ink-3: #6b6a65;
   --rule: #e9e9e4;
   --rule-strong: #dcdcd5;
+
+  /* ── Elevation, for FLOATING surfaces only ──────────────────────────────
+     Direction B gets separation from fill and padding, so panels in the page
+     flow have no border and no shadow. A popover cannot use that trick: it
+     overlaps arbitrary content, and since --popover IS --surface, a dropdown
+     opening over a white Panel is white-on-white — measured 1.000:1, with the
+     stock shadcn edge (ink at 10%) giving only a 1.225:1 hairline. That is the
+     smudge users report.
+
+     The fix is elevation, not an outline. A hairline dark enough for WCAG
+     1.4.11's 3:1 would need ~#949494 around every dropdown in the app, which
+     fights B and buys little: list items are identified by their own text and
+     hover states, so the container edge is reinforcement, not the carrier.
+
+     Three stops (contact / mid / ambient) plus a light hairline at 14%. Use
+     ONLY on overlay primitives — a shadow on an in-flow panel is card soup
+     with extra steps. */
+  --elevation-popover:
+    0 1px 2px rgb(28 28 26 / 0.08), 0 8px 16px -4px rgb(28 28 26 / 0.14),
+    0 24px 32px -12px rgb(28 28 26 / 0.16), 0 0 0 1px rgb(28 28 26 / 0.14);
 
   /* The six hues + their block-fill washes. Meaning is fixed app-wide:
      brand = navigation / primary action · money = invoicing, revenue ·
@@ -219,6 +243,16 @@
   --ink-3: #93938d;
   --rule: #2e2e2c;
   --rule-strong: #3a3a37;
+
+  /* Dark elevation cannot reuse the light recipe: --ink is near-WHITE here, so
+     an ink-based shadow would glow. Shadows stay black and go deeper (a dark
+     surface swallows a soft shadow), and the hairline flips to a LIGHT rim at
+     8% — on a dark ground a raised surface reads by its lit edge, not its
+     shadow. Unreachable today (no theme provider) but kept complete, like
+     every other pair in this file. */
+  --elevation-popover:
+    0 1px 2px rgb(0 0 0 / 0.5), 0 8px 16px -4px rgb(0 0 0 / 0.55),
+    0 24px 32px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(245 245 242 / 0.08);
 
   --brand: #7ca0ee;
   --brand-ink: #9bb8f3;

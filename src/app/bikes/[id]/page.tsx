@@ -350,6 +350,7 @@ export default async function BikeDetailPage({
         }
         colorHex={b.color?.hex ?? null}
         isDeleted={b.deleted_at != null}
+        hasManufacturingOrder={b.manufacturing_order_id != null}
         assignAction={
           <AssignCustomerDialog
             bikeId={b.id}

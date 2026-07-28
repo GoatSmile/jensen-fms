@@ -35,7 +35,7 @@ export async function transitionBike(
 
   const { data: bike, error: lookupErr } = await supabase
     .from("bikes")
-    .select("id, status")
+    .select("id, status, manufacturing_order_id")
     .eq("id", bikeId)
     .maybeSingle();
   if (lookupErr || !bike) {
@@ -50,8 +50,20 @@ export async function transitionBike(
     return { ok: false, error: t("alreadyInState") };
   }
 
-  const allowed = validNextStatuses(fromStatus);
+  const hasManufacturingOrder = bike.manufacturing_order_id != null;
+
+  const allowed = validNextStatuses(fromStatus, { hasManufacturingOrder });
   if (!allowed.includes(toStatus)) {
+    // Name the actual reason for the one case a generic "cannot move" would
+    // read as a bug: the move IS in the matrix, it's the missing MO that
+    // blocks it, and the fix (attach an MO) isn't guessable from "cannot".
+    if (
+      fromStatus === "planning" &&
+      toStatus === "building" &&
+      !hasManufacturingOrder
+    ) {
+      return { ok: false, error: t("bikeBuildNeedsMo") };
+    }
     return {
       ok: false,
       error: t("bikeCannotMove", { from: fromStatus, to: toStatus }),

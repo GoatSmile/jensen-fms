@@ -52,6 +52,12 @@ type Props = {
   colorHex: string | null;
   isDeleted: boolean;
   /**
+   * Gates `planning → building` in the Move-to menu: without an MO there is no
+   * way out of `building` (see `validNextStatuses`). The server action enforces
+   * this too — this only keeps a dead option out of the menu.
+   */
+  hasManufacturingOrder: boolean;
+  /**
    * Slot for the "Assign to customer" action. Lives on the page (server
    * component) because it loads the orgs + units list; injected here so
    * the header keeps its existing layout responsibility.
@@ -70,6 +76,7 @@ export function BikeHeader({
   colorName,
   colorHex,
   isDeleted,
+  hasManufacturingOrder,
   assignAction,
 }: Props) {
   const t = useTranslations("bikeDetail");
@@ -82,7 +89,7 @@ export function BikeHeader({
   const [transitionDialog, setTransitionDialog] =
     useState<PendingTransition>(null);
 
-  const nextStatuses = validNextStatuses(status);
+  const nextStatuses = validNextStatuses(status, { hasManufacturingOrder });
 
   function runDelete() {
     setActionError(null);

@@ -24,6 +24,14 @@
  * matrix here; finishBikeBuild updates status directly (it bypasses this matrix
  * by design, same as autoAdvanceMOAfterBuild does for MOs).
  *
+ * **planning → building requires a manufacturing order.** Without one the bike
+ * has no way OUT of `building`: `finishBikeBuild` is the only path to in_stock,
+ * it lives at `/manufacturing-orders/<mo>/bikes/<bike>/build`, and the build
+ * queue on `/work` filters to bikes on an open MO. So an MO-less bike moved to
+ * `building` is stranded — only `retired` / `lost_or_stolen` remain. That
+ * happened for real (found 2026-07-28, one bike in prod) via two entirely
+ * reasonable clicks: create at `/bikes/new`, then Move to → Building.
+ *
  * Returns from a customer (Phase 4 maintenance) and refurbish flows aren't
  * encoded here — they require model changes that aren't in scope yet.
  */
@@ -67,15 +75,35 @@ const FORWARD_TRANSITIONS: Record<BikeStatus, BikeStatus[]> = {
 
 const TERMINAL_FROM_ANY: BikeStatus[] = ["retired", "lost_or_stolen"];
 
+export type TransitionContext = {
+  /**
+   * Whether the bike is attached to a manufacturing order. Gates
+   * `planning → building`, which is a one-way door without one — see the
+   * module docstring. Defaults to `false`: a caller that doesn't know must not
+   * accidentally offer the stranding move.
+   */
+  hasManufacturingOrder?: boolean;
+};
+
 /**
  * Statuses the bike can transition to from `current`. Excludes `current`
  * itself. Terminal states (retired, lost_or_stolen) are permitted from any
  * non-terminal state.
+ *
+ * Pass `hasManufacturingOrder` so `planning → building` is only offered when
+ * the bike can actually be finished afterwards.
  */
-export function validNextStatuses(current: BikeStatus): BikeStatus[] {
-  const forward = FORWARD_TRANSITIONS[current] ?? [];
+export function validNextStatuses(
+  current: BikeStatus,
+  ctx: TransitionContext = {},
+): BikeStatus[] {
   const isTerminal = current === "retired" || current === "lost_or_stolen";
   if (isTerminal) return [];
+
+  let forward = FORWARD_TRANSITIONS[current] ?? [];
+  if (current === "planning" && !ctx.hasManufacturingOrder) {
+    forward = forward.filter((s) => s !== "building");
+  }
   return [...forward, ...TERMINAL_FROM_ANY];
 }
 
