@@ -1178,3 +1178,93 @@ compromise: build it after the cutover, when there is someone to watch it land.
 
 **Superseded:** `docs/STATUS.md`'s Phase 2 queue items 3 and 4, which both read
 "ask first". They no longer need asking; item 4 needs scheduling.
+
+## 2026-07-28 (evening) — floating surfaces get elevation; the edge is not chased to 3:1
+Phase 2 put nearly every form section on a white `Panel`, and `--popover` IS
+`--surface`, so a dropdown opening over one had **zero** fill separation —
+measured 1.000:1, with shadcn's `ring-1 ring-foreground/10` (ink at 10% →
+rgb(232,232,232)) giving a **1.225:1** hairline as its entire edge. Reported by
+the owner as a white smudge.
+
+Partly self-inflicted and worth stating precisely: the old per-form
+`FormSection` had no background, so its body showed page ground `#fbfbf9` and
+the dropdown already sat at **1.036:1** — invisible in practice. Moving to
+`Panel` removed the last 3.6%, and converting six more forms made it visible
+everywhere. The defect predates the change; the change exposed it.
+
+**Decision: fix it as elevation.** New `--elevation-popover` (three shadow stops
++ a 14% hairline) → the `shadow-popover` utility, on all five overlay
+primitives: select, dialog, dropdown-menu, popover, tooltip. They shared the
+weak ring and all now open over white panels — Select alone in 38 files.
+
+**Rejected: chasing WCAG 1.4.11's 3:1 on the container edge.** `--rule-strong`
+as the ring measures only **1.378:1**; reaching 3:1 against white needs roughly
+`#949494`, a mid-grey outline around every dropdown in the app. It fights
+direction B and buys little, because list items are identified by their own text
+and hover states — the container edge is reinforcement, not the carrier. Owner
+agreed explicitly.
+
+**Also rejected:** tinting popovers `bg-ground` (fixes them over panels, breaks
+them over the page). `sheet.tsx` left alone — per-side borders already define it.
+
+Dark mode gets its own recipe, not the light one scaled: `--ink` is near-WHITE
+there, so an ink shadow would glow. Black shadows, deeper, hairline flipped to a
+light rim — a raised surface on a dark ground reads by its lit edge.
+
+## 2026-07-28 (evening) — bike creation: MOs own building, /bikes/new records the rest
+Prompted by a real stranded bike. `/bikes/new` hardcoded `status: "planning"`;
+`planning → building` was an allowed move; and a `building` bike with no MO has
+no exit, because `finishBikeBuild` is the only path to `in_stock`, it lives
+under `/manufacturing-orders/<mo>/…`, and `/work`'s queue filters to bikes on an
+open MO. Two reasonable clicks produced a dead end.
+
+**The scenarios, enumerated with the owner** — four, not three, because
+build-to-stock is distinct from build-to-order (no customer at all), and
+"a bike needs fixing" is NOT a creation scenario at all: it presupposes the bike
+exists, so it is *record* + work.
+
+| Scenario | Route |
+|---|---|
+| Customer orders bikes | SO → MO → Add bike |
+| Build to stock (no customer) | MO with no SO → Add bike |
+| Record a bike that already exists | `/bikes/new` |
+| Fix a bike | bike must exist; then ticket → Start work order, or `?bike=` deep link |
+
+**Decision:** each route gets one meaning. `/bikes/new` may produce only
+`RECORDABLE_STATUSES` — `in_service` (owner required; a bike with no owner is a
+row nobody can be billed or contacted for) or `in_stock`. It may not produce
+`planning`, enforced as a whitelist rather than a cast. Building belongs to MOs,
+full stop. This closes the trap by construction; the transition guard shipped
+earlier the same day becomes belt-and-braces.
+
+**`in_stock` from this form was kept at the owner's request, against my
+recommendation** to leave those few to the cutover import. It mints a bike with
+no `build_cost_dkk` — exactly what `finishBikeBuild` prevents for bikes we DO
+build. Accepted because for a bike we did not build there is no build cost, null
+is the honest value, and every reader of that column null-guards (verified). The
+reasoning lives in the `RECORDABLE_STATUSES` docstring so it is not later
+"fixed" as an oversight.
+
+**Rejected:** promoting the new bike actions to their own buttons — the owner
+wants the existing "…" dropdown preserved.
+
+## 2026-07-28 (evening) — adopting an existing bike into an MO: UNDECIDED
+Recorded so a later session neither assumes it is approved nor re-argues it from
+scratch. It is **not** rejected — the owner is undecided.
+
+It is the missing capability behind two separate asks: the owner's
+"Create manufacturing order" button on a bike detail page (which would need to
+*pre-select* that bike, and MO creation has no bike field — bikes are added
+afterwards, and `addBikeToMO` CREATES rather than attaches), and the only route
+that could rescue prod's one stranded bike, `JP-3333-12`.
+
+If it is ever built, do NOT reuse `addBikeToMO`: it inserts a bike (adoption
+needs an update), it registers a frame-number identifier (an existing bike
+already has one, and that column is globally UNIQUE, so it would fail), and it
+applies the SO slate (overwriting an owner the bike may already have). Also
+settled while investigating: no backwards status transition is needed —
+`finishBikeBuild` accepts `planning` OR `building` and only checks MO
+membership.
+
+Until then, the recovery for a stranded bike is manual: new MO → Add bike →
+build that one → retire the stranded one.

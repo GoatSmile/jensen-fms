@@ -1,12 +1,12 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-28.** Most recent: **design-refresh Phase 2 slices
-A–E** — four commits (`85b668a`, `843a4dd`, `1293bb5`, `38b6eae`) that took the
-remaining card soup out of the forms, detail sections, dialogs and `/work`, and
-found that most of it was *duplication* rather than styling. Both "ask first"
-gates on the queue are now cleared by the owner (DECISIONS 2026-07-28). Gates
-green as of `38b6eae`: `tsc` clean, lint 0 errors (14 long-standing warnings),
-`npm run build` exit 0, CI green.
+**Last updated: 2026-07-28 (session end).** Most recent: **two owner-reported
+defects fixed** (`f580845`, `8407a35`) — floating surfaces got an elevation token
+after dropdowns measured 1.000:1 against white panels, and the bike-creation
+model was settled: MOs own building, `/bikes/new` records only bikes we did not
+build. Earlier the same day: design-refresh Phase 2 slices A-E (four commits) and
+a docs reconcile. Gates green as of `8407a35`: `tsc` clean, lint 0 errors (14
+long-standing warnings), `npm run build` exit 0.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -90,6 +90,17 @@ list page, detail section, admin form and dialog on `Panel`.
   `/work`'s four accent bars were the last, and they were never deliberate
   exceptions — the original sweep's pattern just missed `border-l-*`, `from-*`
   and `fill-*`.
+- **Elevation is for floating surfaces only.** `--popover` IS `--surface`, so a
+  dropdown over a white `Panel` measured **1.000:1** with a 1.225:1 hairline as
+  its whole edge. All five overlay primitives now wear `shadow-popover`
+  (`--elevation-popover`, per theme). Never put it on an in-flow panel. Chasing
+  WCAG 1.4.11's 3:1 on the edge was rejected — it needs ~`#949494` around every
+  dropdown, and the list items carry the information, not the container.
+- **Verify soft edges at a 1:1 viewport.** Screenshots come back downscaled to
+  800px, which flattens shadows — the DOM/computed-style method that caught the
+  contrast failure and the wrong chip fills is BLIND to this class, and that is
+  how the 1.000:1 dropdown survived four commits of checking. Set an 800px
+  viewport for anything shadow- or edge-related.
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
   wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
   a toggle was deliberately not built. If one lands, it should just work.
@@ -103,7 +114,41 @@ bike-detail empty states and the batch-build grid are unexercised; and no
 inbound message is spam-flagged, so that banner's `money` hue is code-verified
 only. Add to that: **the archive/restore round trip has never been clicked** —
 there is one Supabase project and no staging copy, so exercising it flips
-`is_active` in production.
+`is_active` in production. Same reason **`/bikes/new` has never been
+submitted** — its owner-required and status-whitelist branches are read, not
+posted — and the two new bike-detail menu items were never clicked open (the
+browser tool went down mid-check; they are plain `<Link>`s on a proven param).
+
+## Bike creation is now one meaning per route (locked 2026-07-28)
+Doctrine is in `CLAUDE.md` under "Bike creation"; the reasoning and the rejected
+alternatives in DECISIONS 2026-07-28 (evening). Four scenarios, not three —
+build-to-stock is distinct from build-to-order, and "a bike needs fixing" is not
+a creation scenario at all:
+
+| Scenario | Route |
+|---|---|
+| Customer orders bikes | SO → MO → Add bike |
+| Build to stock (no customer) | MO with no SO → Add bike |
+| Record a bike that already exists | `/bikes/new` |
+| Fix a bike | bike must exist; ticket → Start work order, or the `?bike=` link |
+
+- `/bikes/new` may produce ONLY `in_service` (owner required) or `in_stock`.
+  Never `planning` — that is what made a bike strandable.
+- **One stranded bike remains in prod: `JP-3333-12`**, in `building` with no MO.
+  Nothing shipped can rescue it, because adopting an existing bike into an MO
+  does not exist. Manual recovery: new MO → Add bike → build that one → retire
+  the stranded one. It is a test bike ("test, can be deleted"), so deleting it is
+  also fine.
+- **Adopting an existing bike into an MO is UNDECIDED** — not rejected. It is the
+  capability behind the owner's "Create manufacturing order" button idea and the
+  only real fix for the stranded bike. If it gets built, do NOT reuse
+  `addBikeToMO` (it inserts rather than updates, re-registers a frame-number
+  identifier that already exists against a UNIQUE column, and applies the SO
+  slate over an existing owner). See DECISIONS for the full note.
+- The bike detail "…" menu now links **New work order** and **New ticket** with
+  `?bike=<id>`. Both target forms had accepted that param all along with **zero
+  callers** — worth remembering that a wired-but-unlinked capability looks
+  exactly like a missing feature.
 
 ## Next actions, in order
 1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
@@ -120,22 +165,24 @@ there is one Supabase project and no staging copy, so exercising it flips
    shipped). The honest reduction is extracting narrative to
    `docs/archive/HISTORY.md` — **never deleting a rule.**
 
-### The design-refresh queue, in the order it is worth taking
-1. **Slice F — the behaviour-carrying workbenches.** Deliberately last:
-   `build-workbench` (11 bordered surfaces), `mo-batch-form` (7),
-   `add-parts-workspace` (7), `paint-from-so-form`, `deposit-form`, `scanner`,
-   the build `pick-list`. These carry scan handlers and per-row inputs on
-   workshop-critical screens, so it is **one file per commit, browser-verified
-   individually** — not a batch. Two of them cannot be exercised against real
-   data (see above), which is the main reason to go slowly.
-2. **`/admin/lists`** (18 routes → 1) — **approved 2026-07-28**, build plan in
-   plan §15. Not a sweep: the six vocabularies' fields genuinely differ, so it
-   needs a descriptor layer, and the entity-specific archive copy needs a home
-   in a row-based UI.
-3. **Floor/office mode** (plan §6) — **approved 2026-07-28 but deliberately
-   NOT before 31 Aug.** Largest item in the plan, and it reshapes the screen
-   mechanics use daily; do not ship it into Dennis's solo stretch. Build plan
-   and the contrast-re-measurement requirement in plan §15.
+### The queue, in the order it is worth taking
+1. **Slice F — the behaviour-carrying workbenches.** The last of the card soup,
+   deliberately last: `build-workbench` (11 bordered surfaces), `mo-batch-form`
+   (7), `add-parts-workspace` (7), `paint-from-so-form`, `deposit-form`,
+   `scanner`, the build `pick-list`. These carry scan handlers and per-row inputs
+   on workshop-critical screens, so it is **one file per commit,
+   browser-verified individually** — not a batch. Two of them cannot be exercised
+   against real data (see above). **Consider doing this AFTER Dennis's solo
+   stretch**: the remaining surfaces read as plainer, not broken, and these are
+   the screens his mechanics use daily.
+2. **`/admin/lists`** (18 routes → 1) — approved 2026-07-28, build plan in plan
+   §15. Not a sweep: the six vocabularies' fields genuinely differ, so it needs a
+   descriptor layer, and the entity-specific archive copy needs a home in a
+   row-based UI.
+3. **Floor/office mode** (plan §6) — approved 2026-07-28 but deliberately **NOT
+   before 31 Aug.** Largest item in the plan and it reshapes the screen mechanics
+   use daily; do not ship it into the solo stretch. Plan §15 has the four steps
+   and the contrast-re-measurement requirement.
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.
@@ -173,12 +220,16 @@ Dennis's company number onto the inbound trunk.
 - **Blanket `git add -A` is blocked by a hook** and should stay blocked: it once
   swept an unrelated change into a docs commit, and push-to-`main` deploys.
   Stage explicit paths; `git status` first.
-- **A green toolchain does not mean the page works.** Four times in three days
+- **A green toolchain does not mean the page works.** Six times in three days
   now: five create forms shipping blank defaults (the client-reference shell
   bug), a page-level notice rendering as invisible text (`bg-ground` on a ground
-  background), a contrast gate failure behind a destructive button, and
-  `bg-ground` chips inside hue-washed panels. All four were found in a browser
-  against real data, with `tsc`, `lint` and `next build` clean.
+  background), a contrast gate failure behind a destructive button, `bg-ground`
+  chips inside hue-washed panels, a dropdown at 1.000:1 against a white panel,
+  and a form whose own subtitle described behaviour it no longer had. All six
+  were found in a browser, with `tsc`, `lint` and `next build` clean — and the
+  last two were found by the OWNER, not by any check here, which is the more
+  useful signal: read the screen's copy against what the code now does, and
+  capture soft edges at 1:1.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references

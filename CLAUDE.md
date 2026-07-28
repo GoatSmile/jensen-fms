@@ -230,6 +230,28 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     `bike_template_parts` into `manufacturing_order_parts`.
   - One-off / by-parts — MO has `bike_template_id = NULL`, parts list
     assembled by hand. Both paths consume inventory the same way.
+- **Bike creation: MOs own building; `/bikes/new` records what we did NOT
+  build.** Two routes, one meaning each (locked 2026-07-28):
+  - **An MO creates every bike we build** — to order (MO under an SO) or to
+    stock (MO with no SO, which renders as "Stock build"). `addBikeToMO`
+    creates them at `planning` and copies the MO's type/template/colour down.
+    There is NO way to attach an *existing* bike to an MO.
+  - **`/bikes/new` records a bike that already exists physically**, and may
+    produce only `RECORDABLE_STATUSES` — `in_service` (owner REQUIRED) or
+    `in_stock` (no owner). It may **not** produce `planning`; that is enforced
+    as a whitelist in `parseFields`, not a cast.
+  - **Why it matters:** `planning → building` requires an MO
+    (`validNextStatuses` takes a `TransitionContext`) because `finishBikeBuild`
+    is the only path to `in_stock`, it lives under
+    `/manufacturing-orders/<mo>/…`, and `/work`'s queue filters to bikes on an
+    open MO. An MO-less bike in `building` is **stranded** — only `retired` /
+    `lost_or_stolen` remain. One such bike exists in prod (`JP-3333-12`) and
+    cannot be rescued without an adopt path that does not exist.
+  - `in_stock` from `/bikes/new` mints a bike with **no `build_cost_dkk`** —
+    deliberate (owner's call): for a bike we didn't build there is no build cost,
+    and every reader of that column null-guards. Do not "fix" it by requiring a
+    cost, and do not extend it to bikes we DO build — that is what
+    `finishBikeBuild` protects.
 - **Per-bike parts are the source of truth at build time.** `bike_parts`
   (one row per bike per part, with `inventory_movement_id`) records what was
   actually consumed for a specific bike. The MO recipe
@@ -495,6 +517,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     `canvas.fillStyle` both hand back an un-normalised `oklab()` and every
     hand-parse of it is wrong.
   - `--radius` is `1rem`; buttons are pills except inside a button group.
+  - **Elevation is for FLOATING surfaces only.** Panels in the page flow have no
+    border and no shadow — separation is fill plus padding. An overlay can't use
+    that trick (`--popover` IS `--surface`, so a dropdown over a white `Panel`
+    measured **1.000:1**), so all five overlay primitives — select, dialog,
+    dropdown-menu, popover, tooltip — wear `shadow-popover`
+    (`--elevation-popover`, per-theme). Never put it on an in-flow panel; that's
+    card soup with extra steps. Sheets are exempt: per-side borders define them.
 - **Section tinting.** Only pages stacking *different kinds* of section
   (dispatch surfaces: `/invoices`, `/admin`, `/admin/settings`, ticket +
   agreement details) fill each section with its domain's wash via `hue`;

@@ -858,3 +858,54 @@ dashed **28 → 16**. Zero raw palette colours remain outside the two exempt
 decorative palettes. What is left is slice F — the behaviour-carrying
 workbenches — plus a long tail of single-hit files that are mostly correct as
 they are.
+
+## 2026-07-28 (evening) — two owner-reported defects, and the bike-creation model
+Commits `f580845`, `8407a35`. Both started as the owner using the app and asking
+a question, which is a better bug-finder than any check run so far today.
+
+**"Why is this dropdown a white smudge?"** Because `--popover` IS `--surface`:
+once Phase 2 put nearly every form section on a white `Panel`, dropdowns opened
+over one at **1.000:1**, their whole edge a 1.225:1 hairline. Two candidate
+fixes were tried live in the page before recommending one — a `--rule-strong`
+ring reached only 1.378:1, and reaching WCAG's 3:1 would have meant a mid-grey
+outline on every dropdown in the app. Shipped as elevation instead, one token
+across all five overlay primitives.
+
+The honest part: this was partly self-inflicted (the old borderless
+`FormSection` showed page ground, so the dropdown had a 1.036:1 step — invisible,
+but not *zero*), and more importantly **the verification method used all day
+could not have caught it.** Screenshots come back downscaled to 800px, which
+flattens soft-edge differences; reading DOM structure and computed styles found
+the contrast failure and the wrong chip fills, but is blind to this class. The
+fix was verified at an 800px viewport so the capture is 1:1.
+
+**"Why can't I see this bike anywhere, and how do I finish the build?"** The
+bike was in `building` with no manufacturing order, which turned out to be a
+one-way door: `finishBikeBuild` is the only path to `in_stock`, it lives under
+`/manufacturing-orders/<mo>/…`, and `/work`'s queue filters to bikes on an open
+MO. Two entirely reasonable clicks — create at `/bikes/new`, then Move to →
+Building — produced a bike whose only remaining moves were `retired` and
+`lost_or_stolen`.
+
+Closing it properly took two passes. First a guard: `validNextStatuses` gained a
+`TransitionContext` so `planning → building` requires an MO, enforced in the
+server action and not only hidden in the menu. Then the root cause, after
+enumerating the creation scenarios with the owner and finding there were **four,
+not three** — build-to-stock is distinct from build-to-order, and "a bike needs
+fixing" is not a creation scenario at all. `/bikes/new` now records only bikes
+that already exist (`in_service` with an owner, or `in_stock`), and every bike
+we build comes from an MO. `in_stock` was kept at the owner's request against
+the recommendation to leave it to the cutover import.
+
+Two smaller finds along the way. `/maintenance/work-orders/new` and
+`/maintenance/tickets/new` both already accepted `?bike=<id>` and honoured it
+correctly — and a grep for `?bike=` returned **zero callers**, so both were
+reachable only by typing a URL. Two links in the bike detail's existing "…" menu
+activated capabilities already paid for. And the bike form's own copy still
+advertised the old behaviour ("For one-off builds, demos, or refurb
+candidates") — precisely what it no longer does.
+
+What is still open: prod's one stranded bike cannot be rescued by any of this,
+because adopting an existing bike into an MO does not exist and the owner is
+undecided about building it. The manual recovery is a new MO, a new bike on it,
+and retiring the stranded one.

@@ -695,6 +695,19 @@ And a counter-rule worth carrying: **a `rounded-md border` is not automatically
 card soup.** Nine of slice D's hits are native `<select>`/`<input>` elements
 styled to match shadcn's `Input`; those borders belong to the control.
 
+### Phase 2's one regression, and the elevation token (2026-07-28 evening)
+Commit `f580845`. Putting nearly every section on a white `Panel` exposed that
+`--popover` IS `--surface`: dropdowns over a panel measured **1.000:1** with only
+a 1.225:1 hairline. Fixed as elevation — `--elevation-popover` →
+`shadow-popover`, on all five overlay primitives. Rejected chasing 3:1 on the
+edge (needs ~`#949494` around every dropdown; the items carry the information,
+not the container). Details in DECISIONS 2026-07-28 (evening).
+
+**The verification lesson matters more than the fix.** Screenshots come back
+downscaled to 800px, which flattens soft edges — the DOM/computed-style method
+that caught the contrast failure and the wrong chip fills is blind to this class.
+Capture at an 800px viewport (1:1) for anything shadow- or edge-related.
+
 ### Still not done — the honest list
 - **~71 files still hand-roll `rounded-* border` surfaces**, down from 184 at
   the audit and 127 at the start of 2026-07-28. What remains is **slice F**: the
