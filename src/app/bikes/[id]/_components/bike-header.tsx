@@ -7,9 +7,11 @@ import { useTranslations } from "next-intl";
 import {
   ArchiveRestore,
   ChevronDown,
+  ClipboardList,
   MoreHorizontal,
   QrCode,
   Trash2,
+  Wrench,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +92,11 @@ export function BikeHeader({
     useState<PendingTransition>(null);
 
   const nextStatuses = validNextStatuses(status, { hasManufacturingOrder });
+
+  // Same rule loadWOPickables uses: everything except the terminal states. A
+  // deleted bike gets nothing either.
+  const canTakeNewWork =
+    !isDeleted && status !== "retired" && status !== "lost_or_stolen";
 
   function runDelete() {
     setActionError(null);
@@ -215,6 +222,28 @@ export function BikeHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {/*
+                Both target forms already accept ?bike=<id> and honour it — the
+                parameter existed with zero callers, so this is the missing
+                link, not a new capability. Hidden for terminal statuses to
+                match loadWOPickables / the ticket form's own bike list, so the
+                menu never links to a form that would refuse this bike.
+              */}
+              {canTakeNewWork ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/maintenance/work-orders/new?bike=${bikeId}`}>
+                      <Wrench aria-hidden /> {t("newWorkOrder")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/maintenance/tickets/new?bike=${bikeId}`}>
+                      <ClipboardList aria-hidden /> {t("newTicket")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
               <DropdownMenuItem asChild>
                 <Link href={`/qr/${bikeId}`}>
                   <QrCode aria-hidden /> {t("qrSticker")}

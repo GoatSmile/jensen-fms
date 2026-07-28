@@ -17,7 +17,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ColorSwatch } from "@/components/color-swatch";
+import { Combobox } from "@/components/ui/combobox";
 import { appendField } from "@/lib/forms";
+import {
+  RECORDABLE_STATUSES,
+  type RecordableStatus,
+} from "@/lib/bikes/status";
 import { localizedName } from "@/i18n/vocab";
 
 import { createBike } from "../_actions/save-bike";
@@ -45,12 +50,21 @@ export type ColorOption = {
   hex: string | null;
 };
 
+export type OwnerOption = {
+  id: string;
+  legal_name: string;
+  display_name: string | null;
+};
+
 export type BikeFormValues = {
   bike_type_id: string;
   template_id: string;
   color_id: string;
   frame_number: string;
   notes: string;
+  /** `in_service` | `in_stock` — see RECORDABLE_STATUSES. */
+  status: RecordableStatus;
+  owner_organization_id: string;
 };
 
 const EMPTY_BIKE_FORM: BikeFormValues = {
@@ -59,6 +73,10 @@ const EMPTY_BIKE_FORM: BikeFormValues = {
   color_id: "",
   frame_number: "",
   notes: "",
+  // in_service is the common case for this form: a customer's bike arriving
+  // for work. in_stock is the rarer pre-system-inventory case.
+  status: "in_service",
+  owner_organization_id: "",
 };
 
 type Props = {
@@ -67,9 +85,17 @@ type Props = {
   bikeTypes: BikeTypeOption[];
   templates: TemplateOption[];
   colors: ColorOption[];
+  /** Customers, for the owner picker an `in_service` record requires. */
+  owners: OwnerOption[];
 };
 
-export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
+export function BikeForm({
+  initial,
+  bikeTypes,
+  templates,
+  colors,
+  owners,
+}: Props) {
   const t = useTranslations("bikes");
   const tCommon = useTranslations("common");
   const locale = useLocale();
@@ -118,6 +144,9 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
     appendField(fd, "color_id", values.color_id);
     appendField(fd, "frame_number", values.frame_number);
     appendField(fd, "notes", values.notes);
+    appendField(fd, "status", values.status);
+    // Only meaningful for in_service; the action drops it otherwise anyway.
+    appendField(fd, "owner_organization_id", values.owner_organization_id);
     return fd;
   }
 
@@ -140,6 +169,57 @@ export function BikeForm({ initial, bikeTypes, templates, colors }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
+      {/*
+        First, because it decides what everything else means. This form records
+        a bike that already exists — anything we BUILD goes through a
+        manufacturing order, which is why `planning` isn't offered here.
+      */}
+      <FormSection title={t("recordTitle")} description={t("recordDesc")}>
+        <Field label={t("recordStatus")} htmlFor="bike-status" required>
+          <Select
+            value={values.status}
+            onValueChange={(v) => update("status", v as RecordableStatus)}
+          >
+            <SelectTrigger id="bike-status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RECORDABLE_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {t(`recordStatus_${s}`)}
+                  <span className="text-muted-foreground ml-1.5 text-xs">
+                    {t(`recordStatusHint_${s}`)}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        {values.status === "in_service" ? (
+          <Field
+            label={t("owner")}
+            htmlFor="bike-owner"
+            required
+            error={errorField === "owner_organization_id" ? error : null}
+          >
+            <Combobox
+              id="bike-owner"
+              value={values.owner_organization_id}
+              onValueChange={(v) => update("owner_organization_id", v)}
+              options={owners.map((o) => ({
+                value: o.id,
+                label: o.display_name ?? o.legal_name,
+              }))}
+              placeholder={t("pickOwner")}
+              searchPlaceholder={t("searchOwners")}
+              emptyMessage={t("noOwnersMatch")}
+              emptyState={t("noOwners")}
+            />
+          </Field>
+        ) : null}
+      </FormSection>
+
       <FormSection
         title={t("kindTitle")}
         description={t("kindDesc")}

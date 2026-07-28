@@ -469,9 +469,9 @@
     "agreementEnds": "Aftalen udløber {date}",
     "agreementUntil": "Aftale indtil {date}",
     "newCrumb": "Ny",
-    "newSubtitle": "Til enkeltbyggerier, demoer eller renoveringskandidater. Produktionscykler oprettes via produktionsordre-flowet.",
+    "newSubtitle": "Registrerer en cykel, der allerede findes — en kundes cykel til reparation, eller lager vi ikke selv har bygget. Cykler vi bygger, kommer gennem en produktionsordre.",
     "kindTitle": "Hvilken slags cykel",
-    "kindDesc": "Typen afgør, hvilke identifikatorer der kræves. Vælg en skabelon, hvis cyklen bygges efter en kendt opskrift; lad stå tomt for enkeltbyggerier.",
+    "kindDesc": "Typen styrer, hvilke identifikatorer der kræves. Vælg en skabelon, hvis cyklen matcher en kendt opskrift; lad den stå tom, hvis ikke.",
     "bikeType": "Cykeltype",
     "pickBikeType": "Vælg en cykeltype…",
     "templateOptional": "Skabelon (valgfrit)",
@@ -488,7 +488,19 @@
     "framePlaceholder": "f.eks. JP-2026-HSB-001",
     "notes": "Noter",
     "notesPlaceholder": "Interne noter — vises ikke til kunder.",
-    "createBike": "Opret cykel"
+    "createBike": "Opret cykel",
+    "recordTitle": "Hvad registrerer vi?",
+    "recordDesc": "Denne formular registrerer en cykel, der allerede findes. Alt hvad vi selv bygger, går gennem en produktionsordre.",
+    "recordStatus": "Cyklen er",
+    "recordStatus_in_service": "Hos en kunde",
+    "recordStatusHint_in_service": "i drift",
+    "recordStatus_in_stock": "På vores lager",
+    "recordStatusHint_in_stock": "ikke bygget her",
+    "owner": "Kunde",
+    "pickOwner": "Vælg en kunde…",
+    "searchOwners": "Søg kunder…",
+    "noOwnersMatch": "Ingen kunder matcher.",
+    "noOwners": "Ingen aktive kunder endnu."
   },
   "bikeDetail": {
     "identSection": "Identifikation",
@@ -595,7 +607,9 @@
       "thReason": "Begrundelse",
       "created": "(oprettet)"
     },
-    "crumbBikes": "Cykler"
+    "crumbBikes": "Cykler",
+    "newWorkOrder": "Ny arbejdsordre",
+    "newTicket": "Ny sag"
   },
   "templates": {
     "title": "Cykelskabeloner",
@@ -3894,7 +3908,9 @@
     "adminRoleHomePathInvalid": "Startsiden skal være en intern sti, der starter med /",
     "adminRolePasswordTooShort": "Adgangskoden skal være på mindst 6 tegn",
     "whoamiInvalidPerson": "Denne person kan ikke vælges til denne rolle",
-    "woAssigneeInvalid": "Denne person kan ikke tildeles"
+    "woAssigneeInvalid": "Denne person kan ikke tildeles",
+    "bikeRecordStatusInvalid": "En registreret cykel skal enten være hos en kunde eller på lager — alt hvad vi bygger, går gennem en produktionsordre.",
+    "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører."
   },
   "inbox": {
     "title": "Indbakke",

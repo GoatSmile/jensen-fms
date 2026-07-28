@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { isRecordableStatus, type RecordableStatus } from "@/lib/bikes/status";
 
 export type SaveBikeResult =
   | { ok: true; bikeId: string }
@@ -17,6 +18,8 @@ type ParsedFields = {
   color_id: string | null;
   frame_number: string;
   notes: string | null;
+  status: RecordableStatus;
+  owner_organization_id: string | null;
 };
 
 function parseFields(
@@ -29,12 +32,26 @@ function parseFields(
   if (!frame_number)
     return { errorKey: "bikeFrameNumberRequired", field: "frame_number" };
 
+  // Whitelist, not a cast: this endpoint must never be able to mint a
+  // `planning` or `building` bike, whatever the client posts.
+  const statusRaw = nullable(formData.get("status")) ?? "";
+  if (!isRecordableStatus(statusRaw))
+    return { errorKey: "bikeRecordStatusInvalid", field: "status" };
+
+  // An in-service bike is someone's bike — without an owner it is a fleet row
+  // nobody can be billed or contacted for. in_stock is ours, so no owner.
+  const owner = nullable(formData.get("owner_organization_id"));
+  if (statusRaw === "in_service" && !owner)
+    return { errorKey: "bikeOwnerRequiredInService", field: "owner_organization_id" };
+
   return {
     bike_type_id,
     template_id: nullable(formData.get("template_id")),
     color_id: nullable(formData.get("color_id")),
     frame_number,
     notes: nullable(formData.get("notes")),
+    status: statusRaw,
+    owner_organization_id: statusRaw === "in_service" ? owner : null,
   };
 }
 
@@ -50,12 +67,17 @@ function explainBikeError(
 }
 
 /**
- * Manual bike creation (one-offs, demos, refurb candidates). The MO build
- * flow creates bikes directly from a manufacturing order and won't go through
- * this path.
+ * Records a bike that ALREADY EXISTS physically and that we are not building:
+ * a customer's bike arriving for service, or pre-system stock. Anything we
+ * build — to order or to stock — goes through a manufacturing order instead,
+ * which creates its own bikes at `planning`.
  *
- * The bike starts in `planning` state. The lifecycle identifiers (frame, lock,
- * etc.) are registered as separate actions after creation.
+ * So this path can only produce `in_service` (owner required) or `in_stock`
+ * (no owner) — see `RECORDABLE_STATUSES`. It used to hardcode `planning`,
+ * which let two clicks strand a bike in `building` with no way out.
+ *
+ * The lifecycle identifiers beyond the frame number (lock, battery, QR…) are
+ * registered as separate actions after creation.
  */
 export async function createBike(
   formData: FormData,
@@ -75,8 +97,18 @@ export async function createBike(
       template_id: parsed.template_id,
       color_id: parsed.color_id,
       frame_number: parsed.frame_number,
-      status: "planning",
+      status: parsed.status,
       notes: parsed.notes,
+      owner_organization_id: parsed.owner_organization_id,
+      // A recorded in-service bike is already with its customer, so stamp the
+      // handover timestamp now — the same field `in_stock → assigned` sets.
+      ...(parsed.status === "in_service"
+        ? { assigned_at: new Date().toISOString() }
+        : {}),
+      // frame_number_confirmed stays false: this is a real frame number the
+      // user read off the bike, but confirming is the build workbench's step
+      // and a recorded bike never passes through it. Nothing downstream gates
+      // on it outside finishBikeBuild.
     })
     .select("id")
     .single();

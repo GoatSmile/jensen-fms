@@ -469,9 +469,9 @@
     "agreementEnds": "Agreement ends {date}",
     "agreementUntil": "Agreement until {date}",
     "newCrumb": "New",
-    "newSubtitle": "For one-off builds, demos, or refurb candidates. Production bikes come through the manufacturing-order flow.",
+    "newSubtitle": "Records a bike that already exists — a customer's bike arriving for work, or stock we didn't build. Bikes we build come through a manufacturing order.",
     "kindTitle": "What kind of bike",
-    "kindDesc": "The type drives which identifiers will be required. Pick a template if this bike was built against a known recipe; leave blank for one-offs.",
+    "kindDesc": "The type drives which identifiers will be required. Pick a template if this bike matches a known recipe; leave blank if it doesn't.",
     "bikeType": "Bike type",
     "pickBikeType": "Pick a bike type…",
     "templateOptional": "Template (optional)",
@@ -488,7 +488,19 @@
     "framePlaceholder": "e.g. JP-2026-HSB-001",
     "notes": "Notes",
     "notesPlaceholder": "Internal notes — not shown to customers.",
-    "createBike": "Create bike"
+    "createBike": "Create bike",
+    "recordTitle": "What are we recording?",
+    "recordDesc": "This form records a bike that already exists. Anything we build goes through a manufacturing order instead.",
+    "recordStatus": "Bike is",
+    "recordStatus_in_service": "With a customer",
+    "recordStatusHint_in_service": "in service",
+    "recordStatus_in_stock": "In our stock",
+    "recordStatusHint_in_stock": "not built here",
+    "owner": "Customer",
+    "pickOwner": "Pick a customer…",
+    "searchOwners": "Search customers…",
+    "noOwnersMatch": "No customers match.",
+    "noOwners": "No active customers yet."
   },
   "bikeDetail": {
     "identSection": "Identification",
@@ -595,7 +607,9 @@
       "thReason": "Reason",
       "created": "(created)"
     },
-    "crumbBikes": "Bikes"
+    "crumbBikes": "Bikes",
+    "newWorkOrder": "New work order",
+    "newTicket": "New ticket"
   },
   "templates": {
     "title": "Bike templates",
@@ -3894,7 +3908,9 @@
     "adminRoleHomePathInvalid": "Home page must be an internal path starting with /",
     "adminRolePasswordTooShort": "Password must be at least 6 characters",
     "whoamiInvalidPerson": "That person can't be picked for this role",
-    "woAssigneeInvalid": "That person can't be assigned"
+    "woAssigneeInvalid": "That person can't be assigned",
+    "bikeRecordStatusInvalid": "A recorded bike must be either with a customer or in stock — anything we build goes through a manufacturing order.",
+    "bikeOwnerRequiredInService": "Pick the customer this bike belongs to."
   },
   "inbox": {
     "title": "Inbox",

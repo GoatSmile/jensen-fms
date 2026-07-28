@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   Breadcrumb,
@@ -10,11 +10,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { localizedName } from "@/i18n/vocab";
 
 import {
   BikeForm,
   type BikeTypeOption,
   type ColorOption,
+  type OwnerOption,
   type TemplateOption,
 } from "../_components/bike-form";
 
@@ -24,7 +26,7 @@ export default async function NewBikePage() {
     getTranslations("common"),
   ]);
   const supabase = await createClient();
-  const [bikeTypesRes, templatesRes, colorsRes] = await Promise.all([
+  const [bikeTypesRes, templatesRes, colorsRes, ownersRes] = await Promise.all([
     supabase
       .from("bike_types")
       .select("id, slug, name_en, name_da")
@@ -43,6 +45,14 @@ export default async function NewBikePage() {
       .select("id, slug, name_da, name_en, hex")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
+    // Owners for the in-service case. Pickers read is_active; organizations
+    // carry both flags, so filter on both (CLAUDE.md soft-archive convention).
+    supabase
+      .from("organizations")
+      .select("id, legal_name, display_name_da, display_name_en")
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("legal_name", { ascending: true }),
   ]);
 
   const typeRows = bikeTypesRes.data ?? [];
@@ -71,6 +81,16 @@ export default async function NewBikePage() {
       family: t.family?.name ?? null,
     }));
   const colors: ColorOption[] = colorsRes.data ?? [];
+  const locale = await getLocale();
+  const owners: OwnerOption[] = (ownersRes.data ?? []).map((o) => ({
+    id: o.id,
+    legal_name: o.legal_name,
+    display_name: localizedName(
+      locale,
+      o.display_name_en,
+      o.display_name_da,
+    ),
+  }));
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -106,6 +126,7 @@ export default async function NewBikePage() {
         bikeTypes={bikeTypes}
         templates={templates}
         colors={colors}
+        owners={owners}
       />
     </div>
   );

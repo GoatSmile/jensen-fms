@@ -75,6 +75,33 @@ const FORWARD_TRANSITIONS: Record<BikeStatus, BikeStatus[]> = {
 
 const TERMINAL_FROM_ANY: BikeStatus[] = ["retired", "lost_or_stolen"];
 
+/**
+ * The only statuses `/bikes/new` may create. That form records a bike that
+ * ALREADY EXISTS physically and which we are not building:
+ *
+ *   in_service — a customer's bike, in use. Needs an owner.
+ *   in_stock   — unsold stock we did not build through an MO (pre-system
+ *                inventory). No owner.
+ *
+ * It deliberately cannot create `planning`, which it used to hardcode: a
+ * planning bike is one we intend to BUILD, and building happens only on a
+ * manufacturing order. Creating one here produced a bike that could reach
+ * `building` and then never leave it (see the docstring above).
+ *
+ * `in_stock` here is the one deliberate hole: it mints a bike with no
+ * `build_cost_dkk`, which is exactly what `finishBikeBuild` exists to prevent
+ * for bikes we DO build. It is allowed because for a bike we did not build
+ * there is no build cost to record — null is the honest value, and every
+ * reader of `build_cost_dkk` null-guards. Owner's call, 2026-07-28.
+ */
+export const RECORDABLE_STATUSES = ["in_service", "in_stock"] as const;
+
+export type RecordableStatus = (typeof RECORDABLE_STATUSES)[number];
+
+export function isRecordableStatus(v: string): v is RecordableStatus {
+  return (RECORDABLE_STATUSES as readonly string[]).includes(v);
+}
+
 export type TransitionContext = {
   /**
    * Whether the bike is attached to a manufacturing order. Gates
