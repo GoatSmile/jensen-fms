@@ -42,7 +42,7 @@ known:
   WORKLOG row (date · hours · one-line summary) and reconcile the previous
   row's hours from commit timestamps (mark estimates `~`; the user corrects
   with "log: Jul 9 was 7h"). Update the monthly total. Days without a row =
-  didn't work; never backfill gaps unasked. **Cap the summary at ~200
+  didn't work; never backfill gaps unasked. **Cap the summary at ~300
   characters** (a hook flags longer) — headline plus one clause, no
   semicolon-chains; detail goes to `docs/archive/`.
 - **Session end**: update `docs/STATUS.md` — overwrite, don't append. A new
@@ -51,14 +51,23 @@ known:
   invariant, a new gotcha) lands here; the narrative goes to `docs/archive/`;
   STATUS.md gets rewritten. The test for every line: *would a fresh session
   behave incorrectly without it?*
-- **Length: ~530 lines is a soft target, not a limit.** A `.claude/hooks` check
-  nudges past it; it has never blocked anything. When it fires, ask only
-  whether the new lines are narrative or invariants — narrative moves out,
-  invariants stay and the target moves with them (450 → 470 → 485 → 490 →
-  495 → 520 → 530, each time for a structural rule). **Never delete a real
-  rule to hit the number**:
-  that was tried on 2026-07-26 and the number was raised straight afterwards
-  anyway, so the only outcome was lost content.
+- **No counts in durable docs.** A tally is current state wearing the clothes
+  of a fact: it drifts within days, and a stale number is worse than none
+  because it reads as measured. Name the thing, not the tally. If a count
+  matters it belongs in `docs/STATUS.md`, or it gets re-measured on the spot.
+- **Keep this file shorter than it wants to be — but never enforce that with a
+  number.** Length is a direction, not a threshold, and **no rule is ever
+  deleted to make the file smaller.** A line-count gate was tried and removed
+  (2026-07-28, see DECISIONS.md): it worked once as a one-time forcing
+  function, then took four raises in three days without ever denying an
+  addition, and drifted out of sync with its own config. What actually keeps
+  this file small is the write rules above — narrative to `docs/archive/`,
+  current state to `STATUS.md`, why-trail to `DECISIONS.md` — plus editing a
+  rule in place instead of appending a dated paragraph beside it.
+- **Consolidate on the first session of the month**: read this file end to end
+  looking for rules that contradict each other and facts that have drifted.
+  Nothing else has ever found either — a counter cannot, and "when it feels
+  heavy" never fires.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
   entry in the same commit as the code that implements it.
 

@@ -1034,3 +1034,53 @@ fill made it invisible: the page background already IS `--ground`. Page-level
 notices get their own `Panel`. Recorded because `tsc`, `lint` and `next build`
 were all green while the screen looked broken — the same class of miss as the
 morning's client-reference bug, caught the same way (in a browser).
+
+## 2026-07-28 — The CLAUDE.md size gate is deleted, not relocated
+Ported from Munin, which proposed it after running the same experiment. The
+argument was adopted; its supporting numbers were replaced with this repo's,
+which are checkable here.
+
+**It never denied anything.** `claude-md-budget.sh` landed 2026-07-25 at 470
+lines (commit 5a5f235) and was raised to 485, 490 and 495 by 2026-07-27
+(ed81643, 68afe88, 4149809) — four raises in three days, zero refused
+additions. That is structural, not laziness: the rule was "raise it when the
+addition is an invariant", so the gate could only ever ratchet. A notification
+that cannot deny is not a control.
+
+**It had come apart from its own config.** At deletion the prose said `~530`,
+`settings.json` passed `495`, and the file stood at 528 — so the hook fired on
+every single edit while the rule it enforced said the file was fine. Worse, the
+prose recorded two raises (520, 530) that were **never applied to the hook at
+all**: doctrine was being maintained in a place that drove nothing. That is the
+predictable result of writing one number in two places.
+
+**Size was the wrong variable.** The harm is self-contradiction, which no line
+count detects — the 495-vs-530 split, and a stale `~200` worklog-character cap
+in `CLAUDE.md` against the `300` the hook and skill both used, were both found
+by reading, not by any counter. Both are fixed in this commit.
+
+**What the gate did earn:** the file was 812 lines before the target existed
+and 528 after, so it worked once, as a one-time forcing function. It is being
+removed because that job is done and the instrument degraded into an alarm —
+not on a claim that it never helped.
+
+**Replaced by:** a monthly consolidation pass in the `session-start` skill — a
+calendar, not a threshold, so it cannot be satisfied by deleting doctrine. Plus
+a standing rule against counts in durable docs.
+
+**Kept:** `worklog-row-budget.sh 300`. It enforces a row *format*, not
+adherence to an always-loaded file, and it is the one counter here with a
+demonstrated record (July rows hit 4–6k characters against May/June's 250–400,
+under an earlier "one line per row" rule that measured the wrong thing).
+
+**Rejected:** moving the size check to session start (a better-timed useless
+alarm); measuring relative growth instead (growth is expected in an active
+repo); and Munin's proposed `~200`-line aim — an unsourced count inside the
+rule that bans counts, which this file is 2.6× over, i.e. a standing debt a
+future session would pay down by deleting doctrine. Length stays a direction
+with no number attached.
+
+**Not done here, deliberately:** the 528 lines are untouched. Shrinking the
+file in the same breath as removing its size gate is how a session ends up
+shaving earned doctrine to hit a number. The first monthly pass owns it, and
+the honest fix is extracting narrative to `docs/archive/HISTORY.md`.

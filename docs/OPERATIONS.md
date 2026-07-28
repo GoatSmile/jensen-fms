@@ -71,8 +71,9 @@ system in that table is one the app breaks without, and none of these are.
 
 - **`.claude/hooks/`** (tracked, shared with Munin) — `gates.sh` refuses a
   `git commit` unless `tsc --noEmit` + `next build` pass; `git-add-guard.sh`
-  blocks `git add -A/--all/.`; `claude-md-budget.sh` and
-  `worklog-row-budget.sh` flag CLAUDE.md and WORKLOG rows past their budgets.
+  blocks `git add -A/--all/.`; `worklog-row-budget.sh` flags WORKLOG rows whose
+  summary cell runs past ~300 characters. (A `claude-md-budget.sh` line-count
+  nudge lived here 2026-07-25 → 07-28; deleted, see DECISIONS.md 2026-07-28.)
   **They need `jq` and `lsof` on PATH** — without `jq` every hook exits
   silently and the gates stop gating, with no warning. Rationale:
   DECISIONS.md 2026-07-25.

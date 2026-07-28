@@ -52,7 +52,25 @@ Rules that are easy to get wrong:
 - If a day's work genuinely needs a paragraph, that is the signal to write the
   HISTORY section, not to grow the row.
 
-## 3. Do not
+## 3. First session of a new month: consolidate CLAUDE.md
+
+Check the previous WORKLOG row's month against today's. If the month just turned,
+read `CLAUDE.md` **end to end** — not grep, not skim — looking for two things only:
+
+- **Rules that contradict each other.** This is the actual failure mode; no tool
+  detects it, reading does. (Precedent: the file's own length rule said `~530`
+  while the hook enforcing it was set to `495` — so it fired on every edit while
+  the rule said the file was fine. Nothing surfaced that; it took reading.)
+- **Facts that have drifted**, especially counts. Fix by **deleting the number,
+  not updating it** — see the no-counts rule in `CLAUDE.md`. (Precedent: the
+  worklog cap read `~200` characters in `CLAUDE.md` while the hook and this skill
+  both said `300`.)
+
+Fix what you find in the same session, and put anything structural in
+`DECISIONS.md`. **This is the only trigger there is** — there is deliberately no
+size gate, and "when it feels heavy" never fires.
+
+## 4. Do not
 
 - Do not rewrite `docs/STATUS.md` at session start. That is the session-*end* ritual,
   and it is an overwrite — see the `ship-it` skill.
