@@ -51,11 +51,12 @@ known:
   invariant, a new gotcha) lands here; the narrative goes to `docs/archive/`;
   STATUS.md gets rewritten. The test for every line: *would a fresh session
   behave incorrectly without it?*
-- **Length: ~520 lines is a soft target, not a limit.** A `.claude/hooks` check
+- **Length: ~530 lines is a soft target, not a limit.** A `.claude/hooks` check
   nudges past it; it has never blocked anything. When it fires, ask only
   whether the new lines are narrative or invariants — narrative moves out,
   invariants stay and the target moves with them (450 → 470 → 485 → 490 →
-  495 → 520, each time for a structural rule). **Never delete a rule to hit it**:
+  495 → 520 → 530, each time for a structural rule). **Never delete a real
+  rule to hit the number**:
   that was tried on 2026-07-26 and the number was raised straight afterwards
   anyway, so the only outcome was lost content.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
@@ -457,7 +458,16 @@ cross-cutting. Original SQL files live in `/migrations/`.
 - **A table inside a `Panel` gets no wrapper box.** `Table` already draws its
   own row rules and its own overflow container; boxing it again is the card
   soup the panel replaced. Same for a panel's empty state — `bg-ground`, not
-  a dashed border.
+  a dashed border. A raw `<table>` (the batch-build grid, which needs per-row
+  inputs) is the one exception: it has no container of its own, so the
+  scroller goes on `contentClassName="overflow-x-auto"`.
+  - **`bg-ground` is an IN-PANEL fill only.** The page background already *is*
+    `--ground`, so the same fill at page level renders as nothing and the
+    notice reads as floating text. A page-level empty state or notice gets its
+    own `Panel` (found 2026-07-27, with tsc/lint/build all green).
+  - A **loading skeleton must match the migrated shape** — while
+    `TableSkeleton` was a bordered box, every navigation to a list page
+    flashed a box that then dissolved.
 - Plan-then-build: before writing code, list files you intend to
   create/modify and wait for confirmation.
 - Time estimates quoted as `~X human-dev-min (Y min wait)` — X is the

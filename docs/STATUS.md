@@ -1,18 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2 (four
-slices) plus the real-data verification pass that followed it** — `/inbox` +
-`/bike-templates` onto `Panel`, the panel-table convention applied app-wide,
-§9's form folds, §9's inbound provider summary rows, then eight checks against
-the production DB in a real browser. **Plan §9 is closed except the category
-chips.** Gates green: `tsc` clean, lint 0 errors (14 long-standing warnings),
-`npm run build` exit 0 / 52 static pages. Narrative + commit refs in
-`docs/archive/HISTORY.md`; the decisions in `docs/DECISIONS.md`.
-
-**Phase 2 is verified against real data and no revert was needed.** Five of
-the eight checks passed untouched. Four findings were fixed forward, one of
-them pre-existing and much older than Phase 2 (the client-reference shell bug
-below). **Tier 1 CI shipped** in the same pass, pulled forward from September.
+**Last updated: 2026-07-27.** Most recent: **design-refresh Phase 2 — five
+slices, then the real-data verification pass that Phase 2 had shipped without.**
+Every list page is now on `Panel`; the pass found four things and fixed them
+forward, no revert. **Tier 1 CI shipped alongside**, pulled forward from
+September. Gates green at the last commit: `tsc` clean, lint 0 errors (14
+long-standing warnings), `npm run build` exit 0 / 52 static pages, CI green.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -111,79 +104,44 @@ arrival now) · three of the four audit bugs.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
-## Shipped 2026-07-27 — design-refresh Phase 2 + its verification pass
-Narrative in `docs/archive/HISTORY.md`; reasoning in DECISIONS 2026-07-27
-(nine entries). What a fresh session needs to know:
+## Shipped 2026-07-27 — design-refresh Phase 2, five slices + verification
+Narrative and commit refs in `docs/archive/HISTORY.md`; the ten decisions in
+`docs/DECISIONS.md`. **The durable rules all live in `CLAUDE.md`** (panel-table
+convention, `bg-ground` is in-panel only, no value imports from a `"use client"`
+module, folded sections lose native validation, net-14 payment terms). What a
+fresh session needs beyond those:
 
-- **`/inbox` + `/bike-templates` are on `Panel`** (commit `4149809`) — both
-  list pages, both detail pages, eleven components. No new message keys, no
-  route or data change.
-- **Zero boxed tables remain inside a `Panel`** (`0d21cd6`, 20 more files).
-  The rule is in CLAUDE.md. Its one exception: on a *hued* panel the table
-  keeps a `bg-surface` container and loses only the hairline. Boxed tables
-  that are NOT in a panel were left alone on purpose — those screens are
-  unmigrated and belong to the wider sweep.
-- **`src/components/form-section.tsx`** (`944e434`) is the shared form
-  section, replacing the local helper four forms had copy-pasted.
-  Organisation / part / supplier now fold. **A section's default is computed
-  from the record, not remembered** — unlike `CollapsibleSection`, whose
-  localStorage memory would hide the next customer's address. Folded sections
-  unmount (safe: the forms build FormData from React state), and `forceOpen`
-  unfolds whichever section owns a failed field.
-- **The inbound provider blocks are summary rows** (`9455c85`) —
-  `/admin/settings?section=phone` arrives at 2 controls instead of 13; a row
-  whose secret is missing starts open.
-- **`Panel` grew two props**: `id` (anchor targets) and `ReactNode`
-  `title` / `description`.
-- **Two colour corrections**: suspected spam is `money`, not `alert`; family
-  colour rides the title dot rather than a tinted header band (decorative
-  hues stay out of the six-hue contrast matrix).
+- **Slices 1–4**: `/inbox` + `/bike-templates` onto `Panel`; the panel-table
+  convention applied app-wide (zero boxed tables inside a panel); §9's form
+  folds (`src/components/form-section.tsx`, shared by organisation / part /
+  supplier — a section's default is computed from the record, never
+  remembered); §9's inbound provider summary rows. **Plan §9 is closed except
+  the category chips.**
+- **Slice 5**: every list page is on `Panel` (eleven surfaces), plus the shared
+  `TableSkeleton`, the PO receive form + lines section, and the batch-build
+  grid.
+- **The verification pass** ran eight checks against the production DB in a
+  browser. Five passed untouched; four findings were fixed forward, the largest
+  pre-existing and much older than Phase 2 — `EMPTY_*` shells spread in server
+  pages evaluated to `{}`, so five create forms had been shipping blank
+  defaults (fixed at all 20 forms). **No revert was needed.**
+- **Owner-visible behaviour change**: a new customer now pre-fills payment terms
+  of 14 days, not 30. Net 14 is the schema default, what invoicing uses, and
+  what 531 of 535 existing customers hold.
+- **Tier 1 CI is live** — `.github/workflows/ci.yml`, `npm ci` → `tsc` →
+  `lint` on every push, green since `e765bdc`; the 14 lint warnings show as run
+  annotations. Next 16 does **not** run ESLint during `next build`, so this is
+  the only thing catching that class before prod. **Pinned to Node 24 / npm 11
+  on purpose**: npm 10 rejects our lock file, and a CI failure naming
+  `@swc/helpers` is the pre-existing tree inconsistency in `docs/BACKLOG.md`,
+  not your code.
 
-### What the verification pass fixed (evening)
-- **Create-form defaults were silently dropped app-wide — pre-existing, not
-  Phase 2.** A `"use client"` module's exports are *client references* in a
-  server component, so a page spreading an `EMPTY_*` shell got `{}`: one-off
-  MO had a blank required Target quantity, tickets no Source/Priority, work
-  orders no Language, templates no Currency, customers none of their five
-  defaults. Fixed at all 20 create forms — the shell is module-local now, so a
-  page **cannot** import it; `initial` is a `Partial` of overrides and the
-  component merges `seed`. **The rule is in CLAUDE.md; keep it.**
-- **Customer payment terms are net 14 everywhere** (schema + invoicing +
-  531/535 rows). The Billing fold compared against `"30"`, so every customer
-  opened that section; the create form pre-filled 30 too. Both read
-  `DEFAULT_PAYMENT_TERMS_DAYS` now. Copy + placeholder say 14 (en + da).
-  **Owner-visible change:** a new customer is pre-filled with 14, not 30.
-- **A folded section disables native HTML validation** (`type="email"`,
-  `type="url"`, `min`) because it unmounts its inputs — `x@` in a collapsed
-  Contact section used to save. Customer + supplier actions now check shape
-  (`looksLikeEmail` / `looksLikeUrl` in `src/lib/forms.ts`); the customer one
-  returns `field`, so Contact unfolds with the error inline.
-- **`#family-<id>` anchors** worked on full load, not on client-side nav
-  (Next scrolls before the target renders). `src/components/hash-scroll.tsx`
-  scrolls after the first paint; it is generic, reuse it for future anchors.
-- **Tier 1 CI**: `.github/workflows/ci.yml` runs `npm ci` → `tsc --noEmit` →
-  `npm run lint` on every push. Next 16 does **not** run ESLint during
-  `next build`, so this is the only thing catching that class before prod.
-  Green as of `e765bdc`; the 14 lint warnings show as run annotations.
-  **Pinned to Node 24 / npm 11 on purpose** — npm 10 rejects our lock file
-  (`Missing: @swc/helpers@0.5.23`). A CI failure naming `@swc/helpers` is the
-  pre-existing tree inconsistency in `docs/BACKLOG.md`, not your code.
-
-**Two things real data still cannot verify**: no bike template has paintwork
-rows, and **all 25 bikes were soft-deleted on 2026-07-01** (`/bikes` is empty
-by design, not broken), so bike-detail empty states, the template paint box and
-the batch-build grid have only ever been seen with stub props. No inbound
-message is spam-flagged either — the banner's `money` hue is code-verified only.
-
-### Fifth slice (late) — every list page is on `Panel`
-Eleven list surfaces (the plan named three; the rest were the same one-line
-change), the shared `TableSkeleton`, the PO **receive form** and PO **lines
-section**, and the batch-build grid. The batch grid's raw `<table>` stays raw
-on purpose — it carries per-row inputs and the scan handlers, so the scroller
-lives on the panel body via `contentClassName`. **Keep this rule:** `bg-ground`
-is the fill for an empty state *inside* a panel; at page level the page already
-IS ground, so that fill renders as nothing — a page-level notice needs its own
-`Panel`. A green `tsc` / `lint` / build said nothing about it.
+**Three things real data cannot verify** (so they have only ever been seen with
+stub props): no bike template has paintwork rows; **all 25 bikes were
+soft-deleted 2026-07-01**, so `/bikes` is empty by design, not broken, and both
+bike-detail empty states and the batch-build grid are unexercised; and no
+inbound message is spam-flagged, so that banner's `money` hue is code-verified
+only.
 
 ## Next actions, in order
 1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
@@ -241,10 +199,12 @@ Dennis's company number onto the inbound trunk.
   boundary violations). Stop the dev server and build before trusting a run of
   commits. Tier 1 CI (2026-07-27) now re-runs tsc + lint on every push, so a
   skipped local gate no longer means *nothing* checked — but CI does not build.
-- **A green toolchain does not mean the page works.** `tsc`, `lint` and
-  `next build` were all clean while five create forms shipped blank defaults
-  for weeks (the client-reference shell bug — rule now in CLAUDE.md). This
-  class only shows up in a browser against real data.
+- **A green toolchain does not mean the page works.** Twice on 2026-07-27:
+  `tsc`, `lint` and `next build` were all clean while five create forms had
+  been shipping blank defaults for weeks (the client-reference shell bug), and
+  again while a page-level notice rendered as invisible text (`bg-ground` on a
+  ground background). Both rules are in CLAUDE.md now. This class only shows up
+  in a browser, against real data.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references
