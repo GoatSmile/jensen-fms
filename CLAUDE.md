@@ -86,10 +86,22 @@ known:
   Vercel SSO + the people-&-roles role-password UX wall.
 
 ## Database
-Schema introspectable via the `supabase` MCP server (read-only, including
-`execute_sql` for ad-hoc inspection). Domains: reference, catalog,
-suppliers/purchasing, inventory, customers, bikes, commercial, maintenance,
-cross-cutting. Original SQL files live in `/migrations/`.
+Schema introspectable via the `supabase` MCP server, `execute_sql` included.
+Domains: reference, catalog, suppliers/purchasing, inventory, customers, bikes,
+commercial, maintenance, cross-cutting. Original SQL files live in
+`/migrations/`.
+
+- **The MCP server is READ-WRITE against PRODUCTION. Treat every call as live.**
+  Measured 2026-07-28: `execute_sql` connects as `postgres` with
+  `rolbypassrls = true`, `transaction_read_only = off`, not a replica — an
+  `UPDATE`, `DELETE` or `DROP` would simply run, RLS included. The server also
+  advertises `apply_migration`, `deploy_edge_function`, `pause_project` and
+  `delete_branch`. There is ONE Supabase project and no staging copy.
+- **What has kept this safe is not a capability limit.**
+  `.claude/settings.json` pre-approves five read tools, so a write merely
+  prompts instead of being refused — and this file described the connection as
+  "read-only" until it was actually measured. **Keep `execute_sql` to
+  `SELECT`s**; schema changes go through the migration convention below.
 
 ### Established views
 - `v_current_stock` — `(part_id, location_id, quantity_on_hand, last_movement_at)`.
@@ -541,7 +553,10 @@ cross-cutting. Original SQL files live in `/migrations/`.
 ## Migrations
 Never modify SQL files that have already been applied. Add new ones with
 sequential numbering and apply them through the Supabase SQL editor or via
-`supabase db push` once the CLI is configured.
+`supabase db push` once the CLI is configured. The MCP `apply_migration` tool
+can also push DDL straight to production, but it is **not** a sanctioned path:
+`/migrations/` is the source of truth, so nothing may reach the DB without its
+numbered file committed alongside.
 
 ## Strategy escalation
 Architectural questions ("should this be one table or two?", "how do we

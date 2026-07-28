@@ -203,6 +203,16 @@ model) · e-conomic production cutover · supplier-email go-live (untick
 Dennis's company number onto the inbound trunk.
 
 ## Landmines
+- **The Supabase MCP server is read-WRITE against production** (measured
+  2026-07-28, after CLAUDE.md had claimed read-only for weeks). `execute_sql`
+  runs as `postgres` with `rolbypassrls = true` and no read-only transaction,
+  and `apply_migration` / `deploy_edge_function` / `pause_project` /
+  `delete_branch` are all advertised. One project, no staging copy. The
+  settings allow-list only pre-approves reads, which is a prompt and not a
+  limit — so an agent asked to "fix the data" can write to prod on approval.
+  Keep `execute_sql` to SELECTs. Whether `apply_migration` becomes a
+  sanctioned DDL path is an **open owner call**; until then `/migrations/`
+  files + the SQL editor remain the route.
 - **The commit gate was inert for `git add … && git commit` one-liners**
   (found + fixed 2026-07-27). `gates.sh` is a PreToolUse hook, so it runs
   BEFORE the command: with that idiom the index is still empty when it looks,
