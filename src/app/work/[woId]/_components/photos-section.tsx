@@ -81,10 +81,10 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
 
   return (
     <Panel
-      // The left accent bar identifies each workspace section on the floor.
-      // Kept verbatim — the four /work bars are one system and re-hueing them
-      // is a colour-vocabulary decision, not a styling tidy-up.
-      className="border-l-[3px] border-l-slate-600"
+      // Neutral rule, not a hue: photos are evidence, not a domain, and there
+      // is no seventh meaning to spend on them. The bar keeps the section
+      // identifiable in the stack without claiming one.
+      className="border-l-rule-strong border-l-[3px]"
       title={
         <span className="flex items-center gap-2">
           <Camera className="size-3.5" aria-hidden />

@@ -64,8 +64,9 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
 
   return (
     <Panel
-      // See photos-section: the /work accent bars are one system, kept verbatim.
-      className="border-l-[3px] border-l-indigo-600"
+      // `buy` — parts consumption is the cost side of the job: these lines
+      // carry money and draw down stock, the same domain as purchasing.
+      className="border-l-[3px] border-l-buy"
       title={
         <span className="flex items-center gap-2">
           <Wrench className="size-3.5" aria-hidden />

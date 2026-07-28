@@ -245,7 +245,7 @@ function OfferingTableRow({
         {row.isPreferred ? (
           <Star
             aria-label={t("preferredAria")}
-            className="size-4 fill-amber-400 text-buy"
+            className="fill-buy text-buy size-4"
           />
         ) : null}
       </TableCell>

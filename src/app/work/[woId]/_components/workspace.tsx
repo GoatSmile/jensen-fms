@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, Play, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
 import { DictateButton, type DictateLanguage } from "@/components/dictate-button";
 import {
@@ -121,18 +122,15 @@ export function Workspace({
   return (
     <>
       <div className="mt-4 flex flex-col gap-5">
-        {/* Diagnosis — amber accent (problem). */}
+        {/* Diagnosis — the problem. `money` is the caution hue (ochre): red is
+            reserved for genuine alarm, and a bike needing diagnosis is normal
+            work, not an alarm. Matches the icon, which was already text-money. */}
         <NotesField
           id={`diagnosis-${woId}`}
           label={t("diagnosisLabel")}
           description={t("diagnosisDescription")}
-          icon={
-            <AlertTriangle
-              className="size-4 text-money"
-              aria-hidden
-            />
-          }
-          accentClass="border-l-[3px] border-l-amber-500"
+          icon={<AlertTriangle className="size-3.5 text-money" aria-hidden />}
+          accentClass="border-l-[3px] border-l-money"
           value={diagnosis}
           onChange={setDiagnosis}
           dictateLang={defaultDictateLang}
@@ -140,18 +138,13 @@ export function Workspace({
           readOnly={readOnly}
         />
 
-        {/* Work performed — emerald accent (solution). */}
+        {/* Work performed — the solution. `good` = done. Matches the icon. */}
         <NotesField
           id={`work-${woId}`}
           label={t("workPerformedLabel")}
           description={t("workPerformedDescription")}
-          icon={
-            <CheckCircle2
-              className="size-4 text-good"
-              aria-hidden
-            />
-          }
-          accentClass="border-l-[3px] border-l-emerald-600"
+          icon={<CheckCircle2 className="size-3.5 text-good" aria-hidden />}
+          accentClass="border-l-[3px] border-l-good"
           value={workPerformed}
           onChange={setWorkPerformed}
           dictateLang={defaultDictateLang}
@@ -162,7 +155,7 @@ export function Workspace({
         {/* Save row — surfaces "dirty" state so the tech sees that
             their notes aren't committed yet. */}
         {!readOnly ? (
-          <div className="bg-card flex items-center justify-between gap-2 rounded-md border p-3">
+          <div className="bg-surface flex items-center justify-between gap-2 rounded-lg p-3">
             <span className="text-muted-foreground text-xs">
               {dirty
                 ? t("unsavedChanges")
@@ -187,15 +180,18 @@ export function Workspace({
 
         {error ? (
           <p
-            className="bg-destructive/10 text-destructive border-destructive/30 rounded-md border p-3 text-sm"
+            className="bg-alert-wash text-alert rounded-lg p-3 text-sm"
             role="alert"
           >
             {error}
           </p>
         ) : null}
 
+        {/* bg-surface, NOT bg-ground: this sits at page level, where the page
+            background already IS --ground, so a ground fill renders as nothing
+            and the notice reads as floating text (CLAUDE.md). */}
         {readOnly ? (
-          <div className="bg-muted/40 text-muted-foreground rounded-md border p-3 text-xs">
+          <div className="bg-surface text-ink-2 rounded-lg p-3 text-xs">
             {t("readOnlyNote", {
               status: t(`status.${status}`).toLowerCase(),
             })}
@@ -317,12 +313,21 @@ function NotesField({
   }
 
   return (
-    <section
-      className={`bg-card flex flex-col gap-2.5 rounded-md border p-4 ${accentClass}`}
-    >
+    <Panel className={accentClass} contentClassName="flex flex-col gap-2.5">
+      {/*
+        The title is deliberately NOT Panel's `title` prop: that renders an
+        <h2>, and this section's title is the textarea's own <Label htmlFor>.
+        Losing that association would cost the tech the tap-the-label-to-focus
+        target on a phone, so the Label stays and wears the eyebrow's classes
+        by hand. The hue lives in the accent bar only — colouring the label too
+        would double it, and colour is meaningful only while it's scarce.
+      */}
       <div className="flex items-center gap-2">
         {icon}
-        <Label htmlFor={id} className="text-sm font-semibold">
+        <Label
+          htmlFor={id}
+          className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase"
+        >
           {label}
         </Label>
       </div>
@@ -346,6 +351,6 @@ function NotesField({
           <p className="text-muted-foreground text-xs">{t("micTip")}</p>
         </>
       ) : null}
-    </section>
+    </Panel>
   );
 }

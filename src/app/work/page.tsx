@@ -5,6 +5,7 @@ import { localizedName } from "@/i18n/vocab";
 import { readGate } from "@/lib/auth/read-session";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { elapsedShort } from "@/lib/work/elapsed";
@@ -202,7 +203,7 @@ export default async function WorkQueuePage({
               <li key={wo.id}>
                 <Link
                   href={`/work/${wo.id}`}
-                  className={`group relative flex items-stretch overflow-hidden rounded-lg border bg-card shadow-sm transition-colors hover:bg-muted/30 ${inProgress ? "bg-gradient-to-r from-blue-600/[0.04] to-transparent" : ""}`}
+                  className={`group relative flex items-stretch overflow-hidden rounded-lg border bg-card shadow-sm transition-colors hover:bg-muted/30 ${inProgress ? "from-brand/[0.04] bg-gradient-to-r to-transparent" : ""}`}
                 >
                   <div
                     aria-hidden
@@ -427,10 +428,10 @@ function BuildStream({
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="bg-muted/30 flex flex-col items-center gap-2 rounded-md border p-8 text-center">
+    <Panel contentClassName="flex flex-col items-center gap-2 py-8 text-center">
       <p className="text-sm font-medium">{title}</p>
       <p className="text-muted-foreground text-xs">{body}</p>
-    </div>
+    </Panel>
   );
 }
 
