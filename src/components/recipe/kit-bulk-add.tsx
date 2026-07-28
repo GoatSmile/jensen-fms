@@ -97,7 +97,7 @@ export function KitBulkAdd({
   }
 
   return (
-    <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
+    <div className="bg-ground mb-1 rounded-md px-2.5 py-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-muted-foreground shrink-0 text-xs">
           {t("addWholeKit")}

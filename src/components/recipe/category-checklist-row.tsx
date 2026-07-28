@@ -68,10 +68,13 @@ export function CategoryChecklistRow({
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-md border px-2.5 py-1.5 transition-colors ${
-        done
-          ? "bg-good-wash"
-          : ""
+      // Two fills, no border: 58 bordered rows in a column is the wall of boxes
+      // the panel replaced (plan §9). `bg-ground` recesses an outstanding
+      // category inside the panel's surface, `good` marks a handled one — the
+      // Check glyph and the picked/total count carry the same state in text, so
+      // colour is not the only signal.
+      className={`flex items-center justify-between gap-3 rounded-md px-2.5 py-1.5 transition-colors ${
+        done ? "bg-good-wash" : "bg-ground"
       }`}
     >
       <div className="flex min-w-0 items-center gap-2">
