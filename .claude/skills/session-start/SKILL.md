@@ -66,6 +66,16 @@ read `CLAUDE.md` **end to end** — not grep, not skim — looking for two thing
   worklog cap read `~200` characters in `CLAUDE.md` while the hook and this skill
   both said `300`.)
 
+**Verify claims against the system, don't just re-read the prose.** Reading catches
+self-contradiction; only checking catches a statement that is internally coherent
+and simply false. Take the file's checkable assertions — file paths, cited commits
+and migrations, constants, counts, capability claims — to the source: `ls`/`grep`
+the paths, `git cat-file` the commits, query the DB, read the module that owns the
+behaviour. Both wrong facts found on 2026-07-28 read perfectly well: the nav IA
+described a layout that `src/components/nav-items.ts` had superseded two days
+earlier, and "the MCP server is read-only" needed one query to disprove
+(`transaction_read_only` was `off`). Neither was reachable by reading alone.
+
 Fix what you find in the same session, and put anything structural in
 `DECISIONS.md`. **This is the only trigger there is** — there is deliberately no
 size gate, and "when it feels heavy" never fires.

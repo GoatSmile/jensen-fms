@@ -65,9 +65,11 @@ known:
   current state to `STATUS.md`, why-trail to `DECISIONS.md` — plus editing a
   rule in place instead of appending a dated paragraph beside it.
 - **Consolidate on the first session of the month**: read this file end to end
-  looking for rules that contradict each other and facts that have drifted.
-  Nothing else has ever found either — a counter cannot, and "when it feels
-  heavy" never fires.
+  looking for rules that contradict each other and facts that have drifted —
+  and **verify claims against the system, don't just re-read the prose.**
+  Reading alone would have missed both wrong facts found on 2026-07-28: the nav
+  IA took `nav-items.ts` to disprove, and "the MCP is read-only" took a query.
+  A counter finds none of this, and "when it feels heavy" never fires.
 - **When a decision is locked with the owner**: add a dated DECISIONS.md
   entry in the same commit as the code that implements it — **and if it
   supersedes a rule in this file, edit that rule in the same commit.**
@@ -91,17 +93,15 @@ Domains: reference, catalog, suppliers/purchasing, inventory, customers, bikes,
 commercial, maintenance, cross-cutting. Original SQL files live in
 `/migrations/`.
 
-- **The MCP server is READ-WRITE against PRODUCTION. Treat every call as live.**
-  Measured 2026-07-28: `execute_sql` connects as `postgres` with
-  `rolbypassrls = true`, `transaction_read_only = off`, not a replica — an
-  `UPDATE`, `DELETE` or `DROP` would simply run, RLS included. The server also
-  advertises `apply_migration`, `deploy_edge_function`, `pause_project` and
-  `delete_branch`. There is ONE Supabase project and no staging copy.
-- **What has kept this safe is not a capability limit.**
-  `.claude/settings.json` pre-approves five read tools, so a write merely
-  prompts instead of being refused — and this file described the connection as
-  "read-only" until it was actually measured. **Keep `execute_sql` to
-  `SELECT`s**; schema changes go through the migration convention below.
+- **The MCP server has WRITE access, deliberately** — it is not read-only and
+  is not to be made read-only. Verified 2026-07-28: `execute_sql` connects as
+  `postgres` with `rolbypassrls = true` and `transaction_read_only = off`, and
+  `apply_migration` / `deploy_edge_function` / `pause_project` /
+  `delete_branch` are available. Don't report this as a misconfiguration.
+- Two consequences worth carrying: it **bypasses RLS**, so it is no way to test
+  policies (M1's user-scoped rules won't constrain it either); and there is ONE
+  project with no staging copy, so a write lands in production.
+  `.claude/settings.json` pre-approves the read tools, so writes prompt first.
 
 ### Established views
 - `v_current_stock` — `(part_id, location_id, quantity_on_hand, last_movement_at)`.
@@ -438,16 +438,18 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   underlying string sentence-case; don't "fix" these.
 - **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New
   part", "New MO") — not "Add X" or "Create X".
-- **Navigation / IA — collapsible groups** (reset with the owner 2026-07-26,
-  replacing the flat list agreed 2026-06-20): *Today* (Dashboard) · *Bikes*
-  (All bikes · Bike templates · Families) · *Parts* (All parts · Stock value ·
-  Kits) · *Work* (Tickets · Work orders · Workshop floor · Inbox) · *Orders*
-  (Manufacturing / Purchase / Sales / Paint orders · Invoices) · *Customers*
-  (All customers · Service agreements · Map) · *Admin*.
-  - **Group names are CONCEPTS, not pages, and the rail does not grow.** A new
-    service type becomes another child of *Orders* (nav is per-service-type
-    permanently), never a new group. `nav_open` cookie state is resolved
-    server-side.
+- **Navigation / IA — seven collapsible groups** (reset with the owner
+  2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
+  headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·
+  Families) · *Parts* (All parts · Stock value · Kits) · *Work* (Tickets · Work
+  orders · Workshop floor · Inbox) · *Orders* (Manufacturing · Purchase ·
+  Sales · Paint orders · Invoices) · *Customers* (All customers · Service
+  agreements · Map) · *Admin*.
+  - **Group names are CONCEPTS, not pages, and the rail stays at seven** — that
+    is the point of the shape, not an incidental count. A new service type
+    becomes another child of *Orders* (nav is per-service-type permanently),
+    never an eighth group. Each group opens independently; `nav_open` cookie
+    state is resolved server-side.
   - Both navs render from the shared `src/components/nav-items.ts` — add or
     move items THERE so desktop sidebar and mobile drawer can't drift.
   - **Templates, families and kits are NOT Admin.** Kits are a floor picking
@@ -552,11 +554,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 
 ## Migrations
 Never modify SQL files that have already been applied. Add new ones with
-sequential numbering and apply them through the Supabase SQL editor or via
-`supabase db push` once the CLI is configured. The MCP `apply_migration` tool
-can also push DDL straight to production, but it is **not** a sanctioned path:
-`/migrations/` is the source of truth, so nothing may reach the DB without its
-numbered file committed alongside.
+sequential numbering and apply them through the Supabase SQL editor, the MCP
+`apply_migration` tool, or `supabase db push` once the CLI is configured.
+Whichever route: `/migrations/` is the source of truth, so nothing reaches the
+DB without its numbered file committed alongside.
 
 ## Strategy escalation
 Architectural questions ("should this be one table or two?", "how do we
