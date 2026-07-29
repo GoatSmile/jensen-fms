@@ -1980,7 +1980,8 @@
     "plannedSendDate": "Planned send date",
     "notes": "Notes",
     "paintNotesPlaceholder": "Internal notes about this batch.",
-    "createPaintOrder": "{count, plural, one {Create paint order (1 frame)} other {Create paint order (# frames)}}"
+    "createPaintOrder": "{count, plural, one {Create paint order (1 frame)} other {Create paint order (# frames)}}",
+    "depositSummaryTitle": "Deposit summary"
   },
   "deliveryWeek": {
     "exactDate": "Exact date",

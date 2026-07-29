@@ -7,6 +7,7 @@ import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import {
   Select,
   SelectContent,
@@ -177,9 +178,8 @@ export function DepositForm({
       </div>
 
       {mode === "parts" ? (
-        <div className="flex flex-col gap-3">
+        <Panel title={t("partsPrepay")} contentClassName="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t("partsPrepay")}</span>
             <div className="flex items-center gap-2">
               <Select value={pickPartId} onValueChange={addPart}>
                 <SelectTrigger className="max-w-sm text-sm">
@@ -202,11 +202,14 @@ export function DepositForm({
           </div>
 
           {partRows.length === 0 ? (
-            <p className="text-muted-foreground rounded-md border border-dashed p-3 text-sm italic">
+            // In-panel empty state: bg-ground fill, not a dashed border.
+            <p className="text-ink-2 bg-ground rounded-lg p-3 text-sm italic">
               {t("pickPrepayParts")}
             </p>
           ) : (
-            <ul className="divide-y rounded-md border">
+            // A list inside a Panel gets no wrapper box — the row rules are the
+            // separation. Boxing it again is the card soup the panel replaced.
+            <ul className="divide-rule divide-y">
               {partRows.map((r) => {
                 const q = Number(r.quantity.replace(",", "."));
                 const p = Number(r.unitPrice.replace(",", "."));
@@ -263,7 +266,7 @@ export function DepositForm({
               })}
             </ul>
           )}
-        </div>
+        </Panel>
       ) : (
         <div className="flex flex-col gap-1.5">
           <label htmlFor="deposit-value" className="text-sm font-medium">
@@ -289,7 +292,13 @@ export function DepositForm({
         </div>
       )}
 
-      <div className="bg-muted/30 flex flex-col gap-1 rounded-md border p-3 text-sm">
+      {/* The money summary is its own kind of section, so it gets the money wash
+          rather than a hand-rolled tinted box. */}
+      <Panel
+        hue="money"
+        title={t("depositSummaryTitle")}
+        contentClassName="flex flex-col gap-1 text-sm"
+      >
         <Row label={t("orderSubtotal")} value={formatDkk(soSubtotal)} />
         {priorDepositSubtotal > 0 ? (
           <Row
@@ -297,7 +306,7 @@ export function DepositForm({
             value={`− ${formatDkk(priorDepositSubtotal)}`}
           />
         ) : null}
-        <div className="my-1 border-t" />
+        <div className="border-rule my-1 border-t" />
         <Row label={t("thisDeposit")} value={formatDkk(depositSubtotal)} strong />
         <Row label={t("vatWithRate", { rate: vatRate })} value={formatDkk(depositVat)} />
         <Row label={t("depositTotal")} value={formatDkk(depositTotal)} strong />
@@ -306,7 +315,7 @@ export function DepositForm({
             {t("exceedsRemaining", { remaining: formatDkk(remaining) })}
           </p>
         ) : null}
-      </div>
+      </Panel>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

@@ -1980,7 +1980,8 @@
     "plannedSendDate": "Planlagt afsendelsesdato",
     "notes": "Noter",
     "paintNotesPlaceholder": "Interne noter om denne batch.",
-    "createPaintOrder": "{count, plural, one {Opret lakordre (1 stel)} other {Opret lakordre (# stel)}}"
+    "createPaintOrder": "{count, plural, one {Opret lakordre (1 stel)} other {Opret lakordre (# stel)}}",
+    "depositSummaryTitle": "Depositumoversigt"
   },
   "deliveryWeek": {
     "exactDate": "Præcis dato",
