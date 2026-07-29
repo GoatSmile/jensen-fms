@@ -1458,3 +1458,42 @@ code one), any e-conomic push, any real send.
 pass would fall on the first session of August, days after the thorough 2026-07-28
 one. Skipped one cycle to September. This is a skip, not a new cadence — recorded
 in STATUS with the reason so it does not read as drift.
+
+## 2026-07-29 (late) — the remaining write flows walked; one guard added, no defects found
+Second half of the preflight pass. MO build, batch build, paint send-freeze and SO
+slating/delivery all driven through the real UI against real data, then unwound
+with stock restored exactly. **No new defects.** What it did produce:
+
+**A new invariant: a bike `assigned` or `in_service` with no owner.** Delivery's
+bulk write flips `in_stock -> assigned` without touching the owner, and slating at
+SO-confirm only covers UNBUILT bikes — so a bike built BEFORE its SO was confirmed
+would land in `assigned` with a null owner. **This is not reachable through the
+app**: `sales_order_id` is only ever written at MO creation (`spawn-mo.ts`) and
+nothing re-links an existing MO to an SO. I produced it by doing exactly that in
+SQL. Recorded as check 3 of the audit rather than a code change, because the state
+is genuinely wrong and the check costs nothing; if an adopt-an-MO path is ever
+built (still undecided — see 2026-07-28), this is one of the things it must handle.
+
+**The tier rule is verified, not just documented.** Two lines of the same service
+part type, 6 White + 6 Red, both froze at `J.Jensen KU10` / 160 DKK — the 10–19
+tier — on a total of 12. Neither line reaches 10 alone. Colours sharing a tier
+basis is now demonstrated rather than asserted.
+
+**Two near-miss false findings, same root cause: a screenshot taken right after
+navigation shows PRE-HYDRATION state.** Radix `Select` renders its trigger empty
+server-side and fills the label on mount, so a required field looks like an empty
+chevron pill and a prefilled field looks blank. Both nearly got written up — the
+`?bike=` deep link ("prefill broken", actually fine) and the paint order's
+supplier ("no placeholder", actually pre-selected to Metacoat A/S). **Read the
+trigger's text, never a screenshot, to judge a Select's state**, and never trust
+`select.value`: Radix's hidden native `<select>` carries zero options and reports
+an empty value no matter what is chosen.
+
+**Driving this app from a console is unreliable in three specific ways**, worth
+knowing before anyone automates further: a synthetic `.click()` does not trigger
+server-action buttons (a real mouse click does); `getBoundingClientRect` maths
+against screenshot pixels drifts because the screenshot canvas is offset when the
+page is scrolled and the viewport silently dropped to mobile width mid-session;
+and `input[type=text]` matches the ATTRIBUTE, so it misses every input that
+relies on the default type. **Use `read_page` refs and click by ref** — that
+worked first time, every time, once switched to.

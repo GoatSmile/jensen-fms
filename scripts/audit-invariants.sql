@@ -36,6 +36,21 @@ select * from (
     and deleted_at is null
 
   union all
+  -- "assigned" means assigned TO a customer, so the pair must move together.
+  -- The SO delivery bulk-write flips in_stock -> assigned without touching the
+  -- owner, and slating at SO-confirm only covers UNBUILT bikes — so a bike built
+  -- before its SO was confirmed could in principle land here. Not reachable
+  -- through the app today (sales_order_id is only ever written at MO creation,
+  -- in spawn-mo.ts; nothing re-links an existing MO), which is exactly why this
+  -- stays a cheap guard rather than a fix.
+  select 2.5, 'bikes assigned or in service with no owner',
+         count(*), coalesce(string_agg(frame_number, ', ' order by frame_number), '—')
+  from bikes
+  where status in ('assigned', 'in_service')
+    and owner_organization_id is null
+    and deleted_at is null
+
+  union all
   -- inventory_movement_id is written only when stock is consumed at finish.
   select 3, 'frozen bike_parts on a bike still in planning',
          count(*), coalesce(string_agg(distinct b.frame_number, ', '), '—')

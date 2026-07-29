@@ -125,6 +125,17 @@ customer this bike belongs to." and writes nothing; `in_stock` creates a bike wi
 no owner, no `build_cost_dkk`, no MO, one frame identifier and one state-log row —
 exactly as the doctrine describes. It came off the never-posted list.
 
+**Every write flow has now been driven end to end against real data** (2026-07-29,
+all test rows removed and stock restored — see DECISIONS for the mechanics):
+bike record + slate/deliver · ticket → work order → parts → complete (ticket
+auto-resolves, work lands in the uninvoiced list) · MO create → build workbench →
+confirm frame → copy recipe → finish build (`build_cost_dkk` stamped, 28 rows
+frozen, MO goes `in_progress` and does NOT auto-complete) · batch build (one frame
+typed, three left blank → exactly one built, three untouched) · paint order
+planned → sent (**both lines froze at the 10–19 tier** on a 6+6 split, confirming
+colours share the tier basis) · SO confirm → slates only UNBUILT bikes → delivered
+flips `in_stock` → `assigned`.
+
 Three items came OFF this list on 2026-07-29:
 - **`/bikes` is no longer empty.** The owner added bikes, and MO-2026-0015 carries
   four in `planning` (`JP-2026-E_BIKE-034`–`037`, White, frames unconfirmed,
@@ -189,9 +200,9 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
   asserts status + error-overlay markers + missing i18n keys. Baseline **92 pass ·
   19 redirect · 0 skip · 0 fail**. The 19 are the 18 retired vocab routes plus
   `/whoami`. A SKIP is not a pass — it means no row exists to render that route.
-- **Invariant audit**: each check must return zero offenders. **Baseline is 13 of
-  15 clean**; the two standing hits are real and tracked below (negative stock,
-  e-conomic trial stamps), so treat 13/15 as green and anything else as new.
+- **Invariant audit**: each check must return zero offenders. **Baseline is 14 of
+  16 clean**; the two standing hits are real and tracked below (negative stock,
+  e-conomic trial stamps), so treat 14/16 as green and anything else as new.
 - Why the audit is a `.sql` file and not a script, why two of its first four hits
   were bugs in the checks, and what Tier 1 covered: DECISIONS 2026-07-29
   (afternoon). **Tier 2 — issuing an invoice, any e-conomic push, any real send —
