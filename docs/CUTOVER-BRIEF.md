@@ -256,7 +256,10 @@ accounts, or agree something in writing with shared credentials.
 I have opinions on all of these, but they are yours to settle:
 
 1. **The transfer date.** I propose Monday 31 August — a month end, which is
-   cleanest for the bookkeeping.
+   cleanest for the bookkeeping. What you are trying now is version 0.11.0; I am
+   holding **1.0 for the day we switch over**, rather than spending it on
+   whichever release happened to feel big. It should mean "this is Jensen's
+   system now", and that is a date you set, not me.
 2. **Security.** Right now the app is protected by a login layer and role
    passwords, which is right for a build phase but is not a hard security
    boundary. Once real invoices and real customer data are in it, I owe you a

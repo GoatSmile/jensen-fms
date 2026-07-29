@@ -149,6 +149,10 @@ job from creating a bike through to invoicing — and fixed what it turned up.
 There is nothing outstanding that I know of. Which is exactly why your fresh
 eyes are worth more than more of mine.
 
+**This release is version 0.11.0.** Worth mentioning if you send me something,
+so I know exactly what you were looking at — I will keep changing things while
+you are trying it, and it saves us both guessing.
+
 ---
 
 ## Two things not to press
