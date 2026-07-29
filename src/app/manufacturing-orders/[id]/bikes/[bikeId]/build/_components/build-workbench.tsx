@@ -17,6 +17,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { ColorChip } from "@/components/color-swatch";
 import { Input } from "@/components/ui/input";
 import {
@@ -376,9 +377,7 @@ export function BuildWorkbench({
   return (
     <div className="flex flex-col gap-6">
       {/* Header card with bike identity + status + actions */}
-      <section className="rounded-md border">
-        <div className="border-b px-4 py-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+      <Panel contentClassName="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-muted-foreground text-xs">
@@ -417,14 +416,11 @@ export function BuildWorkbench({
                 {isFinishing ? t("finishing") : t("finishBuild")}
               </Button>
             ) : null}
-          </div>
-        </div>
-      </section>
+      </Panel>
 
       {/* Build-floor labeling note from the sales order (Tier 2 Phase D). */}
       {buildNote ? (
-        <section className="rounded-md border border-money/30 bg-money-wash px-4 py-3">
-          <div className="flex items-start gap-2">
+        <Panel hue="money" contentClassName="flex items-start gap-2">
             <Tag
               className="mt-0.5 size-4 shrink-0 text-money"
               aria-hidden
@@ -437,30 +433,26 @@ export function BuildWorkbench({
                 {buildNote}
               </p>
             </div>
-          </div>
-        </section>
+        </Panel>
       ) : null}
 
       {/* Identify: confirm the real frame number + register identifiers. */}
       {!readOnly ? (
-        <section className="rounded-md border">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-            <div className="flex flex-col gap-0.5">
-              <h2 className="text-sm font-semibold">{t("frameSectionTitle")}</h2>
-              <p className="text-muted-foreground text-xs">
-                {confirmed ? t("frameConfirmedHint") : t("frameEnterHint")}
-              </p>
-            </div>
-            {confirmed ? (
+        <Panel
+          title={t("frameSectionTitle")}
+          description={confirmed ? t("frameConfirmedHint") : t("frameEnterHint")}
+          action={
+            confirmed ? (
               <Badge variant="success">
                 <CheckCircle2 aria-hidden className="size-3.5" />{" "}
                 {t("frameConfirmedBadge")}
               </Badge>
             ) : (
               <Badge variant="warning">{t("provisionalBadge")}</Badge>
-            )}
-          </div>
-          <div className="flex flex-col gap-4 p-4">
+            )
+          }
+          contentClassName="flex flex-col gap-4"
+        >
             <div className="flex flex-wrap items-end gap-2">
               <div className="flex flex-col gap-1.5">
                 <label
@@ -525,7 +517,7 @@ export function BuildWorkbench({
                 ) : null}
               </div>
               {otherIdentifiers.length > 0 ? (
-                <ul className="divide-y rounded-md border text-sm">
+                <ul className="divide-rule divide-y text-sm">
                   {otherIdentifiers.map((id) => (
                     <li
                       key={id.id}
@@ -539,7 +531,7 @@ export function BuildWorkbench({
                   ))}
                 </ul>
               ) : (
-                <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs italic">
+                <p className="text-ink-2 bg-ground rounded-lg px-3 py-2 text-xs italic">
                   {t("noIdentifiers")}
                 </p>
               )}
@@ -553,8 +545,7 @@ export function BuildWorkbench({
                 />
               </div>
             </div>
-          </div>
-        </section>
+        </Panel>
       ) : null}
 
       {pickListSlot}
@@ -571,19 +562,15 @@ export function BuildWorkbench({
       ) : null}
 
       {/* Workbench: categories left, this bike's parts right */}
-      <section className="rounded-md border">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("partsTitle")}</h2>
-            <p className="text-muted-foreground text-xs">
-              {t.rich("partsHint", {
-                frame: bikeFrameNumber,
-                mono: (chunks) => <span className="font-mono">{chunks}</span>,
-                b: (chunks) => <strong>{chunks}</strong>,
-              })}
-            </p>
-          </div>
-          {!readOnly ? (
+      <Panel
+        title={t("partsTitle")}
+        description={t.rich("partsHint", {
+          frame: bikeFrameNumber,
+          mono: (chunks) => <span className="font-mono">{chunks}</span>,
+          b: (chunks) => <strong>{chunks}</strong>,
+        })}
+        action={
+          !readOnly ? (
             <div className="flex flex-wrap items-center gap-2">
               {isEmpty && moRecipeRowCount > 0 ? (
                 <Button
@@ -617,14 +604,14 @@ export function BuildWorkbench({
                 </Button>
               ) : null}
             </div>
-          ) : null}
-        </div>
-
-        <div className="p-4">
+          ) : null
+        }
+      >
+        <div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* LEFT: Category picker (hidden in read-only mode) */}
             {readOnly ? (
-              <div className="text-muted-foreground hidden flex-col items-center justify-center rounded-md border border-dashed p-6 text-sm italic lg:flex">
+              <div className="text-ink-2 bg-ground hidden flex-col items-center justify-center rounded-lg p-6 text-sm italic lg:flex">
                 <Lock className="size-5" aria-hidden />
                 {t("pickerLocked")}
               </div>
@@ -675,11 +662,11 @@ export function BuildWorkbench({
                   />
                 ))}
                 {empty.length > 0 ? (
-                  <div className="mt-2 rounded-md border border-dashed">
+                  <div className="bg-ground mt-2 rounded-lg">
                     <button
                       type="button"
                       onClick={() => setShowEmpty((v) => !v)}
-                      className="hover:bg-muted/30 flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
+                      className="hover:bg-rule/30 flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
                     >
                       {showEmpty ? (
                         <ChevronDown className="size-3.5" aria-hidden />
@@ -691,7 +678,7 @@ export function BuildWorkbench({
                       </span>
                     </button>
                     {showEmpty ? (
-                      <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
+                      <ul className="text-ink-2 border-rule border-t px-3 py-2 text-xs">
                         {empty.map((c, i) => (
                           <li key={c.id} className="py-0.5">
                             {populated.length + i + 1}.{" "}
@@ -727,7 +714,7 @@ export function BuildWorkbench({
                 ) : null}
               </div>
               {isEmpty ? (
-                <div className="text-muted-foreground flex h-32 items-center justify-center rounded-md border border-dashed text-sm italic">
+                <div className="text-ink-2 bg-ground flex h-32 items-center justify-center rounded-lg text-sm italic">
                   {readOnly
                     ? t("emptyReadOnly")
                     : moRecipeRowCount > 0
@@ -746,8 +733,8 @@ export function BuildWorkbench({
                       const catName =
                         catRows[0]?.categoryName ?? t("uncategorised");
                       return (
-                        <div key={catKey} className="rounded-md border">
-                          <div className="bg-muted/30 border-b px-3 py-1.5 text-xs font-medium uppercase tracking-wide">
+                        <div key={catKey} className="bg-ground overflow-hidden rounded-lg">
+                          <div className="bg-rule/40 px-3 py-1.5 text-xs font-medium tracking-wide uppercase">
                             {catName}
                           </div>
                           <ul className="divide-y">
@@ -772,7 +759,7 @@ export function BuildWorkbench({
         </div>
 
         {!readOnly ? (
-          <footer className="border-t bg-muted/20 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <footer className="bg-ground mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg p-3">
             <p
               className={`text-xs ${atPainterReason ? "text-money" : "text-muted-foreground"}`}
             >
@@ -795,7 +782,7 @@ export function BuildWorkbench({
             </Button>
           </footer>
         ) : null}
-      </section>
+      </Panel>
     </div>
   );
 }
@@ -860,7 +847,7 @@ function KitBulkRemove({
   }
 
   return (
-    <div className="bg-muted/20 mb-1 rounded-md border border-dashed px-2.5 py-2">
+    <div className="bg-ground mb-1 rounded-lg px-2.5 py-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-muted-foreground shrink-0 text-xs">
           {t("removeKitLabel")}
