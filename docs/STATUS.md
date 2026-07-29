@@ -116,10 +116,14 @@ form, add-parts, pick list, scanner, deposit and paint-from-SO forms.
 **What real data still cannot verify** (narrowed 2026-07-29): no bike template
 has paintwork rows — though the paintwork section and its no-price messages WERE
 exercised on 2026-07-29 with a temporary row on Norma CS (since deleted), so the
-surface is no longer unseen, only unpopulated — and no inbound message is spam-flagged, so that banner's
-`money` hue is code-verified only. **`/bikes/new` has still never been
-submitted** — its owner-required and status-whitelist branches are read, not
-posted.
+surface is no longer unseen, only unpopulated — and no inbound message is
+spam-flagged, so that banner's `money` hue is code-verified only.
+
+**`/bikes/new` has now been submitted, both branches** (2026-07-29, preflight
+harness): `in_service` with no customer is rejected server-side with "Pick the
+customer this bike belongs to." and writes nothing; `in_stock` creates a bike with
+no owner, no `build_cost_dkk`, no MO, one frame identifier and one state-log row —
+exactly as the doctrine describes. It came off the never-posted list.
 
 Three items came OFF this list on 2026-07-29:
 - **`/bikes` is no longer empty.** The owner added bikes, and MO-2026-0015 carries
@@ -156,11 +160,12 @@ a creation scenario at all:
 
 - `/bikes/new` may produce ONLY `in_service` (owner required) or `in_stock`.
   Never `planning` — that is what made a bike strandable.
-- **One stranded bike remains in prod: `JP-3333-12`**, in `building` with no MO.
-  Nothing shipped can rescue it, because adopting an existing bike into an MO
-  does not exist. Manual recovery: new MO → Add bike → build that one → retire
-  the stranded one. It is a test bike ("test, can be deleted"), so deleting it is
-  also fine.
+- **One stranded bike remains in prod: `JP-3333-155`**, in `planning` with no MO
+  (`JP-3333-12` was soft-deleted by the owner 2026-07-28 — verified in the DB
+  2026-07-29). Nothing shipped can rescue it, because adopting an existing bike
+  into an MO does not exist, and `planning → building` needs one. Manual recovery:
+  new MO → Add bike → build that one → retire the stranded one. It is test data,
+  so deleting it is also fine.
 - **Adopting an existing bike into an MO is UNDECIDED** — not rejected. It is the
   capability behind the owner's "Create manufacturing order" button idea and the
   only real fix for the stranded bike. If it gets built, do NOT reuse
@@ -172,6 +177,31 @@ a creation scenario at all:
   callers** — worth remembering that a wired-but-unlinked capability looks
   exactly like a missing feature.
 
+## Preflight harness (2026-07-29) — run this before showing anyone the app
+Two commands, both read-only, both safe against prod:
+
+```
+npm run smoke                      # 103 routes, needs `npm run dev` running
+scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
+```
+
+- **Smoke sweep**: fetches every page route with real ids pulled from the DB and
+  asserts status + error-overlay markers + missing i18n keys. Baseline **92 pass ·
+  19 redirect · 0 skip · 0 fail**. The 19 are the 18 retired vocab routes plus
+  `/whoami`. A SKIP is not a pass — it means no row exists to render that route.
+- **Invariant audit**: each check must return zero offenders. **Baseline is 13 of
+  15 clean**; the two standing hits are real and tracked below (negative stock,
+  e-conomic trial stamps), so treat 13/15 as green and anything else as new.
+- Why the audit is a `.sql` file and not a script, why two of its first four hits
+  were bugs in the checks, and what Tier 1 covered: DECISIONS 2026-07-29
+  (afternoon). **Tier 2 — issuing an invoice, any e-conomic push, any real send —
+  is excluded on purpose and must stay manual.**
+- **Negative stock, `JP-sap271` (Sapim spokes): −207.** One receipt of 83 in May,
+  then eight real builds consuming 36 each. Opening stock was never entered, so
+  this is a data debt, not a code defect — the 31 Aug physical count resolves it.
+  It does confirm a build is allowed to run the ledger negative without blocking;
+  whether that should warn is an owner question, not a bug.
+
 ## Next actions, in order
 1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
    hues still read as a system across a whole working session rather than
@@ -180,7 +210,10 @@ a creation scenario at all:
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions; `orders@valent.dk`; e-conomic production
    token; company CVR/bank/address).
-3. **Next `CLAUDE.md` consolidation: first session of September** — step 3 of
+3. **Next `CLAUDE.md` consolidation: first session of September** — one cycle
+   skipped deliberately (owner's call 2026-07-29): the 2026-07-28 pass ran late
+   in July and was thorough, so an August pass days later would find nothing.
+   This is a skip, not a new cadence — step 3 of
    `/session-start`, and the only instrument pointing at that file now the
    line-count hook is gone. The 2026-07-28 pass found what no counter could
    (a nav IA bullet describing a superseded layout two days after the refresh
@@ -302,8 +335,16 @@ Dennis's company number onto the inbound trunk.
   `organizations.economic_customer_number` /
   `invoices.economic_voucher_id` / `economic_synced_at` stamped against the
   TRIAL agreement refer to trial entities and must be cleared first.
-  Currently NONE exist — keep it that way (don't push real invoices to the
-  trial).
+  **FOUR SUCH RECORDS EXIST** (found 2026-07-29 by `scripts/audit-invariants.sql`;
+  this entry previously claimed none did, which was wrong from 2026-07-09 —
+  they are the residue of that day's live push test):
+  - `organizations.economic_customer_number` — `Nazar Taras` (2),
+    `TEST Hotel Strandvejen ApS` (3)
+  - `invoices.economic_voucher_id` — `INV-2026-0001` (`2026 J1 V2`),
+    `TEST-2026-0001` (`2026 J1 V3`), both `economic_synced_at` 2026-07-09
+  Clearing these is a **prerequisite of the production cutover**, not
+  housekeeping: left in place, the first real push reconciles against trial
+  entities. Re-run check 14 of the audit to confirm zero before the token swap.
 - `outbound_test_mode` is the only thing between "Email supplier" and real
   supplier inboxes — verify it before demoing send flows.
 - Both locales sit at `en`; if a surface suddenly renders Danish, someone

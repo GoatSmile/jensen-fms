@@ -1392,3 +1392,69 @@ oversight.
 
 **`slugify` was lifted to `src/lib/forms.ts`** from four byte-identical copies
 (colours, coatings, segments, categories) when a fifth was about to be written.
+
+## 2026-07-29 (afternoon) — a preflight harness before Dennis; and what it found wrong in the durable docs
+The app is shown to Dennis shortly and there is no test suite, so the ask was for
+verification that runs without the owner in the loop. Built as two tiers, ordered
+by irreversibility because there is one Supabase project and no staging copy — a
+write lands in production.
+
+**Tier 0 (`npm run smoke` + `scripts/audit-invariants.sql`) is read-only and
+should run every time.** The route sweep fetches all 103 page routes with real ids
+harvested from the DB and asserts status, error-overlay markers and missing i18n
+keys; 92 pass, 19 redirect (the 18 retired vocab routes plus `/whoami`), 0 skip,
+0 fail. The audit is 16 queries that must each return zero rows. This is the CI
+Tier 2 work parked in BACKLOG, minus the repo secrets — built locally now so it
+lands as CI later rather than being written twice.
+
+**The audit is ONE SQL FILE, deliberately, not a Node script.** Running arbitrary
+SQL from Node needs either a new database secret in `.env.local` or a
+SECURITY DEFINER exec RPC — and under the permissive `anon_all` policy
+(migration 50) such an RPC is a live hole reachable with the publishable key,
+which is the standing perimeter landmine. A plain `.sql` file runs in the SQL
+editor, in `psql`, or through the MCP with no new surface and no new secret. The
+first draft of this was a `.mjs` with exactly that RPC in it; it was deleted
+rather than shipped.
+
+**Two of the first run's four hits were bugs in the checks, not the data** — worth
+recording because both are easy to re-introduce: a cancelled draft invoice
+legitimately keeps its `DRAFT-` placeholder (never issued, so never allocated), and
+`'INV-2026-'` is NINE characters, so a `left(…, 8)` comparison silently matches
+nothing and reports every counter as broken.
+
+**CLAUDE.md's landed-cost formula was missing `anti_dumping_pct` entirely** — it
+described three additive buckets where the generated column has four, and the
+missing term reaches 48.5 % of base on the affected HS codes. Wrong from
+2026-06-06 (when anti-dumping shipped) to 2026-07-29. The app code was always
+correct (`line-dialog.tsx` computes all four), so this never produced a wrong
+number on screen — but any reasoning done from the durable doc understated
+China-sourced landed cost by more than a third. This is the class the monthly
+consolidation exists to catch and did not, because reading the paragraph does not
+reveal a missing term; only checking it against `information_schema` does.
+
+**The e-conomic trial landmine's own precondition was false.** STATUS said "no
+trial-stamped records exist — keep it that way"; four do, from the 2026-07-09
+live push test (two `organizations.economic_customer_number`, two
+`invoices.economic_voucher_id`). Clearing them is now recorded as a prerequisite
+of the production cutover rather than housekeeping. Check 14 of the audit is the
+standing guard.
+
+**Tier 1 walked the write flows through the real UI** (`/bikes/new` both branches
+— STATUS had it as never once submitted — then slate/deliver, ticket, work order,
+part consumption, completion), all under a `PREFLIGHT-` scope, then deleted in
+dependency order with stock restored exactly. Two mechanics worth carrying: a
+synthetic `.click()` from the console does NOT reliably trigger these
+server-action buttons where a real mouse click does, and Radix `Select` renders a
+hidden native `<select>` with zero options, so reading `select.value` to check a
+form's state reports empty and invites a false "prefill is broken" finding. It
+did; the trigger's text is the honest source.
+
+**Tier 2 was excluded on purpose:** issuing an invoice (the number is allocated at
+issue and the series must stay gapless — `INV-2026-0001` is already spent on a
+test, so the first real invoice will be `0002`, which is a revisor question, not a
+code one), any e-conomic push, any real send.
+
+**Deferred with the owner: the September consolidation.** The next `CLAUDE.md`
+pass would fall on the first session of August, days after the thorough 2026-07-28
+one. Skipped one cycle to September. This is a skip, not a new cadence — recorded
+in STATUS with the reason so it does not read as drift.
