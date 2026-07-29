@@ -1361,3 +1361,34 @@ on `/admin/lists`; parked in BACKLOG.md rather than bundled here.
 **Prod config changed during verification:** painting's default was
 `Test Nazar Supplier` (no price list, set while testing the old dropdown) and is
 now `Metacoat A/S`, the only painter with a current list — the working value.
+
+## 2026-07-29 (evening) — Slice F built now, not after the solo stretch; service part types get a tab
+Two owner calls, both overriding standing recommendations here.
+
+**Slice F: build it now.** STATUS had it queued *after* Dennis's solo stretch on
+the grounds that these are the screens his mechanics use daily and the upside is
+cosmetic. The owner's call: it is cosmetic, so do it — the structural item
+(floor/office) is the one that waits for a conversation with Dennis. Shipped as
+seven commits, one file each, every one browser-verified against real data before
+the commit, per the plan's own rule.
+
+**The verification found two real bugs, both in `scanner`, neither cosmetic** —
+and this is the argument for the one-file-at-a-time rule rather than a batch:
+manual entry never worked for a frame number, and leaving `/scan` after declining
+the camera threw a runtime error. Details in the plan's §14 list and commit
+`1f34f9a`. Both were pre-existing and invisible to tsc, lint and `next build`.
+
+**Service part types become the 8th `/admin/lists` tab** (`ad1c559`), which was
+the first extension of the descriptor layer and cost exactly what the design
+promised: one descriptor entry plus a three-function action file, no route and no
+components. Its `usage` tally deliberately counts live paint-order lines and
+template paintwork — what WE send — and NOT `service_price_items`, since a
+supplier pricing a part type is their catalogue rather than our usage.
+
+**Still refused, and this is the durable half:** a "New service type" button. Nav
+and routes are per service type permanently, so a created type would have no nav
+entry and no order pages. Recorded in CLAUDE.md so it is not revisited as an
+oversight.
+
+**`slugify` was lifted to `src/lib/forms.ts`** from four byte-identical copies
+(colours, coatings, segments, categories) when a fifth was about to be written.

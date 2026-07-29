@@ -1,16 +1,14 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-29.** Most recent: **the paint estimate no longer
-substitutes a supplier's price list, and the default supplier is set with
-"Make default" on a price-list panel** — the free dropdown that let you default to
-a painter with no prices is deleted (owner-found; three invisible consequences,
-DECISIONS 2026-07-29 later). Painting's default is now `Metacoat A/S`, the only
-painter with a current list. Before that: **`/admin/lists` shipped** — the seven
-controlled vocabularies now live on one page and the 18 old routes redirect to it
-(`13c620e` + the retirement commit). Retiring `/admin/locations` nearly deleted the
-only UI for two app settings; both were ported instead. Gates green: `tsc` clean,
-lint 0 errors (14 long-standing warnings), `npm run build` exit 0 with the dev
-server stopped.
+**Last updated: 2026-07-29.** Most recent: **Slice F is done — the design refresh
+has no card soup left to migrate.** Seven behaviour-carrying files, one commit
+each, each browser-verified against real data; two pre-existing `scanner` bugs
+found and fixed on the way (see below). Also today: **service part types became
+the 8th `/admin/lists` tab**, **the paint estimate stopped substituting a
+supplier's price list** and the default supplier is now set with "Make default" on
+a price-list panel, and **`/admin/lists` replaced 18 vocabulary routes**. Gates
+green throughout: `tsc` clean, lint 0 errors (14 long-standing warnings),
+`npm run build` exit 0 with the dev server stopped each time.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -62,7 +60,7 @@ parked ideas in `docs/BACKLOG.md`.
   kit's sparsebundle is macOS-only, so a NAS can store it and nobody there can
   open it). Owner's call; runbook in the plan, to be rehearsed on the 19th.
 
-## Design refresh — Phase 2 essentially done; slice F is what's left
+## Design refresh — COMPLETE except floor/office mode
 `docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
 where this doc is now wrong" list; **§15** holds the build plans for the two
 newly-approved items — **§15's `/admin/lists` plan is now marked shipped, with
@@ -73,7 +71,9 @@ Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` · `Panel` /
 `Metric` / `Rule` primitives · six hues, closed list · **seven grouped nav
 items** with `nav_open` cookie state · the `/admin/settings` sub-rail · every
 list page, detail section, admin form and dialog on `Panel` · **`/admin/lists`,
-one page for the seven controlled vocabularies** (18 routes retired to it).
+one page for EIGHT controlled vocabularies** (18 routes retired to it; service part
+types added 2026-07-29) · **every Slice F workbench** — build workbench, batch
+form, add-parts, pick list, scanner, deposit and paint-from-SO forms.
 
 - **The remaining card soup was mostly duplication.** Three clusters, each
   identical down to the class list, are now one component each — and a new copy
@@ -187,21 +187,30 @@ a creation scenario at all:
    shipped). The honest reduction is extracting narrative to
    `docs/archive/HISTORY.md` — **never deleting a rule.**
 
-### The queue, in the order it is worth taking
-1. **Slice F — the behaviour-carrying workbenches.** The last of the card soup,
-   deliberately last: `build-workbench` (11 bordered surfaces), `mo-batch-form`
-   (7), `add-parts-workspace` (7), `paint-from-so-form`, `deposit-form`,
-   `scanner`, the build `pick-list`. These carry scan handlers and per-row inputs
-   on workshop-critical screens, so it is **one file per commit,
-   browser-verified individually** — not a batch. **Consider doing this AFTER
-   Dennis's solo stretch**: the remaining surfaces read as plainer, not broken,
-   and these are the screens his mechanics use daily. Its old "cannot be
-   verified against real data" objection is **partly gone** — see the real-data
-   note above.
-2. **Floor/office mode** (plan §6) — approved 2026-07-28 but deliberately **NOT
-   before 31 Aug.** Largest item in the plan and it reshapes the screen mechanics
-   use daily; do not ship it into the solo stretch. Plan §15 has the four steps
-   and the contrast-re-measurement requirement.
+### The queue
+**Only floor/office mode is left** (plan §6) — approved 2026-07-28, deliberately
+**NOT before 31 Aug**, and the owner wants to talk it through with Dennis first.
+It is the largest item in the plan and it reshapes the screen mechanics use daily.
+Plan §15 has the four steps and the contrast-re-measurement requirement.
+
+### Slice F is done (2026-07-29) — what it taught
+All seven files are migrated: `deposit-form`, `paint-from-so-form`, `scanner`,
+`mo-batch-form`, `add-parts-workspace`, the build `pick-list`, `build-workbench`.
+Three things worth carrying:
+- **Two real bugs surfaced, both in `scanner`, neither cosmetic, both invisible to
+  the toolchain.** Manual entry never worked for a frame number — `new URL(v,
+  origin)` never throws for a plain string, so the frame-number fallback was
+  unreachable and typing one 404'd, on the exact path a mechanic uses when the
+  camera fails. And leaving `/scan` after declining the camera threw a runtime
+  error, because html5-qrcode's `stop()` throws SYNCHRONOUSLY and the existing
+  `.catch()` could only see a rejection. This is the case for one-file-per-commit
+  browser verification, not a batch.
+- **A `rounded-*` grep misses leftovers.** `build-workbench`'s footer was
+  `border-t bg-muted/20 px-4 py-3` — no rounded corner, and its padding fought the
+  Panel's once inside one. Grep `bg-muted` and bare `border-t`/`border-b` too.
+- **Console-testing a React form:** a synthetic `blur` does NOT fire React's
+  `onBlur`; React listens on `focusout`, which bubbles. A working quantity writer
+  looked broken because of this.
 
 ### `/admin/lists` — done, with two things to know
 - **A new vocabulary is a descriptor entry, not a route.** `src/lib/admin/vocabularies.ts`

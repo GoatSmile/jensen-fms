@@ -709,18 +709,30 @@ that caught the contrast failure and the wrong chip fills is blind to this class
 Capture at an 800px viewport (1:1) for anything shadow- or edge-related.
 
 ### Still not done — the honest list
-- **~71 files still hand-roll `rounded-* border` surfaces**, down from 184 at
-  the audit and 127 at the start of 2026-07-28. What remains is **slice F**: the
-  behaviour-carrying workbenches, which were deliberately left for last because
-  they carry scan handlers and per-row inputs on workshop-critical screens —
-  `build-workbench` (11), `mo-batch-form` (7), `add-parts-workspace` (7),
-  `paint-from-so-form`, `deposit-form`, `scanner`, the build `pick-list`. One
-  file per commit, browser-verified individually; not a batch.
-  Plus a long tail of single-hit files (print routes, photo-thumb frames and
-  other decorative or control borders) that are mostly **correct as they are** —
-  the count will never reach zero and should not be driven there.
-- **`/admin/lists`** (§8) and **floor/office mode** (§6): both approved
-  2026-07-28. See §15 for the build plans.
+- **Slice F is DONE (2026-07-29).** All seven behaviour-carrying files are off
+  hand-rolled surfaces, one commit each, each browser-verified against real data:
+  `deposit-form`, `paint-from-so-form`, `scanner`, `mo-batch-form`,
+  `add-parts-workspace`, the build `pick-list`, `build-workbench`. What remains is
+  the long tail of single-hit files (print routes, photo-thumb frames, control and
+  button-group borders) that are mostly **correct as they are** — the count will
+  never reach zero and should not be driven there.
+  - **Doing it on the real screens paid for itself twice**, both in `scanner` and
+    neither cosmetic: manual entry never worked for a frame number (`new URL(v,
+    origin)` never throws for a plain string, so the frame-number fallback was
+    unreachable and typing one 404'd — the exact path used when the camera fails),
+    and leaving `/scan` after a denied camera prompt threw a runtime error
+    (html5-qrcode's `stop()` throws SYNCHRONOUSLY, so the existing `.catch()`
+    never saw it). Neither is findable by tsc, lint or `next build`.
+  - **A `rounded-*` grep does not find every leftover.** `build-workbench`'s
+    finish-build footer was `border-t bg-muted/20 px-4 py-3` — a full-bleed tinted
+    bar, no rounded corner — and its own padding fought the Panel's once it was
+    inside one. Search for `bg-muted` and bare `border-t`/`border-b` too.
+  - **Console-testing a React form:** a synthetic `blur` does not fire React's
+    `onBlur` (React listens on `focusout`, which bubbles). A quantity write looked
+    broken and was not.
+
+- **`/admin/lists`** (§8) shipped 2026-07-29 — see §15. **Floor/office mode** (§6)
+  is approved and still queued, deliberately after the cutover.
 - **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
 - **No unit test for the cookie logic.** The plan asked for one; there is no
   test runner in this project (`package.json` has dev/build/start/lint only),
