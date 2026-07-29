@@ -3002,7 +3002,7 @@
     "journalNumberLabel": "Journal number",
     "languageDescription": "Working language for the office app and the workshop floor. Defaults to English.",
     "languageHeading": "Language",
-    "languageRolloutNote": "These save your preference now. The interface is still being translated, so some screens stay in English until that rolls out — customer-facing documents (invoices, the public report) already follow their own language.",
+    "languageRolloutNote": "These take effect immediately, and the office app and the workshop screens each follow their own setting. Part, template and family names stay English by design, as does the supplier-facing purchase-order print. Customer-facing documents (invoices, the public report) follow their own language, not this setting.",
     "paymentTermsLabel": "Payment terms",
     "paymentTermsPlaceholder": "e.g. 1",
     "probeAccountingYears": "Open accounting years: {years}",

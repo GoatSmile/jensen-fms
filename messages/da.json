@@ -3002,7 +3002,7 @@
     "journalNumberLabel": "Journalnummer",
     "languageDescription": "Arbejdssprog for kontor-appen og værkstedsgulvet. Standard er engelsk.",
     "languageHeading": "Sprog",
-    "languageRolloutNote": "Disse gemmer din præference nu. Grænsefladen er stadig ved at blive oversat, så nogle skærme forbliver på engelsk, indtil det rulles ud — kundevendte dokumenter (fakturaer, den offentlige rapport) følger allerede deres eget sprog.",
+    "languageRolloutNote": "Disse træder i kraft med det samme, og kontor-appen og værkstedsskærmene følger hver sin indstilling. Navne på dele, skabeloner og familier forbliver på engelsk med vilje, og det samme gør den leverandørvendte indkøbsordre-udskrift. Kundevendte dokumenter (fakturaer, den offentlige rapport) følger deres eget sprog, ikke denne indstilling.",
     "paymentTermsLabel": "Betalingsbetingelser",
     "paymentTermsPlaceholder": "f.eks. 1",
     "probeAccountingYears": "Åbne regnskabsår: {years}",
