@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import {
   Select,
   SelectContent,
@@ -121,9 +122,11 @@ export function PaintFromSOForm({
 
   if (eligibleBikes.length === 0) {
     return (
-      <div className="bg-muted/30 flex flex-col items-center gap-2 rounded-md border p-8 text-center">
+      // Page-level notice, so it gets its own Panel: the page background already
+      // IS --ground, so a bg-ground fill here would render as floating text.
+      <Panel contentClassName="flex flex-col items-center gap-2 py-8 text-center">
         <p className="text-sm font-medium">{t("noFramesTitle")}</p>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-ink-2 text-xs">
           {t("noFramesDesc", { so: soNumber })}
         </p>
         <Button
@@ -134,28 +137,26 @@ export function PaintFromSOForm({
         >
           {t("backToSo")}
         </Button>
-      </div>
+      </Panel>
     );
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
-      <section className="rounded-md border">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("framesToPaint")}</h2>
-            <p className="text-muted-foreground text-xs">
-              {t("framesSelected", {
-                selected: selectedCount,
-                total: eligibleBikes.length,
-              })}
-            </p>
-          </div>
+      <Panel
+        title={t("framesToPaint")}
+        description={t("framesSelected", {
+          selected: selectedCount,
+          total: eligibleBikes.length,
+        })}
+        action={
           <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
             {allSelected ? tCommon("clearAll") : t("selectAll")}
           </Button>
-        </header>
-        <ul className="max-h-80 divide-y overflow-y-auto">
+        }
+      >
+        {/* The scroller stays on the list itself — it is the thing that overflows. */}
+        <ul className="divide-rule max-h-80 divide-y overflow-y-auto">
           {eligibleBikes.map((b) => {
             const checked = selected.has(b.id);
             return (
@@ -188,16 +189,13 @@ export function PaintFromSOForm({
             );
           })}
         </ul>
-      </section>
+      </Panel>
 
-      <section className="rounded-md border">
-        <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("painterAndColour")}</h2>
-          <p className="text-muted-foreground text-xs">
-            {t("painterColourDesc")}
-          </p>
-        </header>
-        <div className="flex flex-col gap-3 p-4">
+      <Panel
+        title={t("painterAndColour")}
+        description={t("painterColourDesc")}
+        contentClassName="flex flex-col gap-3"
+      >
           <Field
             label={t("supplier")}
             htmlFor="paint-supplier"
@@ -258,15 +256,13 @@ export function PaintFromSOForm({
               </SelectContent>
             </Select>
           </Field>
-        </div>
-      </section>
+      </Panel>
 
-      <section className="rounded-md border">
-        <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{t("schedule")}</h2>
-          <p className="text-muted-foreground text-xs">{t("scheduleDesc")}</p>
-        </header>
-        <div className="flex flex-col gap-3 p-4">
+      <Panel
+        title={t("schedule")}
+        description={t("scheduleDesc")}
+        contentClassName="flex flex-col gap-3"
+      >
           <Field label={t("plannedSendDate")} htmlFor="paint-send-date">
             <Input
               id="paint-send-date"
@@ -284,8 +280,7 @@ export function PaintFromSOForm({
               placeholder={t("paintNotesPlaceholder")}
             />
           </Field>
-        </div>
-      </section>
+      </Panel>
 
       {error && !errorField ? (
         <p className="text-destructive text-sm" role="alert">
