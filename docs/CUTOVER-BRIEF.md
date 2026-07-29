@@ -145,9 +145,11 @@ guess and have our cost figures disagree with your customs paperwork.
 
 ## The three meetings I would like
 
-Week of 17 August. Different places, on purpose.
+Week of 17 August. Different places, on purpose. I have deliberately not put
+days against them — you know your week better than I do, so tell me which days
+suit and we will fix them then. The order is what matters, not the dates.
 
-### Monday 17 August — at your workshop, half a day
+### First — at your workshop, half a day
 The reality check. I need to see the physical side: where the bikes actually
 sit, what is on the whiteboard, how a job sheet travels across the bench,
 whether the kit stickers match the shelves.
@@ -158,7 +160,7 @@ gets your process wrong will show up in that half hour and nowhere else.
 
 Then we agree the transfer date and write it down.
 
-### Wednesday 19 August — at my place, full day
+### Then, a day or two later — at my place, full day
 This is the one I would most like you to travel for.
 
 Two reasons. The practical one: the workshop interrupts you every ten
@@ -231,7 +233,7 @@ person's laptop.
 We agreed on your on-site server. The mechanics are simple: once a month I
 produce an encrypted archive and copy it to a share on your NAS, with the
 password held in your own password manager, never alongside the archive. I
-will bring the procedure to the 19 August session.
+will bring the procedure to the full day at my place.
 
 **The part I actually want to sit down and explain** is the difference between
 *having* a copy and being able to *use* one. So at that meeting we are going
@@ -244,7 +246,7 @@ Vercel, Supabase, the phone number, the email service and the domain are all
 currently registered under my accounts. A backup gives you the data and the
 code; it does not give you a running service or a phone number. That is the
 larger continuity question and I would rather raise it than leave it sitting
-there — so let us decide at the 19th whether to move those into Jensen-owned
+there — so let us decide that day whether to move those into Jensen-owned
 accounts, or agree something in writing with shared credentials.
 
 ---
@@ -275,7 +277,8 @@ together, in the same room, with your real data and your real invoices in
 front of us. That is why I am asking for whole days rather than calls, and
 why I want a date on the calendar rather than a direction of travel.
 
-Bring your scepticism to the 17th. The things you think the app gets wrong
+Bring your scepticism to the workshop session. The things you think the app
+gets wrong
 about how you work are the most valuable thing you can give me.
 
 — Nazar

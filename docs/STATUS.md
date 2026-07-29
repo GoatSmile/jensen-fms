@@ -51,10 +51,14 @@ parked ideas in `docs/BACKLOG.md`.
 
 - **Proposed transfer date: Mon 31 Aug** — one hard line after which no new work
   is recorded in Excel or on paper. Confirm or move it in Meeting 1.
-- **Three meetings, week of 17 Aug**: workshop Mon 17th (reality check, agree
-  the date — the brief said "Monday 18 August", which is a Tuesday; corrected
-  2026-07-29 to match its own "week of 17 August") · Nazar's place Wed 19th (invoicing-parity workshop, revisor on the
-  phone, restore rehearsal) · team session on transfer day.
+- **Three meetings, week of 17 Aug, in this ORDER — no days assigned**
+  (owner's call 2026-07-29; the brief had said "Monday 18 August", which is a
+  Tuesday, so the days came out rather than getting a corrected weekday —
+  Dennis picks them): workshop first (reality check, watch one real job, agree
+  the transfer date) · then a full day at Nazar's a day or two later
+  (invoicing-parity workshop, revisor on the phone, restore rehearsal) · team
+  session on transfer day. **Don't reintroduce weekday names** — the order is
+  what carries meaning and a named day drifts the moment the week moves.
 - **Ladder, ordered by irreversibility**: internal ops → supplier email +
   phone → first real invoice → e-conomic. e-conomic is deliberately LAST.
 - **Migrate almost nothing**: customers + bikes in the field only. Opening stock
@@ -64,7 +68,9 @@ parked ideas in `docs/BACKLOG.md`.
   a backup on Dennis's NAS gives him data and code, not a running service.
 - Off-site copy to Jensen's on-site NAS as an **AES-256 `.7z`** (the backup
   kit's sparsebundle is macOS-only, so a NAS can store it and nobody there can
-  open it). Owner's call; runbook in the plan, to be rehearsed on the 19th.
+  open it). Owner's call; runbook in the plan, to be rehearsed at the full day
+  at Nazar's — unpack an archive, load it into a fresh project, open the app
+  against it, so Dennis has seen a restore work rather than been told it does.
 
 ## Design refresh — COMPLETE except floor/office mode
 `docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
