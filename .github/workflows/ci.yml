@@ -20,6 +20,15 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # These three steps take ~80 seconds together, so 10 minutes is pure
+    # headroom. It exists because the default is SIX HOURS: on 2026-07-29 a
+    # hosted runner died after every step had already passed, and the run sat
+    # there for 46 minutes before GitHub gave up and emailed a failure for work
+    # that had succeeded. This does not prevent that flake — nothing here can —
+    # it just stops one from burning 46 minutes of wall-clock and Actions
+    # budget, and makes a genuine hang obvious in ten minutes instead of
+    # looking like a slow build.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
 
