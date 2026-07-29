@@ -18,8 +18,11 @@ here. History belongs in `docs/archive/`, decisions in `docs/DECISIONS.md`,
 parked ideas in `docs/BACKLOG.md`.
 
 ## Where we are
-- **v0.10.0+**, deployed on Vercel (push-to-`main` → prod), gated behind
-  Vercel SSO. 78 migrations, single-tenant, solo-dev.
+- **v0.11.0** (tagged 2026-07-29 — the release Dennis reviews), deployed on
+  Vercel (push-to-`main` → prod), gated behind Vercel SSO. Single-tenant,
+  solo-dev. **`v1.0.0` is reserved for cutover**, not for a feature count: the
+  convention set by the v0.10.0 tag is "pre-auth, so pre-1.0", and 1.0 now also
+  means the day this becomes Jensen's system of record. Don't spend it early.
 - **Operationally feature-complete** for the workshop's daily job: parts +
   categories + inventory ledger; suppliers + offerings; POs + additive frozen
   landed cost + email-to-supplier (test mode); bike templates (versioned,
