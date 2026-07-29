@@ -1192,7 +1192,7 @@
     "saveChanges": "Save changes",
     "crumbNew": "New",
     "crumbEdit": "Edit",
-    "newSubtitle": "Capture an issue against a specific bike. Work orders come in the next push — for now this just logs the report.",
+    "newSubtitle": "Capture an issue against a specific bike. Start a work order from the ticket once you know what the job is.",
     "editTitle": "Edit ticket",
     "editSubtitle": "Tweak any of the captured fields. Status changes happen on the detail page via the move-to dropdown.",
     "fromInboundBanner": "Drafted from a phone message — review before acting.",

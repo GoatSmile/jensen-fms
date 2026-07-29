@@ -118,15 +118,21 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Landed cost is additive**, broken out so the UI can show the user where
   each øre comes from. Formula:
   ```
-  base_dkk        = unit_price × fx_rate_to_dkk
-  transport_dkk   = base_dkk × transport_pct       (default 10 %, settable in /admin/settings)
-  import_tax_dkk  = base_dkk × tariff_pct          (from the part's HS code, snapshotted at insert)
-  landed_dkk      = base_dkk + transport_dkk + import_tax_dkk
-                  = unit_price × fx_rate_to_dkk × (1 + transport_pct + tariff_pct)
+  base_dkk         = unit_price × fx_rate_to_dkk
+  transport_dkk    = base_dkk × transport_pct        (default 10 %, settable in /admin/settings)
+  import_tax_dkk   = base_dkk × tariff_pct           (from the part's HS code, snapshotted at insert)
+  anti_dumping_dkk = base_dkk × anti_dumping_pct     (also from the HS code; 48.5 % where it applies)
+  landed_dkk       = base_dkk + transport_dkk + import_tax_dkk + anti_dumping_dkk
+                   = unit_price × fx_rate_to_dkk × (1 + transport_pct + tariff_pct + anti_dumping_pct)
   ```
   `purchase_order_lines.landed_cost_dkk_per_unit` is a Postgres
-  `GENERATED ALWAYS AS (unit_price * fx_rate_to_dkk * (1 + transport_pct + tariff_pct)) STORED`
+  `GENERATED ALWAYS AS (unit_price * fx_rate_to_dkk * (1 + transport_pct + tariff_pct + COALESCE(anti_dumping_pct, 0))) STORED`
   column — **never write it from app code** (the DB rejects direct writes).
+  **`anti_dumping_pct` is a fourth additive bucket, not a variant of the
+  tariff** — it is `COALESCE`d because most lines have none, and it dwarfs the
+  other two where it applies. This paragraph omitted it from 2026-06-06 (when it
+  shipped) until 2026-07-29, so any reasoning built on the three-term version
+  understated landed cost on China-sourced lines by ~48 % of base.
   Recompute previews in the UI for live feedback, then read the stored
   value back after insert/update.
 
