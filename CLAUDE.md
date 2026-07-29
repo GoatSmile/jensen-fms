@@ -603,7 +603,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   leading space — write such row copy as one template literal.
 - **`Label` is `flex items-center gap-2`**, so a hint `<span className="block
   text-xs">` inside it becomes a flex ITEM beside the label, not a line under
-  it. Add `className="flex-col items-start gap-0.5"` to the `Label`.
+  it. Add `className="flex-col items-start gap-0.5"` to the `Label`. Same trap for
+  a required-marker asterisk: keep label text and marker in ONE child span.
+- **Driving a React form from the console: dispatch `focusout`, not `blur`.**
+  `blur` does not bubble and React delegates from the root, so a synthetic `blur`
+  never reaches an `onBlur` commit handler — the write silently doesn't happen and
+  the field looks broken. Same shape for `change`: set the value through the
+  prototype's setter, then dispatch `input`.
+- **A hand-rolled surface does not always have a rounded corner.** When sweeping
+  for card soup, grep `bg-muted` and bare `border-t` / `border-b` as well as
+  `rounded-*` — the build workbench's footer was `border-t bg-muted/20 px-4 py-3`
+  and survived every earlier pass because the pattern didn't match it.
 
 ## Local environment
 - Env file is `.env.local` (leading dot — Next.js won't auto-load any other

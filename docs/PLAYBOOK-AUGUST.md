@@ -54,9 +54,15 @@ you leave it**, on this machine, until you change it again. If you close a
 group while you're working inside it, a small dot on the group reminds you
 that's where you are.
 
-Two things worth knowing:
+Three things worth knowing:
 - **Templates, families and kits are now under Bikes and Parts**, not buried
-  in Admin. They're still on the Admin page too, so either route works.
+  in Admin. Kits are still on the Admin page too, so either route works.
+- **All the drop-down lists live on one page now: Admin → Lists.** Part
+  categories, colours, coatings, customer segments, bike families, HS codes,
+  stock locations and the paint part types are tabs down the left. Click a row to
+  edit it in place; "New entry" adds one. The old separate pages (Admin →
+  Colours, Admin → HS codes, and so on) still work — they just send you here, so
+  any bookmark you have is fine.
 - **Stock value** and **work orders** now have their own menu entries rather
   than being reachable only through another page.
 

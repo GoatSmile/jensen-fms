@@ -262,16 +262,32 @@ Dennis's company number onto the inbound trunk.
 - **Blanket `git add -A` is blocked by a hook** and should stay blocked: it once
   swept an unrelated change into a docs commit, and push-to-`main` deploys.
   Stage explicit paths; `git status` first.
-- **A green toolchain does not mean the page works.** Six times in three days
-  now: five create forms shipping blank defaults (the client-reference shell
-  bug), a page-level notice rendering as invisible text (`bg-ground` on a ground
-  background), a contrast gate failure behind a destructive button, `bg-ground`
-  chips inside hue-washed panels, a dropdown at 1.000:1 against a white panel,
-  and a form whose own subtitle described behaviour it no longer had. All six
-  were found in a browser, with `tsc`, `lint` and `next build` clean — and the
-  last two were found by the OWNER, not by any check here, which is the more
-  useful signal: read the screen's copy against what the code now does, and
-  capture soft edges at 1:1.
+- **A green toolchain does not mean the page works.** Every defect below passed
+  `tsc`, `lint` and `next build`, and every one was found by looking at the screen
+  or clicking the thing. No tally — it keeps growing; what matters is the classes:
+  - **Server/client boundary**: five create forms shipped blank defaults because a
+    server component spread a `"use client"` export.
+  - **A token used at the wrong level**: `bg-ground` at page level renders as
+    invisible text; `bg-ground` chips inside a hue-washed panel go muddy.
+  - **Contrast only measurable by measuring**: a destructive button on a caution
+    wash at 4.25:1; a dropdown at 1.000:1 against a white panel (and screenshots
+    come back downscaled, which flattens shadows — capture edges at 1:1).
+  - **Copy that outlived its behaviour**: a form subtitle describing what it no
+    longer did.
+  - **Silent fallbacks**: the paint estimate priced off a supplier nobody chose
+    (2026-07-29) — a wrong number is worse than a blank one.
+  - **Handlers that never reach their fallback**: `/scan`'s manual entry 404'd on
+    every frame number because `new URL(v, origin)` never throws (2026-07-29).
+  - **Teardown that throws instead of rejecting**: html5-qrcode's `stop()` throws
+    SYNCHRONOUSLY, so a `.catch()` on it never fires (2026-07-29).
+  Several were found by the OWNER rather than by any check here, which is the more
+  useful signal: read the screen's copy against what the code now does.
+- **The preview pane's console buffer survives dev-server restarts.** Stale
+  `MISSING_MESSAGE` errors from an earlier compile read as current and will send you
+  chasing a fixed bug. Confirm against a fresh fetch of the route instead — and note
+  that next-intl embeds the whole message dictionary in a script tag, so grepping
+  raw HTML for a message string gives a false positive. Query the rendered DOM,
+  excluding `<script>`.
 - **The publishable/anon key is a DB master key — keep it out of the
   browser.** anon_all RLS (migration 50) means the anon key can read/write
   every table. It's safe today ONLY because nothing browser-side references
