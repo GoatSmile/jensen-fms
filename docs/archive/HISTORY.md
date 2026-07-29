@@ -909,3 +909,140 @@ What is still open: prod's one stranded bike cannot be rescued by any of this,
 because adopting an existing bike into an MO does not exist and the owner is
 undecided about building it. The manual recovery is a new MO, a new bike on it,
 and retiring the stranded one.
+
+## 2026-07-29 — Slice F, `/admin/lists`, and a day of testing before the handover
+
+Three arcs in one day. The first two closed the design refresh; the third was a
+deliberate pass looking for what everything before it had missed.
+
+### Slice F: the last hand-rolled surfaces (commits `1f34f9a` … `2f0e147`)
+
+Seven behaviour-carrying files onto the shared primitives, **one commit each,
+each browser-verified against real data before committing** — deposit form,
+paint-from-SO form, scanner, MO batch form, add-parts workspace, build pick
+list, build workbench. The one-file-at-a-time rule earned its keep immediately:
+verifying `scanner` surfaced **two real, pre-existing bugs, neither cosmetic and
+both invisible to the toolchain.** Manual frame-number entry had never worked —
+`new URL(v, origin)` does not throw for a plain string, so the frame-number
+fallback was unreachable and typing one 404'd, on exactly the path a mechanic
+uses when the camera fails. And leaving `/scan` after declining the camera threw
+a runtime error, because html5-qrcode's `stop()` throws SYNCHRONOUSLY and the
+existing `.catch()` could only ever see a rejection.
+
+A `rounded-*` grep also proved insufficient: `build-workbench`'s footer was
+`border-t bg-muted/20 px-4 py-3` — no rounded corner, and its padding fought the
+Panel's once inside one. Grep `bg-muted` and bare `border-t`/`border-b` too.
+
+### `/admin/lists`: 18 routes retired into one page
+
+The seven controlled vocabularies each had list + new + `[id]` pages; collapsing
+those 18 routes is what the page exists for. A new vocabulary is now a
+descriptor entry in `src/lib/admin/vocabularies.ts` plus its three actions —
+service part types became the eighth tab the same day and cost exactly that,
+which was the design's own prediction tested once. The seven share ONLY
+`is_active`; four different name shapes and two without `sort_order` are why the
+descriptor layer exists rather than a unified field list.
+
+Left deliberately undone: the seven `manage-*.ts` actions still carry
+`revalidatePath` calls for their now-redirect-only routes. Harmless no-ops, not
+worth churning seven files in the commit that deleted 15 components.
+
+Also that morning: **the paint estimate stopped substituting another supplier's
+price list.** It had fallen back to `lists[0]`, so a template could show a
+cost-to-paint — and feed it into margin — priced off a painter nobody chose. No
+default supplier, or a default with no current list, now yields no estimate and
+a message saying which case it is. The default is set from a price-list panel
+("Make default"), never a free supplier dropdown, which is what makes "default
+supplier with no prices" unreachable rather than merely discouraged.
+
+### The preflight pass (commits `e7cd7da` … `b922ea8`)
+
+With the app about to be handed to Dennis and no test suite in existence, a
+two-tier harness built and run: `npm run smoke` (all 103 page routes fetched
+with real ids, asserting status, error-overlay markers and missing i18n keys —
+92 pass, 19 redirect, 0 skip, 0 fail) and `scripts/audit-invariants.sql` (16
+queries that must each return zero rows). Then every write flow driven through
+the real UI and unwound with stock restored exactly.
+
+**It found three real defects and two standing data problems.** The defect that
+matters most was in the durable docs, not the code: **CLAUDE.md's landed-cost
+formula was missing `anti_dumping_pct` entirely**, describing three additive
+buckets where the generated column has four. At 48.5% of base on the affected HS
+codes, anyone reasoning from that paragraph understated China-sourced landed cost
+by more than a third — wrong from 2026-06-06, when anti-dumping shipped, until
+now. The app code was always right, so no wrong number ever reached a screen.
+This is the class the monthly consolidation exists to catch and did not: the
+paragraph reads perfectly well, and a missing term is invisible until you check
+the expression against `information_schema`.
+
+Two others: the new-ticket subtitle still said "Work orders come in the next
+push — for now this just logs the report" (they shipped in May, and the same page
+has a Start work order button), and the **e-conomic trial landmine's own
+precondition was false** — STATUS said no trial-stamped records existed and four
+did, residue of the 2026-07-09 live push test. Clearing them became a recorded
+prerequisite of the production cutover rather than an assumption.
+
+Two standing data problems, both left as debts: negative stock on `JP-sap271`
+(−207, from one receipt in May against eight real builds — opening stock was
+never entered, and the 31 Aug physical count resolves it), and `INV-2026-0001`
+already spent on a test with the counter at 1, so the first real invoice will be
+`INV-2026-0002`. That second one is a revisor question, not a code one.
+
+**Two of the audit's own first four hits were bugs in the checks, not the data** —
+worth recording because both are easy to reintroduce: a cancelled draft invoice
+legitimately keeps its `DRAFT-` placeholder (never issued, so never allocated),
+and `'INV-2026-'` is NINE characters, so a `left(…, 8)` comparison silently
+matches nothing and reports every counter as broken.
+
+The audit is one SQL file rather than a Node script, deliberately. Running
+arbitrary SQL from Node needs either a new database secret or a SECURITY DEFINER
+exec RPC, and under the permissive `anon_all` policy that RPC would be a live
+hole reachable with the publishable key. The first draft was a `.mjs` containing
+exactly that; it was deleted rather than shipped.
+
+### What driving this app from a console actually costs
+
+Recorded because the next person to automate against it will hit all of these.
+A synthetic `.click()` does not trigger server-action buttons where a real mouse
+click does. `getBoundingClientRect` maths against screenshot pixels drifts,
+because the screenshot canvas is offset when the page is scrolled and the
+viewport silently dropped to mobile width mid-session — `read_page` refs worked
+first time, every time, once switched to. `input[type=text]` matches the
+ATTRIBUTE, so it misses every input relying on the default type. And **a
+screenshot taken right after navigation shows PRE-HYDRATION state**: Radix
+`Select` renders its trigger empty server-side and fills the label on mount, so
+a required field looks like an empty chevron pill and a prefilled field looks
+blank. Two findings were nearly written up from that alone — the `?bike=` deep
+link and the paint order's supplier — both fine.
+
+### The handover documents, reframed
+
+The owner's call: Dennis's August job is **not** data entry. `PLAYBOOK-AUGUST.md`
+was rewritten around learning the app and recording reactions, opening with two
+five-minute steps (add himself as Owner under People & roles; set his own App and
+Workshop language). `CUTOVER-BRIEF.md`'s numbered asks were re-ordered to match,
+so the two documents Dennis reads no longer name different top priorities.
+
+Verifying the instructions against the running app corrected two of them: adding
+a person with a role is ONE form (roles are checkboxes on it), and being on the
+people list does **not** stamp records with your name — nothing writes `actor_id`
+anywhere. What it does is let jobs be assigned to you by name and make you
+notifiable.
+
+The brief also turned out to say "Monday 18 August" for a date that is a Tuesday.
+Rather than correcting the weekday, the owner's call was to drop day names
+entirely: the three meetings now carry an order, not dates. Same pass fixed
+"five parts have no HS code" (eleven, as of that day) by pointing at the
+dashboard's live list instead of carrying a number, and a claim in
+`plan-cutover.md` that the e-conomic trial stamps did not exist.
+
+### Danish verified, and one piece of copy that undermined it
+
+Flipping `app_language` / `worker_language` to `da` and back confirmed the
+go-live switch: all 103 routes render Danish with zero missing keys, both
+dictionaries are key-identical at 3979, and the worker surfaces correctly follow
+`worker_language` rather than `app_language`. The one thing it found was the
+worst-placed instance of copy outliving its behaviour — the note directly under
+those two settings said the interface was "still being translated, so some
+screens stay in English until that rolls out." That is the screen you use to go
+live, and it said the feature was not ready.

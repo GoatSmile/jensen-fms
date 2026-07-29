@@ -1497,3 +1497,47 @@ page is scrolled and the viewport silently dropped to mobile width mid-session;
 and `input[type=text]` matches the ATTRIBUTE, so it misses every input that
 relies on the default type. **Use `read_page` refs and click by ref** — that
 worked first time, every time, once switched to.
+
+## 2026-07-29 (session end) — Dennis's August ask, and meetings without weekdays
+Three owner calls about the handover, all doc-only, recorded because a future
+session would otherwise read the documents as drifted rather than deliberate.
+
+**Dennis's August job is to learn the app, not to enter data.** `PLAYBOOK-AUGUST.md`
+had been a task list headed by housekeeping data entry. The owner reversed it: use
+the app as though it were already yours and write down every reaction — what does
+not match how the work really happens, what you expected and could not find, what
+we call by another name. Data entry drops to optional. `CUTOVER-BRIEF.md`'s
+numbered asks were re-ordered to match (familiarisation 1, housekeeping 2, rest
+renumbered) so the two documents Dennis reads no longer name different top
+priorities. **The reasoning matters more than the reordering:** everything below
+the line in that brief assumes the app is broadly right, and if it is not, both
+data entry and a go-live date are premature.
+
+**Meetings carry an order, not weekday names.** The brief said "Monday 18 August"
+for a date that is a Tuesday. Offered the choice of correcting the weekday, the
+owner's call was to drop day names entirely: workshop first, then a full day at
+Nazar's a day or two later, then the team session on transfer day, under a heading
+naming the week and asking Dennis which days suit. **Do not reintroduce weekday
+names** — the order is what carries meaning, and a named day is one more thing to
+drift. The transfer date stays exact (Mon 31 Aug, genuinely a Monday) because the
+brief's whole argument is one hard line after which nothing new goes into Excel,
+and "sometime that week" is the ambiguity that section exists to remove.
+
+**The September consolidation is a deliberate skip, not a new cadence.** The
+monthly `CLAUDE.md` pass would have fallen days after the thorough 2026-07-28 one,
+so August is skipped. Recorded here and in STATUS with the reason so it does not
+read as the ritual quietly lapsing.
+
+**Verifying instructions against the running app corrected two of them**, which is
+the transferable part: adding a person with a role is ONE form (the roles are
+checkboxes on it, not a second step), and being on the people list does **not**
+stamp records with your name — nothing writes `actor_id` anywhere. What it does is
+let jobs be assigned to you by name and make you notifiable. Both would have had
+Dennis doing or expecting the wrong thing. **Write instructions from the screen,
+not from the schema.**
+
+**CI got a 10-minute cap** (`timeout-minutes`) after a hosted runner died with
+every step already green and burned 46 minutes against the 360-minute default
+before GitHub emailed a failure for work that had passed. It prevents nothing —
+runner loss is not preventable from a workflow file — it just stops a flake
+costing 46 minutes, and makes a genuine hang announce itself.

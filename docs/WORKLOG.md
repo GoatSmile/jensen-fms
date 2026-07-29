@@ -68,9 +68,10 @@ treat the early totals as floors, not truth.
 | Tue 2026-07-28 | ~11 | **Design-refresh Phase 2 slices A–E** (three duplicated component clusters collapsed, 25 sections/dialogs//work onto Panel, last raw palette colours onto hues) + CLAUDE.md doctrine. Two owner-found defects: popover elevation, bike creation settled. Then `/admin/lists` commit 1 |
 | Wed 2026-07-29 | ~7 | **`/admin/lists` finished (18 routes → 1, +8th tab) and Slice F closed** — 7 workbenches off card soup, one commit each. Paint estimate no longer substitutes a supplier's price list. Two pre-existing `scanner` bugs fixed |
 | Wed 2026-07-29 (cont. 2) | ~3 | **Preflight harness before Dennis** — 103-route smoke sweep + 16-check invariant audit, then the write flows walked through the real UI. Found CLAUDE.md's landed-cost formula missing anti-dumping, and four e-conomic trial stamps the landmine claimed didn't exist |
+| Wed 2026-07-29 (cont. 3) | ~3 | **Handover docs reframed + Danish verified.** Playbook rewritten around Dennis learning the app rather than data entry; brief re-ordered to match and four stale facts fixed incl. a weekday that wasn't. Locale switch flipped to `da` and back — 103 routes, zero missing keys |
 
-**July so far: ~153 h** (20 working days)
+**July so far: ~156 h** (20 working days)
 
 ---
 
-**Project total: ~236.5 h across 36 working days (2026-05-07 → 2026-07-29)**
+**Project total: ~239.5 h across 36 working days (2026-05-07 → 2026-07-29)**

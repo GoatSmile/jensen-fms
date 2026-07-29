@@ -18,11 +18,13 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   `@swc/helpers` is this, not a code change.
 - **CI Tier 2 — the runtime layer, with auth/M1.** Tier 1 (`tsc` + `lint` on
   push) shipped 2026-07-27 as `.github/workflows/ci.yml`, so the lint class no
-  longer reaches prod unchecked. What is still uncovered is anything that only
-  fails at *runtime*: curl every route against a running server (assert 200 +
-  no "Runtime Error"/"TypeError" in the HTML) and a Vitest suite over the
-  server actions. Needs the Supabase env vars as repo secrets, which is why it
-  waits. Two lessons behind it, both the same shape: commit `fa1dbed` (a server
+  longer reaches prod unchecked. **The route-sweep half then shipped as a local
+  script on 2026-07-29** — `npm run smoke` (`scripts/smoke-routes.mjs`) fetches
+  all 103 page routes with real ids and asserts status, error-overlay markers and
+  missing i18n keys. So what remains for Tier 2 is narrower than this entry used
+  to say: **wire that existing script into CI** (it needs the Supabase env vars
+  as repo secrets and a running server in the job, which is why it waits) and add
+  the Vitest suite over the server actions, which does not exist in any form. Two lessons behind it, both the same shape: commit `fa1dbed` (a server
   component calling a `"use client"` function) and the 2026-07-27 shell bug (a
   server component *spreading* a `"use client"` export — `tsc`, `lint` and
   `next build` were all green while five create forms shipped blank defaults).

@@ -1,14 +1,14 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-29.** Most recent: **Slice F is done — the design refresh
-has no card soup left to migrate.** Seven behaviour-carrying files, one commit
-each, each browser-verified against real data; two pre-existing `scanner` bugs
-found and fixed on the way (see below). Also today: **service part types became
-the 8th `/admin/lists` tab**, **the paint estimate stopped substituting a
-supplier's price list** and the default supplier is now set with "Make default" on
-a price-list panel, and **`/admin/lists` replaced 18 vocabulary routes**. Gates
-green throughout: `tsc` clean, lint 0 errors (14 long-standing warnings),
-`npm run build` exit 0 with the dev server stopped each time.
+**Last updated: 2026-07-29 (session end).** Most recent: **a preflight pass
+before the app goes to Dennis, and the handover documents reframed around it.**
+A repeatable harness now exists (`npm run smoke` + `scripts/audit-invariants.sql`,
+below); every write flow has been driven end to end through the real UI; the
+Danish locale switch was flipped and verified across all 103 routes and put back.
+It found three real defects — all fixed — the worst of which was **CLAUDE.md's
+landed-cost formula missing `anti_dumping_pct`** for seven weeks. Narrative in
+`docs/archive/HISTORY.md` (2026-07-29); decisions in DECISIONS 2026-07-29.
+CI is green on HEAD and the tree is clean.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -37,13 +37,14 @@ parked ideas in `docs/BACKLOG.md`.
   `docs/plan-people-roles.md`, mechanics in DECISIONS 2026-07-23.
 - Inbound shadow-testing rides the US trial number **+1 762 500 0850**; Dennis's
   company number remains the production plan.
-- **The July queue is complete** and its plan is archived. Owner-facing
-  `docs/PLAYBOOK-AUGUST.md` covers Dennis's solo stretch from 3 Aug —
-  **rewritten 2026-07-29 around a different ask**: his job is to learn the app
-  and record what he notices, not to do data entry. It opens with two concrete
-  steps (add himself under People & roles with the Owner role; set his own
-  App/Workshop language). CUTOVER-BRIEF's numbered asks were re-ordered to
-  match, so the two documents no longer name different top priorities.
+- **The July queue is complete** and its plan is archived.
+- **Both Dennis-facing documents are ready to send** and consistent with each
+  other. `PLAYBOOK-AUGUST.md` was rewritten 2026-07-29 around a different ask —
+  **his job is to learn the app and record what he notices, not data entry** —
+  and `CUTOVER-BRIEF.md`'s numbered asks were re-ordered to match so the two do
+  not name different top priorities. Neither now contains a day-level date that
+  can go stale. **They are owner-facing artifacts, not session slots**: rewrite
+  when the period or audience changes, archive when the period ends.
 
 ## The frame: CUTOVER is now what everything serves
 `docs/plan-cutover.md` (working plan: stage ladder, risks, open decisions) +
@@ -82,91 +83,30 @@ the four ways it was wrong.** Decisions in DECISIONS 2026-07-26 / -27 / -28 /
 Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` · `Panel` /
 `Metric` / `Rule` primitives · six hues, closed list · **seven grouped nav
 items** with `nav_open` cookie state · the `/admin/settings` sub-rail · every
-list page, detail section, admin form and dialog on `Panel` · **`/admin/lists`,
-one page for EIGHT controlled vocabularies** (18 routes retired to it; service part
-types added 2026-07-29) · **every Slice F workbench** — build workbench, batch
-form, add-parts, pick list, scanner, deposit and paint-from-SO forms.
+list page, detail section, admin form, dialog and workbench on `Panel` ·
+**`/admin/lists`, one page for EIGHT controlled vocabularies** (18 routes retired
+to it).
 
-- **The remaining card soup was mostly duplication.** Three clusters, each
-  identical down to the class list, are now one component each — and a new copy
-  of any of them is a regression: `FormSection` (six local copies),
-  `ArchivePanel` (seven), `FormSaveBar` (eight). They are listed in CLAUDE.md's
-  Conventions so a fresh session reaches for them.
-- **A `rounded-md border` is NOT automatically card soup.** Nine of the last
-  sweep's hits are native `<select>` / `<input>` elements styled to match
-  shadcn's `Input`; plus print routes, photo-thumb frames and button groups.
-  Those borders belong to the control. **The count will never reach zero and
-  should not be driven there** — read each hit before changing it.
-- **Contrast: a destructive control constrains the surface under it.** The
-  archive footer's caution wash measured 4.25:1 behind its destructive button
-  against the 4.5:1 gate, so it ships untinted. And when measuring a
-  *translucent* pill, composite it on a canvas and read the pixel —
-  `getComputedStyle` hands back an un-normalised `oklab()` and hand-parsing it
-  produces confident wrong numbers (it did, twice).
-- **Zero raw Tailwind palette colours remain** outside the two exempt
-  decorative palettes (`bike-templates/family-colors.ts`, `kits/colors.ts`).
-  `/work`'s four accent bars were the last, and they were never deliberate
-  exceptions — the original sweep's pattern just missed `border-l-*`, `from-*`
-  and `fill-*`.
-- **Elevation is for floating surfaces only.** `--popover` IS `--surface`, so a
-  dropdown over a white `Panel` measured **1.000:1** with a 1.225:1 hairline as
-  its whole edge. All five overlay primitives now wear `shadow-popover`
-  (`--elevation-popover`, per theme). Never put it on an in-flow panel. Chasing
-  WCAG 1.4.11's 3:1 on the edge was rejected — it needs ~`#949494` around every
-  dropdown, and the list items carry the information, not the container.
-- **Verify soft edges at a 1:1 viewport.** Screenshots come back downscaled to
-  800px, which flattens shadows — the DOM/computed-style method that caught the
-  contrast failure and the wrong chip fills is BLIND to this class, and that is
-  how the 1.000:1 dropdown survived four commits of checking. Set an 800px
-  viewport for anything shadow- or edge-related.
+**Every durable lesson from this work is already a rule in `CLAUDE.md`** — the six
+hues and their meanings, elevation being for floating surfaces only, `bg-ground`
+as an in-panel fill, the contrast gate, the shared primitives (`FormSection` /
+`ArchivePanel` / `FormSaveBar` / `Panel` / `EmptyState` / `TableSkeleton`), and
+the measurement gotchas. Don't re-derive them from here; the narrative is in
+`docs/archive/HISTORY.md` (2026-07-26 through -29).
+
+Two live facts a fresh session needs:
 - **Dark mode is unreachable** — no theme provider, no `prefers-color-scheme`
-  wiring, so `.dark` is never applied. Tokens are complete and measured anyway;
-  a toggle was deliberately not built. If one lands, it should just work.
-- **Turbopack bit once during this work**: the served CSS had new light-theme
-  values with stale dark ones. `rm -rf .next` + restart, not code debugging.
+  wiring, so `.dark` never applies. Tokens are complete and measured anyway; a
+  toggle was deliberately not built. If one lands, it should just work.
+- **A `rounded-md border` is NOT automatically card soup**, so the sweep's hit
+  count will never reach zero and must not be driven there — native
+  `<select>`/`<input>`, print routes, photo thumbs and button groups own their
+  borders. Read each hit before changing it.
 
-**What real data still cannot verify** (narrowed 2026-07-29): no bike template
-has paintwork rows — though the paintwork section and its no-price messages WERE
-exercised on 2026-07-29 with a temporary row on Norma CS (since deleted), so the
-surface is no longer unseen, only unpopulated — and no inbound message is
+**What real data still cannot verify:** no bike template has paintwork rows (the
+section and its no-price messages were exercised 2026-07-29 with a temporary row
+since deleted, so the surface is seen but unpopulated), and no inbound message is
 spam-flagged, so that banner's `money` hue is code-verified only.
-
-**`/bikes/new` has now been submitted, both branches** (2026-07-29, preflight
-harness): `in_service` with no customer is rejected server-side with "Pick the
-customer this bike belongs to." and writes nothing; `in_stock` creates a bike with
-no owner, no `build_cost_dkk`, no MO, one frame identifier and one state-log row —
-exactly as the doctrine describes. It came off the never-posted list.
-
-**Every write flow has now been driven end to end against real data** (2026-07-29,
-all test rows removed and stock restored — see DECISIONS for the mechanics):
-bike record + slate/deliver · ticket → work order → parts → complete (ticket
-auto-resolves, work lands in the uninvoiced list) · MO create → build workbench →
-confirm frame → copy recipe → finish build (`build_cost_dkk` stamped, 28 rows
-frozen, MO goes `in_progress` and does NOT auto-complete) · batch build (one frame
-typed, three left blank → exactly one built, three untouched) · paint order
-planned → sent (**both lines froze at the 10–19 tier** on a 6+6 split, confirming
-colours share the tier basis) · SO confirm → slates only UNBUILT bikes → delivered
-flips `in_stock` → `assigned`.
-
-Three items came OFF this list on 2026-07-29:
-- **`/bikes` is no longer empty.** The owner added bikes, and MO-2026-0015 carries
-  four in `planning` (`JP-2026-E_BIKE-034`–`037`, White, frames unconfirmed,
-  notes marked TEST DATA, safe to cancel). **The batch-build grid has now been
-  seen with real data** — four rows, provisional frame numbers as PLACEHOLDERS
-  not values (so "Build 0 bikes" is correct; the tech types over them, which is
-  what the `frame_number_confirmed` gate expects).
-- **The archive/restore round trip has been clicked** — create → rename →
-  archive → restore, on a throwaway `bike_families` row since hard-deleted.
-- **`JP-3333-12`, the stranded MO-less bike, is gone** (soft-deleted by the owner
-  2026-07-28 18:16). A second pre-fix MO-less bike remains: **`JP-3333-155`**, in
-  `planning` with no MO, created 17:11 that day — before `f580845` closed the
-  trap at 17:39. It cannot advance (`planning → building` needs an MO) and there
-  is still no adopt path.
-
-One caution the test data introduced: **`Jp -test 1` consumed real stock** (44
-`bike_parts` rows, build cost 5,047.63 kr) on completed MO-2026-0014. Harmless
-before the 31 Aug opening count, which is a physical count anyway — but it is
-live inventory, not stub data.
 
 ## Bike creation is now one meaning per route (locked 2026-07-28)
 Doctrine is in `CLAUDE.md` under "Bike creation"; the reasoning and the rejected
@@ -182,23 +122,21 @@ a creation scenario at all:
 | Fix a bike | bike must exist; ticket → Start work order, or the `?bike=` link |
 
 - `/bikes/new` may produce ONLY `in_service` (owner required) or `in_stock`.
-  Never `planning` — that is what made a bike strandable.
-- **One stranded bike remains in prod: `JP-3333-155`**, in `planning` with no MO
-  (`JP-3333-12` was soft-deleted by the owner 2026-07-28 — verified in the DB
-  2026-07-29). Nothing shipped can rescue it, because adopting an existing bike
-  into an MO does not exist, and `planning → building` needs one. Manual recovery:
-  new MO → Add bike → build that one → retire the stranded one. It is test data,
-  so deleting it is also fine.
+  Never `planning` — that is what made a bike strandable. **Both branches have
+  now been posted** (2026-07-29): the owner-required rejection writes nothing,
+  and `in_stock` mints a bike with no owner, no `build_cost_dkk`, no MO, one
+  frame identifier and one state-log row, exactly as documented.
+- **No stranded bikes remain in prod.** `JP-3333-12` was soft-deleted by the
+  owner 2026-07-28; `JP-3333-155`, the last one, on 2026-07-29 at the owner's
+  instruction. Both were test data. Check 1 of the invariant audit is the
+  standing guard, so this does not need watching by hand.
 - **Adopting an existing bike into an MO is UNDECIDED** — not rejected. It is the
-  capability behind the owner's "Create manufacturing order" button idea and the
-  only real fix for the stranded bike. If it gets built, do NOT reuse
-  `addBikeToMO` (it inserts rather than updates, re-registers a frame-number
-  identifier that already exists against a UNIQUE column, and applies the SO
-  slate over an existing owner). See DECISIONS for the full note.
-- The bike detail "…" menu now links **New work order** and **New ticket** with
-  `?bike=<id>`. Both target forms had accepted that param all along with **zero
-  callers** — worth remembering that a wired-but-unlinked capability looks
-  exactly like a missing feature.
+  capability behind the owner's "Create manufacturing order" button idea. If it
+  gets built, do NOT reuse `addBikeToMO` (it inserts rather than updates,
+  re-registers a frame-number identifier that already exists against a UNIQUE
+  column, and applies the SO slate over an existing owner), and it must handle
+  the owner-consistency case in **audit check 2.5**. Full note in DECISIONS
+  2026-07-28.
 
 ## Preflight harness (2026-07-29) — run this before showing anyone the app
 Two commands, both read-only, both safe against prod:
@@ -226,22 +164,29 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
   whether that should warn is an owner question, not a bug.
 
 ## Next actions, in order
-1. **Walk the rest of the app with fresh eyes before 3 Aug** — whether the six
-   hues still read as a system across a whole working session rather than
-   screen by screen. Judgement, not mechanics, and it is the one item with a
-   date pressing on it.
+1. **Send Dennis the two documents** — `PLAYBOOK-AUGUST.md` and
+   `CUTOVER-BRIEF.md`. Both are current, consistent and free of dates that can
+   go stale. Nothing is blocking this.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
-   conversation with four questions; `orders@valent.dk`; e-conomic production
-   token; company CVR/bank/address).
-3. **Next `CLAUDE.md` consolidation: first session of September** — one cycle
+   conversation with four questions — **including what number the invoice series
+   should start at, since `INV-2026-0001` is already spent on a test**;
+   `orders@valent.dk`; the e-conomic production token, now overdue; company
+   CVR/bank/address).
+3. **The whole-session fresh-eyes read is DONE** (2026-07-29) — all 103 routes
+   swept in both locales, every write flow driven, the six hues seen across a
+   full working session rather than screen by screen. Nothing outstanding was
+   found beyond what is recorded here. The next genuinely useful pass is
+   **Dennis's**, which is what the playbook is for.
+4. **Next `CLAUDE.md` consolidation: first session of September** — one cycle
    skipped deliberately (owner's call 2026-07-29): the 2026-07-28 pass ran late
    in July and was thorough, so an August pass days later would find nothing.
-   This is a skip, not a new cadence — step 3 of
-   `/session-start`, and the only instrument pointing at that file now the
-   line-count hook is gone. The 2026-07-28 pass found what no counter could
-   (a nav IA bullet describing a superseded layout two days after the refresh
-   shipped). The honest reduction is extracting narrative to
-   `docs/archive/HISTORY.md` — **never deleting a rule.**
+   A skip, not a new cadence. It is step 3 of `/session-start` and the only
+   instrument pointing at that file now the line-count hook is gone. **Reading
+   alone is not enough** — 2026-07-28 found a nav bullet describing a superseded
+   layout, and 2026-07-29 found the landed-cost formula missing a whole term;
+   the second was invisible to reading and took one `information_schema` query.
+   The honest reduction is extracting narrative to `docs/archive/HISTORY.md` —
+   **never deleting a rule.**
 
 ### The queue
 **Only floor/office mode is left** (plan §6) — approved 2026-07-28, deliberately
@@ -249,38 +194,13 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
 It is the largest item in the plan and it reshapes the screen mechanics use daily.
 Plan §15 has the four steps and the contrast-re-measurement requirement.
 
-### Slice F is done (2026-07-29) — what it taught
-All seven files are migrated: `deposit-form`, `paint-from-so-form`, `scanner`,
-`mo-batch-form`, `add-parts-workspace`, the build `pick-list`, `build-workbench`.
-Three things worth carrying:
-- **Two real bugs surfaced, both in `scanner`, neither cosmetic, both invisible to
-  the toolchain.** Manual entry never worked for a frame number — `new URL(v,
-  origin)` never throws for a plain string, so the frame-number fallback was
-  unreachable and typing one 404'd, on the exact path a mechanic uses when the
-  camera fails. And leaving `/scan` after declining the camera threw a runtime
-  error, because html5-qrcode's `stop()` throws SYNCHRONOUSLY and the existing
-  `.catch()` could only see a rejection. This is the case for one-file-per-commit
-  browser verification, not a batch.
-- **A `rounded-*` grep misses leftovers.** `build-workbench`'s footer was
-  `border-t bg-muted/20 px-4 py-3` — no rounded corner, and its padding fought the
-  Panel's once inside one. Grep `bg-muted` and bare `border-t`/`border-b` too.
-- **Console-testing a React form:** a synthetic `blur` does NOT fire React's
-  `onBlur`; React listens on `focusout`, which bubbles. A working quantity writer
-  looked broken because of this.
-
-### `/admin/lists` — done, with two things to know
-- **A new vocabulary is a descriptor entry, not a route.** `src/lib/admin/vocabularies.ts`
-  declares each list's own fields; one renderer reads them. The seven share ONLY
-  `is_active` — four different name shapes, two without `sort_order` — so do not
-  try to unify the fields. Doctrine is in CLAUDE.md's config tier 3; the why-trail
-  and the plan's wrong premise are in DECISIONS 2026-07-29 and plan §15.
-- **Left undone on purpose:** the seven `manage-*.ts` actions still carry
-  `revalidatePath` calls for their now-redirect-only routes. Harmless no-ops;
-  not worth churning seven files in the commit that deleted 15 components.
-  Tidy them next time one of those files is opened.
-- **Unexercised:** "Make primary" — there is one stock location and it is already
-  primary, so the button never renders. The archive-block path around it IS
-  verified (archiving the primary fails with its error).
+### Two small debts left on purpose
+- The seven `manage-*.ts` vocabulary actions still carry `revalidatePath` calls
+  for their now-redirect-only routes. Harmless no-ops; tidy them next time one of
+  those files is open, not in a commit of their own.
+- **`/admin/lists` "Make primary" is unexercised** — there is one stock location
+  and it is already primary, so the button never renders. The archive-block path
+  around it IS verified (archiving the primary fails with its error).
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — was expected ~end of July,
@@ -337,6 +257,11 @@ Dennis's company number onto the inbound trunk.
     every frame number because `new URL(v, origin)` never throws (2026-07-29).
   - **Teardown that throws instead of rejecting**: html5-qrcode's `stop()` throws
     SYNCHRONOUSLY, so a `.catch()` on it never fires (2026-07-29).
+  - **A durable doc that reads well and is simply false**: CLAUDE.md's landed-cost
+    formula was missing `anti_dumping_pct` for seven weeks (2026-07-29). No screen
+    was wrong; every piece of *reasoning* from that paragraph was. Reading cannot
+    catch a missing term — only checking the claim against
+    `information_schema` / the module that owns the behaviour can.
   Several were found by the OWNER rather than by any check here, which is the more
   useful signal: read the screen's copy against what the code now does.
 - **The preview pane's console buffer survives dev-server restarts.** Stale
@@ -372,7 +297,11 @@ Dennis's company number onto the inbound trunk.
 - `outbound_test_mode` is the only thing between "Email supplier" and real
   supplier inboxes — verify it before demoing send flows.
 - Both locales sit at `en`; if a surface suddenly renders Danish, someone
-  flipped `app_settings` — that's the go-live switch, not a bug.
+  flipped `app_settings` — that's the go-live switch, not a bug. **The switch is
+  proven** (flipped to `da` and back 2026-07-29): all 103 routes render Danish
+  with zero missing keys, both dictionaries are key-identical at 3979, and the
+  worker surfaces follow `worker_language` independently. Go-live is one setting,
+  not a project.
 
 ## Data-entry debts (owner/admin, not code)
 Self-serve via the dashboard "Data housekeeping" fold:

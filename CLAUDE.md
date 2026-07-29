@@ -465,6 +465,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   run ESLint during `next build`); the runtime half is Tier 2 in BACKLOG.md.
   **Manually smoke-test new routes in the browser before declaring a phase
   done** — that is still the only check that catches this class.
+- **Two repeatable checks exist — use them instead of hand-rolling one.**
+  `npm run smoke` (`scripts/smoke-routes.mjs`) fetches every page route with real
+  ids from the DB and asserts status, dev-overlay markers and missing i18n keys;
+  it needs a dev server running. `scripts/audit-invariants.sql` is 16 queries that
+  must each return zero rows (run it in the SQL editor, `psql`, or via the MCP).
+  Both are read-only and safe against prod. **Their baselines are in STATUS.md and
+  are not all-zero** — two invariants have known standing hits, so "clean" means
+  matching the recorded baseline, not an empty result.
 - **Never import a VALUE from a `"use client"` module into a server
   component.** Its exports are *client references* there, not the real
   objects: `Object.keys()` is `[]`, so `{...SHELL}` silently evaluates to
@@ -616,6 +624,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   never reaches an `onBlur` commit handler — the write silently doesn't happen and
   the field looks broken. Same shape for `change`: set the value through the
   prototype's setter, then dispatch `input`.
+- **Driving this app from a browser tool: click by `read_page` ref, and judge a
+  `Select` by its trigger text.** Four traps, all hit on 2026-07-29:
+  - **A screenshot taken right after navigation shows PRE-HYDRATION state.** Radix
+    renders a `Select` trigger empty server-side and fills the label on mount, so
+    a required field looks like an empty chevron pill and a prefilled one looks
+    blank. Two defects were nearly reported from this alone; both were fine.
+  - **Never read `select.value`** — Radix's hidden native `<select>` carries zero
+    options and reports `""` whatever is chosen. Read the trigger's `textContent`.
+  - **A synthetic `.click()` does not reliably fire server-action buttons**; a real
+    mouse click does. Coordinate maths is worse — the screenshot canvas is offset
+    when the page is scrolled, and the viewport can silently drop to mobile width
+    mid-session. `read_page` refs worked first time, every time.
+  - **`input[type=text]` matches the ATTRIBUTE**, so it misses every input that
+    relies on the default type. Filter on `el.type`, or select by placeholder.
 - **A hand-rolled surface does not always have a rounded corner.** When sweeping
   for card soup, grep `bg-muted` and bare `border-t` / `border-b` as well as
   `rounded-*` — the build workbench's footer was `border-t bg-muted/20 px-4 py-3`
