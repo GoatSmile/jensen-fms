@@ -3908,7 +3908,8 @@
     "woAssigneeInvalid": "Denne person kan ikke tildeles",
     "bikeRecordStatusInvalid": "En registreret cykel skal enten være hos en kunde eller på lager — alt hvad vi bygger, går gennem en produktionsordre.",
     "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører.",
-    "serviceDefaultNeedsPriceList": "Leverandøren har ingen aktuel prisliste for denne service og kan derfor ikke være standard. Tilføj en prisliste for dem først."
+    "serviceDefaultNeedsPriceList": "Leverandøren har ingen aktuel prisliste for denne service og kan derfor ikke være standard. Tilføj en prisliste for dem først.",
+    "adminServicePartTypeExists": "Der findes allerede en servicedeltype med det navn."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4150,6 +4151,16 @@
     "archiveCopyLocations": "Arkivering skjuler lokationen i lagerformularer. Den primære lokation kan ikke arkiveres — gør en anden primær først.",
     "thInUse": "I brug",
     "badgePrimary": "Primær",
-    "archiveInUse": "{count} poster bruger den lige nu."
+    "archiveInUse": "{count} poster bruger den lige nu.",
+    "vocabServicePartTypes": "Servicedele",
+    "archiveCopyServicePartTypes": "Arkivering skjuler denne deltype på nye laklinjer og i skabelonernes lakarbejde. Linjer og prislister, der allerede bruger den, beholder den."
+  },
+  "adminServicePartTypes": {
+    "archiveTitle": "Arkivér denne deltype",
+    "restoreTitle": "Gendan denne deltype",
+    "archive": "Arkivér",
+    "archiving": "Arkiverer…",
+    "restore": "Gendan",
+    "restoring": "Gendanner…"
   }
 }

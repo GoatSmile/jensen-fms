@@ -79,7 +79,9 @@
     "archiveCopyLocations": "Archiving hides this location from stock forms. The primary location cannot be archived — make another one primary first.",
     "thInUse": "In use",
     "badgePrimary": "Primary",
-    "archiveInUse": "{count} records currently use it."
+    "archiveInUse": "{count} records currently use it.",
+    "vocabServicePartTypes": "Service part types",
+    "archiveCopyServicePartTypes": "Archiving hides this part type from new paint order lines and from a template's paintwork. Lines and price lists already using it keep it."
   },
   "adminFamilies": {
     "archiveTitle": "Archive this family",
@@ -107,6 +109,15 @@
     "thatSupplier": "the default painter"
   },
   "errors": {
-    "serviceDefaultNeedsPriceList": "That supplier has no current price list for this service, so it cannot be the default. Add a price list for them first."
+    "serviceDefaultNeedsPriceList": "That supplier has no current price list for this service, so it cannot be the default. Add a price list for them first.",
+    "adminServicePartTypeExists": "A service part type with that name already exists."
+  },
+  "adminServicePartTypes": {
+    "archiveTitle": "Archive this part type",
+    "restoreTitle": "Restore this part type",
+    "archive": "Archive",
+    "archiving": "Archiving…",
+    "restore": "Restore",
+    "restoring": "Restoring…"
   }
 }

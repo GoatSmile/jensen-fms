@@ -22,6 +22,26 @@ export function nullableString(v: FormDataEntryValue | null): string | null {
 }
 
 /**
+ * URL/identifier-safe slug from a display name — for controlled vocabularies
+ * whose `slug` column is a NOT NULL unique internal key derived from the English
+ * name (colours, coatings, customer segments, service part types).
+ *
+ * Lifted here from three byte-identical local copies (colours, coatings,
+ * segments) when a fourth was about to be written. The NFKD normalise + combining
+ * mark strip is what makes "Mudguards + stays" and Danish names with æ/ø/å come
+ * out as usable ASCII slugs. Returns "" when nothing survives, which every caller
+ * must treat as an error rather than writing an empty slug.
+ */
+export function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
  * Wrapper around `FormData.append` that coalesces `undefined` and `null` to
  * the empty string. Without this, `fd.append(key, undefined)` records the
  * literal text `"undefined"` — which is how the bug above leaked through in

@@ -6,19 +6,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
-- **`service_part_types` should be an 8th `/admin/lists` tab.** These are the
-  part-units you can send a painter (Frame, Fork, Cargo bed, Mudguards + stays,
-  Chain guard, Basket, Sign, Rear carrier). The table is
-  `slug, name_en, name_da, sort_order, is_active` — exactly the shape the vocab
-  descriptor layer already handles, so it is one entry in
-  `src/lib/admin/vocabularies.ts` plus a three-function action file
-  (`create` / `update` / `setActive`) wired into `_actions/dispatch.ts`. Today
-  adding "Kickstand" to what a paint order can carry needs a migration, which is
-  wrong for pure vocabulary. Noted 2026-07-29 while answering "where do we manage
-  other services". NOT the same as service *types* (Painting, future Washing):
-  those need their own nav item and order routes, so they stay code — see
-  CLAUDE.md and DECISIONS 2026-07-29.
-
 - **The dependency tree is internally inconsistent** (surfaced by CI's first
   run, 2026-07-27, pre-existing). `npm ls` reports *invalid*:
   `next-intl@4.13.2` pulls `@swc/core@1.15.43`, which wants

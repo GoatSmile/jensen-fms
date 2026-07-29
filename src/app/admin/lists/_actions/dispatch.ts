@@ -39,6 +39,12 @@ import {
 } from "@/app/admin/locations/_actions/manage-locations";
 import type { VocabId } from "@/lib/admin/vocabularies";
 
+import {
+  createServicePartType,
+  updateServicePartType,
+  setServicePartTypeActive,
+} from "./manage-service-part-types";
+
 export type VocabResult = { ok: true } | { ok: false; error: string };
 
 /**
@@ -72,6 +78,7 @@ const CREATE: Record<VocabId, (formData: FormData) => Promise<VocabResult>> = {
   families: createFamily,
   "hs-codes": createHsCode,
   locations: createLocation,
+  "service-part-types": createServicePartType,
 };
 
 const UPDATE: Record<
@@ -85,6 +92,7 @@ const UPDATE: Record<
   families: updateFamily,
   "hs-codes": updateHsCode,
   locations: updateLocation,
+  "service-part-types": updateServicePartType,
 };
 
 const SET_ACTIVE: Record<
@@ -98,6 +106,7 @@ const SET_ACTIVE: Record<
   families: setFamilyActive,
   "hs-codes": setHsCodeActive,
   locations: setLocationActive,
+  "service-part-types": setServicePartTypeActive,
 };
 
 /** Create when `id` is null, update otherwise. */

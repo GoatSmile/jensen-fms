@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { ralToHex } from "@/lib/colors/ral";
-import { nullableString as nullable } from "@/lib/forms";
+import { nullableString as nullable, slugify } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type ColorResult = { ok: true } | { ok: false; error: string };
@@ -20,14 +20,6 @@ type ParsedColor = {
   is_active: boolean;
 };
 
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function parseFormData(
   formData: FormData,

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { nullableString as nullable } from "@/lib/forms";
+import { nullableString as nullable, slugify } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
 export type SegmentResult = { ok: true } | { ok: false; error: string };
@@ -18,14 +18,6 @@ type ParsedSegment = {
   is_active: boolean;
 };
 
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
 
 function parseFormData(
   formData: FormData,

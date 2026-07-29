@@ -1,14 +1,18 @@
 import type { PanelHue } from "@/components/ui/panel";
 
 /**
- * Descriptors for `/admin/lists` — the one page that replaces 18 routes
+ * Descriptors for `/admin/lists` — the one page that replaced 18 routes
  * (six vocabularies × list + new + [id], plus coatings, which was a second
- * section on `/admin/colors`).
+ * section on `/admin/colors`, plus `service_part_types`, which had no UI at all).
+ *
+ * **Adding a vocabulary is an entry here plus three actions**, which is the whole
+ * point of the layer and is exactly what `service_part_types` cost (2026-07-29):
+ * no route, no page, no components.
  *
  * **Why a descriptor layer rather than one shared form.** The plan assumed
- * these seven tables shared `{name_en, name_da, is_active, sort_order}`. They
- * do not — checked against the live schema 2026-07-28, the ONLY column all
- * seven have is `is_active`. Even the name comes in four shapes:
+ * these tables shared `{name_en, name_da, is_active, sort_order}`. They
+ * do not — checked against the live schema 2026-07-28, the ONLY column all of
+ * them have is `is_active`. Even the name comes in four shapes:
  * `name_en`/`name_da` (colours, segments, categories, locations), a bare `name`
  * (families), `label_en`/`label_da` (coatings), and `code` + `description`
  * (HS codes). Two tables have no `sort_order` at all. So "render the same four
@@ -33,7 +37,8 @@ export type VocabId =
   | "segments"
   | "families"
   | "hs-codes"
-  | "locations";
+  | "locations"
+  | "service-part-types";
 
 /**
  * Literal union, not `string`: the Supabase client is typed off the generated
@@ -47,13 +52,16 @@ export type VocabTable =
   | "customer_segments"
   | "bike_families"
   | "hs_codes"
-  | "inventory_locations";
+  | "inventory_locations"
+  | "service_part_types";
 
 /** Tables consulted for "in use" tallies. Literal for the same reason as `VocabTable`. */
 export type VocabUsageTable =
   | "bikes"
   | "manufacturing_orders"
-  | "organizations";
+  | "organizations"
+  | "service_order_items"
+  | "bike_template_service_parts";
 
 export type VocabFieldType =
   | "text"
@@ -407,6 +415,51 @@ export const VOCABULARIES: VocabDescriptor[] = [
     archiveCopyKey: "archiveCopyLocations",
     isActiveInFormData: true,
     hasLocationControls: true,
+  },
+  {
+    id: "service-part-types",
+    table: "service_part_types",
+    labelKey: "vocabServicePartTypes",
+    // Supplier-facing work, priced per piece — the purchasing hue, same as
+    // HS codes and part categories.
+    hue: "buy",
+    // Never had a route of its own: until 2026-07-29 adding one of these meant a
+    // migration. `legacyRoute` points at the page that reads them, for reference.
+    legacyRoute: "/admin/services",
+    hasDeletedAt: false,
+    select: "id, slug, name_en, name_da, sort_order, is_active",
+    order: [
+      { column: "sort_order", ascending: true },
+      { column: "name_en", ascending: true },
+    ],
+    title: { en: "name_en", da: "name_da" },
+    columns: [
+      { name: "slug", labelKey: "fieldSlug", className: "hidden sm:table-cell" },
+      {
+        name: "sort_order",
+        labelKey: "fieldSortOrder",
+        className: "hidden md:table-cell",
+        align: "right",
+      },
+    ],
+    fields: [
+      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      { name: "name_da", labelKey: "fieldNameDa", type: "text" },
+      SORT_FIELD,
+    ],
+    archiveNamespace: "adminServicePartTypes",
+    archiveCopyKey: "archiveCopyServicePartTypes",
+    // Both things that reference a part type: live paint-order lines and the
+    // templates that declare it as paintwork. Neither table has `deleted_at`.
+    usage: [
+      { table: "service_order_items", column: "service_part_type_id", excludeDeleted: false },
+      {
+        table: "bike_template_service_parts",
+        column: "service_part_type_id",
+        excludeDeleted: false,
+      },
+    ],
+    isActiveInFormData: true,
   },
 ];
 
