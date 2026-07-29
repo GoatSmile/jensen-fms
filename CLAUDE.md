@@ -144,8 +144,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **HS / TARIC codes** live in `hs_codes` (code unique, description,
   `tariff_pct`, `anti_dumping_pct`). `parts.hs_code_id` is optional —
   unclassified parts snapshot `tariff_pct = 0` and skip the import-tax
-  bucket. Admin at `/admin/hs-codes`. Archiving (`is_active = false`) hides
-  a code from new-part pickers but leaves historical snapshots alone.
+  bucket. Admin at `/admin/lists?vocab=hs-codes`. Archiving
+  (`is_active = false`) hides a code from new-part pickers but leaves
+  historical snapshots alone.
 - **Configuration doctrine — three tiers (standing rule, formalized
   2026-07-14).** Every configurable knob goes in exactly one place by its
   nature; apply this to all new config:
@@ -159,8 +160,18 @@ commercial, maintenance, cross-cutting. Original SQL files live in
      loader in `src/lib/<domain>/settings.ts` (e.g.
      `loadCommunicationSettings`, `loadInboundSettings`) — never
      `process.env` for these.
-  3. **Vocabulary / reference data → controlled-vocab tables + `/admin/*`.**
-     Colours, categories, service types, etc. (localized via `localizedName`).
+  3. **Vocabulary / reference data → controlled-vocab tables + `/admin/lists`.**
+     Colours, coatings, part categories, customer segments, bike families, HS
+     codes, stock locations — **one page, `?vocab=` selects the list**, driven by
+     descriptors in `src/lib/admin/vocabularies.ts` (localized via
+     `localizedName`). A new vocabulary is a descriptor entry plus its three
+     actions, NOT a new route: the seven each had list + new + [id] pages once,
+     and collapsing those 18 is what this page is for. Their only genuinely
+     shared column is `is_active` — the field list per vocabulary is why the
+     descriptor layer exists, so do not try to unify the fields.
+     Exceptions that are NOT this page: `/admin/kits` (a floor picking aid with
+     a sticker sheet, not config), `/admin/services` (per-supplier price-list
+     revisions), `/admin/suppliers` (an entity, not a vocabulary).
   - **Swappable providers (registry pattern).** A "provider" for a swappable
     capability (transcription, telephony, extraction-LLM, email, geocoding)
     is an **adapter behind a stable interface**. Config *selects* which
@@ -191,8 +202,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     on-hand total, no location column, no picker — forms target the primary
     location). Driven by a `hideLocations` / `primaryLocationId` prop pair
     threaded from server pages — not a query-time filter.
-  - **All location config lives at `/admin/locations`** (CRUD, hide/reveal
-    toggle, per-row "Make primary"). Settings has no Locations section.
+  - **All location config lives on ONE surface** — `/admin/lists?vocab=locations`
+    (CRUD, hide/reveal toggle, per-row "Make primary"). `/admin/settings` has no
+    Locations section and never had one; `/admin/locations` was retired into the
+    lists page 2026-07-29 and redirects there. The toggle and "Make primary" are
+    the reason that retirement had to PORT rather than delete: they are the only
+    UI for `hide_location_info` and `primary_location_id`.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
 - `part_categories` is hierarchical (parent_id self-reference).
@@ -218,7 +233,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   migration 09). Size and color split:
   - **Frame size** is baked into the template — `Norma S` and `Norma L` are
     two separate templates, grouped by `bike_templates.family_id` →
-    `bike_families` (controlled vocab, admin at `/admin/families`).
+    `bike_families` (controlled vocab, admin at `/admin/lists?vocab=families`).
   - **Color** is picked at order time (`sales_order_line.color_id`) and at
     build time (`manufacturing_orders.color_id`). FK to controlled-vocab
     `colors` (carries `ral_code` + `coating`); never free-text.

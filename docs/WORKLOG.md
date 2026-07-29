@@ -65,11 +65,11 @@ treat the early totals as floors, not truth.
 | Sat 2026-07-25 | ~7 | **Live-call recording V1 shipped + live-verified on a real bridged call** (migs 77–78); speaker attribution fixed to Gladia's `channel` tag; provider evaluation closed (keep Twilio + Gladia + Claude); AI-receptionist tier decided, not queued |
 | Sun 2026-07-26 | ~10 | **Design refresh built and shipped** — B tokens in signal blue, Panel/Metric primitives, 517-colour sweep onto six hues, 7-group nav w/ cookie state, settings sub-rail; 21 commits, 10:16–20:39 |
 | Mon 2026-07-27 | ~8 | **Phase 2 (5 slices) + its real-data verification pass** — 4 fixes incl. the client-reference bug that blanked create-form defaults app-wide, plus Tier 1 CI and every list page onto Panel |
+| Tue 2026-07-28 | ~11 | **Design-refresh Phase 2 slices A–E** (three duplicated component clusters collapsed, 25 sections/dialogs//work onto Panel, last raw palette colours onto hues) + CLAUDE.md doctrine. Two owner-found defects: popover elevation, bike creation settled. Then `/admin/lists` commit 1 |
+| Wed 2026-07-29 | ~2 | **`/admin/lists` commit 2 — 18 vocab routes retired to 1.** Ported the location visibility toggle + "Make primary" (would have been deleted), restored usage tallies with the `deleted_at` filter, six Admin tiles into one |
 
-| Tue 2026-07-28 | ~9 | CLAUDE.md doctrine + **design-refresh Phase 2 slices A–E** (three duplicated component clusters collapsed, 25 sections/dialogs//work onto Panel, last raw palette colours onto hues). Then two owner-found defects: popover elevation (1.000:1 dropdowns), and bike creation settled — MOs own building |
-
-**July so far: ~141 h** (19 working days)
+**July so far: ~145 h** (20 working days)
 
 ---
 
-**Project total: ~224.5 h across 35 working days (2026-05-07 → 2026-07-28)**
+**Project total: ~228.5 h across 36 working days (2026-05-07 → 2026-07-29)**

@@ -21,6 +21,8 @@ import { localizedName } from "@/i18n/vocab";
 import { getVocab, type VocabDescriptor, type VocabId } from "@/lib/admin/vocabularies";
 import { cn } from "@/lib/utils";
 
+import { LocationVisibilityToggle } from "./location-visibility-toggle";
+import { MakePrimaryButton } from "./make-primary-button";
 import {
   VocabRowEditor,
   type SelectOption,
@@ -44,11 +46,20 @@ export function VocabTable({
   rows,
   parentOptions,
   coatingOptions,
+  usageByRow,
+  locationsHidden,
+  primaryLocationId,
 }: {
   vocabId: VocabId;
   rows: VocabRowData[];
   parentOptions: SelectOption[];
   coatingOptions: SelectOption[];
+  /** Reference counts per row id, for the vocabularies that declare `usage`. */
+  usageByRow: Record<string, number>;
+  /** Locations only: current `app_settings.hide_location_info`. */
+  locationsHidden: boolean;
+  /** Locations only: which row is primary (it cannot be archived). */
+  primaryLocationId: string | null;
 }) {
   const vocab = getVocab(vocabId);
   const t = useTranslations("adminLists");
@@ -57,8 +68,9 @@ export function VocabTable({
   const [creating, setCreating] = useState(false);
 
   const activeCount = rows.filter((row) => row.is_active !== false).length;
-  // Title + descriptor columns + status + the chevron cell.
-  const columnCount = vocab.columns.length + 3;
+  const showUsage = Boolean(vocab.usage?.length);
+  // Title + descriptor columns + status + chevron, plus "in use" when declared.
+  const columnCount = vocab.columns.length + 3 + (showUsage ? 1 : 0);
 
   return (
     <Panel
@@ -82,6 +94,12 @@ export function VocabTable({
       }
     >
       <div className="flex flex-col gap-4">
+        {/* Locations carry one app-wide control that is not a row field. It lived
+            on the retired /admin/locations and has no other home. */}
+        {vocab.hasLocationControls ? (
+          <LocationVisibilityToggle hidden={locationsHidden} />
+        ) : null}
+
         {creating ? (
           <VocabRowEditor
             vocabId={vocabId}
@@ -115,6 +133,11 @@ export function VocabTable({
                     {t(column.labelKey)}
                   </TableHead>
                 ))}
+                {showUsage ? (
+                  <TableHead className="hidden text-right lg:table-cell">
+                    {t("thInUse")}
+                  </TableHead>
+                ) : null}
                 <TableHead>{t("thStatus")}</TableHead>
                 <TableHead className="w-[36px]" />
               </TableRow>
@@ -163,10 +186,21 @@ export function VocabTable({
                           )}
                         </TableCell>
                       ))}
+                      {showUsage ? (
+                        <TableCell className="text-ink-2 hidden text-right lg:table-cell">
+                          {usageByRow[row.id] ?? 0}
+                        </TableCell>
+                      ) : null}
                       <TableCell>
-                        <Badge variant={isActive ? "secondary" : "outline"}>
-                          {isActive ? t("statusActive") : t("statusArchived")}
-                        </Badge>
+                        <span className="flex items-center gap-2">
+                          <Badge variant={isActive ? "secondary" : "outline"}>
+                            {isActive ? t("statusActive") : t("statusArchived")}
+                          </Badge>
+                          {vocab.hasLocationControls &&
+                          row.id === primaryLocationId ? (
+                            <Badge variant="outline">{t("badgePrimary")}</Badge>
+                          ) : null}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <span
@@ -189,6 +223,14 @@ export function VocabTable({
                             row={row}
                             parentOptions={parentOptions}
                             coatingOptions={coatingOptions}
+                            usageCount={usageByRow[row.id] ?? 0}
+                            extraControls={
+                              vocab.hasLocationControls &&
+                              isActive &&
+                              row.id !== primaryLocationId ? (
+                                <MakePrimaryButton locationId={row.id} />
+                              ) : null
+                            }
                             onDone={() => setOpenId(null)}
                           />
                         </TableCell>

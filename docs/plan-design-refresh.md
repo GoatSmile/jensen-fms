@@ -732,9 +732,36 @@ Capture at an 800px viewport (1:1) for anything shadow- or edge-related.
   `saveChanges`. `FormSaveBar` works around it by taking strings; normalise it
   the next time those messages are touched.
 
-## 15. Approved 2026-07-28, not yet built
+## 15. Approved 2026-07-28 — `/admin/lists` SHIPPED 2026-07-29, floor/office still queued
 
-### §8 — `/admin/lists`: 18 routes → 1
+### `/admin/lists` — built and shipped (2026-07-29)
+
+Commits `13c620e` (the page, additive) + the retirement commit. **Where §15's
+build plan below is now wrong, in the order it matters:**
+
+1. **"The shared subset is only `{name_en, name_da, is_active, sort_order}`" was
+   still too generous.** Against the live schema the only column all seven share
+   is `is_active`. The name comes in FOUR shapes — `name_en`/`name_da`, a bare
+   `name` (families), `label_en`/`label_da` (coatings), `code` + `description`
+   (HS codes) — and `hs_codes` and `inventory_locations` have no `sort_order`.
+   The descriptor layer was the right call for a stronger reason than the plan
+   gave.
+2. **There are SEVEN vocabularies, not six.** Coatings lived as a second section
+   of `/admin/colors` and the plan never counted it.
+3. **The sequence's step (d) was nearly a data-loss bug.** "Redirect the 18 old
+   routes" would have deleted the ONLY UI for `hide_location_info` and
+   `primary_location_id`, both of which lived on `/admin/locations` and nowhere
+   else. Ported into the locations tab instead. Any future route retirement
+   should read the page for controls that are not row fields before redirecting.
+4. **The retired pages' "in use" tallies were load-bearing** and had to be
+   rebuilt — including their `deleted_at` filter on referencing rows, whose
+   absence reported 13 uses of a colour with 5 live.
+
+What the plan got right and is worth keeping: descriptors over one form, the
+archive copy needing a home in a row-based UI (it is the expanded row), old
+routes redirecting rather than 404ing, and kits staying out.
+
+### §8 — `/admin/lists`: 18 routes → 1 (original build plan, superseded above)
 Approved to build. Admin-only, so the owner's daily surfaces are untouched.
 
 **Shape.** One page, a vocabulary switcher (`?vocab=`, matching the

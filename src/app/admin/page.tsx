@@ -1,17 +1,12 @@
 import Link from "next/link";
 import {
   Coins,
-  FolderTree,
-  Layers,
+  List,
   Map as MapIcon,
   Package,
-  Palette,
   Percent,
-  Tag,
   Truck,
   UserCog,
-  Users,
-  Warehouse,
 } from "lucide-react";
 
 import { getTranslations } from "next-intl/server";
@@ -24,6 +19,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { VOCABULARIES } from "@/lib/admin/vocabularies";
 import { createClient } from "@/lib/supabase/server";
 import { formatPct } from "@/lib/parts/format";
 import { cn } from "@/lib/utils";
@@ -42,26 +38,19 @@ export default async function AdminLandingPage() {
     getTranslations("adminHome"),
     getTranslations("common"),
   ]);
+  // The six per-vocabulary counts that fed the retired tiles are gone with them —
+  // one "Lists" tile replaces all six, and its stat comes from the descriptor
+  // array rather than six round-trips this page no longer needs.
   const [
-    hsRes,
     settingsRes,
     fxRes,
-    colorsRes,
-    segmentsRes,
     suppliersRes,
     kitsRes,
-    categoriesRes,
-    locationsRes,
-    familiesRes,
     orgsRes,
     priceListsRes,
     peopleRes,
     rolesRes,
   ] = await Promise.all([
-    supabase
-      .from("hs_codes")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
     supabase
       .from("app_settings")
       .select("default_transport_pct")
@@ -74,33 +63,12 @@ export default async function AdminLandingPage() {
       .limit(1)
       .maybeSingle(),
     supabase
-      .from("colors")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("customer_segments")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
       .from("suppliers")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true)
       .is("deleted_at", null),
     supabase
       .from("kits")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("part_categories")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true)
-      .is("deleted_at", null),
-    supabase
-      .from("inventory_locations")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-    supabase
-      .from("bike_families")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
     supabase
@@ -121,18 +89,12 @@ export default async function AdminLandingPage() {
       .eq("is_active", true),
   ]);
 
-  const activeHsCount = hsRes.count ?? 0;
   const defaultTransportPct = Number(
     settingsRes.data?.default_transport_pct ?? 0.10,
   );
   const lastFxRefresh = fxRes.data?.rate_date as string | undefined;
-  const activeColorCount = colorsRes.count ?? 0;
-  const activeSegmentCount = segmentsRes.count ?? 0;
   const activeSupplierCount = suppliersRes.count ?? 0;
   const activeKitCount = kitsRes.count ?? 0;
-  const activeCategoryCount = categoriesRes.count ?? 0;
-  const activeLocationCount = locationsRes.count ?? 0;
-  const activeFamilyCount = familiesRes.count ?? 0;
   const customerCount = orgsRes.count ?? 0;
   const currentPriceListCount = priceListsRes.count ?? 0;
   const activePeopleCount = peopleRes.count ?? 0;
@@ -164,26 +126,16 @@ export default async function AdminLandingPage() {
           title={t("groupCatalog")}
           tint="bg-brand-wash"
         >
+          {/* One tile for all seven vocabularies. It sits in Catalog because most
+              of them are catalog data, and its description names the two that
+              are not (HS codes, customer segments) so retiring the Purchasing
+              and Customers tiles doesn't hide them. */}
           <Tile
-            href="/admin/categories"
-            icon={FolderTree}
-            title={t("categoriesTitle")}
-            description={t("categoriesDesc")}
-            stat={t("categoriesStat", { count: activeCategoryCount })}
-          />
-          <Tile
-            href="/admin/colors"
-            icon={Palette}
-            title={t("coloursTitle")}
-            description={t("coloursDesc")}
-            stat={t("coloursStat", { count: activeColorCount })}
-          />
-          <Tile
-            href="/admin/families"
-            icon={Layers}
-            title={t("familiesTitle")}
-            description={t("familiesDesc")}
-            stat={t("familiesStat", { count: activeFamilyCount })}
+            href="/admin/lists"
+            icon={List}
+            title={t("listsTitle")}
+            description={t("listsDesc")}
+            stat={t("listsStat", { count: VOCABULARIES.length })}
           />
           <Tile
             href="/admin/kits"
@@ -191,13 +143,6 @@ export default async function AdminLandingPage() {
             title={t("kitsTitle")}
             description={t("kitsDesc")}
             stat={t("kitsStat", { count: activeKitCount })}
-          />
-          <Tile
-            href="/admin/locations"
-            icon={Warehouse}
-            title={t("locationsTitle")}
-            description={t("locationsDesc")}
-            stat={t("locationsStat", { count: activeLocationCount })}
           />
         </AdminGroup>
 
@@ -211,13 +156,6 @@ export default async function AdminLandingPage() {
             title={t("suppliersTitle")}
             description={t("suppliersDesc")}
             stat={t("suppliersStat", { count: activeSupplierCount })}
-          />
-          <Tile
-            href="/admin/hs-codes"
-            icon={Tag}
-            title={t("hsCodesTitle")}
-            description={t("hsCodesDesc")}
-            stat={t("hsCodesStat", { count: activeHsCount })}
           />
           <Tile
             href="/admin/fx-rates"
@@ -243,13 +181,6 @@ export default async function AdminLandingPage() {
           title={t("groupCustomers")}
           tint="bg-good-wash"
         >
-          <Tile
-            href="/admin/customer-segments"
-            icon={Users}
-            title={t("segmentsTitle")}
-            description={t("segmentsDesc")}
-            stat={t("segmentsStat", { count: activeSegmentCount })}
-          />
           <Tile
             href="/organizations/map"
             icon={MapIcon}
@@ -314,7 +245,7 @@ function Tile({
   stat,
 }: {
   href: string;
-  icon: typeof Tag;
+  icon: typeof List;
   title: string;
   description: string;
   stat: string;

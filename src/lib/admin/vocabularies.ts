@@ -49,6 +49,12 @@ export type VocabTable =
   | "hs_codes"
   | "inventory_locations";
 
+/** Tables consulted for "in use" tallies. Literal for the same reason as `VocabTable`. */
+export type VocabUsageTable =
+  | "bikes"
+  | "manufacturing_orders"
+  | "organizations";
+
 export type VocabFieldType =
   | "text"
   | "textarea"
@@ -107,6 +113,35 @@ export type VocabDescriptor = {
   archiveNamespace: string;
   /** `adminLists` key for the archive consequence copy — per entity, and load-bearing. */
   archiveCopyKey: string;
+  /**
+   * Tables that reference these rows, tallied into an "in use" count. The
+   * retired detail pages used it to make the archive warning concrete
+   * ("12 bikes use this colour") rather than generic, so the row editor does
+   * too. One cheap query per entry, only for the vocabularies that declare it.
+   */
+  usage?: {
+    table: VocabUsageTable;
+    column: string;
+    /**
+     * Skip soft-deleted referencing rows. Required, not optional-by-omission:
+     * the retired colours page filtered `deleted_at` on bikes and the first
+     * generic version here did not, which counted the 10 bikes soft-deleted on
+     * 2026-07-28 and reported 13 uses of White where 3 are live. An archive
+     * warning that overstates usage is worse than none. `manufacturing_orders`
+     * has no `deleted_at` — transactional tables carry status enums only — so
+     * it is `false` there, and setting it true would return zero rows silently.
+     */
+    excludeDeleted: boolean;
+  }[];
+  /**
+   * Locations carry two controls that are NOT vocabulary fields: the app-wide
+   * hide/reveal of location detail, and per-row "make this the primary
+   * location". They existed only on `/admin/locations`, which this page
+   * replaces, and neither has an equivalent anywhere else — `/admin/settings`
+   * does not carry them (the toggle's own docstring claimed it did; that was
+   * stale). Redirecting without porting them would have deleted both.
+   */
+  hasLocationControls?: boolean;
   /**
    * True when the vocabulary's `parseFormData` reads
    * `is_active: formData.get("is_active") === "on"`. For those, an ABSENT field
@@ -195,6 +230,12 @@ export const VOCABULARIES: VocabDescriptor[] = [
     ],
     archiveNamespace: "adminColors",
     archiveCopyKey: "archiveCopyColors",
+    // Combined usage, matching the retired page: a colour is referenced by both
+    // finished bikes and open MOs.
+    usage: [
+      { table: "bikes", column: "color_id", excludeDeleted: true },
+      { table: "manufacturing_orders", column: "color_id", excludeDeleted: false },
+    ],
     isActiveInFormData: true,
   },
   {
@@ -261,6 +302,13 @@ export const VOCABULARIES: VocabDescriptor[] = [
     ],
     archiveNamespace: "adminSegments",
     archiveCopyKey: "archiveCopySegments",
+    usage: [
+      {
+        table: "organizations",
+        column: "customer_segment_id",
+        excludeDeleted: true,
+      },
+    ],
     isActiveInFormData: true,
   },
   {
@@ -358,6 +406,7 @@ export const VOCABULARIES: VocabDescriptor[] = [
     archiveNamespace: "adminLocations",
     archiveCopyKey: "archiveCopyLocations",
     isActiveInFormData: true,
+    hasLocationControls: true,
   },
 ];
 

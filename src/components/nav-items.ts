@@ -69,7 +69,16 @@ export const NAV_GROUPS: NavGroup[] = [
         labelKey: "bikeTemplates",
         capability: "templates",
       },
-      { href: "/admin/families", labelKey: "families", capability: "templates" },
+      // Families' own route was retired into /admin/lists (2026-07-29). Pointed
+      // straight at the tab rather than through the redirect. Known cost:
+      // `pathMatches` compares pathname only, so on /admin/lists the ADMIN item
+      // lights up, not this one — it already pointed into /admin/*, so the group
+      // it lives in was always a label rather than a path.
+      {
+        href: "/admin/lists?vocab=families",
+        labelKey: "families",
+        capability: "templates",
+      },
     ],
   },
   {

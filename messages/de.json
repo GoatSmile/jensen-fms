@@ -76,7 +76,10 @@
     "archiveCopySegments": "Archiving hides this segment from customer forms. Customers already in it keep their segment.",
     "archiveCopyFamilies": "Archiving hides this family from the template form. Templates already in it keep their family.",
     "archiveCopyHsCodes": "Archiving hides this code from new-part pickers. Tariffs already snapshotted onto purchase order lines are untouched — cost basis is frozen at purchase.",
-    "archiveCopyLocations": "Archiving hides this location from stock forms. The primary location cannot be archived — make another one primary first."
+    "archiveCopyLocations": "Archiving hides this location from stock forms. The primary location cannot be archived — make another one primary first.",
+    "thInUse": "In use",
+    "badgePrimary": "Primary",
+    "archiveInUse": "{count} records currently use it."
   },
   "adminFamilies": {
     "archiveTitle": "Archive this family",
@@ -85,5 +88,10 @@
     "archiving": "Archiving…",
     "restore": "Restore",
     "restoring": "Restoring…"
+  },
+  "adminHome": {
+    "listsTitle": "Lists",
+    "listsDesc": "Part categories, colours, coatings, customer segments, bike families, HS codes and stock locations.",
+    "listsStat": "{count} lists"
   }
 }

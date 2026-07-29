@@ -48,6 +48,8 @@ export function VocabRowEditor({
   parentOptions,
   coatingOptions,
   onDone,
+  usageCount = 0,
+  extraControls,
 }: {
   vocabId: VocabDescriptor["id"];
   /** `null` for the create row. */
@@ -55,6 +57,14 @@ export function VocabRowEditor({
   parentOptions: SelectOption[];
   coatingOptions: SelectOption[];
   onDone: () => void;
+  /** How many records reference this row, for the archive warning. */
+  usageCount?: number;
+  /**
+   * Row-level controls that are not vocabulary fields — locations' "Make
+   * primary". A slot rather than a vocab branch here, so the editor stays
+   * descriptor-driven.
+   */
+  extraControls?: React.ReactNode;
 }) {
   const vocab = getVocab(vocabId);
   const t = useTranslations("adminLists");
@@ -156,13 +166,23 @@ export function VocabRowEditor({
       {row ? (
         <>
           <hr className="border-rule" />
+          {extraControls ? (
+            <div className="flex justify-end">{extraControls}</div>
+          ) : null}
           {/* Inline variant: a Panel here would be a box inside a table cell
               inside a Panel — the card soup the panel convention replaced. */}
           <ArchivePanel
             variant="inline"
             namespace={vocab.archiveNamespace}
             isActive={isActive}
-            description={t(vocab.archiveCopyKey)}
+            description={
+              // The retired detail pages made this concrete with a count. A
+              // generic "N records use this" sentence appended to the entity
+              // copy beats seven more per-entity message keys.
+              usageCount > 0
+                ? `${t(vocab.archiveCopyKey)} ${t("archiveInUse", { count: usageCount })}`
+                : t(vocab.archiveCopyKey)
+            }
             onToggle={async () => {
               const result = await setVocabRowActive(vocabId, row.id, !isActive);
               if (result.ok) {

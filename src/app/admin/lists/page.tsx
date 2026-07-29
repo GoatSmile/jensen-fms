@@ -48,6 +48,10 @@ export default async function AdminListsPage({
   // check — commit 98cef10).
   let query = supabase.from(vocab.table).select(vocab.select);
   if (vocab.hasDeletedAt) query = query.is("deleted_at", null);
+  // Active first, then the vocabulary's own order — what the retired detail
+  // pages did. Without it archived entries interleave with live ones, and the
+  // status badge becomes the only thing separating them.
+  query = query.order("is_active", { ascending: false });
   for (const order of vocab.order) {
     query = query.order(order.column, { ascending: order.ascending });
   }
@@ -69,6 +73,41 @@ export default async function AdminListsPage({
         ),
       }))
     : [];
+
+  // "In use" tallies: one query per referencing table, counted in memory the way
+  // the retired detail pages did. Only the vocabularies that declare `usage` pay.
+  const usageByRow: Record<string, number> = {};
+  for (const source of vocab.usage ?? []) {
+    let usageQuery = supabase
+      .from(source.table)
+      .select(source.column)
+      .not(source.column, "is", null);
+    if (source.excludeDeleted) usageQuery = usageQuery.is("deleted_at", null);
+    const usageRes = await usageQuery;
+    // `.select()` with a runtime column name can't be typed off the generated
+    // schema, so the row shape is unknown here by construction.
+    for (const record of (usageRes.data ?? []) as unknown as Record<
+      string,
+      unknown
+    >[]) {
+      const referenced = record[source.column];
+      if (typeof referenced !== "string") continue;
+      usageByRow[referenced] = (usageByRow[referenced] ?? 0) + 1;
+    }
+  }
+
+  // Locations' two non-field controls need app_settings.
+  let locationsHidden = false;
+  let primaryLocationId: string | null = null;
+  if (vocab.hasLocationControls) {
+    const settingsRes = await supabase
+      .from("app_settings")
+      .select("hide_location_info, primary_location_id")
+      .eq("id", 1)
+      .maybeSingle();
+    locationsHidden = settingsRes.data?.hide_location_info ?? false;
+    primaryLocationId = settingsRes.data?.primary_location_id ?? null;
+  }
 
   let coatingOptions: SelectOption[] = [];
   if (needsCoatings) {
@@ -128,6 +167,9 @@ export default async function AdminListsPage({
             rows={rows}
             parentOptions={parentOptions}
             coatingOptions={coatingOptions}
+            usageByRow={usageByRow}
+            locationsHidden={locationsHidden}
+            primaryLocationId={primaryLocationId}
           />
         </div>
       </div>

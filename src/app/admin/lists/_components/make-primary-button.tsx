@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
-import { setPrimaryLocation } from "../_actions/manage-locations";
+import { setPrimaryLocation } from "@/app/admin/locations/_actions/manage-locations";
 
 /**
  * Per-row "Make primary" on the locations list — points

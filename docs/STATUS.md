@@ -1,12 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-28 (session end).** Most recent: **two owner-reported
-defects fixed** (`f580845`, `8407a35`) — floating surfaces got an elevation token
-after dropdowns measured 1.000:1 against white panels, and the bike-creation
-model was settled: MOs own building, `/bikes/new` records only bikes we did not
-build. Earlier the same day: design-refresh Phase 2 slices A-E (four commits) and
-a docs reconcile. Gates green as of `8407a35`: `tsc` clean, lint 0 errors (14
-long-standing warnings), `npm run build` exit 0.
+**Last updated: 2026-07-29.** Most recent: **`/admin/lists` shipped** — the seven
+controlled vocabularies now live on one page and the 18 old routes redirect to it
+(`13c620e` + the retirement commit). Retiring `/admin/locations` nearly deleted the
+only UI for two app settings; both were ported instead. Gates green: `tsc` clean,
+lint 0 errors (14 long-standing warnings), `npm run build` exit 0 with the dev
+server stopped.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -61,13 +60,15 @@ parked ideas in `docs/BACKLOG.md`.
 ## Design refresh — Phase 2 essentially done; slice F is what's left
 `docs/plan-design-refresh.md` **§14** is the authoritative "what shipped and
 where this doc is now wrong" list; **§15** holds the build plans for the two
-newly-approved items. Decisions in DECISIONS 2026-07-26 / -27 / -28. Mock-up
-`docs/mockups/design-directions.html` is history, not the target.
+newly-approved items — **§15's `/admin/lists` plan is now marked shipped, with
+the four ways it was wrong.** Decisions in DECISIONS 2026-07-26 / -27 / -28 /
+-29. Mock-up `docs/mockups/design-directions.html` is history, not the target.
 
 Live in prod: direction **B "Emalje"** in signal blue `#2E5FD1` · `Panel` /
 `Metric` / `Rule` primitives · six hues, closed list · **seven grouped nav
 items** with `nav_open` cookie state · the `/admin/settings` sub-rail · every
-list page, detail section, admin form and dialog on `Panel`.
+list page, detail section, admin form and dialog on `Panel` · **`/admin/lists`,
+one page for the seven controlled vocabularies** (18 routes retired to it).
 
 - **The remaining card soup was mostly duplication.** Three clusters, each
   identical down to the class list, are now one component each — and a new copy
@@ -107,17 +108,31 @@ list page, detail section, admin form and dialog on `Panel`.
 - **Turbopack bit once during this work**: the served CSS had new light-theme
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
-**Three things real data cannot verify** (so they have only ever been seen with
-stub props): no bike template has paintwork rows; **all 25 bikes were
-soft-deleted 2026-07-01**, so `/bikes` is empty by design, not broken, and both
-bike-detail empty states and the batch-build grid are unexercised; and no
-inbound message is spam-flagged, so that banner's `money` hue is code-verified
-only. Add to that: **the archive/restore round trip has never been clicked** —
-there is one Supabase project and no staging copy, so exercising it flips
-`is_active` in production. Same reason **`/bikes/new` has never been
+**What real data still cannot verify** (narrowed 2026-07-29): no bike template
+has paintwork rows, and no inbound message is spam-flagged, so that banner's
+`money` hue is code-verified only. **`/bikes/new` has still never been
 submitted** — its owner-required and status-whitelist branches are read, not
-posted — and the two new bike-detail menu items were never clicked open (the
-browser tool went down mid-check; they are plain `<Link>`s on a proven param).
+posted.
+
+Three items came OFF this list on 2026-07-29:
+- **`/bikes` is no longer empty.** The owner added bikes, and MO-2026-0015 carries
+  four in `planning` (`JP-2026-E_BIKE-034`–`037`, White, frames unconfirmed,
+  notes marked TEST DATA, safe to cancel). **The batch-build grid has now been
+  seen with real data** — four rows, provisional frame numbers as PLACEHOLDERS
+  not values (so "Build 0 bikes" is correct; the tech types over them, which is
+  what the `frame_number_confirmed` gate expects).
+- **The archive/restore round trip has been clicked** — create → rename →
+  archive → restore, on a throwaway `bike_families` row since hard-deleted.
+- **`JP-3333-12`, the stranded MO-less bike, is gone** (soft-deleted by the owner
+  2026-07-28 18:16). A second pre-fix MO-less bike remains: **`JP-3333-155`**, in
+  `planning` with no MO, created 17:11 that day — before `f580845` closed the
+  trap at 17:39. It cannot advance (`planning → building` needs an MO) and there
+  is still no adopt path.
+
+One caution the test data introduced: **`Jp -test 1` consumed real stock** (44
+`bike_parts` rows, build cost 5,047.63 kr) on completed MO-2026-0014. Harmless
+before the 31 Aug opening count, which is a physical count anyway — but it is
+live inventory, not stub data.
 
 ## Bike creation is now one meaning per route (locked 2026-07-28)
 Doctrine is in `CLAUDE.md` under "Bike creation"; the reasoning and the rejected
@@ -171,18 +186,29 @@ a creation scenario at all:
    (7), `add-parts-workspace` (7), `paint-from-so-form`, `deposit-form`,
    `scanner`, the build `pick-list`. These carry scan handlers and per-row inputs
    on workshop-critical screens, so it is **one file per commit,
-   browser-verified individually** — not a batch. Two of them cannot be exercised
-   against real data (see above). **Consider doing this AFTER Dennis's solo
-   stretch**: the remaining surfaces read as plainer, not broken, and these are
-   the screens his mechanics use daily.
-2. **`/admin/lists`** (18 routes → 1) — approved 2026-07-28, build plan in plan
-   §15. Not a sweep: the six vocabularies' fields genuinely differ, so it needs a
-   descriptor layer, and the entity-specific archive copy needs a home in a
-   row-based UI.
-3. **Floor/office mode** (plan §6) — approved 2026-07-28 but deliberately **NOT
+   browser-verified individually** — not a batch. **Consider doing this AFTER
+   Dennis's solo stretch**: the remaining surfaces read as plainer, not broken,
+   and these are the screens his mechanics use daily. Its old "cannot be
+   verified against real data" objection is **partly gone** — see the real-data
+   note above.
+2. **Floor/office mode** (plan §6) — approved 2026-07-28 but deliberately **NOT
    before 31 Aug.** Largest item in the plan and it reshapes the screen mechanics
    use daily; do not ship it into the solo stretch. Plan §15 has the four steps
    and the contrast-re-measurement requirement.
+
+### `/admin/lists` — done, with two things to know
+- **A new vocabulary is a descriptor entry, not a route.** `src/lib/admin/vocabularies.ts`
+  declares each list's own fields; one renderer reads them. The seven share ONLY
+  `is_active` — four different name shapes, two without `sort_order` — so do not
+  try to unify the fields. Doctrine is in CLAUDE.md's config tier 3; the why-trail
+  and the plan's wrong premise are in DECISIONS 2026-07-29 and plan §15.
+- **Left undone on purpose:** the seven `manage-*.ts` actions still carry
+  `revalidatePath` calls for their now-redirect-only routes. Harmless no-ops;
+  not worth churning seven files in the commit that deleted 15 components.
+  Tidy them next time one of those files is opened.
+- **Unexercised:** "Make primary" — there is one stock location and it is already
+  primary, so the button never renders. The archive-block path around it IS
+  verified (archiving the primary fails with its error).
 
 ## Waiting on (external)
 - **e-conomic production agreement** grant token — expected ~end of July.

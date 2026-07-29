@@ -1268,3 +1268,55 @@ membership.
 
 Until then, the recovery for a stranded bike is manual: new MO → Add bike →
 build that one → retire the stranded one.
+
+## 2026-07-29 — /admin/lists ships: 18 routes to 1, and two capabilities ported rather than deleted
+Implements the 2026-07-28 approval. Built in two commits: the page additively
+first (13c620e), then the retirement of the old routes.
+
+**The plan's shared-field premise was wrong.** Plan §15 assumed the
+vocabularies shared `{name_en, name_da, is_active, sort_order}`. Checked
+against the live schema, the only column all seven have is `is_active`; the
+name alone comes in four shapes (`name_en`/`name_da`, a bare `name` on
+families, `label_en`/`label_da` on coatings, `code` + `description` on HS
+codes) and two tables have no `sort_order`. So there is no one form to render
+seven times — hence a descriptor layer (`src/lib/admin/vocabularies.ts`) read
+by one renderer. Do not try to unify the fields later; that is the thing that
+does not hold.
+
+**Coatings is the seventh vocabulary**, not a second section of
+`/admin/colors`, and `/admin/kits` is deliberately NOT one of them (floor
+picking aid, per CLAUDE.md).
+
+**Redirect, not delete, for the 18 routes** — they may be bookmarked, and a
+404 on a route that worked yesterday reads as the app being broken.
+
+**Two capabilities had to be PORTED, and finding that changed the commit.**
+`/admin/locations` was the only home for the hide/reveal of
+`hide_location_info` and the per-row "Make primary". Neither exists on
+`/admin/settings` — the visibility toggle's own docstring claimed it mirrored
+one there, which was false. Redirecting on the letter of "retire all 18" would
+have made two settings unreachable from the UI. Both now live above and inside
+the locations tab, and CLAUDE.md's location-config rule is edited in this same
+commit.
+
+**Usage counts were restored after being dropped.** The retired colours and
+segments pages showed an "in use" tally so the archive warning could be
+concrete. The first generic version omitted it, and the second omitted the
+retired pages' `deleted_at` filter on referencing rows — reporting 13 uses of
+White where 5 bikes are live and 5 were soft-deleted the day before. An
+archive warning that overstates usage is worse than none, so `usage` carries a
+REQUIRED `excludeDeleted` per source table (`manufacturing_orders` has no
+`deleted_at`; setting it there would silently return zero rows).
+
+**Rejected: making the row editor own the entity rules.** The parent-cycle
+check, the primary-location archive block, the duplicate-code and unique-slug
+messages all stay in the seven existing actions, which are reused unchanged;
+`_actions/dispatch.ts` only routes and revalidates. Reimplementing them in a
+generic editor would have forked proven validation.
+
+**Known cost, accepted:** the *Bikes → Families* nav item now points at
+`/admin/lists?vocab=families`, and `pathMatches` compares pathname only, so
+`/admin/lists` lights up ADMIN rather than that item. It always pointed into
+`/admin/*`, so its group was already a label rather than a path. Teaching the
+nav to match search params was rejected as too much shared-internals change
+for one item's highlight — revisit if a second query-string nav item appears.
