@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/money";
 import { appendField } from "@/lib/forms";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
@@ -185,38 +186,34 @@ export function AddPartsWorkspace({
 
       <div className="flex flex-col gap-5 pt-4">
         {error ? (
-          <p
-            className="bg-destructive/10 text-destructive border-destructive/30 rounded-md border p-3 text-sm"
-            role="alert"
-          >
+          <p className="text-destructive text-sm" role="alert">
             {error}
           </p>
         ) : null}
         {notice ? (
-          <p
-            className="rounded-md border bg-good-wash p-3 text-sm text-good"
-            role="status"
-          >
+          // Status strip, not a card: the good wash carries it, the border added
+          // nothing.
+          <p className="bg-good-wash text-good rounded-lg p-3 text-sm" role="status">
             {notice}
           </p>
         ) : null}
 
         {/* Kit shortcut — one tap restocks the whole sticker code. */}
         {kits.length > 0 ? (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              {t("kitsTitle")}
-            </h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Panel
+            title={t("kitsTitle")}
+            contentClassName="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
               {kits.map((kit) => {
                 const colour = stickerColor(kit.stickerColor);
                 const code = kitCode(kit.stickerColor, kit.kitNumber);
                 const allAdded = kit.alreadyAdded >= kit.totalParts;
                 const busy = busyKey === `kit:${kit.kitId}`;
                 return (
+                  // In-panel grouping: fill, not a border.
                   <div
                     key={kit.kitId}
-                    className="overflow-hidden rounded-md border"
+                    className="bg-ground overflow-hidden rounded-lg"
                   >
                     <div
                       className="flex items-center justify-between gap-2 px-3 py-2"
@@ -256,31 +253,29 @@ export function AddPartsWorkspace({
                   </div>
                 );
               })}
-            </div>
-          </section>
+          </Panel>
         ) : null}
 
         {/* What's on the WO right now — steppers adjust, trash removes. */}
-        <section className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              {t("trayTitle", { count: tray.length })}
-            </h2>
-            {tray.length > 0 ? (
+        <Panel
+          title={t("trayTitle", { count: tray.length })}
+          action={
+            tray.length > 0 ? (
               <span className="text-xs tabular-nums">
                 {t("trayTotal")}{" "}
                 <span className="font-semibold">
                   <Money amount={retailTotal} currency="DKK" bold={false} />
                 </span>
               </span>
-            ) : null}
-          </div>
+            ) : null
+          }
+        >
           {tray.length === 0 ? (
-            <p className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm italic">
+            <p className="text-ink-2 bg-ground rounded-lg p-4 text-center text-sm italic">
               {t("trayEmpty")}
             </p>
           ) : (
-            <ul className="divide-y rounded-md border">
+            <ul className="divide-rule divide-y">
               {tray.map((row) => {
                 const rowBusy =
                   busyKey === `qty:${row.id}` || busyKey === `remove:${row.id}`;
@@ -351,13 +346,10 @@ export function AddPartsWorkspace({
               })}
             </ul>
           )}
-        </section>
+        </Panel>
 
         {/* Catalog — add stays on the page; repeat taps become +1. */}
-        <section className="flex flex-col gap-2">
-          <h2 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            {t("addMoreTitle")}
-          </h2>
+        <Panel title={t("addMoreTitle")} contentClassName="flex flex-col gap-2">
           <div className="relative">
             <Search
               className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -371,11 +363,11 @@ export function AddPartsWorkspace({
             />
           </div>
           {filtered.length === 0 ? (
-            <p className="text-muted-foreground rounded-md border border-dashed p-4 text-center text-sm italic">
+            <p className="text-ink-2 bg-ground rounded-lg p-4 text-center text-sm italic">
               {t("noMatch")}
             </p>
           ) : (
-            <ul className="divide-y rounded-md border">
+            <ul className="divide-rule divide-y">
               {filtered.map((part) => {
                 const onWO = trayByPartId.get(part.id);
                 const busy = busyKey === `add:${part.id}` ||
@@ -452,7 +444,7 @@ export function AddPartsWorkspace({
               })}
             </ul>
           )}
-        </section>
+        </Panel>
       </div>
     </div>
   );
