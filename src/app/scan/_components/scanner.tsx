@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { CameraOff, ScanLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 
 /**
  * QR scanner using html5-qrcode. Opens the back camera, listens for QR
@@ -124,23 +125,35 @@ export function Scanner() {
         | { stop: () => Promise<void>; clear: () => void }
         | undefined;
       if (scanner) {
-        scanner
-          .stop()
-          .catch(() => {})
-          .finally(() => {
-            try {
-              scanner.clear();
-            } catch {
-              /* nothing to clean */
-            }
-          });
+        // `stop()` throws SYNCHRONOUSLY when the scanner was constructed but
+        // never started — which is exactly what happens when the camera
+        // permission was denied. The `.catch()` below can only handle a REJECTED
+        // promise, so without this try the throw escaped the cleanup and Next
+        // showed "Cannot stop, scanner is not running or paused" on navigating
+        // away from /scan. Reachable by any mechanic who declines the camera
+        // prompt and then leaves the page (found 2026-07-29).
+        const clear = () => {
+          try {
+            scanner.clear();
+          } catch {
+            /* nothing to clean */
+          }
+        };
+        try {
+          scanner.stop().catch(() => {}).finally(clear);
+        } catch {
+          clear();
+        }
       }
     };
   }, [router, t]);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative overflow-hidden rounded-lg border bg-black">
+      {/* Media frame, not card soup: the border defines the camera feed's edge,
+          the same exemption photo thumbnails get. Not a Panel — a Panel's padding
+          and fill are wrong around a bleed-to-edge video surface. */}
+      <div className="border-rule relative overflow-hidden rounded-lg border bg-black">
         <div ref={containerRef} className="aspect-square w-full" />
         {status.kind === "starting" ? (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
@@ -154,25 +167,34 @@ export function Scanner() {
         ) : null}
       </div>
 
+      {/* Untinted, with the destructive colour carried by the icon and title
+          rather than a red wash: manual entry below is a working fallback, so this
+          is a failed attempt, not an alarm — and CLAUDE.md keeps `alert` scarce so
+          that red still means something when it appears. */}
       {status.kind === "error" ? (
-        <div className="bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border border-destructive/30 p-3 text-sm">
-          <CameraOff className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <Panel contentClassName="flex items-start gap-2 text-sm">
+          <CameraOff
+            className="text-destructive mt-0.5 size-4 shrink-0"
+            aria-hidden
+          />
           <div className="flex flex-col gap-1">
-            <p className="font-medium">{t("cameraFailedTitle")}</p>
-            <p className="text-xs">
+            <p className="text-destructive font-medium">
+              {t("cameraFailedTitle")}
+            </p>
+            <p className="text-ink-2 text-xs">
               {t("cameraFailedBody", { message: status.message })}
             </p>
           </div>
-        </div>
+        </Panel>
       ) : null}
 
       {status.kind === "decoded" ? (
-        <div className="bg-muted/40 rounded-md border p-3 text-sm">
+        <Panel contentClassName="text-sm">
           <p className="font-medium">{t("scannedLabel")}</p>
-          <p className="text-muted-foreground font-mono text-xs break-all">
+          <p className="text-ink-2 font-mono text-xs break-all">
             {status.value}
           </p>
-        </div>
+        </Panel>
       ) : null}
 
       <ManualEntry />
@@ -189,24 +211,36 @@ function ManualEntry() {
     e.preventDefault();
     const v = value.trim();
     if (!v) return;
-    // Accept a full URL, a UUID, or a frame number prefix.
-    try {
-      const u = new URL(v, window.location.origin);
-      if (u.origin === window.location.origin) {
-        // Same rewrite as the camera path: /b/<id> stickers are for
-        // customers; staff want the workshop view.
-        const stickerMatch = u.pathname.match(
-          /^\/b\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
-        );
-        if (stickerMatch) {
-          router.push(`/bikes/${stickerMatch[1]}`);
+    // Accept a full URL, a UUID, or a frame number.
+    //
+    // The URL branch is gated on the input actually LOOKING like a URL. It used
+    // to be a bare `try { new URL(v, origin) }`, and that never throws for a
+    // plain string — a relative reference resolves against the origin — so
+    // "JP-2026-E_BIKE-034" became `/JP-2026-E_BIKE-034` and pushed a 404. The
+    // catch below only ever fired for genuinely malformed input, which made the
+    // frame-number fallback at the bottom unreachable: typing a frame number
+    // into the manual fallback, the thing you use when the camera won't start,
+    // always 404'd. Found 2026-07-29 while browser-verifying this file.
+    const looksLikeUrl = /^https?:\/\//i.test(v) || v.startsWith("/");
+    if (looksLikeUrl) {
+      try {
+        const u = new URL(v, window.location.origin);
+        if (u.origin === window.location.origin) {
+          // Same rewrite as the camera path: /b/<id> stickers are for
+          // customers; staff want the workshop view.
+          const stickerMatch = u.pathname.match(
+            /^\/b\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+          );
+          if (stickerMatch) {
+            router.push(`/bikes/${stickerMatch[1]}`);
+            return;
+          }
+          router.push(u.pathname + u.search);
           return;
         }
-        router.push(u.pathname + u.search);
-        return;
+      } catch {
+        /* not a usable URL — fall through to identifier handling */
       }
-    } catch {
-      /* not a URL */
     }
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) {
       router.push(`/bikes/${v}`);
