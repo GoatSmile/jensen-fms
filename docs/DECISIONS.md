@@ -1320,3 +1320,44 @@ generic editor would have forked proven validation.
 `/admin/*`, so its group was already a label rather than a path. Teaching the
 nav to match search params was rejected as too much shared-internals change
 for one item's highlight — revisit if a second query-string nav item appears.
+
+## 2026-07-29 (later) — the paint estimate refuses to substitute; the default supplier is set from a price list
+Owner-reported, found by simply trying the "Default suppliers" dropdown on
+`/admin/services` and watching nothing change.
+
+**What was wrong.** That panel was a free select over every active supplier, and
+picking one with no price list produced a state nothing surfaced: the screen
+showed the chosen name with a green "Saved", `loadDefaultPaintList` silently fell
+back to `lists[0]` so every template kept showing a cost-to-paint priced off a
+DIFFERENT painter (feeding cost-to-produce and margin), and `/paint-orders/new`
+pre-selected a supplier whose lines could never be priced, so those orders could
+never be sent. Three consequences, none visible.
+
+**Decided — the estimate refuses.** No default, or a default with no current
+list ⇒ no estimate, plus a message naming which case and which supplier. Chosen
+over the two alternatives the owner was offered: showing the number loudly
+attributed to the substitute supplier, and showing it while nulling `totalDkk`.
+Reason for the strict choice: this total flows into margin, and a margin computed
+from a painter nobody selected is a wrong number wearing a right number's
+clothes. `PaintListUnavailable` carries the reason so each case gets its own
+sentence and its own fix.
+
+**Decided — "Make default" replaces the dropdown, and the dropdown is deleted.**
+The control now lives on each price-list panel; the current default shows a badge
+instead. Choosing a supplier with no prices stops being possible rather than
+being validated against — the button only exists where a current price list
+exists. `/admin/services` also grew a `money` panel naming any service type whose
+default cannot price, because the broken state predates the fix and would
+otherwise stay invisible on the page that caused it.
+Rejected: keeping the select with invalid options disabled — two write paths for
+one setting, and the disabled-option affordance still invites the question.
+
+**Not built, deliberately: a "New service type" button.** Nav and routes are per
+service type permanently, so a created type would have no nav entry and no order
+pages — a row you can make but not use. Same shape as the provider-registry rule.
+`service_part_types` is the opposite case (pure vocabulary, no routes) and belongs
+on `/admin/lists`; parked in BACKLOG.md rather than bundled here.
+
+**Prod config changed during verification:** painting's default was
+`Test Nazar Supplier` (no price list, set while testing the old dropdown) and is
+now `Metacoat A/S`, the only painter with a current list — the working value.

@@ -349,6 +349,7 @@ export default async function BikeTemplateDetailPage({
         totalLabel={paintEstimate.totalLabel}
         listLabel={paintEstimate.listLabel}
         unpricedCount={paintEstimate.unpricedCount}
+        unavailable={paintEstimate.unavailable}
       />
 
       <LabelBomKit

@@ -324,6 +324,22 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     one bike sends to the painter; priced live against the type's default
     supplier's current list (`service_types.default_supplier_id`); joins
     the recipe box: parts + paint → cost to produce → margin.
+    - **The estimate NEVER substitutes another supplier's list.** No default set,
+      or the default has no current list ⇒ no estimate, and the screen says which
+      case it is. It used to fall back to `lists[0]`, which meant a template could
+      show a cost-to-paint — and feed it into margin — priced off a painter nobody
+      chose (2026-07-29).
+    - **The default supplier is set from a price-list panel** ("Make default" on
+      `/admin/services`), never a free supplier dropdown. That is what makes
+      "default supplier with no prices" unreachable: the control only exists where
+      prices do. The action re-checks server-side anyway.
+  - **Service TYPES and service PART TYPES have no admin UI, deliberately for the
+    first and not for the second.** A new service type needs its own nav item and
+    order routes (nav is per-service-type permanently), so it is a migration plus
+    code — config cannot conjure it, same doctrine as the provider registry. A new
+    service *part* type (what you can send a painter) is pure vocabulary and
+    SHOULD be a `/admin/lists` tab; until it is, adding one is a migration. Don't
+    build a "New service type" button.
   - JP-lak service SKUs are retired (soft-deleted); demand/pick surfaces
     skip soft-deleted parts — there is no SKU-prefix exclusion convention.
 - **Inbound is a generic trunk; voicemail is just the first channel.**

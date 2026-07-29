@@ -52,24 +52,65 @@ export type TemplatePaintEstimate = {
   /** Which list priced the estimate, e.g. "SIK priser 2026 · Metacoat A/S". */
   listLabel: string | null;
   unpricedCount: number;
+  /**
+   * Set when no list could be used, so the UI can say WHY instead of showing a
+   * blank cost. Null when the default supplier's list priced the estimate.
+   */
+  unavailable: PaintListUnavailable | null;
 };
 
-/**
- * The default painter's current list for the painting type — the type's
- * configured default supplier when it has a current list, else the sole/first
- * current list. Null when nobody has a current painting price list.
- */
-async function loadDefaultPaintList(
-  supabase: SupabaseClient<Database>,
-): Promise<{
+type PaintList = {
   name: string;
   supplierId: string | null;
   supplierName: string | null;
   currency: string;
   items: ServicePriceItem[];
-} | null> {
+};
+
+/**
+ * Why there is no estimate, when there isn't one. Each case needs a different
+ * sentence on screen and a different fix, so they are distinct rather than one
+ * "unavailable".
+ */
+export type PaintListUnavailable =
+  | { reason: "no_service_type" }
+  /** No default painter configured — set one on a price list in /admin/services. */
+  | { reason: "no_default_supplier" }
+  /** A default IS set, but that supplier has no current list. */
+  | { reason: "default_has_no_list"; supplierName: string | null };
+
+type PaintListResolution =
+  | { ok: true; list: PaintList }
+  | ({ ok: false } & PaintListUnavailable);
+
+/** Drop the discriminant so the reason can travel on the estimate. */
+function stripOk(
+  resolution: { ok: false } & PaintListUnavailable,
+): PaintListUnavailable {
+  return resolution.reason === "default_has_no_list"
+    ? { reason: resolution.reason, supplierName: resolution.supplierName }
+    : { reason: resolution.reason };
+}
+
+/**
+ * The default painter's current list for the painting type — **the configured
+ * default supplier's list, or nothing.**
+ *
+ * It used to fall back to `lists[0]` when the default supplier had no current
+ * list. That was silent and it misled: on 2026-07-29 the painting default was
+ * set to a supplier with no price list, and every template went on showing a
+ * cost-to-paint priced off a DIFFERENT supplier, feeding that number into
+ * cost-to-produce and margin. A total that quietly comes from a supplier nobody
+ * chose is worse than no total, so this refuses and the caller says why.
+ */
+async function loadDefaultPaintList(
+  supabase: SupabaseClient<Database>,
+): Promise<PaintListResolution> {
   const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
-  if (!serviceType) return null;
+  if (!serviceType) return { ok: false, reason: "no_service_type" };
+  if (!serviceType.default_supplier_id) {
+    return { ok: false, reason: "no_default_supplier" };
+  }
 
   const { data, error } = await supabase
     .from("service_price_lists")
@@ -81,16 +122,33 @@ async function loadDefaultPaintList(
        )`,
     )
     .eq("service_type_id", serviceType.id)
-    .eq("is_current", true);
-  if (error || !data || data.length === 0) return null;
+    .eq("supplier_id", serviceType.default_supplier_id)
+    .eq("is_current", true)
+    .maybeSingle();
 
-  const lists = data
-    .map((l) => ({
-      name: l.name,
-      supplierId: one(l.supplier)?.id ?? null,
-      supplierName: one(l.supplier)?.name ?? null,
-      currency: l.currency,
-      items: (l.items ?? []).map((i) => ({
+  if (error || !data) {
+    // Name the supplier we were told to price against, so the message can say
+    // WHICH painter is missing prices rather than just "unavailable".
+    const { data: supplier } = await supabase
+      .from("suppliers")
+      .select("name")
+      .eq("id", serviceType.default_supplier_id)
+      .maybeSingle();
+    return {
+      ok: false,
+      reason: "default_has_no_list",
+      supplierName: supplier?.name ?? null,
+    };
+  }
+
+  return {
+    ok: true,
+    list: {
+      name: data.name,
+      supplierId: one(data.supplier)?.id ?? null,
+      supplierName: one(data.supplier)?.name ?? null,
+      currency: data.currency,
+      items: (data.items ?? []).map((i) => ({
         id: i.id,
         service_part_type_id: i.service_part_type_id,
         supplier_item_no: i.supplier_item_no,
@@ -98,12 +156,8 @@ async function loadDefaultPaintList(
         tier_max: i.tier_max,
         unit_price: Number(i.unit_price),
       })),
-    }))
-    .sort((a, b) => (a.supplierName ?? "").localeCompare(b.supplierName ?? ""));
-  return (
-    lists.find((l) => l.supplierId === serviceType.default_supplier_id) ??
-    lists[0]
-  );
+    },
+  };
 }
 
 export async function loadTemplatePaintEstimate(
@@ -116,6 +170,7 @@ export async function loadTemplatePaintEstimate(
     totalLabel: null,
     listLabel: null,
     unpricedCount: 0,
+    unavailable: null,
   };
 
   const { data: paintRows, error } = await supabase
@@ -126,7 +181,11 @@ export async function loadTemplatePaintEstimate(
     .eq("template_id", templateId);
   if (error || !paintRows) return empty;
 
-  const list = await loadDefaultPaintList(supabase);
+  const resolution = await loadDefaultPaintList(supabase);
+  const list = resolution.ok ? resolution.list : null;
+  const unavailable: PaintListUnavailable | null = resolution.ok
+    ? null
+    : stripOk(resolution);
   const listLabel = list
     ? [list.name, list.supplierName].filter(Boolean).join(" · ")
     : null;
@@ -193,5 +252,6 @@ export async function loadTemplatePaintEstimate(
     totalLabel,
     listLabel,
     unpricedCount: priced.unpricedCount,
+    unavailable,
   };
 }

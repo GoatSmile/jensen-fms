@@ -93,5 +93,20 @@
     "listsTitle": "Lists",
     "listsDesc": "Part categories, colours, coatings, customer segments, bike families, HS codes and stock locations.",
     "listsStat": "{count} lists"
+  },
+  "adminServices": {
+    "makeDefault": "Make default",
+    "defaultBadge": "Default supplier",
+    "noDefaultHeading": "Cost estimates are blank",
+    "noDefaultBody": "{type}: no default supplier is set, so template cost estimates stay blank. Use \"Make default\" on a price list below.",
+    "defaultHasNoListBody": "{type}: {supplier} is the default supplier but has no current price list, so template cost estimates stay blank and new orders cannot be priced. Add their price list, or make another supplier the default below."
+  },
+  "templateDetail": {
+    "noDefaultSupplier": "No default painter is set, so this cannot be priced. Set one in Admin → Service price lists.",
+    "defaultHasNoList": "{supplier} is the default painter but has no current price list, so this cannot be priced. Add their price list, or make another supplier the default.",
+    "thatSupplier": "the default painter"
+  },
+  "errors": {
+    "serviceDefaultNeedsPriceList": "That supplier has no current price list for this service, so it cannot be the default. Add a price list for them first."
   }
 }

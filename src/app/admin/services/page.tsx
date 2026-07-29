@@ -26,7 +26,9 @@ import { localizedName } from "@/i18n/vocab";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 
-import { DefaultSuppliersForm } from "./_components/default-suppliers-form";
+import { Panel } from "@/components/ui/panel";
+
+import { MakeDefaultButton } from "./_components/make-default-button";
 
 type PriceListRow = {
   id: string;
@@ -73,7 +75,9 @@ export default async function AdminServicesPage() {
   ]);
   const supabase = await createClient();
 
-  const [listsRes, partTypesRes, serviceTypesRes, suppliersRes] =
+  // No suppliers query any more: the default is set from a price-list panel, so
+  // the only candidates are the suppliers that already appear as one.
+  const [listsRes, partTypesRes, serviceTypesRes] =
     await Promise.all([
     supabase
       .from("service_price_lists")
@@ -98,12 +102,6 @@ export default async function AdminServicesPage() {
       .select("id, name_en, name_da, default_supplier_id, sort_order")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
-    supabase
-      .from("suppliers")
-      .select("id, name")
-      .is("deleted_at", null)
-      .eq("is_active", true)
-      .order("name", { ascending: true }),
   ]);
 
   const serviceTypeRows = (serviceTypesRes.data ?? []).map((st) => ({
@@ -111,7 +109,25 @@ export default async function AdminServicesPage() {
     name: localizedName(locale, st.name_en, st.name_da),
     defaultSupplierId: st.default_supplier_id,
   }));
-  const supplierRows = suppliersRes.data ?? [];
+  // Which supplier is default per type, for the badge-vs-button decision.
+  const defaultSupplierByType = new Map(
+    serviceTypeRows.map((st) => [st.id, st.defaultSupplierId]),
+  );
+  // Names for defaults that may not appear as a price-list group at all — needed
+  // to say WHICH painter is missing prices.
+  const defaultSupplierIds = serviceTypeRows
+    .map((st) => st.defaultSupplierId)
+    .filter((id): id is string => Boolean(id));
+  const defaultSupplierNames = new Map<string, string>();
+  if (defaultSupplierIds.length > 0) {
+    const { data: defaultSuppliers } = await supabase
+      .from("suppliers")
+      .select("id, name")
+      .in("id", defaultSupplierIds);
+    for (const s of defaultSuppliers ?? []) {
+      defaultSupplierNames.set(s.id, s.name);
+    }
+  }
 
   if (listsRes.error) {
     throw new Error(`Failed to load price lists: ${listsRes.error.message}`);
@@ -167,6 +183,28 @@ export default async function AdminServicesPage() {
     );
   });
 
+  // Service types whose default painter cannot price anything — either none is
+  // set, or the one that is has no CURRENT list. Both make the template estimate
+  // refuse, and the second is the state the old free-choice dropdown produced, so
+  // it has to be visible HERE rather than only on a template page.
+  const currentListKeys = new Set(
+    lists
+      .filter((l) => l.is_current)
+      .map((l) => `${l.supplier_id}:${l.service_type_id}`),
+  );
+  const unpriceableTypes = serviceTypeRows
+    .filter(
+      (st) =>
+        !st.defaultSupplierId ||
+        !currentListKeys.has(`${st.defaultSupplierId}:${st.id}`),
+    )
+    .map((st) => ({
+      name: st.name,
+      supplierName: st.defaultSupplierId
+        ? (defaultSupplierNames.get(st.defaultSupplierId) ?? null)
+        : null,
+    }));
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
@@ -203,23 +241,26 @@ export default async function AdminServicesPage() {
         </Button>
       </div>
 
-      {serviceTypeRows.length > 0 ? (
-        <section className="rounded-md border">
-          <header className="border-b px-4 py-3">
-            <h2 className="text-sm font-semibold">
-              {t("defaultSuppliersHeading")}
-            </h2>
-            <p className="text-muted-foreground text-xs">
-              {t("defaultSuppliersDescription")}
-            </p>
-          </header>
-          <div className="p-4">
-            <DefaultSuppliersForm
-              serviceTypes={serviceTypeRows}
-              suppliers={supplierRows}
-            />
-          </div>
-        </section>
+      {/* The "Default suppliers" select panel is gone (2026-07-29). It listed
+          every active supplier, so it let you default to one with no price list —
+          which broke the template estimate and made new orders unsendable, with
+          nothing on screen saying so. Setting the default now happens on the
+          price-list panel that proves prices exist. */}
+      {unpriceableTypes.length > 0 ? (
+        <Panel hue="money" title={t("noDefaultHeading")}>
+          <ul className="text-ink-2 flex flex-col gap-1 text-sm">
+            {unpriceableTypes.map((type) => (
+              <li key={type.name}>
+                {type.supplierName
+                  ? t("defaultHasNoListBody", {
+                      type: type.name,
+                      supplier: type.supplierName,
+                    })
+                  : t("noDefaultBody", { type: type.name })}
+              </li>
+            ))}
+          </ul>
+        </Panel>
       ) : null}
 
       {groupList.length === 0 ? (
@@ -293,6 +334,20 @@ export default async function AdminServicesPage() {
                     )}
                   </p>
                 </div>
+                {/* Default marker + setter. Only a group with a current revision
+                    can become the default — that is what keeps the "default
+                    supplier has no prices" state unreachable. */}
+                {current && head.supplier_id ? (
+                  defaultSupplierByType.get(head.service_type_id) ===
+                  head.supplier_id ? (
+                    <Badge variant="secondary">{t("defaultBadge")}</Badge>
+                  ) : (
+                    <MakeDefaultButton
+                      serviceTypeId={head.service_type_id}
+                      supplierId={head.supplier_id}
+                    />
+                  )
+                ) : null}
                 {current ? (
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/admin/services/new?from=${current.id}`}>

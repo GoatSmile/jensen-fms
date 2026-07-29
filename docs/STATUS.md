@@ -1,6 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-29.** Most recent: **`/admin/lists` shipped** — the seven
+**Last updated: 2026-07-29.** Most recent: **the paint estimate no longer
+substitutes a supplier's price list, and the default supplier is set with
+"Make default" on a price-list panel** — the free dropdown that let you default to
+a painter with no prices is deleted (owner-found; three invisible consequences,
+DECISIONS 2026-07-29 later). Painting's default is now `Metacoat A/S`, the only
+painter with a current list. Before that: **`/admin/lists` shipped** — the seven
 controlled vocabularies now live on one page and the 18 old routes redirect to it
 (`13c620e` + the retirement commit). Retiring `/admin/locations` nearly deleted the
 only UI for two app settings; both were ported instead. Gates green: `tsc` clean,
@@ -109,7 +114,9 @@ one page for the seven controlled vocabularies** (18 routes retired to it).
   values with stale dark ones. `rm -rf .next` + restart, not code debugging.
 
 **What real data still cannot verify** (narrowed 2026-07-29): no bike template
-has paintwork rows, and no inbound message is spam-flagged, so that banner's
+has paintwork rows — though the paintwork section and its no-price messages WERE
+exercised on 2026-07-29 with a temporary row on Norma CS (since deleted), so the
+surface is no longer unseen, only unpopulated — and no inbound message is spam-flagged, so that banner's
 `money` hue is code-verified only. **`/bikes/new` has still never been
 submitted** — its owner-required and status-whitelist branches are read, not
 posted.

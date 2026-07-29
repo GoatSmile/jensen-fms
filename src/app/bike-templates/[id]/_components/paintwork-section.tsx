@@ -16,7 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { TemplatePaintworkRow } from "@/lib/services/template-paint";
+import type {
+  PaintListUnavailable,
+  TemplatePaintworkRow,
+} from "@/lib/services/template-paint";
 
 import {
   addTemplatePaintPart,
@@ -35,6 +38,8 @@ type Props = {
   totalLabel: string | null;
   listLabel: string | null;
   unpricedCount: number;
+  /** Why no list priced this, when none did. */
+  unavailable: PaintListUnavailable | null;
 };
 
 /**
@@ -51,6 +56,7 @@ export function PaintworkSection({
   totalLabel,
   listLabel,
   unpricedCount,
+  unavailable,
 }: Props) {
   const t = useTranslations("templateDetail");
   const router = useRouter();
@@ -137,9 +143,18 @@ export function PaintworkSection({
           </div>
         )}
 
+        {/* Why there is no cost, specifically. The estimate no longer falls back
+            to another supplier's list, so this line is the whole explanation of
+            a blank paint cost — and each reason has a different fix. */}
         {rows.length > 0 && listLabel == null ? (
-          <p className="mt-2 text-xs text-money">
-            {t("noPriceList")}
+          <p className="text-money mt-2 text-xs">
+            {unavailable?.reason === "no_default_supplier"
+              ? t("noDefaultSupplier")
+              : unavailable?.reason === "default_has_no_list"
+                ? t("defaultHasNoList", {
+                    supplier: unavailable.supplierName ?? t("thatSupplier"),
+                  })
+                : t("noPriceList")}
           </p>
         ) : null}
       </div>

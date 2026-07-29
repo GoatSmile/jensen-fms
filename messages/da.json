@@ -743,7 +743,10 @@
     "thPartsCol": "Dele",
     "currentBadge": "aktuel",
     "pastBadge": "tidligere",
-    "youAreHere": "du er her"
+    "youAreHere": "du er her",
+    "noDefaultSupplier": "Der er ikke valgt en standardlakerer, så prisen kan ikke beregnes. Vælg en under Administration → Serviceprislister.",
+    "defaultHasNoList": "{supplier} er standardlakerer, men har ingen aktuel prisliste, så prisen kan ikke beregnes. Tilføj deres prisliste, eller vælg en anden leverandør som standard.",
+    "thatSupplier": "standardlakereren"
   },
   "parts": {
     "title": "Dele",
@@ -2969,10 +2972,13 @@
     "tierPcs": "{tier} stk.",
     "tierPcsCurrency": "{tier} stk. · {currency}",
     "title": "Serviceprislister",
-    "defaultSuppliersHeading": "Standardleverandører",
-    "defaultSuppliersDescription": "Leverandøren der forudvælges på nye ordrer af hver servicetype, og bruges til skabelonens prisestimat.",
     "noDefaultSupplier": "Ingen standard",
-    "saved": "Gemt"
+    "saved": "Gemt",
+    "makeDefault": "Vælg som standard",
+    "defaultBadge": "Standardleverandør",
+    "noDefaultHeading": "Prisoverslag er tomme",
+    "noDefaultBody": "{type}: der er ikke valgt en standardleverandør, så skabelonernes prisoverslag er tomme. Brug \"Vælg som standard\" på en prisliste nedenfor.",
+    "defaultHasNoListBody": "{type}: {supplier} er standardleverandør, men har ingen aktuel prisliste, så skabelonernes prisoverslag er tomme, og nye ordrer kan ikke prissættes. Tilføj deres prisliste, eller vælg en anden leverandør som standard nedenfor."
   },
   "adminSettings": {
     "accountingDescription": "Udstedte fakturaer skubbes til e-conomic som kladdebilag — bogholderen gennemgår og bogfører dem der. API-tokens ligger i miljøvariabler; dette kort indeholder aftalenumrene. Bekræft journalen og omsætningskontoen med revisoren før det første rigtige push.",
@@ -3901,7 +3907,8 @@
     "whoamiInvalidPerson": "Denne person kan ikke vælges til denne rolle",
     "woAssigneeInvalid": "Denne person kan ikke tildeles",
     "bikeRecordStatusInvalid": "En registreret cykel skal enten være hos en kunde eller på lager — alt hvad vi bygger, går gennem en produktionsordre.",
-    "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører."
+    "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører.",
+    "serviceDefaultNeedsPriceList": "Leverandøren har ingen aktuel prisliste for denne service og kan derfor ikke være standard. Tilføj en prisliste for dem først."
   },
   "inbox": {
     "title": "Indbakke",

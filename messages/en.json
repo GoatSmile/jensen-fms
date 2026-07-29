@@ -743,7 +743,10 @@
     "thPartsCol": "Parts",
     "currentBadge": "current",
     "pastBadge": "past",
-    "youAreHere": "you are here"
+    "youAreHere": "you are here",
+    "noDefaultSupplier": "No default painter is set, so this cannot be priced. Set one in Admin → Service price lists.",
+    "defaultHasNoList": "{supplier} is the default painter but has no current price list, so this cannot be priced. Add their price list, or make another supplier the default.",
+    "thatSupplier": "the default painter"
   },
   "parts": {
     "title": "Parts",
@@ -2969,10 +2972,13 @@
     "tierPcs": "{tier} pcs",
     "tierPcsCurrency": "{tier} pcs · {currency}",
     "title": "Service price lists",
-    "defaultSuppliersHeading": "Default suppliers",
-    "defaultSuppliersDescription": "The supplier pre-selected on new orders of each service type, and used for the template cost estimate.",
     "noDefaultSupplier": "No default",
-    "saved": "Saved"
+    "saved": "Saved",
+    "makeDefault": "Make default",
+    "defaultBadge": "Default supplier",
+    "noDefaultHeading": "Cost estimates are blank",
+    "noDefaultBody": "{type}: no default supplier is set, so template cost estimates stay blank. Use \"Make default\" on a price list below.",
+    "defaultHasNoListBody": "{type}: {supplier} is the default supplier but has no current price list, so template cost estimates stay blank and new orders cannot be priced. Add their price list, or make another supplier the default below."
   },
   "adminSettings": {
     "accountingDescription": "Issued invoices push to e-conomic as draft journal vouchers — the bookkeeper reviews and books them there. API tokens live in env vars; this card holds the agreement numbers. Confirm the journal and revenue account with the revisor before the first real push.",
@@ -3901,7 +3907,8 @@
     "whoamiInvalidPerson": "That person can't be picked for this role",
     "woAssigneeInvalid": "That person can't be assigned",
     "bikeRecordStatusInvalid": "A recorded bike must be either with a customer or in stock — anything we build goes through a manufacturing order.",
-    "bikeOwnerRequiredInService": "Pick the customer this bike belongs to."
+    "bikeOwnerRequiredInService": "Pick the customer this bike belongs to.",
+    "serviceDefaultNeedsPriceList": "That supplier has no current price list for this service, so it cannot be the default. Add a price list for them first."
   },
   "inbox": {
     "title": "Inbox",
