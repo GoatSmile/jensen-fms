@@ -38,7 +38,12 @@ parked ideas in `docs/BACKLOG.md`.
 - Inbound shadow-testing rides the US trial number **+1 762 500 0850**; Dennis's
   company number remains the production plan.
 - **The July queue is complete** and its plan is archived. Owner-facing
-  `docs/PLAYBOOK-AUGUST.md` covers Dennis's solo stretch from 3 Aug.
+  `docs/PLAYBOOK-AUGUST.md` covers Dennis's solo stretch from 3 Aug —
+  **rewritten 2026-07-29 around a different ask**: his job is to learn the app
+  and record what he notices, not to do data entry. It opens with two concrete
+  steps (add himself under People & roles with the Owner role; set his own
+  App/Workshop language). CUTOVER-BRIEF's numbered asks were re-ordered to
+  match, so the two documents no longer name different top priorities.
 
 ## The frame: CUTOVER is now what everything serves
 `docs/plan-cutover.md` (working plan: stage ladder, risks, open decisions) +

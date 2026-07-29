@@ -1,7 +1,7 @@
 # Going live — what I need from you
 
-For Dennis. Written 26 July 2026, to read before we meet in the week of
-17 August.
+For Dennis. Written 26 July 2026, revised 29 July, to read before we meet in
+the week of 17 August.
 
 This follows on from `docs/PLAYBOOK-AUGUST.md`, which is your guide for the
 solo stretch from 3 August. That one is about using the system. This one is
@@ -36,24 +36,35 @@ everything starts going into the new system.** My proposal is Monday
 The order matters. Each item unblocks the ones under it, so please work down
 the list rather than picking the easy ones.
 
-### 1. Drive the housekeeping counts to zero — start now
+### 1. Get to know the app, and write down what you notice — start now
+
+**The ask:** use it as though it were already your system, and keep a running
+note of your reactions. The August playbook has a suggested route and the
+kinds of things worth writing down.
+
+**Why it matters:** everything below this line assumes the app is broadly
+right. If it isn't — if it doesn't match how the work actually happens — then
+data entry and a go-live date are both premature, and I would much rather
+find that out from you in August than in September. Your list is the main
+agenda item when we meet.
+
+### 2. Drive the housekeeping counts to zero
 
 **The ask:** Dashboard → Data housekeeping. Work the list until every count
-reads 0.
+reads 0. Detailed priorities are in the August playbook.
 
-**Why it matters:** This is the single thing that decides whether we can go
-live at the end of August, and it is the one thing that cannot be rushed
-later. It is all data that only you know — which supplier sells what at what
-price, which parts come from China, when to reorder. The app is complete
-without it, but it will be *quietly wrong* until it is in: purchase orders
-land at 0 kr., Chinese parts show no import duty so your landed cost is
-understated, and the reorder warnings stay silent because nothing knows what
-"low" means.
+**Why it matters:** this is what decides whether we can go live at the end of
+August, and it is the one thing that cannot be rushed later. It is all data
+that only you know — which supplier sells what at what price, which parts
+come from China, when to reorder. The app is complete without it, but it will
+be *quietly wrong* until it is in: purchase orders land at 0 kr., Chinese
+parts show no import duty so your landed cost is understated, and the reorder
+warnings stay silent because nothing knows what "low" means.
 
-The detailed task list with priorities is already in the August playbook. If
-you do nothing else before we meet, do this.
+Do as much as you have appetite for. If you only have time for one of items 1
+and 2, do item 1 — but this is the one with a deadline attached to it.
 
-### 2. Send me your company details
+### 3. Send me your company details
 
 **The ask:** CVR number, bank account, and the invoice address exactly as it
 should be printed.
@@ -64,7 +75,7 @@ whole plan. The invoice print page currently shows a warning where these
 should be. Five minutes of your time, weeks of lead time on mine if it
 arrives late.
 
-### 3. Book one conversation with your revisor
+### 4. Book one conversation with your revisor
 
 **The ask:** One meeting or call, with four questions on the agenda. Ideally
 in the week of 17 August so I can join by phone.
@@ -85,7 +96,7 @@ credit note. I would much rather ask your revisor now than fix bookkeeping
 later. Please treat this as one conversation with four questions, not four
 separate errands.
 
-### 4. Create the orders@valent.dk mailbox
+### 5. Create the orders@valent.dk mailbox
 
 **The ask:** In Google Workspace, create `orders@valent.dk` as an alias or
 catch-all.
@@ -95,7 +106,7 @@ out from that address. Until the mailbox exists, any supplier who hits reply
 gets a bounce — and they will not tell us, they will just assume we did not
 answer.
 
-### 5. Chase the e-conomic production access
+### 6. Chase the e-conomic production access
 
 **The ask:** The production grant token for the app. We are on a trial
 agreement today.
@@ -104,7 +115,7 @@ agreement today.
 but it comes from a third party, and third parties are slow. Start it now so
 it is not what we are waiting for in September.
 
-### 6. Get me the list of bikes already out with customers
+### 7. Get me the list of bikes already out with customers
 
 **The ask:** Whatever list exists — spreadsheet, notebook, or your memory —
 of bikes currently in the field and who has them.
@@ -115,7 +126,7 @@ has to attach to a real bike in the system. Everything else — old invoices,
 old repairs, old purchase prices — we deliberately leave in the old system
 and never move. This is the exception.
 
-### 7. Ask DA Custom Brokers about five parts
+### 8. Ask DA Custom Brokers about five parts
 
 **The ask:** Five parts have no HS code (the Ananda motor and cable variants,
 plus two small parts). Ask the broker which TARIC code they actually file
