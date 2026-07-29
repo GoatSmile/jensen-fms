@@ -126,11 +126,15 @@ has to attach to a real bike in the system. Everything else — old invoices,
 old repairs, old purchase prices — we deliberately leave in the old system
 and never move. This is the exception.
 
-### 8. Ask DA Custom Brokers about five parts
+### 8. Ask DA Custom Brokers about the unclassified parts
 
-**The ask:** Five parts have no HS code (the Ananda motor and cable variants,
-plus two small parts). Ask the broker which TARIC code they actually file
-these under.
+**The ask:** A handful of parts have no HS code — the Ananda motor and cable
+variants, a couple of Shimano wheels and hubs, and some small parts. Ask the
+broker which TARIC code they actually file these under.
+
+The live list is on the dashboard under Data housekeeping, so it is always
+current — it has grown since I first wrote this, because parts you added since
+June are in it too. Work from the screen, not from this page.
 
 **Why it matters:** Lower priority than the rest, but worth doing while you
 think of it. The broker files some parts under favourable "for cycle
@@ -143,7 +147,7 @@ guess and have our cost figures disagree with your customs paperwork.
 
 Week of 17 August. Different places, on purpose.
 
-### Monday 18 August — at your workshop, half a day
+### Monday 17 August — at your workshop, half a day
 The reality check. I need to see the physical side: where the bikes actually
 sit, what is on the whiteboard, how a job sheet travels across the bench,
 whether the kit stickers match the shelves.
@@ -271,7 +275,7 @@ together, in the same room, with your real data and your real invoices in
 front of us. That is why I am asking for whole days rather than calls, and
 why I want a date on the calendar rather than a direction of travel.
 
-Bring your scepticism to the 18th. The things you think the app gets wrong
+Bring your scepticism to the 17th. The things you think the app gets wrong
 about how you work are the most valuable thing you can give me.
 
 — Nazar

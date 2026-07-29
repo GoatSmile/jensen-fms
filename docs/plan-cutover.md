@@ -156,11 +156,17 @@ be a conscious call made at Stage 3, not something that quietly never happens.
 ### Stage 4 — Accounting (after 2–3 clean invoices)
 e-conomic production cutover.
 
-- Production grant token in place of the trial (expected end of July).
-- **Clear any trial-stamped IDs first** — `organizations.economic_customer_number`,
-  `invoices.economic_voucher_id`, `economic_synced_at`. There are none today;
-  the landmine in STATUS.md exists to keep it that way. Do not push a real
-  invoice to the trial agreement in the meantime.
+- Production grant token in place of the trial (was expected end of July —
+  chase it; it is the long-lead item in this stage).
+- **Clear the trial-stamped IDs first — FOUR EXIST** (found 2026-07-29 by
+  `scripts/audit-invariants.sql`, check 15; this bullet previously claimed there
+  were none, which was wrong from 2026-07-09): `economic_customer_number` on
+  `Nazar Taras` (2) and `TEST Hotel Strandvejen ApS` (3), and
+  `economic_voucher_id` on `INV-2026-0001` (`2026 J1 V2`) and `TEST-2026-0001`
+  (`2026 J1 V3`). They are residue of the 2026-07-09 live push test. Left in
+  place, the first real push reconciles against trial entities. Re-run the audit
+  to confirm zero before the token swap, and do not push anything else to the
+  trial in the meantime.
 - Revisor confirms journal, revenue account 1010, U25, payment terms.
 - Push one invoice, have the revisor look at the voucher, then push the rest.
 

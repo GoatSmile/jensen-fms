@@ -51,8 +51,9 @@ parked ideas in `docs/BACKLOG.md`.
 
 - **Proposed transfer date: Mon 31 Aug** — one hard line after which no new work
   is recorded in Excel or on paper. Confirm or move it in Meeting 1.
-- **Three meetings, week of 17 Aug**: workshop Mon 18th (reality check, agree
-  the date) · Nazar's place Wed 19th (invoicing-parity workshop, revisor on the
+- **Three meetings, week of 17 Aug**: workshop Mon 17th (reality check, agree
+  the date — the brief said "Monday 18 August", which is a Tuesday; corrected
+  2026-07-29 to match its own "week of 17 August") · Nazar's place Wed 19th (invoicing-parity workshop, revisor on the
   phone, restore rehearsal) · team session on transfer day.
 - **Ladder, ordered by irreversibility**: internal ops → supplier email +
   phone → first real invoice → e-conomic. e-conomic is deliberately LAST.
@@ -276,7 +277,8 @@ Three things worth carrying:
   verified (archiving the primary fails with its error).
 
 ## Waiting on (external)
-- **e-conomic production agreement** grant token — expected ~end of July.
+- **e-conomic production agreement** grant token — was expected ~end of July,
+  so it is due now; chase it (it is the long-lead item in cutover Stage 4).
   Then: re-run Test connection, confirm journal / revenue account 1010 /
   U25 / payment terms with the revisor, then the first real push.
 - **`orders@valent.dk`** alias (or catch-all) in Google Workspace — direct
@@ -372,9 +374,11 @@ Self-serve via the dashboard "Data housekeeping" fold:
   (`import_tax_basis = 'unclassified'`) until origins are set on the part
   edit form. Classifying the China-sourced fast movers as `non_eu` restores
   tariff-by-default where it matters.
-- **5 parts lack an HS code**: `JP-AND-M100-PWR`, `JP-AND-M100-CS`,
-  `JP-AND-DSP-NTC`, `JP-SLFFH01B`, `JP-SP207- 27,2 350` — they snapshot 0 %
-  tariff until classified. TARIC note: the customs broker (DA Custom
+- **Parts lack an HS code** — they snapshot 0 % tariff until classified. The
+  count was 5 here and is **11** as of 2026-07-29: the five May originals plus
+  Shimano wheels/hubs added 17 Jun and 1 Jul. Don't re-fix the number — query
+  it (`parts where hs_code_id is null and deleted_at is null`) or read the
+  dashboard's Data housekeeping fold, which is live. TARIC note: the customs broker (DA Custom
   Brokers) files some parts under favourable "for cycle manufacture" splits
   (e.g. 8714911077, 8714913072, 8714961010) to dodge the 48.5 %
   anti-dumping; our classification uses the standard splits — confirm with
