@@ -8,6 +8,7 @@ import { Minus, Plus, Search, Trash2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Panel } from "@/components/ui/panel";
 import {
   Select,
   SelectContent,
@@ -293,17 +294,13 @@ export function MOBatchForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       {/* 1 — template cards. Click to add a batch row. */}
-      <section className="rounded-md border">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("buildingWhatTitle")}</h2>
-            <p className="text-muted-foreground text-xs">
-              {t("buildingWhatDesc")}
-            </p>
-          </div>
+      <Panel
+        title={t("buildingWhatTitle")}
+        description={t("buildingWhatDesc")}
+        action={
           <div className="relative w-full sm:w-56">
             <Search
-              className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+              className="text-ink-2 absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
               aria-hidden
             />
             <Input
@@ -313,8 +310,10 @@ export function MOBatchForm({
               className="h-8 pl-8 text-sm"
             />
           </div>
-        </header>
-        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        }
+        contentClassName="flex flex-col gap-3"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {families.length === 0 ? (
             <p className="text-muted-foreground col-span-full p-2 text-center text-sm italic">
               {templates.length === 0
@@ -329,10 +328,10 @@ export function MOBatchForm({
             </p>
           ) : (
             families.map(([key, { label, familyId, members }]) => (
-              <div
-                key={key}
-                className="overflow-hidden rounded-md border"
-              >
+              // In-panel grouping: fill, not a border. A bordered card inside a
+              // Panel is the nesting the panel convention removed; the family
+              // tint on the header already carries the grouping.
+              <div key={key} className="bg-ground overflow-hidden rounded-lg">
                 <div
                   className={`flex items-baseline justify-between gap-2 border-b px-3 py-2 ${familyTint(familyId).header}`}
                 >
@@ -392,7 +391,7 @@ export function MOBatchForm({
             ))
           )}
         </div>
-        <footer className="text-muted-foreground border-t px-4 py-2 text-xs">
+        <footer className="text-ink-2 text-xs">
           {t.rich("oneOffFooter", {
             link: (chunks) => (
               <Link
@@ -404,27 +403,24 @@ export function MOBatchForm({
             ),
           })}
         </footer>
-      </section>
+      </Panel>
 
       {/* 2 — the batch rows */}
-      <section className="rounded-md border">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="text-sm font-semibold">{t("batchTitle")}</h2>
-            <p className="text-muted-foreground text-xs">{t("batchDescRow")}</p>
-          </div>
-          {rows.length > 0 ? (
+      <Panel
+        title={t("batchTitle")}
+        description={t("batchDescRow")}
+        action={
+          rows.length > 0 ? (
             <span className="text-sm tabular-nums">
               {t.rich("batchSummary", {
                 count: rows.length,
                 bikes: totalBikes,
-                b: (chunks) => (
-                  <span className="font-semibold">{chunks}</span>
-                ),
+                b: (chunks) => <span className="font-semibold">{chunks}</span>,
               })}
             </span>
-          ) : null}
-        </header>
+          ) : null
+        }
+      >
         {rows.length === 0 ? (
           <p className="text-muted-foreground p-6 text-center text-sm italic">
             {t("batchEmpty")}
@@ -600,19 +596,14 @@ export function MOBatchForm({
             ) : null}
           </footer>
         ) : null}
-      </section>
+      </Panel>
 
       {/* 3 — shared production plan */}
-      <section className="rounded-md border">
-        <header className="flex flex-col gap-0.5 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">
-            {t("productionPlanTitle")}
-          </h2>
-          <p className="text-muted-foreground text-xs">
-            {t("productionPlanDescBatch")}
-          </p>
-        </header>
-        <div className="flex flex-col gap-3 p-4">
+      <Panel
+        title={t("productionPlanTitle")}
+        description={t("productionPlanDescBatch")}
+        contentClassName="flex flex-col gap-3"
+      >
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("plannedStartDate")} htmlFor="batch-start">
               <Input
@@ -643,7 +634,7 @@ export function MOBatchForm({
               placeholder={t("notesPlaceholderBatch")}
             />
           </Field>
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-md border p-3">
+          <label className="bg-ground flex cursor-pointer items-start gap-2.5 rounded-lg p-3">
             <input
               type="checkbox"
               checked={createBikes}
@@ -659,14 +650,10 @@ export function MOBatchForm({
               </span>
             </span>
           </label>
-        </div>
-      </section>
+      </Panel>
 
       {error ? (
-        <p
-          className="bg-destructive/10 text-destructive border-destructive/30 rounded-md border p-3 text-sm"
-          role="alert"
-        >
+        <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
       ) : null}
