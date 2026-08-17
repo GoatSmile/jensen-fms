@@ -41,17 +41,26 @@ parked ideas in `docs/BACKLOG.md`.
 - Inbound shadow-testing rides the US trial number **+1 762 500 0850**; Dennis's
   company number remains the production plan.
 - **The July queue is complete** and its plan is archived.
-- **Both Dennis-facing documents are ready to send** and consistent with each
-  other. `PLAYBOOK-AUGUST.md` was rewritten 2026-07-29 around a different ask —
-  **his job is to learn the app and record what he notices, not data entry** —
-  and `CUTOVER-BRIEF.md`'s numbered asks were re-ordered to match so the two do
-  not name different top priorities. Neither now contains a day-level date that
-  can go stale. **They are owner-facing artifacts, not session slots**: rewrite
-  when the period or audience changes, archive when the period ends.
+- **There is now exactly ONE Dennis-facing document: `PLAYBOOK-AUGUST.md`**
+  (owner's call 2026-08-07). `CUTOVER-BRIEF.md` was **demoted to a working
+  reference** — it stays in `docs/` for our own use and Dennis never sees it, so
+  it no longer needs to stay in sync with anything he reads. Consequence to
+  carry: **the account-ownership question** (GitHub / Vercel / Supabase / domain
+  / phone all under Nazar) now lives ONLY in the brief and `plan-cutover.md` §10
+  — it is deliberately absent from everything Dennis has, and gets raised in
+  person instead. The playbook was rewritten the same day: every ask reworded as
+  a suggestion (he is a client running a business, not a team member), the
+  cutover-brief references removed, a plain-language **backup-to-his-own-server**
+  section added that asks whether a NAS exists, and the **calls → tickets**
+  pipeline promoted to its own prominent section with a step-by-step for
+  pointing the bridge at his own mobile. It contains no day-level date. **It is
+  an owner-facing artifact, not a session slot**: rewrite when the period or
+  audience changes, archive when the period ends.
 
 ## The frame: CUTOVER is now what everything serves
 `docs/plan-cutover.md` (working plan: stage ladder, risks, open decisions) +
-`docs/CUTOVER-BRIEF.md` (Dennis's, English, hand-over ready).
+`docs/CUTOVER-BRIEF.md` (**our working reference since 2026-08-07 — not sent to
+Dennis**; still the fullest written form of the ladder and the asks).
 
 - **Proposed transfer date: Mon 31 Aug** — one hard line after which no new work
   is recorded in Excel or on paper. Confirm or move it in Meeting 1.
@@ -59,10 +68,16 @@ parked ideas in `docs/BACKLOG.md`.
   (owner's call 2026-07-29; the brief had said "Monday 18 August", which is a
   Tuesday, so the days came out rather than getting a corrected weekday —
   Dennis picks them): workshop first (reality check, watch one real job, agree
-  the transfer date) · then a full day at Nazar's a day or two later
+  the transfer date) · then a session at Nazar's a day or two later
   (invoicing-parity workshop, revisor on the phone, restore rehearsal) · team
   session on transfer day. **Don't reintroduce weekday names** — the order is
   what carries meaning and a named day drifts the moment the week moves.
+  - **The playbook deliberately proposes only the first TWO, both as half
+    days** (2026-08-07). That is not drift: the transfer-day team session still
+    happens, it is simply not something Dennis needs to book now, and the
+    playbook is a preliminary document rather than the full plan. Nazar's
+    session was also cut from a full day to a half. Don't "reconcile" the two
+    files by adding the third meeting back to the playbook.
 - **Ladder, ordered by irreversibility**: internal ops → supplier email +
   phone → first real invoice → e-conomic. e-conomic is deliberately LAST.
 - **Migrate almost nothing**: customers + bikes in the field only. Opening stock
@@ -167,9 +182,10 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
   whether that should warn is an owner question, not a bug.
 
 ## Next actions, in order
-1. **Send Dennis the two documents** — `PLAYBOOK-AUGUST.md` and
-   `CUTOVER-BRIEF.md`. Both are current, consistent and free of dates that can
-   go stale. Nothing is blocking this.
+1. **Send Dennis the playbook** — `PLAYBOOK-AUGUST.md` only (PDF alongside the
+   markdown). `CUTOVER-BRIEF.md` is NOT sent. Nothing is blocking this, and the
+   window is already open — the playbook describes the stretch before the week
+   of 17 Aug.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
    conversation with four questions — **including what number the invoice series
    should start at, since `INV-2026-0001` is already spent on a test**;
