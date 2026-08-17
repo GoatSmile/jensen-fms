@@ -82,6 +82,28 @@ kroner — and freezes that rate onto the purchase so history stays truthful.
 
 **OpenStreetMap** turns customer addresses into map pins.
 
+### If one of these ever has to change
+
+Each of those is behind a plug rather than welded in, and that is not a promise —
+it is already true in one case: there is a **second transcription service
+built and ready to use** alongside the one running today, because I did not want
+that box to have a single supplier.
+
+The one worth knowing about concerns Europe. **Claude, in the United States, is
+the only piece of this anywhere outside the EU**, and only the typed-out text
+reaches it — never the recording, never your database. If that ever became a
+problem — a hospital or municipal tender with data-residency conditions, or your
+own advisers asking the question — there is a French service that does the same
+job, and moving to it would make the entire chain European.
+
+I am not proposing that. Today's arrangement is lawful and normal, and the
+French option is not as good at the job. It is worth knowing the door exists,
+given who your customers are.
+
+The honest version of all this: replaceable is not the same as interchangeable.
+Swapping one of these boxes is a day or two of my work, not a setting somebody
+ticks. What it does mean is that no supplier here can put a gun to your head.
+
 ### The safety net
 
 Every night a complete copy of the database and its files is pulled down

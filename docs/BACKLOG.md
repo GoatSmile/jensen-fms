@@ -76,6 +76,68 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 - Dashboard service-order aging card + the service-order detail page don't
   filter by service type — fix when service type #2 becomes real.
 
+## Providers & channels (the swappable seams)
+
+What each capability runs on today, the realistic alternative, and why it is
+parked. **Doctrine reminder (CLAUDE.md):** a new provider is an adapter behind
+the stable interface plus a registry entry — never a config-only switch, and
+never an unbuilt integration you can select. Munin has already paid for some of
+this evaluation (`~/workspace/code/munin/docs/BACKLOG.md` → *Channels &
+capabilities*); borrow it rather than re-running it, but note that Munin's live
+`<Gather>` conversation constraints are NOT ours.
+
+- **Transcription** — built: `gladia` (EU-native, the default) and `azure`
+  (built, needs a region, and the only one supporting dual-channel, which is how
+  bridged calls get deterministic speaker attribution). Two parked options:
+  - **xAI STT** — assessed by Munin 2026-07-30: a ~90-line adapter, one REST
+    POST to `api.x.ai/v1/stt`, same signed-URL input, $0.10/hr, Danish native,
+    diarization included. The reason it is interesting *for us* is **keyterm
+    biasing, up to 100 terms** — a direct shot at the failure that costs us
+    most: mangled part names, frame numbers, customer names and Danish
+    toponyms. We could feed `parts.name_en`, `bike_families`, colour names and
+    `organizations.legal_name`. Parked on Munin's ground: xAI's EU residency
+    and zero-retention terms are an enterprise-tier conversation, so vet the
+    DPA before sending customer call audio anywhere near it.
+  - **ElevenLabs Scribe v2 / AssemblyAI Universal-3** — Munin defers both
+    because *streaming* needs a Twilio Media Streams bridge they would have to
+    own. **That constraint is not ours**: our path is record-then-transcribe, so
+    a batch REST endpoint is sufficient. If Gladia's Danish accuracy on real
+    workshop calls disappoints, these are reachable for us far more cheaply than
+    for Munin. Do not build until Gladia is measured and found wanting on real
+    traffic — which cannot happen until a Danish number is connected.
+- **Extraction (text → who / what / intent)** — built: `anthropic` only.
+  **Mistral is the option worth knowing about**, and not for accuracy: Claude is
+  currently the ONLY hop outside the EU anywhere in the system (audio stays in
+  Europe; only the transcript leaves). An EU-resident model would make the whole
+  pipeline end-to-end European. Jensen's customer segments are hospitals and
+  municipalities, so a tender or a DPO asking this question is not hypothetical.
+  Park it as a lever we know how to pull, not as work to do now.
+- **Telephony** — built: `twilio` only. Alternatives exist (Sinch, Bird,
+  46elks, Telnyx) and **none has been evaluated**. Deliberately so: the pressing
+  telephony question is not the vendor but connecting Dennis's own Danish number
+  (three options in `docs/ARCHITECTURE-OVERVIEW.md`). Only evaluate a second
+  vendor if Twilio turns out to be unable to port a Danish number on acceptable
+  terms.
+- **Geocoding — the one with a free win sitting on the floor.** Runtime
+  geocoding is Nominatim (`src/lib/geocode/nominatim.ts`; keyless, public, and
+  their policy wants a contact address in the User-Agent). But the bulk import
+  already uses **DAWA** (`scripts/geocode_dawa.py` — "free, unlimited, and
+  accurate on Danish addresses", with a postnr-centre fallback), and the runtime
+  path never got the same treatment. Promote DAWA to the runtime geocoder with
+  Nominatim kept for non-DK rows — precisely the split that script's docstring
+  already describes. Small, self-contained, and strictly better for a Danish
+  customer base.
+- **Outbound email** — Resend, EU region, `valent.dk` verified. No reason to
+  move; alternatives (Postmark, Brevo, Mailgun EU) are commodity. Revisit only
+  if the free allowance stops covering us.
+- **SMS** — GatewayAPI (Danish alphanumeric sender), still planned/partial.
+
+Explicitly NOT applicable to us from Munin's list: ElevenLabs TTS and
+ConversationRelay (Munin speaks back; we record and draft), per-member Google
+OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
+*customer* channel, and Munin's research already concluded there is no ToS-safe
+path to a personal inbox, so it would have to be a Jensen-owned sender.
+
 ## Parked product ideas
 - **Sales track: website bike-configurator + AI lead-gen agent** (parked
   2026-07-09 by the owner — "lay the bottom first"; his framing: earliest
