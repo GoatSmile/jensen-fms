@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 620" width="1060" height="620" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6b6a65"/>
+    </marker>
+    <style>
+      .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 1.4px; fill: #6b6a65; }
+      .opt     { font-size: 14.5px; font-weight: 700; fill: #1c1c1a; }
+      .title   { font-size: 15px; font-weight: 600; fill: #1c1c1a; }
+      .sub     { font-size: 12.5px; fill: #5f5e59; }
+      .alab    { font-size: 11.5px; fill: #6b6a65; }
+      .pill    { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+      .foot    { font-size: 12.5px; fill: #5f5e59; }
+    </style>
+  </defs>
+
+  <rect width="1060" height="620" fill="#fbfbf9"/>
+  <text class="eyebrow" x="40" y="30">THREE WAYS TO CONNECT JENSEN'S OWN DANISH NUMBER</text>
+
+  <!-- ===== OPTION 1 ===== -->
+  <text class="opt" x="40" y="66">Option 1 — divert only the calls nobody answers</text>
+  <rect x="392" y="53" width="152" height="18" rx="9" fill="#10725a"/>
+  <text class="pill" x="468" y="66" text-anchor="middle" fill="#ffffff">REVERSIBLE IN A MINUTE</text>
+  <text class="sub" x="560" y="66">Start here. Nothing about how you answer the phone today changes.</text>
+
+  <rect x="40" y="80" width="250" height="84" rx="14" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="165" y="108" text-anchor="middle">Your Danish number</text>
+  <text class="sub" x="165" y="127" text-anchor="middle">stays exactly where it is,</text>
+  <text class="sub" x="165" y="145" text-anchor="middle">with your current provider</text>
+
+  <line x1="298" y1="122" x2="348" y2="122" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="alab" x="323" y="108" text-anchor="middle">no answer</text>
+
+  <rect x="356" y="80" width="210" height="84" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="461" y="115" text-anchor="middle">A Twilio number</text>
+  <text class="sub" x="461" y="134" text-anchor="middle">new, cheap, never dialled</text>
+
+  <line x1="574" y1="122" x2="616" y2="122" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="624" y="80" width="396" height="84" rx="14" fill="#eaf0fd" stroke="#2e5fd1" stroke-width="1.5"/>
+  <text class="title" x="822" y="108" text-anchor="middle">The app takes the message</text>
+  <text class="sub" x="822" y="127" text-anchor="middle">records it, writes it down, works out the customer</text>
+  <text class="sub" x="822" y="145" text-anchor="middle">and the bike, and leaves a draft ticket in Inbox</text>
+
+  <!-- ===== OPTION 2 ===== -->
+  <text class="opt" x="40" y="208">Option 2 — move the number to Twilio</text>
+  <rect x="336" y="195" width="128" height="18" rx="9" fill="#8a6423"/>
+  <text class="pill" x="400" y="208" text-anchor="middle" fill="#ffffff">TAKES A FEW WEEKS</text>
+  <text class="sub" x="480" y="208">The end state, once you trust it. Every call captured, one number, nothing to remember.</text>
+
+  <rect x="40" y="222" width="250" height="84" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="165" y="250" text-anchor="middle">Your Danish number</text>
+  <text class="sub" x="165" y="269" text-anchor="middle">carried by Twilio instead —</text>
+  <text class="sub" x="165" y="287" text-anchor="middle">same number, new plumbing</text>
+
+  <line x1="298" y1="264" x2="348" y2="264" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="alab" x="323" y="250" text-anchor="middle">all calls</text>
+
+  <rect x="356" y="222" width="210" height="84" rx="14" fill="#eaf0fd" stroke="#2e5fd1" stroke-width="1.5"/>
+  <text class="title" x="461" y="257" text-anchor="middle">The app answers first</text>
+  <text class="sub" x="461" y="276" text-anchor="middle">plays the recorded notice</text>
+
+  <line x1="574" y1="264" x2="616" y2="264" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="624" y="222" width="396" height="84" rx="14" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="822" y="250" text-anchor="middle">Then rings whoever should pick up</text>
+  <text class="sub" x="822" y="269" text-anchor="middle">an ordinary conversation — and if nobody answers in</text>
+  <text class="sub" x="822" y="287" text-anchor="middle">twenty seconds, voicemail. Either way, a draft ticket.</text>
+
+  <!-- ===== OPTION 3 ===== -->
+  <text class="opt" x="40" y="350">Option 3 — plug into the phone system you already have</text>
+  <rect x="446" y="337" width="168" height="18" rx="9" fill="#7a3a96"/>
+  <text class="pill" x="530" y="350" text-anchor="middle" fill="#ffffff">DEPENDS ON YOUR SETUP</text>
+  <text class="sub" x="630" y="350">Only if there is a VoIP system with desk phones and internal routing.</text>
+
+  <rect x="40" y="364" width="250" height="84" rx="14" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="165" y="392" text-anchor="middle">Your phone system</text>
+  <text class="sub" x="165" y="411" text-anchor="middle">desk phones, extensions and</text>
+  <text class="sub" x="165" y="429" text-anchor="middle">routing all stay as they are</text>
+
+  <line x1="298" y1="406" x2="348" y2="406" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+  <text class="alab" x="323" y="392" text-anchor="middle">a link</text>
+
+  <rect x="356" y="364" width="210" height="84" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="461" y="399" text-anchor="middle">Twilio joins the two</text>
+  <text class="sub" x="461" y="418" text-anchor="middle">no new public number</text>
+
+  <line x1="574" y1="406" x2="616" y2="406" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="624" y="364" width="396" height="84" rx="14" fill="#eaf0fd" stroke="#2e5fd1" stroke-width="1.5"/>
+  <text class="title" x="822" y="392" text-anchor="middle">The app listens in and drafts tickets</text>
+  <text class="sub" x="822" y="411" text-anchor="middle">without changing the number your customers dial</text>
+  <text class="sub" x="822" y="429" text-anchor="middle">or the handsets on the desks</text>
+
+  <!-- ===== FOOTER ===== -->
+  <rect x="40" y="482" width="980" height="104" rx="14" fill="#faf2e4" stroke="#8a6423" stroke-width="1.5"/>
+  <text class="opt" x="60" y="510">Three things only you can tell me, and then I can price and plan any of them</text>
+  <text class="foot" x="60" y="533">1 · Who carries the number today, and is it a landline or a mobile?</text>
+  <text class="foot" x="60" y="553">2 · Is there a phone system with desk phones, or does the number simply ring a handset?</text>
+  <text class="foot" x="60" y="573">3 · Every call captured, or only the ones nobody answers?</text>
+</svg>

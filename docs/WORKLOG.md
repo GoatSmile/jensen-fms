@@ -70,8 +70,16 @@ treat the early totals as floors, not truth.
 | Wed 2026-07-29 (cont. 2) | ~3 | **Preflight harness before Dennis** — 103-route smoke sweep + 16-check invariant audit, then the write flows walked through the real UI. Found CLAUDE.md's landed-cost formula missing anti-dumping, and four e-conomic trial stamps the landmine claimed didn't exist |
 | Wed 2026-07-29 (cont. 3) | ~3 | **Handover docs reframed + Danish verified.** Playbook rewritten around Dennis learning the app rather than data entry; brief re-ordered to match and four stale facts fixed incl. a weekday that wasn't. Locale switch flipped to `da` and back — 103 routes, zero missing keys |
 
-**July so far: ~156 h** (20 working days)
+**July total: ~156 h** (20 working days)
+
+## August 2026
+
+| Date | Hours | Work |
+|---|---|---|
+| Mon 2026-08-17 | ~3 | **Prep for the Wednesday review with Dennis** — playbook + STATUS checked against reality and the 7 Aug rewrite finally committed; meeting agenda drafted; plain-language architecture + hosting-cost overview written for the meeting |
+
+**August so far: ~3 h** (1 working day)
 
 ---
 
-**Project total: ~239.5 h across 36 working days (2026-05-07 → 2026-07-29)**
+**Project total: ~242.5 h across 37 working days (2026-05-07 → 2026-08-17)**

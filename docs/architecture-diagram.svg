@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 940" width="1060" height="940" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6b6a65"/>
+    </marker>
+    <marker id="arrowBrand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2e5fd1"/>
+    </marker>
+    <style>
+      .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: 1.4px; fill: #6b6a65; }
+      .grp     { font-size: 13px; font-weight: 600; fill: #5f5e59; }
+      .title   { font-size: 15.5px; font-weight: 600; fill: #1c1c1a; }
+      .titleOn { font-size: 17px; font-weight: 700; fill: #ffffff; }
+      .sub     { font-size: 12.5px; fill: #5f5e59; }
+      .subOn   { font-size: 12.5px; fill: #e6ecfb; }
+      .note    { font-size: 12.5px; fill: #6b6a65; }
+      .alab    { font-size: 11.5px; fill: #6b6a65; }
+      .pill    { font-size: 10px; font-weight: 700; letter-spacing: 0.6px; }
+      .band    { fill: none; stroke: #e9e9e4; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect width="1060" height="940" fill="#fbfbf9"/>
+
+  <!-- ============ BAND A — building and deploying ============ -->
+  <text class="eyebrow" x="40" y="32">HOW A CHANGE REACHES YOU</text>
+
+  <rect x="40" y="46" width="200" height="66" rx="14" fill="#f4ecf8" stroke="#7a3a96" stroke-width="1.5"/>
+  <text class="title" x="140" y="76" text-anchor="middle">Nazar's Mac</text>
+  <text class="sub" x="140" y="95" text-anchor="middle">where the code is written</text>
+
+  <line x1="248" y1="79" x2="308" y2="79" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="316" y="46" width="200" height="66" rx="14" fill="#f4ecf8" stroke="#7a3a96" stroke-width="1.5"/>
+  <text class="title" x="416" y="76" text-anchor="middle">GitHub</text>
+  <text class="sub" x="416" y="95" text-anchor="middle">private archive of the code</text>
+
+  <line x1="524" y1="79" x2="584" y2="79" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="592" y="46" width="220" height="66" rx="14" fill="#f4ecf8" stroke="#7a3a96" stroke-width="1.5"/>
+  <text class="title" x="702" y="76" text-anchor="middle">Vercel</text>
+  <text class="sub" x="702" y="95" text-anchor="middle">builds it and runs it</text>
+
+  <text class="note" x="836" y="74">Every change is live about</text>
+  <text class="note" x="836" y="91">two minutes after it is saved.</text>
+
+  <line class="band" x1="40" y1="140" x2="1020" y2="140"/>
+
+  <!-- ============ BAND B — using it ============ -->
+  <text class="eyebrow" x="40" y="170">WHO USES IT, AND WHERE EVERYTHING IS KEPT</text>
+
+  <rect x="40" y="190" width="192" height="56" rx="12" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="136" y="214" text-anchor="middle">The office</text>
+  <text class="sub" x="136" y="232" text-anchor="middle">you, in a browser</text>
+
+  <rect x="40" y="256" width="192" height="56" rx="12" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="136" y="280" text-anchor="middle">The workshop</text>
+  <text class="sub" x="136" y="298" text-anchor="middle">mechanics, on phones</text>
+
+  <rect x="40" y="322" width="192" height="56" rx="12" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="136" y="346" text-anchor="middle">Your customers</text>
+  <text class="sub" x="136" y="364" text-anchor="middle">QR sticker on a bike</text>
+
+  <path d="M 232 218 L 262 218" stroke="#2e5fd1" stroke-width="1.5" fill="none"/>
+  <path d="M 232 284 L 262 284" stroke="#2e5fd1" stroke-width="1.5" fill="none"/>
+  <path d="M 232 350 L 262 350" stroke="#2e5fd1" stroke-width="1.5" fill="none"/>
+  <path d="M 262 218 L 262 350" stroke="#2e5fd1" stroke-width="1.5" fill="none"/>
+  <path d="M 262 254 L 284 254" stroke="#2e5fd1" stroke-width="1.5" fill="none" marker-end="url(#arrowBrand)"/>
+
+  <rect x="290" y="196" width="300" height="116" rx="16" fill="#2e5fd1"/>
+  <text class="titleOn" x="440" y="238" text-anchor="middle">The Jensen app</text>
+  <text class="subOn" x="440" y="260" text-anchor="middle">one web address, any device</text>
+  <text class="subOn" x="440" y="279" text-anchor="middle">nothing to install, nothing to update</text>
+
+  <line x1="440" y1="312" x2="440" y2="352" stroke="#10725a" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+
+  <rect x="290" y="356" width="300" height="86" rx="14" fill="#e6f4f0" stroke="#10725a" stroke-width="1.5"/>
+  <text class="title" x="440" y="384" text-anchor="middle">Supabase — the database</text>
+  <text class="sub" x="440" y="403" text-anchor="middle">and every photo and recording</text>
+  <rect x="392" y="412" width="96" height="19" rx="9.5" fill="#10725a"/>
+  <text class="pill" x="440" y="425.5" text-anchor="middle" fill="#ffffff">EU · IRELAND</text>
+
+  <line x1="598" y1="399" x2="638" y2="399" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="646" y="356" width="374" height="86" rx="14" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="sub" x="666" y="382">Bikes · parts · stock · customers · orders</text>
+  <text class="sub" x="666" y="402">invoices · repair history · bike photos</text>
+  <text class="sub" x="666" y="422">call recordings and transcripts</text>
+
+  <text class="note" x="646" y="224">The app holds no data of its own. It reads</text>
+  <text class="note" x="646" y="242">and writes everything to the database, so</text>
+  <text class="note" x="646" y="260">two people always see the same figures —</text>
+  <text class="note" x="646" y="278">and a copy of the database is a copy of</text>
+  <text class="note" x="646" y="296">the whole business.</text>
+
+  <line class="band" x1="40" y1="470" x2="1020" y2="470"/>
+
+  <!-- ============ BAND C — outside services ============ -->
+  <text class="eyebrow" x="40" y="500">WHAT THE APP TALKS TO ON YOUR BEHALF</text>
+
+  <rect x="40" y="514" width="980" height="34" rx="10" fill="#eaf0fd" stroke="#2e5fd1" stroke-width="1.2"/>
+  <text class="grp" x="60" y="536" fill="#2e5fd1">All of this leaves from Vercel — never from anyone's computer, so it keeps working when every laptop is shut.</text>
+
+  <text class="grp" x="40" y="580">Turning phone calls into repair tickets</text>
+
+  <rect x="40" y="592" width="210" height="72" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="145" y="620" text-anchor="middle">Twilio</text>
+  <text class="sub" x="145" y="638" text-anchor="middle">answers and records</text>
+  <text class="sub" x="145" y="655" text-anchor="middle">the phone call</text>
+
+  <line x1="258" y1="628" x2="288" y2="628" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="296" y="592" width="210" height="72" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="401" y="620" text-anchor="middle">Gladia</text>
+  <text class="sub" x="401" y="638" text-anchor="middle">writes down what</text>
+  <text class="sub" x="401" y="655" text-anchor="middle">was said</text>
+  <rect x="459" y="598" width="40" height="18" rx="9" fill="#af5029"/>
+  <text class="pill" x="479" y="611" text-anchor="middle" fill="#ffffff">EU</text>
+
+  <line x1="514" y1="628" x2="544" y2="628" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="552" y="592" width="210" height="72" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="657" y="620" text-anchor="middle">Claude</text>
+  <text class="sub" x="657" y="638" text-anchor="middle">works out the customer,</text>
+  <text class="sub" x="657" y="655" text-anchor="middle">the bike and the problem</text>
+  <rect x="708" y="598" width="46" height="18" rx="9" fill="#af5029"/>
+  <text class="pill" x="731" y="611" text-anchor="middle" fill="#ffffff">USA</text>
+
+  <text class="note" x="790" y="612">The recording stays in Europe.</text>
+  <text class="note" x="790" y="630">Only the typed-out text is sent</text>
+  <text class="note" x="790" y="648">to Claude to be understood.</text>
+
+  <text class="grp" x="40" y="700">Everything else it reaches out to</text>
+
+  <rect x="40" y="712" width="230" height="76" rx="14" fill="#fceee8" stroke="#af5029" stroke-width="1.5"/>
+  <text class="title" x="155" y="740" text-anchor="middle">Resend</text>
+  <text class="sub" x="155" y="758" text-anchor="middle">sends purchase orders</text>
+  <text class="sub" x="155" y="775" text-anchor="middle">to your suppliers</text>
+
+  <rect x="290" y="712" width="230" height="76" rx="14" fill="#faf2e4" stroke="#8a6423" stroke-width="1.5"/>
+  <text class="title" x="405" y="740" text-anchor="middle">e-conomic</text>
+  <text class="sub" x="405" y="758" text-anchor="middle">your invoices, pushed</text>
+  <text class="sub" x="405" y="775" text-anchor="middle">into the accounts</text>
+
+  <rect x="540" y="712" width="230" height="76" rx="14" fill="#faf2e4" stroke="#8a6423" stroke-width="1.5"/>
+  <text class="title" x="655" y="740" text-anchor="middle">European Central Bank</text>
+  <text class="sub" x="655" y="758" text-anchor="middle">yesterday's currency rates,</text>
+  <text class="sub" x="655" y="775" text-anchor="middle">for what parts really cost</text>
+
+  <rect x="790" y="712" width="230" height="76" rx="14" fill="#ffffff" stroke="#dcdcd5" stroke-width="1.5"/>
+  <text class="title" x="905" y="740" text-anchor="middle">OpenStreetMap</text>
+  <text class="sub" x="905" y="758" text-anchor="middle">puts your customers</text>
+  <text class="sub" x="905" y="775" text-anchor="middle">on the map</text>
+
+  <line class="band" x1="40" y1="816" x2="1020" y2="816"/>
+
+  <!-- ============ BAND D — backups ============ -->
+  <text class="eyebrow" x="40" y="846">THE SAFETY NET</text>
+
+  <rect x="40" y="860" width="212" height="62" rx="14" fill="#e6f4f0" stroke="#10725a" stroke-width="1.5"/>
+  <text class="title" x="146" y="886" text-anchor="middle">The live database</text>
+  <text class="sub" x="146" y="904" text-anchor="middle">running in Ireland</text>
+
+  <line x1="260" y1="891" x2="292" y2="891" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="alab" x="276" y="876" text-anchor="middle">nightly</text>
+
+  <rect x="300" y="860" width="212" height="62" rx="14" fill="#e6f4f0" stroke="#10725a" stroke-width="1.5"/>
+  <text class="title" x="406" y="886" text-anchor="middle">Copy on Nazar's Mac</text>
+  <text class="sub" x="406" y="904" text-anchor="middle">automatic, every night</text>
+
+  <line x1="520" y1="891" x2="552" y2="891" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text class="alab" x="536" y="876" text-anchor="middle">monthly</text>
+
+  <rect x="560" y="860" width="212" height="62" rx="14" fill="#e6f4f0" stroke="#10725a" stroke-width="1.5"/>
+  <text class="title" x="666" y="886" text-anchor="middle">One encrypted file</text>
+  <text class="sub" x="666" y="904" text-anchor="middle">password only you hold</text>
+
+  <line x1="780" y1="891" x2="812" y2="891" stroke="#6b6a65" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="820" y="860" width="200" height="62" rx="14" fill="#ffffff" stroke="#10725a" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text class="title" x="920" y="886" text-anchor="middle">A server at Jensen</text>
+  <text class="sub" x="920" y="904" text-anchor="middle">still to be agreed</text>
+</svg>
