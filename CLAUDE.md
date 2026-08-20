@@ -625,7 +625,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   the field looks broken. Same shape for `change`: set the value through the
   prototype's setter, then dispatch `input`.
 - **Driving this app from a browser tool: click by `read_page` ref, and judge a
-  `Select` by its trigger text.** Four traps, all hit on 2026-07-29:
+  `Select` by its trigger text.** Traps hit on 2026-07-29 and 2026-08-20:
   - **A screenshot taken right after navigation shows PRE-HYDRATION state.** Radix
     renders a `Select` trigger empty server-side and fills the label on mount, so
     a required field looks like an empty chevron pill and a prefilled one looks
@@ -633,9 +633,26 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - **Never read `select.value`** — Radix's hidden native `<select>` carries zero
     options and reports `""` whatever is chosen. Read the trigger's `textContent`.
   - **A synthetic `.click()` does not reliably fire server-action buttons**; a real
-    mouse click does. Coordinate maths is worse — the screenshot canvas is offset
-    when the page is scrolled, and the viewport can silently drop to mobile width
-    mid-session. `read_page` refs worked first time, every time.
+    mouse click does.
+  - **A `ref` click is not always a real click — verify the WRITE, not the tool's
+    "clicked" reply.** Refs worked every time on 2026-07-29; on 2026-08-20 a
+    ref click on a submit button reported success and did nothing, four times
+    over, because the screenshot frame and the viewport were at wildly different
+    scales (an 800×937 canvas for a 1280×1500 viewport, page content in its
+    top-left corner) — so the click landed in empty space. The fix is to take a
+    screenshot and click where the button appears IN THAT IMAGE. Diagnose it by
+    attaching capture listeners for `click` and `submit` and reading them back:
+    empty means the event never arrived, and no amount of re-clicking the ref
+    will change that. Do not conclude from a silent failure that the pane is
+    hidden — `document.visibilityState` says so directly, and it was `visible`
+    for three of those four attempts.
+  - **`read_page`'s tree is viewport-bounded**, so a save bar below the fold has
+    no ref at all. Grow the viewport (`resize_window` to ~1500 tall) instead of
+    scrolling — scrolling moved the tree's contents but also hung the pane twice.
+  - **`form_input` fills the DOM but not React's state** on a date input: the
+    value shows, the form still reads clean, and a submit writes the OLD value.
+    Use the prototype-setter + `input` dispatch already documented above, then
+    confirm the form went dirty before submitting.
   - **`input[type=text]` matches the ATTRIBUTE**, so it misses every input that
     relies on the default type. Filter on `el.type`, or select by placeholder.
 - **A hand-rolled surface does not always have a rounded corner.** When sweeping
