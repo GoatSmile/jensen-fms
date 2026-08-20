@@ -40,7 +40,7 @@ export default async function AdminPeoplePage() {
   const [peopleRes, rolesRes, personRolesRes, capsRes] = await Promise.all([
     supabase
       .from("people")
-      .select("id, full_name, engagement, email, phone, is_active")
+      .select("id, full_name, email, phone, is_active")
       .order("is_active", { ascending: false })
       .order("full_name", { ascending: true }),
     supabase
@@ -140,9 +140,6 @@ export default async function AdminPeoplePage() {
               <TableRow>
                 <TableHead>{t("colName")}</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  {t("colEngagement")}
-                </TableHead>
-                <TableHead className="hidden lg:table-cell">
                   {t("colRoles")}
                 </TableHead>
                 <TableHead>{t("colStatus")}</TableHead>
@@ -162,12 +159,7 @@ export default async function AdminPeoplePage() {
                         {row.full_name}
                       </Link>
                     </TableCell>
-                    <TableCell className="hidden p-0 md:table-cell">
-                      <Link href={href} className="block px-4 py-2.5">
-                        {t(`engagement_${row.engagement}`)}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden p-0 lg:table-cell">
+                    <TableCell className="text-muted-foreground hidden p-0 md:table-cell">
                       <Link href={href} className="block px-4 py-2.5">
                         {(rolesByPerson.get(row.id) ?? []).join(" · ") || "—"}
                       </Link>

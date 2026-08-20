@@ -77,9 +77,10 @@ treat the early totals as floors, not truth.
 | Date | Hours | Work |
 |---|---|---|
 | Mon 2026-08-17 | ~3 | **Prep for the Wednesday review with Dennis** — playbook + STATUS checked against reality and the 7 Aug rewrite finally committed; meeting agenda drafted; plain-language architecture + hosting-cost overview written for the meeting |
+| Thu 2026-08-20 | ~1 | **Post-review session opens** — oriented from STATUS + the Aug 19 meeting plan, checked prod state (Dennis's usage since 7 Aug, the switches, the debts). Fixes and QA push from Dennis's feedback start here. |
 
-**August so far: ~3 h** (1 working day)
+**August so far: ~4 h** (2 working days)
 
 ---
 
-**Project total: ~242.5 h across 37 working days (2026-05-07 → 2026-08-17)**
+**Project total: ~243.5 h across 38 working days (2026-05-07 → 2026-08-20)**

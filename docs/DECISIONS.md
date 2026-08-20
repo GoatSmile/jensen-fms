@@ -1541,3 +1541,38 @@ every step already green and burned 46 minutes against the 360-minute default
 before GitHub emailed a failure for work that had passed. It prevents nothing —
 runner loss is not preventable from a workflow file — it just stops a flake
 costing 46 minutes, and makes a genuine hang announce itself.
+
+## 2026-08-20 — engagement is HR metadata, not a second permission system
+
+The owner asked why `people.engagement` and roles both exist, and whether one
+could go. They are independent axes and merging them is the trap: an external
+accountant needs the Accountant role, a summer temp holds the same Workshop role
+a permanent mechanic holds. Collapse them and you either lose the
+internal/external fact or you get a 4×5 cross-product of roles
+(`Workshop-temp`, `Workshop-employee`…) whose capability lists have to be kept
+in sync by hand. Migration 73's header already names the four concepts as never
+to be collapsed; this is the same argument arriving from the other direction.
+
+**What was true and worth admitting:** engagement earns almost nothing *today*.
+It appears in three display sites and no logic — it gates nothing, routes
+nothing, notifies nobody. The only behaviour in that cluster comes from
+`engaged_until` (past-dated people drop out of assignee pickers), not from the
+enum. Its real justification is ahead of it: **at M1 engagement decides who gets
+a login at all**, when role passwords die and `people.user_id` bridges to
+`auth.users`. Secondary: contractors probably should not receive internal
+notification mail.
+
+**Decided: keep both, and do not let engagement acquire behaviour.** The moment
+it gates anything there are two competing permission systems. Roles hold
+capabilities; engagement stays descriptive.
+
+**Engagement leaves the people LIST.** Once Dennis was given the Owner role the
+table read `Dennis Jensen · Owner · Owner` — the same word in two columns
+meaning two different things, which is what prompted the question and would have
+prompted his. It now lives only on the person detail page, beside the
+`engaged_from` / `engaged_until` dates it actually works with, and Roles takes
+the column it vacated (`md` instead of `lg`). Rejected: renaming the heading to
+"Employment" — the collision is between the *values* (`owner` engagement vs the
+Owner role), so a new heading would not have removed it. The orphaned
+`colEngagement` key came out of both dictionaries in the same commit; they stay
+key-identical.
