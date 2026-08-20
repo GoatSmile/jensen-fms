@@ -2804,7 +2804,6 @@ export type Database = {
           email: string | null
           engaged_from: string | null
           engaged_until: string | null
-          engagement: string
           full_name: string
           id: string
           is_active: boolean
@@ -2821,7 +2820,6 @@ export type Database = {
           email?: string | null
           engaged_from?: string | null
           engaged_until?: string | null
-          engagement?: string
           full_name: string
           id?: string
           is_active?: boolean
@@ -2838,7 +2836,6 @@ export type Database = {
           email?: string | null
           engaged_from?: string | null
           engaged_until?: string | null
-          engagement?: string
           full_name?: string
           id?: string
           is_active?: boolean
