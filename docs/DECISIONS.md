@@ -1576,3 +1576,37 @@ the column it vacated (`md` instead of `lg`). Rejected: renaming the heading to
 Owner role), so a new heading would not have removed it. The orphaned
 `colEngagement` key came out of both dictionaries in the same commit; they stay
 key-identical.
+
+## 2026-08-20 (later) — engagement dropped; the earlier entry's reason did not hold
+
+**Supersedes the 2026-08-20 entry above.** That entry kept `people.engagement`
+on one argument: at M1 it would decide who gets a login. Checked against the
+table it describes, that argument fails — the only `contractor` on it is the
+person who most needs a login, and an external accountant or a summer temp would
+need one too. Engagement never predicted login eligibility. The rest of that
+entry stands: engagement and roles are independent axes and merging them into
+role names would have produced a 4×5 cross-product. The enum simply wasn't
+carrying either job.
+
+Migration 79 drops the column. What answers each question now: **is this person
+here?** `is_active` + `engaged_until` · **what can they do?** their roles ·
+**who are they to us?** their role plus `people.notes`.
+
+**The date columns stay; their labels become "Start date" / "End date"**
+(owner's call). "Engaged from/until" was vocabulary borrowed from the removed
+concept, and leaving it would have been exactly the copy-outliving-behaviour
+drift this project keeps finding. Message keys renamed with the labels
+(`fieldStartDate` / `fieldEndDate` / `endDateHint`) rather than left pointing at
+dead vocabulary.
+
+**`engaged_from` is deliberately inert and stays that way.** Nothing reads it —
+the one row that has a value is dated six weeks in the FUTURE while that person
+is active and pickable today. It is a record, not a gate; only `engaged_until`
+filters (`src/lib/people/queries.ts`). Do not "fix" it into a gate without
+deciding that on purpose.
+
+**Sequencing note for any future column drop against this project:** code first,
+pushed and deployed, THEN the DDL. There is one Supabase project and no staging
+copy, so a column dropped while the deployed bundle still selects it breaks that
+page for real. Here the exposure was one SSO-gated admin page for the length of a
+Vercel deploy.

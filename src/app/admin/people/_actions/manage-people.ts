@@ -8,14 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PersonResult = { ok: true } | { ok: false; error: string };
 
-const ENGAGEMENTS = ["owner", "employee", "temp", "contractor"] as const;
-
 type ParsedPerson = {
   full_name: string;
   email: string | null;
   phone: string | null;
   preferred_language: string;
-  engagement: (typeof ENGAGEMENTS)[number];
   engaged_from: string | null;
   engaged_until: string | null;
   notify_email: boolean;
@@ -34,13 +31,6 @@ function parseFormData(
   if (!full_name) return { ok: false, error: t("nameRequired") };
 
   const language = nullable(formData.get("preferred_language")) ?? "da";
-  const engagementRaw = nullable(formData.get("engagement")) ?? "employee";
-  const engagement = ENGAGEMENTS.includes(
-    engagementRaw as (typeof ENGAGEMENTS)[number],
-  )
-    ? (engagementRaw as (typeof ENGAGEMENTS)[number])
-    : "employee";
-
   return {
     ok: true,
     values: {
@@ -48,7 +38,6 @@ function parseFormData(
       email: nullable(formData.get("email"))?.trim() || null,
       phone: nullable(formData.get("phone"))?.trim() || null,
       preferred_language: language === "en" ? "en" : "da",
-      engagement,
       engaged_from: nullable(formData.get("engaged_from")) || null,
       engaged_until: nullable(formData.get("engaged_until")) || null,
       notify_email: formData.get("notify_email") === "on",

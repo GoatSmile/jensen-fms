@@ -24,7 +24,6 @@ export type PersonFormValues = {
   email: string;
   phone: string;
   preferred_language: "da" | "en";
-  engagement: "owner" | "employee" | "temp" | "contractor";
   engaged_from: string;
   engaged_until: string;
   notify_email: boolean;
@@ -39,7 +38,6 @@ const EMPTY_PERSON_FORM: PersonFormValues = {
   email: "",
   phone: "",
   preferred_language: "da",
-  engagement: "employee",
   engaged_from: "",
   engaged_until: "",
   notify_email: true,
@@ -48,8 +46,6 @@ const EMPTY_PERSON_FORM: PersonFormValues = {
   is_active: true,
   role_ids: [],
 };
-
-const ENGAGEMENTS = ["owner", "employee", "temp", "contractor"] as const;
 
 type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
@@ -102,7 +98,6 @@ export function PersonForm({
     appendField(fd, "email", values.email.trim());
     appendField(fd, "phone", values.phone.trim());
     appendField(fd, "preferred_language", values.preferred_language);
-    appendField(fd, "engagement", values.engagement);
     appendField(fd, "engaged_from", values.engaged_from);
     appendField(fd, "engaged_until", values.engaged_until);
     if (values.notify_email) fd.set("notify_email", "on");
@@ -169,25 +164,6 @@ export function PersonForm({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label={t("fieldEngagement")} htmlFor="person-engagement">
-          <Select
-            value={values.engagement}
-            onValueChange={(v) =>
-              update("engagement", v as PersonFormValues["engagement"])
-            }
-          >
-            <SelectTrigger id="person-engagement">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ENGAGEMENTS.map((e) => (
-                <SelectItem key={e} value={e}>
-                  {t(`engagement_${e}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
         <Field label={t("fieldLanguage")} htmlFor="person-language">
           <Select
             value={values.preferred_language}
@@ -207,7 +183,7 @@ export function PersonForm({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label={t("fieldEngagedFrom")} htmlFor="person-from">
+        <Field label={t("fieldStartDate")} htmlFor="person-from">
           <Input
             id="person-from"
             type="date"
@@ -215,7 +191,7 @@ export function PersonForm({
             onChange={(e) => update("engaged_from", e.target.value)}
           />
         </Field>
-        <Field label={t("fieldEngagedUntil")} htmlFor="person-until">
+        <Field label={t("fieldEndDate")} htmlFor="person-until">
           <Input
             id="person-until"
             type="date"
@@ -223,7 +199,7 @@ export function PersonForm({
             onChange={(e) => update("engaged_until", e.target.value)}
           />
           <p className="text-muted-foreground text-xs">
-            {t("engagedUntilHint")}
+            {t("endDateHint")}
           </p>
         </Field>
       </div>

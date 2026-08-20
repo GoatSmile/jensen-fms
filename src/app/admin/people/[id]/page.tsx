@@ -31,7 +31,7 @@ export default async function EditPersonPage({
     supabase
       .from("people")
       .select(
-        "id, full_name, email, phone, preferred_language, engagement, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active",
+        "id, full_name, email, phone, preferred_language, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -100,11 +100,6 @@ export default async function EditPersonPage({
           phone: person.phone ?? "",
           preferred_language:
             person.preferred_language?.trim() === "en" ? "en" : "da",
-          engagement: person.engagement as
-            | "owner"
-            | "employee"
-            | "temp"
-            | "contractor",
           engaged_from: person.engaged_from ?? "",
           engaged_until: person.engaged_until ?? "",
           notify_email: person.notify_email,

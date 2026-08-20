@@ -1,0 +1,30 @@
+-- ============================================================================
+-- 79 — Drop people.engagement: HR label with no behaviour
+-- ============================================================================
+-- DECISIONS 2026-08-20 (supersedes the earlier entry the same day). Migration
+-- 73 introduced FOUR never-collapsed concepts — person / role / credential /
+-- assignment — and that separation stands. `engagement` was none of them: a
+-- descriptive enum (owner | employee | temp | contractor) that gated nothing,
+-- routed nothing and notified nobody. It reached three display sites and no
+-- logic.
+--
+-- The reason recorded for keeping it — "at M1 engagement decides who gets a
+-- login" — did not survive checking against the data it described: the one
+-- `contractor` in the table is the person who most needs a login, and an
+-- external accountant or a summer temp needs one too. Engagement never
+-- predicted login eligibility.
+--
+-- What still answers each question after this:
+--   is this person here?     is_active + engaged_until (the only behaviour
+--                            this cluster ever had — past-dated people drop
+--                            out of assignee pickers, src/lib/people/queries.ts)
+--   what can they do?        their roles → role_capabilities
+--   who are they to us?      their role, plus people.notes
+--
+-- The date columns stay and keep their semantics; only their LABELS change
+-- ("Start date" / "End date"), because "engaged from/until" was vocabulary
+-- borrowed from the concept being removed. Note engaged_from remains
+-- deliberately inert — a record, not a gate.
+-- ============================================================================
+
+ALTER TABLE people DROP COLUMN engagement;
