@@ -16,6 +16,18 @@
 export const AUTH_COOKIE = "fms_auth";
 
 /**
+ * Who logged in on THIS browser last, so the login screen can preselect them.
+ *
+ * Deliberately a cookie and not a person preference (migration 81 moved those
+ * onto the person): this is device state, and it has to be readable when there
+ * is no session at all — that is the whole point of it. It carries a
+ * `people.id`, which the login screen already lists by name, so it discloses
+ * nothing the page doesn't. It SURVIVES sign-out; forgetting who you are is
+ * not what signing out means.
+ */
+export const LAST_PERSON_COOKIE = "fms_last_person";
+
+/**
  * Sanitise a post-login redirect target: only internal absolute paths are
  * allowed (never protocol-relative `//host` or external URLs), so the `?next=`
  * param can't be used as an open redirect.

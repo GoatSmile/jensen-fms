@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { AUTH_COOKIE, safeNextPath } from "@/lib/auth/gate";
+import { AUTH_COOKIE, LAST_PERSON_COOKIE, safeNextPath } from "@/lib/auth/gate";
 import { signSession, type AppSession } from "@/lib/auth/session";
 import { ALL_CAPABILITIES } from "@/lib/people/capabilities";
 import { verifyPassword } from "@/lib/people/password";
@@ -100,6 +100,12 @@ export async function login(
 
   const jar = await cookies();
   jar.set(AUTH_COOKIE, await signSession(session, expected), COOKIE_OPTIONS);
+  // Remember the name for next time on this device. Not httpOnly-sensitive
+  // either way, but it stays server-only for consistency with the session.
+  jar.set(LAST_PERSON_COOKIE, session.person, {
+    ...COOKIE_OPTIONS,
+    maxAge: 60 * 60 * 24 * 365,
+  });
 
   // A deep link (?next=) wins; otherwise land on the role's home page.
   // Middleware bounces uncapable targets to home, so no capability check

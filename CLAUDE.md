@@ -392,7 +392,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     server-rendered from the person — never a cookie or localStorage, which
     are per BROWSER and lie on a shared tablet. Genuinely per-DEVICE state
     (the `/scan` install hint, `collapse:*` section state) stays in
-    localStorage on purpose.
+    localStorage on purpose. Same reasoning, opposite conclusion, for the
+    login screen's preselected name: `fms_last_person` is a COOKIE
+    (`LAST_PERSON_COOKIE`), because "who used this browser last" is device
+    state and has to be readable with no session at all. It survives
+    sign-out, and the page ignores it when that person is no longer
+    offered.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:

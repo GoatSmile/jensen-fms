@@ -23,16 +23,19 @@ export type LoginOption = { id: string; full_name: string };
 export function LoginForm({
   next,
   options,
+  initialPersonId,
 }: {
   next: string;
   /** Admin first, then every person who can actually log in. */
   options: LoginOption[];
+  /** Last person to log in on this device; falls back to the first option. */
+  initialPersonId: string;
 }) {
   const t = useTranslations("auth");
   const [state, formAction, pending] = useActionState(login, INITIAL);
   // The id rides in a hidden input rather than on the Select itself —
   // Radix's hidden native select is not a reliable form value here.
-  const [personId, setPersonId] = useState(options[0]?.id ?? "");
+  const [personId, setPersonId] = useState(initialPersonId);
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
