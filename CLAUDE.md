@@ -457,7 +457,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   first, `app_settings` second (`src/i18n/request.ts`):
   `people.preferred_language` is nullable — a value wins on EVERY surface
   (migration 81; it used to override only worker surfaces), NULL means
-  "follow the app default". The fallback stays per surface:
+  "follow the app default". **On `/login` there is no session, so the
+  language comes from the remembered person** (`fms_last_person`, the same
+  cookie that preselects the name) — login-only on purpose: `/b/<id>` and
+  `/report` are CUSTOMER-facing, and a customer's language is not whoever
+  used the shop tablet last. The fallback stays per surface:
   `src/middleware.ts` stamps `x-pathname`; worker surfaces (`/work`,
   `/scan`, build workbench + batch build — see `WORKER_PATH`) take
   `worker_language`, everything else `app_language`. Messages in

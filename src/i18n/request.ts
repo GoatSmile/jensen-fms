@@ -1,7 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 
-import { AUTH_COOKIE } from "@/lib/auth/gate";
+import { AUTH_COOKIE, LAST_PERSON_COOKIE } from "@/lib/auth/gate";
 import { verifySessionToken } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -67,20 +67,44 @@ const WORKER_PATH =
  * person and travel with the login). NULL there means "follow the app
  * default", which is why the column is nullable: before that, "never
  * decided" and "chose Danish" were the same row.
+ *
+ * ON THE LOGIN SCREEN there is no session yet, so it falls back to whoever
+ * logged in on this device last (`fms_last_person`, the same cookie that
+ * preselects their name). Otherwise a Danish-speaking worker would meet an
+ * English screen and only get their own language AFTER signing in — the one
+ * screen where nobody has told us who they are is the screen where the
+ * device's own memory is all we have.
+ *
+ * Deliberately login-only: the other unauthenticated surfaces (`/b/<id>`,
+ * `/report`) are CUSTOMER-facing, and a customer's language is not whoever
+ * used the shop tablet last.
  */
 async function personLanguage(
   supabase: Awaited<ReturnType<typeof createClient>>,
+  isLoginPath: boolean,
 ): Promise<string | null> {
+  const jar = await cookies();
   const expected = process.env.SITE_PASSWORD;
-  if (!expected) return null;
-  const token = (await cookies()).get(AUTH_COOKIE)?.value;
-  if (!token || !token.startsWith("v2.")) return null;
-  const session = await verifySessionToken(token, expected);
-  if (!session?.person) return null;
+
+  let personId: string | null = null;
+  if (expected) {
+    const token = jar.get(AUTH_COOKIE)?.value;
+    if (token?.startsWith("v2.")) {
+      const session = await verifySessionToken(token, expected);
+      personId = session?.person ?? null;
+    }
+  }
+  if (!personId && isLoginPath) {
+    personId = jar.get(LAST_PERSON_COOKIE)?.value ?? null;
+  }
+  if (!personId) return null;
+
   const { data } = await supabase
     .from("people")
     .select("preferred_language")
-    .eq("id", session.person)
+    .eq("id", personId)
+    // An archived person stops speaking for the device.
+    .eq("is_active", true)
     .maybeSingle();
   const lang = data?.preferred_language?.trim();
   return lang === "da" || lang === "en" ? lang : null;
@@ -103,7 +127,8 @@ export default getRequestConfig(async () => {
     const fallback = WORKER_PATH.test(pathname)
       ? data?.worker_language
       : data?.app_language;
-    const raw = (await personLanguage(supabase)) ?? fallback;
+    const isLoginPath = pathname === "/login" || pathname.startsWith("/login/");
+    const raw = (await personLanguage(supabase, isLoginPath)) ?? fallback;
     if (isLocale(raw)) locale = raw;
   } catch {
     /* default en */
