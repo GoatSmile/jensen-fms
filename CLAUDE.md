@@ -678,6 +678,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     confirm the form went dirty before submitting.
   - **`input[type=text]` matches the ATTRIBUTE**, so it misses every input that
     relies on the default type. Filter on `el.type`, or select by placeholder.
+- **A control that changes state is never a prefetchable `<Link>`.** Next
+  prefetches links in the viewport, so a `<Link href="/logout">` in the app
+  chrome fired the sign-out GET on every page render — the session died
+  roughly once per navigation (found in prod 2026-08-23, minutes after
+  shipping the control; the local check had been done with the gate OFF, which
+  is exactly where this is invisible). Sign-out is a POST server action
+  (`src/app/_actions/logout.ts`); the `/logout` route survives as the
+  typed-URL escape hatch and ignores speculative requests. Any future
+  destructive GET route inherits the same trap.
 - **A hand-rolled surface does not always have a rounded corner.** When sweeping
   for card soup, grep `bg-muted` and bare `border-t` / `border-b` as well as
   `rounded-*` — the build workbench's footer was `border-t bg-muted/20 px-4 py-3`

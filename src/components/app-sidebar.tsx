@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
 
@@ -230,26 +231,30 @@ export function AppSidebar({
                   {personName}
                 </TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/logout"
-                    aria-label={t("signOutAria", { name: personName ?? "" })}
-                    className={cn(
-                      "text-ink-2 hover:bg-ink/5 hover:text-ink flex w-full items-center gap-2.5 rounded-full py-1.5 text-sm transition-colors",
-                      collapsed ? "justify-center px-0" : "px-2.5",
-                    )}
-                  >
-                    <LogOut aria-hidden className="size-4 shrink-0" />
-                    {collapsed ? null : (
-                      <span className="truncate">{t("signOut")}</span>
-                    )}
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" hidden={!collapsed}>
-                  {t("signOut")}
-                </TooltipContent>
-              </Tooltip>
+              {/* A form, not a link: Next prefetches links in the viewport,
+                  and this one signs you out. */}
+              <form action={logout}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="submit"
+                      aria-label={t("signOutAria", { name: personName ?? "" })}
+                      className={cn(
+                        "text-ink-2 hover:bg-ink/5 hover:text-ink flex w-full items-center gap-2.5 rounded-full py-1.5 text-sm transition-colors",
+                        collapsed ? "justify-center px-0" : "px-2.5",
+                      )}
+                    >
+                      <LogOut aria-hidden className="size-4 shrink-0" />
+                      {collapsed ? null : (
+                        <span className="truncate">{t("signOut")}</span>
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" hidden={!collapsed}>
+                    {t("signOut")}
+                  </TooltipContent>
+                </Tooltip>
+              </form>
             </>
           ) : null}
           <Tooltip>

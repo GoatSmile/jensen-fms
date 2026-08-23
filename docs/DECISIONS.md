@@ -1670,3 +1670,14 @@ localStorage — it is not a preference that should travel.
 
 **Sequencing note:** migration 80 drops `roles.password_hash`, so it followed the
 same rule as migration 79 — nothing reads the column before the DDL runs.
+
+**Follow-up the same day — sign-out must not be a link.** The chrome's sign-out
+was shipped as `<Link href="/logout">`. Next prefetches links in the viewport,
+the sidebar renders on every page, so the GET route fired unprompted and deleted
+the session cookie: Admin was thrown back to the login screen roughly once per
+navigation in prod. It is now a POST server action
+(`src/app/_actions/logout.ts`); `/logout` stays as the typed-URL escape hatch and
+ignores speculative requests. The reason it got through local verification is
+worth keeping: the dev gate was OFF (no `SITE_PASSWORD` in `.env.local`), and
+with no session there is nothing to delete — the whole failure mode is invisible
+in that configuration. **Verify auth changes with the gate ON.**

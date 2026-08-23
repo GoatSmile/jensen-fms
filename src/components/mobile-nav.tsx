@@ -14,6 +14,7 @@ import {
   isNavItemActive,
 } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
+import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
 
@@ -202,15 +203,19 @@ export function MobileNav({
                   <CircleUser aria-hidden className="size-4 shrink-0" />
                   <span className="truncate">{personName}</span>
                 </div>
-                <DialogPrimitive.Close asChild>
-                  <Link
-                    href="/logout"
-                    className="text-ink-2 hover:bg-ink/5 hover:text-ink flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors"
-                  >
-                    <LogOut aria-hidden className="size-4 shrink-0" />
-                    <span className="truncate">{t("signOut")}</span>
-                  </Link>
-                </DialogPrimitive.Close>
+                {/* A form, not a link — a prefetched <Link href="/logout">
+                    signs you out without a click. */}
+                <form action={logout}>
+                  <DialogPrimitive.Close asChild>
+                    <button
+                      type="submit"
+                      className="text-ink-2 hover:bg-ink/5 hover:text-ink flex w-full items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors"
+                    >
+                      <LogOut aria-hidden className="size-4 shrink-0" />
+                      <span className="truncate">{t("signOut")}</span>
+                    </button>
+                  </DialogPrimitive.Close>
+                </form>
               </div>
             ) : null}
           </DialogPrimitive.Content>
