@@ -1,16 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileNav } from "@/components/mobile-nav";
-import { NAV_GROUPS, NAV_GROUP_IDS, isGroupActive } from "@/components/nav-items";
+import {
+  NAV_GROUPS,
+  NAV_GROUP_IDS,
+  isGroupActive,
+} from "@/components/nav-items";
 import { RegisterSW } from "@/components/register-sw";
 import { ScanFab } from "@/components/scan-fab";
 import { readGate } from "@/lib/auth/read-session";
-import { NAV_OPEN_COOKIE, resolveOpenGroups } from "@/lib/nav/open-groups";
+import {
+  parsePreferences,
+  resolveOpenGroups,
+  EMPTY_PREFERENCES,
+} from "@/lib/people/preferences";
 import { createClient } from "@/lib/supabase/server";
 
 import "./globals.css";
@@ -71,34 +79,37 @@ export default async function RootLayout({
   // surfaces follow worker_language) — see src/i18n/request.ts.
   const locale = await getLocale();
   const messages = await getMessages();
-  // Role-session capability scope for the app chrome (people & roles P2).
-  // null = nothing scoped (gate off / legacy full-access login). The person
-  // chip (P3 tap-your-name) only exists on role sessions.
+  // Session capability scope for the app chrome. null = nothing scoped
+  // (gate off). Every session carries a person (migration 80), so the chip
+  // names whoever is logged in — including the shared Admin account.
   const gate = await readGate();
-  const allowedCaps = gate.kind === "role" ? gate.session.caps : null;
-  const showPersonChip = gate.kind === "role";
+  const allowedCaps = gate.kind === "session" ? gate.session.caps : null;
+  const showPersonChip = gate.kind === "session";
   let personName: string | null = null;
-  if (gate.kind === "role" && gate.session.person) {
+  let preferences = EMPTY_PREFERENCES;
+  if (gate.kind === "session") {
     const supabase = await createClient();
     const { data } = await supabase
       .from("people")
-      .select("full_name")
+      .select("full_name, ui_preferences")
       .eq("id", gate.session.person)
       .maybeSingle();
     personName = data?.full_name ?? null;
+    preferences = parsePreferences(data?.ui_preferences);
   }
 
   // Sidebar group state, resolved HERE rather than on the client: the rail is
-  // server-rendered, so reading this from localStorage after hydration would
-  // shift the layout on every navigation. `x-pathname` is stamped by
+  // server-rendered, so applying a stored preference after hydration would
+  // shift the layout on every navigation. It comes off the PERSON (migration
+  // 81), so it follows them between devices. `x-pathname` is stamped by
   // src/middleware.ts (already used for the worker-locale split).
   const pathname = (await headers()).get("x-pathname") ?? "/";
   const openGroups = resolveOpenGroups(
-    (await cookies()).get(NAV_OPEN_COOKIE)?.value,
+    preferences.navOpen,
     NAV_GROUP_IDS,
     // Default for a group nobody has expressed an opinion about: open the one
-    // holding the current page. Only ever applies to groups absent from the
-    // cookie — once someone closes a group, navigating into it must not
+    // holding the current page. Only ever applies to groups the person has
+    // never touched — once someone closes a group, navigating into it must not
     // reopen it, or a dashboard link would undo their setting.
     (id) => {
       const group = NAV_GROUPS.find((g) => g.id === id);
@@ -119,6 +130,7 @@ export default async function RootLayout({
               showPersonChip={showPersonChip}
               personName={personName}
               initialOpenGroups={openGroups}
+              initialCollapsed={preferences.navCollapsed}
             />
             <div className="flex min-w-0 flex-1 flex-col">
               <MobileNav

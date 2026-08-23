@@ -293,7 +293,8 @@
     "closeAria": "Luk navigationen",
     "title": "Navigation",
     "inbox": "Indbakke",
-    "whoami": "Hvem arbejder?",
+    "signOut": "Log ud",
+    "signOutAria": "Logget ind som {name} — log ud",
     "groupToday": "I dag",
     "groupBikes": "Cykler",
     "groupParts": "Dele",
@@ -3144,6 +3145,7 @@
     "colPeople": "Personer",
     "colPassword": "Adgangskode",
     "passwordSet": "Sat",
+    "sharedLogin": "Fælles",
     "passwordNotSet": "Ikke sat",
     "openAria": "Åbn {name}",
     "personNewSubtitle": "Tilføj en person og vælg personens roller.",
@@ -3153,6 +3155,8 @@
     "fieldEmail": "E-mail",
     "fieldPhone": "Telefon",
     "fieldLanguage": "Foretrukket sprog",
+    "languageFollowsApp": "Følg appens standard",
+    "fieldLanguageHint": "Gælder hele appen for denne person — og følger med, uanset hvilken enhed de logger ind på.",
     "fieldStartDate": "Startdato",
     "fieldEndDate": "Slutdato",
     "endDateHint": "Personer med en dato i fortiden forsvinder fra vælgere — der sker ikke andet.",
@@ -3192,12 +3196,14 @@
     "eventAgreementExpiring": "Serviceaftale udløber",
     "addRole": "Tilføj rolle",
     "passwordTitle": "Login-adgangskode",
-    "passwordStatusSet": "Der er sat en adgangskode. Indtastes den på login-skærmen, vælges denne rolle.",
-    "passwordStatusMissing": "Ingen adgangskode endnu — rollen kan ikke logge ind, før der er sat en.",
+    "passwordStatusSet": "Der er sat en adgangskode. Personen vælger sit navn på login-skærmen og taster den.",
+    "passwordStatusMissing": "Ingen adgangskode endnu — personen vises ikke på login-skærmen, før der er sat en.",
     "passwordFieldLabel": "Ny adgangskode",
     "passwordSetButton": "Sæt adgangskode",
     "passwordReplaceButton": "Udskift adgangskode",
     "passwordSavedNote": "Adgangskoden er opdateret.",
+    "passwordAdminNote": "Admin er den fælles konto: den logger ind med site-adgangskoden fra miljøet og har derfor ingen egen adgangskode her.",
+    "passwordNeedsRole": "Personen har ingen rolle og kan derfor ikke logge ind endnu — et login uden rettigheder ville blive afvist på alle sider. Giv personen en rolle nedenfor.",
     "passwordWriteOnlyHint": "Kan kun skrives: adgangskoden gemmes som en hash og kan aldrig vises igen."
   },
   "adminSuppliers": {
@@ -3285,11 +3291,12 @@
     "sheetEmpty": "Ingen cykler matcher de anmodede id'er."
   },
   "auth": {
+    "whoIsLoggingIn": "Hvem logger ind?",
     "signInPrompt": "Log ind på Jensen FMS",
     "password": "Adgangskode",
     "logIn": "Log ind",
     "checking": "Kontrollerer…",
-    "wrongPassword": "Forkert adgangskode. Prøv igen."
+    "wrongPassword": "Forkert navn eller adgangskode. Prøv igen."
   },
   "errors": {
     "commandActionNotFound": "Handlingen findes ikke længere i planen.",
@@ -3898,8 +3905,9 @@
     "adminRoleKeyExists": "Der findes allerede en rolle med denne nøgle",
     "adminRoleKeyInvalid": "Nøglen må kun bestå af små bogstaver, tal og understregninger og skal starte med et bogstav",
     "adminRoleHomePathInvalid": "Startsiden skal være en intern sti, der starter med /",
-    "adminRolePasswordTooShort": "Adgangskoden skal være på mindst 6 tegn",
-    "whoamiInvalidPerson": "Denne person kan ikke vælges til denne rolle",
+    "adminPersonPasswordTooShort": "Adgangskoden skal være mindst 6 tegn.",
+    "adminPersonPasswordSystem": "Admin logger ind med site-adgangskoden og har ingen egen adgangskode.",
+    "adminPersonArchiveSystem": "Admin er den fælles login-konto og kan ikke arkiveres.",
     "woAssigneeInvalid": "Denne person kan ikke tildeles",
     "bikeRecordStatusInvalid": "En registreret cykel skal enten være hos en kunde eller på lager — alt hvad vi bygger, går gennem en produktionsordre.",
     "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører.",
@@ -4089,12 +4097,6 @@
     "repair_request": "Reparation",
     "order_inquiry": "Ordreforespørgsel",
     "other": "Andet"
-  },
-  "whoami": {
-    "title": "Hvem arbejder?",
-    "subtitle": "Tryk på dit navn — arbejde du starter, registreres under det. ({role})",
-    "currentBadge": "Dig",
-    "continueWithout": "Fortsæt uden navn"
   },
   "adminLists": {
     "title": "Lister",

@@ -1,14 +1,18 @@
 /**
- * Role sessions (auth v0.5, people & roles P2) — an HMAC-signed cookie
- * payload carrying which role logged in and what it opens. Extends the
- * shared-password gate (gate.ts), same honesty note: a UX/scoping wall,
- * not a security boundary; the perimeter stays Vercel SSO until M1.
+ * Person sessions (auth v0.5) — an HMAC-signed cookie payload carrying WHO
+ * logged in, what they can open, and where they land. Same honesty note as
+ * ever: a UX/scoping wall, not a security boundary; the perimeter stays
+ * Vercel SSO until M1.
  *
  * Design (docs/plan-people-roles.md): the session is SELF-CONTAINED —
- * role key, capability list, and home path are frozen into the cookie at
- * login, because Edge middleware can't (and shouldn't) hit Postgres per
- * request. Consequence: capability/home edits in admin apply at the next
- * login, not live.
+ * person, role key, capability list and home path are frozen into the
+ * cookie at login, because Edge middleware can't (and shouldn't) hit
+ * Postgres per request. Consequence: capability/home/role edits in admin
+ * apply at the next login, not live.
+ *
+ * Every session has a person (migration 80) — the shared password logs in
+ * as the seeded `Admin` person, so there is no such thing as an
+ * unattributed session any more.
  *
  * The HMAC key derives from SITE_PASSWORD (+ a fixed pepper) — no new env
  * var; rotating SITE_PASSWORD invalidates all sessions, which is the
@@ -16,21 +20,19 @@
  * same helpers run in Edge middleware and Node server actions. This whole
  * layer dies at M1 (Supabase sessions carry person + roles as claims).
  *
- * Token format: `v2.<base64url payload JSON>.<base64url HMAC-SHA256>` —
- * structurally distinct from the legacy gate token (64 lowercase hex
- * chars, no dots), so both can share the fms_auth cookie during cutover.
+ * Token format: `v2.<base64url payload JSON>.<base64url HMAC-SHA256>`.
  */
 
-export type RoleSession = {
+export type AppSession = {
   v: 1;
-  /** Role key ('owner', 'workshop', …) — display only until P3. */
+  /** Primary role key ('owner', 'workshop', 'admin') — display + home. */
   role: string;
   /** Capability keys frozen at login (validated against the registry). */
   caps: string[];
-  /** Where this role lands / gets bounced to (roles.home_path). */
+  /** Where this person lands / gets bounced to (their role's home_path). */
   home: string;
-  /** Person id — arrives with P3's tap-your-name. */
-  person?: string;
+  /** people.id — who is working. Required: no anonymous sessions. */
+  person: string;
 };
 
 const TOKEN_PREFIX = "v2";
@@ -64,7 +66,7 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
 }
 
 export async function signSession(
-  session: RoleSession,
+  session: AppSession,
   secret: string,
 ): Promise<string> {
   const payload = toBase64Url(
@@ -82,7 +84,7 @@ export async function signSession(
 export async function verifySessionToken(
   token: string,
   secret: string,
-): Promise<RoleSession | null> {
+): Promise<AppSession | null> {
   const [prefix, payload, sig] = token.split(".");
   if (prefix !== TOKEN_PREFIX || !payload || !sig) return null;
 
@@ -107,16 +109,20 @@ export async function verifySessionToken(
   }
 
   if (typeof parsed !== "object" || parsed === null) return null;
-  const s = parsed as Partial<RoleSession>;
+  const s = parsed as Partial<AppSession>;
   if (
     s.v !== 1 ||
     typeof s.role !== "string" ||
     !Array.isArray(s.caps) ||
     !s.caps.every((c) => typeof c === "string") ||
     typeof s.home !== "string" ||
-    !s.home.startsWith("/")
+    !s.home.startsWith("/") ||
+    // Pre-migration-80 cookies carried no person; they fail here and the
+    // holder logs in again under a name.
+    typeof s.person !== "string" ||
+    s.person.length === 0
   ) {
     return null;
   }
-  return s as RoleSession;
+  return s as AppSession;
 }

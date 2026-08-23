@@ -4,15 +4,18 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { hashPassword } from "@/lib/people/password";
 import { createClient } from "@/lib/supabase/server";
 
 export type PersonResult = { ok: true } | { ok: false; error: string };
+
+const PASSWORD_MIN_LENGTH = 6;
 
 type ParsedPerson = {
   full_name: string;
   email: string | null;
   phone: string | null;
-  preferred_language: string;
+  preferred_language: string | null;
   engaged_from: string | null;
   engaged_until: string | null;
   notify_email: boolean;
@@ -30,14 +33,17 @@ function parseFormData(
   const full_name = nullable(formData.get("full_name"))?.trim();
   if (!full_name) return { ok: false, error: t("nameRequired") };
 
-  const language = nullable(formData.get("preferred_language")) ?? "da";
+  // NULL = follow the app default (migration 81) — anything we don't
+  // recognise means "not chosen", never a silent fallback to Danish.
+  const language = nullable(formData.get("preferred_language"));
   return {
     ok: true,
     values: {
       full_name,
       email: nullable(formData.get("email"))?.trim() || null,
       phone: nullable(formData.get("phone"))?.trim() || null,
-      preferred_language: language === "en" ? "en" : "da",
+      preferred_language:
+        language === "en" || language === "da" ? language : null,
       engaged_from: nullable(formData.get("engaged_from")) || null,
       engaged_until: nullable(formData.get("engaged_until")) || null,
       notify_email: formData.get("notify_email") === "on",
@@ -145,9 +151,61 @@ export async function setPersonActive(
   if (!id) return { ok: false, error: t("missingId") };
 
   const supabase = await createClient();
+  if (!isActive) {
+    const { data: person } = await supabase
+      .from("people")
+      .select("is_system")
+      .eq("id", id)
+      .maybeSingle();
+    if (person?.is_system) {
+      return { ok: false, error: t("adminPersonArchiveSystem") };
+    }
+  }
   const { error } = await supabase
     .from("people")
     .update({ is_active: isActive })
+    .eq("id", id);
+  if (error) {
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+  }
+
+  revalidate();
+  return { ok: true };
+}
+
+/**
+ * Set/rotate this person's login password — write-only (the UI never shows a
+ * stored value, only set/missing; same status pattern as env secrets).
+ *
+ * The shared Admin account is refused: it authenticates against
+ * SITE_PASSWORD, and a hash here would be dead weight that looks live.
+ */
+export async function setPersonPassword(
+  id: string,
+  formData: FormData,
+): Promise<PersonResult> {
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+
+  const password = nullable(formData.get("password"));
+  if (!password || password.length < PASSWORD_MIN_LENGTH) {
+    return { ok: false, error: t("adminPersonPasswordTooShort") };
+  }
+
+  const supabase = await createClient();
+  const { data: person } = await supabase
+    .from("people")
+    .select("is_system")
+    .eq("id", id)
+    .maybeSingle();
+  if (person?.is_system) {
+    return { ok: false, error: t("adminPersonPasswordSystem") };
+  }
+
+  const password_hash = await hashPassword(password);
+  const { error } = await supabase
+    .from("people")
+    .update({ password_hash })
     .eq("id", id);
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };

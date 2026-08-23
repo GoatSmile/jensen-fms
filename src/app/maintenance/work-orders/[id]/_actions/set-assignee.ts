@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { readGate } from "@/lib/auth/read-session";
+import { readPersonId } from "@/lib/auth/read-session";
 import { nullableString as nullable } from "@/lib/forms";
 import { woAssignedEmail } from "@/lib/people/email-content";
 import { notifyEvent } from "@/lib/people/notify";
@@ -46,8 +46,7 @@ export async function setWorkOrderAssignee(
   // P4: person-targeted ping (design: wo.assigned is NOT role-broadcast).
   // Self-assignment ("Assign to me") skips the email — you know already.
   if (personId) {
-    const gate = await readGate();
-    const selfId = gate.kind === "role" ? gate.session.person : null;
+    const selfId = await readPersonId();
     if (personId !== selfId) {
       const { data: wo } = await supabase
         .from("work_orders")

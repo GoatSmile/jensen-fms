@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ChevronRight,
   CircleUser,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
@@ -23,15 +24,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { persistOpenGroups, type OpenGroups } from "@/lib/nav/open-groups";
+import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
-
-const COLLAPSE_KEY = "jensen-fms:sidebar-collapsed";
 
 export function AppSidebar({
   allowedCaps,
   showPersonChip,
   personName,
+  initialCollapsed,
   initialOpenGroups,
 }: {
   /** Role capability scope; null = show everything (gate off / legacy). */
@@ -39,23 +39,20 @@ export function AppSidebar({
   /** Only role sessions carry a person identity (tap-your-name, P3). */
   showPersonChip: boolean;
   personName: string | null;
-  /** Resolved server-side from the `nav_open` cookie — no hydration shift. */
-  initialOpenGroups: OpenGroups;
+  /** Resolved server-side from the person's preferences — no hydration shift. */
+  initialOpenGroups: Record<string, boolean>;
+  /** The person's stored rail state, server-rendered for the same reason. */
+  initialCollapsed: boolean;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const groups = filterNavGroups(allowedCaps);
-  // Collapsed = icon-only rail with hover tooltips. SSR renders expanded;
-  // the stored preference applies after mount (the sidebar lives in the
-  // root layout, so this runs once per full page load, not per navigation).
-  const [collapsed, setCollapsed] = useState(false);
-  // Group state arrives from the server already resolved, so the rail paints
-  // correctly on the first frame. Toggling updates local state AND the cookie.
-  const [open, setOpen] = useState<OpenGroups>(initialOpenGroups);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only, so the stored preference is applied after mount (see above)
-    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
-  }, []);
+  // Both preferences arrive from the server already resolved (they live on
+  // the person now, migration 81), so the rail paints correctly on the FIRST
+  // frame — the old localStorage read could only apply after mount, which
+  // meant an expanded rail that snapped narrow on every full page load.
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [open, setOpen] = useState<Record<string, boolean>>(initialOpenGroups);
   // Hide all workshop chrome on public-scan routes — those pages are
   // customer-facing and need a clean shell.
   if (
@@ -66,24 +63,23 @@ export function AppSidebar({
     return null;
   }
   function toggleCollapsed() {
-    setCollapsed((c) => {
-      localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
-      return !c;
-    });
+    const next = !collapsed;
+    setCollapsed(next);
+    void savePreferences({ navCollapsed: next });
   }
   function toggleGroup(id: string) {
     // Compute the next state and persist it HERE, not inside a setState
-    // updater. React may batch or re-invoke an updater, and writing a cookie
-    // from one is a side effect in a place that must stay pure — two toggles
-    // in a single tick persisted only the first.
+    // updater. React may batch or re-invoke an updater, and a write from one
+    // is a side effect in a place that must stay pure — two toggles in a
+    // single tick persisted only the first.
     //
     // Deliberately not a useEffect on `open` either: that fires on mount and
-    // would freeze the current defaults into the cookie just by visiting a
+    // would freeze the current defaults into the record just by visiting a
     // page, so "open the group holding the current page" would never apply
     // again. Only a real toggle should write.
     const next = { ...open, [id]: !open[id] };
     setOpen(next);
-    persistOpenGroups(next);
+    void savePreferences({ navOpen: { [id]: next[id] } });
   }
   return (
     <aside
@@ -212,28 +208,49 @@ export function AppSidebar({
         </nav>
         <div className="p-2">
           {showPersonChip ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href="/whoami"
-                  aria-label={personName ?? t("whoami")}
-                  className={cn(
-                    "text-ink-2 hover:bg-ink/5 hover:text-ink flex w-full items-center gap-2.5 rounded-full py-1.5 text-sm transition-colors",
-                    collapsed ? "justify-center px-0" : "px-2.5",
-                  )}
-                >
-                  <CircleUser aria-hidden className="size-4 shrink-0" />
-                  {collapsed ? null : (
-                    <span className="truncate">
-                      {personName ?? t("whoami")}
-                    </span>
-                  )}
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" hidden={!collapsed}>
-                {personName ?? t("whoami")}
-              </TooltipContent>
-            </Tooltip>
+            <>
+              {/* Who you are — a label, not a control. It used to be the
+                  sign-out link itself, which read as a name and logged you
+                  out when clicked. */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className={cn(
+                      "text-ink-2 flex w-full items-center gap-2.5 rounded-full py-1.5 text-sm",
+                      collapsed ? "justify-center px-0" : "px-2.5",
+                    )}
+                  >
+                    <CircleUser aria-hidden className="size-4 shrink-0" />
+                    {collapsed ? null : (
+                      <span className="truncate">{personName}</span>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" hidden={!collapsed}>
+                  {personName}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/logout"
+                    aria-label={t("signOutAria", { name: personName ?? "" })}
+                    className={cn(
+                      "text-ink-2 hover:bg-ink/5 hover:text-ink flex w-full items-center gap-2.5 rounded-full py-1.5 text-sm transition-colors",
+                      collapsed ? "justify-center px-0" : "px-2.5",
+                    )}
+                  >
+                    <LogOut aria-hidden className="size-4 shrink-0" />
+                    {collapsed ? null : (
+                      <span className="truncate">{t("signOut")}</span>
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" hidden={!collapsed}>
+                  {t("signOut")}
+                </TooltipContent>
+              </Tooltip>
+            </>
           ) : null}
           <Tooltip>
             <TooltipTrigger asChild>

@@ -85,7 +85,7 @@ known:
 - Publishable key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe with RLS)
 - Secret key in `SUPABASE_SECRET_KEY` (server-only, bypasses RLS)
 - Real auth (M1) deliberately delayed — see docs/STATUS.md. Perimeter today:
-  Vercel SSO + the people-&-roles role-password UX wall.
+  Vercel SSO + the people-&-roles person-password UX wall.
 
 ## Database
 Schema introspectable via the `supabase` MCP server, `execute_sql` included.
@@ -365,15 +365,34 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **People & roles (auth v0.5).** Four separated concepts — person / role /
   credential / assignment — across `people`, `roles`, `person_roles`,
   `role_capabilities`, `role_notifications` (capability/event keys
-  validated against code registries in `src/lib/people/`). One scrypt
-  password PER ROLE (the password IS the role selector); signed
-  `{role, person}` cookie on top of the existing `fms_auth` gate; `can()`
-  gates nav (via shared nav-items ids) / routes / dashboard bands; per-role
-  `home_path` landing. Explicitly a **UX wall, not a security boundary**
-  (perimeter stays Vercel SSO until M1; at M1 the role passwords die and
-  the model survives — RLS policies get written against
-  `role_capabilities`). Design: `docs/plan-people-roles.md`; build state:
-  `docs/STATUS.md`.
+  validated against code registries in `src/lib/people/`). `can()` gates nav
+  (via shared nav-items ids) / routes / dashboard bands; per-role `home_path`
+  landing. Explicitly a **UX wall, not a security boundary** (perimeter stays
+  Vercel SSO until M1; at M1 the passwords die and the model survives — RLS
+  policies get written against `role_capabilities`). Design:
+  `docs/plan-people-roles.md`; build state: `docs/STATUS.md`.
+  - **The credential is on the PERSON, not the role** (migration 80,
+    supersedes the 2026-07-17 role-password design). Login = pick a NAME +
+    that person's own scrypt `people.password_hash`; the session cookie is
+    `{role, caps, home, person}` and `person` is REQUIRED — there is no
+    unattributed session and no "continue without a name". A name is only
+    offered when picking it can work: active, inside the engagement window,
+    password set, ≥1 role (a role-less login has zero caps and gets bounced
+    off every route). Capabilities are the UNION of the person's active
+    roles; home is their lowest-`sort_order` role's.
+  - **Admin is a person.** `SITE_PASSWORD` authenticates ONE seeded row
+    (`people.is_system`) with every capability and no role rows — so the
+    shared login is attributed to "Admin", not to nobody. It can't be
+    archived and can't be given a password of its own; both refused
+    server-side. Everything else was removed 2026-08-23: the legacy digest
+    token, role passwords, and `/whoami`.
+  - **Preferences belong to the person and travel with the login**
+    (migration 81). `people.ui_preferences` (JSONB) holds nav state, written
+    through `savePreferences` in `src/app/_actions/preferences.ts` and
+    server-rendered from the person — never a cookie or localStorage, which
+    are per BROWSER and lie on a shared tablet. Genuinely per-DEVICE state
+    (the `/scan` install hint, `collapse:*` section state) stays in
+    localStorage on purpose.
 - **Bike-to-customer assignment is intentionally overloaded** — no separate
   "slated_for" column. `bikes.owner_organization_id` is set in two
   conceptually distinct moments:
@@ -429,12 +448,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   or a placeholder; read that constant.
 
 ## Internationalisation (whole-app Danish; both locales currently `en`)
-- next-intl **without URL routing**. Locale comes from `app_settings`,
-  resolved per surface: `src/middleware.ts` stamps `x-pathname`;
-  `src/i18n/request.ts` maps worker surfaces (`/work`, `/scan`, build
-  workbench + batch build — see `WORKER_PATH`) to `worker_language`,
-  everything else to `app_language`. Messages in `messages/{en,da,de}.json`
-  (`de` scaffolded, untranslated); missing keys deep-merge back to English.
+- next-intl **without URL routing**. Locale comes from the LOGGED-IN PERSON
+  first, `app_settings` second (`src/i18n/request.ts`):
+  `people.preferred_language` is nullable — a value wins on EVERY surface
+  (migration 81; it used to override only worker surfaces), NULL means
+  "follow the app default". The fallback stays per surface:
+  `src/middleware.ts` stamps `x-pathname`; worker surfaces (`/work`,
+  `/scan`, build workbench + batch build — see `WORKER_PATH`) take
+  `worker_language`, everything else `app_language`. Messages in
+  `messages/{en,da,de}.json` (`de` scaffolded, untranslated); missing keys
+  deep-merge back to English.
 - Every UI surface and server-action error string is swept. New code must
   follow: UI strings via namespaced messages; action errors localized AT
   THE SOURCE via the flat `errors` namespace
@@ -521,8 +544,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - **Group names are CONCEPTS, not pages, and the rail stays at seven** — that
     is the point of the shape, not an incidental count. A new service type
     becomes another child of *Orders* (nav is per-service-type permanently),
-    never an eighth group. Each group opens independently; `nav_open` cookie
-    state is resolved server-side.
+    never an eighth group. Each group opens independently; open/collapsed
+    state lives in `people.ui_preferences` and is resolved server-side.
   - Both navs render from the shared `src/components/nav-items.ts` — add or
     move items THERE so desktop sidebar and mobile drawer can't drift.
   - **Templates, families and kits are NOT Admin.** Kits are a floor picking

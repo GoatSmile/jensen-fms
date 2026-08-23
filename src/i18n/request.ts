@@ -11,9 +11,10 @@ import en from "../../messages/en.json";
 
 /**
  * Locale resolution for the whole app (next-intl WITHOUT URL routing — the
- * locale comes from app_settings, not the path).
+ * locale comes from the logged-in person, else app_settings; never the path).
  *
- * Two settings drive it (migration 49):
+ * The logged-in person's `preferred_language` wins everywhere when set. Two
+ * settings are the fallback (migration 49):
  *   - `worker_language` — the WORKER SURFACES (/work, /scan, the build
  *     workbench + batch build). Covers the employee who can't work in
  *     English while the rest of the app stays in the owner's language.
@@ -61,11 +62,13 @@ const WORKER_PATH =
   /^\/(work|scan)(\/|$)|^\/manufacturing-orders\/[^/]+\/(bikes\/[^/]+\/build|build-batch)(\/|$)/;
 
 /**
- * P3: a claimed person's preferred_language supersedes the shared
- * worker_language on worker surfaces — the "per-user at M1" i18n note
- * arrives early via tap-your-name. Only role sessions carry a person.
+ * The logged-in person's own language, which supersedes BOTH app_settings
+ * languages on every surface (migration 81 — preferences belong to the
+ * person and travel with the login). NULL there means "follow the app
+ * default", which is why the column is nullable: before that, "never
+ * decided" and "chose Danish" were the same row.
  */
-async function personWorkerLanguage(
+async function personLanguage(
   supabase: Awaited<ReturnType<typeof createClient>>,
 ): Promise<string | null> {
   const expected = process.env.SITE_PASSWORD;
@@ -95,9 +98,12 @@ export default getRequestConfig(async () => {
       .select("app_language, worker_language")
       .eq("id", 1)
       .maybeSingle();
-    const raw = WORKER_PATH.test(pathname)
-      ? ((await personWorkerLanguage(supabase)) ?? data?.worker_language)
+    // The person wins; the app_settings pair is the fallback for whoever
+    // hasn't chosen (and for the shared Admin account).
+    const fallback = WORKER_PATH.test(pathname)
+      ? data?.worker_language
       : data?.app_language;
+    const raw = (await personLanguage(supabase)) ?? fallback;
     if (isLocale(raw)) locale = raw;
   } catch {
     /* default en */

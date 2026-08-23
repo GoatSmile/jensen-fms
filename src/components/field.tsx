@@ -2,19 +2,26 @@ import { Label } from "@/components/ui/label";
 
 /**
  * Form field wrapper — label (+ optional required marker) over the control,
- * with an optional validation error beneath. The single shared version of the
- * `Field` that used to be copy-pasted across every form and dialog.
+ * with an optional hint and validation error beneath. The single shared
+ * version of the `Field` that used to be copy-pasted across every form and
+ * dialog.
+ *
+ * The hint sits OUTSIDE the `Label` on purpose: `Label` is
+ * `flex items-center gap-2`, so a hint nested inside it becomes a flex item
+ * beside the label text rather than a line under the field.
  */
 export function Field({
   label,
   htmlFor,
   required,
+  hint,
   error,
   children,
 }: {
   label: string;
   htmlFor?: string;
   required?: boolean;
+  hint?: string | null;
   error?: string | null;
   children: React.ReactNode;
 }) {
@@ -25,6 +32,7 @@ export function Field({
         {required ? <span className="text-destructive ml-0.5">*</span> : null}
       </Label>
       {children}
+      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
       {error ? (
         <p className="text-destructive text-xs" role="alert">
           {error}

@@ -137,6 +137,14 @@ Seeds are starting points — capabilities are admin-editable per role.
 
 ## Auth v0.5 — role passwords
 
+> **SUPERSEDED 2026-08-23 (migrations 80 + 81).** The credential moved from the
+> role to the PERSON: login is a name dropdown plus that person's own password,
+> the shared `SITE_PASSWORD` became the seeded `Admin` person, and `/whoami`
+> (step 3 below) was removed — the session carries a person from the moment you
+> log in. Capabilities, `home_path`, the registries and everything else in this
+> plan still stand. See DECISIONS 2026-08-23 and CLAUDE.md "People & roles".
+
+
 1. **Login**: one password field, no role picker — the entered password is
    scrypt-checked against every active role's hash; **the password IS the
    role selector**. scrypt from `node:crypto` (zero new deps). Hashes are

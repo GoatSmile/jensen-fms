@@ -293,7 +293,8 @@
     "closeAria": "Close navigation",
     "title": "Navigation",
     "inbox": "Inbox",
-    "whoami": "Who's working?",
+    "signOut": "Sign out",
+    "signOutAria": "Signed in as {name} — sign out",
     "groupToday": "Today",
     "groupBikes": "Bikes",
     "groupParts": "Parts",
@@ -3144,6 +3145,7 @@
     "colPeople": "People",
     "colPassword": "Password",
     "passwordSet": "Set",
+    "sharedLogin": "Shared",
     "passwordNotSet": "Not set",
     "openAria": "Open {name}",
     "personNewSubtitle": "Add a person and pick the roles they hold.",
@@ -3153,6 +3155,8 @@
     "fieldEmail": "Email",
     "fieldPhone": "Phone",
     "fieldLanguage": "Preferred language",
+    "languageFollowsApp": "Follow app default",
+    "fieldLanguageHint": "Applies to this person's whole app — it follows them to any device they log in on.",
     "fieldStartDate": "Start date",
     "fieldEndDate": "End date",
     "endDateHint": "Past-dated people drop out of pickers — nothing else happens.",
@@ -3192,12 +3196,14 @@
     "eventAgreementExpiring": "Service agreement expiring",
     "addRole": "Add role",
     "passwordTitle": "Login password",
-    "passwordStatusSet": "A password is set. Entering it on the login screen selects this role.",
-    "passwordStatusMissing": "No password yet — this role can't log in until one is set.",
+    "passwordStatusSet": "A password is set. This person picks their name on the login screen and types it.",
+    "passwordStatusMissing": "No password yet — this person isn't offered on the login screen until one is set.",
     "passwordFieldLabel": "New password",
     "passwordSetButton": "Set password",
     "passwordReplaceButton": "Replace password",
     "passwordSavedNote": "Password updated.",
+    "passwordAdminNote": "Admin is the shared account: it signs in with the site password from the environment, so it has no password of its own here.",
+    "passwordNeedsRole": "This person holds no role, so they can't log in yet — a login with no capabilities would be bounced off every page. Give them a role below.",
     "passwordWriteOnlyHint": "Write-only: the password is stored as a hash and can never be shown again."
   },
   "adminSuppliers": {
@@ -3285,11 +3291,12 @@
     "sheetEmpty": "No bikes match the requested ids."
   },
   "auth": {
+    "whoIsLoggingIn": "Who is logging in?",
     "signInPrompt": "Sign in to Jensen FMS",
     "password": "Password",
     "logIn": "Log in",
     "checking": "Checking…",
-    "wrongPassword": "Wrong password. Try again."
+    "wrongPassword": "Wrong name or password. Try again."
   },
   "errors": {
     "commandActionNotFound": "That action is no longer in the plan.",
@@ -3898,8 +3905,9 @@
     "adminRoleKeyExists": "A role with this key already exists",
     "adminRoleKeyInvalid": "Key must be lowercase letters, numbers or underscores, starting with a letter",
     "adminRoleHomePathInvalid": "Home page must be an internal path starting with /",
-    "adminRolePasswordTooShort": "Password must be at least 6 characters",
-    "whoamiInvalidPerson": "That person can't be picked for this role",
+    "adminPersonPasswordTooShort": "Password must be at least 6 characters.",
+    "adminPersonPasswordSystem": "Admin signs in with the site password — it has no password of its own.",
+    "adminPersonArchiveSystem": "Admin is the shared login account and can't be archived.",
     "woAssigneeInvalid": "That person can't be assigned",
     "bikeRecordStatusInvalid": "A recorded bike must be either with a customer or in stock — anything we build goes through a manufacturing order.",
     "bikeOwnerRequiredInService": "Pick the customer this bike belongs to.",
@@ -4089,12 +4097,6 @@
     "repair_request": "Repair request",
     "order_inquiry": "Order inquiry",
     "other": "Something else"
-  },
-  "whoami": {
-    "title": "Who's working?",
-    "subtitle": "Tap your name — work you start is logged under it. ({role})",
-    "currentBadge": "You",
-    "continueWithout": "Continue without a name"
   },
   "adminLists": {
     "title": "Lists",

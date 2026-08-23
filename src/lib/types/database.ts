@@ -868,6 +868,57 @@ export type Database = {
         }
         Relationships: []
       }
+      command_actions: {
+        Row: {
+          action_type: string
+          applied_at: string
+          applied_by: string | null
+          entity_id: string | null
+          entity_table: string | null
+          id: string
+          message_id: string
+          payload: Json | null
+          plan_action_id: string
+        }
+        Insert: {
+          action_type: string
+          applied_at?: string
+          applied_by?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          message_id: string
+          payload?: Json | null
+          plan_action_id: string
+        }
+        Update: {
+          action_type?: string
+          applied_at?: string
+          applied_by?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          message_id?: string
+          payload?: Json | null
+          plan_action_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "command_actions_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "command_actions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           created_at: string
@@ -1151,57 +1202,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      command_actions: {
-        Row: {
-          action_type: string
-          applied_at: string
-          applied_by: string | null
-          entity_id: string | null
-          entity_table: string | null
-          id: string
-          message_id: string
-          payload: Json | null
-          plan_action_id: string
-        }
-        Insert: {
-          action_type: string
-          applied_at?: string
-          applied_by?: string | null
-          entity_id?: string | null
-          entity_table?: string | null
-          id?: string
-          message_id: string
-          payload?: Json | null
-          plan_action_id: string
-        }
-        Update: {
-          action_type?: string
-          applied_at?: string
-          applied_by?: string | null
-          entity_id?: string | null
-          entity_table?: string | null
-          id?: string
-          message_id?: string
-          payload?: Json | null
-          plan_action_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "command_actions_applied_by_fkey"
-            columns: ["applied_by"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "command_actions_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "inbound_messages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       inbound_messages: {
         Row: {
@@ -2807,11 +2807,14 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          is_system: boolean
           notes: string | null
           notify_email: boolean
           notify_sms: boolean
+          password_hash: string | null
           phone: string | null
-          preferred_language: string
+          preferred_language: string | null
+          ui_preferences: Json
           updated_at: string
           user_id: string | null
         }
@@ -2823,11 +2826,14 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          is_system?: boolean
           notes?: string | null
           notify_email?: boolean
           notify_sms?: boolean
+          password_hash?: string | null
           phone?: string | null
-          preferred_language?: string
+          preferred_language?: string | null
+          ui_preferences?: Json
           updated_at?: string
           user_id?: string | null
         }
@@ -2839,11 +2845,14 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          is_system?: boolean
           notes?: string | null
           notify_email?: boolean
           notify_sms?: boolean
+          password_hash?: string | null
           phone?: string | null
-          preferred_language?: string
+          preferred_language?: string | null
+          ui_preferences?: Json
           updated_at?: string
           user_id?: string | null
         }
@@ -3146,7 +3155,6 @@ export type Database = {
           key: string
           name_da: string | null
           name_en: string
-          password_hash: string | null
           sort_order: number
           updated_at: string
         }
@@ -3158,7 +3166,6 @@ export type Database = {
           key: string
           name_da?: string | null
           name_en: string
-          password_hash?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -3170,7 +3177,6 @@ export type Database = {
           key?: string
           name_da?: string | null
           name_en?: string
-          password_hash?: string | null
           sort_order?: number
           updated_at?: string
         }

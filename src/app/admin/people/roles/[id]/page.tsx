@@ -19,7 +19,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 import { RoleForm } from "../../_components/role-form";
-import { RolePasswordCard } from "../../_components/role-password-card";
 
 export default async function EditRolePage({
   params,
@@ -37,9 +36,7 @@ export default async function EditRolePage({
   const [roleRes, capsRes, eventsRes] = await Promise.all([
     supabase
       .from("roles")
-      .select(
-        "id, key, name_en, name_da, home_path, sort_order, is_active, password_hash",
-      )
+      .select("id, key, name_en, name_da, home_path, sort_order, is_active")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("role_capabilities").select("capability").eq("role_id", id),
@@ -82,11 +79,6 @@ export default async function EditRolePage({
           {t("roleEditSubtitle")}
         </p>
       </div>
-
-      <RolePasswordCard
-        roleId={role.id}
-        hasPassword={role.password_hash !== null}
-      />
 
       <RoleForm
         mode={{ kind: "edit", id: role.id }}

@@ -14,6 +14,7 @@ import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
 import { PersonForm } from "../_components/person-form";
+import { PersonPasswordCard } from "../_components/person-password-card";
 
 export default async function EditPersonPage({
   params,
@@ -31,7 +32,7 @@ export default async function EditPersonPage({
     supabase
       .from("people")
       .select(
-        "id, full_name, email, phone, preferred_language, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active",
+        "id, full_name, email, phone, preferred_language, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active, is_system, password_hash",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -92,6 +93,13 @@ export default async function EditPersonPage({
         </p>
       </div>
 
+      <PersonPasswordCard
+        personId={person.id}
+        hasPassword={person.password_hash !== null}
+        isSystem={person.is_system}
+        hasRole={heldRoleIds.size > 0}
+      />
+
       <PersonForm
         mode={{ kind: "edit", id: person.id }}
         initial={{
@@ -99,7 +107,11 @@ export default async function EditPersonPage({
           email: person.email ?? "",
           phone: person.phone ?? "",
           preferred_language:
-            person.preferred_language?.trim() === "en" ? "en" : "da",
+            person.preferred_language?.trim() === "en"
+              ? "en"
+              : person.preferred_language?.trim() === "da"
+                ? "da"
+                : "",
           engaged_from: person.engaged_from ?? "",
           engaged_until: person.engaged_until ?? "",
           notify_email: person.notify_email,

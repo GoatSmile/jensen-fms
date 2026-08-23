@@ -40,9 +40,8 @@ export default async function WorkQueuePage({
     getLocale(),
     readGate(),
   ]);
-  // Tap-your-name person (P3) — enables the "Mine" filter on repairs.
-  const myPersonId =
-    gate.kind === "role" ? (gate.session.person ?? null) : null;
+  // Who is logged in — enables the "Mine" filter on repairs.
+  const myPersonId = gate.kind === "session" ? gate.session.person : null;
   const mineActive = mine === "1" && myPersonId !== null;
   const supabase = await createClient();
 

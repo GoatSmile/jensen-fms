@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/lib/types/database";
-import { readGate } from "@/lib/auth/read-session";
+import { readPersonId } from "@/lib/auth/read-session";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import { runCommandAgent } from "@/lib/inbound/command/agent";
 import { buildInquiryTask } from "@/lib/inbound/command/inquiry";
@@ -30,10 +30,9 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** The logged-in person id, when a role session carries one (post-P3). */
+/** The logged-in person id — every session carries one (migration 80). */
 async function currentPersonId(): Promise<string | null> {
-  const gate = await readGate();
-  return gate.kind === "role" ? (gate.session.person ?? null) : null;
+  return readPersonId();
 }
 
 /**

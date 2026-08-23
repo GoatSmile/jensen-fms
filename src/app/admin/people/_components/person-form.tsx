@@ -23,7 +23,7 @@ export type PersonFormValues = {
   full_name: string;
   email: string;
   phone: string;
-  preferred_language: "da" | "en";
+  preferred_language: "" | "da" | "en";
   engaged_from: string;
   engaged_until: string;
   notify_email: boolean;
@@ -37,7 +37,7 @@ const EMPTY_PERSON_FORM: PersonFormValues = {
   full_name: "",
   email: "",
   phone: "",
-  preferred_language: "da",
+  preferred_language: "",
   engaged_from: "",
   engaged_until: "",
   notify_email: true,
@@ -46,6 +46,12 @@ const EMPTY_PERSON_FORM: PersonFormValues = {
   is_active: true,
   role_ids: [],
 };
+
+/**
+ * Radix rejects an empty-string SelectItem value, so "no choice" needs a
+ * sentinel in the picker; it maps back to "" (NULL in the column) on submit.
+ */
+const FOLLOW_APP = "__app__";
 
 type Mode = { kind: "create" } | { kind: "edit"; id: string };
 
@@ -164,17 +170,27 @@ export function PersonForm({
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label={t("fieldLanguage")} htmlFor="person-language">
+        <Field
+          label={t("fieldLanguage")}
+          htmlFor="person-language"
+          hint={t("fieldLanguageHint")}
+        >
           <Select
-            value={values.preferred_language}
+            value={values.preferred_language || FOLLOW_APP}
             onValueChange={(v) =>
-              update("preferred_language", v === "en" ? "en" : "da")
+              update(
+                "preferred_language",
+                v === "en" ? "en" : v === "da" ? "da" : "",
+              )
             }
           >
             <SelectTrigger id="person-language">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={FOLLOW_APP}>
+                {t("languageFollowsApp")}
+              </SelectItem>
               <SelectItem value="da">{tLang("da")}</SelectItem>
               <SelectItem value="en">{tLang("en")}</SelectItem>
             </SelectContent>
@@ -198,9 +214,7 @@ export function PersonForm({
             value={values.engaged_until}
             onChange={(e) => update("engaged_until", e.target.value)}
           />
-          <p className="text-muted-foreground text-xs">
-            {t("endDateHint")}
-          </p>
+          <p className="text-muted-foreground text-xs">{t("endDateHint")}</p>
         </Field>
       </div>
 
@@ -292,11 +306,7 @@ export function PersonForm({
               ? t("notYetSaved")
               : t("upToDate")
         }
-        submitLabel={
-          mode.kind === "create"
-            ? t("addPerson")
-            : t("saveChanges")
-        }
+        submitLabel={mode.kind === "create" ? t("addPerson") : t("saveChanges")}
       />
     </form>
   );

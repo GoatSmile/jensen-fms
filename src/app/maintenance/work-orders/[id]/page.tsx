@@ -108,8 +108,7 @@ export default async function WorkOrderDetailPage({
       assigneeOptions.push({ id: archived.id, label: archived.full_name });
     }
   }
-  const myPersonId =
-    gate.kind === "role" ? (gate.session.person ?? null) : null;
+  const myPersonId = gate.kind === "session" ? gate.session.person : null;
 
   const partsCatalog: PartChoice[] = (partsCatalogRes.data ?? []).map((p) => ({
     id: p.id,

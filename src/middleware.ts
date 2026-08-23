@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { AUTH_COOKIE, passwordToken } from "@/lib/auth/gate";
+import { AUTH_COOKIE } from "@/lib/auth/gate";
 import { verifySessionToken } from "@/lib/auth/session";
 import { routeCapability } from "@/lib/people/routes";
 
@@ -27,12 +27,12 @@ function nextWithPathname(req: NextRequest) {
 }
 
 /**
- * Auth gate + role-capability routing (people & roles P2).
+ * Auth gate + capability routing.
  *
- * Three token shapes share the fms_auth cookie:
- * - legacy shared-password token (64-hex) → full access, cutover-compatible
- * - signed role session (`v2.…`) → route gating via the caps frozen at login
- * - anything else / missing → redirect to /login
+ * One token shape in the fms_auth cookie: the signed person session
+ * (`v2.…`), gating routes by the caps frozen at login. Anything else or
+ * missing → redirect to /login. (The legacy shared-password digest token
+ * went with migration 80; the shared password now signs an Admin session.)
  *
  * No DB access here (Edge): the session is self-contained by design —
  * capability edits apply at next login.
@@ -47,17 +47,13 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get(AUTH_COOKIE)?.value;
   if (token) {
-    if (token === (await passwordToken(expected))) {
-      return nextWithPathname(req);
-    }
-
     const session = await verifySessionToken(token, expected);
     if (session) {
       const needed = routeCapability(pathname);
       if (!needed || session.caps.includes(needed)) {
         return nextWithPathname(req);
       }
-      // Uncapable route → bounce to the role's home. If home itself is the
+      // Uncapable route → bounce to their home. If home itself is the
       // blocked path (misconfigured role), pass through rather than loop.
       if (pathname === session.home) return nextWithPathname(req);
       const url = req.nextUrl.clone();

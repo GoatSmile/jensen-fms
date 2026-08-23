@@ -6,13 +6,11 @@ import { getTranslations } from "next-intl/server";
 import { nullableString as nullable } from "@/lib/forms";
 import { isCapability } from "@/lib/people/capabilities";
 import { isNotificationEvent } from "@/lib/people/notifications";
-import { hashPassword } from "@/lib/people/password";
 import { createClient } from "@/lib/supabase/server";
 
 export type RoleResult = { ok: true } | { ok: false; error: string };
 
 const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
-const PASSWORD_MIN_LENGTH = 6;
 
 type ParsedRole = {
   name_en: string;
@@ -94,7 +92,9 @@ async function syncRoleGrants(
   if (capabilities.length > 0) {
     const { error } = await supabase
       .from("role_capabilities")
-      .insert(capabilities.map((capability) => ({ role_id: roleId, capability })));
+      .insert(
+        capabilities.map((capability) => ({ role_id: roleId, capability })),
+      );
     if (error) return error.message;
   }
 
@@ -203,36 +203,6 @@ export async function setRoleActive(
   const { error } = await supabase
     .from("roles")
     .update({ is_active: isActive })
-    .eq("id", id);
-  if (error) {
-    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
-  }
-
-  revalidate();
-  return { ok: true };
-}
-
-/**
- * Set/rotate the role's login password — write-only (the UI never shows a
- * stored value, only set/missing; same status pattern as env secrets).
- */
-export async function setRolePassword(
-  id: string,
-  formData: FormData,
-): Promise<RoleResult> {
-  const t = await getTranslations("errors");
-  if (!id) return { ok: false, error: t("missingId") };
-
-  const password = nullable(formData.get("password"));
-  if (!password || password.length < PASSWORD_MIN_LENGTH) {
-    return { ok: false, error: t("adminRolePasswordTooShort") };
-  }
-
-  const supabase = await createClient();
-  const password_hash = await hashPassword(password);
-  const { error } = await supabase
-    .from("roles")
-    .update({ password_hash })
     .eq("id", id);
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };

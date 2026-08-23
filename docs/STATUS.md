@@ -1,14 +1,12 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-07-29 (session end).** Most recent: **a preflight pass
-before the app goes to Dennis, and the handover documents reframed around it.**
-A repeatable harness now exists (`npm run smoke` + `scripts/audit-invariants.sql`,
-below); every write flow has been driven end to end through the real UI; the
-Danish locale switch was flipped and verified across all 103 routes and put back.
-It found three real defects — all fixed — the worst of which was **CLAUDE.md's
-landed-cost formula missing `anti_dumping_pct`** for seven weeks. Narrative in
-`docs/archive/HISTORY.md` (2026-07-29); decisions in DECISIONS 2026-07-29.
-CI is green on HEAD and the tree is clean.
+**Last updated: 2026-08-23 (session end).** Most recent: **login is now a name
+and a password.** The credential moved from the role to the person (migrations
+80 + 81), the shared `SITE_PASSWORD` became one named `Admin` person, role
+passwords / the legacy digest token / `/whoami` were all removed, and UI
+preferences plus per-person language now live on the person and follow them to
+any device. Decisions in DECISIONS 2026-08-23. tsc + lint + build clean;
+`npm run smoke` 92 pass · 18 redirect · 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -33,11 +31,20 @@ parked ideas in `docs/BACKLOG.md`.
   complete; e-conomic push (verified against a trial agreement); inbound
   voicemail + live-call recording → ticket pipeline **live in prod in shadow
   mode**; whole-app Danish i18n swept (locales still `en`).
-- **People & roles P1–P4 shipped 2026-07-23** (migrations 73 + 74) — the interim
-  system is complete. **No role passwords are set in prod**, so login behaviour
-  is unchanged until they are, and P4 notifications stay in the test-mode
-  reroute (nothing reaches real inboxes yet). Design in
-  `docs/plan-people-roles.md`, mechanics in DECISIONS 2026-07-23.
+- **People & roles P1–P4 shipped 2026-07-23** (migrations 73 + 74); the
+  credential was rebuilt 2026-08-23 (migrations 80 + 81). Login = pick a name,
+  type that person's password. P4 notifications stay in the test-mode reroute
+  (nothing reaches real inboxes yet). Design in `docs/plan-people-roles.md`,
+  mechanics in DECISIONS 2026-07-23 + 2026-08-23.
+  - **In prod: only `Admin` can log in.** It is the seeded `is_system` person
+    behind `SITE_PASSWORD` (full capabilities). Dennis and Nazar exist with
+    roles but **no password set**, so they are not offered on the login screen
+    yet — set one at `/admin/people/<id>` when they should have their own login.
+  - Person language: Dennis `da`, Nazar `en`, Admin NULL (follows
+    `app_settings`, still `en`). A person's language now drives the WHOLE app
+    for them, so setting a password for Dennis also means he gets a Danish app
+    at his next login — that is intended, but it is the first place it will
+    show up.
 - Inbound shadow-testing rides the US trial number **+1 762 500 0850**; Dennis's
   company number remains the production plan.
 - **The July queue is complete** and its plan is archived.
@@ -166,8 +173,10 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
 
 - **Smoke sweep**: fetches every page route with real ids pulled from the DB and
   asserts status + error-overlay markers + missing i18n keys. Baseline **92 pass ·
-  19 redirect · 0 skip · 0 fail**. The 19 are the 18 retired vocab routes plus
-  `/whoami`. A SKIP is not a pass — it means no row exists to render that route.
+  18 redirect · 0 skip · 0 fail** (verified 2026-08-23). The 18 are the retired
+  vocab routes; `/whoami` was the 19th until it was removed with the
+  person-login rebuild. A SKIP is not a pass — it means no row exists to render
+  that route.
 - **Invariant audit**: each check must return zero offenders. **Baseline is 14 of
   16 clean**; the two standing hits are real and tracked below (negative stock,
   e-conomic trial stamps), so treat 14/16 as green and anything else as new.

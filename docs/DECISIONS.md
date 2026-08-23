@@ -1610,3 +1610,63 @@ pushed and deployed, THEN the DDL. There is one Supabase project and no staging
 copy, so a column dropped while the deployed bundle still selects it breaks that
 page for real. Here the exposure was one SSO-gated admin page for the length of a
 Vercel deploy.
+
+## 2026-08-23 — The credential moves from the role to the person; Admin becomes a person
+
+**Supersedes the credential half of 2026-07-17 (people & roles P2).** That design
+hung ONE scrypt password on each role and made the password itself the role
+selector: you typed a password, the app worked out which role it belonged to,
+and then a second screen (`/whoami`, "tap your name") asked you to self-claim a
+person. Migrations 80 + 81 replace that with a name and a password.
+
+**Why (owner's call).** A role password cannot say who did the work. The
+self-claim step was a claim, not an identity — free to skip ("Continue without a
+name"), free to answer with someone else's name, and answered again on every
+device. The prompt for this was concrete: the Owner picker offered exactly one
+name, because the list was scoped to the role you had logged in as, and the
+person asking wasn't in that role. Wanting to know who did what is the actual
+requirement; role passwords never met it.
+
+**What login is now.** A NAME dropdown plus that person's own password
+(`people.password_hash`, scrypt, write-only in admin at `/admin/people/<id>`).
+Offered names are the ones where picking them can actually work: active, inside
+their engagement window, password set, and holding at least one role. A person
+with no role is withheld deliberately — their session would carry zero
+capabilities and be bounced off every route, so "you can log in but nothing
+opens" is not a state worth shipping.
+
+**Admin is a person, not an exception (owner's call).** The shared
+`SITE_PASSWORD` survives as ONE named account: a seeded `people` row
+(`is_system`), full capabilities, no role rows, authenticated against the env
+var rather than a hash of its own. Work done on the shared login is attributed
+to "Admin" instead of to nobody, which is the whole point of the change — from
+today, every session has a name on it. It cannot be archived and cannot be given
+a password of its own; both are refused server-side.
+
+**Everything else is gone, per the owner: "remove all other authentications for
+now."** The legacy shared-password digest token, the role-hash login loop, the
+per-role password admin card, and `/whoami` in its entirety. The fms_auth cookie
+now carries exactly one shape — the signed person session — and a pre-existing
+cookie without a person fails verification, so the holder simply logs in again.
+
+**Preferences follow the person (migration 81).** Anything we kept in a cookie
+or in localStorage was per BROWSER, which quietly lies the moment two people
+share a shop tablet. `people.ui_preferences` (JSONB) now holds the nav state,
+and `people.preferred_language` — made NULLABLE, so "never decided" stops
+reading as "chose Danish" — sets that person's language across the WHOLE app,
+not just the worker surfaces it covered before. `app_settings.app_language` /
+`worker_language` remain the fallback for whoever hasn't chosen, Admin included.
+Side benefit: both preferences are server-rendered from the person, so the rail
+no longer paints expanded and snap narrow after mount.
+
+**Rejected: keeping role passwords alongside person passwords.** Two credential
+systems for one shop, and the role password would have stayed the quiet way to
+log in as nobody.
+
+**Not carried over:** the `nav_open` cookie and the `jensen-fms:sidebar-collapsed`
+localStorage key are dead. Per-device state that is genuinely about the DEVICE
+(the `/scan` install hint, `collapse:*` section state) deliberately stays in
+localStorage — it is not a preference that should travel.
+
+**Sequencing note:** migration 80 drops `roles.password_hash`, so it followed the
+same rule as migration 79 — nothing reads the column before the DDL runs.

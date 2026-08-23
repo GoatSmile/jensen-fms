@@ -27,7 +27,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * People & roles — the workforce model's admin home (P1 of
  * docs/plan-people-roles.md): who works here, which hats they wear, what
- * each hat opens, and the per-role login password (auth v0.5).
+ * each hat opens, and each person's login password (auth v0.5).
  */
 export default async function AdminPeoplePage() {
   const supabase = await createClient();
@@ -40,14 +40,14 @@ export default async function AdminPeoplePage() {
   const [peopleRes, rolesRes, personRolesRes, capsRes] = await Promise.all([
     supabase
       .from("people")
-      .select("id, full_name, email, phone, is_active")
+      .select(
+        "id, full_name, email, phone, is_active, is_system, password_hash",
+      )
       .order("is_active", { ascending: false })
       .order("full_name", { ascending: true }),
     supabase
       .from("roles")
-      .select(
-        "id, key, name_en, name_da, home_path, sort_order, is_active, password_hash",
-      )
+      .select("id, key, name_en, name_da, home_path, sort_order, is_active")
       .order("is_active", { ascending: false })
       .order("sort_order", { ascending: true }),
     supabase.from("person_roles").select("person_id, role_id"),
@@ -142,6 +142,7 @@ export default async function AdminPeoplePage() {
                 <TableHead className="hidden md:table-cell">
                   {t("colRoles")}
                 </TableHead>
+                <TableHead>{t("colPassword")}</TableHead>
                 <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-[36px]" />
               </TableRow>
@@ -166,12 +167,21 @@ export default async function AdminPeoplePage() {
                     </TableCell>
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
+                        {row.is_system ? (
+                          <Badge variant="secondary">{t("sharedLogin")}</Badge>
+                        ) : row.password_hash ? (
+                          <Badge variant="success">{t("passwordSet")}</Badge>
+                        ) : (
+                          <Badge variant="outline">{t("passwordNotSet")}</Badge>
+                        )}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0">
+                      <Link href={href} className="block px-4 py-2.5">
                         {row.is_active ? (
                           <Badge variant="success">{t("statusActive")}</Badge>
                         ) : (
-                          <Badge variant="outline">
-                            {t("statusArchived")}
-                          </Badge>
+                          <Badge variant="outline">{t("statusArchived")}</Badge>
                         )}
                       </Link>
                     </TableCell>
@@ -224,7 +234,6 @@ export default async function AdminPeoplePage() {
                 <TableHead className="hidden text-right lg:table-cell">
                   {t("colPeople")}
                 </TableHead>
-                <TableHead>{t("colPassword")}</TableHead>
                 <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-[36px]" />
               </TableRow>
@@ -263,23 +272,10 @@ export default async function AdminPeoplePage() {
                     </TableCell>
                     <TableCell className="p-0">
                       <Link href={href} className="block px-4 py-2.5">
-                        {row.password_hash ? (
-                          <Badge variant="success">{t("passwordSet")}</Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            {t("passwordNotSet")}
-                          </Badge>
-                        )}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="p-0">
-                      <Link href={href} className="block px-4 py-2.5">
                         {row.is_active ? (
                           <Badge variant="success">{t("statusActive")}</Badge>
                         ) : (
-                          <Badge variant="outline">
-                            {t("statusArchived")}
-                          </Badge>
+                          <Badge variant="outline">{t("statusArchived")}</Badge>
                         )}
                       </Link>
                     </TableCell>

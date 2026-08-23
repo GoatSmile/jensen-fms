@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { ChevronRight, CircleUser, Menu, X } from "lucide-react";
+import { ChevronRight, CircleUser, LogOut, Menu, X } from "lucide-react";
 
 import { Logo, LogoMark } from "@/components/logo";
 import {
@@ -14,7 +14,7 @@ import {
   isNavItemActive,
 } from "@/components/nav-items";
 import { Button } from "@/components/ui/button";
-import { persistOpenGroups, type OpenGroups } from "@/lib/nav/open-groups";
+import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,12 +39,13 @@ export function MobileNav({
   /** Only role sessions carry a person identity (tap-your-name, P3). */
   showPersonChip: boolean;
   personName: string | null;
-  initialOpenGroups: OpenGroups;
+  initialOpenGroups: Record<string, boolean>;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<OpenGroups>(initialOpenGroups);
+  const [openGroups, setOpenGroups] =
+    useState<Record<string, boolean>>(initialOpenGroups);
   const groups = filterNavGroups(allowedCaps);
 
   // Close the drawer when the route changes — clicking a nav link navigates,
@@ -68,7 +69,7 @@ export function MobileNav({
     // Persist outside the setState updater — see the note in app-sidebar.tsx.
     const next = { ...openGroups, [id]: !openGroups[id] };
     setOpenGroups(next);
-    persistOpenGroups(next);
+    void savePreferences({ navOpen: { [id]: next[id] } });
   }
 
   return (
@@ -195,15 +196,19 @@ export function MobileNav({
             </nav>
             {showPersonChip ? (
               <div className="p-2">
+                {/* Who you are, then the way out — one row each, so the
+                    name is never mistaken for a button. */}
+                <div className="text-ink-2 flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm">
+                  <CircleUser aria-hidden className="size-4 shrink-0" />
+                  <span className="truncate">{personName}</span>
+                </div>
                 <DialogPrimitive.Close asChild>
                   <Link
-                    href="/whoami"
+                    href="/logout"
                     className="text-ink-2 hover:bg-ink/5 hover:text-ink flex items-center gap-2.5 rounded-full px-2.5 py-2 text-sm transition-colors"
                   >
-                    <CircleUser aria-hidden className="size-4 shrink-0" />
-                    <span className="truncate">
-                      {personName ?? t("whoami")}
-                    </span>
+                    <LogOut aria-hidden className="size-4 shrink-0" />
+                    <span className="truncate">{t("signOut")}</span>
                   </Link>
                 </DialogPrimitive.Close>
               </div>
