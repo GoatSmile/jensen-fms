@@ -212,3 +212,24 @@ the wrong database.
 
 **Trap — divergence.** Every new migration must be applied to both. `/migrations`
 stays the source of truth; `supabase db reset` after a fresh dump re-syncs local.
+
+### Signing in from a script (added 2026-08-24)
+
+The login gate blocks anything scripted, which is why `npm run smoke` reported
+4 pass · 106 redirect the first time it met a gated environment.
+
+    node scripts/dev-session.mjs                    # cookie for Admin
+    node scripts/dev-session.mjs "Lars"            # by name fragment, or a uuid
+    node scripts/dev-session.mjs "Lars" --curl     # a ready -b flag
+    curl -b "$(node scripts/dev-session.mjs Dennis)" http://localhost:3000/bikes
+
+It mints a REAL session with the same HMAC as `src/lib/auth/session.ts` — no
+bypass branch anywhere in app code, and it only works where SITE_PASSWORD is
+already known, i.e. locally. It will mint for ANY person, including one the
+login screen would refuse (no password, no roles): the mechanic who never logs
+in is exactly who attribution needs testing with.
+
+`npm run smoke` now signs itself in automatically when the gate is on, and
+`AS="Lars" npm run smoke` sweeps as one person — which is how you check what a
+role actually opens (as Lars, `/invoices` correctly bounces to `/work`).
+Baseline with the gate on is the same 92 pass · 18 redirect · 0 fail.

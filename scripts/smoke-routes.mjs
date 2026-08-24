@@ -13,6 +13,13 @@
  *   node scripts/smoke-routes.mjs                 # against http://localhost:3000
  *   BASE=http://localhost:3001 node scripts/…     # elsewhere
  *   node scripts/smoke-routes.mjs --only /parts   # substring filter
+ *   AS="Lars" node scripts/smoke-routes.mjs       # sweep as a given person
+ *
+ * When the login gate is on (SITE_PASSWORD set), the sweep signs itself in by
+ * minting a session cookie (scripts/lib/dev-session.mjs) — otherwise every
+ * route answers 307 to /login and the run means nothing. It swept as Admin by
+ * default, which holds every capability; `AS` narrows it to one person, which
+ * is how you check what a role actually opens.
  *
  * Requires a dev server already running (`npm run dev`) and `.env.local` for
  * the Supabase credentials used to resolve `[id]` segments.
@@ -22,9 +29,13 @@ import { readFile } from "node:fs/promises";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
+import { mintCookie } from "./lib/dev-session.mjs";
+
 const ROOT = process.cwd();
 const APP_DIR = path.join(ROOT, "src", "app");
 const BASE = process.env.BASE ?? "http://localhost:3000";
+/** Set once the sweep has a session; sent with every page fetch. */
+let SESSION_COOKIE = null;
 const onlyIdx = process.argv.indexOf("--only");
 const ONLY = onlyIdx > -1 ? process.argv[onlyIdx + 1] : null;
 
@@ -236,6 +247,19 @@ async function main() {
   }
   const db = new Db(env);
 
+  // Sign in, if there is a gate to get past. Without this every route answers
+  // 307 to /login and a green run would mean nothing.
+  if (env.SITE_PASSWORD) {
+    try {
+      const minted = await mintCookie(env, process.env.AS ?? null);
+      SESSION_COOKIE = minted.cookie;
+      console.log(`Signed in as ${minted.person.full_name}`);
+    } catch (err) {
+      console.error(`Could not mint a session: ${err.message}`);
+      process.exit(2);
+    }
+  }
+
   try {
     await fetch(BASE, { signal: AbortSignal.timeout(5000) });
   } catch {
@@ -263,7 +287,10 @@ async function main() {
     for (const url of urls) {
       let res;
       try {
-        res = await fetch(`${BASE}${url}`, { redirect: "manual" });
+        res = await fetch(`${BASE}${url}`, {
+          redirect: "manual",
+          headers: SESSION_COOKIE ? { cookie: SESSION_COOKIE } : {},
+        });
       } catch (err) {
         record(url, "—", "fail", `fetch threw: ${err.message}`);
         continue;
