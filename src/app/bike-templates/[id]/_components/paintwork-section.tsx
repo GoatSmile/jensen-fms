@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import type {
   PaintListUnavailable,
+  TemplatePaintLadderRung,
   TemplatePaintworkRow,
 } from "@/lib/services/template-paint";
 
@@ -34,8 +35,10 @@ type Props = {
   isCurrent: boolean;
   rows: TemplatePaintworkRow[];
   partTypes: PaintPartTypeOption[];
-  /** Footer summary, computed server-side. */
+  /** Footer summary, computed server-side. Always the singles tier. */
   totalLabel: string | null;
+  /** Per-bike price at each batch size that changes it; empty when flat. */
+  ladder: TemplatePaintLadderRung[];
   listLabel: string | null;
   unpricedCount: number;
   /** Why no list priced this, when none did. */
@@ -45,8 +48,12 @@ type Props = {
 /**
  * The template's paintwork declaration: which part-units one bike of this
  * template sends to the painter, priced live against the default painter's
- * current list at per-bike quantities (the 1–9 tier for singles). The DKK
- * total joins the parts cost in the recipe section's cost-to-produce box.
+ * current list.
+ *
+ * The footer figure is the SINGLES tier and says so — it is the number that
+ * joins parts cost in the cost-to-produce box, and a template that assumed a
+ * batch would inflate every margin built on it. The ladder beside it shows
+ * what a batch actually buys, as information rather than arithmetic.
  */
 export function PaintworkSection({
   templateId,
@@ -54,6 +61,7 @@ export function PaintworkSection({
   rows,
   partTypes,
   totalLabel,
+  ladder,
   listLabel,
   unpricedCount,
   unavailable,
@@ -126,13 +134,31 @@ export function PaintworkSection({
                 <div className="text-muted-foreground flex justify-end gap-2 text-sm">
                   <span>
                     {listLabel
-                      ? t("paintPerBikeWithList", { list: listLabel })
-                      : t("paintPerBike")}
+                      ? t("paintPerBikeSinglesWithList", { list: listLabel })
+                      : t("paintPerBikeSingles")}
                   </span>
                   <span className="text-foreground font-medium tabular-nums">
                     {totalLabel}
                   </span>
                 </div>
+              ) : null}
+              {ladder.length > 1 ? (
+                <p className="text-muted-foreground text-right text-xs">
+                  {t("paintLadderPrefix")}{" "}
+                  {ladder
+                    .map((rung) =>
+                      t("paintLadderRung", {
+                        range:
+                          rung.toBikes == null
+                            ? `${rung.fromBikes}+`
+                            : rung.fromBikes === rung.toBikes
+                              ? `${rung.fromBikes}`
+                              : `${rung.fromBikes}–${rung.toBikes}`,
+                        price: rung.perBikeLabel,
+                      }),
+                    )
+                    .join(" · ")}
+                </p>
               ) : null}
               {unpricedCount > 0 ? (
                 <p className="text-right text-xs text-money">

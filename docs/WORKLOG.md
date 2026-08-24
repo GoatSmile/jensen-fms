@@ -78,10 +78,11 @@ treat the early totals as floors, not truth.
 |---|---|---|
 | Mon 2026-08-17 | ~3 | **Prep for the Wednesday review with Dennis** — playbook + STATUS checked against reality and the 7 Aug rewrite finally committed; meeting agenda drafted; plain-language architecture + hosting-cost overview written for the meeting |
 | Thu 2026-08-20 | ~1 | **Post-review session opens** — oriented from STATUS + the Aug 19 meeting plan, checked prod state (Dennis's usage since 7 Aug, the switches, the debts). Fixes and QA push from Dennis's feedback start here. |
-| Sun 2026-08-23 | ~3 | **Login becomes a name + a password** (migrations 80 + 81): credential moved from role to person, shared password became the `Admin` person, role passwords / legacy token / `/whoami` removed, UI prefs + per-person language moved onto the person. |
+| Sun 2026-08-23 | ~3.5 | **Login becomes a name + a password** (migrations 80 + 81): credential moved from role to person, shared password became the `Admin` person, role passwords / legacy token / `/whoami` removed, UI prefs + per-person language moved onto the person. |
+| Mon 2026-08-24 | ~1 | **Template paintwork made honest** — per-bike quantity guarded at the source, the estimate decoupled from the recipe number and priced at the singles tier, with the batch ladder shown beside it. |
 
-**August so far: ~7 h** (3 working days)
+**August so far: ~8.5 h** (4 working days)
 
 ---
 
-**Project total: ~246.5 h across 39 working days (2026-05-07 → 2026-08-23)**
+**Project total: ~248 h across 40 working days (2026-05-07 → 2026-08-24)**

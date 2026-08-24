@@ -640,10 +640,10 @@ export function PartsRecipeSection({
                     <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
                       <span>
                         {paintEstimate.listLabel
-                          ? t("paintEstimatedWithList", {
+                          ? t("paintEstimatedSinglesWithList", {
                               list: paintEstimate.listLabel,
                             })
-                          : t("paintEstimated")}
+                          : t("paintEstimatedSingles")}
                       </span>
                       <span className="tabular-nums">
                         {paintEstimate.totalDkk != null

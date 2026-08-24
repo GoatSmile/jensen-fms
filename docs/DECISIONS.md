@@ -1681,3 +1681,56 @@ ignores speculative requests. The reason it got through local verification is
 worth keeping: the dev gate was OFF (no `SITE_PASSWORD` in `.env.local`), and
 with no session there is nothing to delete — the whole failure mode is invisible
 in that configuration. **Verify auth changes with the gate ON.**
+
+## 2026-08-24 — Template paintwork: a recipe, priced at singles, with the batch shown beside it
+
+**The trigger.** A template read *"Paint per bike: 8.800,00 kr."* and a margin of
+**−5.653,93 kr.** Two faults stacked. The Jeudan rows carried `quantity = 20` in a
+PER-BIKE field, and that one number fed two different things: it multiplied the line
+AND set the tier basis, so the per-piece column quietly switched to 20+ rates and the
+total looked plausible instead of absurd. The real figure is 710 kr and the margin is
++2.436,07 kr.
+
+**Paintwork stays on the template — as a DEFAULT, not a contract.** The question
+raised was whether paint belongs on the template at all, since a customer may want
+frame + fork one time and frame + fork + basket the next. It does, for the same
+reason the BOM does: what a product normally sends to the painter is stable product
+knowledge. Varying it is an ORDER-level edit, exactly as `manufacturing_order_parts`
+is an editable copy of the template BOM and `bike_parts` is what was actually
+consumed. A new template is right when the PRODUCT differs (different price, different
+BOM — as frame size already does), never because one order sends less.
+
+**What moves off the template is the price, not the paintwork.** Cost depends on the
+painter, the list revision, and the tier — and the tier depends on batch size, which
+is a property of an order. So:
+
+1. **The per-bike quantity is guarded at the source** (`MAX_QTY_PER_BIKE = 10` in
+   `manage-service-parts.ts`, rejecting with an error that says where batch size
+   belongs). The column header already read "Qty / bike" when the 20s went in, so a
+   label was not the fix. Relabelling discourages; validation makes it impossible.
+2. **The tier no longer moves with the recipe number.** `priceTemplatePerBike` takes
+   the batch as an argument and the recipe quantity only ever multiplies — a separate
+   function from `priceOrderItems` on purpose, because on an order the quantity IS the
+   pieces, and conflating the two is what produced the 20× reading.
+3. **The headline number is always the singles tier, and says so.** Rejected: a
+   `typical_batch_size` column on the template feeding "margin at N". Assuming a
+   cheaper batch inflates every quote built on the template, and a stored N decays
+   silently as a product's typical run changes. Singles OVERSTATES cost, which is the
+   safe direction for a number that feeds pricing. The batch ladder ("1–9: 710 · 10–19:
+   550 · 20+: 440") sits beside it as information, never in the arithmetic. Its rungs
+   are derived from the list's own breakpoints — converted to BIKE counts, since a
+   10-piece breakpoint is reached at 5 bikes when a bike sends 2 of that part — and
+   rungs that don't change the price are dropped.
+
+**Where the truth is:** paint order (frozen at send) → MO (knows N) → SO line (the
+quote) → template (illustration with its assumption printed).
+
+**Next, not now:** seeding a paint order's item lines from the attached bikes'
+templates (`bikes.template_id` + `bikes.color_id`, grouped by part type × colour) — a
+one-shot explicit action like the BOM-label bulk write, never an auto-write when a
+bike is attached. That is the piece that makes tiering CORRECT rather than a
+data-entry outcome, since tier basis is the order-wide total. Explicitly NOT now:
+allocating paint into `bike.build_cost_dkk` (needs a recognition-moment decision — build
+cost is stamped at `finishBikeBuild`, paint arrives on its own order) and any per-deal
+scope schema (that is the open question for Dennis: *is a Jeudan without a basket the
+same product sending less, or a product you would quote differently?*).

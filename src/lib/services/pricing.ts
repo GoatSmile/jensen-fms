@@ -155,3 +155,82 @@ export function priceOrderItems(
   }
   return { byItemId, total, unpricedCount };
 }
+
+export type PerBikeItemPrice = {
+  item: ServicePriceItem;
+  /** Pieces of this part type a batch of `bikes` sends — the tier basis. */
+  tierQty: number;
+  /** Cost for ONE bike's worth of this line at that tier. */
+  perBikeTotal: number;
+};
+
+/**
+ * Price a TEMPLATE's paintwork declaration for a batch of `bikes`.
+ *
+ * Separate from `priceOrderItems` because the two answer different questions
+ * and conflating them is what made a template read 20× its own cost. On an
+ * order, the quantity IS the pieces going to the painter. On a template, the
+ * quantity is per bike, and the pieces — hence the tier — depend on a batch
+ * size the template does not know. So the caller states the batch, and the
+ * recipe number only ever multiplies.
+ */
+export function priceTemplatePerBike(
+  items: ServicePriceItem[],
+  rows: OrderItemForPricing[],
+  bikes: number,
+): {
+  byItemId: Map<string, PerBikeItemPrice | null>;
+  perBikeTotal: number;
+  unpricedCount: number;
+} {
+  const byItemId = new Map<string, PerBikeItemPrice | null>();
+  let perBikeTotal = 0;
+  let unpricedCount = 0;
+
+  // Pieces per part type across the batch — two rows of the same type (which
+  // the unique constraint forbids today) would still tier together.
+  const piecesByPartType = new Map<string, number>();
+  for (const r of rows) {
+    piecesByPartType.set(
+      r.service_part_type_id,
+      (piecesByPartType.get(r.service_part_type_id) ?? 0) + r.quantity * bikes,
+    );
+  }
+
+  for (const r of rows) {
+    const tierQty = piecesByPartType.get(r.service_part_type_id) ?? r.quantity;
+    const resolved = resolveTierItem(items, r.service_part_type_id, tierQty);
+    if (!resolved) {
+      byItemId.set(r.id, null);
+      unpricedCount += 1;
+      continue;
+    }
+    const perBike = resolved.unit_price * r.quantity;
+    perBikeTotal += perBike;
+    byItemId.set(r.id, { item: resolved, tierQty, perBikeTotal: perBike });
+  }
+
+  return { byItemId, perBikeTotal, unpricedCount };
+}
+
+/**
+ * The batch sizes at which this declaration's per-bike cost actually changes.
+ *
+ * Derived from the list's own tier breakpoints rather than assumed: a
+ * breakpoint of 10 PIECES is reached at 5 bikes when a bike sends 2 of that
+ * part, so candidates are converted into bike counts before being offered.
+ */
+export function paintBatchBreakpoints(
+  items: ServicePriceItem[],
+  rows: OrderItemForPricing[],
+): number[] {
+  const bikeCounts = new Set<number>([1]);
+  for (const r of rows) {
+    if (r.quantity <= 0) continue;
+    for (const i of items) {
+      if (i.service_part_type_id !== r.service_part_type_id) continue;
+      bikeCounts.add(Math.max(1, Math.ceil(i.tier_min / r.quantity)));
+    }
+  }
+  return [...bikeCounts].sort((a, b) => a - b);
+}

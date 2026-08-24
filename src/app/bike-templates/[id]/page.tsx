@@ -347,6 +347,7 @@ export default async function BikeTemplateDetailPage({
           name_en: localizedName(locale, pt.name_en, pt.name_da),
         }))}
         totalLabel={paintEstimate.totalLabel}
+        ladder={paintEstimate.ladder}
         listLabel={paintEstimate.listLabel}
         unpricedCount={paintEstimate.unpricedCount}
         unavailable={paintEstimate.unavailable}

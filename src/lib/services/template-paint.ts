@@ -4,8 +4,18 @@
  * A template declares its paintwork in `bike_template_service_parts` (which
  * service part-units one bike sends to the painter: stel, forgaffel, kurv…).
  * This loader prices that declaration against the DEFAULT painter's current
- * price list at PER-BIKE quantities — a single bike sits in the 1–9 tier;
- * batch tiers apply on the paint order itself, where the real quantity is
+ * price list.
+ *
+ * THE HEADLINE NUMBER IS ALWAYS THE SINGLES TIER, deliberately. A template
+ * cannot know the batch its bikes will be built in, and a cheaper assumed
+ * batch would quietly inflate the margin on every quote built from it — the
+ * failure the 310→710 lesson already paid for once. Singles overstates cost,
+ * which is the safe direction. The `ladder` carries the batch prices beside
+ * it as information, never as the arithmetic.
+ *
+ * Note the tier no longer moves with the recipe number: the batch is stated
+ * by this loader (`priceTemplatePerBike`), so a per-bike quantity can only
+ * ever multiply. Real prices live on the paint order, where the quantity is
  * known and the send freezes the snapshot.
  *
  * The DKK total feeds the template's cost-to-produce + margin box (the
@@ -22,7 +32,8 @@ import { getOrFetchRate } from "@/lib/fx/get-or-fetch";
 import { one } from "@/lib/supabase/embed";
 
 import {
-  priceOrderItems,
+  paintBatchBreakpoints,
+  priceTemplatePerBike,
   tierLabel,
   type ServicePriceItem,
 } from "./pricing";
@@ -42,8 +53,22 @@ export type TemplatePaintworkRow = {
   tierBadge: string | null;
 };
 
+/** One rung: what a bike costs to paint when built in a batch this size. */
+export type TemplatePaintLadderRung = {
+  /** Bikes at which this price starts applying. */
+  fromBikes: number;
+  /** Last batch size at this price; null = open top. */
+  toBikes: number | null;
+  perBikeLabel: string;
+};
+
 export type TemplatePaintEstimate = {
   rows: TemplatePaintworkRow[];
+  /**
+   * Per-bike cost at each batch size that changes it, singles first. Empty
+   * when the price is flat (nothing to show) or nothing could be priced.
+   */
+  ladder: TemplatePaintLadderRung[];
   /** Estimated paint cost per bike in DKK; null when it can't be computed
    * (no list, nothing priced, or FX lookup failed on a non-DKK list). */
   totalDkk: number | null;
@@ -80,8 +105,7 @@ export type PaintListUnavailable =
   | { reason: "default_has_no_list"; supplierName: string | null };
 
 type PaintListResolution =
-  | { ok: true; list: PaintList }
-  | ({ ok: false } & PaintListUnavailable);
+  { ok: true; list: PaintList } | ({ ok: false } & PaintListUnavailable);
 
 /** Drop the discriminant so the reason can travel on the estimate. */
 function stripOk(
@@ -166,6 +190,7 @@ export async function loadTemplatePaintEstimate(
 ): Promise<TemplatePaintEstimate> {
   const empty: TemplatePaintEstimate = {
     rows: [],
+    ladder: [],
     totalDkk: null,
     totalLabel: null,
     listLabel: null,
@@ -190,14 +215,15 @@ export async function loadTemplatePaintEstimate(
     ? [list.name, list.supplierName].filter(Boolean).join(" · ")
     : null;
 
-  const priced = priceOrderItems(
-    { items: list?.items ?? [] },
-    paintRows.map((r) => ({
-      id: r.id,
-      service_part_type_id: r.service_part_type_id,
-      quantity: r.quantity,
-    })),
-  );
+  const forPricing = paintRows.map((r) => ({
+    id: r.id,
+    service_part_type_id: r.service_part_type_id,
+    quantity: r.quantity,
+  }));
+  const items = list?.items ?? [];
+  // ONE bike: the tier every row is priced at, and the total the margin box
+  // gets. See the header note — this is the conservative direction on purpose.
+  const priced = priceTemplatePerBike(items, forPricing, 1);
 
   const rows: TemplatePaintworkRow[] = paintRows
     .map((r) => ({ r, partType: one(r.part_type) }))
@@ -220,7 +246,7 @@ export async function loadTemplatePaintEstimate(
             : null,
         lineTotalLabel:
           resolved && list
-            ? formatPrice(resolved.lineTotal, list.currency)
+            ? formatPrice(resolved.perBikeTotal, list.currency)
             : null,
         tierBadge: resolved ? tierLabel(resolved.item) : null,
       };
@@ -228,13 +254,40 @@ export async function loadTemplatePaintEstimate(
 
   const anyPriced = rows.some((r) => r.unitPriceLabel != null);
   const totalLabel =
-    anyPriced && list ? formatPrice(priced.total, list.currency) : null;
+    anyPriced && list ? formatPrice(priced.perBikeTotal, list.currency) : null;
+
+  // The ladder: price the same declaration at every batch size that changes
+  // it, then drop the rungs that don't (a breakpoint on a part type this bike
+  // doesn't send much of buys nothing, and a rung showing the same number
+  // twice is noise). One surviving rung means flat pricing — show none.
+  const ladder: TemplatePaintLadderRung[] = [];
+  if (anyPriced && list) {
+    const priceByBikes = paintBatchBreakpoints(items, forPricing).map(
+      (bikes) => ({
+        bikes,
+        perBike: priceTemplatePerBike(items, forPricing, bikes).perBikeTotal,
+      }),
+    );
+    const changes = priceByBikes.filter(
+      (p, i) => i === 0 || p.perBike !== priceByBikes[i - 1].perBike,
+    );
+    if (changes.length > 1) {
+      for (const [i, c] of changes.entries()) {
+        const next = changes[i + 1];
+        ladder.push({
+          fromBikes: c.bikes,
+          toBikes: next ? next.bikes - 1 : null,
+          perBikeLabel: formatPrice(c.perBike, list.currency),
+        });
+      }
+    }
+  }
 
   // DKK total for the margin math; ECB conversion for a non-DKK list.
   let totalDkk: number | null = null;
   if (anyPriced && list) {
     if (list.currency === "DKK") {
-      totalDkk = priced.total;
+      totalDkk = priced.perBikeTotal;
     } else {
       const fx = await getOrFetchRate(
         supabase,
@@ -242,12 +295,13 @@ export async function loadTemplatePaintEstimate(
         "DKK",
         new Date().toISOString().slice(0, 10),
       );
-      totalDkk = fx ? priced.total * fx.rate : null;
+      totalDkk = fx ? priced.perBikeTotal * fx.rate : null;
     }
   }
 
   return {
     rows,
+    ladder,
     totalDkk,
     totalLabel,
     listLabel,

@@ -46,8 +46,22 @@ function parseQuantity(
   if (!Number.isInteger(n) || n <= 0) {
     return { ok: false, error: t("tplQuantityWholeAboveZero") };
   }
+  if (n >= MAX_QTY_PER_BIKE) {
+    return { ok: false, error: t("tplPaintQtyPerBikeOnly") };
+  }
   return { ok: true, value: n };
 }
+
+/**
+ * A per-bike count, so a real value is 1 — occasionally 2 (two signs; two
+ * mudguards if that type is ever split). Anything at or above this is a BATCH
+ * size typed into a per-bike field, which is exactly what happened once: 20 in
+ * every row read as "20 frames per bike", multiplied the line AND pushed the
+ * tier lookup to 20+, and reported 20 bikes' worth of paint as the per-bike
+ * cost. The column header already said "Qty / bike" at the time — a label was
+ * not the fix, this is.
+ */
+const MAX_QTY_PER_BIKE = 10;
 
 export async function addTemplatePaintPart(
   templateId: string,
