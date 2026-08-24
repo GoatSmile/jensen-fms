@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Wand2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   removeServiceOrderItem,
   updateServiceOrderItem,
 } from "../_actions/manage-items";
+import { seedItemsFromBikes } from "../_actions/seed-items";
 import { Section } from "./section";
 
 export type PartTypeOption = {
@@ -66,6 +67,8 @@ export type ServiceOrderItemRow = {
 type Props = {
   serviceOrderId: string;
   orderStatus: string;
+  /** How many bikes are attached — the seeder's raw material. */
+  attachedBikes: number;
   rows: ServiceOrderItemRow[];
   partTypes: PartTypeOption[];
   colors: ColorOption[];
@@ -80,6 +83,7 @@ type Props = {
 export function ServiceOrderItemsSection({
   serviceOrderId,
   orderStatus,
+  attachedBikes,
   rows,
   partTypes,
   colors,
@@ -92,6 +96,7 @@ export function ServiceOrderItemsSection({
   const t = useTranslations("paintOrderDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [seedNote, setSeedNote] = useState<string | null>(null);
   const canEdit = orderStatus === "planned";
 
   return (
@@ -100,14 +105,30 @@ export function ServiceOrderItemsSection({
       description={canEdit ? t("itemsDescEdit") : t("itemsDescSent")}
       action={
         canEdit ? (
-          <AddItemDialog
-            serviceOrderId={serviceOrderId}
-            partTypes={partTypes}
-            colors={colors}
-            defaultColorId={defaultColorId}
-            onError={setError}
-            onChange={() => router.refresh()}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <FillFromBikesButton
+              serviceOrderId={serviceOrderId}
+              attachedBikes={attachedBikes}
+              existingLines={rows.length}
+              onError={(e) => {
+                setError(e);
+                setSeedNote(null);
+              }}
+              onSeeded={(note) => {
+                setError(null);
+                setSeedNote(note);
+                router.refresh();
+              }}
+            />
+            <AddItemDialog
+              serviceOrderId={serviceOrderId}
+              partTypes={partTypes}
+              colors={colors}
+              defaultColorId={defaultColorId}
+              onError={setError}
+              onChange={() => router.refresh()}
+            />
+          </div>
         ) : undefined
       }
     >
@@ -117,9 +138,19 @@ export function ServiceOrderItemsSection({
         </p>
       ) : null}
 
+      {seedNote ? (
+        <p className="text-muted-foreground mb-3 text-sm" role="status">
+          {seedNote}
+        </p>
+      ) : null}
+
       {rows.length === 0 ? (
-        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg text-sm">
-          {canEdit ? t("noItemsEdit") : t("noItems")}
+        <div className="text-ink-3 bg-ground flex h-20 items-center justify-center rounded-lg px-4 text-center text-sm">
+          {canEdit
+            ? attachedBikes > 0
+              ? t("noItemsFillHint")
+              : t("noItemsEdit")
+            : t("noItems")}
         </div>
       ) : (
         <div className="overflow-x-auto md:overflow-hidden">
@@ -177,9 +208,7 @@ export function ServiceOrderItemsSection({
       )}
 
       {canEdit && rows.length > 0 && priceListName == null ? (
-        <p className="mt-2 text-xs text-money">
-          {t("noPriceListWarning")}
-        </p>
+        <p className="mt-2 text-xs text-money">{t("noPriceListWarning")}</p>
       ) : null}
     </Section>
   );
@@ -299,15 +328,23 @@ function ItemRow({
               {colors.map((c) => {
                 const label = localizedName(locale, c.name_en, c.name_da);
                 return (
-                <SelectItem key={c.id} value={c.id}>
-                  <ColorSwatch hex={c.hex} label={label} />
-                  {label}
-                  {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
-                    <span className="text-muted-foreground ml-1.5 text-xs">
-                      {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
-                    </span>
-                  ) : null}
-                </SelectItem>
+                  <SelectItem key={c.id} value={c.id}>
+                    <ColorSwatch hex={c.hex} label={label} />
+                    {label}
+                    {colorFinishLabel(
+                      c.ral_code,
+                      c.coating,
+                      locale === "da" ? "da" : "en",
+                    ) ? (
+                      <span className="text-muted-foreground ml-1.5 text-xs">
+                        {colorFinishLabel(
+                          c.ral_code,
+                          c.coating,
+                          locale === "da" ? "da" : "en",
+                        )}
+                      </span>
+                    ) : null}
+                  </SelectItem>
                 );
               })}
             </SelectContent>
@@ -337,16 +374,12 @@ function ItemRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-money">
-            {t("noPrice")}
-          </span>
+          <span className="text-money">{t("noPrice")}</span>
         )}
       </td>
 
       <td className="px-4 py-2.5 text-right tabular-nums">
-        {row.lineTotalLabel ?? (
-          <span className="text-muted-foreground">—</span>
-        )}
+        {row.lineTotalLabel ?? <span className="text-muted-foreground">—</span>}
       </td>
 
       <td className="px-4 py-2.5 text-right">
@@ -488,15 +521,23 @@ function AddItemDialog({
                 {colors.map((c) => {
                   const label = localizedName(locale, c.name_en, c.name_da);
                   return (
-                  <SelectItem key={c.id} value={c.id}>
-                    <ColorSwatch hex={c.hex} label={label} />
-                    {label}
-                    {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
-                      <span className="text-muted-foreground ml-1.5 text-xs">
-                        {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
-                      </span>
-                    ) : null}
-                  </SelectItem>
+                    <SelectItem key={c.id} value={c.id}>
+                      <ColorSwatch hex={c.hex} label={label} />
+                      {label}
+                      {colorFinishLabel(
+                        c.ral_code,
+                        c.coating,
+                        locale === "da" ? "da" : "en",
+                      ) ? (
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                          {colorFinishLabel(
+                            c.ral_code,
+                            c.coating,
+                            locale === "da" ? "da" : "en",
+                          )}
+                        </span>
+                      ) : null}
+                    </SelectItem>
                   );
                 })}
               </SelectContent>
@@ -537,6 +578,108 @@ function AddItemDialog({
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * "Fill from bikes" — recompute the order's lines from the attached bikes'
+ * templates, grouped by part type × colour.
+ *
+ * A one-shot writer, like the BOM-label bulk action: it never runs on its
+ * own when a bike is attached, and later template edits do not reach back
+ * into a planned order. Re-filling REPLACES, because merging into
+ * hand-edited lines has no defensible definition — there is no uniqueness on
+ * (order, part type, colour), so duplicates are legal and a tech may want
+ * two lines that differ only in their notes.
+ */
+function FillFromBikesButton({
+  serviceOrderId,
+  attachedBikes,
+  existingLines,
+  onError,
+  onSeeded,
+}: {
+  serviceOrderId: string;
+  attachedBikes: number;
+  existingLines: number;
+  onError: (error: string) => void;
+  onSeeded: (note: string) => void;
+}) {
+  const t = useTranslations("paintOrderDetail");
+  const tCommon = useTranslations("common");
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+
+  function run() {
+    start(async () => {
+      const r = await seedItemsFromBikes(serviceOrderId);
+      setOpen(false);
+      if (!r.ok) {
+        onError(r.error);
+        return;
+      }
+      // Say what happened to every attached bike, not just the happy ones —
+      // a silent bulk write is how people stop trusting a button.
+      const parts = [
+        t("seedDoneLines", { lines: r.linesWritten, bikes: r.seededBikes }),
+      ];
+      if (r.bikesWithoutPaintwork > 0) {
+        parts.push(
+          t("seedSkippedNoPaintwork", { count: r.bikesWithoutPaintwork }),
+        );
+      }
+      if (r.bikesWithoutTemplate > 0) {
+        parts.push(
+          t("seedSkippedNoTemplate", { count: r.bikesWithoutTemplate }),
+        );
+      }
+      if (r.bikesWithoutColour > 0) {
+        parts.push(t("seedNoColour", { count: r.bikesWithoutColour }));
+      }
+      onSeeded(parts.join(" "));
+    });
+  }
+
+  const label = existingLines > 0 ? t("refillFromBikes") : t("fillFromBikes");
+
+  if (existingLines === 0) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={attachedBikes === 0 || pending}
+        title={attachedBikes === 0 ? t("fillNeedsBikes") : undefined}
+        onClick={run}
+      >
+        <Wand2 aria-hidden /> {pending ? t("filling") : label}
+      </Button>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" disabled={attachedBikes === 0}>
+          <Wand2 aria-hidden /> {label}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("refillConfirmTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("refillConfirmBody", { count: existingLines })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            {tCommon("cancel")}
+          </Button>
+          <Button onClick={run} disabled={pending}>
+            {pending ? t("filling") : t("refillConfirmAction")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

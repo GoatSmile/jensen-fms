@@ -182,7 +182,11 @@ export default async function PaintOrderDetailPage({
         : null,
       colorHex: i.color?.hex ?? null,
       colorFinish: i.color
-        ? colorFinishLabel(i.color.ral_code, i.color.coating, locale === "da" ? "da" : "en")
+        ? colorFinishLabel(
+            i.color.ral_code,
+            i.color.coating,
+            locale === "da" ? "da" : "en",
+          )
         : null,
       notes: i.notes,
     };
@@ -260,7 +264,9 @@ export default async function PaintOrderDetailPage({
         ? localizedName(locale, r.color.name_en, r.color.name_da)
         : null,
       legacyColorHex: r.color?.hex ?? null,
-      legacyScopeLabel: r.scope ? (LEGACY_SCOPE_LABEL[r.scope] ?? r.scope) : null,
+      legacyScopeLabel: r.scope
+        ? (LEGACY_SCOPE_LABEL[r.scope] ?? r.scope)
+        : null,
     };
   });
 
@@ -328,7 +334,11 @@ export default async function PaintOrderDetailPage({
         colorHex={order.color?.hex ?? null}
         colorFinish={
           order.color
-            ? colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en")
+            ? colorFinishLabel(
+                order.color.ral_code,
+                order.color.coating,
+                locale === "da" ? "da" : "en",
+              )
             : null
         }
       />
@@ -349,9 +359,17 @@ export default async function PaintOrderDetailPage({
                     order.color.name_da,
                   )}
                 />
-                {colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en") ? (
+                {colorFinishLabel(
+                  order.color.ral_code,
+                  order.color.coating,
+                  locale === "da" ? "da" : "en",
+                ) ? (
                   <span className="text-muted-foreground text-xs">
-                    {colorFinishLabel(order.color.ral_code, order.color.coating, locale === "da" ? "da" : "en")}
+                    {colorFinishLabel(
+                      order.color.ral_code,
+                      order.color.coating,
+                      locale === "da" ? "da" : "en",
+                    )}
                   </span>
                 ) : null}
               </span>
@@ -408,6 +426,7 @@ export default async function PaintOrderDetailPage({
       <ServiceOrderItemsSection
         serviceOrderId={order.id}
         orderStatus={order.status}
+        attachedBikes={bikeRows.length}
         rows={itemRows}
         partTypes={partTypes}
         colors={colors}

@@ -4623,6 +4623,10 @@ export type Database = {
         Args: { p_list_id: string }
         Returns: undefined
       }
+      replace_service_order_items: {
+        Args: { p_items: Json; p_order_id: string }
+        Returns: number
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

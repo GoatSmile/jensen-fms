@@ -1734,3 +1734,52 @@ allocating paint into `bike.build_cost_dkk` (needs a recognition-moment decision
 cost is stamped at `finishBikeBuild`, paint arrives on its own order) and any per-deal
 scope schema (that is the open question for Dennis: *is a Jeudan without a basket the
 same product sending less, or a product you would quote differently?*).
+
+## 2026-08-24 (later) — "Fill from bikes": the template's paintwork reaches the order
+
+Follows the entry above, which established the template as a DEFAULT and the order as
+the truth. Until now the default reached nothing: `bike_template_service_parts` fed the
+template's estimate panel and nowhere else, and every paint order's item lines were
+typed by hand.
+
+**What it does.** One button on a `planned` paint order expands each attached bike's
+template paintwork and groups it by **part type × the bike's colour**. Twenty Jeudans
+in white and five in blue become *Frame · White · 20*, *Frame · Blue · 5*, and so on.
+
+**It is a pricing fix, not just a typing fix.** Tier basis is the order-wide total per
+part type, so twenty bikes each sending one frame land the whole order in the 20+ band
+automatically. Typed by hand, the tier follows whatever was typed — which is exactly
+how the template came to read 20+ rates for a single bike.
+
+**Decisions, and why:**
+- **Explicit button, never an auto-write when a bike is attached.** Attaching is
+  traceability; deciding what goes to the painter is a decision, and a bike may
+  deliberately be sent frame-only. Same one-shot-writer shape as the BOM-label bulk
+  action: later template edits never reach back into a planned order.
+- **Replace, not merge.** There is no uniqueness on (order, part type, colour) — two
+  lines differing only in notes are legal — so "add what's missing" has no defensible
+  definition. Re-filling discards and rebuilds, behind a confirm that says how many
+  lines go.
+- **Atomic via an RPC** (migration 82, `replace_service_order_items`), following
+  `publish_service_price_list`. Delete-then-insert over two PostgREST calls would leave
+  a hand-curated list wiped if the insert half failed. The function re-checks `planned`
+  itself — verified by calling it against the cancelled order, which raised.
+- **Refuses when it would write nothing**, so "every attached bike is unseedable"
+  cannot quietly empty an order that already has lines.
+- **The bike's OWN template version** (`bikes.template_id`), not the family's current
+  one — two bikes from v1 and v2 contribute their own recipes, which is what history
+  says happened. **Colour from `bikes.color_id`**, never
+  `service_order_bikes.color_id`, which is legacy from the pre-items paint model and
+  would silently shadow the truth.
+- **Every attached bike is accounted for on screen** — seeded, skipped for no template
+  (a `/bikes/new` bike), skipped for no paintwork declared, or contributing colourless
+  lines. A silent bulk write is how people stop trusting a button.
+- Grouping lives in `src/lib/services/paint-seed.ts`, pure and DB-free (the
+  `import-tax.ts` doctrine); the RPC only writes finished lines.
+
+**Standing data gap this exposed:** the templates that HAVE paintwork (Jeudan, Svajer
+classic) have no bikes, and the templates with bikes (Norma CS, Norma FS) declare no
+paintwork. So the button correctly reports "skipped — no paintwork declared" for every
+bike in prod today, and those templates' cost-to-produce silently omits paint. Asking
+Dennis what a Norma sends to the painter is data entry, not code — and it is what makes
+both this feature and those margins real.
