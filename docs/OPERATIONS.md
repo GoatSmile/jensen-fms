@@ -150,3 +150,65 @@ the Keychain.
   handoff in `munin/CLAUDE.md`
 - Owner's legacy Excel register ("Bikes and customers.xlsx") — source of
   the dashboard history backfill (migration 59)
+
+## Local database copy (added 2026-08-24)
+
+A full local Supabase stack, so testing never touches the database Dennis is
+using. Prompted by two `TEST-SEED-DELETE-ME` bikes appearing in production
+during a verification run.
+
+**Start / stop**
+
+    supabase start          # first run pulls ~12 images; after that, seconds
+    supabase stop           # keeps the volume; data survives
+    supabase db reset       # rebuild from supabase/ seed files (see below)
+
+**Which database am I on?** Two independent answers, and they can disagree:
+
+    scripts/use-db.sh              # what .env.local says NOW
+    scripts/use-db.sh local|prod   # switch (then RESTART the dev server)
+
+and the dev-only banner at the bottom of every page — green *Local database*,
+red *PRODUCTION database*. The banner reflects what the running server actually
+loaded, the script reflects the file. **Disagreement means: restart.**
+
+**Local URLs** — the app stays on `http://localhost:3000` either way, which is
+exactly why the banner exists.
+
+| API | `http://127.0.0.1:54321` |
+|---|---|
+| Postgres | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
+| Studio (browse/edit tables, no login) | `http://127.0.0.1:54323` |
+| Mailpit | `http://127.0.0.1:54324` |
+
+`psql` is installed via Homebrew's `libpq` but unlinked:
+`/opt/homebrew/opt/libpq/bin/psql`.
+
+**How the copy is built.** `supabase/config.toml` seeds from three files in
+order: `schema.sql` → `data.sql` → `anonymise.sql`. The first two are dumps of
+production (`supabase db dump` / `--data-only`) and are **gitignored — data.sql
+holds real customer data**. `anonymise.sql` IS committed: it is the recipe, and
+running it as part of the seed means `supabase db reset` always rebuilds to the
+safe state rather than anonymising once and hoping.
+
+**What anonymisation does** (owner's scope, 2026-08-24): emails and phone
+numbers only, everywhere they appear, including `app_settings` outbound config.
+Names, parts, prices, orders and stock stay real — they are what the copy is
+for. Addresses become `@example.invalid` (RFC 2606, cannot resolve). **Kept
+real on purpose:** the `Nazar Taras` customer organisation and person — the
+owner's own test account. Refresh the copy by re-running the two dumps and
+`supabase db reset`.
+
+**Outbound secrets are absent from `env/local.env`** (Resend, Twilio,
+e-conomic). Those features read as "not configured" locally, which is the
+correct local state. `SITE_PASSWORD=local-dev` IS set, so the login gate
+behaves like production — without a session there is no person, and nothing to
+attribute work to.
+
+**Trap — the Supabase MCP tools stay bound to PRODUCTION** (`jzlphajunfrqvpogzsiz`)
+no matter what the app points at. When work is being verified locally, query
+with `psql` against `127.0.0.1:54322`; `execute_sql` would confirm the change in
+the wrong database.
+
+**Trap — divergence.** Every new migration must be applied to both. `/migrations`
+stays the source of truth; `supabase db reset` after a fresh dump re-syncs local.

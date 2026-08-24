@@ -93,6 +93,13 @@ Domains: reference, catalog, suppliers/purchasing, inventory, customers, bikes,
 commercial, maintenance, cross-cutting. Original SQL files live in
 `/migrations/`.
 
+- **A LOCAL database copy exists since 2026-08-24** (`supabase start`, runbook
+  in `docs/OPERATIONS.md`) — so "one project, no staging copy" is no longer the
+  whole truth. Two consequences: the **MCP tools still point at PRODUCTION**
+  whatever the app is pointed at, so verify local work with `psql` against
+  `127.0.0.1:54322`, never `execute_sql`; and `scripts/use-db.sh` plus the
+  dev-only banner (green LOCAL / red PRODUCTION) are how you know which one is
+  live. A write through the MCP still lands in production.
 - **The MCP server has WRITE access, deliberately** — it is not read-only and
   is not to be made read-only. Verified 2026-07-28: `execute_sql` connects as
   `postgres` with `rolbypassrls = true` and `transaction_read_only = off`, and

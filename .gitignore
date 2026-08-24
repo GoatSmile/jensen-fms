@@ -56,3 +56,12 @@ next-env.d.ts
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Local Supabase stack. The dumps carry REAL customer data (data.sql is taken
+# from production before anonymisation runs) and must never be committed.
+# supabase/anonymise.sql and config.toml ARE committed — they are the recipe,
+# not the data.
+supabase/schema.sql
+supabase/data.sql
+supabase/.temp/
+supabase/.branches/

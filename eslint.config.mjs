@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
     "public/sw.js",
     "public/sw.js.map",
     "public/swe-worker-*.js",
+    // The Supabase CLI writes generated, minified JS into supabase/.temp on
+    // every `supabase start`. Gitignored, but ESLint does not read
+    // .gitignore, so without this the commit gate lints the local stack's
+    // own runtime and fails on `var`.
+    "supabase/**",
   ]),
   {
     rules: {
