@@ -173,10 +173,7 @@ export function PartsRecipeSection({
     [categories],
   );
 
-  const knownPartIds = useMemo(
-    () => new Set(parts.map((p) => p.id)),
-    [parts],
-  );
+  const knownPartIds = useMemo(() => new Set(parts.map((p) => p.id)), [parts]);
 
   // How many recipe rows each category has — drives the done-state and the
   // picked/available counter on the left.
@@ -284,7 +281,10 @@ export function PartsRecipeSection({
       },
     ]);
     // Reset the picker so it reads the placeholder again, ready for another.
-    setPickerValueByCat((prev) => ({ ...prev, [category.id]: "__placeholder__" }));
+    setPickerValueByCat((prev) => ({
+      ...prev,
+      [category.id]: "__placeholder__",
+    }));
     setSuccess(null);
   }
 
@@ -392,6 +392,7 @@ export function PartsRecipeSection({
         <>
           {t("recipeParts", { count: rows.length })} ·{" "}
           {t("recipeUnits", { count: totalUnitsPerBike })}
+          {rows.length > 0 ? <> · {t("lineFiguresLegend")}</> : null}
           {rows.length > 0 ? (
             <>
               {" · "}
@@ -500,18 +501,23 @@ export function PartsRecipeSection({
               <CategoryChecklistRow
                 key={category.id}
                 index={index + 1}
-                label={localizedName(locale, category.name_en, category.name_da)}
+                label={localizedName(
+                  locale,
+                  category.name_en,
+                  category.name_da,
+                )}
                 parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
                   id: p.id,
                   sku: p.internal_sku,
                   name: p.name_en,
-                  meta: p.retailDkk != null ? formatDkk(p.retailDkk) : null,
+                  meta:
+                    p.costDkk != null
+                      ? t("costMeta", { amount: formatDkk(p.costDkk) })
+                      : t("noCostYet"),
                 }))}
                 addedIds={inRecipePartIds}
                 pickedCount={pickedByCategory.get(category.id) ?? 0}
-                selectValue={
-                  pickerValueByCat[category.id] ?? "__placeholder__"
-                }
+                selectValue={pickerValueByCat[category.id] ?? "__placeholder__"}
                 onSelectValue={(v) =>
                   setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
                 }
@@ -575,12 +581,19 @@ export function PartsRecipeSection({
                     const catName =
                       catRows[0]?.categoryName ?? t("uncategorised");
                     let subtotal = 0;
+                    let retailSubtotal = 0;
                     let hasPrice = false;
+                    let hasRetail = false;
                     for (const r of catRows) {
                       const qty = Number(r.quantity);
-                      if (r.retailDkk != null && Number.isFinite(qty)) {
-                        subtotal += qty * r.retailDkk;
+                      if (!Number.isFinite(qty)) continue;
+                      if (r.costDkk != null) {
+                        subtotal += qty * r.costDkk;
                         hasPrice = true;
+                      }
+                      if (r.retailDkk != null) {
+                        retailSubtotal += qty * r.retailDkk;
+                        hasRetail = true;
                       }
                     }
                     return (
@@ -592,11 +605,18 @@ export function PartsRecipeSection({
                           <span className="text-xs font-medium uppercase tracking-wide">
                             {catName}
                           </span>
-                          {hasPrice ? (
-                            <span className="text-muted-foreground text-xs tabular-nums">
-                              {formatDkk(subtotal)}
-                            </span>
-                          ) : null}
+                          <span className="text-muted-foreground flex items-center gap-2 text-xs tabular-nums">
+                            {hasPrice ? (
+                              <span>{formatDkk(subtotal)}</span>
+                            ) : null}
+                            {hasRetail ? (
+                              <span>
+                                {t("retailInline", {
+                                  amount: formatDkk(retailSubtotal),
+                                })}
+                              </span>
+                            ) : null}
+                          </span>
                         </div>
                         <ul className="divide-y">
                           {catRows.map((r) => (
@@ -825,7 +845,13 @@ function RecipeLine({
 }) {
   const t = useTranslations("templateDetail");
   const qty = Number(row.quantity);
-  const lineTotal =
+  // Cost is the headline because this panel's job is cost to produce; retail
+  // rides along LABELLED. Both used to be one unlabelled number — retail —
+  // sitting under a total that said "parts cost", so the lines never
+  // reconciled with the figure directly above them.
+  const costTotal =
+    row.costDkk != null && Number.isFinite(qty) ? qty * row.costDkk : null;
+  const lineRetail =
     row.retailDkk != null && Number.isFinite(qty) ? qty * row.retailDkk : null;
 
   return (
@@ -840,11 +866,16 @@ function RecipeLine({
           </Link>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {lineTotal != null ? (
+          <span className="flex flex-col items-end">
             <span className="text-sm font-medium tabular-nums">
-              {formatDkk(lineTotal)}
+              {costTotal != null ? formatDkk(costTotal) : t("noCostYet")}
             </span>
-          ) : null}
+            {lineRetail != null ? (
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {t("retailInline", { amount: formatDkk(lineRetail) })}
+              </span>
+            ) : null}
+          </span>
           {canEdit ? (
             <Button
               size="icon-sm"
