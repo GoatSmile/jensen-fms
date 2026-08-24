@@ -1,0 +1,2 @@
+# Stored environment files, switched by scripts/use-db.sh. Never committed.
+*.env
