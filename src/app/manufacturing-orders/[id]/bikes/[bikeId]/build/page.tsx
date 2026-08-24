@@ -11,6 +11,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { localizedName } from "@/i18n/vocab";
+import { readPersonId } from "@/lib/auth/read-session";
+import { loadActivePeople } from "@/lib/people/queries";
 import { createClient } from "@/lib/supabase/server";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
@@ -40,6 +42,11 @@ export default async function BikeBuildWorkbenchPage({
     getLocale(),
   ]);
   const supabase = await createClient();
+  // Everyone pickable as the builder, plus who is logged in (the default).
+  const [peopleOptions, sessionPersonId] = await Promise.all([
+    loadActivePeople(supabase),
+    readPersonId(),
+  ]);
 
   const [
     moRes,
@@ -377,6 +384,8 @@ export default async function BikeBuildWorkbenchPage({
       </Breadcrumb>
 
       <BuildWorkbench
+        peopleOptions={peopleOptions}
+        defaultBuiltById={sessionPersonId}
         moId={moId}
         moNumber={mo.mo_number}
         bikeId={bikeId}

@@ -105,6 +105,14 @@ type Props = {
   templateLabel: string | null;
   colorName: string | null;
   colorHex: string | null;
+  /**
+   * Who can be named as the builder. The mechanic who did the work often is
+   * not the one at the keyboard (migration 83), so this is a choice, not the
+   * session person — but it DEFAULTS to whoever is logged in, so the common
+   * case costs nothing.
+   */
+  peopleOptions: { id: string; full_name: string }[];
+  defaultBuiltById: string | null;
   initialBikeParts: BikePartRow[];
   categories: CategoryOption[];
   catalog: PartInCatalog[];
@@ -137,6 +145,8 @@ export function BuildWorkbench({
   templateLabel,
   colorName,
   colorHex,
+  peopleOptions,
+  defaultBuiltById,
   initialBikeParts,
   categories,
   catalog,
@@ -152,6 +162,9 @@ export function BuildWorkbench({
 }: Props) {
   const t = useTranslations("build");
   const tStatus = useTranslations("bikeStatus");
+  // Defaults to the session person: the common case is that whoever is
+  // finishing the build did it. Changing it is one tap.
+  const [builtBy, setBuiltBy] = useState<string | null>(defaultBuiltById);
   const locale = useLocale();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -210,7 +223,10 @@ export function BuildWorkbench({
 
   // Catalog ids the kit-add control treats as "known" (kit members outside
   // the catalog are ignored).
-  const knownPartIds = useMemo(() => new Set(catalog.map((p) => p.id)), [catalog]);
+  const knownPartIds = useMemo(
+    () => new Set(catalog.map((p) => p.id)),
+    [catalog],
+  );
 
   // Recipe rows per category — drives the green-checklist done-state.
   const pickedByCategory = useMemo(() => {
@@ -272,7 +288,11 @@ export function BuildWorkbench({
     });
   }
 
-  function onPickFromCategory(categoryId: string, partId: string, quantity = 1) {
+  function onPickFromCategory(
+    categoryId: string,
+    partId: string,
+    quantity = 1,
+  ) {
     if (!partId || partId === "__placeholder__") return;
     setError(null);
     setSuccess(null);
@@ -283,7 +303,10 @@ export function BuildWorkbench({
         setError(r.error);
         return;
       }
-      setPickerValueByCat((prev) => ({ ...prev, [categoryId]: "__placeholder__" }));
+      setPickerValueByCat((prev) => ({
+        ...prev,
+        [categoryId]: "__placeholder__",
+      }));
       router.refresh();
     });
   }
@@ -355,7 +378,7 @@ export function BuildWorkbench({
     setSuccess(null);
     setClearArmed(false);
     startFinish(async () => {
-      const r = await finishBikeBuild(moId, bikeId);
+      const r = await finishBikeBuild(moId, bikeId, { builtBy });
       if (!r.ok) {
         setError(r.error);
         return;
@@ -378,61 +401,60 @@ export function BuildWorkbench({
     <div className="flex flex-col gap-6">
       {/* Header card with bike identity + status + actions */}
       <Panel contentClassName="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-muted-foreground text-xs">
-                  MO <Link href={`/manufacturing-orders/${moId}`} className="font-mono hover:underline">{moNumber}</Link>
-                </span>
-                <Badge variant={BIKE_STATUS_VARIANT[bikeStatus] ?? "outline"}>
-                  {tStatus(bikeStatus)}
-                </Badge>
-                {colorName ? (
-                  <ColorChip hex={colorHex} label={colorName} />
-                ) : (
-                  <Badge variant="outline" className="font-normal italic">
-                    {t("unpainted")}
-                  </Badge>
-                )}
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                <Link
-                  href={`/bikes/${bikeId}`}
-                  className="font-mono hover:underline"
-                >
-                  {bikeFrameNumber}
-                </Link>
-              </h1>
-              {templateLabel ? (
-                <p className="text-muted-foreground text-sm">{templateLabel}</p>
-              ) : null}
-            </div>
-            {!readOnly ? (
-              <Button
-                type="button"
-                onClick={onFinish}
-                disabled={finishDisabled}
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground text-xs">
+              MO{" "}
+              <Link
+                href={`/manufacturing-orders/${moId}`}
+                className="font-mono hover:underline"
               >
-                <CheckCircle2 aria-hidden />
-                {isFinishing ? t("finishing") : t("finishBuild")}
-              </Button>
-            ) : null}
+                {moNumber}
+              </Link>
+            </span>
+            <Badge variant={BIKE_STATUS_VARIANT[bikeStatus] ?? "outline"}>
+              {tStatus(bikeStatus)}
+            </Badge>
+            {colorName ? (
+              <ColorChip hex={colorHex} label={colorName} />
+            ) : (
+              <Badge variant="outline" className="font-normal italic">
+                {t("unpainted")}
+              </Badge>
+            )}
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <Link
+              href={`/bikes/${bikeId}`}
+              className="font-mono hover:underline"
+            >
+              {bikeFrameNumber}
+            </Link>
+          </h1>
+          {templateLabel ? (
+            <p className="text-muted-foreground text-sm">{templateLabel}</p>
+          ) : null}
+        </div>
+        {!readOnly ? (
+          <Button type="button" onClick={onFinish} disabled={finishDisabled}>
+            <CheckCircle2 aria-hidden />
+            {isFinishing ? t("finishing") : t("finishBuild")}
+          </Button>
+        ) : null}
       </Panel>
 
       {/* Build-floor labeling note from the sales order (Tier 2 Phase D). */}
       {buildNote ? (
         <Panel hue="money" contentClassName="flex items-start gap-2">
-            <Tag
-              className="mt-0.5 size-4 shrink-0 text-money"
-              aria-hidden
-            />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-semibold uppercase tracking-wide text-money">
-                {t("productionNote")}
-              </span>
-              <p className="text-sm whitespace-pre-wrap text-money">
-                {buildNote}
-              </p>
-            </div>
+          <Tag className="mt-0.5 size-4 shrink-0 text-money" aria-hidden />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-money">
+              {t("productionNote")}
+            </span>
+            <p className="text-sm whitespace-pre-wrap text-money">
+              {buildNote}
+            </p>
+          </div>
         </Panel>
       ) : null}
 
@@ -440,7 +462,9 @@ export function BuildWorkbench({
       {!readOnly ? (
         <Panel
           title={t("frameSectionTitle")}
-          description={confirmed ? t("frameConfirmedHint") : t("frameEnterHint")}
+          description={
+            confirmed ? t("frameConfirmedHint") : t("frameEnterHint")
+          }
           action={
             confirmed ? (
               <Badge variant="success">
@@ -453,98 +477,98 @@ export function BuildWorkbench({
           }
           contentClassName="flex flex-col gap-4"
         >
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="frame-confirm"
-                  className="text-xs font-medium tracking-wide"
-                >
-                  {t("frameNumberLabel")}
-                </label>
-                <div className="relative">
-                  <ScanLine
-                    aria-hidden
-                    className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
-                  />
-                  <Input
-                    id="frame-confirm"
-                    value={frameValue}
-                    onChange={(e) => setFrameValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (frameValue.trim() !== "") onConfirmFrame();
-                      }
-                    }}
-                    disabled={isConfirming}
-                    className="w-[240px] pl-8 font-mono"
-                    aria-label={t("realFrameAria")}
-                  />
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant={confirmed ? "outline" : "default"}
-                onClick={onConfirmFrame}
-                disabled={isConfirming || frameValue.trim() === ""}
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="frame-confirm"
+                className="text-xs font-medium tracking-wide"
               >
-                {isConfirming
-                  ? t("saving")
-                  : confirmed
-                    ? t("updateFrame")
-                    : t("confirmFrame")}
-              </Button>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                  {t("otherIdentifiers", { count: otherIdentifiers.length })}
-                </span>
-                {requiredIdentifierCount > 0 ? (
-                  <span
-                    className={`text-xs tabular-nums ${
-                      requiredRegisteredCount < requiredIdentifierCount
-                        ? "text-money"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {t("requiredCount", {
-                      registered: requiredRegisteredCount,
-                      required: requiredIdentifierCount,
-                    })}
-                  </span>
-                ) : null}
-              </div>
-              {otherIdentifiers.length > 0 ? (
-                <ul className="divide-rule divide-y text-sm">
-                  {otherIdentifiers.map((id) => (
-                    <li
-                      key={id.id}
-                      className="flex items-center justify-between gap-2 px-3 py-1.5"
-                    >
-                      <span className="text-muted-foreground text-xs">
-                        {id.typeName}
-                      </span>
-                      <span className="font-mono text-xs">{id.value}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-ink-2 bg-ground rounded-lg px-3 py-2 text-xs italic">
-                  {t("noIdentifiers")}
-                </p>
-              )}
-              <div>
-                <IdentifierDialog
-                  bikeId={bikeId}
-                  identifierTypes={identifierTypes}
-                  extraRevalidatePaths={[
-                    `/manufacturing-orders/${moId}/bikes/${bikeId}/build`,
-                  ]}
+                {t("frameNumberLabel")}
+              </label>
+              <div className="relative">
+                <ScanLine
+                  aria-hidden
+                  className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
+                />
+                <Input
+                  id="frame-confirm"
+                  value={frameValue}
+                  onChange={(e) => setFrameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (frameValue.trim() !== "") onConfirmFrame();
+                    }
+                  }}
+                  disabled={isConfirming}
+                  className="w-[240px] pl-8 font-mono"
+                  aria-label={t("realFrameAria")}
                 />
               </div>
             </div>
+            <Button
+              type="button"
+              variant={confirmed ? "outline" : "default"}
+              onClick={onConfirmFrame}
+              disabled={isConfirming || frameValue.trim() === ""}
+            >
+              {isConfirming
+                ? t("saving")
+                : confirmed
+                  ? t("updateFrame")
+                  : t("confirmFrame")}
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                {t("otherIdentifiers", { count: otherIdentifiers.length })}
+              </span>
+              {requiredIdentifierCount > 0 ? (
+                <span
+                  className={`text-xs tabular-nums ${
+                    requiredRegisteredCount < requiredIdentifierCount
+                      ? "text-money"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {t("requiredCount", {
+                    registered: requiredRegisteredCount,
+                    required: requiredIdentifierCount,
+                  })}
+                </span>
+              ) : null}
+            </div>
+            {otherIdentifiers.length > 0 ? (
+              <ul className="divide-rule divide-y text-sm">
+                {otherIdentifiers.map((id) => (
+                  <li
+                    key={id.id}
+                    className="flex items-center justify-between gap-2 px-3 py-1.5"
+                  >
+                    <span className="text-muted-foreground text-xs">
+                      {id.typeName}
+                    </span>
+                    <span className="font-mono text-xs">{id.value}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-ink-2 bg-ground rounded-lg px-3 py-2 text-xs italic">
+                {t("noIdentifiers")}
+              </p>
+            )}
+            <div>
+              <IdentifierDialog
+                bikeId={bikeId}
+                identifierTypes={identifierTypes}
+                extraRevalidatePaths={[
+                  `/manufacturing-orders/${moId}/bikes/${bikeId}/build`,
+                ]}
+              />
+            </div>
+          </div>
         </Panel>
       ) : null}
 
@@ -639,21 +663,32 @@ export function BuildWorkbench({
                   <CategoryChecklistRow
                     key={category.id}
                     index={index + 1}
-                    label={localizedName(locale, category.name_en, category.name_da)}
-                    parts={(partsByCategory.get(category.id) ?? []).map((p) => ({
-                      id: p.id,
-                      sku: p.internal_sku,
-                      name: p.name_en,
-                      meta: t("onHandMeta", { qty: formatQuantity(p.onHand) }),
-                      metaDanger: p.onHand <= 0,
-                    }))}
+                    label={localizedName(
+                      locale,
+                      category.name_en,
+                      category.name_da,
+                    )}
+                    parts={(partsByCategory.get(category.id) ?? []).map(
+                      (p) => ({
+                        id: p.id,
+                        sku: p.internal_sku,
+                        name: p.name_en,
+                        meta: t("onHandMeta", {
+                          qty: formatQuantity(p.onHand),
+                        }),
+                        metaDanger: p.onHand <= 0,
+                      }),
+                    )}
                     addedIds={inBikePartIds}
                     pickedCount={pickedByCategory.get(category.id) ?? 0}
                     selectValue={
                       pickerValueByCat[category.id] ?? "__placeholder__"
                     }
                     onSelectValue={(v) =>
-                      setPickerValueByCat((prev) => ({ ...prev, [category.id]: v }))
+                      setPickerValueByCat((prev) => ({
+                        ...prev,
+                        [category.id]: v,
+                      }))
                     }
                     onPick={(partId, qty) =>
                       onPickFromCategory(category.id, partId, qty)
@@ -693,7 +728,9 @@ export function BuildWorkbench({
             )}
 
             {/* RIGHT: this bike's parts */}
-            <div className={`flex flex-col gap-2 ${readOnly ? "lg:col-span-2" : ""}`}>
+            <div
+              className={`flex flex-col gap-2 ${readOnly ? "lg:col-span-2" : ""}`}
+            >
               <div className="mb-1 flex items-baseline justify-between gap-2">
                 <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                   {t("selectedParts", { count: rows.length })}
@@ -733,7 +770,10 @@ export function BuildWorkbench({
                       const catName =
                         catRows[0]?.categoryName ?? t("uncategorised");
                       return (
-                        <div key={catKey} className="bg-ground overflow-hidden rounded-lg">
+                        <div
+                          key={catKey}
+                          className="bg-ground overflow-hidden rounded-lg"
+                        >
                           <div className="bg-rule/40 px-3 py-1.5 text-xs font-medium tracking-wide uppercase">
                             {catName}
                           </div>
@@ -771,15 +811,40 @@ export function BuildWorkbench({
                     ? t("footerAddParts")
                     : t("footerReady", { count: rows.length })}
             </p>
-            <Button
-              type="button"
-              size="lg"
-              onClick={onFinish}
-              disabled={finishDisabled}
-            >
-              <CheckCircle2 aria-hidden />{" "}
-              {isFinishing ? t("finishing") : t("finishBuild")}
-            </Button>
+            <div className="flex items-center gap-2">
+              {peopleOptions.length > 1 ? (
+                <label className="flex items-center gap-1.5 text-sm">
+                  <span className="text-muted-foreground">{t("builtBy")}</span>
+                  <Select
+                    value={builtBy ?? ""}
+                    onValueChange={(v) => setBuiltBy(v || null)}
+                  >
+                    <SelectTrigger
+                      className="w-[180px]"
+                      aria-label={t("builtBy")}
+                    >
+                      <SelectValue placeholder={t("builtByUnknown")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {peopleOptions.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+              ) : null}
+              <Button
+                type="button"
+                size="lg"
+                onClick={onFinish}
+                disabled={finishDisabled}
+              >
+                <CheckCircle2 aria-hidden />{" "}
+                {isFinishing ? t("finishing") : t("finishBuild")}
+              </Button>
+            </div>
           </footer>
         ) : null}
       </Panel>
@@ -871,7 +936,9 @@ function KitBulkRemove({
                   <span
                     aria-hidden
                     className="inline-block size-2.5 rounded-full border border-black/10"
-                    style={{ backgroundColor: stickerColor(k.sticker_color).hex }}
+                    style={{
+                      backgroundColor: stickerColor(k.sticker_color).hex,
+                    }}
                   />
                   {kitCode(k.sticker_color, k.kit_number)}
                   <span className="text-muted-foreground ml-1 text-[10px] tabular-nums">
@@ -902,10 +969,7 @@ function KitBulkRemove({
           {error}
         </p>
       ) : note ? (
-        <p
-          className="mt-1.5 text-xs text-good"
-          role="status"
-        >
+        <p className="mt-1.5 text-xs text-good" role="status">
           {note}
         </p>
       ) : null}
@@ -1032,9 +1096,7 @@ function RecipeLine({
         </span>
         <span
           className={`tabular-nums ${
-            shortfall > 0
-              ? "text-destructive font-medium"
-              : "text-good"
+            shortfall > 0 ? "text-destructive font-medium" : "text-good"
           }`}
         >
           {shortfall > 0

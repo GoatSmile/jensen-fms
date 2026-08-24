@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdjustStockInput = {
@@ -38,9 +39,7 @@ export type AdjustStockInput = {
   occurredAt?: string | null;
 };
 
-export type AdjustStockResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type AdjustStockResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Append a single `inventory_movements` row of type `adjustment`.
@@ -168,15 +167,19 @@ export async function adjustStock(
     };
   }
 
-  const { error: insertErr } = await supabase.from("inventory_movements").insert({
-    part_id: input.partId,
-    location_id: input.locationId,
-    movement_type: "adjustment",
-    quantity_delta: delta,
-    unit_cost_dkk: unitCostDkk,
-    reason: costProvenance ? `${reason} · ${costProvenance}` : reason,
-    ...(occurredAt ? { occurred_at: occurredAt } : {}),
-  });
+  const personId = await readPersonId();
+  const { error: insertErr } = await supabase
+    .from("inventory_movements")
+    .insert({
+      part_id: input.partId,
+      location_id: input.locationId,
+      movement_type: "adjustment",
+      quantity_delta: delta,
+      unit_cost_dkk: unitCostDkk,
+      reason: costProvenance ? `${reason} · ${costProvenance}` : reason,
+      created_by: personId,
+      ...(occurredAt ? { occurred_at: occurredAt } : {}),
+    });
 
   if (insertErr) {
     return {

@@ -146,7 +146,9 @@ export default async function PartDetailPage({
           unit_cost_dkk,
           reason,
           source_entity_type,
-          inventory_locations(code, name_en, name_da)
+          created_by,
+          inventory_locations(code, name_en, name_da),
+          moved_by:people!inventory_movements_created_by_fkey(full_name)
         `,
       )
       .eq("part_id", id)
@@ -330,10 +332,7 @@ export default async function PartDetailPage({
         moId: mo?.id ?? "",
         moNumber: mo?.mo_number ?? "—",
         status: (mo?.status ?? "planned") as
-          | "planned"
-          | "released"
-          | "in_progress"
-          | "on_hold",
+          "planned" | "released" | "in_progress" | "on_hold",
         qtyPerBike: Number(r.quantity_per_bike),
         outstandingBikes: Math.max(0, target - completed),
       };
@@ -388,10 +387,12 @@ export default async function PartDetailPage({
         row.inventory_locations?.name_da,
       ) || "—",
     quantityDelta: Number(row.quantity_delta),
-    unitCostDkk:
-      row.unit_cost_dkk != null ? Number(row.unit_cost_dkk) : null,
+    unitCostDkk: row.unit_cost_dkk != null ? Number(row.unit_cost_dkk) : null,
     reason: row.reason,
     sourceEntityType: row.source_entity_type,
+    movedByName:
+      (Array.isArray(row.moved_by) ? row.moved_by[0] : row.moved_by)
+        ?.full_name ?? null,
   }));
 
   // ------- Purchase lines (sorted by PO order_date desc, top N) -------
@@ -506,7 +507,11 @@ export default async function PartDetailPage({
         nameDa={part.name_da}
         categoryName={
           part.category
-            ? localizedName(locale, part.category.name_en, part.category.name_da)
+            ? localizedName(
+                locale,
+                part.category.name_en,
+                part.category.name_da,
+              )
             : null
         }
         isDeleted={part.deleted_at != null}
@@ -543,9 +548,7 @@ export default async function PartDetailPage({
           part.reorder_point != null ? Number(part.reorder_point) : null
         }
         reorderQuantity={
-          part.reorder_quantity != null
-            ? Number(part.reorder_quantity)
-            : null
+          part.reorder_quantity != null ? Number(part.reorder_quantity) : null
         }
         notes={part.notes}
         attributes={(part.attributes as Record<string, unknown>) ?? {}}

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   OPEN_TICKET_STATUSES,
@@ -33,7 +34,10 @@ async function returnWOPartsToStock(
     .select("id, inventory_movement_id")
     .eq("work_order_id", woId);
   if (error) {
-    return { ok: false, error: t("woCouldNotLoadRow", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("woCouldNotLoadRow", { detail: error.message }),
+    };
   }
   if (!rows || rows.length === 0) return { ok: true };
 
@@ -42,7 +46,10 @@ async function returnWOPartsToStock(
     .delete()
     .eq("work_order_id", woId);
   if (delErr) {
-    return { ok: false, error: t("woCouldNotRemoveRow", { detail: delErr.message }) };
+    return {
+      ok: false,
+      error: t("woCouldNotRemoveRow", { detail: delErr.message }),
+    };
   }
 
   const movementIds = rows
@@ -81,6 +88,7 @@ export async function transitionWO(
   woId: string,
   toStatus: WorkOrderStatus,
   reason: string | null,
+  opts: { completedBy?: string | null } = {},
 ): Promise<WOTransitionResult> {
   const t = await getTranslations("errors");
   if (!woId) return { ok: false, error: t("missingWorkOrderId") };
@@ -89,7 +97,7 @@ export async function transitionWO(
   const { data: wo, error: lookupErr } = await supabase
     .from("work_orders")
     .select(
-      "id, status, started_at, completed_at, work_performed, ticket_id",
+      "id, status, started_at, completed_at, work_performed, ticket_id, assigned_to, completed_by",
     )
     .eq("id", woId)
     .maybeSingle();
@@ -132,6 +140,17 @@ export async function transitionWO(
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
 
+  // Attribution on completion (migration 83). `completed_by` is who DID the
+  // repair — an explicit choice wins, else whoever the WO was assigned to
+  // (the shop's own prior statement about who is doing it), else the session
+  // person. `completion_recorded_by` is always the session person and is not
+  // offered for edit. Other transitions leave both alone.
+  const personId = await readPersonId();
+  const completing = toStatus === "completed";
+  const completedBy = completing
+    ? (opts.completedBy ?? wo.completed_by ?? wo.assigned_to ?? personId)
+    : wo.completed_by;
+
   const newStartedAt =
     toStatus === "in_progress" && !wo.started_at ? nowIso : wo.started_at;
   const newCompletedAt =
@@ -149,6 +168,8 @@ export async function transitionWO(
       started_at: newStartedAt,
       completed_at: newCompletedAt,
       work_performed: newWorkPerformed,
+      completed_by: completedBy,
+      ...(completing ? { completion_recorded_by: personId } : {}),
       updated_at: nowIso,
     })
     .eq("id", woId);

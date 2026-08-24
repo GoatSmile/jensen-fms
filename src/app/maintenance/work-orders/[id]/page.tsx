@@ -47,7 +47,9 @@ export default async function WorkOrderDetailPage({
     .from("work_orders")
     .select(
       `
-        id, wo_number, status, is_billable, assigned_to,
+        id, wo_number, status, is_billable, assigned_to, completed_by,
+        completed_by_person:people!work_orders_completed_by_fkey(full_name),
+        completion_recorded_person:people!work_orders_completion_recorded_by_fkey(full_name),
         diagnosis, work_performed, customer_summary_en, customer_summary_da,
         language, labor_minutes, labor_rate_dkk,
         started_at, completed_at, created_at, updated_at,
@@ -145,17 +147,19 @@ export default async function WorkOrderDetailPage({
     0,
   );
   const laborMinutes = wo.labor_minutes ?? 0;
-  const laborRate = wo.labor_rate_dkk == null ? null : Number(wo.labor_rate_dkk);
+  const laborRate =
+    wo.labor_rate_dkk == null ? null : Number(wo.labor_rate_dkk);
   const laborSubtotal =
-    laborRate != null && laborMinutes > 0
-      ? (laborMinutes / 60) * laborRate
-      : 0;
+    laborRate != null && laborMinutes > 0 ? (laborMinutes / 60) * laborRate : 0;
   const total = partsSubtotal + laborSubtotal;
 
   const bike = wo.bike;
   const owner = bike?.owner_organization ?? null;
   const ownerName =
-    owner?.display_name_da ?? owner?.display_name_en ?? owner?.legal_name ?? null;
+    owner?.display_name_da ??
+    owner?.display_name_en ??
+    owner?.legal_name ??
+    null;
   const bikeTypeName =
     localizedName(locale, bike?.bike_type?.name_en, bike?.bike_type?.name_da) ||
     null;
@@ -200,9 +204,7 @@ export default async function WorkOrderDetailPage({
         status={status}
         isBillable={wo.is_billable}
         coveredByAgreementName={
-          wo.service_agreement?.name_da ??
-          wo.service_agreement?.name_en ??
-          null
+          wo.service_agreement?.name_da ?? wo.service_agreement?.name_en ?? null
         }
         headline={headline}
         bikeId={bike?.id ?? ""}
@@ -212,6 +214,18 @@ export default async function WorkOrderDetailPage({
         ticketNumber={wo.ticket?.ticket_number ?? null}
         startedAt={wo.started_at}
         completedAt={wo.completed_at}
+        completedByName={
+          (Array.isArray(wo.completed_by_person)
+            ? wo.completed_by_person[0]
+            : wo.completed_by_person
+          )?.full_name ?? null
+        }
+        completionRecordedByName={
+          (Array.isArray(wo.completion_recorded_person)
+            ? wo.completion_recorded_person[0]
+            : wo.completion_recorded_person
+          )?.full_name ?? null
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -317,11 +331,7 @@ export default async function WorkOrderDetailPage({
               <SummaryRow
                 label={t("partsRetail")}
                 value={
-                  <Money
-                    amount={partsSubtotal}
-                    currency="DKK"
-                    bold={false}
-                  />
+                  <Money amount={partsSubtotal} currency="DKK" bold={false} />
                 }
               />
               <SummaryRow
@@ -335,11 +345,7 @@ export default async function WorkOrderDetailPage({
                 }
                 value={
                   laborRate != null && laborMinutes > 0 ? (
-                    <Money
-                      amount={laborSubtotal}
-                      currency="DKK"
-                      bold={false}
-                    />
+                    <Money amount={laborSubtotal} currency="DKK" bold={false} />
                   ) : (
                     "—"
                   )
@@ -386,13 +392,7 @@ function SummaryRow({
       <span className={strong ? "font-medium" : "text-muted-foreground"}>
         {label}
       </span>
-      <span
-        className={
-          strong
-            ? "tabular-nums font-semibold"
-            : "tabular-nums"
-        }
-      >
+      <span className={strong ? "tabular-nums font-semibold" : "tabular-nums"}>
         {value}
       </span>
     </div>

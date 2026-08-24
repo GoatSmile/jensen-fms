@@ -120,6 +120,8 @@
     "lost_or_stolen": "Mistet / stjålet"
   },
   "build": {
+        "builtBy": "Bygget af",
+    "builtByUnknown": "Ikke registreret",
     "crumbDashboard": "Dashboard",
     "crumbMos": "Produktionsordrer",
     "crumbBuild": "Byg",
@@ -504,6 +506,9 @@
     "noOwners": "Ingen aktive kunder endnu."
   },
   "bikeDetail": {
+        "builtBy": "Bygget af",
+    "recordedBy": "registreret af {name}",
+    "notRecorded": "ikke registreret",
     "identSection": "Identifikation",
     "identSectionDesc": "Katalogreferencer — alle valgfrie. Stelnummeret i toppen er den primære identifikator.",
     "bikeType": "Cykeltype",
@@ -962,6 +967,7 @@
     "thType": "Type",
     "thDeltaQty": "Δ antal",
     "thUnitCost": "Kostpris/enhed (DKK)",
+    "thBy": "Af",
     "thReasonSource": "Årsag / kilde",
     "viaSource": "(via {source})",
     "noMovements": "Ingen lagerbevægelser endnu.",
@@ -1241,6 +1247,8 @@
     "ticketLabel": "Sag",
     "startedAt": "Startet {date}",
     "completedAt": "Afsluttet {date}",
+    "completedBy": "af {name}",
+    "recordedBy": "registreret af {name}",
     "moveTo": "Flyt til",
     "cancelTitle": "Annullér arbejdsseddel?",
     "completeTitle": "Afslut arbejdsseddel?",

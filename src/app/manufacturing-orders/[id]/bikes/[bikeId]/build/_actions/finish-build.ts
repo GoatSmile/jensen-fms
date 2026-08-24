@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
@@ -23,6 +24,15 @@ export type FinishBuildResult =
  *
  * Idempotent retry: re-running the action skips already-consumed rows.
  *
+ * ATTRIBUTION (migration 83). Two different facts, kept apart:
+ *   built_by          — who BUILT it. Defaults to the session person, but the
+ *                       caller can name someone else, because the mechanic who
+ *                       did the work often is not the one at the keyboard.
+ *   built_recorded_by — who typed it. Always the session person, never chosen.
+ * Consumed stock is stamped with the session person: for a movement the
+ * performer and the recorder are the same, so there is one column and no
+ * picker.
+ *
  * Pre-conditions:
  *   - Bike must belong to this MO.
  *   - Bike status must be planning or building.
@@ -34,6 +44,7 @@ export type FinishBuildResult =
 export async function finishBikeBuild(
   moId: string,
   bikeId: string,
+  opts: { builtBy?: string | null } = {},
 ): Promise<FinishBuildResult> {
   const t = await getTranslations("errors");
   if (!moId || !bikeId) {
@@ -41,6 +52,9 @@ export async function finishBikeBuild(
   }
 
   const supabase = await createClient();
+  const personId = await readPersonId();
+  // An explicit performer wins; otherwise whoever is logged in is claiming it.
+  const builtBy = opts.builtBy ?? personId;
 
   const { data: bike, error: bikeErr } = await supabase
     .from("bikes")
@@ -52,7 +66,9 @@ export async function finishBikeBuild(
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
+      error: t("bikeCouldNotLoad", {
+        detail: bikeErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (bike.manufacturing_order_id !== moId) {
@@ -171,6 +187,7 @@ export async function finishBikeBuild(
         source_entity_type: "bike_part",
         source_entity_id: bp.id,
         reason: `Build of bike ${bikeId}`,
+        created_by: personId,
       })
       .select("id")
       .single();
@@ -214,6 +231,8 @@ export async function finishBikeBuild(
       status: "in_stock",
       build_cost_dkk: runningBuildCostDkk > 0 ? runningBuildCostDkk : null,
       built_at: nowIso,
+      built_by: builtBy,
+      built_recorded_by: personId,
       updated_at: nowIso,
     })
     .eq("id", bikeId);

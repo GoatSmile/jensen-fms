@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   computeStatusFromLines,
@@ -63,7 +64,10 @@ export async function receivePurchaseOrder(
     )
     .eq("purchase_order_id", poId);
   if (linesErr) {
-    return { ok: false, error: t("poCouldNotLoadLines", { detail: linesErr.message }) };
+    return {
+      ok: false,
+      error: t("poCouldNotLoadLines", { detail: linesErr.message }),
+    };
   }
   if (!lines || lines.length !== receipts.length) {
     return { ok: false, error: t("poLinesNotFound") };
@@ -83,8 +87,7 @@ export async function receivePurchaseOrder(
         error: t("poLineNoPrice"),
       };
     }
-    const outstanding =
-      Number(line.quantity) - Number(line.received_quantity);
+    const outstanding = Number(line.quantity) - Number(line.received_quantity);
     if (r.additionalQty > outstanding) {
       return {
         ok: false,
@@ -97,6 +100,7 @@ export async function receivePurchaseOrder(
   }
 
   // 1) Append one inventory_movements row per receipt.
+  const personId = await readPersonId();
   const movements = receipts.map((r) => {
     const line = lines.find((l) => l.id === r.lineId)!;
     return {
@@ -107,13 +111,19 @@ export async function receivePurchaseOrder(
       unit_cost_dkk: line.landed_cost_dkk_per_unit,
       source_entity_type: "purchase_order_line",
       source_entity_id: line.id,
+      // Who received the goods. Performer and recorder are the same person
+      // for a stock move, so one column and no picker (migration 83).
+      created_by: personId,
     };
   });
   const { error: insertErr } = await supabase
     .from("inventory_movements")
     .insert(movements);
   if (insertErr) {
-    return { ok: false, error: t("poCouldNotWriteMovements", { detail: insertErr.message }) };
+    return {
+      ok: false,
+      error: t("poCouldNotWriteMovements", { detail: insertErr.message }),
+    };
   }
 
   // 2) Bump received_quantity on each line. PostgREST has no `+=`, so we
@@ -187,7 +197,10 @@ export async function receivePurchaseOrder(
     })
     .eq("id", poId);
   if (poUpdErr) {
-    return { ok: false, error: t("poCouldNotUpdatePoStatus", { detail: poUpdErr.message }) };
+    return {
+      ok: false,
+      error: t("poCouldNotUpdatePoStatus", { detail: poUpdErr.message }),
+    };
   }
 
   revalidatePath("/parts");

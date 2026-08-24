@@ -51,6 +51,9 @@ type Props = {
   ticketNumber: string | null;
   startedAt: string | null;
   completedAt: string | null;
+  /** Who did the repair, and who recorded it (migration 83). */
+  completedByName: string | null;
+  completionRecordedByName: string | null;
 };
 
 export function WOHeader({
@@ -67,6 +70,8 @@ export function WOHeader({
   ticketNumber,
   startedAt,
   completedAt,
+  completedByName,
+  completionRecordedByName,
 }: Props) {
   const t = useTranslations("workOrders");
   const tWoStatus = useTranslations("woStatus");
@@ -183,6 +188,13 @@ export function WOHeader({
             {completedAt ? (
               <span>
                 {t("completedAt", { date: formatDateTime(completedAt) })}
+                {completedByName
+                  ? ` · ${t("completedBy", { name: completedByName })}`
+                  : ""}
+                {completionRecordedByName &&
+                completionRecordedByName !== completedByName
+                  ? ` · ${t("recordedBy", { name: completionRecordedByName })}`
+                  : ""}
               </span>
             ) : null}
           </div>

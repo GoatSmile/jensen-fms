@@ -670,6 +670,8 @@ export type Database = {
           bike_type_id: string
           build_cost_dkk: number | null
           built_at: string | null
+          built_by: string | null
+          built_recorded_by: string | null
           color_id: string | null
           created_at: string
           current_location_id: string | null
@@ -693,6 +695,8 @@ export type Database = {
           bike_type_id: string
           build_cost_dkk?: number | null
           built_at?: string | null
+          built_by?: string | null
+          built_recorded_by?: string | null
           color_id?: string | null
           created_at?: string
           current_location_id?: string | null
@@ -716,6 +720,8 @@ export type Database = {
           bike_type_id?: string
           build_cost_dkk?: number | null
           built_at?: string | null
+          built_by?: string | null
+          built_recorded_by?: string | null
           color_id?: string | null
           created_at?: string
           current_location_id?: string | null
@@ -740,6 +746,20 @@ export type Database = {
             columns: ["bike_type_id"]
             isOneToOne: false
             referencedRelation: "bike_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikes_built_by_fkey"
+            columns: ["built_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikes_built_recorded_by_fkey"
+            columns: ["built_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {
@@ -1412,6 +1432,13 @@ export type Database = {
           unit_cost_dkk?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "inventory_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inventory_movements_location_id_fkey"
             columns: ["location_id"]
@@ -4185,6 +4212,8 @@ export type Database = {
           assigned_to: string | null
           bike_id: string
           completed_at: string | null
+          completed_by: string | null
+          completion_recorded_by: string | null
           covered_by_service_agreement_id: string | null
           created_at: string
           customer_summary_da: string | null
@@ -4207,6 +4236,8 @@ export type Database = {
           assigned_to?: string | null
           bike_id: string
           completed_at?: string | null
+          completed_by?: string | null
+          completion_recorded_by?: string | null
           covered_by_service_agreement_id?: string | null
           created_at?: string
           customer_summary_da?: string | null
@@ -4229,6 +4260,8 @@ export type Database = {
           assigned_to?: string | null
           bike_id?: string
           completed_at?: string | null
+          completed_by?: string | null
+          completion_recorded_by?: string | null
           covered_by_service_agreement_id?: string | null
           created_at?: string
           customer_summary_da?: string | null
@@ -4260,6 +4293,20 @@ export type Database = {
             columns: ["bike_id"]
             isOneToOne: false
             referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_completion_recorded_by_fkey"
+            columns: ["completion_recorded_by"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {

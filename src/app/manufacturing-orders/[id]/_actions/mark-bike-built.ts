@@ -23,11 +23,12 @@ export type MarkBuiltResult = { ok: true } | { ok: false; error: string };
 export async function markBikeBuilt(
   moId: string,
   bikeId: string,
+  opts: { builtBy?: string | null } = {},
 ): Promise<MarkBuiltResult> {
   const seedResult = await copyMoRecipeToBike(moId, bikeId);
   if (!seedResult.ok) return seedResult;
 
-  const finishResult = await finishBikeBuild(moId, bikeId);
+  const finishResult = await finishBikeBuild(moId, bikeId, opts);
   if (!finishResult.ok) {
     return { ok: false, error: finishResult.error };
   }

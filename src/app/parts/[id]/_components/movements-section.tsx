@@ -24,6 +24,8 @@ export type MovementRow = {
   unitCostDkk: number | null;
   reason: string | null;
   sourceEntityType: string | null;
+  /** Who moved it. NULL on rows written before attribution (migration 83). */
+  movedByName: string | null;
 };
 
 const MOVEMENT_BADGE_VARIANT: Record<
@@ -77,6 +79,9 @@ export async function MovementsSection({
                 <TableHead className="hidden text-right md:table-cell">
                   {t("thUnitCost")}
                 </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("thBy")}
+                </TableHead>
                 <TableHead className="hidden lg:table-cell">
                   {t("thReasonSource")}
                 </TableHead>
@@ -117,6 +122,9 @@ export async function MovementsSection({
                   </TableCell>
                   <TableCell className="hidden text-right tabular-nums md:table-cell">
                     {formatDkk(row.unitCostDkk)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
+                    {row.movedByName ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs lg:table-cell">
                     {row.reason ??

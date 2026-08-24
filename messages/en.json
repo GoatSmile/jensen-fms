@@ -120,6 +120,8 @@
     "lost_or_stolen": "Lost / stolen"
   },
   "build": {
+        "builtBy": "Built by",
+    "builtByUnknown": "Not recorded",
     "crumbDashboard": "Dashboard",
     "crumbMos": "Manufacturing orders",
     "crumbBuild": "Build",
@@ -504,6 +506,9 @@
     "noOwners": "No active customers yet."
   },
   "bikeDetail": {
+        "builtBy": "Built by",
+    "recordedBy": "recorded by {name}",
+    "notRecorded": "not recorded",
     "identSection": "Identification",
     "identSectionDesc": "Catalog references — all optional. The frame number on the header is the primary identifier.",
     "bikeType": "Bike type",
@@ -962,6 +967,7 @@
     "thType": "Type",
     "thDeltaQty": "Δ qty",
     "thUnitCost": "Unit cost (DKK)",
+    "thBy": "By",
     "thReasonSource": "Reason / source",
     "viaSource": "(via {source})",
     "noMovements": "No inventory movements yet.",
@@ -1241,6 +1247,8 @@
     "ticketLabel": "Ticket",
     "startedAt": "Started {date}",
     "completedAt": "Completed {date}",
+    "completedBy": "by {name}",
+    "recordedBy": "recorded by {name}",
     "moveTo": "Move to",
     "cancelTitle": "Cancel work order?",
     "completeTitle": "Finish this work order?",

@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   CLOSED_WO_STATUSES,
@@ -14,8 +15,7 @@ import {
 export type WOPartsResult = { ok: true } | { ok: false; error: string };
 
 export type WOKitAddResult =
-  | { ok: true; added: number; skipped: number }
-  | { ok: false; error: string };
+  { ok: true; added: number; skipped: number } | { ok: false; error: string };
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -86,6 +86,7 @@ async function consumePartOntoWO(
   unitPrice: number | null,
 ): Promise<WOPartsResult> {
   const t = await getTranslations("errors");
+  const personId = await readPersonId();
   // Insert the movement first; source_entity_id gets patched after the
   // wo_parts row exists.
   const { data: movement, error: movErr } = await supabase
@@ -99,6 +100,7 @@ async function consumePartOntoWO(
       source_entity_type: "work_order_part",
       source_entity_id: null,
       reason: `Work order ${woId}`,
+      created_by: personId,
     })
     .select("id")
     .single();
@@ -245,7 +247,9 @@ export async function updateWOPartQty(
   if (rowErr || !row) {
     return {
       ok: false,
-      error: t("woCouldNotLoadRow", { detail: rowErr?.message ?? t("notFound") }),
+      error: t("woCouldNotLoadRow", {
+        detail: rowErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.work_order_id !== woId) {
@@ -375,7 +379,10 @@ export async function addKitPartsToWO(
   const { data: priceRows } = await supabase
     .from("parts")
     .select("id, default_retail_price, default_retail_currency")
-    .in("id", toAdd.map(([partId]) => partId));
+    .in(
+      "id",
+      toAdd.map(([partId]) => partId),
+    );
   const retailById = new Map<string, number>();
   for (const p of priceRows ?? []) {
     if (
@@ -440,7 +447,9 @@ export async function removePartFromWO(
   if (rowErr || !row) {
     return {
       ok: false,
-      error: t("woCouldNotLoadRow", { detail: rowErr?.message ?? t("notFound") }),
+      error: t("woCouldNotLoadRow", {
+        detail: rowErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (row.work_order_id !== woId) {

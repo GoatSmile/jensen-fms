@@ -1783,3 +1783,56 @@ paintwork. So the button correctly reports "skipped — no paintwork declared" f
 bike in prod today, and those templates' cost-to-produce silently omits paint. Asking
 Dennis what a Norma sends to the painter is data entry, not code — and it is what makes
 both this feature and those margins real.
+
+## 2026-08-24 (later still) — Attribution: who did the work, kept apart from who typed it
+
+Phase 1 of the attribution plan. Login has carried a person since migration 80, so
+the system can finally record who did something rather than only what happened.
+
+**The design question that shaped it** (owner's, and the right one to ask): a bike is
+assigned to a mechanic, the mechanic does not log in, and Dennis marks it built while
+logged in as himself. Stamping "built by Dennis" would be false, and the first time a
+mechanic sees his work under someone else's name the field stops meaning anything.
+
+**Two columns per event, never one.**
+- `built_by` / `completed_by` — the PERFORMER. A claim about the world, often
+  second-hand, and therefore correctable.
+- `built_recorded_by` / `completion_recorded_by` — the RECORDER. The session person,
+  stamped automatically, never offered for edit.
+
+This also makes the shared `Admin` login degrade gracefully: recorded_by = Admin,
+built_by = whoever actually did it.
+
+**Defaults, chosen against the data rather than by instinct.** The first draft
+defaulted the performer to the assignee. Checked: 0 of 9 MOs and 1 of 4 work orders
+have an assignee, so that default would mostly produce blanks. So — the build defaults
+to the SESSION PERSON with a one-tap picker beside Finish build; work-order completion
+defaults to `assigned_to` when there IS one (the shop's own prior statement about who
+is doing it), else the session person. Common case: zero friction. Exception: one tap.
+
+**Where there is only one column, deliberately:** stock movements
+(`inventory_movements.created_by`, which existed unconstrained since day one and is now
+FK'd to `people`). For a movement the performer and the recorder are the same person, so
+a second field would be friction with no information in it. Same for issuing an invoice
+when that lands in Phase 2.
+
+**"Don't know" stays cheaper than lying.** NULL is a legal answer, historical rows are
+NOT backfilled with Admin, and screens show "—". A required field gets filled with the
+nearest plausible name, and then you have confident wrong data.
+
+**Refinement to the 2026-08-24 stamping doctrine above:** system facts are immutable;
+claims about the world are correctable, with the correction itself logged. That is what
+the narrow audit trigger (Phase 3) is for, and the attribution columns are its first
+target.
+
+**Verified against the local copy, not production** — the first work to use it. A
+throwaway "Lars Mekaniker" with the workshop role and no password played the mechanic
+who never logs in: work order assigned to Lars, completed by Dennis, and the header now
+reads *"Afsluttet 24. aug. 2026 · af Lars Mekaniker · registreret af Dennis Jensen"*.
+None of that touched Dennis's data, which is what the local database was built for.
+
+**Found while testing, not yet fixed:** `npm run smoke` cannot authenticate, so with the
+gate on locally it reports 4 pass · 106 redirect. It was only ever run against a
+gate-off environment. Either it learns to mint the signed cookie (the algorithm is in
+`src/lib/auth/session.ts`) or the runbook says to run it with the gate off; until then
+its baseline only means something without a gate.

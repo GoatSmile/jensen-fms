@@ -81,12 +81,14 @@ export default async function BikeDetailPage({
     unitsRes,
     attachmentsRes,
   ] = await Promise.all([
-      supabase
-        .from("bikes")
-        .select(
-          `
+    supabase
+      .from("bikes")
+      .select(
+        `
             id, frame_number, status, notes, deleted_at, bike_type_id,
-            manufacturing_order_id, build_cost_dkk,
+            manufacturing_order_id, build_cost_dkk, built_at,
+            built_by_person:people!bikes_built_by_fkey(id, full_name),
+            recorded_by_person:people!bikes_built_recorded_by_fkey(id, full_name),
             owner_organization_id, owner_unit_id, assigned_at,
             bike_type:bike_types(id, name_en, name_da),
             template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
@@ -101,65 +103,65 @@ export default async function BikeDetailPage({
             ),
             owner_unit:organization_units!owner_unit_id(id, name)
           `,
-        )
-        .eq("id", id)
-        .maybeSingle(),
-      supabase
-        .from("bike_identifiers")
-        .select(
-          `
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("bike_identifiers")
+      .select(
+        `
             id, identifier_value, is_active, created_at, deactivated_at,
             identifier_type:bike_identifier_types(id, name_en, name_da)
           `,
-        )
-        .eq("bike_id", id)
-        .order("is_active", { ascending: false })
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("bike_parts")
-        .select(
-          `
+      )
+      .eq("bike_id", id)
+      .order("is_active", { ascending: false })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("bike_parts")
+      .select(
+        `
             id, quantity, installed_at, removed_at, notes,
             parts:parts(id, internal_sku, name_en)
           `,
-        )
-        .eq("bike_id", id)
-        .order("installed_at", { ascending: true }),
-      supabase
-        .from("bike_state_log")
-        .select("id, from_status, to_status, occurred_at, reason")
-        .eq("bike_id", id)
-        .order("occurred_at", { ascending: false }),
-      supabase
-        .from("bike_identifier_types")
-        .select("id, slug, name_en, name_da, format_regex, is_active")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true }),
-      // Active customers for the assign dialog — loaded eagerly so the dialog
-      // opens instantly. At 50+ customers this becomes a search-as-you-type
-      // problem; fine to defer until then.
-      supabase
-        .from("organizations")
-        .select(
-          `id, legal_name, display_name_en, display_name_da,
+      )
+      .eq("bike_id", id)
+      .order("installed_at", { ascending: true }),
+    supabase
+      .from("bike_state_log")
+      .select("id, from_status, to_status, occurred_at, reason")
+      .eq("bike_id", id)
+      .order("occurred_at", { ascending: false }),
+    supabase
+      .from("bike_identifier_types")
+      .select("id, slug, name_en, name_da, format_regex, is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    // Active customers for the assign dialog — loaded eagerly so the dialog
+    // opens instantly. At 50+ customers this becomes a search-as-you-type
+    // problem; fine to defer until then.
+    supabase
+      .from("organizations")
+      .select(
+        `id, legal_name, display_name_en, display_name_da,
            segment:customer_segments(name_en, name_da)`,
-        )
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .order("legal_name", { ascending: true }),
-      supabase
-        .from("organization_units")
-        .select("id, organization_id, name")
-        .is("deleted_at", null)
-        .order("name", { ascending: true }),
-      supabase
-        .from("attachments")
-        .select("id, file_url, file_name, purpose, created_at")
-        .eq("entity_type", "bike")
-        .eq("entity_id", id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
-    ]);
+      )
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("legal_name", { ascending: true }),
+    supabase
+      .from("organization_units")
+      .select("id, organization_id, name")
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
+    supabase
+      .from("attachments")
+      .select("id, file_url, file_name, purpose, created_at")
+      .eq("entity_type", "bike")
+      .eq("entity_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (bikeRes.error) {
     throw new Error(`Failed to load bike: ${bikeRes.error.message}`);
@@ -167,6 +169,18 @@ export default async function BikeDetailPage({
   if (!bikeRes.data) notFound();
 
   const b = bikeRes.data;
+  // PostgREST returns an embed as an object or a one-element array depending
+  // on how it resolves the relationship; both shapes appear in this file.
+  const builtByName =
+    (Array.isArray(b.built_by_person)
+      ? b.built_by_person[0]
+      : b.built_by_person
+    )?.full_name ?? null;
+  const recordedByName =
+    (Array.isArray(b.recorded_by_person)
+      ? b.recorded_by_person[0]
+      : b.recorded_by_person
+    )?.full_name ?? null;
 
   // Derived agreement coverage — follows the bike's current owner (see
   // src/lib/agreements/coverage.ts). null = no owner or no active agreement.
@@ -233,8 +247,8 @@ export default async function BikeDetailPage({
   }));
 
   const requiredCount = requiredTypes.size;
-  const requiredRegisteredCount = Array.from(requiredTypes.keys()).filter((id) =>
-    activeIdentifierTypeIds.has(id),
+  const requiredRegisteredCount = Array.from(requiredTypes.keys()).filter(
+    (id) => activeIdentifierTypeIds.has(id),
   ).length;
 
   const partRows: InstalledPartRow[] = (partsRes.data ?? []).map((r) => ({
@@ -373,10 +387,7 @@ export default async function BikeDetailPage({
         }
       />
 
-      <Section
-        title={t("identSection")}
-        description={t("identSectionDesc")}
-      >
+      <Section title={t("identSection")} description={t("identSectionDesc")}>
         <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <Field label={t("bikeType")}>
             {b.bike_type ? (
@@ -492,6 +503,22 @@ export default async function BikeDetailPage({
               </div>
             ) : (
               <Muted>{t("noAgreement")}</Muted>
+            )}
+          </Field>
+          <Field label={t("builtBy")}>
+            {builtByName ? (
+              <span className="flex flex-col">
+                <span>{builtByName}</span>
+                {/* Who typed it, only when that is someone else — saying
+                    "recorded by Dennis" under "built by Dennis" is noise. */}
+                {recordedByName && recordedByName !== builtByName ? (
+                  <span className="text-muted-foreground text-xs">
+                    {t("recordedBy", { name: recordedByName })}
+                  </span>
+                ) : null}
+              </span>
+            ) : (
+              <Muted>{t("notRecorded")}</Muted>
             )}
           </Field>
           <Field label={t("buildCost")}>
