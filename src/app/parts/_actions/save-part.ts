@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type SavePartResult =
-  | { ok: true; partId: string }
-  | { ok: false; error: string; field?: string };
+  { ok: true; partId: string } | { ok: false; error: string; field?: string };
 
 type ParsedFields = {
   internal_sku: string;
@@ -57,9 +57,11 @@ function parseFields(
   const category_id = nullable(formData.get("category_id"));
   const unit_of_measure = nullable(formData.get("unit_of_measure"));
 
-  if (!internal_sku) return { errorKey: "partSkuRequired", field: "internal_sku" };
+  if (!internal_sku)
+    return { errorKey: "partSkuRequired", field: "internal_sku" };
   if (!name_en) return { errorKey: "englishNameRequired", field: "name_en" };
-  if (!category_id) return { errorKey: "partCategoryRequired", field: "category_id" };
+  if (!category_id)
+    return { errorKey: "partCategoryRequired", field: "category_id" };
   if (!unit_of_measure) {
     return { errorKey: "partUnitOfMeasureRequired", field: "unit_of_measure" };
   }
@@ -175,9 +177,10 @@ function parseFields(
  * Translate a Postgres error into a friendlier UI message. Today the only
  * one we expect to surface is the unique violation on `parts.internal_sku`.
  */
-function explain(
-  err: { code?: string; message: string },
-): { messageKey: string; field?: string } | { message: string } {
+function explain(err: {
+  code?: string;
+  message: string;
+}): { messageKey: string; field?: string } | { message: string } {
   if (err.code === "23505" && /internal_sku/.test(err.message)) {
     return {
       messageKey: "partSkuInUse",
@@ -194,9 +197,12 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
     return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
+
+  const personId = await readPersonId();
   const { data, error } = await supabase
     .from("parts")
     .insert({
+      last_actor_id: personId,
       internal_sku: parsed.internal_sku,
       name_en: parsed.name_en,
       name_da: parsed.name_da,
@@ -256,9 +262,11 @@ export async function updatePart(
     return { ok: false, error: t(parsed.errorKey), field: parsed.field };
 
   const supabase = await createClient();
+  const personId = await readPersonId();
   const { error } = await supabase
     .from("parts")
     .update({
+      last_actor_id: personId,
       internal_sku: parsed.internal_sku,
       name_en: parsed.name_en,
       name_da: parsed.name_da,

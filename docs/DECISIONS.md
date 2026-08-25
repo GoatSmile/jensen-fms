@@ -1877,3 +1877,52 @@ build or a smoke sweep — all four were green with the history invisible.
 
 Second-order note: adding a constraint needs `NOTIFY pgrst, 'reload schema'`
 against a running PostgREST, or the embed keeps failing against a cached schema.
+
+## 2026-08-25 (later) — Attribution phase 3: an audit trail, deliberately narrow
+
+`audit_log` existed from the original schema with zero rows and no triggers.
+Migration 87 turns it on for the changes that **move money quietly** — a small
+edit, no visible event, consequences weeks later:
+
+- **`parts`** — but ONLY when `default_retail_price`, `default_retail_currency`,
+  `hs_code_id` or `origin` change. A whole-table trigger would fire on every
+  description edit and bury the rest.
+- **`service_price_items`** — the painter's tier prices.
+- **`app_settings`** — `default_transport_pct` alters landed cost on every new PO
+  line; provider selection decides what sends mail.
+- **`people`** — engagement, active flag, language, and WHEN a password was set.
+- **`bikes.built_by`** — but only a CORRECTION (`OLD.built_by IS NOT NULL`). The
+  bike row already records the current claim; the log is for changes to a claim
+  already made. Without that clause every finished build would write a row.
+
+**`part_retail_prices` was the obvious target and is the wrong one.** It is empty
+and nothing in the app writes it — retail price lives on
+`parts.default_retail_price`. Auditing it would have produced a trail that was
+always empty and looked healthy. Found by grepping for writers before wiring the
+trigger, not after.
+
+**Who, again by ride-along.** Triggers cannot see the session, so the actor comes
+from `last_actor_id` on the row (migration 84's pattern, now on parts,
+service_price_items, app_settings, people). A writer that forgets to set it
+produces a row with no name — visibly missing rather than silently wrong.
+
+**Three behaviours worth keeping:**
+- **Credentials are redacted.** `password_hash` becomes `"[redacted]"` in both
+  old and new JSON, while `changed_fields` still says it changed — so you know
+  WHEN a password was rotated without the log holding the hash.
+- **Bookkeeping is not a change.** An UPDATE touching only `updated_at` /
+  `last_actor_id` logs nothing; otherwise every save would produce noise.
+- **`entity_id` is now nullable.** `app_settings` is a singleton with a SMALLINT
+  id and has no uuid to record; `entity_type` still identifies it.
+
+**Deliberately deferred: `role_capabilities` and `person_roles`.** Both are edited
+delete-then-insert, so a row trigger would record twelve deletes and nine inserts
+for one edit, with no actor on the deletes. Permission changes want ONE
+app-written summary row (before caps → after caps) — a different job, not this one.
+
+**Not a security control.** RLS is permissive and the MCP bypasses everything; a
+service key can write without leaving a trace. This is accountability among
+trusted colleagues, not a tamper-proof ledger. It also has no UI, on purpose:
+it is forensics, queried when a specific question arises. **GDPR:** "person X
+changed Y at 14:32" is employee personal data and needs a retention decision
+alongside the voicemail media rules.

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   TRANSCRIPTION_PROVIDERS,
@@ -38,13 +39,17 @@ export async function saveSettings(
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       default_transport_pct: n,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");
@@ -87,7 +92,10 @@ export async function saveCommunicationSettings(
   // The test field may hold several addresses (comma-separated) — every
   // piece must look like an email so a typo doesn't silently drop mail.
   if (testEmail) {
-    const pieces = testEmail.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+    const pieces = testEmail
+      .split(/[,;]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (pieces.length === 0 || pieces.some((p) => !p.includes("@"))) {
       return {
         ok: false,
@@ -106,6 +114,7 @@ export async function saveCommunicationSettings(
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       outbound_from_email: fromEmail,
       outbound_reply_to_email: replyToEmail,
       outbound_test_mode: testMode,
@@ -116,7 +125,10 @@ export async function saveCommunicationSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");
@@ -199,6 +211,7 @@ export async function saveEmailDnsSettings(
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       email_domain: domain,
       email_dns_records: records,
       updated_at: new Date().toISOString(),
@@ -206,7 +219,10 @@ export async function saveEmailDnsSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");
@@ -231,6 +247,7 @@ export async function saveLanguageSettings(
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       app_language: appLanguage,
       worker_language: workerLanguage,
       updated_at: new Date().toISOString(),
@@ -238,7 +255,10 @@ export async function saveLanguageSettings(
     .eq("id", 1);
 
   if (error) {
-    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");
@@ -271,24 +291,38 @@ export async function saveEconomicSettings(
     return { value: n };
   };
 
-  const journal = intField("economic_journal_number", t("adminEconomicJournalNumber"));
+  const journal = intField(
+    "economic_journal_number",
+    t("adminEconomicJournalNumber"),
+  );
   if ("error" in journal) return { ok: false, error: journal.error };
-  const revenue = intField("economic_revenue_account", t("adminEconomicRevenueAccount"));
+  const revenue = intField(
+    "economic_revenue_account",
+    t("adminEconomicRevenueAccount"),
+  );
   if ("error" in revenue) return { ok: false, error: revenue.error };
-  const group = intField("economic_customer_group", t("adminEconomicCustomerGroup"));
+  const group = intField(
+    "economic_customer_group",
+    t("adminEconomicCustomerGroup"),
+  );
   if ("error" in group) return { ok: false, error: group.error };
   const zone = intField("economic_vat_zone", t("adminEconomicVatZone"));
   if ("error" in zone) return { ok: false, error: zone.error };
-  const terms = intField("economic_payment_terms", t("adminEconomicPaymentTerms"));
+  const terms = intField(
+    "economic_payment_terms",
+    t("adminEconomicPaymentTerms"),
+  );
   if ("error" in terms) return { ok: false, error: terms.error };
 
   const vatCodeRaw = nullable(formData.get("economic_vat_code"));
-  const vatCode = vatCodeRaw && vatCodeRaw.trim() !== "" ? vatCodeRaw.trim() : null;
+  const vatCode =
+    vatCodeRaw && vatCodeRaw.trim() !== "" ? vatCodeRaw.trim() : null;
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       economic_enabled: enabled,
       economic_journal_number: journal.value,
       economic_revenue_account: revenue.value,
@@ -300,7 +334,10 @@ export async function saveEconomicSettings(
     })
     .eq("id", 1);
   if (error) {
-    return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
+    return {
+      ok: false,
+      error: t("adminSettingsCouldNotSave", { detail: error.message }),
+    };
   }
 
   revalidatePath("/admin/settings");
@@ -335,7 +372,8 @@ export async function saveInboundSettings(
     TRANSCRIPTION_PROVIDERS,
     "azure",
   );
-  if ("error" in transcription) return { ok: false, error: transcription.error };
+  if ("error" in transcription)
+    return { ok: false, error: transcription.error };
   const extraction = pick(
     "inbound_extraction_provider",
     EXTRACTION_PROVIDERS,
@@ -371,7 +409,11 @@ export async function saveInboundSettings(
   const bridgeTimeout = Number(
     (nullable(formData.get("inbound_bridge_timeout_seconds")) ?? "20").trim(),
   );
-  if (!Number.isInteger(bridgeTimeout) || bridgeTimeout < 5 || bridgeTimeout > 120) {
+  if (
+    !Number.isInteger(bridgeTimeout) ||
+    bridgeTimeout < 5 ||
+    bridgeTimeout > 120
+  ) {
     return { ok: false, error: t("inboundBridgeTimeoutRange") };
   }
   // The call-path transcription provider is optional (NULL = use the voicemail
@@ -379,7 +421,10 @@ export async function saveInboundSettings(
   const callProviderRaw = nullable(
     formData.get("inbound_call_transcription_provider"),
   );
-  if (callProviderRaw && !findProvider(TRANSCRIPTION_PROVIDERS, callProviderRaw)) {
+  if (
+    callProviderRaw &&
+    !findProvider(TRANSCRIPTION_PROVIDERS, callProviderRaw)
+  ) {
     return {
       ok: false,
       error: t("inboundUnknownProvider", { provider: callProviderRaw }),
@@ -390,6 +435,7 @@ export async function saveInboundSettings(
   const { error } = await supabase
     .from("app_settings")
     .update({
+      last_actor_id: await readPersonId(),
       inbound_transcription_provider: transcription.value,
       inbound_transcription_region: nullable(
         formData.get("inbound_transcription_region"),

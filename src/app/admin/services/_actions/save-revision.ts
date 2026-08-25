@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { nullableString as nullable } from "@/lib/forms";
 
@@ -40,7 +41,8 @@ export async function saveServicePriceRevision(
 ): Promise<SaveRevisionResult> {
   const t = await getTranslations("errors");
   if (!input.supplierId) return { ok: false, error: t("pickSupplier") };
-  if (!input.serviceTypeId) return { ok: false, error: t("adminServiceMissingType") };
+  if (!input.serviceTypeId)
+    return { ok: false, error: t("adminServiceMissingType") };
   const name = input.name?.trim();
   if (!name) {
     return { ok: false, error: t("adminServiceRevisionName") };
@@ -97,6 +99,8 @@ export async function saveServicePriceRevision(
 
   const supabase = await createClient();
 
+  const personId = await readPersonId();
+
   // Next revision number in this supplier × service type chain.
   const { data: maxRow, error: maxErr } = await supabase
     .from("service_price_lists")
@@ -107,7 +111,12 @@ export async function saveServicePriceRevision(
     .limit(1)
     .maybeSingle();
   if (maxErr) {
-    return { ok: false, error: t("adminServiceCouldNotLookUpRevisions", { detail: maxErr.message }) };
+    return {
+      ok: false,
+      error: t("adminServiceCouldNotLookUpRevisions", {
+        detail: maxErr.message,
+      }),
+    };
   }
   const nextVersion = (maxRow?.version ?? 0) + 1;
 
@@ -141,6 +150,7 @@ export async function saveServicePriceRevision(
       tier_max: item.tierMax,
       unit_price: item.unitPrice,
       supplier_item_no: nullable(item.supplierItemNo),
+      last_actor_id: personId,
     })),
   );
   if (itemsErr) {

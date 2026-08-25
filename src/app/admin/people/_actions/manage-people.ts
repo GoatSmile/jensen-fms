@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { hashPassword } from "@/lib/people/password";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type PersonResult = { ok: true } | { ok: false; error: string };
@@ -93,7 +94,7 @@ export async function createPerson(formData: FormData): Promise<PersonResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("people")
-    .insert(parsed.values)
+    .insert({ ...parsed.values, last_actor_id: await readPersonId() })
     .select("id")
     .single();
   if (error || !data) {
@@ -124,7 +125,7 @@ export async function updatePerson(
   const supabase = await createClient();
   const { error } = await supabase
     .from("people")
-    .update(parsed.values)
+    .update({ ...parsed.values, last_actor_id: await readPersonId() })
     .eq("id", id);
   if (error) {
     return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
@@ -163,7 +164,7 @@ export async function setPersonActive(
   }
   const { error } = await supabase
     .from("people")
-    .update({ is_active: isActive })
+    .update({ is_active: isActive, last_actor_id: await readPersonId() })
     .eq("id", id);
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
@@ -205,7 +206,7 @@ export async function setPersonPassword(
   const password_hash = await hashPassword(password);
   const { error } = await supabase
     .from("people")
-    .update({ password_hash })
+    .update({ password_hash, last_actor_id: await readPersonId() })
     .eq("id", id);
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
