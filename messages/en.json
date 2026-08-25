@@ -613,6 +613,7 @@
       "empty": "No state changes recorded yet.",
       "thWhen": "When",
       "thTransition": "Transition",
+      "thBy": "By",
       "thReason": "Reason",
       "created": "(created)"
     },
@@ -2206,6 +2207,7 @@
     "credits": "Credits ",
     "creditedBy": "Credited by ",
     "metaIssued": "Issued",
+    "issuedBy": "by {name}",
     "metaDue": "Due",
     "metaPaid": "Paid",
     "metaCurrency": "Currency",

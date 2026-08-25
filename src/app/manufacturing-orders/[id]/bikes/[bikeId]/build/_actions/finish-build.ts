@@ -233,6 +233,8 @@ export async function finishBikeBuild(
       built_at: nowIso,
       built_by: builtBy,
       built_recorded_by: personId,
+      // The state-log trigger reads this on the same UPDATE (migration 84).
+      last_actor_id: personId,
       updated_at: nowIso,
     })
     .eq("id", bikeId);

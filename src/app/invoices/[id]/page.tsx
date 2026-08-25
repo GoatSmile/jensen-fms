@@ -60,6 +60,7 @@ export default async function InvoiceDetailPage({
         `
           id, invoice_number, kind, status, language, currency, notes,
           issued_date, due_date, paid_date, issued_locked_at, created_at,
+          issued_by_person:people!invoices_issued_by_fkey(full_name),
           subtotal_amount, total_vat_amount, total_amount,
           ean_number_used, is_reverse_charge, is_export, credited_invoice_id,
           economic_voucher_id, economic_synced_at,
@@ -95,6 +96,11 @@ export default async function InvoiceDetailPage({
   ]);
 
   const invoice = invoiceRes.data;
+  const issuedByName =
+    (Array.isArray(invoice?.issued_by_person)
+      ? invoice.issued_by_person[0]
+      : invoice?.issued_by_person
+    )?.full_name ?? null;
   if (invoiceRes.error || !invoice) notFound();
 
   const lines = linesRes.data ?? [];
@@ -186,7 +192,10 @@ export default async function InvoiceDetailPage({
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">
               {org ? (
-                <Link href={`/organizations/${org.id}`} className="hover:underline">
+                <Link
+                  href={`/organizations/${org.id}`}
+                  className="hover:underline"
+                >
                   {orgName}
                 </Link>
               ) : (
@@ -249,10 +258,17 @@ export default async function InvoiceDetailPage({
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Meta label={t("metaIssued")} value={formatDate(invoice.issued_date)} />
+        <Meta
+          label={t("metaIssued")}
+          value={formatDate(invoice.issued_date)}
+          sub={issuedByName ? t("issuedBy", { name: issuedByName }) : null}
+        />
         <Meta label={t("metaDue")} value={formatDate(invoice.due_date)} />
         <Meta label={t("metaPaid")} value={formatDate(invoice.paid_date)} />
-        <Meta label={t("metaCurrency")} value={invoice.currency?.trim() || "DKK"} />
+        <Meta
+          label={t("metaCurrency")}
+          value={invoice.currency?.trim() || "DKK"}
+        />
       </div>
 
       {showEconomic ? (
@@ -346,13 +362,25 @@ export default async function InvoiceDetailPage({
   );
 }
 
-function Meta({ label, value }: { label: string; value: string }) {
+function Meta({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  /** Secondary line, e.g. who issued it. */
+  sub?: string | null;
+}) {
   return (
     <div className="rounded-md border p-3">
       <div className="text-muted-foreground text-xs tracking-wide uppercase">
         {label}
       </div>
       <div className="mt-1 text-sm font-medium">{value}</div>
+      {sub ? (
+        <div className="text-muted-foreground mt-0.5 text-xs">{sub}</div>
+      ) : null}
     </div>
   );
 }

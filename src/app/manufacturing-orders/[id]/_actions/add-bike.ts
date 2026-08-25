@@ -4,11 +4,11 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type AddBikeResult =
-  | { ok: true; bikeId: string }
-  | { ok: false; error: string; field?: string };
+  { ok: true; bikeId: string } | { ok: false; error: string; field?: string };
 
 /**
  * Create a bike attached to a manufacturing order. The bike inherits the MO's
@@ -93,6 +93,7 @@ export async function addBikeToMO(
   const { data: bike, error: bikeErr } = await supabase
     .from("bikes")
     .insert({
+      last_actor_id: await readPersonId(),
       bike_type_id: mo.bike_type_id,
       template_id: mo.bike_template_id,
       color_id: mo.color_id,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import type { SOStatus } from "@/lib/so/status";
 import { validNextSOStatuses } from "@/lib/so/status";
@@ -44,15 +45,15 @@ export async function transitionSO(
   const supabase = await createClient();
   const { data: so, error: lookupErr } = await supabase
     .from("sales_orders")
-    .select(
-      "id, status, organization_id, organization_unit_id, notes",
-    )
+    .select("id, status, organization_id, organization_unit_id, notes")
     .eq("id", soId)
     .maybeSingle();
   if (lookupErr || !so) {
     return {
       ok: false,
-      error: t("soCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
+      error: t("soCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -126,6 +127,9 @@ export async function transitionSO(
         .update({
           status: "assigned",
           assigned_at: now,
+          // One bulk UPDATE, so every state-log row it produces names the
+          // person who delivered the sales order (migration 84).
+          last_actor_id: await readPersonId(),
           updated_at: now,
         })
         .in(
@@ -183,14 +187,15 @@ export async function transitionSO(
       status: to,
       notes,
       actual_delivery_date:
-        to === "delivered"
-          ? new Date().toISOString().slice(0, 10)
-          : undefined,
+        to === "delivered" ? new Date().toISOString().slice(0, 10) : undefined,
       updated_at: new Date().toISOString(),
     })
     .eq("id", soId);
   if (updErr) {
-    return { ok: false, error: t("soCouldNotTransition", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("soCouldNotTransition", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/sales-orders");

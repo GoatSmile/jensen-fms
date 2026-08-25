@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   transitionRequiresReason,
@@ -41,7 +42,9 @@ export async function transitionBike(
   if (lookupErr || !bike) {
     return {
       ok: false,
-      error: t("bikeCouldNotLoad", { detail: lookupErr?.message ?? t("notFound") }),
+      error: t("bikeCouldNotLoad", {
+        detail: lookupErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -84,6 +87,9 @@ export async function transitionBike(
     .from("bikes")
     .update({
       status: toStatus,
+      // Rides along so the state-log trigger can name who did this
+      // (migration 84).
+      last_actor_id: await readPersonId(),
       updated_at: now,
       // Stamp assigned_at on the first transition into 'assigned' so we have
       // a "sold/handed-over" timestamp for the customer phase. If the bike
@@ -92,7 +98,10 @@ export async function transitionBike(
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: t("bikeCouldNotUpdateStatus", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("bikeCouldNotUpdateStatus", { detail: updErr.message }),
+    };
   }
 
   // The trigger has just appended a (fromStatus, toStatus) log row with

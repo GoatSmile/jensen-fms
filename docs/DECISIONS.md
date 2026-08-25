@@ -1836,3 +1836,44 @@ gate on locally it reports 4 pass · 106 redirect. It was only ever run against 
 gate-off environment. Either it learns to mint the signed cookie (the algorithm is in
 `src/lib/auth/session.ts`) or the runbook says to run it with the gate off; until then
 its baseline only means something without a gate.
+
+## 2026-08-25 — Attribution phase 2: the bike's own timeline, and the invoice
+
+Follows 2026-08-24 (phase 1: build, repair completion, stock movements).
+
+**The state log gets a name, without session plumbing.** `bike_state_log.actor_id`
+existed from day one and was NULL on all 55 rows, because the trigger that writes
+them cannot see who is logged in — PostgREST hands out pooled connections with no
+session context. Rejected: routing every status change through an RPC that sets a
+transaction-local setting, which fights the app's PostgREST-everywhere style.
+Chosen: **the actor rides along on the row being written** (migration 84). The app
+sets `bikes.last_actor_id` in the same UPDATE that changes `status`; the trigger
+copies it into the log row. The trigger keeps its guarantee that no transition
+escapes unlogged, and attribution arrives for free.
+
+`last_actor_id` is scratch space for the trigger, NOT history — read the log.
+
+Five writers set it: the generic bike transition, slate/deliver, unassign, the
+build's own flip, and the sales-order delivery bulk write. Creation paths set it
+too, so the first log row (`(created) → planning`) has a name.
+
+**Invoices get one column each, not the pair** (migration 85). `issued_by` at the
+moment the INV number is allocated and the row becomes immutable;
+`payment_recorded_by` when someone marks it paid. Whoever clicks Issue IS the
+person issuing it — the performer/recorder pair exists only where the work and the
+typing genuinely come apart, which is a mechanic who does not log in, not an
+accountant at a keyboard. Credit notes are `invoices` rows, so `issued_by` covers
+them with no extra column.
+
+**A bug this found, worth recording as a class.** `bike_state_log.actor_id` had
+never had a FOREIGN KEY. PostgREST resolves an embed by constraint name, so
+`people!bike_state_log_actor_id_fkey(full_name)` failed — and a failed embed does
+not error, it **returns no rows**. The bike page's entire status history rendered
+as "no status changes recorded yet" while the table held them. Migration 86 adds
+the FK. This is the same shape as the `.is("deleted_at", null)` trap already in
+CLAUDE.md: **a query that is wrong about the schema comes back empty, not red.**
+Caught by fetching the rendered page and reading the table, not by tsc, lint,
+build or a smoke sweep — all four were green with the history invisible.
+
+Second-order note: adding a constraint needs `NOTIFY pgrst, 'reload schema'`
+against a running PostgREST, or the embed keeps failing against a cached schema.

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type AssignResult = { ok: true } | { ok: false; error: string };
@@ -34,8 +35,7 @@ export async function assignBikeToCustomer(
 ): Promise<AssignResult> {
   const t = await getTranslations("errors");
   if (!bikeId) return { ok: false, error: t("missingBikeId") };
-  if (!organizationId)
-    return { ok: false, error: t("bikePickCustomer") };
+  if (!organizationId) return { ok: false, error: t("bikePickCustomer") };
 
   const supabase = await createClient();
 
@@ -47,7 +47,9 @@ export async function assignBikeToCustomer(
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
+      error: t("bikeCouldNotLoad", {
+        detail: bikeErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -113,11 +115,15 @@ export async function assignBikeToCustomer(
       // Advance to 'assigned' if not already. The trg_bikes_state_log trigger
       // fires on this UPDATE and logs the transition automatically.
       ...(bike.status === "in_stock" ? { status: "assigned" } : {}),
+      last_actor_id: await readPersonId(),
       updated_at: now,
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: t("bikeCouldNotAssign", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("bikeCouldNotAssign", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/bikes");
@@ -148,7 +154,9 @@ export async function unassignBike(bikeId: string): Promise<AssignResult> {
   if (bikeErr || !bike) {
     return {
       ok: false,
-      error: t("bikeCouldNotLoad", { detail: bikeErr?.message ?? t("notFound") }),
+      error: t("bikeCouldNotLoad", {
+        detail: bikeErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (!bike.owner_organization_id) {
@@ -162,11 +170,15 @@ export async function unassignBike(bikeId: string): Promise<AssignResult> {
       owner_organization_id: null,
       owner_unit_id: null,
       ...(bike.status === "assigned" ? { status: "in_stock" } : {}),
+      last_actor_id: await readPersonId(),
       updated_at: now,
     })
     .eq("id", bikeId);
   if (updErr) {
-    return { ok: false, error: t("bikeCouldNotUnassign", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("bikeCouldNotUnassign", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/bikes");

@@ -5,12 +5,12 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { isRecordableStatus, type RecordableStatus } from "@/lib/bikes/status";
 
 export type SaveBikeResult =
-  | { ok: true; bikeId: string }
-  | { ok: false; error: string; field?: string };
+  { ok: true; bikeId: string } | { ok: false; error: string; field?: string };
 
 type ParsedFields = {
   bike_type_id: string;
@@ -42,7 +42,10 @@ function parseFields(
   // nobody can be billed or contacted for. in_stock is ours, so no owner.
   const owner = nullable(formData.get("owner_organization_id"));
   if (statusRaw === "in_service" && !owner)
-    return { errorKey: "bikeOwnerRequiredInService", field: "owner_organization_id" };
+    return {
+      errorKey: "bikeOwnerRequiredInService",
+      field: "owner_organization_id",
+    };
 
   return {
     bike_type_id,
@@ -55,9 +58,10 @@ function parseFields(
   };
 }
 
-function explainBikeError(
-  err: { code?: string; message: string },
-):
+function explainBikeError(err: {
+  code?: string;
+  message: string;
+}):
   | { duplicateFrame: true; field: string }
   | { duplicateFrame: false; message: string } {
   if (err.code === "23505" && /frame_number/.test(err.message)) {
@@ -79,9 +83,7 @@ function explainBikeError(
  * The lifecycle identifiers beyond the frame number (lock, battery, QR…) are
  * registered as separate actions after creation.
  */
-export async function createBike(
-  formData: FormData,
-): Promise<SaveBikeResult> {
+export async function createBike(formData: FormData): Promise<SaveBikeResult> {
   const t = await getTranslations("errors");
   const parsed = parseFields(formData);
   if ("errorKey" in parsed)
@@ -98,6 +100,9 @@ export async function createBike(
       color_id: parsed.color_id,
       frame_number: parsed.frame_number,
       status: parsed.status,
+      // /bikes/new records a bike that already exists; the first state-log
+      // row still names who recorded it (migration 84).
+      last_actor_id: await readPersonId(),
       notes: parsed.notes,
       owner_organization_id: parsed.owner_organization_id,
       // A recorded in-service bike is already with its customer, so stamp the
@@ -116,7 +121,11 @@ export async function createBike(
   if (error || !bike) {
     const e = explainBikeError(error ?? { message: t("unknownError") });
     if (e.duplicateFrame)
-      return { ok: false, error: t("bikeFrameNumberDuplicate"), field: e.field };
+      return {
+        ok: false,
+        error: t("bikeFrameNumberDuplicate"),
+        field: e.field,
+      };
     return { ok: false, error: e.message };
   }
 

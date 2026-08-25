@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_PAYMENT_TERMS_DAYS,
@@ -10,7 +11,8 @@ import {
 } from "@/lib/invoicing/status";
 import { getTranslations } from "next-intl/server";
 
-export type InvoiceTransitionResult = { ok: true } | { ok: false; error: string };
+export type InvoiceTransitionResult =
+  { ok: true } | { ok: false; error: string };
 
 /**
  * Issue a draft invoice: allocate the sequential INV number (drafts carry a
@@ -40,7 +42,9 @@ export async function issueInvoice(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: t("invCouldNotLoadInvoice", { detail: invErr?.message ?? t("notFound") }),
+      error: t("invCouldNotLoadInvoice", {
+        detail: invErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (invoice.status !== "draft") {
@@ -77,7 +81,8 @@ export async function issueInvoice(
 
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
-  const termsDays = Number(org?.payment_terms_days) || DEFAULT_PAYMENT_TERMS_DAYS;
+  const termsDays =
+    Number(org?.payment_terms_days) || DEFAULT_PAYMENT_TERMS_DAYS;
   const due = new Date();
   due.setDate(due.getDate() + termsDays);
 
@@ -93,11 +98,17 @@ export async function issueInvoice(
         : (invoice.due_date ?? due.toISOString().slice(0, 10)),
       issued_locked_at: nowIso,
       ean_number_used: org?.ean_number ?? null,
+      // Whoever clicks Issue IS the person issuing it — one column, no
+      // picker (migration 85).
+      issued_by: await readPersonId(),
     })
     .eq("id", invoiceId)
     .eq("status", "draft");
   if (updErr) {
-    return { ok: false, error: t("invCouldNotIssue", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("invCouldNotIssue", { detail: updErr.message }),
+    };
   }
 
   // Issuing a credit note settles the original: status → credited, and
@@ -125,8 +136,10 @@ export async function issueInvoice(
 export async function markInvoicePaid(
   invoiceId: string,
 ): Promise<InvoiceTransitionResult> {
+  const personId = await readPersonId();
   return transition(invoiceId, "paid", (inv) => ({
     paid_date: inv.paid_date ?? new Date().toISOString().slice(0, 10),
+    payment_recorded_by: personId,
   }));
 }
 
@@ -171,7 +184,9 @@ async function transition(
   if (invErr || !invoice) {
     return {
       ok: false,
-      error: t("invCouldNotLoadInvoice", { detail: invErr?.message ?? t("notFound") }),
+      error: t("invCouldNotLoadInvoice", {
+        detail: invErr?.message ?? t("notFound"),
+      }),
     };
   }
 
@@ -182,11 +197,17 @@ async function transition(
 
   const { error: updErr } = await supabase
     .from("invoices")
-    .update({ status: toStatus, ...patch({ status: from, paid_date: invoice.paid_date }) })
+    .update({
+      status: toStatus,
+      ...patch({ status: from, paid_date: invoice.paid_date }),
+    })
     .eq("id", invoiceId)
     .eq("status", from);
   if (updErr) {
-    return { ok: false, error: t("invCouldNotUpdate", { detail: updErr.message }) };
+    return {
+      ok: false,
+      error: t("invCouldNotUpdate", { detail: updErr.message }),
+    };
   }
 
   revalidatePath("/invoices");

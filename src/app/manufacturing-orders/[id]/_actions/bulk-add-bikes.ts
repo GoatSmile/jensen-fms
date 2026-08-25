@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   framePrefix,
@@ -10,8 +11,7 @@ import {
 } from "@/lib/bikes/frame-number";
 
 export type BulkAddResult =
-  | { ok: true; created: number }
-  | { ok: false; error: string; created: number };
+  { ok: true; created: number } | { ok: false; error: string; created: number };
 
 /**
  * Add up to N bikes to an MO at once. Each bike gets a sequentially-suggested
@@ -143,6 +143,7 @@ export async function bulkAddBikesToMO(
     const { data: bike, error: bikeErr } = await supabase
       .from("bikes")
       .insert({
+        last_actor_id: await readPersonId(),
         bike_type_id: mo.bike_type_id,
         template_id: mo.bike_template_id,
         color_id: mo.color_id,

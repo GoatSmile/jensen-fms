@@ -613,6 +613,7 @@
       "empty": "Ingen statusskift registreret endnu.",
       "thWhen": "Hvornår",
       "thTransition": "Skift",
+      "thBy": "Af",
       "thReason": "Begrundelse",
       "created": "(oprettet)"
     },
@@ -2206,6 +2207,7 @@
     "credits": "Krediterer ",
     "creditedBy": "Krediteret af ",
     "metaIssued": "Udstedt",
+    "issuedBy": "af {name}",
     "metaDue": "Forfald",
     "metaPaid": "Betalt",
     "metaCurrency": "Valuta",

@@ -21,6 +21,8 @@ export type StateLogRow = {
   toStatus: string;
   occurredAt: string;
   reason: string | null;
+  /** Who made the change. NULL on rows written before migration 84. */
+  actorName: string | null;
 };
 
 export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
@@ -38,6 +40,9 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                 {t("thWhen")}
               </TableHead>
               <TableHead>{t("thTransition")}</TableHead>
+              <TableHead className="hidden md:table-cell">
+                {t("thBy")}
+              </TableHead>
               <TableHead className="hidden sm:table-cell">
                 {t("thReason")}
               </TableHead>
@@ -75,6 +80,9 @@ export function StateLogSection({ rows }: { rows: StateLogRow[] }) {
                       {tStatus(row.toStatus)}
                     </Badge>
                   </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
+                  {row.actorName ?? "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground hidden max-w-[320px] truncate text-xs sm:table-cell">
                   {row.reason ?? "—"}

@@ -129,7 +129,9 @@ export default async function BikeDetailPage({
       .order("installed_at", { ascending: true }),
     supabase
       .from("bike_state_log")
-      .select("id, from_status, to_status, occurred_at, reason")
+      .select(
+        "id, from_status, to_status, occurred_at, reason, actor:people!bike_state_log_actor_id_fkey(full_name)",
+      )
       .eq("bike_id", id)
       .order("occurred_at", { ascending: false }),
     supabase
@@ -268,6 +270,8 @@ export default async function BikeDetailPage({
     toStatus: r.to_status,
     occurredAt: r.occurred_at,
     reason: r.reason,
+    actorName:
+      (Array.isArray(r.actor) ? r.actor[0] : r.actor)?.full_name ?? null,
   }));
 
   const templateLabel = b.template
