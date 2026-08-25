@@ -33,6 +33,15 @@ import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row
 import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
 import { kitCode, stickerColor } from "@/lib/kits/colors";
 import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { IdentifierDialog } from "@/app/bikes/[id]/_components/identifier-dialog";
 import type { IdentifierTypeOption } from "@/app/bikes/[id]/_components/identifier-dialog";
 
@@ -162,9 +171,11 @@ export function BuildWorkbench({
 }: Props) {
   const t = useTranslations("build");
   const tStatus = useTranslations("bikeStatus");
+  const tCommon = useTranslations("common");
   // Defaults to the session person: the common case is that whoever is
   // finishing the build did it. Changing it is one tap.
   const [builtBy, setBuiltBy] = useState<string | null>(defaultBuiltById);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const locale = useLocale();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -383,6 +394,7 @@ export function BuildWorkbench({
         setError(r.error);
         return;
       }
+      setConfirmOpen(false);
       setSuccess(t("buildFinished", { count: r.partsConsumed }));
       router.refresh();
     });
@@ -436,7 +448,11 @@ export function BuildWorkbench({
           ) : null}
         </div>
         {!readOnly ? (
-          <Button type="button" onClick={onFinish} disabled={finishDisabled}>
+          <Button
+            type="button"
+            onClick={() => setConfirmOpen(true)}
+            disabled={finishDisabled}
+          >
             <CheckCircle2 aria-hidden />
             {isFinishing ? t("finishing") : t("finishBuild")}
           </Button>
@@ -811,43 +827,56 @@ export function BuildWorkbench({
                     ? t("footerAddParts")
                     : t("footerReady", { count: rows.length })}
             </p>
-            <div className="flex items-center gap-2">
-              {peopleOptions.length > 1 ? (
-                <label className="flex items-center gap-1.5 text-sm">
-                  <span className="text-muted-foreground">{t("builtBy")}</span>
-                  <Select
-                    value={builtBy ?? ""}
-                    onValueChange={(v) => setBuiltBy(v || null)}
-                  >
-                    <SelectTrigger
-                      className="w-[180px]"
-                      aria-label={t("builtBy")}
-                    >
-                      <SelectValue placeholder={t("builtByUnknown")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {peopleOptions.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-              ) : null}
-              <Button
-                type="button"
-                size="lg"
-                onClick={onFinish}
-                disabled={finishDisabled}
-              >
-                <CheckCircle2 aria-hidden />{" "}
-                {isFinishing ? t("finishing") : t("finishBuild")}
-              </Button>
-            </div>
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => setConfirmOpen(true)}
+              disabled={finishDisabled}
+            >
+              <CheckCircle2 aria-hidden />{" "}
+              {isFinishing ? t("finishing") : t("finishBuild")}
+            </Button>
           </footer>
         ) : null}
       </Panel>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("finishConfirmTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("finishConfirmBody", { count: rows.length })}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="built-by">{t("builtBy")}</Label>
+            <Select
+              value={builtBy ?? ""}
+              onValueChange={(v) => setBuiltBy(v || null)}
+            >
+              <SelectTrigger id="built-by">
+                <SelectValue placeholder={t("builtByUnknown")} />
+              </SelectTrigger>
+              <SelectContent>
+                {peopleOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">{t("builtByHint")}</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              {tCommon("cancel")}
+            </Button>
+            <Button onClick={onFinish} disabled={isFinishing}>
+              {isFinishing ? t("finishing") : t("finishBuild")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

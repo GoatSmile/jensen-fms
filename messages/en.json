@@ -120,6 +120,9 @@
     "lost_or_stolen": "Lost / stolen"
   },
   "build": {
+                "finishConfirmTitle": "Finish this build?",
+        "finishConfirmBody": "{count} parts come off the shelf and the bike moves to stock. This cannot be undone.",
+        "builtByHint": "Who actually built it — change this if you are recording someone else's work.",
         "builtBy": "Built by",
     "builtByUnknown": "Not recorded",
     "crumbDashboard": "Dashboard",

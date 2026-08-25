@@ -120,6 +120,9 @@
     "lost_or_stolen": "Mistet / stjålet"
   },
   "build": {
+                "finishConfirmTitle": "Afslut denne opbygning?",
+        "finishConfirmBody": "{count} dele trækkes fra lageret, og cyklen flyttes til lager. Det kan ikke fortrydes.",
+        "builtByHint": "Hvem der faktisk byggede den — ret det, hvis du registrerer en andens arbejde.",
         "builtBy": "Bygget af",
     "builtByUnknown": "Ikke registreret",
     "crumbDashboard": "Dashboard",
