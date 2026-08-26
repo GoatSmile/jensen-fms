@@ -44,6 +44,8 @@ type Props = {
   heroUrl: string | null;
   /** Currencies for the adjust dialog's foreign-cost picker. */
   currencies?: CurrencyOption[];
+  /** Prevailing unit cost, pre-filled into the adjust dialog. */
+  prevailingCostDkk?: number | null;
 };
 
 /**
@@ -67,6 +69,7 @@ export function PartHeader({
   primaryLocationId = null,
   heroUrl,
   currencies = [],
+  prevailingCostDkk = null,
 }: Props) {
   const t = useTranslations("partDetail");
   const tCommon = useTranslations("common");
@@ -143,6 +146,7 @@ export function PartHeader({
               defaultLocationId={primaryLocationId ?? undefined}
               hideLocation={hideLocations}
               currencies={currencies}
+              prevailingCostDkk={prevailingCostDkk}
             />
           )}
           <DropdownMenu>

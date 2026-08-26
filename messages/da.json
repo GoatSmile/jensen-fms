@@ -908,6 +908,12 @@
     "createPart": "Opret del",
     "saveChanges": "Gem ændringer"
   },
+  "unitCostBasis": {
+    "purchase": "indkøbt",
+    "stated": "angivet",
+    "derived": "overført",
+    "none": "ukendt"
+  },
   "partDetail": {
     "retiredBanner": "Denne del er udgået. Den er skjult fra dellisten og kan ikke bestilles eller forbruges.",
     "edit": "Redigér",
@@ -1026,7 +1032,11 @@
     "purchaseDateHint": "Hvornår varen faktisk ankom — tilbagedatér historiske posteringer. Lad stå tomt for i dag.",
     "fxFollowsDate": " Valutakursen nedenfor følger denne dato.",
     "unitCostOptional": "Kostpris pr. enhed (valgfrit)",
-    "unitCostPlaceholder": "Lad stå tomt, når lager fjernes",
+    "unitCostPlaceholder": "Et skøn er fint",
+    "unitCostRequired": "Kostpris pr. enhed",
+    "costRequiredOnIncrease": "Angiv en kostpris — et skøn er fint.",
+    "costInheritedOnDecrease": "Når lager fjernes, arves den gældende kostpris, så der er intet at udfylde her.",
+    "costPrefilledHint": "Udfyldt med den nuværende kostpris ({amount}). Ret den kun, hvis dette parti kostede noget andet.",
     "costCurrencyAria": "Kostprisvaluta",
     "fxRateLabel": "Valutakurs til DKK",
     "fxRatePlaceholder": "f.eks. 6,91",
@@ -3462,6 +3472,8 @@
     "partUnitCostNumberOrEmpty": "Enhedspris skal være et tal eller tomt.",
     "partUnitCostDkkOrForeign": "Angiv enhedsprisen enten i DKK eller i en fremmed valuta, ikke begge.",
     "partUnitCostNonNegative": "Enhedspris skal være et ikke-negativt tal.",
+    "partUnitCostRequiredOnIncrease": "Angiv kostprisen, når du tilføjer lager — et skøn er fint, og det er den, der værdisætter lageret og koster fremtidige byg.",
+    "partUnitCostOnDecrease": "Kostpris kan ikke angives, når lager fjernes — den arves fra den gældende kostpris.",
     "partFxRatePositive": "Valutakurs skal være større end nul.",
     "partPickForeignCurrency": "Vælg en gyldig fremmed valuta.",
     "partPurchaseDateInvalid": "Købsdato er ikke en gyldig dato.",

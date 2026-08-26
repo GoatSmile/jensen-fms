@@ -212,5 +212,40 @@ select * from (
       and ds.current_value <> coalesce(max_issued.n, 0)
   ) x
 
+  union all
+  -- Stock nothing knows the cost of. Since migration 88 an inbound movement
+  -- cannot be written without a cost, so a hit here is either legacy data or a
+  -- writer that bypassed adjustStock. It matters because such stock is valued
+  -- at zero everywhere and costs a build nothing — silently, since the ledger
+  -- is immutable and nobody is told at the time.
+  select 17, 'parts holding stock with no known unit cost',
+         count(*), coalesce(string_agg(internal_sku, ', ' order by internal_sku), '—')
+  from (
+    select p.internal_sku
+    from parts p
+    join (
+      select part_id, sum(quantity_on_hand) as qty
+      from v_current_stock group by part_id
+    ) s on s.part_id = p.id
+    left join v_part_last_cost c on c.part_id = p.id
+    where p.deleted_at is null
+      and s.qty > 0
+      and c.last_cost_dkk is null
+  ) x
+
+  union all
+  -- The other half of the same rule: a movement that changed stock without
+  -- recording where its cost came from. `none` is legacy-only by design.
+  select 18, 'inventory movements with no cost basis',
+         count(*), coalesce(string_agg(detail, ', '), '—')
+  from (
+    select m.movement_type || ' ' || m.quantity_delta || ' on ' || p.internal_sku as detail
+    from inventory_movements m
+    join parts p on p.id = m.part_id
+    where m.unit_cost_basis = 'none'
+    order by m.occurred_at desc
+    limit 20
+  ) x
+
 ) t
 order by ord;

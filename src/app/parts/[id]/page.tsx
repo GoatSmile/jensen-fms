@@ -132,7 +132,9 @@ export default async function PartDetailPage({
       .eq("part_id", id),
     supabase
       .from("v_part_last_cost")
-      .select("last_cost_dkk, last_purchase_quantity, last_order_date")
+      .select(
+        "last_cost_dkk, last_purchase_quantity, last_order_date, last_cost_basis, last_cost_at",
+      )
       .eq("part_id", id)
       .maybeSingle(),
     supabase
@@ -291,10 +293,17 @@ export default async function PartDetailPage({
 
   // ------- Last cost + status -------
   const lastCostRow = lastCostRes.data ?? null;
-  const lastCostDkk = lastCostRow ? Number(lastCostRow.last_cost_dkk) : null;
-  const lastPurchaseQty = lastCostRow
-    ? Number(lastCostRow.last_purchase_quantity)
-    : null;
+  // Null-check the FIELDS, not just the row: since migration 88 the view is a
+  // FULL OUTER JOIN of "last costed event" and "last purchase", so either half
+  // can be absent on a row that exists. `Number(null)` is 0, which would render
+  // a confident 0,00 kr. where the honest answer is "not known yet".
+  const lastCostDkk =
+    lastCostRow?.last_cost_dkk != null ? Number(lastCostRow.last_cost_dkk) : null;
+  const lastCostBasis = lastCostRow?.last_cost_basis ?? null;
+  const lastPurchaseQty =
+    lastCostRow?.last_purchase_quantity != null
+      ? Number(lastCostRow.last_purchase_quantity)
+      : null;
   const stockStatus = getStockStatus(
     totalStock,
     lastPurchaseQty,
@@ -518,6 +527,7 @@ export default async function PartDetailPage({
         locations={locationOptions}
         hideLocations={hideLocations}
         primaryLocationId={primaryLocationId}
+        prevailingCostDkk={lastCostDkk}
         heroUrl={heroPhoto?.fileUrl ?? null}
         currencies={currenciesRes.data ?? []}
       />
@@ -543,7 +553,13 @@ export default async function PartDetailPage({
         unitOfMeasure={part.unit_of_measure}
         weightGrams={part.weight_grams}
         lastCostDkk={lastCostDkk}
-        lastCostDate={lastCostRow?.last_order_date ?? null}
+        lastCostBasis={lastCostBasis}
+        // The as-of date follows the cost itself. `last_order_date` is
+        // purchase-only, so a hand-priced part would otherwise show a figure
+        // with no date at all.
+        lastCostDate={
+          lastCostRow?.last_cost_at ?? lastCostRow?.last_order_date ?? null
+        }
         reorderPoint={
           part.reorder_point != null ? Number(part.reorder_point) : null
         }
@@ -568,6 +584,7 @@ export default async function PartDetailPage({
         hideLocations={hideLocations}
         primaryLocationId={primaryLocationId}
         currencies={currenciesRes.data ?? []}
+        prevailingCostDkk={lastCostDkk}
       />
 
       <MovementsSection rows={movementRows} hideLocations={hideLocations} />

@@ -109,6 +109,9 @@ export async function receivePurchaseOrder(
       movement_type: "received" as const,
       quantity_delta: r.additionalQty,
       unit_cost_dkk: line.landed_cost_dkk_per_unit,
+      // Landed cost off the line: FX and the duty buckets already frozen at
+      // insert. The only basis that is evidence rather than assertion.
+      unit_cost_basis: "purchase" as const,
       source_entity_type: "purchase_order_line",
       source_entity_id: line.id,
       // Who received the goods. Performer and recorder are the same person

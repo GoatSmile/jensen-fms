@@ -6,6 +6,10 @@ import { getTranslations } from "next-intl/server";
 import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
+import {
+  outboundCostFields,
+  resolveUnitCosts,
+} from "@/lib/inventory/unit-cost";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import { autoAdvanceMOAfterBuild } from "../../../../_actions/transition-mo";
@@ -138,20 +142,12 @@ export async function finishBikeBuild(
 
   const toConsume = bikeParts.filter((bp) => bp.inventory_movement_id == null);
 
-  // Last-cost lookup for inventory_movements.unit_cost_dkk + build_cost_dkk.
+  // Unit-cost lookup for inventory_movements.unit_cost_dkk + build_cost_dkk.
+  // Since migration 88 this resolves against costed inbound MOVEMENTS as well
+  // as purchase-order lines, so a part that was found in storage and priced by
+  // hand costs the build correctly instead of contributing zero.
   const partIds = [...new Set(bikeParts.map((bp) => bp.part_id))];
-  const lastCostByPart = new Map<string, number>();
-  if (partIds.length > 0) {
-    const { data: costs } = await supabase
-      .from("v_part_last_cost")
-      .select("part_id, last_cost_dkk")
-      .in("part_id", partIds);
-    for (const c of costs ?? []) {
-      if (c.part_id != null && c.last_cost_dkk != null) {
-        lastCostByPart.set(c.part_id, Number(c.last_cost_dkk));
-      }
-    }
-  }
+  const costByPart = await resolveUnitCosts(supabase, partIds);
 
   let runningBuildCostDkk = 0;
   let partsConsumed = 0;
@@ -174,7 +170,11 @@ export async function finishBikeBuild(
     const qty = Number(bp.quantity);
     if (!Number.isFinite(qty) || qty <= 0) continue;
 
-    const lastCostDkk = lastCostByPart.get(bp.part_id) ?? null;
+    // Stock leaving the shelf inherits the prevailing cost — `derived`, never
+    // a fresh valuation. A part nothing knows the cost of still consumes, and
+    // records `none` so the gap is findable rather than indistinguishable from
+    // a genuine zero.
+    const costFields = outboundCostFields(costByPart.get(bp.part_id));
 
     const { data: movement, error: movErr } = await supabase
       .from("inventory_movements")
@@ -183,7 +183,7 @@ export async function finishBikeBuild(
         location_id: location.id,
         movement_type: "consumed_build",
         quantity_delta: -qty,
-        unit_cost_dkk: lastCostDkk,
+        ...costFields,
         source_entity_type: "bike_part",
         source_entity_id: bp.id,
         reason: `Build of bike ${bikeId}`,
@@ -215,8 +215,8 @@ export async function finishBikeBuild(
       };
     }
 
-    if (lastCostDkk != null) {
-      runningBuildCostDkk += lastCostDkk * qty;
+    if (costFields.unit_cost_dkk != null) {
+      runningBuildCostDkk += costFields.unit_cost_dkk * qty;
     }
     partsConsumed += 1;
   }

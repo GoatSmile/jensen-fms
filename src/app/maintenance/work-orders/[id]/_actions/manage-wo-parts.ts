@@ -6,6 +6,10 @@ import { getTranslations } from "next-intl/server";
 import { nullableString as nullable } from "@/lib/forms";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
 import { readPersonId } from "@/lib/auth/read-session";
+import {
+  outboundCostFields,
+  resolveUnitCost,
+} from "@/lib/inventory/unit-cost";
 import { createClient } from "@/lib/supabase/server";
 import {
   CLOSED_WO_STATUSES,
@@ -87,6 +91,14 @@ async function consumePartOntoWO(
 ): Promise<WOPartsResult> {
   const t = await getTranslations("errors");
   const personId = await readPersonId();
+  // `unitPrice` is the CUSTOMER-facing retail snapshot and belongs only on the
+  // work_order_parts row. The ledger wants what the part cost US, resolved and
+  // inherited the same way a build consumption does — writing retail into
+  // unit_cost_dkk overstated the ledger by the whole margin, which is what the
+  // comment at the call site always said should not happen.
+  const costFields = outboundCostFields(
+    await resolveUnitCost(supabase, partId),
+  );
   // Insert the movement first; source_entity_id gets patched after the
   // wo_parts row exists.
   const { data: movement, error: movErr } = await supabase
@@ -96,7 +108,7 @@ async function consumePartOntoWO(
       location_id: locationId,
       movement_type: "consumed_maintenance",
       quantity_delta: -qty,
-      unit_cost_dkk: unitPrice,
+      ...costFields,
       source_entity_type: "work_order_part",
       source_entity_id: null,
       reason: `Work order ${woId}`,

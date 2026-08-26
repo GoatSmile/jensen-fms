@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { readPersonId } from "@/lib/auth/read-session";
+import {
+  outboundCostFields,
+  resolveUnitCost,
+} from "@/lib/inventory/unit-cost";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdjustStockInput = {
@@ -13,7 +17,11 @@ export type AdjustStockInput = {
   /** Signed delta (mode='delta') or absolute target (mode='set'). */
   value: number;
   reason: string;
-  /** Optional landed-cost-per-unit in DKK; only meaningful when adding stock. */
+  /**
+   * Landed-cost-per-unit in DKK. REQUIRED when the adjustment adds stock
+   * (migration 88); must be omitted when it removes stock, which inherits the
+   * prevailing cost instead.
+   */
   unitCostDkk: number | null;
   /**
    * Alternative to `unitCostDkk` — the original foreign amount plus the FX
@@ -167,6 +175,37 @@ export async function adjustStock(
     };
   }
 
+  // Cost is direction-dependent, and this is the whole point of migration 88.
+  //
+  // Stock COMING IN must say what it cost — that is the found-in-storage case,
+  // and letting it through uncosted is what left 499 baskets valued at zero and
+  // a bike built from them missing its parts cost. The dialog pre-fills the
+  // prevailing figure, so a plain recount is one click, not a research task.
+  //
+  // Stock GOING OUT inherits the prevailing cost and is never asked. Nobody can
+  // answer "what was the broken one worth?", and asking invites a made-up
+  // number into the ledger.
+  let costFields: {
+    unit_cost_dkk: number | null;
+    unit_cost_basis: "purchase" | "stated" | "derived" | "none";
+  };
+  if (delta > 0) {
+    if (unitCostDkk == null) {
+      return { ok: false, error: t("partUnitCostRequiredOnIncrease") };
+    }
+    if (unitCostDkk < 0) {
+      return { ok: false, error: t("partUnitCostNonNegative") };
+    }
+    costFields = { unit_cost_dkk: unitCostDkk, unit_cost_basis: "stated" };
+  } else {
+    if (unitCostDkk != null) {
+      return { ok: false, error: t("partUnitCostOnDecrease") };
+    }
+    costFields = outboundCostFields(
+      await resolveUnitCost(supabase, input.partId),
+    );
+  }
+
   const personId = await readPersonId();
   const { error: insertErr } = await supabase
     .from("inventory_movements")
@@ -175,7 +214,7 @@ export async function adjustStock(
       location_id: input.locationId,
       movement_type: "adjustment",
       quantity_delta: delta,
-      unit_cost_dkk: unitCostDkk,
+      ...costFields,
       reason: costProvenance ? `${reason} · ${costProvenance}` : reason,
       created_by: personId,
       ...(occurredAt ? { occurred_at: occurredAt } : {}),

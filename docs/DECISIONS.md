@@ -1926,3 +1926,49 @@ trusted colleagues, not a tamper-proof ledger. It also has no UI, on purpose:
 it is forensics, queried when a specific question arises. **GDPR:** "person X
 changed Y at 14:32" is employee personal data and needs a retention decision
 alongside the voicemail media rules.
+
+## 2026-08-26 — Unit cost has a BASIS, and stock can arrive without a purchase order
+Stock does not only arrive through purchasing: parts get found in storage
+years after they were bought, counts get corrected upward, a supplier sends a
+free replacement. The shop knows roughly what it paid. `v_part_last_cost` read
+`purchase_order_lines` and nothing else, so such a part had NO cost — not
+approximate, null — and every reader treated that as zero: template
+cost-to-produce, MO projections, and `finishBikeBuild`, which wrote
+`unit_cost_dkk = NULL` onto the consumption movement and dropped the part from
+`bikes.build_cost_dkk`. Silently, into an immutable ledger. In production 499
+JP-BasJen baskets sat valued at zero and a bike built from them is short its
+parts cost.
+
+**Decided:**
+1. **Inbound movements MUST carry a cost; outbound movements MUST NOT ask for
+   one.** Stock leaving the shelf inherits the prevailing cost — a tech cannot
+   answer "what was the broken one worth?", and asking invites invention. This
+   makes "part with unknown cost" unreachable going forward rather than merely
+   discouraged.
+2. **`inventory_movements.unit_cost_basis`** (`purchase | stated | derived |
+   none`) records where a figure came from, frozen at insert — the same reason
+   `import_tax_basis` exists: a derived reason cannot be reconstructed later
+   from mutable state. `none` is legacy-only by design.
+3. **A `stated` cost CAN outrank a real `purchase` cost when it is newer.**
+   Recency wins across all bases — you just counted the shelf and know what you
+   paid, which beats an older invoice. Owner's call. The cost is that one
+   adjustment can move the basis margins are built on, which is exactly why the
+   basis is recorded and shown (`≈ 259,12 kr. (stated)`) rather than blended
+   into an unmarked number.
+4. **`last_purchase_quantity` stays purchase-sourced.** It sizes reordering
+   (on-hand ≤ 20% of last purchase qty) and no part has an explicit
+   `reorder_point`, so that heuristic drives every low-stock badge in the app.
+   Point it at movements and a +10 adjustment sets a reorder threshold of 2.
+   Cost moves to the ledger; reorder sizing does not.
+
+**Rejected:** a *phantom purchase order* for found stock (invents a supplier
+and an order date, corrupting spend and lead-time reporting to fix a valuation
+problem); and a mutable `parts.standard_cost_dkk` (the conventional ERP answer,
+but it has no as-of and no history, so it drifts silently — against this
+codebase's freeze-at-the-event instinct).
+
+Implemented in migration 88 + `src/lib/inventory/unit-cost.ts` (one resolver
+for every consumption path, so the workbench, work orders and adjustments
+cannot disagree). Fixed in passing: work-order consumption wrote the CUSTOMER
+retail price into `unit_cost_dkk`, overstating the ledger by the whole margin —
+contradicting the comment at its own call site.

@@ -40,6 +40,8 @@ type Props = {
   primaryLocationId?: string | null;
   /** Currencies for the adjust dialog's foreign-cost picker. */
   currencies?: CurrencyOption[];
+  /** Prevailing unit cost, pre-filled into the adjust dialog. */
+  prevailingCostDkk?: number | null;
 };
 
 export async function StockSection({
@@ -51,6 +53,7 @@ export async function StockSection({
   hideLocations = false,
   primaryLocationId = null,
   currencies = [],
+  prevailingCostDkk = null,
 }: Props) {
   const t = await getTranslations("partDetail");
   if (hideLocations) {
@@ -91,6 +94,7 @@ export async function StockSection({
             defaultLocationId={primaryLocationId ?? undefined}
             hideLocation
             currencies={currencies}
+            prevailingCostDkk={prevailingCostDkk}
           />
         </div>
       </Section>
@@ -146,6 +150,7 @@ export async function StockSection({
                         defaultLocationId={row.locationId}
                         triggerVariant="row"
                         currencies={currencies}
+                        prevailingCostDkk={prevailingCostDkk}
                       />
                     ) : (
                       <Button

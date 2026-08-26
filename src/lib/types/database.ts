@@ -1436,6 +1436,7 @@ export type Database = {
           reason: string | null
           source_entity_id: string | null
           source_entity_type: string | null
+          unit_cost_basis: Database["public"]["Enums"]["unit_cost_basis"]
           unit_cost_dkk: number | null
         }
         Insert: {
@@ -1450,6 +1451,7 @@ export type Database = {
           reason?: string | null
           source_entity_id?: string | null
           source_entity_type?: string | null
+          unit_cost_basis?: Database["public"]["Enums"]["unit_cost_basis"]
           unit_cost_dkk?: number | null
         }
         Update: {
@@ -1464,6 +1466,7 @@ export type Database = {
           reason?: string | null
           source_entity_id?: string | null
           source_entity_type?: string | null
+          unit_cost_basis?: Database["public"]["Enums"]["unit_cost_basis"]
           unit_cost_dkk?: number | null
         }
         Relationships: [
@@ -4583,6 +4586,8 @@ export type Database = {
       }
       v_part_last_cost: {
         Row: {
+          last_cost_at: string | null
+          last_cost_basis: Database["public"]["Enums"]["unit_cost_basis"] | null
           last_cost_dkk: number | null
           last_order_date: string | null
           last_purchase_quantity: number | null
@@ -4853,6 +4858,7 @@ export type Database = {
         | "resolved"
         | "closed"
         | "cancelled"
+      unit_cost_basis: "purchase" | "stated" | "derived" | "none"
       work_order_status: "open" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
@@ -5082,6 +5088,7 @@ export const Constants = {
         "closed",
         "cancelled",
       ],
+      unit_cost_basis: ["purchase", "stated", "derived", "none"],
       work_order_status: ["open", "in_progress", "completed", "cancelled"],
     },
   },

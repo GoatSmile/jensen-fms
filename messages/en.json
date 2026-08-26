@@ -908,6 +908,12 @@
     "createPart": "Create part",
     "saveChanges": "Save changes"
   },
+  "unitCostBasis": {
+    "purchase": "purchased",
+    "stated": "stated",
+    "derived": "carried over",
+    "none": "not known"
+  },
   "partDetail": {
     "retiredBanner": "This part is retired. It is hidden from the parts list and cannot be ordered or consumed.",
     "edit": "Edit",
@@ -1026,7 +1032,11 @@
     "purchaseDateHint": "When this stock actually arrived — back-date for historical entries. Leave blank for today.",
     "fxFollowsDate": " The FX rate below follows this date.",
     "unitCostOptional": "Unit cost (optional)",
-    "unitCostPlaceholder": "Leave blank when removing stock",
+    "unitCostPlaceholder": "An estimate is fine",
+    "unitCostRequired": "Unit cost",
+    "costRequiredOnIncrease": "Enter a unit cost — an estimate is fine.",
+    "costInheritedOnDecrease": "Removing stock inherits the prevailing unit cost, so there is nothing to enter here.",
+    "costPrefilledHint": "Pre-filled with the current cost ({amount}). Change it only if this batch cost something different.",
     "costCurrencyAria": "Cost currency",
     "fxRateLabel": "FX rate to DKK",
     "fxRatePlaceholder": "e.g. 6.91",
@@ -3462,6 +3472,8 @@
     "partUnitCostNumberOrEmpty": "Unit cost must be a number or empty.",
     "partUnitCostDkkOrForeign": "Provide the unit cost either in DKK or in a foreign currency, not both.",
     "partUnitCostNonNegative": "Unit cost must be a non-negative number.",
+    "partUnitCostRequiredOnIncrease": "Enter the unit cost when adding stock — an estimate is fine, and it is what values the stock and costs future builds.",
+    "partUnitCostOnDecrease": "Unit cost cannot be set when removing stock — it is inherited from the prevailing cost.",
     "partFxRatePositive": "FX rate must be greater than zero.",
     "partPickForeignCurrency": "Pick a valid foreign currency.",
     "partPurchaseDateInvalid": "Purchase date is not a valid date.",

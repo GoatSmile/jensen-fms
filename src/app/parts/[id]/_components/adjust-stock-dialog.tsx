@@ -59,6 +59,13 @@ type Props = {
    * Omit (or pass []) to keep the cost input DKK-only.
    */
   currencies?: CurrencyOption[];
+  /**
+   * What a unit currently costs us (DKK), from `v_part_last_cost`. Pre-fills
+   * the cost box so a plain recount is one click rather than a research task:
+   * a count correction is not a revaluation. Null when nothing knows yet —
+   * that is the found-in-storage case, and then a figure must be typed.
+   */
+  prevailingCostDkk?: number | null;
 };
 
 type Mode = "delta" | "set";
@@ -71,6 +78,7 @@ export function AdjustStockDialog({
   triggerVariant = "default",
   hideLocation = false,
   currencies = [],
+  prevailingCostDkk = null,
 }: Props) {
   const t = useTranslations("partDetail");
   const [open, setOpen] = useState(false);
@@ -113,6 +121,7 @@ export function AdjustStockDialog({
           defaultLocationId={defaultLocationId}
           hideLocation={hideLocation}
           currencies={currencies}
+          prevailingCostDkk={prevailingCostDkk}
           onCancel={() => setOpen(false)}
           onSuccess={() => {
             setOpen(false);
@@ -135,6 +144,7 @@ function AdjustStockForm({
   defaultLocationId,
   hideLocation,
   currencies,
+  prevailingCostDkk,
   onSuccess,
   onCancel,
 }: {
@@ -144,6 +154,7 @@ function AdjustStockForm({
   defaultLocationId?: string;
   hideLocation: boolean;
   currencies: CurrencyOption[];
+  prevailingCostDkk: number | null;
   onSuccess: () => void;
   onCancel: () => void;
 }) {
@@ -155,7 +166,9 @@ function AdjustStockForm({
   const [mode, setMode] = useState<Mode>("delta");
   const [valueText, setValueText] = useState("");
   const [reason, setReason] = useState("");
-  const [unitCostText, setUnitCostText] = useState("");
+  const [unitCostText, setUnitCostText] = useState(
+    prevailingCostDkk != null ? String(prevailingCostDkk) : "",
+  );
   const [costCurrency, setCostCurrency] = useState("DKK");
   const [fxRateText, setFxRateText] = useState("");
   const [fxLookup, setFxLookup] = useState<
@@ -225,6 +238,11 @@ function AdjustStockForm({
 
   const previewIsNegative = preview != null && preview.resulting < 0;
 
+  // Cost is a question only for stock coming IN. Stock going out inherits the
+  // prevailing cost server-side (migration 88), so the box is hidden rather
+  // than ignored — an input nobody should fill is worse than no input.
+  const isDecrease = preview != null && preview.delta < 0;
+
   // Live DKK/unit for a foreign cost — same arithmetic the action persists.
   const foreignCostDkk = useMemo(() => {
     if (costCurrency === "DKK") return null;
@@ -245,7 +263,12 @@ function AdjustStockForm({
       return;
     }
 
-    const trimmedCost = unitCostText.trim();
+    // Removing stock never carries a cost — the server derives it.
+    const trimmedCost = isDecrease ? "" : unitCostText.trim();
+    if (!isDecrease && trimmedCost === "") {
+      setError(t("costRequiredOnIncrease"));
+      return;
+    }
     let unitCostDkk: number | null = null;
     let unitCostForeign: {
       amount: number;
@@ -379,9 +402,7 @@ function AdjustStockForm({
         {preview != null ? (
           <p
             className={`text-xs tabular-nums ${
-              previewIsNegative
-                ? "text-destructive"
-                : "text-muted-foreground"
+              previewIsNegative ? "text-destructive" : "text-muted-foreground"
             }`}
           >
             {mode === "delta"
@@ -425,72 +446,85 @@ function AdjustStockForm({
         </p>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="adjust-cost">{t("unitCostOptional")}</Label>
-        <div className="flex gap-2">
-          <Input
-            id="adjust-cost"
-            inputMode="decimal"
-            value={unitCostText}
-            onChange={(e) => setUnitCostText(e.target.value)}
-            placeholder={t("unitCostPlaceholder")}
-            className="flex-1"
-          />
-          {currencies.length > 0 ? (
-            <Select value={costCurrency} onValueChange={setCostCurrency}>
-              <SelectTrigger
-                aria-label={t("costCurrencyAria")}
-                className="w-[92px] shrink-0"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-        </div>
-        {costCurrency !== "DKK" ? (
-          <div className="flex flex-col gap-1.5 pt-1">
-            <Label htmlFor="adjust-fx">{t("fxRateLabel")}</Label>
+      {isDecrease ? (
+        <p className="text-muted-foreground text-sm">
+          {t("costInheritedOnDecrease")}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="adjust-cost">{t("unitCostRequired")}</Label>
+          <div className="flex gap-2">
             <Input
-              id="adjust-fx"
+              id="adjust-cost"
               inputMode="decimal"
-              value={fxRateText}
-              onChange={(e) => setFxRateText(e.target.value)}
-              placeholder={t("fxRatePlaceholder")}
+              value={unitCostText}
+              onChange={(e) => setUnitCostText(e.target.value)}
+              placeholder={t("unitCostPlaceholder")}
+              className="flex-1"
             />
-            <p className="text-muted-foreground text-xs">
-              {fxLookup.kind === "loading"
-                ? t("fxLoading", { currency: costCurrency, date: fxDate })
-                : fxLookup.kind === "ok"
-                  ? fxLookup.actualDate !== fxDate
-                    ? t("fxOkClosest", {
-                        date: fxLookup.actualDate,
-                        requested: fxDate,
-                      })
-                    : t("fxOk", { date: fxLookup.actualDate })
-                  : fxLookup.kind === "missing"
-                    ? t("fxMissing", { message: fxLookup.message })
-                    : t("fxIdle")}
-            </p>
-            {foreignCostDkk != null ? (
-              <p className="text-xs tabular-nums">
-                {t("foreignCostPerUnit", {
-                  amount: formatDkk(foreignCostDkk),
-                })}
-                <span className="text-muted-foreground">
-                  {t("foreignCostNote")}
-                </span>
-              </p>
+            {currencies.length > 0 ? (
+              <Select value={costCurrency} onValueChange={setCostCurrency}>
+                <SelectTrigger
+                  aria-label={t("costCurrencyAria")}
+                  className="w-[92px] shrink-0"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : null}
           </div>
-        ) : null}
-      </div>
+          {costCurrency !== "DKK" ? (
+            <div className="flex flex-col gap-1.5 pt-1">
+              <Label htmlFor="adjust-fx">{t("fxRateLabel")}</Label>
+              <Input
+                id="adjust-fx"
+                inputMode="decimal"
+                value={fxRateText}
+                onChange={(e) => setFxRateText(e.target.value)}
+                placeholder={t("fxRatePlaceholder")}
+              />
+              <p className="text-muted-foreground text-xs">
+                {fxLookup.kind === "loading"
+                  ? t("fxLoading", { currency: costCurrency, date: fxDate })
+                  : fxLookup.kind === "ok"
+                    ? fxLookup.actualDate !== fxDate
+                      ? t("fxOkClosest", {
+                          date: fxLookup.actualDate,
+                          requested: fxDate,
+                        })
+                      : t("fxOk", { date: fxLookup.actualDate })
+                    : fxLookup.kind === "missing"
+                      ? t("fxMissing", { message: fxLookup.message })
+                      : t("fxIdle")}
+              </p>
+              {foreignCostDkk != null ? (
+                <p className="text-xs tabular-nums">
+                  {t("foreignCostPerUnit", {
+                    amount: formatDkk(foreignCostDkk),
+                  })}
+                  <span className="text-muted-foreground">
+                    {t("foreignCostNote")}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {prevailingCostDkk != null && costCurrency === "DKK" ? (
+            <p className="text-muted-foreground text-xs">
+              {t("costPrefilledHint", {
+                amount: formatDkk(prevailingCostDkk),
+              })}
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">

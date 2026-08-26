@@ -12,6 +12,8 @@ type Props = {
   weightGrams: number | null;
   lastCostDkk: number | null;
   lastCostDate: string | null;
+  /** Where the cost came from — see migration 88. Null when nothing knows. */
+  lastCostBasis?: "purchase" | "stated" | "derived" | "none" | null;
   reorderPoint: number | null;
   reorderQuantity: number | null;
   notes: string | null;
@@ -27,6 +29,7 @@ export async function DetailsSection({
   weightGrams,
   lastCostDkk,
   lastCostDate,
+  lastCostBasis = null,
   reorderPoint,
   reorderQuantity,
   notes,
@@ -34,7 +37,13 @@ export async function DetailsSection({
   templateUsageCount,
 }: Props) {
   const t = await getTranslations("partDetail");
+  const tBasis = await getTranslations("unitCostBasis");
   const attributeEntries = Object.entries(attributes ?? {});
+
+  // A purchased cost is evidence; everything else is an assertion someone made.
+  // Say which, rather than letting an estimate wear the same clothes as an
+  // invoice — the number is used for margin, so its footing matters.
+  const showBasis = lastCostBasis != null && lastCostBasis !== "purchase";
 
   return (
     // Folded by default — reference data, not daily-flow data. The
@@ -64,7 +73,13 @@ export async function DetailsSection({
         <Field label={t("lastLandedCost")}>
           {lastCostDkk != null ? (
             <span className="tabular-nums">
+              {showBasis ? "≈ " : null}
               {formatDkk(lastCostDkk)}
+              {showBasis && tBasis.has(lastCostBasis) ? (
+                <span className="text-muted-foreground">
+                  {` (${tBasis(lastCostBasis)})`}
+                </span>
+              ) : null}
               {lastCostDate ? (
                 <span className="text-muted-foreground">
                   {t("asOf", { date: formatDate(lastCostDate) })}
