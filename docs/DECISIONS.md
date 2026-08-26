@@ -1972,3 +1972,57 @@ for every consumption path, so the workbench, work orders and adjustments
 cannot disagree). Fixed in passing: work-order consumption wrote the CUSTOMER
 retail price into `unit_cost_dkk`, overstating the ledger by the whole margin —
 contradicting the comment at its own call site.
+
+## 2026-08-26 (evening) — Test data cleared out of PRODUCTION, and the invoice series reclaimed
+The owner's own test account had left real residue in the live database: 15 test
+bikes whose builds had consumed **51 328,75 kr. of genuine stock**, 4 invoices,
+5 sales orders, 4 work orders, 4 tickets, an active "Test agreement", 3 test
+customer organisations and a test supplier. `JP-sap271` had been sitting at
+**−207** on hand — recorded in STATUS.md for weeks as a data debt awaiting the
+physical count, which was the wrong diagnosis: it was test builds eating real
+spokes.
+
+**Decided, and how:**
+1. **Reverse stock, do not delete movements.** 317 compensating inbound
+   `adjustment` rows carrying each original's cost with basis `stated`. The
+   ledger stays immutable, the reversal is itself reversible, and the restored
+   stock survives the bike deletion because those rows have no FK to a bike.
+   **Ordering was load-bearing**: `bike_parts` is `ON DELETE CASCADE` and is the
+   only link from a bike to its movements, so deleting bikes first would have
+   destroyed the ability to identify what to reverse.
+2. **Delete the issued test invoices and reset the counter to 0** — breaking the
+   "issued invoices are immutable, correct with a credit note" rule ONCE,
+   deliberately. It was safe only because all 4 invoices that had ever existed
+   were test, no credit note referenced them, and no real accounting series
+   existed to leave a hole in. **The rule stands for every future invoice**; this
+   was the last moment it was free. Consequence: `INV-2026-0001` is available
+   again, which retires the revisor question about where to start the series.
+3. **Hard-delete the 15 test bikes** (owner: "this once"). Normally soft-delete
+   is the convention. Worth recording *why the premise was checked*: the
+   evidence first offered — "they're all soft-deleted" — turned out worthless,
+   because the same July sweep had soft-deleted a **Rigshospitalet** bike too,
+   and the `JP-2026-E_BIKE-0NN` frame pattern is on every bike in the database
+   including live ones. Only 2 of the 15 carried explicit `test` notes. The
+   deletion went ahead on the owner's direct confirmation that the Nazar Taras
+   org is a test account, not on inference.
+4. **Keep the person and the customer org.** `people."Nazar Taras"` is a login;
+   deleting it locks the owner out. The organisation stays as a real customer.
+
+**Rejected:** deleting the 317 movements outright (hides that the consumption
+ever happened, and the ledger is immutable by design); and deleting the MOs that
+held the test bikes — `MO-2026-0001` and `-0011` also hold bikes belonging to
+others, so only `MO-2026-0009`, which was entirely test, was removed.
+
+Backup taken first: `~/Backups/db/pre-cleanup-20260826-210318` (schema + data).
+Post-state verified: no negative stock, no dangling references, all 317
+reversals intact, invariant checks 9 and 14 now clean.
+
+## 2026-08-26 (evening) — Anything that goes to a human ships as a PDF
+Owner's standing rule. The moment a deliverable is destined for someone outside
+the session — Dennis on the workshop floor, the revisor, a customer — it is
+produced as a **PDF**, not a link, an HTML file, or text in a terminal. They may
+have no account, no browser and no laptop; a PDF prints, attaches to mail, and
+cannot change after they have read it. Source stays markdown in `docs/`,
+rendered with `scripts/build-doc-pdf.py`. An artifact or link may accompany the
+PDF; it never replaces it. Rule recorded in CLAUDE.md; first applied to
+`docs/PARTS-REVIEW-2026-08.md`.

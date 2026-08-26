@@ -1,12 +1,21 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-08-23 (session end).** Most recent: **login is now a name
-and a password.** The credential moved from the role to the person (migrations
-80 + 81), the shared `SITE_PASSWORD` became one named `Admin` person, role
-passwords / the legacy digest token / `/whoami` were all removed, and UI
-preferences plus per-person language now live on the person and follow them to
-any device. Decisions in DECISIONS 2026-08-23. tsc + lint + build clean;
+**Last updated: 2026-08-26 (session end).** Most recent: **stock can now arrive
+without a purchase order, and every unit cost says where it came from.**
+Migration 88 adds `unit_cost_basis` and widens `v_part_last_cost` to read costed
+inbound MOVEMENTS as well as PO lines; inbound movements must carry a cost,
+outbound ones inherit it. **The production database was then cleaned of test
+data** — 15 test bikes and their orders, tickets, work orders and invoices
+removed, and **51 328,75 kr. of stock restored** that those test builds had
+consumed. Decisions in DECISIONS 2026-08-26. tsc + lint + build clean;
 `npm run smoke` 92 pass · 18 redirect · 0 fail.
+
+**Two consequences a fresh session must know.** The invariant-audit baseline
+CHANGED (below) — the two long-standing hits are both resolved. And the **local
+database copy is stale**: it is the 24 Aug dump plus migration 88, so it still
+holds the test bikes and invoices that production no longer has. Re-dump before
+trusting local for anything data-shaped. Pre-cleanup backup:
+`~/Backups/db/pre-cleanup-20260826-210318`.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -151,9 +160,9 @@ a creation scenario at all:
   now been posted** (2026-07-29): the owner-required rejection writes nothing,
   and `in_stock` mints a bike with no owner, no `build_cost_dkk`, no MO, one
   frame identifier and one state-log row, exactly as documented.
-- **No stranded bikes remain in prod.** `JP-3333-12` was soft-deleted by the
-  owner 2026-07-28; `JP-3333-155`, the last one, on 2026-07-29 at the owner's
-  instruction. Both were test data. Check 1 of the invariant audit is the
+- **No stranded bikes remain in prod.** `JP-3333-12` was hard-deleted with the
+  rest of the test data 2026-08-26 (it had been soft-deleted since 2026-07-28);
+  `JP-3333-155`, the last one, was soft-deleted 2026-07-29. Both were test data. Check 1 of the invariant audit is the
   standing guard, so this does not need watching by hand.
 - **Adopting an existing bike into an MO is UNDECIDED** — not rejected. It is the
   capability behind the owner's "Create manufacturing order" button idea. If it
@@ -168,7 +177,7 @@ Two commands, both read-only, both safe against prod:
 
 ```
 npm run smoke                      # 103 routes, needs `npm run dev` running
-scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
+scripts/audit-invariants.sql       # 18 invariants; SQL editor, psql, or the MCP
 ```
 
 - **Smoke sweep**: fetches every page route with real ids pulled from the DB and
@@ -177,18 +186,26 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
   vocab routes; `/whoami` was the 19th until it was removed with the
   person-login rebuild. A SKIP is not a pass — it means no row exists to render
   that route.
-- **Invariant audit**: each check must return zero offenders. **Baseline is 14 of
-  16 clean**; the two standing hits are real and tracked below (negative stock,
-  e-conomic trial stamps), so treat 14/16 as green and anything else as new.
+- **Invariant audit**: each check must return zero offenders. **Baseline as of
+  2026-08-26 is 16 of 18 clean.** The two former standing hits — negative stock
+  and e-conomic trial stamps — are BOTH RESOLVED; do not go looking for them.
+  The two current hits are new and both benign:
+  - **check 17** — `JP-BasJen` holds 499 units with no known cost (needs the
+    owner's estimate; it is the one item on the parts review sheet).
+  - **check 18** — 11 legacy movements carry `unit_cost_basis = 'none'`, from
+    before costs were required on inbound. Migration 88 makes new ones
+    unreachable, so this count can only shrink.
 - Why the audit is a `.sql` file and not a script, why two of its first four hits
   were bugs in the checks, and what Tier 1 covered: DECISIONS 2026-07-29
   (afternoon). **Tier 2 — issuing an invoice, any e-conomic push, any real send —
   is excluded on purpose and must stay manual.**
-- **Negative stock, `JP-sap271` (Sapim spokes): −207.** One receipt of 83 in May,
-  then eight real builds consuming 36 each. Opening stock was never entered, so
-  this is a data debt, not a code defect — the 31 Aug physical count resolves it.
-  It does confirm a build is allowed to run the ledger negative without blocking;
-  whether that should warn is an owner question, not a bug.
+- **Negative stock is RESOLVED (2026-08-26).** `JP-sap271` sat at −207 because
+  eight *test* builds consumed 36 each against a real receipt of 83. Those were
+  never physical builds; the consumption has been reversed and the part is at
+  +9. The diagnosis recorded here previously — "real builds, opening stock never
+  entered" — was wrong. It remains true that a build is allowed to run the
+  ledger negative without blocking; whether that should warn is still an owner
+  question, not a bug.
 
 ## Next actions, in order
 1. **Send Dennis the playbook** — `PLAYBOOK-AUGUST.md` only (PDF alongside the
@@ -196,8 +213,9 @@ scripts/audit-invariants.sql       # 16 invariants; SQL editor, psql, or the MCP
    window is already open — the playbook describes the stretch before the week
    of 17 Aug.
 2. **Chase the external blockers** in cutover plan §7 (revisor in one
-   conversation with four questions — **including what number the invoice series
-   should start at, since `INV-2026-0001` is already spent on a test**;
+   conversation with four questions — **the invoice-series question is now
+   MOOT**: the test invoices were deleted and the 2026 counter reset to 0, so
+   the first real invoice will be `INV-2026-0001` after all;
    `orders@valent.dk`; the e-conomic production token, now overdue; company
    CVR/bank/address).
 3. **The whole-session fresh-eyes read is DONE** (2026-07-29) — all 103 routes
@@ -308,20 +326,15 @@ Dennis's company number onto the inbound trunk.
   through server components / server actions (`src/lib/supabase/server.ts`).
   This resolves at M1 when user-scoped RLS replaces anon_all. (Perimeter
   audit 2026-07-23; guardrail header in `client.ts`.)
-- **Before switching e-conomic tokens to production**: any
-  `organizations.economic_customer_number` /
-  `invoices.economic_voucher_id` / `economic_synced_at` stamped against the
-  TRIAL agreement refer to trial entities and must be cleared first.
-  **FOUR SUCH RECORDS EXIST** (found 2026-07-29 by `scripts/audit-invariants.sql`;
-  this entry previously claimed none did, which was wrong from 2026-07-09 —
-  they are the residue of that day's live push test):
-  - `organizations.economic_customer_number` — `Nazar Taras` (2),
-    `TEST Hotel Strandvejen ApS` (3)
-  - `invoices.economic_voucher_id` — `INV-2026-0001` (`2026 J1 V2`),
-    `TEST-2026-0001` (`2026 J1 V3`), both `economic_synced_at` 2026-07-09
-  Clearing these is a **prerequisite of the production cutover**, not
-  housekeeping: left in place, the first real push reconciles against trial
-  entities. Re-run check 14 of the audit to confirm zero before the token swap.
+- **e-conomic trial stamps are CLEARED (2026-08-26) — check 14 is at zero.**
+  All four records are gone: both trial-stamped invoices were deleted with the
+  rest of the test data, and the `economic_customer_number` was cleared from
+  `Nazar Taras` and from `TEST Hotel Strandvejen ApS` (the latter org deleted
+  entirely). The rule that produced this landmine still stands: **anything
+  stamped against the TRIAL agreement must be cleared before the production
+  token swap**, or the first real push reconciles against trial entities.
+  Re-run check 14 before the swap regardless — it is cheap and it is the only
+  thing that would catch a new stamp.
 - `outbound_test_mode` is the only thing between "Email supplier" and real
   supplier inboxes — verify it before demoing send flows.
 - Both locales sit at `en`; if a surface suddenly renders Danish, someone
@@ -333,10 +346,12 @@ Dennis's company number onto the inbound trunk.
 
 ## Data-entry debts (owner/admin, not code)
 Self-serve via the dashboard "Data housekeeping" fold:
-- **Every part has `origin = NULL`** → new PO lines default to NO import tax
-  (`import_tax_basis = 'unclassified'`) until origins are set on the part
-  edit form. Classifying the China-sourced fast movers as `non_eu` restores
-  tariff-by-default where it matters.
+- **Origin is set on only 3 of 172 parts** → the other 169 default to NO import
+  tax (`import_tax_basis = 'unclassified'`) on new PO lines until origins are
+  set on the part edit form. Classifying the China-sourced fast movers as
+  `non_eu` restores tariff-by-default where it matters. Note this is
+  FORWARD-looking only: 163 historical PO lines did carry duty, 98 233,88 kr. of
+  it, correctly inside landed cost.
 - **Parts lack an HS code** — they snapshot 0 % tariff until classified. The
   count was 5 here and is **11** as of 2026-07-29: the five May originals plus
   Shimano wheels/hubs added 17 Jun and 1 Jul. Don't re-fix the number — query
@@ -355,6 +370,14 @@ Self-serve via the dashboard "Data housekeeping" fold:
 - **Supplier country codes** were name-inferred (migration 25): Herrmans→FI,
   RYDE→NL, SAPIM→BE, Shimano Nordic→SE, MessingschKG→DE are best-guesses
   worth confirming.
+- **`JP-BasJen` — 499 baskets with no cost.** Added 2026-07-01 as "est 010726"
+  with no price, so they are valued at 0 kr. and cost a build nothing. Needs the
+  owner's estimate; it can be back-dated. This is invariant check 17.
+- **`JP-AND-DSP-NTC` — 93 units of "test" stock in PRODUCTION.** Two inbound
+  entries both reasoned `test` (Apr 2024, Aug 2026). Counted as real stock and
+  pickable for builds. Owner decides: real, or reverse them.
+- **Both of the above, plus the missing prices and the reorder-point gap, are
+  written up for Dennis** in `docs/PARTS-REVIEW-2026-08.md` (+ PDF).
 
 ## Standing "not now" decisions (reasons in docs/DECISIONS.md)
 - **M1 auth + RLS tightening — DELAYED (owner's call).** RLS is ON across

@@ -34,6 +34,17 @@ Dennis's solo stretch) is a dated artifact written for a human, not a session
 doc: *rewrite it when its period or audience changes; archive it when the
 period ends.* Don't grow the seven slots to hold this class of file.
 
+**Anything that leaves this repo for a HUMAN is a PDF.** The moment a
+deliverable is destined for someone who is not in the session — Dennis on the
+floor, the revisor, a customer — it ships as a PDF, not a link, an HTML file or
+text in a terminal. They may have no account, no browser and no laptop, and a
+PDF prints, attaches to mail, and cannot change after they have read it.
+Source stays markdown in `docs/`; render with
+`python3 scripts/build-doc-pdf.py docs/<FILE>.md` (Chrome headless, styled with
+the app's own colour tokens so a printed page matches the screens). Build it
+without being asked twice. An artifact or a link may accompany the PDF; it
+never replaces it.
+
 ### Session rituals
 The full procedure for each lives in a skill — `/session-start`, `/ship-it`,
 `/log-decision`. The triggers and invariants stay here because they must always be
@@ -223,6 +234,30 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     UI for `hide_location_info` and `primary_location_id`.
 - Catalog (`parts`) and inventory (`inventory_movements`) are separate.
   Current stock is a query (`SUM(quantity_delta)`), never a stored field.
+- **Unit cost is direction-dependent, and every figure records its BASIS**
+  (migration 88). Stock does not only arrive through purchasing — it gets found
+  in storage, counted up, sent free by a supplier — so:
+  - **Inbound (`quantity_delta > 0`) MUST carry a cost.** `adjustStock` refuses
+    an increase without one and pre-fills the prevailing figure, so a recount is
+    one click rather than a research task. A free item is an explicit `0`, not a
+    blank.
+  - **Outbound MUST NOT ask for one.** It inherits the prevailing cost via
+    `resolveUnitCost` (`src/lib/inventory/unit-cost.ts`) and freezes it. Nobody
+    can answer "what was the broken one worth?", and asking invites invention.
+    That one resolver is shared by the build workbench, work orders and
+    adjustments so they cannot disagree.
+  - `inventory_movements.unit_cost_basis` (`purchase | stated | derived | none`)
+    is frozen at insert — same reason `import_tax_basis` exists. **`none` is
+    legacy-only**; new writes must not produce it, and audit check 18 watches.
+  - `v_part_last_cost` resolves the most recent costed inbound event across
+    **movements AND PO lines**, newest wins — a `stated` cost CAN outrank an
+    older `purchase` one (DECISIONS 2026-08-26). The UI must show the basis
+    (`≈ 259,12 kr. (stated)`): an estimate does not get to wear the same clothes
+    as an invoice when the number feeds margin.
+  - **`last_purchase_quantity` on that view stays PURCHASE-sourced.** It sizes
+    reordering (on-hand ≤ 20 % of last purchase qty) and no part has an explicit
+    `reorder_point`, so that heuristic drives every low-stock badge in the app.
+    Point it at movements and a +10 adjustment sets a reorder threshold of 2.
 - `part_categories` is hierarchical (parent_id self-reference).
 - **Kits (kitting) ≠ part categories.** `kits` ("Red 1", "Green 9" — colour +
   number sticker labels on part boxes) are an assembly-floor *picking* aid,
