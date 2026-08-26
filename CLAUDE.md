@@ -512,6 +512,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   Both are read-only and safe against prod. **Their baselines are in STATUS.md and
   are not all-zero** — two invariants have known standing hits, so "clean" means
   matching the recorded baseline, not an empty result.
+- **Local testing NEVER requires the login form** — the only exception is
+  testing login itself. Mint a session instead of typing a password:
+  `node scripts/dev-session.mjs [who]` prints an `fms_auth` cookie for curl
+  (this is what `npm run smoke` uses), and `node scripts/dev-login.mjs [who]
+  [/path]` prints a one-shot URL that plants the cookie in a real browser and
+  redirects there. The browser one needs its own port because the cookie is
+  httpOnly (so `document.cookie` can't set it) and cookies are scoped by HOST,
+  ignoring PORT. Both mint for ANY person — including people the login screen
+  would refuse — which is how role-scoped UI gets tested at all. **The gate
+  stays ON while testing**: turning it off is exactly where the `/logout`
+  prefetch bug was invisible.
 - **Never import a VALUE from a `"use client"` module into a server
   component.** Its exports are *client references* there, not the real
   objects: `Object.keys()` is `[]`, so `{...SHELL}` silently evaluates to
