@@ -2275,3 +2275,23 @@ inert and its CSS cannot leak into the app. Rejected: a UI-less table like
 provider id and trusting Resend's dashboard (outside the app, limited
 retention, no link to an order); and one row per (message × entity), which
 would duplicate a document body per invoice in a digest.
+
+## 2026-09-02 (later still) — The paint question is ASKED, at the sales order
+From the 1 Sep transcript, 00:27:18 — the ask I had recorded as "answered" and
+was not: *"they ask you, do you want to create a paint order? because if it's
+the black and we have it on stock, I just put no. Okay, the order will be
+released. If I say yes, it should jump over and I create a paint order."* The
+information already existed on the MO's coverage panel; nothing ASKED. Decided:
+**Spawn MO on the sales order line raises the question** — the action no longer
+redirects, it returns how many recipe parts have no painted stock in the line's
+colour, and the sales order screen offers *Create paint order* (jumping to
+`/sales-orders/<id>/paint/new`) or *Not now — open the MO*. Zero parts needing
+paint means no dialog at all: the black frames are on the shelf and the answer
+would always have been "no". Spawn is the right moment because it is the first
+point where the question is answerable with the real recipe against real stock;
+at SO confirm there is no MO and no recipe to measure. Falling out of it:
+`loadMOCoverage` is now COLOUR-AWARE (it took the same `paintedByPartFor` the
+MO page uses), so the draft-PO action it also feeds stops proposing to buy parts
+the shelf already holds painted. Rejected: prompting at SO confirm (nothing to
+measure yet), and a passive banner on the MO page (that is what already existed,
+and being asked is the thing he was missing).

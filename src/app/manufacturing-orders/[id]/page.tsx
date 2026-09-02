@@ -26,7 +26,10 @@ import {
   remainingToBuildCount,
 } from "@/lib/manufacturing/coverage";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
-import { loadPaintedStockLookup } from "@/lib/parts/painted-variants";
+import {
+  loadPaintedStockLookup,
+  paintedByPartFor,
+} from "@/lib/parts/painted-variants";
 
 import { CoverageSection } from "./_components/coverage-section";
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
@@ -210,15 +213,15 @@ export default async function ManufacturingOrderDetailPage({
     name_en: localizedName(locale, c.name_en, c.name_da),
     sortOrder: c.sort_order,
   }));
-  const partsCatalogWithStock: PartInCatalog[] = (partsCatalogRes.data ?? []).map(
-    (p) => ({
-      id: p.id,
-      internal_sku: p.internal_sku,
-      name_en: p.name_en,
-      category_id: p.category_id ?? null,
-      onHand: stockByPart.get(p.id) ?? 0,
-    }),
-  );
+  const partsCatalogWithStock: PartInCatalog[] = (
+    partsCatalogRes.data ?? []
+  ).map((p) => ({
+    id: p.id,
+    internal_sku: p.internal_sku,
+    name_en: p.name_en,
+    category_id: p.category_id ?? null,
+    onHand: stockByPart.get(p.id) ?? 0,
+  }));
 
   // Projected build cost = Σ (qty/bike × last_cost_dkk × outstanding bikes).
   // last_cost_dkk per part comes from v_part_last_cost.
@@ -302,15 +305,14 @@ export default async function ManufacturingOrderDetailPage({
   // Painted parts are stock (docs/plan-painted-parts.md): for a paintable recipe
   // part, painted stock in the MO's colour covers demand first; what raw covers
   // is flagged as still needing paint.
-  const paintedByPart = new Map<string, number>();
+  let paintedByPart = new Map<string, number>();
   if (mo.color_id) {
     const lookup = await loadPaintedStockLookup(supabase);
-    for (const row of moPartsRes.data ?? []) {
-      if (!lookup.paintable.has(row.part_id)) continue;
-      const base = lookup.baseOf.get(row.part_id) ?? row.part_id;
-      const variantId = lookup.variantByBaseColour.get(`${base}:${mo.color_id}`);
-      paintedByPart.set(row.part_id, variantId ? (lookup.onHand.get(variantId) ?? 0) : 0);
-    }
+    paintedByPart = paintedByPartFor(
+      lookup,
+      mo.color_id,
+      (moPartsRes.data ?? []).map((row) => row.part_id),
+    );
   }
   const coverageRows = computeCoverageRows(
     (moPartsRes.data ?? []).map((row) => ({
@@ -395,9 +397,15 @@ export default async function ManufacturingOrderDetailPage({
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label={t("statTarget")} value={String(mo.target_quantity)} />
-        <Stat label={t("statCompleted")} value={String(mo.completed_quantity)} />
+        <Stat
+          label={t("statCompleted")}
+          value={String(mo.completed_quantity)}
+        />
         <Stat label={t("statOutstanding")} value={String(outstandingBikes)} />
-        <Stat label={t("statPartsInRecipe")} value={String(moPartRows.length)} />
+        <Stat
+          label={t("statPartsInRecipe")}
+          value={String(moPartRows.length)}
+        />
         <Stat
           label={t("statBuildCostSoFar")}
           value={

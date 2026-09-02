@@ -10,6 +10,11 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import {
+  loadPaintedStockLookup,
+  paintedByPartFor,
+} from "@/lib/parts/painted-variants";
+
 export type CoverageRow = {
   partId: string;
   sku: string;
@@ -97,8 +102,14 @@ export function remainingToBuildCount(args: {
 }
 
 /**
- * Self-contained loader used by the draft-PO action (the MO detail page
- * computes the same thing from data it already has on hand).
+ * Self-contained loader used by the draft-PO action and by the spawn-MO paint
+ * prompt (the MO detail page computes the same thing from data it already has
+ * on hand).
+ *
+ * COLOUR-AWARE since the paint prompt: painted stock in the MO's colour covers
+ * demand first, so a frame already painted is neither re-purchased by the
+ * draft PO nor counted as needing paint. Before this it was colour-blind and
+ * overstated the shortfall by whatever the shelf already held painted.
  */
 export async function loadMOCoverage(
   supabase: SupabaseClient,
@@ -107,7 +118,7 @@ export async function loadMOCoverage(
   const [moRes, bikesRes, recipeRes, stockRes] = await Promise.all([
     supabase
       .from("manufacturing_orders")
-      .select("id, target_quantity")
+      .select("id, target_quantity, color_id")
       .eq("id", moId)
       .maybeSingle(),
     supabase
@@ -125,7 +136,9 @@ export async function loadMOCoverage(
   ]);
 
   if (moRes.error || !moRes.data) {
-    return { error: `Could not load MO: ${moRes.error?.message ?? "not found"}` };
+    return {
+      error: `Could not load MO: ${moRes.error?.message ?? "not found"}`,
+    };
   }
 
   const stockByPart = new Map<string, number>();
@@ -153,7 +166,21 @@ export async function loadMOCoverage(
     };
   });
 
-  const rows = computeCoverageRows(recipe, remainingToBuild, stockByPart);
+  const colorId = moRes.data.color_id;
+  const paintedByPart = colorId
+    ? paintedByPartFor(
+        await loadPaintedStockLookup(supabase),
+        colorId,
+        recipe.map((r) => r.partId),
+      )
+    : undefined;
+
+  const rows = computeCoverageRows(
+    recipe,
+    remainingToBuild,
+    stockByPart,
+    paintedByPart,
+  );
   return {
     remainingToBuild,
     rows,

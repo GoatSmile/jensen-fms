@@ -1,14 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { bulkAddBikesToMO } from "@/app/manufacturing-orders/[id]/_actions/bulk-add-bikes";
+import { loadMOCoverage } from "@/lib/manufacturing/coverage";
+import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
 export type SpawnMOResult =
-  | { ok: true; moId: string }
+  | {
+      ok: true;
+      moId: string;
+      moNumber: string;
+      /** Distinct recipe parts with no painted stock in the line's colour. */
+      needsPaint: number;
+      /** The line's colour, ready to display; null when the line has none. */
+      colourLabel: string | null;
+    }
   | { ok: false; error: string };
 
 /**
@@ -16,8 +25,13 @@ export type SpawnMOResult =
  * batch-creation screen so both MO entry paths behave the same: recipe via
  * the `mo_copy_template_parts` RPC, bikes bulk-created up front (auto frame
  * numbers; they inherit the SO's customer slate when the SO is past draft).
- * The redirect lands on the MO detail page, where stock coverage and the
- * shortfall→draft-PO button are already waiting.
+ * It does NOT redirect. Dennis asked to be ASKED (call of 1 Sep, 00:27): "they
+ * ask you, do you want to create a paint order? because if it's the black and
+ * we have it on stock, I just put no." So the action answers that question —
+ * how many recipe parts have no painted stock in this line's colour — and the
+ * caller either goes straight to the MO or offers the paint order first. The
+ * information was always on the MO's coverage panel; what was missing is that
+ * nothing asked.
  *
  * Pre-conditions:
  *   - Line must reference a bike_template (not a part).
@@ -51,14 +65,17 @@ export async function spawnMOFromSOLine(
     .from("sales_order_lines")
     .select(
       `id, sales_order_id, bike_template_id, quantity, color_id,
-       template:bike_templates!bike_template_id(id, bike_type_id, is_current)`,
+       template:bike_templates!bike_template_id(id, bike_type_id, is_current),
+       color:colors!color_id(id, name_en, name_da)`,
     )
     .eq("id", lineId)
     .maybeSingle();
   if (lineErr || !line) {
     return {
       ok: false,
-      error: t("soCouldNotLoadLine", { detail: lineErr?.message ?? t("notFound") }),
+      error: t("soCouldNotLoadLine", {
+        detail: lineErr?.message ?? t("notFound"),
+      }),
     };
   }
   if (line.sales_order_id !== soId) {
@@ -145,7 +162,9 @@ export async function spawnMOFromSOLine(
   if (moErr || !mo) {
     return {
       ok: false,
-      error: t("soCouldNotCreateMo", { detail: moErr?.message ?? t("unknownError") }),
+      error: t("soCouldNotCreateMo", {
+        detail: moErr?.message ?? t("unknownError"),
+      }),
     };
   }
 
@@ -178,5 +197,25 @@ export async function spawnMOFromSOLine(
   revalidatePath("/sales-orders");
   revalidatePath(`/sales-orders/${soId}`);
   revalidatePath("/manufacturing-orders");
-  redirect(`/manufacturing-orders/${mo.id}`);
+
+  // The paint question, answered with the SAME rule the MO's coverage panel and
+  // the floor queue use — a count of parts, not of pieces, so it reads like the
+  // badge on the MO ("2 parts need paint"). A coverage failure is not worth
+  // failing a created MO over: no count, no prompt, and the MO page will say it.
+  let needsPaint = 0;
+  const coverage = await loadMOCoverage(supabase, mo.id);
+  if (!("error" in coverage)) {
+    needsPaint = coverage.rows.filter((r) => r.needsPaint > 0).length;
+  }
+  const colour = Array.isArray(line.color) ? line.color[0] : line.color;
+
+  return {
+    ok: true,
+    moId: mo.id,
+    moNumber: numberData as string,
+    needsPaint,
+    colourLabel: colour
+      ? localizedName(await getLocale(), colour.name_en, colour.name_da)
+      : null,
+  };
 }

@@ -70,10 +70,15 @@ export async function findOrCreatePaintedVariant(
         .eq("id", colorId)
         .maybeSingle(),
     ]);
-  if (baseErr || !base) return { ok: false, error: baseErr?.message ?? "base part not found" };
-  if (colorErr || !color) return { ok: false, error: colorErr?.message ?? "colour not found" };
+  if (baseErr || !base)
+    return { ok: false, error: baseErr?.message ?? "base part not found" };
+  if (colorErr || !color)
+    return { ok: false, error: colorErr?.message ?? "colour not found" };
   if (base.base_part_id) {
-    return { ok: false, error: "a painted variant cannot be the base of another variant" };
+    return {
+      ok: false,
+      error: "a painted variant cannot be the base of another variant",
+    };
   }
 
   const { data: created, error: insErr } = await supabase
@@ -81,7 +86,9 @@ export async function findOrCreatePaintedVariant(
     .insert({
       internal_sku: paintedVariantSku(base.internal_sku, color),
       name_en: `${base.name_en} — ${color.name_en}`,
-      name_da: base.name_da ? `${base.name_da} — ${color.name_da ?? color.name_en}` : null,
+      name_da: base.name_da
+        ? `${base.name_da} — ${color.name_da ?? color.name_en}`
+        : null,
       description_en: base.description_en,
       description_da: base.description_da,
       category_id: base.category_id,
@@ -146,7 +153,12 @@ export async function convertPaintedStock(
     lines: ConversionLine[];
   },
 ): Promise<ConversionResult> {
-  const result: ConversionResult = { converted: 0, variantsCreated: 0, failures: [], skippedNoPart: 0 };
+  const result: ConversionResult = {
+    converted: 0,
+    variantsCreated: 0,
+    failures: [],
+    skippedNoPart: 0,
+  };
   const nowIso = new Date().toISOString();
 
   for (const line of input.lines) {
@@ -162,7 +174,11 @@ export async function convertPaintedStock(
     }
     const basePartId = named.base_part_id ?? named.id;
 
-    const variant = await findOrCreatePaintedVariant(supabase, basePartId, line.colorId);
+    const variant = await findOrCreatePaintedVariant(
+      supabase,
+      basePartId,
+      line.colorId,
+    );
     if (!variant.ok) {
       result.failures.push({ partId: line.partId, error: variant.error });
       continue;
@@ -174,38 +190,42 @@ export async function convertPaintedStock(
     const inCost =
       rawCost.costDkk == null && line.paintUnitCostDkk == null
         ? null
-        : Math.round(((rawCost.costDkk ?? 0) + (line.paintUnitCostDkk ?? 0)) * 10000) / 10000;
+        : Math.round(
+            ((rawCost.costDkk ?? 0) + (line.paintUnitCostDkk ?? 0)) * 10000,
+          ) / 10000;
     const reason = `Painted on ${input.orderNumber}: ${named.internal_sku} → variant · raw ${
       rawCost.costDkk == null ? "?" : rawCost.costDkk
     } + paint ${line.paintUnitCostDkk == null ? "?" : line.paintUnitCostDkk} DKK/unit`;
 
-    const { error: insErr } = await supabase.from("inventory_movements").insert([
-      {
-        part_id: named.id,
-        location_id: input.locationId,
-        movement_type: "paint_out",
-        quantity_delta: -line.quantity,
-        ...out,
-        source_entity_type: "service_order",
-        source_entity_id: input.serviceOrderId,
-        reason,
-        occurred_at: nowIso,
-        created_by: input.actorId,
-      },
-      {
-        part_id: variant.variantId,
-        location_id: input.locationId,
-        movement_type: "paint_in",
-        quantity_delta: line.quantity,
-        unit_cost_dkk: inCost,
-        unit_cost_basis: inCost == null ? "none" : "derived",
-        source_entity_type: "service_order",
-        source_entity_id: input.serviceOrderId,
-        reason,
-        occurred_at: nowIso,
-        created_by: input.actorId,
-      },
-    ]);
+    const { error: insErr } = await supabase
+      .from("inventory_movements")
+      .insert([
+        {
+          part_id: named.id,
+          location_id: input.locationId,
+          movement_type: "paint_out",
+          quantity_delta: -line.quantity,
+          ...out,
+          source_entity_type: "service_order",
+          source_entity_id: input.serviceOrderId,
+          reason,
+          occurred_at: nowIso,
+          created_by: input.actorId,
+        },
+        {
+          part_id: variant.variantId,
+          location_id: input.locationId,
+          movement_type: "paint_in",
+          quantity_delta: line.quantity,
+          unit_cost_dkk: inCost,
+          unit_cost_basis: inCost == null ? "none" : "derived",
+          source_entity_type: "service_order",
+          source_entity_id: input.serviceOrderId,
+          reason,
+          occurred_at: nowIso,
+          created_by: input.actorId,
+        },
+      ]);
     if (insErr) {
       result.failures.push({ partId: line.partId, error: insErr.message });
       continue;
@@ -281,6 +301,31 @@ export async function loadPaintedStockLookup(
  * reason with the same rule. `alreadyClaimed` lets a caller reserve variant
  * stock across several rows (two frames on one MO, or many bikes in a queue).
  */
+/**
+ * Painted stock in ONE colour, keyed by the RAW recipe part — exactly the map
+ * `computeCoverageRows` takes. Pure over an already-loaded lookup so every
+ * caller (the MO page, the coverage loader behind the draft-PO action and the
+ * spawn prompt) builds it the same way.
+ *
+ * MEMBERSHIP is the signal: a part outside the map is colour-blind, while a
+ * paintable part with no variant in this colour maps to 0 — which is what
+ * makes its row read "needs paint" instead of "covered".
+ */
+export function paintedByPartFor(
+  lookup: PaintedStockLookup,
+  colorId: string,
+  partIds: string[],
+): Map<string, number> {
+  const painted = new Map<string, number>();
+  for (const partId of partIds) {
+    if (!lookup.paintable.has(partId)) continue;
+    const base = lookup.baseOf.get(partId) ?? partId;
+    const variantId = lookup.variantByBaseColour.get(`${base}:${colorId}`);
+    painted.set(partId, variantId ? (lookup.onHand.get(variantId) ?? 0) : 0);
+  }
+  return painted;
+}
+
 export function resolvePaintedPick(
   lookup: PaintedStockLookup,
   partId: string,
@@ -325,7 +370,11 @@ export async function applyPaintedVariantsToBike(
   supabase: SupabaseServerClient,
   bikeId: string,
 ): Promise<ApplyVariantsResult> {
-  const result: ApplyVariantsResult = { swappedToPainted: 0, swappedToRaw: 0, needsPaint: 0 };
+  const result: ApplyVariantsResult = {
+    swappedToPainted: 0,
+    swappedToRaw: 0,
+    needsPaint: 0,
+  };
   const { data: bike } = await supabase
     .from("bikes")
     .select("id, color_id")
@@ -345,7 +394,13 @@ export async function applyPaintedVariantsToBike(
   const claimed = new Map<string, number>();
   for (const row of rows) {
     if (!lookup.paintable.has(row.part_id)) continue;
-    const pick = resolvePaintedPick(lookup, row.part_id, Number(row.quantity), bike.color_id, claimed);
+    const pick = resolvePaintedPick(
+      lookup,
+      row.part_id,
+      Number(row.quantity),
+      bike.color_id,
+      claimed,
+    );
     if (pick.needsPaint) result.needsPaint += 1;
     if (pick.partId === row.part_id) continue;
     const { error } = await supabase
@@ -394,17 +449,25 @@ export async function loadPaintedDemand(
 
   const { data: bikes } = await supabase
     .from("bikes")
-    .select("id, color_id, manufacturing_order_id, mo:manufacturing_orders!manufacturing_order_id(status)")
+    .select(
+      "id, color_id, manufacturing_order_id, mo:manufacturing_orders!manufacturing_order_id(status)",
+    )
     .in("status", ["planning", "building"])
     .is("deleted_at", null)
     .not("color_id", "is", null);
   const openBikes = (bikes ?? []).filter((b) => {
     const mo = Array.isArray(b.mo) ? b.mo[0] : b.mo;
-    return mo && OPEN_MO_STATUSES.includes(mo.status as string) && b.manufacturing_order_id;
+    return (
+      mo &&
+      OPEN_MO_STATUSES.includes(mo.status as string) &&
+      b.manufacturing_order_id
+    );
   });
   if (openBikes.length > 0) {
     const bikeIds = openBikes.map((b) => b.id);
-    const moIds = [...new Set(openBikes.map((b) => b.manufacturing_order_id as string))];
+    const moIds = [
+      ...new Set(openBikes.map((b) => b.manufacturing_order_id as string)),
+    ];
     const [{ data: rows }, { data: recipe }] = await Promise.all([
       supabase
         .from("bike_parts")
@@ -452,10 +515,14 @@ export async function loadPaintedDemand(
     .not("color_id", "is", null);
   for (const l of lines ?? []) {
     const order = Array.isArray(l.order) ? l.order[0] : l.order;
-    if (!order || !AT_PAINTER_ORDER_STATUSES.includes(order.status as string)) continue;
-    const type = Array.isArray(order.service_type) ? order.service_type[0] : order.service_type;
+    if (!order || !AT_PAINTER_ORDER_STATUSES.includes(order.status as string))
+      continue;
+    const type = Array.isArray(order.service_type)
+      ? order.service_type[0]
+      : order.service_type;
     if (!type?.blocks_build) continue;
-    const base = lookup.baseOf.get(l.part_id as string) ?? (l.part_id as string);
+    const base =
+      lookup.baseOf.get(l.part_id as string) ?? (l.part_id as string);
     bump(demand.atPainter, `${base}:${l.color_id}`, Number(l.quantity));
   }
   return demand;

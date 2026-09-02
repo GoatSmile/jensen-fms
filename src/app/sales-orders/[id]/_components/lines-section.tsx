@@ -22,6 +22,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Panel } from "@/components/ui/panel";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
@@ -228,8 +236,15 @@ function SOLineTableRow({
   onAfterAction: () => void;
 }) {
   const t = useTranslations("soDetail");
+  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [paintPrompt, setPaintPrompt] = useState<{
+    moId: string;
+    moNumber: string;
+    needsPaint: number;
+    colourLabel: string | null;
+  } | null>(null);
 
   function runDelete() {
     onError(null);
@@ -248,8 +263,24 @@ function SOLineTableRow({
     onError(null);
     start(async () => {
       const r = await spawnMOFromSOLine(soId, row.id);
-      if (r && !r.ok) onError(r.error);
-      // ok path redirects, no need to refresh here
+      if (!r.ok) {
+        onError(r.error);
+        return;
+      }
+      // Dennis, 1 Sep: "they ask you, do you want to create a paint order?
+      // because if it's the black and we have it on stock, I just put no."
+      // Nothing to paint means nothing to ask — go where the button always
+      // went.
+      if (r.needsPaint > 0) {
+        setPaintPrompt({
+          moId: r.moId,
+          moNumber: r.moNumber,
+          needsPaint: r.needsPaint,
+          colourLabel: r.colourLabel,
+        });
+        return;
+      }
+      router.push(`/manufacturing-orders/${r.moId}`);
     });
   }
 
@@ -371,6 +402,52 @@ function SOLineTableRow({
           </DropdownMenu>
         ) : null}
       </TableCell>
+
+      {/* Asked at the moment the order becomes work, not left to be noticed on
+          the MO's coverage panel. Answering "not now" is a real answer: the
+          frames may be black and already on the shelf. */}
+      {paintPrompt ? (
+        <Dialog
+          open
+          onOpenChange={(next) => {
+            if (!next) {
+              const moId = paintPrompt.moId;
+              setPaintPrompt(null);
+              router.push(`/manufacturing-orders/${moId}`);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t("paintPromptTitle")}</DialogTitle>
+              <DialogDescription>
+                {t("paintPromptBody", {
+                  mo: paintPrompt.moNumber,
+                  count: paintPrompt.needsPaint,
+                  colour: paintPrompt.colourLabel ?? t("paintPromptThatColour"),
+                })}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const moId = paintPrompt.moId;
+                  setPaintPrompt(null);
+                  router.push(`/manufacturing-orders/${moId}`);
+                }}
+              >
+                {t("paintPromptOpenMo")}
+              </Button>
+              <Button asChild>
+                <Link href={`/sales-orders/${soId}/paint/new`}>
+                  {t("paintPromptCreate")}
+                </Link>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </TableRow>
   );
 }
