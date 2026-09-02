@@ -2314,3 +2314,31 @@ were non-zero on local (repaired; production had none). Rejected: syncing
 identifiers from a trigger (the app already syncs on the one path that renames,
 `confirmBikeFrame`, and a trigger would fight it), and retrying the next number
 inside the insert loop (papers over drift instead of surfacing it).
+
+## 2026-09-03 — "Paintable as" is generated from the category, with a third state
+Owner review of why the flag exists at all: *"why don't we just make all frames
+paintable?"* Because the exceptions live inside the categories — stainless
+frames and mudguards where the bare finish IS the product, a WOLT frame that
+arrives white — and *needs paint* blocks readiness, so a wrong yes stops a build
+on the floor. But the flag being manual is what left it unfilled, and an unfilled
+flag is how MO-2026-0018 answered "all covered for 3 bikes" for a bike whose
+template sends four things to the painter. Decided (migration 97):
+1. **A painter type claims a part category** (`service_part_types.default_category_id`,
+   unique per category), set from the type's own row on `/admin/lists` — the
+   small end of the mapping: eight types, not two hundred parts.
+2. **It is a generator, not a live lookup.** New parts inherit it in the form,
+   and a per-row button fills every undecided part in the category. The resolved
+   value stays STORED on the part: painted variants, their frozen costs and
+   priced paint-order lines all hang off `parts.service_part_type_id`, so
+   re-filing a part must never retroactively change what it was to the painter.
+3. **Three states, not two.** `parts.paint_exempt` is the deliberate *not
+   painted*; a NULL type only ever meant "nobody decided". Without the
+   distinction the apply action would re-mark the stainless frames every run.
+   A DB check keeps a part from being both.
+4. **Map only homogeneous categories.** Frames (3 exceptions in 11) and Forks
+   (0 in 5) earn a default; Basket and Mudguards are majority-exception and stay
+   hand-marked, so a default there would be wrong more often than right.
+Rejected: resolving the type through the category at read time (a re-filed part
+would rewrite priced history), and dropping the part-level field entirely (the
+exceptions make the category alone a wrong answer, loudly — a stainless frame
+that "needs paint" is unbuildable).

@@ -73,7 +73,9 @@ export type VocabFieldType =
   /** Select over `coatings.slug`. */
   | "coating"
   /** Select over the same table's rows — categories' `parent_id`. */
-  | "parent";
+  | "parent"
+  /** Select over `part_categories` — a painter type claiming a category. */
+  | "partCategory";
 
 export type VocabField = {
   /** FormData key. Must match the action's `parseFormData`. */
@@ -117,6 +119,12 @@ export type VocabDescriptor = {
   swatchField?: string;
   columns: VocabColumn[];
   fields: VocabField[];
+  /**
+   * Per-row "fill the blanks in my category" button — service part types only.
+   * The mapping is a generator, so it needs a trigger; without it, setting one
+   * would change nothing about the parts already on file.
+   */
+  hasPaintCategoryApply?: boolean;
   /** Namespace holding ArchivePanel's six shared archive/restore keys. */
   archiveNamespace: string;
   /** `adminLists` key for the archive consequence copy — per entity, and load-bearing. */
@@ -183,7 +191,11 @@ export const VOCABULARIES: VocabDescriptor[] = [
     title: { en: "name_en", da: "name_da" },
     columns: [
       { name: "parent_id", labelKey: "fieldParent" },
-      { name: "slug", labelKey: "fieldSlug", className: "hidden sm:table-cell" },
+      {
+        name: "slug",
+        labelKey: "fieldSlug",
+        className: "hidden sm:table-cell",
+      },
       {
         name: "sort_order",
         labelKey: "fieldSortOrder",
@@ -192,11 +204,26 @@ export const VOCABULARIES: VocabDescriptor[] = [
       },
     ],
     fields: [
-      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      {
+        name: "name_en",
+        labelKey: "fieldNameEn",
+        type: "text",
+        required: true,
+      },
       { name: "name_da", labelKey: "fieldNameDa", type: "text" },
       { name: "parent_id", labelKey: "fieldParent", type: "parent" },
-      { name: "description_en", labelKey: "fieldDescriptionEn", type: "textarea", wide: true },
-      { name: "description_da", labelKey: "fieldDescriptionDa", type: "textarea", wide: true },
+      {
+        name: "description_en",
+        labelKey: "fieldDescriptionEn",
+        type: "textarea",
+        wide: true,
+      },
+      {
+        name: "description_da",
+        labelKey: "fieldDescriptionDa",
+        type: "textarea",
+        wide: true,
+      },
       SORT_FIELD,
     ],
     archiveNamespace: "adminCategories",
@@ -219,8 +246,16 @@ export const VOCABULARIES: VocabDescriptor[] = [
     title: { en: "name_en", da: "name_da" },
     swatchField: "hex",
     columns: [
-      { name: "ral_code", labelKey: "fieldRalCode", className: "hidden sm:table-cell" },
-      { name: "coating", labelKey: "fieldCoating", className: "hidden md:table-cell" },
+      {
+        name: "ral_code",
+        labelKey: "fieldRalCode",
+        className: "hidden sm:table-cell",
+      },
+      {
+        name: "coating",
+        labelKey: "fieldCoating",
+        className: "hidden md:table-cell",
+      },
       {
         name: "sort_order",
         labelKey: "fieldSortOrder",
@@ -229,7 +264,12 @@ export const VOCABULARIES: VocabDescriptor[] = [
       },
     ],
     fields: [
-      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      {
+        name: "name_en",
+        labelKey: "fieldNameEn",
+        type: "text",
+        required: true,
+      },
       { name: "name_da", labelKey: "fieldNameDa", type: "text" },
       { name: "hex", labelKey: "fieldHex", type: "hex" },
       { name: "ral_code", labelKey: "fieldRalCode", type: "text" },
@@ -242,7 +282,11 @@ export const VOCABULARIES: VocabDescriptor[] = [
     // finished bikes and open MOs.
     usage: [
       { table: "bikes", column: "color_id", excludeDeleted: true },
-      { table: "manufacturing_orders", column: "color_id", excludeDeleted: false },
+      {
+        table: "manufacturing_orders",
+        column: "color_id",
+        excludeDeleted: false,
+      },
     ],
     isActiveInFormData: true,
   },
@@ -260,7 +304,11 @@ export const VOCABULARIES: VocabDescriptor[] = [
     ],
     title: { en: "label_en", da: "label_da" },
     columns: [
-      { name: "slug", labelKey: "fieldSlug", className: "hidden sm:table-cell" },
+      {
+        name: "slug",
+        labelKey: "fieldSlug",
+        className: "hidden sm:table-cell",
+      },
       {
         name: "sort_order",
         labelKey: "fieldSortOrder",
@@ -269,7 +317,12 @@ export const VOCABULARIES: VocabDescriptor[] = [
       },
     ],
     fields: [
-      { name: "label_en", labelKey: "fieldLabelEn", type: "text", required: true },
+      {
+        name: "label_en",
+        labelKey: "fieldLabelEn",
+        type: "text",
+        required: true,
+      },
       { name: "label_da", labelKey: "fieldLabelDa", type: "text" },
       SORT_FIELD,
     ],
@@ -293,7 +346,11 @@ export const VOCABULARIES: VocabDescriptor[] = [
     ],
     title: { en: "name_en", da: "name_da" },
     columns: [
-      { name: "slug", labelKey: "fieldSlug", className: "hidden sm:table-cell" },
+      {
+        name: "slug",
+        labelKey: "fieldSlug",
+        className: "hidden sm:table-cell",
+      },
       {
         name: "sort_order",
         labelKey: "fieldSortOrder",
@@ -302,10 +359,25 @@ export const VOCABULARIES: VocabDescriptor[] = [
       },
     ],
     fields: [
-      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      {
+        name: "name_en",
+        labelKey: "fieldNameEn",
+        type: "text",
+        required: true,
+      },
       { name: "name_da", labelKey: "fieldNameDa", type: "text" },
-      { name: "description_en", labelKey: "fieldDescriptionEn", type: "textarea", wide: true },
-      { name: "description_da", labelKey: "fieldDescriptionDa", type: "textarea", wide: true },
+      {
+        name: "description_en",
+        labelKey: "fieldDescriptionEn",
+        type: "textarea",
+        wide: true,
+      },
+      {
+        name: "description_da",
+        labelKey: "fieldDescriptionDa",
+        type: "textarea",
+        wide: true,
+      },
       SORT_FIELD,
     ],
     archiveNamespace: "adminSegments",
@@ -356,7 +428,8 @@ export const VOCABULARIES: VocabDescriptor[] = [
     hue: "buy",
     legacyRoute: "/admin/hs-codes",
     hasDeletedAt: false,
-    select: "id, code, description, tariff_pct, anti_dumping_pct, notes, is_active",
+    select:
+      "id, code, description, tariff_pct, anti_dumping_pct, notes, is_active",
     order: [{ column: "code", ascending: true }],
     // No name pair at all: the code IS the identity, description is English.
     title: { en: "code" },
@@ -381,9 +454,23 @@ export const VOCABULARIES: VocabDescriptor[] = [
     ],
     fields: [
       { name: "code", labelKey: "fieldCode", type: "text", required: true },
-      { name: "description", labelKey: "fieldDescription", type: "text", required: true },
-      { name: "tariff_pct", labelKey: "fieldTariffPct", type: "percent", required: true },
-      { name: "anti_dumping_pct", labelKey: "fieldAntiDumpingPct", type: "percent" },
+      {
+        name: "description",
+        labelKey: "fieldDescription",
+        type: "text",
+        required: true,
+      },
+      {
+        name: "tariff_pct",
+        labelKey: "fieldTariffPct",
+        type: "percent",
+        required: true,
+      },
+      {
+        name: "anti_dumping_pct",
+        labelKey: "fieldAntiDumpingPct",
+        type: "percent",
+      },
       { name: "notes", labelKey: "fieldNotes", type: "textarea", wide: true },
     ],
     archiveNamespace: "adminHsCodes",
@@ -403,13 +490,27 @@ export const VOCABULARIES: VocabDescriptor[] = [
     title: { en: "name_en", da: "name_da" },
     columns: [
       { name: "code", labelKey: "fieldCode" },
-      { name: "address", labelKey: "fieldAddress", className: "hidden sm:table-cell" },
+      {
+        name: "address",
+        labelKey: "fieldAddress",
+        className: "hidden sm:table-cell",
+      },
     ],
     fields: [
       { name: "code", labelKey: "fieldCode", type: "text", required: true },
-      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      {
+        name: "name_en",
+        labelKey: "fieldNameEn",
+        type: "text",
+        required: true,
+      },
       { name: "name_da", labelKey: "fieldNameDa", type: "text" },
-      { name: "address", labelKey: "fieldAddress", type: "textarea", wide: true },
+      {
+        name: "address",
+        labelKey: "fieldAddress",
+        type: "textarea",
+        wide: true,
+      },
     ],
     archiveNamespace: "adminLocations",
     archiveCopyKey: "archiveCopyLocations",
@@ -427,14 +528,20 @@ export const VOCABULARIES: VocabDescriptor[] = [
     // migration. `legacyRoute` points at the page that reads them, for reference.
     legacyRoute: "/admin/services",
     hasDeletedAt: false,
-    select: "id, slug, name_en, name_da, sort_order, is_active",
+    select:
+      "id, slug, name_en, name_da, sort_order, is_active, default_category_id",
     order: [
       { column: "sort_order", ascending: true },
       { column: "name_en", ascending: true },
     ],
     title: { en: "name_en", da: "name_da" },
     columns: [
-      { name: "slug", labelKey: "fieldSlug", className: "hidden sm:table-cell" },
+      { name: "default_category_id", labelKey: "fieldDefaultCategory" },
+      {
+        name: "slug",
+        labelKey: "fieldSlug",
+        className: "hidden sm:table-cell",
+      },
       {
         name: "sort_order",
         labelKey: "fieldSortOrder",
@@ -443,16 +550,34 @@ export const VOCABULARIES: VocabDescriptor[] = [
       },
     ],
     fields: [
-      { name: "name_en", labelKey: "fieldNameEn", type: "text", required: true },
+      {
+        name: "name_en",
+        labelKey: "fieldNameEn",
+        type: "text",
+        required: true,
+      },
       { name: "name_da", labelKey: "fieldNameDa", type: "text" },
+      // The mapping that stops "Paintable as" being 200 hand edits. Saying it
+      // from THIS side is the small end: eight types, not two hundred parts.
+      {
+        name: "default_category_id",
+        labelKey: "fieldDefaultCategory",
+        type: "partCategory",
+        wide: true,
+      },
       SORT_FIELD,
     ],
+    hasPaintCategoryApply: true,
     archiveNamespace: "adminServicePartTypes",
     archiveCopyKey: "archiveCopyServicePartTypes",
     // Both things that reference a part type: live paint-order lines and the
     // templates that declare it as paintwork. Neither table has `deleted_at`.
     usage: [
-      { table: "service_order_items", column: "service_part_type_id", excludeDeleted: false },
+      {
+        table: "service_order_items",
+        column: "service_part_type_id",
+        excludeDeleted: false,
+      },
       {
         table: "bike_template_service_parts",
         column: "service_part_type_id",

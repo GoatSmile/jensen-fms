@@ -19,10 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  flattenCategoryTree,
-  type FlatCategory,
-} from "@/lib/parts/categories";
+import { flattenCategoryTree, type FlatCategory } from "@/lib/parts/categories";
 import { localizedName } from "@/i18n/vocab";
 
 import { createPart, updatePart } from "../_actions/save-part";
@@ -41,6 +38,8 @@ export type ServicePartTypeOption = {
   id: string;
   name_en: string;
   name_da?: string | null;
+  /** The category this type claims — a new part filed there inherits it. */
+  default_category_id?: string | null;
 };
 
 export type PartFormValues = {
@@ -56,6 +55,8 @@ export type PartFormValues = {
   origin: string;
   /** Paintable as this service part type (frame, fork, …); "" = never painted. */
   service_part_type_id: string;
+  /** Deliberately never painted — stainless, or pre-finished by the supplier. */
+  paint_exempt: boolean;
   /** "" when no override; otherwise a percent string like "5" or "10.2"
    *  that gets converted to the decimal (0.05, 0.102) on submit. */
   tariff_pct_override: string;
@@ -80,6 +81,7 @@ const NO_SUPPLIER = "__none__";
 const NO_ORIGIN = "__none__";
 /** And for "not paintable". */
 const NO_PAINT = "__none__";
+const PAINT_EXEMPT = "__exempt__";
 
 const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
@@ -91,6 +93,7 @@ const EMPTY_PART_FORM: PartFormValues = {
   hs_code_id: "",
   origin: "",
   service_part_type_id: "",
+  paint_exempt: false,
   tariff_pct_override: "",
   unit_of_measure: "pcs",
   default_retail_price: "",
@@ -141,6 +144,38 @@ export function PartForm({
     () => flattenCategoryTree(categories, locale),
     [categories, locale],
   );
+
+  // A part filed under a category some painter type has claimed IS that type
+  // unless someone says otherwise. Filling it in here is what stops "Paintable
+  // as" being two hundred hand edits nobody makes — the gap that had an MO
+  // reporting "all covered" for a bike whose template sends four things to the
+  // painter (2026-09-02).
+  //
+  // Only over an UNDECIDED field, and only when the category actually changes:
+  // an explicit type and an explicit "not painted" are decisions, and this must
+  // never overwrite one.
+  const inheritedType = servicePartTypes.find(
+    (pt) =>
+      pt.default_category_id != null &&
+      pt.default_category_id === values.category_id,
+  );
+  const inheritedTypeName = inheritedType
+    ? localizedName(locale, inheritedType.name_en, inheritedType.name_da)
+    : null;
+  const [lastCategoryId, setLastCategoryId] = useState(values.category_id);
+  if (values.category_id !== lastCategoryId) {
+    setLastCategoryId(values.category_id);
+    if (
+      inheritedType &&
+      !values.paint_exempt &&
+      values.service_part_type_id === ""
+    ) {
+      setValues((prev) => ({
+        ...prev,
+        service_part_type_id: inheritedType.id,
+      }));
+    }
+  }
   // The HS list can run to hundreds of codes — a searchable combobox beats a
   // flat Select. The sentinel "none" row sits first; codes are searchable by
   // both code and description (the combobox matches label + sublabel).
@@ -159,7 +194,10 @@ export function PartForm({
   const [errorField, setErrorField] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function update<K extends keyof PartFormValues>(key: K, value: PartFormValues[K]) {
+  function update<K extends keyof PartFormValues>(
+    key: K,
+    value: PartFormValues[K],
+  ) {
     setValues((prev) => ({ ...prev, [key]: value }));
     if (errorField === key) {
       setError(null);
@@ -171,7 +209,10 @@ export function PartForm({
     update("attributes", [...values.attributes, { key: "", value: "" }]);
   }
 
-  function updateAttribute(idx: number, patch: Partial<{ key: string; value: string }>) {
+  function updateAttribute(
+    idx: number,
+    patch: Partial<{ key: string; value: string }>,
+  ) {
     update(
       "attributes",
       values.attributes.map((a, i) => (i === idx ? { ...a, ...patch } : a)),
@@ -196,6 +237,7 @@ export function PartForm({
     fd.append("hs_code_id", values.hs_code_id);
     fd.append("origin", values.origin);
     fd.append("service_part_type_id", values.service_part_type_id);
+    if (values.paint_exempt) fd.append("paint_exempt", "on");
     fd.append("tariff_pct_override", values.tariff_pct_override);
     fd.append("unit_of_measure", values.unit_of_measure);
     fd.append("default_retail_price", values.default_retail_price);
@@ -247,13 +289,13 @@ export function PartForm({
   );
   const hasSpecs = Boolean(
     seed.weight_grams ||
-      seed.default_retail_price ||
-      seed.reorder_point ||
-      seed.reorder_quantity ||
-      seed.attributes.length > 0 ||
-      // Against the shell, never a literal — that drift is what made the
-      // customer Billing fold open on every record (CLAUDE.md).
-      seed.unit_of_measure !== EMPTY_PART_FORM.unit_of_measure,
+    seed.default_retail_price ||
+    seed.reorder_point ||
+    seed.reorder_quantity ||
+    seed.attributes.length > 0 ||
+    // Against the shell, never a literal — that drift is what made the
+    // customer Billing fold open on every record (CLAUDE.md).
+    seed.unit_of_measure !== EMPTY_PART_FORM.unit_of_measure,
   );
   const SPEC_FIELDS = [
     "unit_of_measure",
@@ -362,22 +404,37 @@ export function PartForm({
           </Select>
           <p className="text-muted-foreground text-xs">{t("originHint")}</p>
         </Field>
+        {/* Three states, not two. A blank used to mean both "nobody has
+            decided" (most of the catalogue) and "never painted" (a stainless
+            frame) — and the category apply action has to tell them apart or it
+            re-marks the exceptions every time it runs. */}
         <Field label={t("paintableLabel")} htmlFor="service_part_type_id">
           <Select
             value={
-              values.service_part_type_id === "" ? NO_PAINT : values.service_part_type_id
+              values.paint_exempt
+                ? PAINT_EXEMPT
+                : values.service_part_type_id === ""
+                  ? NO_PAINT
+                  : values.service_part_type_id
             }
-            onValueChange={(v) =>
-              update("service_part_type_id", v === NO_PAINT ? "" : v)
-            }
+            onValueChange={(v) => {
+              update("paint_exempt", v === PAINT_EXEMPT);
+              update(
+                "service_part_type_id",
+                v === NO_PAINT || v === PAINT_EXEMPT ? "" : v,
+              );
+            }}
           >
             <SelectTrigger id="service_part_type_id">
-              <SelectValue placeholder={t("paintableNone")} />
+              <SelectValue placeholder={t("paintableUndecided")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NO_PAINT}>
-                <span className="text-muted-foreground italic">{t("paintableNone")}</span>
+                <span className="text-muted-foreground italic">
+                  {t("paintableUndecided")}
+                </span>
               </SelectItem>
+              <SelectItem value={PAINT_EXEMPT}>{t("paintableNone")}</SelectItem>
               {servicePartTypes.map((pt) => (
                 <SelectItem key={pt.id} value={pt.id}>
                   {localizedName(locale, pt.name_en, pt.name_da)}
@@ -385,7 +442,11 @@ export function PartForm({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-muted-foreground text-xs">{t("paintableHint")}</p>
+          <p className="text-muted-foreground text-xs">
+            {inheritedTypeName
+              ? t("paintableInherited", { type: inheritedTypeName })
+              : t("paintableHint")}
+          </p>
         </Field>
         <Field
           label={t("tariffOverride")}
@@ -397,9 +458,7 @@ export function PartForm({
               id="tariff_pct_override"
               inputMode="decimal"
               value={values.tariff_pct_override}
-              onChange={(e) =>
-                update("tariff_pct_override", e.target.value)
-              }
+              onChange={(e) => update("tariff_pct_override", e.target.value)}
               placeholder={t("tariffOverridePlaceholder")}
               className="max-w-[160px]"
             />
@@ -419,7 +478,9 @@ export function PartForm({
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("supplier")} htmlFor="supplier_id">
               <Select
-                value={values.supplier_id === "" ? NO_SUPPLIER : values.supplier_id}
+                value={
+                  values.supplier_id === "" ? NO_SUPPLIER : values.supplier_id
+                }
                 onValueChange={(v) =>
                   update("supplier_id", v === NO_SUPPLIER ? "" : v)
                 }
@@ -616,14 +677,18 @@ export function PartForm({
                     aria-label={t("attrKeyAria", { n: i + 1 })}
                     placeholder={t("keyPlaceholder")}
                     value={a.key}
-                    onChange={(e) => updateAttribute(i, { key: e.target.value })}
+                    onChange={(e) =>
+                      updateAttribute(i, { key: e.target.value })
+                    }
                     className="flex-1"
                   />
                   <Input
                     aria-label={t("attrValueAria", { n: i + 1 })}
                     placeholder={t("valuePlaceholder")}
                     value={a.value}
-                    onChange={(e) => updateAttribute(i, { value: e.target.value })}
+                    onChange={(e) =>
+                      updateAttribute(i, { value: e.target.value })
+                    }
                     className="flex-[2]"
                   />
                   <Button

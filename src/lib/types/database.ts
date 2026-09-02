@@ -2913,6 +2913,7 @@ export type Database = {
           name_en: string
           notes: string | null
           origin: string | null
+          paint_exempt: boolean
           reorder_point: number | null
           reorder_quantity: number | null
           service_part_type_id: string | null
@@ -2940,6 +2941,7 @@ export type Database = {
           name_en: string
           notes?: string | null
           origin?: string | null
+          paint_exempt?: boolean
           reorder_point?: number | null
           reorder_quantity?: number | null
           service_part_type_id?: string | null
@@ -2967,6 +2969,7 @@ export type Database = {
           name_en?: string
           notes?: string | null
           origin?: string | null
+          paint_exempt?: boolean
           reorder_point?: number | null
           reorder_quantity?: number | null
           service_part_type_id?: string | null
@@ -3937,6 +3940,7 @@ export type Database = {
       service_part_types: {
         Row: {
           created_at: string
+          default_category_id: string | null
           id: string
           is_active: boolean
           name_da: string
@@ -3946,6 +3950,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_category_id?: string | null
           id?: string
           is_active?: boolean
           name_da: string
@@ -3955,6 +3960,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_category_id?: string | null
           id?: string
           is_active?: boolean
           name_da?: string

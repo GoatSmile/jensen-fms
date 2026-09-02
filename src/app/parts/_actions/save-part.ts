@@ -21,6 +21,7 @@ type ParsedFields = {
   hs_code_id: string | null;
   origin: "eu" | "non_eu" | null;
   service_part_type_id: string | null;
+  paint_exempt: boolean;
   tariff_pct_override: number | null;
   unit_of_measure: string;
   default_retail_price: number | null;
@@ -137,9 +138,14 @@ function parseFields(
   }
   const origin = originRaw;
 
-  // Paintable as — the picker emits "" for "never painted".
+  // Paintable as — three states. A blank type means "nobody has decided", which
+  // is what the category apply action fills in; `paint_exempt` is the
+  // deliberate "never painted" it must skip. Belt and braces with the DB check:
+  // a part can never be both.
   const paintRaw = nullable(formData.get("service_part_type_id"));
-  const service_part_type_id = paintRaw && paintRaw !== "" ? paintRaw : null;
+  const paint_exempt = formData.get("paint_exempt") === "on";
+  const service_part_type_id =
+    !paint_exempt && paintRaw && paintRaw !== "" ? paintRaw : null;
 
   // Tariff override (optional). Form holds a percent string ("5" for
   // 5 %, "10.2" for 10.2 %); DB stores the decimal (0.05, 0.102).
@@ -167,6 +173,7 @@ function parseFields(
     hs_code_id,
     origin,
     service_part_type_id,
+    paint_exempt,
     tariff_pct_override,
     unit_of_measure,
     default_retail_price,
@@ -218,6 +225,7 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
       hs_code_id: parsed.hs_code_id,
       origin: parsed.origin,
       service_part_type_id: parsed.service_part_type_id,
+      paint_exempt: parsed.paint_exempt,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
@@ -283,6 +291,7 @@ export async function updatePart(
       hs_code_id: parsed.hs_code_id,
       origin: parsed.origin,
       service_part_type_id: parsed.service_part_type_id,
+      paint_exempt: parsed.paint_exempt,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,

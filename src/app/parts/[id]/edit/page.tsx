@@ -12,10 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 
-import {
-  PartForm,
-  type PartFormValues,
-} from "../../_components/part-form";
+import { PartForm, type PartFormValues } from "../../_components/part-form";
 
 export default async function EditPartPage({
   params,
@@ -29,41 +26,42 @@ export default async function EditPartPage({
   ]);
   const supabase = await createClient();
 
-  const [partRes, categoriesRes, currenciesRes, hsCodesRes, partTypesRes] = await Promise.all([
-    supabase
-      .from("parts")
-      .select(
-        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, origin, service_part_type_id, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("part_categories")
-      .select("id, name_en, name_da, parent_id")
-      .is("deleted_at", null)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-      .order("name_en", { ascending: true }),
-    supabase
-      .from("currencies")
-      .select("code, name_en")
-      .order("sort_order", { ascending: true })
-      .order("code", { ascending: true }),
-    supabase
-      .from("hs_codes")
-      .select("id, code, description, tariff_pct, is_active")
-      // hs_codes has no sort_order column — ordering by it errored the
-      // query, and because the error wasn't checked the picker fell back
-      // to an empty list, so a classified part rendered as "Unclassified".
-      // Order by is_active then code.
-      .order("is_active", { ascending: false })
-      .order("code", { ascending: true }),
-    supabase
-      .from("service_part_types")
-      .select("id, name_en, name_da")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-  ]);
+  const [partRes, categoriesRes, currenciesRes, hsCodesRes, partTypesRes] =
+    await Promise.all([
+      supabase
+        .from("parts")
+        .select(
+          "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, origin, service_part_type_id, paint_exempt, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("part_categories")
+        .select("id, name_en, name_da, parent_id")
+        .is("deleted_at", null)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("name_en", { ascending: true }),
+      supabase
+        .from("currencies")
+        .select("code, name_en")
+        .order("sort_order", { ascending: true })
+        .order("code", { ascending: true }),
+      supabase
+        .from("hs_codes")
+        .select("id, code, description, tariff_pct, is_active")
+        // hs_codes has no sort_order column — ordering by it errored the
+        // query, and because the error wasn't checked the picker fell back
+        // to an empty list, so a classified part rendered as "Unclassified".
+        // Order by is_active then code.
+        .order("is_active", { ascending: false })
+        .order("code", { ascending: true }),
+      supabase
+        .from("service_part_types")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+    ]);
 
   if (partRes.error) {
     throw new Error(`Failed to load part: ${partRes.error.message}`);
@@ -97,6 +95,7 @@ export default async function EditPartPage({
     hs_code_id: part.hs_code_id ?? "",
     origin: part.origin ?? "",
     service_part_type_id: part.service_part_type_id ?? "",
+    paint_exempt: part.paint_exempt ?? false,
     // DB stores override as decimal fraction (0.0470); form holds the
     // percent string ("4.7"). Round to 2 decimals when reading back.
     tariff_pct_override:
@@ -105,11 +104,12 @@ export default async function EditPartPage({
         : "",
     unit_of_measure: part.unit_of_measure,
     default_retail_price:
-      part.default_retail_price != null ? String(part.default_retail_price) : "",
+      part.default_retail_price != null
+        ? String(part.default_retail_price)
+        : "",
     default_retail_currency: part.default_retail_currency ?? "DKK",
     weight_grams: part.weight_grams != null ? String(part.weight_grams) : "",
-    reorder_point:
-      part.reorder_point != null ? String(part.reorder_point) : "",
+    reorder_point: part.reorder_point != null ? String(part.reorder_point) : "",
     reorder_quantity:
       part.reorder_quantity != null ? String(part.reorder_quantity) : "",
     notes: part.notes ?? "",

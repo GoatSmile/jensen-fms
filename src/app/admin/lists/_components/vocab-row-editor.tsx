@@ -14,10 +14,7 @@ import {
   type VocabField,
 } from "@/lib/admin/vocabularies";
 
-import {
-  saveVocabRow,
-  setVocabRowActive,
-} from "../_actions/dispatch";
+import { saveVocabRow, setVocabRowActive } from "../_actions/dispatch";
 
 export type VocabRowData = Record<string, unknown> & { id: string };
 
@@ -47,6 +44,7 @@ export function VocabRowEditor({
   row,
   parentOptions,
   coatingOptions,
+  categoryOptions,
   onDone,
   usageCount = 0,
   extraControls,
@@ -56,6 +54,7 @@ export function VocabRowEditor({
   row: VocabRowData | null;
   parentOptions: SelectOption[];
   coatingOptions: SelectOption[];
+  categoryOptions: SelectOption[];
   onDone: () => void;
   /** How many records reference this row, for the archive warning. */
   usageCount?: number;
@@ -102,7 +101,10 @@ export function VocabRowEditor({
   }
 
   return (
-    <form onSubmit={onSubmit} className="bg-ground flex flex-col gap-4 rounded-lg p-4">
+    <form
+      onSubmit={onSubmit}
+      className="bg-ground flex flex-col gap-4 rounded-lg p-4"
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         {vocab.fields.map((field) => {
           const inputId = `${vocabId}-${row?.id ?? "new"}-${field.name}`;
@@ -136,6 +138,7 @@ export function VocabRowEditor({
                   (option) => option.value !== row?.id,
                 )}
                 coatingOptions={coatingOptions}
+                categoryOptions={categoryOptions}
               />
             </div>
           );
@@ -184,7 +187,11 @@ export function VocabRowEditor({
                 : t(vocab.archiveCopyKey)
             }
             onToggle={async () => {
-              const result = await setVocabRowActive(vocabId, row.id, !isActive);
+              const result = await setVocabRowActive(
+                vocabId,
+                row.id,
+                !isActive,
+              );
               if (result.ok) {
                 onDone();
                 return null;
@@ -205,6 +212,7 @@ function FieldInput({
   onChange,
   parentOptions,
   coatingOptions,
+  categoryOptions,
 }: {
   id: string;
   field: VocabField;
@@ -212,6 +220,7 @@ function FieldInput({
   onChange: (next: string) => void;
   parentOptions: SelectOption[];
   coatingOptions: SelectOption[];
+  categoryOptions: SelectOption[];
 }) {
   if (field.type === "textarea") {
     return (
@@ -224,8 +233,17 @@ function FieldInput({
     );
   }
 
-  if (field.type === "parent" || field.type === "coating") {
-    const options = field.type === "parent" ? parentOptions : coatingOptions;
+  if (
+    field.type === "parent" ||
+    field.type === "coating" ||
+    field.type === "partCategory"
+  ) {
+    const options =
+      field.type === "parent"
+        ? parentOptions
+        : field.type === "coating"
+          ? coatingOptions
+          : categoryOptions;
     return (
       // Native select styled to match `Input` — the established pattern in these
       // admin forms, and its border belongs to the control (not card soup).
@@ -250,7 +268,9 @@ function FieldInput({
       id={id}
       value={value}
       inputMode={
-        field.type === "number" || field.type === "percent" ? "decimal" : undefined
+        field.type === "number" || field.type === "percent"
+          ? "decimal"
+          : undefined
       }
       placeholder={field.type === "hex" ? "#000000" : undefined}
       onChange={(event) => onChange(event.target.value)}

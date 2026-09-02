@@ -886,6 +886,8 @@
     "originHint": "Sets the default of “Apply import tax” on new PO lines — EU-origin parts skip it. Existing PO lines stay frozen.",
     "paintableLabel": "Paintable as",
     "paintableNone": "Not painted",
+    "paintableUndecided": "Not decided",
+    "paintableInherited": "Parts in this category are “{type}” by default — change it here if this one is the exception.",
     "paintableHint": "Which of the painter's part types this is (frame, fork, cargo bed…). Makes the part pickable on a paint-order line; a stock paint order coming back creates a painted variant of it per colour.",
     "paintedVariantsTitle": "Painted variants",
     "paintedVariantsDesc": "Painted {type}s on the shelf, per colour. Born when a stock paint order comes back — never typed in.",
@@ -4106,7 +4108,8 @@
     "bikeRecordStatusInvalid": "A recorded bike must be either with a customer or in stock — anything we build goes through a manufacturing order.",
     "bikeOwnerRequiredInService": "Pick the customer this bike belongs to.",
     "serviceDefaultNeedsPriceList": "That supplier has no current price list for this service, so it cannot be the default. Add a price list for them first.",
-    "adminServicePartTypeExists": "A service part type with that name already exists."
+    "adminServicePartTypeExists": "A service part type with that name already exists.",
+    "adminPainterTypeNoCategory": "This painter type has no default part category yet — set one first."
   },
   "inbox": {
     "title": "Inbox",
@@ -4344,6 +4347,10 @@
     "badgePrimary": "Primary",
     "archiveInUse": "{count} records currently use it.",
     "vocabServicePartTypes": "Service part types",
+    "fieldDefaultCategory": "Default for part category",
+    "applyCategory": "Set as paintable on {count, plural, one {1 undecided part} other {# undecided parts}}",
+    "applyCategoryNothing": "Nothing undecided in that category",
+    "applyCategoryDone": "{count, plural, =0 {Nothing to change} one {1 part marked} other {# parts marked}}",
     "archiveCopyServicePartTypes": "Archiving hides this part type from new paint order lines and from a template's paintwork. Lines and price lists already using it keep it."
   },
   "adminServicePartTypes": {

@@ -51,6 +51,8 @@ export type ServicePartType = {
   name_en: string;
   name_da: string;
   sort_order: number;
+  /** The part category this type claims; parts filed there inherit it. */
+  default_category_id: string | null;
 };
 
 /** Active part types, picker-ordered. */
@@ -59,7 +61,7 @@ export async function loadActiveServicePartTypes(
 ): Promise<ServicePartType[]> {
   const { data, error } = await supabase
     .from("service_part_types")
-    .select("id, slug, name_en, name_da, sort_order")
+    .select("id, slug, name_en, name_da, sort_order, default_category_id")
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name_en", { ascending: true });

@@ -31,6 +31,7 @@ type ParsedPartType = {
   name_da: string;
   sort_order: number;
   is_active: boolean;
+  default_category_id: string | null;
 };
 
 function parseFormData(
@@ -64,6 +65,8 @@ function parseFormData(
       name_da,
       sort_order,
       is_active: formData.get("is_active") === "on",
+      default_category_id:
+        nullable(formData.get("default_category_id"))?.trim() || null,
     },
   };
 }
@@ -117,6 +120,7 @@ export async function updateServicePartType(
       name_da: parsed.values.name_da,
       sort_order: parsed.values.sort_order,
       is_active: parsed.values.is_active,
+      default_category_id: parsed.values.default_category_id,
     })
     .eq("id", id);
   if (error) {
@@ -148,4 +152,55 @@ export async function setServicePartTypeActive(
   }
   revalidateAll();
   return { ok: true };
+}
+
+export type ApplyCategoryResult =
+  { ok: true; updated: number } | { ok: false; error: string };
+
+/**
+ * Fill in "Paintable as" for every UNDECIDED part in this type's category.
+ *
+ * The mapping alone changes nothing about the parts already on file — it is a
+ * generator, and this is its trigger. Deliberately narrow: it skips parts that
+ * already carry a type (never re-file someone's decision) and parts marked
+ * `paint_exempt` (the stainless frames, the mudguards bought black), so running
+ * it twice is a no-op and the exceptions survive.
+ */
+export async function applyPainterTypeToCategory(
+  id: string,
+): Promise<ApplyCategoryResult> {
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+
+  const supabase = await createClient();
+  const { data: type, error: typeErr } = await supabase
+    .from("service_part_types")
+    .select("id, default_category_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (typeErr || !type) {
+    return {
+      ok: false,
+      error: t("couldNotSave", { detail: typeErr?.message ?? t("notFound") }),
+    };
+  }
+  if (!type.default_category_id) {
+    return { ok: false, error: t("adminPainterTypeNoCategory") };
+  }
+
+  const { data, error } = await supabase
+    .from("parts")
+    .update({ service_part_type_id: id })
+    .eq("category_id", type.default_category_id)
+    .is("service_part_type_id", null)
+    .eq("paint_exempt", false)
+    .is("deleted_at", null)
+    .select("id");
+  if (error) {
+    return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+  }
+  revalidateAll();
+  revalidatePath("/parts");
+  revalidatePath("/parts/painted");
+  return { ok: true, updated: (data ?? []).length };
 }

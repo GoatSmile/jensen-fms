@@ -62,6 +62,9 @@ export default async function AdminListsPage({
   // for the vocabulary that needs them, so six of seven pay nothing.
   const needsParents = vocab.fields.some((field) => field.type === "parent");
   const needsCoatings = vocab.fields.some((field) => field.type === "coating");
+  const needsCategories = vocab.fields.some(
+    (field) => field.type === "partCategory",
+  );
 
   const parentOptions: SelectOption[] = needsParents
     ? rows.map((row) => ({
@@ -107,6 +110,46 @@ export default async function AdminListsPage({
       .maybeSingle();
     locationsHidden = settingsRes.data?.hide_location_info ?? false;
     primaryLocationId = settingsRes.data?.primary_location_id ?? null;
+  }
+
+  // Painter types claim a part category. Only the leaf-ish list matters here —
+  // every active category is offered and the unique index refuses a second
+  // claim, so an ambiguous default is impossible rather than merely discouraged.
+  let categoryOptions: SelectOption[] = [];
+  let undecidedByCategory: Record<string, number> = {};
+  if (needsCategories) {
+    const [catsRes, undecidedRes] = await Promise.all([
+      supabase
+        .from("part_categories")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .order("name_en", { ascending: true }),
+      // What "apply" would actually touch: filed here, nobody has decided, and
+      // not deliberately exempt.
+      supabase
+        .from("parts")
+        .select("category_id")
+        .is("service_part_type_id", null)
+        .eq("paint_exempt", false)
+        .is("deleted_at", null)
+        .not("category_id", "is", null),
+    ]);
+    categoryOptions = (catsRes.data ?? []).map((row) => ({
+      value: String(row.id),
+      label: localizedName(
+        locale,
+        row.name_en as string | null,
+        row.name_da as string | null,
+      ),
+    }));
+    undecidedByCategory = (undecidedRes.data ?? []).reduce<
+      Record<string, number>
+    >((acc, row) => {
+      const key = String(row.category_id);
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
   }
 
   let coatingOptions: SelectOption[] = [];
@@ -167,6 +210,8 @@ export default async function AdminListsPage({
             rows={rows}
             parentOptions={parentOptions}
             coatingOptions={coatingOptions}
+            categoryOptions={categoryOptions}
+            undecidedByCategory={undecidedByCategory}
             usageByRow={usageByRow}
             locationsHidden={locationsHidden}
             primaryLocationId={primaryLocationId}

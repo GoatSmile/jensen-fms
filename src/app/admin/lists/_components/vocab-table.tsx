@@ -18,10 +18,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { localizedName } from "@/i18n/vocab";
-import { getVocab, type VocabDescriptor, type VocabId } from "@/lib/admin/vocabularies";
+import {
+  getVocab,
+  type VocabDescriptor,
+  type VocabId,
+} from "@/lib/admin/vocabularies";
 import { cn } from "@/lib/utils";
 
 import { LocationVisibilityToggle } from "./location-visibility-toggle";
+import { ApplyCategoryButton } from "./apply-category-button";
 import { MakePrimaryButton } from "./make-primary-button";
 import {
   VocabRowEditor,
@@ -46,6 +51,8 @@ export function VocabTable({
   rows,
   parentOptions,
   coatingOptions,
+  categoryOptions,
+  undecidedByCategory,
   usageByRow,
   locationsHidden,
   primaryLocationId,
@@ -54,6 +61,9 @@ export function VocabTable({
   rows: VocabRowData[];
   parentOptions: SelectOption[];
   coatingOptions: SelectOption[];
+  categoryOptions: SelectOption[];
+  /** category id → parts there with nothing decided; drives the apply button. */
+  undecidedByCategory: Record<string, number>;
   /** Reference counts per row id, for the vocabularies that declare `usage`. */
   usageByRow: Record<string, number>;
   /** Locations only: current `app_settings.hide_location_info`. */
@@ -106,6 +116,7 @@ export function VocabTable({
             row={null}
             parentOptions={parentOptions}
             coatingOptions={coatingOptions}
+            categoryOptions={categoryOptions}
             onDone={() => setCreating(false)}
           />
         ) : null}
@@ -183,6 +194,7 @@ export function VocabTable({
                             row,
                             parentOptions,
                             coatingOptions,
+                            categoryOptions,
                           )}
                         </TableCell>
                       ))}
@@ -223,12 +235,23 @@ export function VocabTable({
                             row={row}
                             parentOptions={parentOptions}
                             coatingOptions={coatingOptions}
+                            categoryOptions={categoryOptions}
                             usageCount={usageByRow[row.id] ?? 0}
                             extraControls={
                               vocab.hasLocationControls &&
                               isActive &&
                               row.id !== primaryLocationId ? (
                                 <MakePrimaryButton locationId={row.id} />
+                              ) : vocab.hasPaintCategoryApply &&
+                                row.default_category_id ? (
+                                <ApplyCategoryButton
+                                  typeId={row.id}
+                                  undecided={
+                                    undecidedByCategory[
+                                      String(row.default_category_id)
+                                    ] ?? 0
+                                  }
+                                />
                               ) : null
                             }
                             onDone={() => setOpenId(null)}
@@ -272,6 +295,7 @@ function cellValue(
   row: VocabRowData,
   parentOptions: SelectOption[],
   coatingOptions: SelectOption[],
+  categoryOptions: SelectOption[] = [],
 ): string {
   const raw = row[name];
   if (raw == null || raw === "") return "—";
@@ -283,6 +307,12 @@ function cellValue(
   if (field?.type === "parent") {
     return (
       parentOptions.find((option) => option.value === String(raw))?.label ?? "—"
+    );
+  }
+  if (field?.type === "partCategory") {
+    return (
+      categoryOptions.find((option) => option.value === String(raw))?.label ??
+      "—"
     );
   }
   if (field?.type === "coating") {

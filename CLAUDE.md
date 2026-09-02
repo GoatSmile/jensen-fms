@@ -297,6 +297,25 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   Paint stays a service type; the variant is its product. `/parts/painted` is
   the shelf view. Never model a painted part as a bike, and never as a
   paint-as-part SKU.
+- **"Paintable as" is generated from the part CATEGORY, and has THREE states.**
+  `parts.service_part_type_id` says both *does this go to the painter* and
+  *what does the painter call it* — the second is what prices a paint-order
+  line, so it must live on the part. The first is mostly inferable, and asking
+  a human to restate it per part is why it was never filled in (15 declared
+  paintwork lines, 2 backed; an MO reporting "all covered" for a bike whose
+  template sends four things to the painter). So `service_part_types.default_category_id`
+  claims a category (unique — an ambiguous default is worse than none), new
+  parts inherit it in the form, and a per-row button on
+  `/admin/lists?vocab=service-part-types` fills every UNDECIDED part in that
+  category. It is a **generator, not a live lookup**: the resolved value stays
+  stored, because re-filing a part must not retroactively change what painted
+  variants and frozen paint-order lines were priced as. The third state is
+  `parts.paint_exempt` — the deliberate *not painted* (stainless, or
+  pre-finished by the supplier), which a NULL type cannot express and which the
+  apply action must skip or it re-marks the exceptions every run. Map only
+  categories that are homogeneous: Frames and Forks are; Basket (a bag and a
+  reflex cover) and Mudguards (bought-black plastic) are majority-exception and
+  stay hand-marked.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
   RFID, AirTag, fleet_number (customers' own numbering).
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a

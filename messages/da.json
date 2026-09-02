@@ -886,6 +886,8 @@
     "originHint": "Sætter standarden for “Pålæg importtold” på nye indkøbslinjer — dele med EU-oprindelse springer den over. Eksisterende linjer forbliver fastfrosset.",
     "paintableLabel": "Kan lakeres som",
     "paintableNone": "Lakeres ikke",
+    "paintableUndecided": "Ikke afklaret",
+    "paintableInherited": "Dele i denne kategori er “{type}” som standard — ret det her, hvis netop denne er undtagelsen.",
     "paintableHint": "Hvilken af lakererens deltyper dette er (stel, forgaffel, lad…). Gør delen valgbar på en lakeringsordrelinje; en lager-lakeringsordre, der kommer retur, opretter en lakeret variant pr. farve.",
     "paintedVariantsTitle": "Lakerede varianter",
     "paintedVariantsDesc": "Lakerede {type} på lager, pr. farve. Oprettes når en lager-lakeringsordre kommer retur — tastes aldrig ind.",
@@ -4106,7 +4108,8 @@
     "bikeRecordStatusInvalid": "En registreret cykel skal enten være hos en kunde eller på lager — alt hvad vi bygger, går gennem en produktionsordre.",
     "bikeOwnerRequiredInService": "Vælg den kunde, cyklen tilhører.",
     "serviceDefaultNeedsPriceList": "Leverandøren har ingen aktuel prisliste for denne service og kan derfor ikke være standard. Tilføj en prisliste for dem først.",
-    "adminServicePartTypeExists": "Der findes allerede en servicedeltype med det navn."
+    "adminServicePartTypeExists": "Der findes allerede en servicedeltype med det navn.",
+    "adminPainterTypeNoCategory": "Denne lakerertype har endnu ingen standardkategori — vælg en først."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4344,6 +4347,10 @@
     "badgePrimary": "Primær",
     "archiveInUse": "{count} poster bruger den lige nu.",
     "vocabServicePartTypes": "Servicedele",
+    "fieldDefaultCategory": "Standard for varekategori",
+    "applyCategory": "Sæt som lakerbar på {count, plural, one {1 uafklaret del} other {# uafklarede dele}}",
+    "applyCategoryNothing": "Intet uafklaret i den kategori",
+    "applyCategoryDone": "{count, plural, =0 {Intet at ændre} one {1 del markeret} other {# dele markeret}}",
     "archiveCopyServicePartTypes": "Arkivering skjuler denne deltype på nye laklinjer og i skabelonernes lakarbejde. Linjer og prislister, der allerede bruger den, beholder den."
   },
   "adminServicePartTypes": {
