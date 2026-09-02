@@ -33,6 +33,8 @@ import { PurchaseHistorySection } from "./_components/purchase-history-section";
 import { WhereUsedSection } from "./_components/where-used-section";
 import { StatStrip } from "./_components/stat-strip";
 import { StockSection } from "./_components/stock-section";
+import { PaintedVariantsSection } from "./_components/painted-variants-section";
+import { colorFinishLabel } from "@/lib/colors/coating";
 
 const MOVEMENTS_LIMIT = 50;
 const PURCHASE_LINES_LIMIT = 10;
@@ -94,6 +96,11 @@ export default async function PartDetailPage({
           notes,
           attributes,
           deleted_at,
+          base_part_id,
+          color_id,
+          service_part_type_id,
+          paintable_as:service_part_types!service_part_type_id(name_en, name_da),
+          own_colour:colors!color_id(name_en, name_da, hex),
           category:part_categories(id, name_en, name_da),
           hs_code:hs_codes!hs_code_id(id, code, description, tariff_pct, is_active)
         `,
@@ -272,6 +279,64 @@ export default async function PartDetailPage({
   }
 
   const part = partRes.data;
+
+  // ------- Painted variants (docs/plan-painted-parts.md) -------
+  // A raw part lists its painted variants with on-hand per colour; a variant
+  // points back at its base. Self-join embeds are direction-ambiguous on
+  // PostgREST, so both sides are explicit queries.
+  const [variantsRes, baseRes] = await Promise.all([
+    supabase
+      .from("parts")
+      .select("id, internal_sku, color:colors!color_id(name_en, name_da, hex, ral_code, coating)")
+      .eq("base_part_id", part.id)
+      .is("deleted_at", null),
+    part.base_part_id
+      ? supabase
+          .from("parts")
+          .select("id, internal_sku, name_en, color:colors!color_id(name_en, name_da, hex)")
+          .eq("id", part.base_part_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const variantIds = (variantsRes.data ?? []).map((v) => v.id);
+  const variantStock = new Map<string, number>();
+  if (variantIds.length > 0) {
+    const { data: vs } = await supabase
+      .from("v_current_stock")
+      .select("part_id, quantity_on_hand")
+      .in("part_id", variantIds);
+    for (const r of vs ?? []) {
+      if (!r.part_id) continue;
+      variantStock.set(r.part_id, (variantStock.get(r.part_id) ?? 0) + Number(r.quantity_on_hand ?? 0));
+    }
+  }
+  const variantRows = (variantsRes.data ?? [])
+    .map((v) => ({
+      partId: v.id,
+      sku: v.internal_sku,
+      colourName: v.color ? localizedName(locale, v.color.name_en, v.color.name_da) : "—",
+      colourHex: v.color?.hex ?? null,
+      colourFinish: v.color
+        ? colorFinishLabel(v.color.ral_code, v.color.coating, locale === "da" ? "da" : "en")
+        : null,
+      onHand: variantStock.get(v.id) ?? 0,
+    }))
+    .sort((a, b) => b.onHand - a.onHand || a.colourName.localeCompare(b.colourName));
+  // On a variant, the banner names the base and THIS part's own colour.
+  const baseRow = baseRes.data
+    ? {
+        partId: baseRes.data.id,
+        sku: baseRes.data.internal_sku,
+        name: baseRes.data.name_en,
+        colourName: part.own_colour
+          ? localizedName(locale, part.own_colour.name_en, part.own_colour.name_da)
+          : "—",
+        colourHex: part.own_colour?.hex ?? null,
+      }
+    : null;
+  const paintableAs = part.paintable_as
+    ? localizedName(locale, part.paintable_as.name_en, part.paintable_as.name_da)
+    : null;
 
   // ------- Stock per location -------
   const stockRows = (stockRes.data ?? []).map((row) => ({
@@ -572,6 +637,12 @@ export default async function PartDetailPage({
       />
 
       <KitsSection partId={part.id} chips={kitChips} options={kitOptions} />
+
+      <PaintedVariantsSection
+        paintableAs={paintableAs}
+        variants={variantRows}
+        base={baseRow}
+      />
 
       {/* Section order tells a story: identity (neutral) → availability
           (sky) → sourcing (amber) → usage/selling (neutral tail). */}

@@ -40,6 +40,8 @@ const MOVEMENT_BADGE_VARIANT: Record<
   transfer_in: "outline",
   transfer_out: "outline",
   disposed: "destructive",
+  paint_out: "secondary",
+  paint_in: "success",
 };
 
 export async function MovementsSection({

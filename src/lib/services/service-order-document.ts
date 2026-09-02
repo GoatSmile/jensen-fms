@@ -116,6 +116,8 @@ const DOC_TITLES: Record<string, Record<DocumentLanguage, string>> = {
 export type ServiceOrderDocumentLine = {
   position: number;
   partType: string;
+  /** The specific part named on the line (catalogue name, deliberately English), or null. */
+  partLabel: string | null;
   /** The supplier's own item number from their price list (may be null). */
   supplierItemNo: string | null;
   colour: string | null;
@@ -189,6 +191,7 @@ export async function loadServiceOrderDocument(
       .select(
         `id, service_part_type_id, quantity, supplier_item_no, unit_price, currency,
          part_type:service_part_types!service_part_type_id(name_en, name_da),
+         part:parts!part_id(internal_sku, name_en),
          color:colors!color_id(name_en, name_da, ral_code, coating)`,
       )
       .eq("service_order_id", serviceOrderId)
@@ -241,6 +244,7 @@ export async function loadServiceOrderDocument(
 
   const lines: ServiceOrderDocumentLine[] = items.map((i, idx) => {
     const partType = one(i.part_type);
+    const namedPart = one(i.part);
     const colour = one(i.color);
     let unitPrice: number | null;
     let currency: string | null;
@@ -261,6 +265,7 @@ export async function loadServiceOrderDocument(
       partType: partType
         ? localizedName(labelLang, partType.name_en, partType.name_da)
         : "—",
+      partLabel: namedPart ? `${namedPart.name_en} (${namedPart.internal_sku})` : null,
       supplierItemNo,
       colour: colour
         ? localizedName(labelLang, colour.name_en, colour.name_da)

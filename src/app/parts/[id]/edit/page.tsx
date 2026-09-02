@@ -29,11 +29,11 @@ export default async function EditPartPage({
   ]);
   const supabase = await createClient();
 
-  const [partRes, categoriesRes, currenciesRes, hsCodesRes] = await Promise.all([
+  const [partRes, categoriesRes, currenciesRes, hsCodesRes, partTypesRes] = await Promise.all([
     supabase
       .from("parts")
       .select(
-        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, origin, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
+        "id, internal_sku, name_en, name_da, description_en, description_da, category_id, hs_code_id, origin, service_part_type_id, tariff_pct_override, unit_of_measure, default_retail_price, default_retail_currency, weight_grams, reorder_point, reorder_quantity, notes, attributes",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -58,6 +58,11 @@ export default async function EditPartPage({
       // Order by is_active then code.
       .order("is_active", { ascending: false })
       .order("code", { ascending: true }),
+    supabase
+      .from("service_part_types")
+      .select("id, name_en, name_da")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (partRes.error) {
@@ -91,6 +96,7 @@ export default async function EditPartPage({
     category_id: part.category_id,
     hs_code_id: part.hs_code_id ?? "",
     origin: part.origin ?? "",
+    service_part_type_id: part.service_part_type_id ?? "",
     // DB stores override as decimal fraction (0.0470); form holds the
     // percent string ("4.7"). Round to 2 decimals when reading back.
     tariff_pct_override:
@@ -162,6 +168,7 @@ export default async function EditPartPage({
         categories={categoriesRes.data ?? []}
         currencies={currenciesRes.data ?? []}
         hsCodes={hsCodes}
+        servicePartTypes={partTypesRes.data ?? []}
       />
     </div>
   );

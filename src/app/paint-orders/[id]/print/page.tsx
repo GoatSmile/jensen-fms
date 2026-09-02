@@ -193,7 +193,12 @@ export default async function PaintOrderPrintPage({
           {doc.lines.map((l) => (
             <tr key={l.position} className="border-b align-top">
               <td className="py-1.5 pr-2 tabular-nums">{l.position}</td>
-              <td className="py-1.5 pr-2">{l.partType}</td>
+              <td className="py-1.5 pr-2">
+                <div>{l.partType}</div>
+                {l.partLabel ? (
+                  <div className="text-muted-foreground text-xs">{l.partLabel}</div>
+                ) : null}
+              </td>
               {showItemNo ? (
                 <td className="py-1.5 pr-2 font-mono text-xs">
                   {l.supplierItemNo ?? "—"}

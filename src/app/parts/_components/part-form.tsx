@@ -23,6 +23,7 @@ import {
   flattenCategoryTree,
   type FlatCategory,
 } from "@/lib/parts/categories";
+import { localizedName } from "@/i18n/vocab";
 
 import { createPart, updatePart } from "../_actions/save-part";
 import { CategoryPicker } from "./category-picker";
@@ -36,6 +37,11 @@ export type HsCodeOption = {
   description: string;
   tariffPct: number;
 };
+export type ServicePartTypeOption = {
+  id: string;
+  name_en: string;
+  name_da?: string | null;
+};
 
 export type PartFormValues = {
   internal_sku: string;
@@ -48,6 +54,8 @@ export type PartFormValues = {
   hs_code_id: string;
   /** Customs origin: "eu" | "non_eu" | "" (unclassified). */
   origin: string;
+  /** Paintable as this service part type (frame, fork, …); "" = never painted. */
+  service_part_type_id: string;
   /** "" when no override; otherwise a percent string like "5" or "10.2"
    *  that gets converted to the decimal (0.05, 0.102) on submit. */
   tariff_pct_override: string;
@@ -70,6 +78,8 @@ const NO_HS_CODE = "__none__";
 const NO_SUPPLIER = "__none__";
 /** And for the origin picker's "unclassified". */
 const NO_ORIGIN = "__none__";
+/** And for "not paintable". */
+const NO_PAINT = "__none__";
 
 const EMPTY_PART_FORM: PartFormValues = {
   internal_sku: "",
@@ -80,6 +90,7 @@ const EMPTY_PART_FORM: PartFormValues = {
   category_id: "",
   hs_code_id: "",
   origin: "",
+  service_part_type_id: "",
   tariff_pct_override: "",
   unit_of_measure: "pcs",
   default_retail_price: "",
@@ -101,6 +112,8 @@ type Props = {
   categories: CategoryOption[];
   currencies: CurrencyOption[];
   hsCodes: HsCodeOption[];
+  /** The painter's part types — what a part can be "paintable as". */
+  servicePartTypes?: ServicePartTypeOption[];
   /** Active suppliers for the optional create-mode offering. Absent in edit. */
   suppliers?: SupplierOption[];
 };
@@ -112,6 +125,7 @@ export function PartForm({
   categories,
   currencies,
   hsCodes,
+  servicePartTypes = [],
   suppliers = [],
 }: Props) {
   const t = useTranslations("parts");
@@ -181,6 +195,7 @@ export function PartForm({
     fd.append("category_id", values.category_id);
     fd.append("hs_code_id", values.hs_code_id);
     fd.append("origin", values.origin);
+    fd.append("service_part_type_id", values.service_part_type_id);
     fd.append("tariff_pct_override", values.tariff_pct_override);
     fd.append("unit_of_measure", values.unit_of_measure);
     fd.append("default_retail_price", values.default_retail_price);
@@ -346,6 +361,31 @@ export function PartForm({
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">{t("originHint")}</p>
+        </Field>
+        <Field label={t("paintableLabel")} htmlFor="service_part_type_id">
+          <Select
+            value={
+              values.service_part_type_id === "" ? NO_PAINT : values.service_part_type_id
+            }
+            onValueChange={(v) =>
+              update("service_part_type_id", v === NO_PAINT ? "" : v)
+            }
+          >
+            <SelectTrigger id="service_part_type_id">
+              <SelectValue placeholder={t("paintableNone")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_PAINT}>
+                <span className="text-muted-foreground italic">{t("paintableNone")}</span>
+              </SelectItem>
+              {servicePartTypes.map((pt) => (
+                <SelectItem key={pt.id} value={pt.id}>
+                  {localizedName(locale, pt.name_en, pt.name_da)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-xs">{t("paintableHint")}</p>
         </Field>
         <Field
           label={t("tariffOverride")}

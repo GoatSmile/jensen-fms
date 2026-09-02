@@ -92,6 +92,7 @@ export const NAV_GROUPS: NavGroup[] = [
         labelKey: "stockValue",
         capability: "parts",
       },
+      { href: "/parts/painted", labelKey: "paintedStock", capability: "parts" },
       { href: "/admin/kits", labelKey: "kits", capability: "parts" },
     ],
   },

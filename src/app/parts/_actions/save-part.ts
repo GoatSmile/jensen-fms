@@ -20,6 +20,7 @@ type ParsedFields = {
   category_id: string;
   hs_code_id: string | null;
   origin: "eu" | "non_eu" | null;
+  service_part_type_id: string | null;
   tariff_pct_override: number | null;
   unit_of_measure: string;
   default_retail_price: number | null;
@@ -136,6 +137,10 @@ function parseFields(
   }
   const origin = originRaw;
 
+  // Paintable as — the picker emits "" for "never painted".
+  const paintRaw = nullable(formData.get("service_part_type_id"));
+  const service_part_type_id = paintRaw && paintRaw !== "" ? paintRaw : null;
+
   // Tariff override (optional). Form holds a percent string ("5" for
   // 5 %, "10.2" for 10.2 %); DB stores the decimal (0.05, 0.102).
   // Blank → no override, fall back to HS code at PO snapshot time.
@@ -161,6 +166,7 @@ function parseFields(
     category_id,
     hs_code_id,
     origin,
+    service_part_type_id,
     tariff_pct_override,
     unit_of_measure,
     default_retail_price,
@@ -211,6 +217,7 @@ export async function createPart(formData: FormData): Promise<SavePartResult> {
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
       origin: parsed.origin,
+      service_part_type_id: parsed.service_part_type_id,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,
@@ -275,6 +282,7 @@ export async function updatePart(
       category_id: parsed.category_id,
       hs_code_id: parsed.hs_code_id,
       origin: parsed.origin,
+      service_part_type_id: parsed.service_part_type_id,
       tariff_pct_override: parsed.tariff_pct_override,
       unit_of_measure: parsed.unit_of_measure,
       default_retail_price: parsed.default_retail_price,

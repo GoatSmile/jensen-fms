@@ -19,7 +19,7 @@ export default async function NewPartPage() {
     getTranslations("common"),
   ]);
   const supabase = await createClient();
-  const [categoriesRes, currenciesRes, hsCodesRes, suppliersRes] =
+  const [categoriesRes, currenciesRes, hsCodesRes, suppliersRes, partTypesRes] =
     await Promise.all([
       supabase
         .from("part_categories")
@@ -46,6 +46,11 @@ export default async function NewPartPage() {
         .is("deleted_at", null)
         .eq("is_active", true)
         .order("name", { ascending: true }),
+      supabase
+        .from("service_part_types")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
     ]);
 
   const hsCodes = (hsCodesRes.data ?? []).map((h) => ({
@@ -91,6 +96,7 @@ export default async function NewPartPage() {
         categories={categoriesRes.data ?? []}
         currencies={currenciesRes.data ?? []}
         hsCodes={hsCodes}
+        servicePartTypes={partTypesRes.data ?? []}
         suppliers={suppliersRes.data ?? []}
       />
     </div>

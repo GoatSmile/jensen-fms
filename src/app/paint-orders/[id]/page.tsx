@@ -96,13 +96,15 @@ export default async function PaintOrderDetailPage({
     partTypes,
     priceList,
     settingsRes,
+    paintablePartsRes,
   ] = await Promise.all([
     supabase
       .from("service_order_items")
       .select(
         `
           id, service_part_type_id, quantity, notes,
-          supplier_item_no, unit_price, currency,
+          supplier_item_no, unit_price, currency, part_id,
+          named_part:parts!part_id(id, internal_sku, name_en),
           part_type:service_part_types(id, name_en, name_da),
           color:colors(id, name_en, name_da, hex, ral_code, coating)
         `,
@@ -168,6 +170,14 @@ export default async function PaintOrderDetailPage({
       .select("outbound_test_mode, outbound_test_email")
       .eq("id", 1)
       .maybeSingle(),
+    // Parts a line can name: anything paintable (raw or variant), for the
+    // specific-part picker on each line.
+    supabase
+      .from("parts")
+      .select("id, internal_sku, name_en, service_part_type_id, base_part_id")
+      .not("service_part_type_id", "is", null)
+      .is("deleted_at", null)
+      .order("internal_sku", { ascending: true }),
   ]);
 
   const items = itemsRes.data ?? [];
@@ -192,6 +202,10 @@ export default async function PaintOrderDetailPage({
       partTypeName: i.part_type
         ? localizedName(locale, i.part_type.name_en, i.part_type.name_da)
         : "—",
+      partId: one(i.named_part)?.id ?? null,
+      partLabel: one(i.named_part)
+        ? `${one(i.named_part)!.internal_sku} · ${one(i.named_part)!.name_en}`
+        : null,
       quantity: i.quantity,
       colorId: i.color?.id ?? null,
       colorName: i.color
@@ -471,6 +485,13 @@ export default async function PaintOrderDetailPage({
         attachedBikes={bikeRows.length}
         rows={itemRows}
         partTypes={partTypes}
+        paintableParts={(paintablePartsRes.data ?? []).map((p) => ({
+          id: p.id,
+          sku: p.internal_sku,
+          name: p.name_en,
+          servicePartTypeId: p.service_part_type_id as string,
+          isVariant: p.base_part_id != null,
+        }))}
         colors={colors}
         defaultColorId={order.color?.id ?? null}
         totalLabel={totalLabel}

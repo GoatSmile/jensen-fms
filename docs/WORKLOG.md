@@ -90,10 +90,10 @@ treat the early totals as floors, not truth.
 
 | Date | Hours | Work |
 |---|---|---|
-| Wed 2026-09-02 | ~10 | **SO → paint order becomes walkable** (migrations 89–90): painter + PO documents in the supplier's language, a picker grouped by customer order, an MO next step to the painter, a paint filter on /bikes, the TEST-prefix rule, a full docs sweep after the re-plan. |
+| Wed 2026-09-02 | ~12 | **SO → paint order walkable, painted parts become stock** (migrations 89–91): painter + PO documents in the supplier's language, a picker by customer order, painted variants per colour with a shelf view, the TEST-prefix rule, a docs sweep after the re-plan. |
 
-**September so far: ~10 h** (1 working day)
+**September so far: ~12 h** (1 working day)
 
 ---
 
-**Project total: ~264 h across 42 working days (2026-05-07 → 2026-09-02)**
+**Project total: ~266 h across 42 working days (2026-05-07 → 2026-09-02)**

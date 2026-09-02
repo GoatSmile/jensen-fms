@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { readPersonId } from "@/lib/auth/read-session";
+import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
+import {
+  convertPaintedStock,
+  type ConversionResult,
+} from "@/lib/parts/painted-variants";
 import { getOrFetchRate } from "@/lib/fx/get-or-fetch";
 import {
   serviceOrderTransitionRequiresReason,
@@ -13,7 +19,7 @@ import {
 import { loadCurrentPriceList, priceOrderItems } from "@/lib/services/pricing";
 
 export type TransitionServiceOrderResult =
-  | { ok: true }
+  | { ok: true; conversion?: ConversionResult }
   | { ok: false; error: string };
 
 /**
@@ -126,9 +132,72 @@ export async function transitionServiceOrderStatus(
     };
   }
 
+  // Painted parts are stock (docs/plan-painted-parts.md). A STOCK paint order —
+  // one with no bikes attached — coming back converts raw stock into painted
+  // variants, line by line. Order-tied paint orders keep today's behaviour until
+  // phase 2 makes build consumption colour-aware; converting them now would
+  // consume the raw part twice.
+  let conversion: ConversionResult | undefined;
+  if (toStatus === "received_back") {
+    conversion = await convertReceivedStockOrder(supabase, serviceOrderId);
+  }
+
   revalidatePath("/paint-orders");
   revalidatePath(`/paint-orders/${serviceOrderId}`);
-  return { ok: true };
+  if (conversion && conversion.converted > 0) {
+    revalidatePath("/parts");
+    revalidatePath("/parts/painted");
+  }
+  return { ok: true, conversion };
+}
+
+async function convertReceivedStockOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  serviceOrderId: string,
+): Promise<ConversionResult | undefined> {
+  const { count: bikeCount } = await supabase
+    .from("service_order_bikes")
+    .select("bike_id", { count: "exact", head: true })
+    .eq("service_order_id", serviceOrderId);
+  if ((bikeCount ?? 0) > 0) return undefined;
+
+  const { data: order } = await supabase
+    .from("service_orders")
+    .select(
+      "order_number, items:service_order_items(part_id, color_id, quantity, unit_price, fx_rate_to_dkk)",
+    )
+    .eq("id", serviceOrderId)
+    .maybeSingle();
+  if (!order) return undefined;
+  const lines = (order.items ?? [])
+    .filter((i) => i.part_id && i.color_id)
+    .map((i) => ({
+      partId: i.part_id as string,
+      colorId: i.color_id as string,
+      quantity: Number(i.quantity),
+      paintUnitCostDkk:
+        i.unit_price == null
+          ? null
+          : Math.round(Number(i.unit_price) * Number(i.fx_rate_to_dkk ?? 1) * 10000) / 10000,
+    }));
+  if (lines.length === 0) return { converted: 0, variantsCreated: 0, failures: [] };
+
+  const location = await resolveDefaultLocationId(supabase);
+  if (!location.ok) {
+    return {
+      converted: 0,
+      variantsCreated: 0,
+      failures: lines.map((l) => ({ partId: l.partId, error: location.error })),
+    };
+  }
+  const actorId = await readPersonId();
+  return convertPaintedStock(supabase, {
+    serviceOrderId,
+    orderNumber: order.order_number,
+    locationId: location.id,
+    actorId,
+    lines,
+  });
 }
 
 /**

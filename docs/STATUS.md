@@ -1,7 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-02 (session end).** Most recent: **the whole sales
-order → paint order path is now walkable without knowing a frame number.** The
+**Last updated: 2026-09-02 (session end).** Most recent: **painted parts are
+stock** (migration 91, `docs/plan-painted-parts.md`, phase 1 shipped): a part
+can be paintable, a painted variant is a part per colour, a stock paint order
+coming back converts raw stock into painted stock with a real cost, and
+`/parts/painted` shows raw beside painted per colour. Before that, **the whole
+sales order → paint order path became walkable without knowing a frame number.** The
 painter receives a document (print + *Email painter*, in the supplier's own
 language, migration 89; emailing marks a planned order sent and freezes prices
 first); the paint order's *Add bike* picker groups bikes by customer order with
@@ -70,11 +74,20 @@ so a screen you demo in English looks different on his tablet.
   Jeudan chain.
 
 ## Next actions
+0. **Painted parts, phase 2** (plan §4): colour-aware build consumption — swap a
+   paintable BOM part for its variant in the bike's colour when it has stock,
+   flag *needs paint* otherwise, then let order-tied paint orders convert stock
+   too. Touches `finishBikeBuild`, the recipe copy and coverage; verify against
+   fixtures before shipping. Phases 3–4 (shelf view with demand, fill-from-bikes
+   naming parts) after.
 1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
    customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
    CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,
    both frames, linked back to the SO). Every step was driven through the real
-   UI today, so it is the demo script as well as the test. Point the dev
+   UI today, so it is the demo script as well as the test. Also on local: TEST
+   stock paint order `PNT-2026-0010` (two frames + a fork in Maisgleb, received
+   back) and the three painted variants it created — show Dennis `/parts/painted`
+   and the base part's *Painted variants* section. Point the dev
    server at local (`scripts/use-db.sh`), sign in with `dev-login.mjs`.
 2. **Then decide with Dennis** whether the same order goes into production for
    real (his real-estate customer), and whether Metacoat's real email replaces

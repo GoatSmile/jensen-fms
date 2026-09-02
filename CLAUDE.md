@@ -278,6 +278,19 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   but drop out of pickers, pick lists, and filters. Admin at `/admin/kits`
   (+ printable sticker sheet); the build workbench groups the bike's parts
   by kit as a pick list.
+- **Painted parts are STOCK, per part and colour** (migration 91, DECISIONS
+  2026-09-02, plan in `docs/plan-painted-parts.md`). A part can be paintable
+  (`parts.service_part_type_id` = which of the painter's part types it is); a
+  painted variant is a PART with `base_part_id` + `color_id`, created lazily by
+  `findOrCreatePaintedVariant` (`src/lib/parts/painted-variants.ts`) the first
+  time that base × colour comes back from the painter. **Painting is the
+  conversion event**: a STOCK paint order (no bikes attached) reaching
+  `received_back` posts `paint_out` on the base and `paint_in` on the variant,
+  cost = raw prevailing cost + the frozen paint price, basis `derived`.
+  Order-tied paint orders do NOT convert until phase 2 makes build consumption
+  colour-aware (otherwise the raw part is consumed twice). Paint stays a
+  service type; the variant is its product. `/parts/painted` is the shelf view.
+  Never model a painted part as a bike, and never as a paint-as-part SKU.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
   RFID, AirTag, fleet_number (customers' own numbering).
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a
@@ -633,7 +646,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Navigation / IA — seven collapsible groups** (reset with the owner
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·
-  Families) · *Parts* (All parts · Stock value · Kits) · *Work* (Tickets · Work
+  Families) · *Parts* (All parts · Stock value · Painted stock · Kits) · *Work* (Tickets · Work
   orders · Workshop floor · Inbox) · *Orders* (Manufacturing · Purchase ·
   Sales · Paint orders · Invoices) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.

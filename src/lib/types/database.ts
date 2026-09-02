@@ -2792,11 +2792,13 @@ export type Database = {
       parts: {
         Row: {
           attributes: Json
+          base_part_id: string | null
           category_id: string
           created_at: string
           default_retail_currency: string | null
           default_retail_price: number | null
           deleted_at: string | null
+          color_id: string | null
           description_da: string | null
           description_en: string | null
           hs_code_id: string | null
@@ -2809,6 +2811,7 @@ export type Database = {
           origin: string | null
           reorder_point: number | null
           reorder_quantity: number | null
+          service_part_type_id: string | null
           tariff_pct_override: number | null
           unit_of_measure: string
           updated_at: string
@@ -2816,11 +2819,13 @@ export type Database = {
         }
         Insert: {
           attributes?: Json
+          base_part_id?: string | null
           category_id: string
           created_at?: string
           default_retail_currency?: string | null
           default_retail_price?: number | null
           deleted_at?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           hs_code_id?: string | null
@@ -2833,6 +2838,7 @@ export type Database = {
           origin?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
+          service_part_type_id?: string | null
           tariff_pct_override?: number | null
           unit_of_measure?: string
           updated_at?: string
@@ -2840,11 +2846,13 @@ export type Database = {
         }
         Update: {
           attributes?: Json
+          base_part_id?: string | null
           category_id?: string
           created_at?: string
           default_retail_currency?: string | null
           default_retail_price?: number | null
           deleted_at?: string | null
+          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           hs_code_id?: string | null
@@ -2857,6 +2865,7 @@ export type Database = {
           origin?: string | null
           reorder_point?: number | null
           reorder_quantity?: number | null
+          service_part_type_id?: string | null
           tariff_pct_override?: number | null
           unit_of_measure?: string
           updated_at?: string
@@ -2882,6 +2891,27 @@ export type Database = {
             columns: ["hs_code_id"]
             isOneToOne: false
             referencedRelation: "hs_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_service_part_type_id_fkey"
+            columns: ["service_part_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_part_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_base_part_id_fkey"
+            columns: ["base_part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3638,6 +3668,7 @@ export type Database = {
           fx_rate_to_dkk: number | null
           id: string
           notes: string | null
+          part_id: string | null
           quantity: number
           service_order_id: string
           service_part_type_id: string
@@ -3651,6 +3682,7 @@ export type Database = {
           fx_rate_to_dkk?: number | null
           id?: string
           notes?: string | null
+          part_id?: string | null
           quantity: number
           service_order_id: string
           service_part_type_id: string
@@ -3664,6 +3696,7 @@ export type Database = {
           fx_rate_to_dkk?: number | null
           id?: string
           notes?: string | null
+          part_id?: string | null
           quantity?: number
           service_order_id?: string
           service_part_type_id?: string
@@ -3697,6 +3730,13 @@ export type Database = {
             columns: ["service_part_type_id"]
             isOneToOne: false
             referencedRelation: "service_part_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
             referencedColumns: ["id"]
           },
         ]
@@ -4804,6 +4844,8 @@ export type Database = {
         | "transfer_out"
         | "transfer_in"
         | "disposed"
+        | "paint_out"
+        | "paint_in"
       invoice_status:
         | "draft"
         | "issued"
@@ -5024,6 +5066,8 @@ export const Constants = {
         "transfer_out",
         "transfer_in",
         "disposed",
+        "paint_out",
+        "paint_in",
       ],
       invoice_status: [
         "draft",

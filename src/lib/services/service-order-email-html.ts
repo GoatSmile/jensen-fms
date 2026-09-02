@@ -77,7 +77,11 @@ export function renderServiceOrderEmailHtml(
     .map(
       (l) => `<tr>
         <td style="${cellStyle}">${l.position}</td>
-        <td style="${cellStyle}">${escapeHtml(l.partType)}</td>
+        <td style="${cellStyle}">${escapeHtml(l.partType)}${
+          l.partLabel
+            ? `<br/><span style="color:#737373;font-size:12px;">${escapeHtml(l.partLabel)}</span>`
+            : ""
+        }</td>
         ${showRef ? `<td style="${cellStyle}font-family:monospace;font-size:12px;">${escapeHtml(l.supplierItemNo ?? "—")}</td>` : ""}
         <td style="${cellStyle}">${escapeHtml(l.colour ?? "—")}${
           l.colourFinish

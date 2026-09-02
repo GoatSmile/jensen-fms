@@ -45,10 +45,25 @@ export type PartTypeOption = {
   name_da?: string | null;
 };
 
+/** A catalogue part that is paintable as some service part type (raw or already a variant). */
+export type PaintablePartOption = {
+  id: string;
+  sku: string;
+  name: string;
+  servicePartTypeId: string;
+  isVariant: boolean;
+};
+
+/** Radix Select can't hold "" — sentinel for "any part of this type". */
+const ANY_PART = "__any__";
+
 export type ServiceOrderItemRow = {
   id: string;
   partTypeId: string;
   partTypeName: string;
+  /** The specific part named on the line (needed for stock conversion), or null. */
+  partId: string | null;
+  partLabel: string | null;
   quantity: number;
   colorId: string | null;
   colorName: string | null;
@@ -71,6 +86,7 @@ type Props = {
   attachedBikes: number;
   rows: ServiceOrderItemRow[];
   partTypes: PartTypeOption[];
+  paintableParts: PaintablePartOption[];
   colors: ColorOption[];
   defaultColorId: string | null;
   /** Footer summary, computed server-side. */
@@ -86,6 +102,7 @@ export function ServiceOrderItemsSection({
   attachedBikes,
   rows,
   partTypes,
+  paintableParts,
   colors,
   defaultColorId,
   totalLabel,
@@ -123,6 +140,7 @@ export function ServiceOrderItemsSection({
             <AddItemDialog
               serviceOrderId={serviceOrderId}
               partTypes={partTypes}
+              paintableParts={paintableParts}
               colors={colors}
               defaultColorId={defaultColorId}
               onError={setError}
@@ -175,6 +193,7 @@ export function ServiceOrderItemsSection({
                   key={r.id}
                   serviceOrderId={serviceOrderId}
                   row={r}
+                  paintableParts={paintableParts}
                   colors={colors}
                   canEdit={canEdit}
                   onError={setError}
@@ -217,6 +236,7 @@ export function ServiceOrderItemsSection({
 function ItemRow({
   serviceOrderId,
   row,
+  paintableParts,
   colors,
   canEdit,
   onError,
@@ -224,6 +244,7 @@ function ItemRow({
 }: {
   serviceOrderId: string;
   row: ServiceOrderItemRow;
+  paintableParts: PaintablePartOption[];
   colors: ColorOption[];
   canEdit: boolean;
   onError: (msg: string | null) => void;
@@ -264,6 +285,20 @@ function ItemRow({
     });
   }
 
+  function patchPart(value: string) {
+    onError(null);
+    start(async () => {
+      const r = await updateServiceOrderItem(serviceOrderId, row.id, {
+        partId: value === ANY_PART ? null : value,
+      });
+      if (!r.ok) onError(r.error);
+      else onChange();
+    });
+  }
+  const partOptions = paintableParts.filter(
+    (p) => p.servicePartTypeId === row.partTypeId,
+  );
+
   function runRemove() {
     onError(null);
     start(async () => {
@@ -278,6 +313,30 @@ function ItemRow({
       <td className="px-4 py-2.5">
         <span className="flex flex-col gap-0.5">
           <span>{row.partTypeName}</span>
+          {canEdit && partOptions.length > 0 ? (
+            <Select
+              value={row.partId ?? ANY_PART}
+              onValueChange={patchPart}
+              disabled={pending}
+            >
+              <SelectTrigger size="sm" className="mt-0.5 w-[240px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_PART}>
+                  <span className="text-muted-foreground italic">{t("anyPartOfType")}</span>
+                </SelectItem>
+                {partOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    <span className="font-mono text-xs">{p.sku}</span>{" "}
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : row.partLabel ? (
+            <span className="text-muted-foreground text-xs">{row.partLabel}</span>
+          ) : null}
           {row.supplierItemNo ? (
             <span className="text-muted-foreground font-mono text-xs">
               {row.supplierItemNo}
@@ -402,6 +461,7 @@ function ItemRow({
 function AddItemDialog({
   serviceOrderId,
   partTypes,
+  paintableParts,
   colors,
   defaultColorId,
   onError,
@@ -409,6 +469,7 @@ function AddItemDialog({
 }: {
   serviceOrderId: string;
   partTypes: PartTypeOption[];
+  paintableParts: PaintablePartOption[];
   colors: ColorOption[];
   defaultColorId: string | null;
   onError: (msg: string | null) => void;
@@ -419,6 +480,7 @@ function AddItemDialog({
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [partTypeId, setPartTypeId] = useState("");
+  const [partId, setPartId] = useState("");
   const [qty, setQty] = useState("1");
   const [colorId, setColorId] = useState(defaultColorId ?? "");
   const [notes, setNotes] = useState("");
@@ -427,6 +489,7 @@ function AddItemDialog({
 
   function reset() {
     setPartTypeId("");
+    setPartId("");
     setQty("1");
     setColorId(defaultColorId ?? "");
     setNotes("");
@@ -455,6 +518,7 @@ function AddItemDialog({
         servicePartTypeId: partTypeId,
         quantity: n,
         colorId: colorId || null,
+        partId: partId || null,
         notes: notes || null,
       });
       if (!r.ok) {
@@ -484,7 +548,13 @@ function AddItemDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="item-part-type">{t("part")}</Label>
-              <Select value={partTypeId} onValueChange={setPartTypeId}>
+              <Select
+                value={partTypeId}
+                onValueChange={(v) => {
+                  setPartTypeId(v);
+                  setPartId("");
+                }}
+              >
                 <SelectTrigger id="item-part-type">
                   <SelectValue placeholder={t("pickPlaceholder")} />
                 </SelectTrigger>
@@ -509,6 +579,33 @@ function AddItemDialog({
                 onChange={(e) => setQty(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="item-part">{t("specificPart")}</Label>
+            <Select
+              value={partId === "" ? ANY_PART : partId}
+              onValueChange={(v) => setPartId(v === ANY_PART ? "" : v)}
+              disabled={partTypeId === ""}
+            >
+              <SelectTrigger id="item-part">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_PART}>
+                  <span className="text-muted-foreground italic">{t("anyPartOfType")}</span>
+                </SelectItem>
+                {paintableParts
+                  .filter((p) => p.servicePartTypeId === partTypeId)
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <span className="font-mono text-xs">{p.sku}</span>{" "}
+                      {p.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">{t("specificPartHint")}</p>
           </div>
 
           <div className="flex flex-col gap-1.5">

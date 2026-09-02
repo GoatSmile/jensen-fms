@@ -2114,3 +2114,38 @@ production pass waits for his word. Rejected: an `is_test` boolean (another
 column on a dozen tables, invisible on paper and in a dropdown, and not what a
 person on the floor sees); a marker inside document numbers (the series are
 gapless by design).
+
+## 2026-09-02 — Painted parts are stock, per part and colour
+Owner's call, thinking it through in chat: Dennis has raw frames, painted frames,
+frames at the painter and frames in bikes — and the same for forks, cargo beds,
+mudguards, carriers and signs. The system modelled raw (a part) and built (a
+bike) and faked painted with a bike-in-planning, which breaks the moment a frame
+painted for stock is wanted for an order (the order spawns its own bikes; nothing
+hands the painted frame across). Decided:
+1. **A painted part is a PART**: a variant of its raw base part in one colour
+   (`parts.base_part_id` + `parts.color_id`, migration 91), with its own stock
+   and cost. Variants are created lazily, the first time that base × colour
+   comes back from the painter, so the catalogue grows by the colours the shop
+   actually stocks — not model × RAL.
+2. **A part can be paintable** (`parts.service_part_type_id`): which of the
+   painter's part types it is. That makes it pickable on a paint-order line
+   (`service_order_items.part_id`) and priceable from the existing tiered list.
+3. **Painting is the conversion event.** A STOCK paint order (no bikes attached)
+   received back posts `paint_out` on the base and `paint_in` on the variant,
+   cost = raw prevailing cost + the paint price frozen on the line, basis
+   `derived`. Order-tied paint orders keep the bike gate and do NOT convert
+   yet — phase 2 makes build consumption colour-aware so the raw part is not
+   consumed twice.
+4. **Paint stays a service type** with price lists and the freeze at send; the
+   variant is the product of that service. Not the retired paint-as-part SKUs,
+   which priced the painter's WORK as a catalogue item.
+5. **Bikes stay bikes.** The bikes paint filter keeps serving order-tied frames.
+6. **The shelf view is a page**: `/parts/painted`, under Parts in the nav — raw
+   beside painted, per colour, for every paintable part.
+Rejected: a colour dimension on inventory itself (every movement and stock row
+carrying a colour) — no catalogue rows, but it rewrites the inventory core for
+one family of parts; and bikes-as-frames (stock-build MOs standing in for
+painted frames) — see the failure above. Plan and phases:
+`docs/plan-painted-parts.md`. Phase 1 verified end to end on the local copy
+(TEST order PNT-2026-0010: two frames and a fork in Maisgleb became three
+painted variants with real costs, raw stock down by three).
