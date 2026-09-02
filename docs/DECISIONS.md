@@ -2295,3 +2295,22 @@ MO page uses), so the draft-PO action it also feeds stops proposing to buy parts
 the shelf already holds painted. Rejected: prompting at SO confirm (nothing to
 measure yet), and a passive banner on the MO page (that is what already existed,
 and being asked is the thing he was missing).
+
+## 2026-09-02 (later still) — A frame number is taken if EITHER table holds it
+Spawning an MO aborted half-created: the bike row for `JP-2026-E_BIKE-035` went
+in, its `bike_identifiers` row hit `uq_bike_identifiers_type_value`. Cause: a
+frame number is written to two places — `bikes.frame_number` and an identifier
+row — and the generator only ever scanned the first, while the unique index on
+the second covers every row, active or not. Five bikes renamed by hand to the
+`TEST` prefix on 2 Sep had updated the bike column and left the identifiers
+holding the old values, so five numbers looked free and were not. Decided:
+`loadUsedFrameNumbers` reads BOTH tables and every suggester goes through it, so
+the class of collision is gone regardless of how a stray identifier got there —
+a hand correction, an import, a deactivated row. Verified with a decoy
+identifier no bike held: the suggester skipped it. Plus two audit invariants —
+19, identifiers that disagree with their bike; 20, live bikes with no frame
+identifier — because this drift is silent until it aborts something, and both
+were non-zero on local (repaired; production had none). Rejected: syncing
+identifiers from a trigger (the app already syncs on the one path that renames,
+`confirmBikeFrame`, and a trigger would fight it), and retrying the next number
+inside the insert loop (papers over drift instead of surfacing it).

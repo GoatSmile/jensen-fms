@@ -247,5 +247,43 @@ select * from (
     limit 20
   ) x
 
+  union all
+  -- A frame number lives in two places — bikes.frame_number and its
+  -- bike_identifiers row — and only the bike column is what people edit.
+  -- Drift is invisible until it bites: the identifier still owns the old value
+  -- under a table-wide unique index, so the next generated frame number can
+  -- collide with a number no bike appears to hold (a spawned MO aborted
+  -- half-created on exactly this, 2026-09-02). The generator now reads both
+  -- sides, but a divergence still means search-by-frame finds the wrong bike.
+  select 19, 'frame identifiers that disagree with their bike',
+         count(*), coalesce(string_agg(detail, ', '), '—')
+  from (
+    select bi.identifier_value || ' vs ' || b.frame_number as detail
+    from bike_identifiers bi
+    join bike_identifier_types t on t.id = bi.identifier_type_id
+      and t.slug = 'frame_number'
+    join bikes b on b.id = bi.bike_id
+    where bi.identifier_value is distinct from b.frame_number
+    limit 20
+  ) x
+
+  union all
+  -- The other direction: a live bike whose frame number was never registered
+  -- as an identifier, so a scan or a search by frame number cannot find it.
+  select 20, 'live bikes with no frame identifier',
+         count(*), coalesce(string_agg(frame_number, ', '), '—')
+  from (
+    select b.frame_number
+    from bikes b
+    where b.deleted_at is null
+      and not exists (
+        select 1 from bike_identifiers bi
+        join bike_identifier_types t on t.id = bi.identifier_type_id
+          and t.slug = 'frame_number'
+        where bi.bike_id = b.id
+      )
+    limit 20
+  ) x
+
 ) t
 order by ord;

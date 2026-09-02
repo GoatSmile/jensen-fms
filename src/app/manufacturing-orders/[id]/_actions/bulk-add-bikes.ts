@@ -7,6 +7,7 @@ import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
   framePrefix,
+  loadUsedFrameNumbers,
   nextFrameNumberSuggestion,
 } from "@/lib/bikes/frame-number";
 
@@ -87,10 +88,10 @@ export async function bulkAddBikesToMO(
   }
   const toCreate = Math.min(count, slotsLeft);
 
-  // Use the bike_type slug as the frame-number prefix. We pull existing
-  // frames globally (not just within this MO) because the unique constraint
-  // on bikes.frame_number is table-wide; scoping to the MO let a fresh MO
-  // collide with frames from a previous MO that shared the same prefix.
+  // Use the bike_type slug as the frame-number prefix. Numbers already taken
+  // come from BOTH the bike rows and the identifier rows, globally — scanning
+  // bikes alone proposed one the identifier table owned and aborted this loop
+  // half-created (2026-09-02). See loadUsedFrameNumbers.
   const { data: bikeTypeRow } = await supabase
     .from("bike_types")
     .select("slug")
@@ -100,11 +101,7 @@ export async function bulkAddBikesToMO(
   const year = new Date().getFullYear();
   const prefix = framePrefix(year, bikeTypeRow?.slug ?? null);
 
-  const { data: existingFrames } = await supabase
-    .from("bikes")
-    .select("frame_number")
-    .like("frame_number", `${prefix}%`);
-  const existing = (existingFrames ?? []).map((b) => b.frame_number as string);
+  const existing = await loadUsedFrameNumbers(supabase, prefix);
 
   // Pre-compute the full sequence by feeding back each suggestion. One
   // round trip total; the suggester is a pure max-scan after that.
