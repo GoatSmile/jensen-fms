@@ -324,6 +324,14 @@ export default async function PaintedStockPage({
                       <ul className="flex flex-col gap-1">
                         {g.colours.map((c) => {
                           const free = c.onHand - c.promised;
+                          // Demand above painted stock is only an
+                          // "over-promise" once some of it IS painted. A colour
+                          // nobody has painted yet is the ordinary starting
+                          // state — it needs a trip to the painter, not the
+                          // alarm hue, which has to stay scarce to mean
+                          // anything.
+                          const short = free < 0;
+                          const neverPainted = c.onHand === 0;
                           const inner = (
                             <>
                               <ColorChip hex={c.colourHex} label={c.colourName} />
@@ -332,11 +340,19 @@ export default async function PaintedStockPage({
                                 <span
                                   className={cn(
                                     "tabular-nums",
-                                    free < 0 ? "text-alert" : "text-ink-2",
+                                    short
+                                      ? neverPainted
+                                        ? "text-money"
+                                        : "text-alert"
+                                      : "text-ink-2",
                                   )}
                                 >
-                                  {free < 0
-                                    ? t("overPromised", { count: formatQuantity(-free) })
+                                  {short
+                                    ? neverPainted
+                                      ? t("needPaint", { count: -free })
+                                      : t("overPromised", {
+                                          count: formatQuantity(-free),
+                                        })
                                     : t("promisedFree", {
                                         promised: formatQuantity(c.promised),
                                         free: formatQuantity(free),

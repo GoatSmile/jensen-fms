@@ -2165,3 +2165,20 @@ colour with no painted frame is not buildable, whatever the raw stock says.
 Rejected: swapping only at copy time (a variant sold out by build time would drive
 its stock negative); a per-part colour override (open question 1 in the plan — one
 colour per bike until someone asks).
+
+## 2026-09-02 (later still) — "Paint shelf", and demand is caution, not alarm
+Two owner calls off one screenshot of `/parts/painted`. Decided: **the screen is
+"Paint shelf"** (nav + title, DA *Lakhylde*), and its filter is **"Already
+painted"**. The row set is every part marked *Paintable as* whether or not any
+of it is painted, so "Painted stock" named one of five columns and read as a
+promise the page does not keep — the existence of an "only parts with painted
+stock" filter was the tell. Decided also: **a colour with nothing painted yet is
+not over-promised.** `free = painted − promised` going negative was rendered
+`over-promised by N` in `alert`, so the ordinary starting state (three unbuilt
+bikes want white, no white has ever been painted) wore the alarm hue. It now
+reads `N need paint` in `money` when nothing is painted in that colour;
+`over-promised by N` in `alert` survives for the case where painted stock exists
+and more bikes want it than there are — the only reading where a promise was
+actually made twice. Rejected: dropping "over-promised" altogether (the
+double-promise case is real and worth red), and "Paintable parts" as the title
+(names the list, not the question the page answers).

@@ -652,7 +652,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Navigation / IA — seven collapsible groups** (reset with the owner
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·
-  Families) · *Parts* (All parts · Stock value · Painted stock · Kits) · *Work* (Tickets · Work
+  Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
   orders · Workshop floor · Inbox) · *Orders* (Manufacturing · Purchase ·
   Sales · Paint orders · Invoices) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.

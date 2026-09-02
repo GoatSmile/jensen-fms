@@ -21,7 +21,7 @@ From the transcript, in his words where it matters. Each ask has a home now.
 | 00:20 | "You cannot attach a specific order to the bike … can you be able to choose an order instead?" | Paint order → **Add bike** groups bikes by customer order; MO → **Send frames to painter**; SO → **New paint order**. Scenarios B and E. |
 | 00:22 | "They go in, they find the order … it will say frame at the painter." | Sales order detail → the MO row shows frames and *N at painter*. Scenario B step 9. |
 | 00:27 | "Do you want to create a paint order? If it's black and we have it on stock, I just put no." | The MO's coverage says whether painted stock covers the bikes; the *Send frames to painter* step is there when it does not. Scenarios C and D. |
-| 00:28 | "At some point I need to know what I have in stock of painted frames." / "Do you have a way to see frames painted vs not painted? — No." | Parts → **Painted stock**: raw, at the painter, painted per colour, promised, free. Bikes list → *Paint* filter. Scenario C. |
+| 00:28 | "At some point I need to know what I have in stock of painted frames." / "Do you have a way to see frames painted vs not painted? — No." | Parts → **Paint shelf**: raw, at the painter, painted per colour, promised, free. Bikes list → *Paint* filter. Scenario C. |
 | 00:16 | Kits: "if a kit was … the middle motor, cable, display … or if the whole bike is a kit." | Kits are box-sticker labels for picking, nothing else. Copying a bike is **Duplicate template**. His "kit" is a sub-assembly and is an open modelling question. Scenario A step 6. |
 | 00:07 | "I saw that I could change the parts now. Put in the price, approximate purchase date." | Part → Stock section → adjust with a stated cost. Not repeated here; it worked for him. |
 
@@ -93,7 +93,7 @@ Everything the later scenarios lean on. Roughly 15 minutes.
    as: Frame* → Save. Do the same for *Forgaffel for semilav M410+*
    (`JP-KRD-241113-700c`) → *Fork*.
    *What to notice:* on the part page a *Painted variants* section appears,
-   empty, saying none has come back painted yet. And Parts → **Painted stock**
+   empty, saying none has come back painted yet. And Parts → **Paint shelf**
    now lists both parts with raw stock and zero painted.
 4. **The template's paintwork.** Bikes → Bike templates → *Norma CS* (48 cm).
    In the *Paintwork* section add *Frame* × 1 and *Fork* × 1. The recipe box
@@ -154,12 +154,12 @@ walk with him on Tuesday.
    shows the MO with *1* frame and the badge **1 at painter**. That is the
    answer whoever picks up the phone gives. Also: Bikes → filter *Paint: At
    the painter* lists the bike; Dashboard → Build band → *at painter* is 1;
-   Parts → Painted stock → the frame row shows *1 at painter* under TEST Blå.
+   Parts → Paint shelf → the frame row shows *1 at painter* under TEST Blå.
 10. **The build is blocked.** MO → the bike → *Build*: the header says the frame
     is at the painter and *Finish build* is disabled.
 11. **It comes back.** Paint order → *Move to → Received back*. A green line
     reads *Received back: 2 lines turned into painted stock*. Now:
-    Parts → Painted stock → frame and fork each show *TEST Blå × 1 · 1 promised
+    Parts → Paint shelf → frame and fork each show *TEST Blå × 1 · 1 promised
     · 0 free*. The base part's page → *Painted variants* → TEST Blå, on hand 1.
     Open that variant: it is a part of its own, *Painted from* the raw one,
     with a movement pair on the raw and the variant and a cost of raw plus
@@ -168,7 +168,7 @@ walk with him on Tuesday.
     (`TEST-FRAME-B-001`) and *Confirm frame*. *Copy MO recipe*: the pick list
     now shows *Semilav 48cm … — TEST Blå* and *Forgaffel … — TEST Blå*, the
     painted variants, not the raw parts. *Finish build* → confirm who built it.
-    The bike is *In stock*; its build cost includes the paint; Painted stock is
+    The bike is *In stock*; its build cost includes the paint; Paint shelf is
     back to zero in TEST Blå; raw stock of the frame is down by one — consumed
     once, when it went to paint.
 13. **Deliver.** Sales order → *Move to → In production → Ready → Delivered*.
@@ -192,7 +192,7 @@ minutes.
 3. **Send and receive.** *Move to → Sent to painter* (prices freeze; the 3s sit
    in the 1–9 tier), then *Move to → Received back*. The green line says
    *2 lines turned into painted stock*.
-4. **The shelf.** Parts → Painted stock: frame and fork rows show *Black 9005
+4. **The shelf.** Parts → Paint shelf: frame and fork rows show *Black 9005
    × 3*, nothing promised, nothing at the painter. That is Dennis's "what do I
    have painted" answered.
 5. **An order in black.** New sales order for the TEST customer, line Norma CS
@@ -200,11 +200,11 @@ minutes.
    *What to notice on the MO:* coverage says *all covered for 2 bikes*; the
    frame and fork lines read *3 painted*, no *needs paint*. The *Send frames to
    painter* button is still there — because the system does not decide for
-   him — but the coverage has already told him the answer is no. Painted stock
+   him — but the coverage has already told him the answer is no. Paint shelf
    now shows *Black × 3 · 2 promised · 1 free*.
 6. **Build both.** For each bike: *Build* → confirm frame (`TEST-FRAME-C-001`,
    `-002`) → *Copy MO recipe* → the pick list shows the black variants →
-   *Finish build*. Painted stock ends at *Black × 1 · 1 free*. No paint order
+   *Finish build*. Paint shelf ends at *Black × 1 · 1 free*. No paint order
    was ever created for this sales order.
 
 ---
@@ -213,11 +213,11 @@ minutes.
 
 The mixed case, where the arithmetic shows. About 10 minutes.
 
-1. Painted stock has one black frame and one black fork left from Scenario C.
+1. Paint shelf has one black frame and one black fork left from Scenario C.
 2. New sales order, TEST customer, Norma CS × **2**, colour Black, confirm,
    *Spawn MO*.
 3. **Coverage** on the MO: frame line *1 painted · 1 needs paint*, fork the
-   same; header badge *2 parts need paint*. Painted stock shows *Black × 1 ·
+   same; header badge *2 parts need paint*. Paint shelf shows *Black × 1 ·
    2 promised · over-promised by 1*.
 4. **Floor**: the first bike would be ready, the second says *2 parts need
    paint* — the queue does not model two bikes competing, so both may read
