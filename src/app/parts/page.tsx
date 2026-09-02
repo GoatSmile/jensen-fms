@@ -27,18 +27,20 @@ import {
 } from "./_components/parts-table";
 import { PartsPagination } from "./_components/pagination";
 import { ReorderBanner } from "./_components/reorder-banner";
-import type { SortColumn } from "./_components/sortable-header";
 
 const PAGE_SIZE = 40;
 
-const SORTABLE_COLUMNS: ReadonlyArray<SortColumn> = [
+/** The DB columns this list may be ordered by — the `?sort=` whitelist. */
+const SORTABLE_COLUMNS = [
   "internal_sku",
   "name_en",
   "category_name",
   "primary_supplier_name",
   "stock_on_hand",
   "default_retail_price",
-];
+] as const;
+
+type SortColumn = (typeof SORTABLE_COLUMNS)[number];
 
 type SearchParams = {
   q?: string;
@@ -217,8 +219,10 @@ export default async function PartsPage({
     .select("*", { count: "exact" })
     .is("deleted_at", null);
 
-  if (categoryFilterIds) viewQuery = viewQuery.in("category_id", categoryFilterIds);
-  if (stockFilter !== "all") viewQuery = viewQuery.eq("stock_status", stockFilter);
+  if (categoryFilterIds)
+    viewQuery = viewQuery.in("category_id", categoryFilterIds);
+  if (stockFilter !== "all")
+    viewQuery = viewQuery.eq("stock_status", stockFilter);
   if (supplierFilteredIds) {
     viewQuery = viewQuery.in("id", supplierFilteredIds);
   }
@@ -275,7 +279,8 @@ export default async function PartsPage({
   const categoryCounts: Record<string, number> = {};
   for (const row of countRowsRes.data ?? []) {
     if (!row.category_id) continue;
-    categoryCounts[row.category_id] = (categoryCounts[row.category_id] ?? 0) + 1;
+    categoryCounts[row.category_id] =
+      (categoryCounts[row.category_id] ?? 0) + 1;
   }
 
   const totalCount = viewRes.count ?? 0;
@@ -331,21 +336,23 @@ export default async function PartsPage({
       ? categoryNameById.get(row.category_id)
       : undefined;
     return {
-    id: row.id!,
-    internalSku: row.internal_sku!,
-    name: row.name_en!,
-    categoryName: cat ? localizedName(locale, cat.en, cat.da) : row.category_name,
-    supplierName: row.primary_supplier_name,
-    supplierCount: row.supplier_count ?? 0,
-    stockOnHand: Number(row.stock_on_hand ?? 0),
-    retailDkk:
-      row.default_retail_price != null &&
-      (row.default_retail_currency ?? "DKK") === "DKK"
-        ? Number(row.default_retail_price)
-        : null,
-    stockStatus: (row.stock_status ?? "ok") as StockStatus,
-    heroUrl: heroByPartId.get(row.id!) ?? null,
-    kits: kitsByPartId.get(row.id!) ?? [],
+      id: row.id!,
+      internalSku: row.internal_sku!,
+      name: row.name_en!,
+      categoryName: cat
+        ? localizedName(locale, cat.en, cat.da)
+        : row.category_name,
+      supplierName: row.primary_supplier_name,
+      supplierCount: row.supplier_count ?? 0,
+      stockOnHand: Number(row.stock_on_hand ?? 0),
+      retailDkk:
+        row.default_retail_price != null &&
+        (row.default_retail_currency ?? "DKK") === "DKK"
+          ? Number(row.default_retail_price)
+          : null,
+      stockStatus: (row.stock_status ?? "ok") as StockStatus,
+      heroUrl: heroByPartId.get(row.id!) ?? null,
+      kits: kitsByPartId.get(row.id!) ?? [],
     };
   });
 
@@ -393,7 +400,9 @@ export default async function PartsPage({
                   q || stockFilter !== "all"
                     ? `?${new URLSearchParams({
                         ...(q ? { q } : {}),
-                        ...(stockFilter !== "all" ? { stock: stockFilter } : {}),
+                        ...(stockFilter !== "all"
+                          ? { stock: stockFilter }
+                          : {}),
                       }).toString()}`
                     : ""
                 }`}
@@ -440,7 +449,13 @@ export default async function PartsPage({
         kits={kitsRes.data ?? []}
       />
 
-      {totalCount === 0 && !q && !categoryId && !supplierId && !kitId && !gap && stockFilter === "all" ? (
+      {totalCount === 0 &&
+      !q &&
+      !categoryId &&
+      !supplierId &&
+      !kitId &&
+      !gap &&
+      stockFilter === "all" ? (
         <EmptyState
           icon={Boxes}
           title={t("emptyTitle")}

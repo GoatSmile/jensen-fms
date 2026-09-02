@@ -626,7 +626,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `FormSection` (a form's titled/foldable section) · `Panel` / `Section` ·
   `ArchivePanel` (a vocab detail page's archive-restore footer) · `FormSaveBar`
   (a form's status + Cancel + submit row) · `EmptyState` (pass `inPanel` inside
-  a `Panel`) · `TableSkeleton`.
+  a `Panel`) · `TableSkeleton` · `SortableHeader` (a list's clickable column
+  head — writes `?sort=col` / `?sort=col:desc`, third click clears; the page
+  owns the whitelist and whether it orders in SQL or in memory).
 - **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
   `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`

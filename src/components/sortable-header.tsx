@@ -8,30 +8,39 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-export type SortColumn =
-  | "internal_sku"
-  | "name_en"
-  | "category_name"
-  | "primary_supplier_name"
-  | "stock_on_hand"
-  | "default_retail_price";
-
 type Props = {
-  column: SortColumn;
+  /** Whatever key the page's own sort whitelist understands. */
+  column: string;
   label: string;
   align?: "left" | "right";
   className?: string;
+  /**
+   * Direction the FIRST click applies. Dates and quantities want the big end
+   * first ("newest", "most"), text wants A–Z. Defaults to ascending.
+   */
+  firstDirection?: "asc" | "desc";
 };
 
 /**
- * Clickable column header. URL is the source of truth via `?sort=col` /
- * `?sort=col:desc`. A third click clears the sort.
+ * Clickable column header, shared by every sortable list. URL is the source of
+ * truth via `?sort=col` / `?sort=col:desc`, so a sorted view is a link. A third
+ * click clears the sort and the page falls back to its own default.
  *
- * The `?page` param is dropped on every change so the user doesn't land on
- * an empty page after the row order changes.
+ * The `?page` param is dropped on every change so the user doesn't land on an
+ * empty page after the row order changes.
+ *
+ * The column key means nothing here — each page maps it to a DB column (parts,
+ * sorted in Postgres) or to a comparator (manufacturing orders, whose template
+ * and customer labels are assembled from embeds).
  */
-export function SortableHeader({ column, label, align = "left", className }: Props) {
-  const t = useTranslations("parts");
+export function SortableHeader({
+  column,
+  label,
+  align = "left",
+  className,
+  firstDirection = "asc",
+}: Props) {
+  const t = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -47,8 +56,10 @@ export function SortableHeader({ column, label, align = "left", className }: Pro
       : "asc";
 
   function next(): "asc" | "desc" | null {
-    if (!isActive) return "asc";
-    if (direction === "asc") return "desc";
+    if (!isActive) return firstDirection;
+    if (direction === firstDirection) {
+      return firstDirection === "asc" ? "desc" : "asc";
+    }
     return null;
   }
 
@@ -70,7 +81,11 @@ export function SortableHeader({ column, label, align = "left", className }: Pro
   }
 
   const Icon =
-    direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
+    direction === "asc"
+      ? ArrowUp
+      : direction === "desc"
+        ? ArrowDown
+        : ArrowUpDown;
 
   return (
     <TableHead className={className}>

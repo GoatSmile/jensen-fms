@@ -23,7 +23,7 @@ import {
 
 import { kitCode, stickerColor } from "@/lib/kits/colors";
 
-import { SortableHeader } from "./sortable-header";
+import { SortableHeader } from "@/components/sortable-header";
 
 /** Map a stock status to a per-row left-edge accent so low/out parts pop
  *  while scanning. The class targets the row's first cell so the colour
@@ -162,7 +162,10 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
                 </Link>
               </TableCell>
               <TableCell className="hidden p-0 md:table-cell">
-                <Link href={`/parts/${row.id}`} className="text-muted-foreground block px-4 py-2.5">
+                <Link
+                  href={`/parts/${row.id}`}
+                  className="text-muted-foreground block px-4 py-2.5"
+                >
                   {row.categoryName ?? "—"}
                 </Link>
               </TableCell>
@@ -200,7 +203,8 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
                             aria-hidden
                             className="inline-block size-2 rounded-full border border-black/10"
                             style={{
-                              backgroundColor: stickerColor(k.sticker_color).hex,
+                              backgroundColor: stickerColor(k.sticker_color)
+                                .hex,
                             }}
                           />
                           {kitCode(k.sticker_color, k.kit_number)}
