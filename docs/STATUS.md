@@ -31,8 +31,9 @@ Scope is two-pronged: **modules** (bike templates + parts) and **processes**
 (sales order → paint order first). Purchase orders and work orders are parked
 until those two are solid. `docs/plan-cutover.md` keeps the ladder
 (irreversibility ascending, e-conomic last) for whenever a date is set; its
-August dates are stale and its header says so. `CUTOVER-BRIEF.md` is a working
-reference, not sent to Dennis. The August playbook is archived.
+August dates are stale and its header says so. The cutover brief and the
+August playbook are archived (2 Sep), and every plan in `docs/` was swept the
+same day for facts the re-plan made false.
 
 **What Dennis actually did on 1 Sep** (checked in prod, not remembered): created
 paint order `PNT-2026-0008` for Metacoat — five lines in RAL 1006, zero bikes,

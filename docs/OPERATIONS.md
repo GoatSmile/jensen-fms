@@ -18,7 +18,7 @@ every secret lives, and how to rebuild or hand over the whole thing.
 | Gladia | Transcription (selected provider) | EU | per the inbound provider registry |
 | Anthropic API | Extraction LLM + command agent (`claude-sonnet-5`) | Model is admin-selected from the live `GET /v1/models` list at `/admin/settings`, with a Test probe; free text still allowed | `ANTHROPIC_API_KEY` → `.env.local` + Vercel |
 | GatewayAPI | SMS ack (Danish alphanumeric sender) | planned/partial | per the inbound provider registry |
-| e-conomic | Accounting push | currently a TRIAL agreement 2446940 ("Din virksomhed"); production grant expected ~end of July 2026 — see the STATUS landmine before switching | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` → `.env.local` (+ Vercel at prod cutover). The public demo/demo pair is READ-ONLY — never default to it silently |
+| e-conomic | Accounting push | currently a TRIAL agreement 2446940 ("Din virksomhed"); production grant still outstanding as of September 2026 — chase it; see the STATUS landmine before switching | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` → `.env.local` (+ Vercel at prod cutover). The public demo/demo pair is READ-ONLY — never default to it silently |
 | ECB | FX reference rates | consumed by the FX refresh cron below (no account) | — |
 | OpenStreetMap Nominatim | Geocoding (`src/lib/geocode/nominatim.ts`) | Public endpoint, keyless, but their policy requires a contact address in the User-Agent — falls back to a hardcoded address if unset | `NEXT_PUBLIC_NOMINATIM_CONTACT` → `.env.local` + Vercel |
 
@@ -102,7 +102,8 @@ system in that table is one the app breaks without, and none of these are.
 ## Cold start (rebuild from nothing)
 1. Clone `GoatSmile/jensen-fms`; `npm install`.
 2. Create a Supabase project (EU) and apply `/migrations/*.sql` in numeric
-   order via the SQL editor (never modify already-applied files). Seeds
+   order via the SQL editor (never modify already-applied files; once the
+   local copy exists, every migration lands on both — see below). Seeds
    (controlled vocab, the `app_settings` singleton row id = 1) are in the
    migrations.
 3. Create `.env.local` with the variables above.
@@ -133,7 +134,10 @@ the Keychain.
 ## Go-live switches (deliberately OFF today — sequencing in docs/STATUS.md)
 - `outbound_test_mode` (`app_settings`, `/admin/settings`) — while TRUE,
   ALL outbound mail reroutes to the test inboxes and messages say who they
-  were meant for; unticking is the supplier-email go-live.
+  were meant for; unticking is the supplier-email AND painter-email go-live.
+  **Before unticking: Metacoat A/S's `email_primary` is deliberately the
+  owner's test address (`nazar@valent.dk`, set 2026-09-02) — replace it with
+  the painter's real address, or the first real paint order goes to Nazar.**
 - `inbound_shadow_mode` — the voicemail pipeline creates review-bannered
   tickets; graduation criteria in `docs/plan-inbound-triage.md`.
 - `app_language` / `worker_language` → `da` — the 1-click Danish go-live.
@@ -210,8 +214,15 @@ no matter what the app points at. When work is being verified locally, query
 with `psql` against `127.0.0.1:54322`; `execute_sql` would confirm the change in
 the wrong database.
 
-**Trap — divergence.** Every new migration must be applied to both. `/migrations`
-stays the source of truth; `supabase db reset` after a fresh dump re-syncs local.
+**Trap — divergence.** Every new migration must be applied to both — production
+BEFORE the push that deploys code reading the new columns. `/migrations` stays
+the source of truth; `supabase db reset` after a fresh dump re-syncs local.
+
+**Trap — types.** `supabase gen types typescript --local` does NOT reproduce the
+committed `src/lib/types/database.ts` (it drops `__InternalSupabase` and the
+`Relationships` arrays). After a migration, hand-patch the affected tables (Row +
+Insert + Update), or regenerate through the MCP against production once the
+migration is applied there.
 
 ### Signing in from a script (added 2026-08-24)
 
@@ -232,4 +243,5 @@ in is exactly who attribution needs testing with.
 `npm run smoke` now signs itself in automatically when the gate is on, and
 `AS="Lars" npm run smoke` sweeps as one person — which is how you check what a
 role actually opens (as Lars, `/invoices` correctly bounces to `/work`).
-Baseline with the gate on is the same 92 pass · 18 redirect · 0 fail.
+The baseline lives in `docs/STATUS.md` — it moves whenever a route is added or a
+table is emptied — and the gate itself changes nothing about it.

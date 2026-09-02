@@ -4,9 +4,9 @@
 parallel running for now (DECISIONS 2026-09-01), with core functionality by
 October and go-live by Christmas as the targets. The ladder below still stands
 for whenever a transfer date is set; every August date in this file is stale.**
-Working document for Nazar. The owner-facing version is
-`docs/CUTOVER-BRIEF.md` — that one is written to be handed over and studied;
-this one holds the reasoning, the risk analysis, and the open decisions.
+Working document for Nazar. The owner-facing brief written for the August
+cutover is archived (`docs/archive/CUTOVER-BRIEF.md`); this file holds the
+reasoning, the risk analysis, and the open decisions.
 
 Companion reading: `docs/STATUS.md` (where the build stands),
 `docs/OPERATIONS.md` (accounts, secrets, switches),
@@ -32,9 +32,14 @@ Danish, for when the team reads it: *idriftsættelse* for a go-live,
 
 ## 2. The one thing that must not be staged
 
-Everything below is staged except this: **there is a single hard date after
-which no new work is recorded in Excel or on paper.** Call it the
-**transfer date**.
+Everything below is staged except this: **when the cutover happens, there is a
+single hard date after which no new work is recorded in Excel or on paper.**
+Call it the **transfer date**.
+
+> **Superseded for now (DECISIONS 2026-09-01).** The owner chose parallel
+> running: the old system stays the system of record while small things are
+> done in the FMS. The paragraph below is the risk that choice knowingly
+> accepts, kept so nobody mistakes it for an oversight.
 
 Parallel running is the standard failure mode for a shop this size. If both
 systems accept new work for a month, neither is trusted, stock figures drift
@@ -42,7 +47,7 @@ apart, and the team quietly falls back to the spreadsheet whenever the app
 asks a question they don't have the answer to. The cost of a partly-wrong FMS
 that everyone uses is far lower than the cost of two systems that disagree.
 
-So: **one hard line for input, a ladder for output.** From the transfer date,
+So, at the eventual transfer date: **one hard line for input, a ladder for output.** From the transfer date,
 every new bike, ticket, order and PO is born in the FMS. The old system
 becomes read-only history. What stays staged is which *outward-facing* and
 *irreversible* capabilities are switched on, and when.
@@ -70,7 +75,7 @@ different owners and different blockers.
 
 | Workstream | Owner | Blocked by |
 |---|---|---|
-| **Master data** — parts, suppliers, customers, templates, the bike fleet | Dennis (data entry) | Nothing. Can start 3 Aug |
+| **Master data** — parts, suppliers, customers, templates, the bike fleet | Dennis (data entry) | Nothing |
 | **Process** — the team stops using paper and starts using the app | Dennis + team | Master data, Danish UI, role passwords, training |
 | **Systems of record** — email, phone, invoicing, accounting | Nazar (switches) + revisor (sign-off) | Master data + external items in §7 |
 
@@ -78,17 +83,16 @@ Master data is the long pole and it is the one thing that cannot be
 compressed by working harder in August. It is also entirely self-serve today
 — the dashboard "Data housekeeping" fold lists it with live counts, and
 `docs/archive/PLAYBOOK-AUGUST.md` §"Quiet-hour tasks" is already Dennis's task list
-for it. **The single most useful thing he can do before 17 Aug is drive those
-counts to zero.**
+for it. **The single most useful thing he can do before the October checkpoint
+is drive those counts to zero.**
 
 ## 5. The ladder
 
-Dates below are anchored to a transfer date of **Mon 31 Aug 2026** — a month
-end, which is the natural line for the bookkeeping, and two weeks after the
-17–21 Aug sessions. Confirm or move it in Meeting 1; everything else shifts
-with it.
+No transfer date is set (DECISIONS 2026-09-01). The stages below are ordered,
+not dated; a month end remains the natural line for the bookkeeping when one is
+chosen, and everything else shifts with it.
 
-### Stage 0 — Foundation (3 Aug → transfer date)
+### Stage 0 — Foundation (now → transfer date)
 Nothing real flows. Everything reversible.
 
 - Master data to zero outstanding: supplier emails, part origins, purchase
@@ -105,7 +109,7 @@ Nothing real flows. Everything reversible.
 **Gate to Stage 1:** housekeeping counts at zero, the fleet loaded, the team
 has each done one real job end-to-end in the app.
 
-### Stage 1 — Transfer date (Mon 31 Aug)
+### Stage 1 — Transfer date (not yet set)
 The hard line. Internal operations only; nothing leaves the building.
 
 - Every new bike, ticket, work order, MO, sales order and PO is created in
@@ -159,15 +163,14 @@ be a conscious call made at Stage 3, not something that quietly never happens.
 ### Stage 4 — Accounting (after 2–3 clean invoices)
 e-conomic production cutover.
 
-- Production grant token in place of the trial (was expected end of July —
-  chase it; it is the long-lead item in this stage).
-- **Clear the trial-stamped IDs first — FOUR EXIST** (found 2026-07-29 by
-  `scripts/audit-invariants.sql`, check 15; this bullet previously claimed there
-  were none, which was wrong from 2026-07-09): `economic_customer_number` on
-  `Nazar Taras` (2) and `TEST Hotel Strandvejen ApS` (3), and
-  `economic_voucher_id` on `INV-2026-0001` (`2026 J1 V2`) and `TEST-2026-0001`
-  (`2026 J1 V3`). They are residue of the 2026-07-09 live push test. Left in
-  place, the first real push reconciles against trial entities. Re-run the audit
+- Production grant token in place of the trial (still outstanding in September
+  — chase it; it is the long-lead item in this stage).
+- **Clear any trial-stamped IDs first.** Four existed on 2026-07-29 (residue of
+  the 2026-07-09 live push test); the 2026-08-26 test-data cleanup removed them
+  and production showed zero on 2026-09-02. The guard is the audit check named
+  *e-conomic trial entities stamped on real records* — cite it by name, the
+  numbering drifts. Left in place, a stamp makes the first real push reconcile
+  against trial entities. Re-run the audit
   to confirm zero before the token swap, and do not push anything else to the
   trial in the meantime.
 - Revisor confirms journal, revenue account 1010, U25, payment terms.
@@ -242,51 +245,17 @@ Meeting 2.
   the system will lose it. Either fix the lead path before Stage 2 or keep
   the phone in shadow mode. Tracked separately.
 
-## 9. Meeting plan — week of 17 Aug
+## 9. Meetings
 
-Three sessions, deliberately in different places, for different reasons.
-
-### Meeting 1 — at the workshop (Herlev), Mon 18 Aug, half day
-**Purpose: reality check and set the transfer date.**
-
-It has to be there because the questions are physical: where the bikes
-actually are, what is on the whiteboard, how a job sheet moves across the
-bench, whether the kit stickers match what is on the shelves.
-
-1. Walk the floor. Compare the parts shelves against the catalog.
-2. Watch Dennis do one real job end to end the way he does it today — silent
-   observation, no coaching. Everything the app gets wrong shows up here.
-3. Review the housekeeping counts together, live.
-4. **Agree the transfer date** and write it down.
-5. Confirm the fleet list to load (§6).
-
-### Meeting 2 — at Nazar's, Wed 19 Aug, full day
-**Purpose: the work that needs uninterrupted focus and two screens.**
-
-It has to be here because the workshop interrupts every ten minutes, and
-because the invoicing-parity workshop is genuinely hard: it is a line-by-line
-comparison of a real Jensen invoice against what the app produces. Him making
-the trip is also the point — this stops being a supplier delivering software
-and becomes two people shipping a thing together.
-
-1. Invoicing-parity workshop. Real invoice, side by side, until they match.
-2. Revisor on the phone: stock valuation, deposit VAT, e-conomic config, INV
-   series start. All four questions in one call.
-3. Role matrix — who sees what — against the people-and-roles model.
-4. Off-site copy: walk the runbook in §10, then **do a live restore
-   rehearsal** together.
-5. Sequence the ladder in §5 against real dates and write the plan he keeps.
-
-### Meeting 3 — at the workshop, transfer date or the day before
-**Purpose: the team, not the owner.**
-
-1. Danish UI on.
-2. Role passwords set with each person present.
-3. Everyone does one real job in the app, watched.
-4. Opening stock count.
-
-**Between meetings:** a 30-minute video check-in every Monday. Short, standing
-agenda, no slides.
+The three-session week of 17 August is past; its plan is archived
+(`docs/archive/plan-aug19-meeting.md`). What replaced it (DECISIONS 2026-09-01):
+a **weekly Tuesday-morning check-in**, Nazar acting as project manager, Dennis in
+the system 15–20 minutes each morning so every meeting has findings. The content
+of the old Meeting 2 — invoicing-parity workshop, revisor call, role matrix,
+restore rehearsal — is still owed and gets scheduled as its own session when a
+transfer date comes into view. The old Meeting 3 (Danish UI on, passwords set
+with each person present, everyone does one real job in the app, opening stock
+count) is the transfer-day script and stands.
 
 ## 10. Off-site copy to Jensen's own server
 
@@ -349,7 +318,7 @@ after Stage 3's first real invoice. Manual is fine and honest — an automated
 copy nobody checks is worse than a monthly one somebody does.
 
 ### The part to sit down and explain
-Possession is not restorability. At Meeting 2, do a real rehearsal on Dennis's
+Possession is not restorability. At the invoicing-and-restore session, do a real rehearsal on Dennis's
 machine: pull a git bundle into a fresh clone, load a dump into a scratch
 Supabase project, open the app against it. Half an hour, and it converts an
 abstract reassurance into something he has personally seen work.
@@ -361,9 +330,10 @@ in principle — but it must stay encrypted at rest, access-controlled to named
 people, and listed in whatever record of processing they keep. Retention on
 the copies matches the media retention already configured in the app.
 
-## 11. Open decisions for the 17–21 Aug sessions
+## 11. Open decisions for the next owner session
 
-1. **Transfer date** — proposed Mon 31 Aug. Confirm or move.
+1. **Transfer date** — none set; parallel running until the October checkpoint
+   shows core functionality holding. Targets: October core, Christmas go-live.
 2. **Auth / M1** — Stage 3 trips the agreed trigger. Do we do it, defer it
    again with eyes open, or do a partial (kill `anon_all`, keep the role wall)?
 3. **Account ownership** — migrate to Jensen-owned accounts, or a written

@@ -23,7 +23,8 @@ update on any machine at Jensen.
 **Everything your business knows sits in one database, in Ireland.** Bikes,
 parts, stock, customers, orders, invoices, repair history, bike photos, call
 recordings. A copy of that database is a copy of the business — which is what
-makes the backup question in the playbook worth five minutes of your thinking.
+makes the backup question — where your own copy should live — worth five
+minutes of your thinking.
 
 **The app reaches out on your behalf, not from anyone's laptop.** Purchase
 orders to suppliers, invoices to your accounts, currency rates, phone calls. All
@@ -71,7 +72,7 @@ the United States, and only the typed-out text is sent — never the audio, neve
 your database.
 
 **Resend** sends the emails the app writes: purchase orders to your suppliers,
-and invoice mail later on.
+paint orders to your painter, and invoice mail later on.
 
 **e-conomic** is your own accounting system. The app pushes finished invoices
 into it so nobody types an invoice twice.
@@ -108,9 +109,9 @@ ticks. What it does mean is that no supplier here can put a gun to your head.
 
 Every night a complete copy of the database and its files is pulled down
 automatically. Once a month that becomes a single encrypted file, which is the
-copy meant to live on hardware of yours. The playbook covers the part still to
-be decided — where it should live, and rehearsing a restore together so you have
-seen one work rather than been told it does.
+copy meant to live on hardware of yours. Still to be decided together: where it
+should live, and rehearsing a restore so you have seen one work rather than been
+told it does.
 
 ---
 
@@ -173,7 +174,7 @@ Converted at the rate on my August statement, about 6.55 kr. to the dollar.
 | Supabase (database + files) | Where the business lives. Paid tier, for nightly backups and support | **164 kr.** ($25) |
 | Vercel (running the app) | Runs the website. The commercial tier is required — Jensen is a business, and the free tier is licensed for hobby use only | **131 kr.** ($20) |
 | GitHub (code archive) | Private code history. Free, permanently — this is not a trial | **0 kr.** |
-| Resend (supplier email) | Sends purchase orders. Free allowance, see below | **0 kr.** |
+| Resend (supplier email) | Sends purchase and paint orders. Free allowance, see below | **0 kr.** |
 | Domain name | Annual, roughly 150 kr./year | **~13 kr.** |
 | | **Fixed total** | **~310 kr./month** |
 
@@ -200,7 +201,7 @@ why, because "free" is doing different work in each case.
 nothing at this scale. Nothing to plan for.
 
 **Resend is free within an allowance** measured in thousands of emails a month.
-You send purchase orders, not newsletters, so the allowance is unlikely to be a
+You send purchase and paint orders, not newsletters, so the allowance is unlikely to be a
 problem — but if invoice mail is added later the volume goes up, and the paid
 tier is about 131 kr. ($20) a month if it ever comes to that.
 
@@ -231,7 +232,7 @@ it.
 - **e-conomic** — you already pay for it. The integration adds nothing to that
   bill.
 - **A server or NAS for your own backup copy** — a one-off purchase if you decide
-  you want one, not a subscription. Discussed in the playbook.
+  you want one, not a subscription. To be discussed at a check-in.
 - **Porting your phone number**, if you choose Option 2 — a one-off fee from
   your current provider, usually modest.
 - **My time.** This document is about what the machinery costs, not what

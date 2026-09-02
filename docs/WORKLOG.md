@@ -90,10 +90,10 @@ treat the early totals as floors, not truth.
 
 | Date | Hours | Work |
 |---|---|---|
-| Wed 2026-09-02 | ~8 | **SO → paint order becomes walkable** (migration 89): painter document in the supplier's language (print + email, emailing = sending), a picker grouped by customer order, an MO next step to the painter, a paint filter on /bikes. Plus the Sep 1 call analysis and the September consolidation. |
+| Wed 2026-09-02 | ~9 | **SO → paint order becomes walkable** (migration 89): painter document in the supplier's language (print + email, emailing = sending), a picker grouped by customer order, an MO next step to the painter, a paint filter on /bikes. Plus the Sep 1 call analysis and the September consolidation. |
 
-**September so far: ~8 h** (1 working day)
+**September so far: ~9 h** (1 working day)
 
 ---
 
-**Project total: ~262 h across 42 working days (2026-05-07 → 2026-09-02)**
+**Project total: ~263 h across 42 working days (2026-05-07 → 2026-09-02)**

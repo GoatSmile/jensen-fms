@@ -20,9 +20,9 @@ npx tsc --noEmit && npm run build
 ```
 
 `.claude/hooks/gates.sh` enforces this at commit time, but run it yourself first so
-a failure surfaces while you still have context. There is no test suite yet — the
-Vitest/CI item sits parked in `docs/BACKLOG.md`, which is exactly why step 2 is not
-optional.
+a failure surfaces while you still have context. There are no unit tests — the
+Vitest/CI item sits parked in `docs/BACKLOG.md` — but `npm run smoke` sweeps every
+route (dev server running); run it. Both facts are why step 2 is not optional.
 
 **Never run `npm run build` while the dev server is live** — it corrupts `.next` and
 produces phantom hydration stalls. Stop the server first.
@@ -37,6 +37,9 @@ every route you touched.
 Also check:
 
 - **en/da parity** if you touched any user-facing string. Both locales.
+- **Which database?** Verify against the LOCAL copy (`scripts/use-db.sh`, green
+  banner). The Supabase MCP tools are bound to PRODUCTION whatever the app points
+  at — confirm local writes with `psql` against `127.0.0.1:54322`.
 - The preview pane **throttles hydration while hidden** — front it before
   click-testing, or you will diagnose a stall that isn't there.
 - A **stale PWA service worker** can serve an old shell mid-session. A fresh tab or
@@ -64,6 +67,10 @@ was rejected. See the `log-decision` skill.
 - A finished `docs/plan-*.md` is **marked closed and moved to `docs/archive/`**, and
   every reference to it repointed. A shipped plan left in `docs/` makes the whole
   directory ambiguous about what is still live.
+- **Did this add a migration?** Apply it to BOTH databases — production BEFORE
+  the push that deploys code reading the new columns — and hand-patch
+  `src/lib/types/database.ts` (Row + Insert + Update): `supabase gen types
+  typescript --local` does not reproduce the committed file.
 
 ## 6. Durable residue → `CLAUDE.md`, edited in place
 

@@ -283,7 +283,7 @@ sender IDs are one-way, so replies need an SMS-enabled number — our DK number 
 bought Voice-only, and DK-specific SMS rules are unverified). An AI answering in
 Danish earns its keep only if the workshop is regularly missing calls it can't
 return within a business day — and we now record `call_outcome` on **every**
-call, so that is measurable from August's real traffic instead of guessed.
+call, so that is measurable once a real number is connected, instead of guessed.
 
 **Gates before building Tier C**: (1) one clean Danish bridged call that
 transcribes well, and (2) one month of real `call_outcome` data showing missed
@@ -379,4 +379,4 @@ Dennis-side whisper announcement (he's informed by policy, not by robot).
   above). If it ever starts, it starts with confirming where the WebSocket leg
   can live.
 - The front-door cutover itself: publishing the Twilio number, porting or
-  forwarding the shop's real number (August, with Dennis).
+  forwarding the shop's real number (with Dennis, unscheduled).

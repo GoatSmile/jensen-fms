@@ -1,7 +1,9 @@
 # Inbound triage & routing — design reference
 
-**Date:** 2026-07-16 · **Status:** agreed design, implementation deferred
-(pick up with Dennis in August, after shadow-mode data accumulates).
+**Date:** 2026-07-16 · **Status:** agreed design; phases 1–3 shipped in July
+(migrations 69–72: call events, transcript confidence, triage disposition +
+spam fold); phases 4–6 wait for real Danish traffic, which needs a connected
+number. No owner session happened in August.
 Companion to `docs/archive/plan-july9-vacation-month.md` (which covers the shipped
 pipeline slices A–F); this doc is the *next* arc: capture-everything,
 confidence, triage, routing, and the graduation path out of shadow mode.
@@ -9,8 +11,8 @@ confidence, triage, routing, and the graduation path out of shadow mode.
 ## Where this starts from
 
 As of 2026-07-16 the inbound pipeline is **live in production**: a real
-Danish number (+45 9370 3111, dev account; Dennis's company number comes
-later) → Twilio voice webhook → bilingual recorded-call notice → voicemail →
+US trial number (+1 762 500 0850 — +45 9370 3111 went to Munin on
+2026-07-17; Dennis's company number comes later) → Twilio voice webhook → bilingual recorded-call notice → voicemail →
 recording pulled to Supabase EU + deleted from Twilio → Gladia transcript →
 Claude extraction (incl. `intent`) → deterministic matcher → shadow-mode
 draft ticket in `/inbox`. First two real calls both processed correctly,
@@ -28,7 +30,7 @@ channels/dispositions, never parallel systems.
 2. UNDERSTAND  audio → text, with a clarity score             (built; no score yet)
 3. INTERPRET   text → structured facts, per-field confidence  (built; no confidence yet)
 4. IDENTIFY    facts → who is this, with provenance           (built — `via` provenance exists)
-5. TRIAGE      everything → ordered queue + disposition       (new layer)
+5. TRIAGE      everything → ordered queue + disposition       (shipped: migrations 71–72)
 ```
 
 ## Design principles
@@ -85,7 +87,7 @@ channels/dispositions, never parallel systems.
 - Match: keep `via` provenance as the confidence tiers
   (phone-exact > frame-exact > org-name-unique > fleet+hint).
 
-### 5 · Triage
+### 5 · Triage (shipped 2026-07 — disposition, spam signals, spam fold)
 
 - New fields: `disposition enum (pending | spam | no_action | actioned)` +
   `spam_signals jsonb` (each signal stored so the reviewer sees *why*).
@@ -142,11 +144,11 @@ demands).
 
 ## Phasing
 
-1. **Capture-everything** — status callback + promoted columns
+1. **Capture-everything** (shipped) — status callback + promoted columns
    (`duration_seconds`, `intent`, `call_outcome`). One migration.
-2. **Confidence plumbing** — transcript_confidence + per-field ordinals +
+2. **Confidence plumbing** (shipped) — transcript_confidence + per-field ordinals +
    garbled badge + second-opinion re-transcribe.
-3. **Triage v1** — disposition + spam fold + spam_signals + queue ordering.
+3. **Triage v1** (shipped) — disposition + spam fold + spam_signals + queue ordering.
 4. **Routing v1** — intent → action choice on the review screen (ticket /
    lead-disposition / park). Auto-creation stays off.
 5. **Stats fold** — weekly match rate, intent accuracy, garble rate, spam
@@ -155,7 +157,7 @@ demands).
    attachment, ≤5% intent misses over 50 real calls"); leaving shadow mode
    becomes a measurement, not a leap of faith.
 
-## Open questions for the August session (Dennis)
+## Open questions for the next owner session (Dennis)
 
 - Overflow vs front-door deployment for v2 (his phone, his workflow).
 - His company production number (regulatory bundle with company docs).

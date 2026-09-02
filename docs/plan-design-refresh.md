@@ -33,8 +33,8 @@ Consequences worth noting, because they change earlier sections:
 Live mock-up of the chosen direction: `docs/mockups/design-directions.html`
 (toggles Current vs B, three pages, 14-flat vs 7-group nav, light and dark).
 
-Companion: `docs/plan-cutover.md` — the 31 Aug transfer date constrains what is
-safe to do before Dennis sees this version. §10 sequences against it.
+Companion: `docs/plan-cutover.md`. §10 was sequenced against the 31 Aug
+transfer date, since abandoned for parallel running (DECISIONS 2026-09-01).
 
 ---
 
@@ -349,16 +349,15 @@ and role-session cookies.
   code default rather than silently arriving closed.
 
 Per-person rather than per-browser is a later upgrade: mirror onto `people` once
-role sessions carry a person in prod (they do not yet — no role passwords are
-set). Not needed for the shop today, and it does not change the cookie design.
+role sessions carry a person in prod (done 2026-08-23: `people.ui_preferences`,
+migration 81 — nav state travels with the login). Not needed for the shop today, and it does not change the cookie design.
 Worth noting the shared-tablet worry resolves itself: mechanics work in floor
 mode, which has its own reduced nav with no groups at all (§6).
 
 **Sequencing:** this changes URLs and muscle memory, so it is **not** a
 pre-cutover change. Phase 1 keeps the 14 routes and only restyles the rail (drop
 icons, add group micro-headings, lighter weight, more spacing) — zero routing
-change, one file. Groups land in Phase 3, after 31 Aug, ideally agreed with
-Dennis first since he is the one with the muscle memory.
+change, one file. (Superseded: groups shipped 2026-07-26 — see §14.)
 
 ## 8. Page count — 102 is too many, and ~19 are near-duplicates
 
@@ -403,7 +402,7 @@ a "More details" fold. Most fields are filled once and never revisited.
 of rows carries zero information and costs attention — show the pill only for
 *low* and *out*. Same principle for the repeated category chips.
 
-## 10. Sequencing against the 31 Aug cutover
+## 10. Sequencing (written against the abandoned 31 Aug cutover)
 
 This is the part I would push back on if you asked for everything at once.
 
@@ -434,9 +433,8 @@ boxed KPI rows (cause 2). Then the floor/office mode split from §6.
 **Phase 3 — later.** Nav Option 1, the `/admin/lists` consolidation, settings
 sub-rail, form folds.
 
-**Do not** attempt Phase 2 before 31 Aug. The visual win is real but it is not
-worth destabilising the surface every screen is built from in the fortnight
-before go-live.
+**Do not** attempt Phase 2 in the fortnight before a go-live. (Superseded by
+§14.1 — Phase 2 shipped 2026-07-27, and the 31 Aug date is gone.)
 
 ## 11. Bugs found while looking
 
@@ -732,11 +730,12 @@ Capture at an 800px viewport (1:1) for anything shadow- or edge-related.
     broken and was not.
 
 - **`/admin/lists`** (§8) shipped 2026-07-29 — see §15. **Floor/office mode** (§6)
-  is approved and still queued, deliberately after the cutover.
+  is approved and still queued; no longer date-gated — build it when someone
+  can watch it land.
 - **No dark-mode toggle.** Deliberate: see DECISIONS 2026-07-26.
 - **No unit test for the cookie logic.** The plan asked for one; there is no
-  test runner in this project (`package.json` has dev/build/start/lint only),
-  and inventing one days before a cutover is the wrong trade. The
+  unit-test runner in this project (`npm run smoke` sweeps routes; nothing runs
+  functions), and inventing one days before a cutover was the wrong trade. The
   absent/empty/new-group cases were verified in the browser instead. CI is
   already parked in BACKLOG.md.
 - **`adminColors` / `adminHsCodes` message drift** — they say `savedStatus` /
@@ -811,12 +810,12 @@ have them bookmarked.
 already scoped as "selectively, not as a rule", and a 16-field organisation
 form in a drawer is worse, not better.
 
-### §6 — floor/office mode: approved in principle, scheduled AFTER the cutover
-The concern was raised and the approval stood; the timing is the compromise.
-**Not before 31 Aug.** It is the largest item in this document and it reshapes
-the screen mechanics use every day — shipping it into Dennis's solo stretch
-(from 3 Aug) means he absorbs a changed floor UI with no developer on hand.
-Build it when there is someone to watch it land.
+### §6 — floor/office mode: approved in principle, not date-gated
+The concern was raised and the approval stood; the timing was the compromise
+(originally "not before 31 Aug", a date since abandoned). It is the largest
+item in this document and it reshapes the screen mechanics use every day.
+Build it when there is someone to watch it land, and talk it through with
+Dennis first.
 
 **The mechanism is half-built already, which is why this is worth doing.**
 `src/i18n/request.ts` maps exactly the right set of surfaces (`WORKER_PATH`) to

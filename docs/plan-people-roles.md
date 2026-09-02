@@ -1,8 +1,9 @@
 # People & roles — design reference
 
-**Date:** 2026-07-17 · **Status:** P1–P4 all SHIPPED 2026-07-23 — the
-interim people & roles system is complete (M1 minus per-human passwords).
-Only phase 5 (M1 credential swap) remains, and it's deliberately deferred.
+**Date:** 2026-07-17 · **Status:** P1–P4 all SHIPPED 2026-07-23; per-person
+passwords followed 2026-08-23 (migrations 80–81, see the banner below). What
+M1 still means is Supabase auth + RLS written against `role_capabilities`,
+deliberately deferred.
 The workforce/identity model: employees, owners, temps, contractors —
 role-scoped access, per-role dashboards, task notification routing, and a
 role-password auth v0.5 that becomes real per-user auth (M1) without rework.
@@ -24,13 +25,13 @@ role-password auth v0.5 that becomes real per-user auth (M1) without rework.
 ```
 PERSON      "Nazar, contractor, +45 …, prefers English"        — who
 ROLE        "workshop / accountant / owner / it_admin / sales"  — the hat
-CREDENTIAL  one password per role (v0.5) → per-user login (M1)  — the key
+CREDENTIAL  per-person password (since 2026-08-23) → Supabase auth (M1) — the key
 ASSIGNMENT  "WO-2026-0142 is Mikkel's"                          — the work
 ```
 
-A person holds several roles (M-N). Credentials attach to the ROLE today
-and move to the PERSON at M1 — because they're a separate concern, that
-swap touches nothing else.
+A person holds several roles (M-N). Credentials attached to the ROLE in v0.5
+and moved to the PERSON on 2026-08-23 — because they're a separate concern,
+that swap touched nothing else, as designed.
 
 ## What exists to build on
 
@@ -157,7 +158,8 @@ Seeds are starting points — capabilities are admin-editable per role.
    that role) stores `person` in the cookie. Self-claimed (locked above) —
    same trust level as the shared password; becomes verified identity at
    M1. Enables per-person to-dos ("my work" on /work), assignee stamping,
-   and audit-lite (`person_id` on writes → the dormant audit_log).
+   and audit-lite (`person_id` on writes → `audit_log`, which has had triggers
+   since migration 87).
 4. **Routing**: login lands on `home_path`; middleware bounces uncapable
    routes there; both navs filter via `can()`.
 5. **Falls out for free**: the person's `preferred_language` supersedes the
@@ -190,8 +192,8 @@ role `password_hash` columns die (credential moves to the person) → cookie
 session becomes a Supabase session carrying person + roles as claims →
 `can()` reads claims → **RLS policies are written against the same
 `role_capabilities` table**. People, roles, capabilities, notifications,
-assignments, dashboards all survive. The interim is M1 minus
-passwords-per-human, not a detour.
+assignments, dashboards all survive. The interim is M1 minus Supabase auth
+and RLS, not a detour.
 
 ## Phasing (each shippable alone)
 
@@ -239,5 +241,5 @@ passwords-per-human, not a detour.
 
 Field-level permissions / cost redaction (locked: workshop sees costs) ·
 per-person PINs (locked: self-claimed) · temp auto-archival (locked: picker
-filtering only) · per-person passwords before M1 · any RLS tightening now
-(that IS M1).
+filtering only) · any RLS tightening now (that IS M1). Per-person passwords
+WERE built before M1 (2026-08-23) — the credential, not the perimeter.

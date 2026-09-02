@@ -2,8 +2,8 @@
 
 > ⚠️ **This document describes the ORIGINAL schema package as proposed in
 > May 2026 — files `01`–`02`. It is not a description of today's database.**
-> The live schema is the full numbered sequence in this directory (73+
-> migrations and counting); `docs/STATUS.md` has the current count. Kept
+> The live schema is the full numbered sequence in this directory; the
+> highest-numbered file is the current state. Kept
 > because it explains the founding design of the core tables and the
 > bilingual mechanism, both of which still hold. For anything beyond that,
 > read the migrations themselves — and never modify a file that has already
@@ -34,6 +34,11 @@ psql "$DATABASE_URL" -f 03_migrate_excel_data.sql
 
 # Supabase: paste each file into the SQL Editor in order
 ```
+
+Since 2026-08-24 there are TWO databases: production and the local copy
+(`supabase start`; `psql` at `127.0.0.1:54322`). Every new migration is applied
+to both — production first, before the push that deploys code reading the new
+columns. Runbook in `docs/OPERATIONS.md`.
 
 Verify with:
 

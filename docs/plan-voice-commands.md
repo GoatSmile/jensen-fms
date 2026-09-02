@@ -2,8 +2,8 @@
 
 **Date:** 2026-07-17 · **Status:** **VC-1 SHIPPED 2026-07-23** (Option A,
 text-first — the in-app dictate slice; commits `1799d61`, `a403b12`).
-Phone/audio ingress and the staff-number fork are **VC-3**, deferred to
-August with Dennis; this doc stays live for that arc. Narrative in
+Phone/audio ingress and the staff-number fork are **VC-3**, deferred and
+unscheduled (the August session did not happen); this doc stays live for that arc. Narrative in
 `docs/archive/HISTORY.md`, mechanics in `docs/DECISIONS.md` (2026-07-23).
 
 Staff dictate business tasks — by calling the workshop number or via an
@@ -185,7 +185,7 @@ CREATE TABLE command_actions (         -- one row per APPLIED action
   end to end.*
 - **VC-2 · Floor + maintenance actions** (~1 d): draft_ticket, WO
   parts/labor dictation, notes-everywhere.
-- **VC-3 · Tier B + graduation** (with Dennis, August): confirm-flow for
+- **VC-3 · Tier B + graduation** (with Dennis, unscheduled): confirm-flow for
   state changes; per-action accuracy stats; first auto-applies.
 
 ## Deliberately NOT building

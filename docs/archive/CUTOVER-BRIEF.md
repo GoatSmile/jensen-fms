@@ -1,3 +1,11 @@
+> **Archived 2026-09-02.** Written for a cutover on 31 August that did not
+> happen. The owner chose parallel running instead (DECISIONS 2026-09-01), with
+> core functionality by October and go-live by Christmas as the targets — so the
+> "one hard date" argument below is the position we did NOT take, and every date
+> in it is past. Kept because it is still the fullest written form of the ladder
+> and of the asks (revisor questions, account ownership, a backup on Jensen's own
+> hardware). The live plan is `docs/plan-cutover.md`.
+
 # Going live — what I need from you
 
 For Dennis. Written 26 July 2026, revised 29 July, to read before we meet in

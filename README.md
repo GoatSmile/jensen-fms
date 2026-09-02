@@ -3,7 +3,8 @@
 Fleet management system for Jensen Production / Logocykler — a Danish
 workshop building custom branded bikes for hotels, municipalities, and
 hospitals. Replaces fragmented Excel + paper workflows. Single-tenant,
-solo-dev, in daily production use.
+solo-dev, running in parallel with the owner's existing system; go-live is
+targeted for Christmas 2026.
 
 **Stack**: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 + shadcn/ui ·
 Supabase (Postgres, EU) · deployed on Vercel (push-to-`main` → prod, gated
