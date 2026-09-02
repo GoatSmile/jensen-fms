@@ -63,6 +63,7 @@ const SORTABLE_COLUMNS = [
   "mo_number",
   "created_at",
   "client",
+  "sales_order",
   "template",
   "type",
   "colour",
@@ -149,6 +150,7 @@ export default async function ManufacturingOrdersPage({
         mo.sales_order?.organization?.display_name_en ??
         mo.sales_order?.organization?.legal_name ??
         null,
+      soNumber: mo.sales_order?.sales_order_number ?? null,
       // What the Planned column actually shows the far end of.
       plannedSort: mo.planned_completion_date ?? mo.planned_start_date ?? null,
     }))
@@ -163,6 +165,7 @@ export default async function ManufacturingOrdersPage({
         mo_number: { a: a.mo.mo_number, b: b.mo.mo_number },
         created_at: { a: a.mo.created_at, b: b.mo.created_at },
         client: { a: a.client, b: b.client },
+        sales_order: { a: a.soNumber, b: b.soNumber },
         template: { a: a.tplLabel, b: b.tplLabel },
         type: { a: a.typeLabel, b: b.typeLabel },
         colour: { a: a.colourLabel, b: b.colourLabel },
@@ -248,6 +251,11 @@ export default async function ManufacturingOrdersPage({
                   className="hidden md:table-cell"
                 />
                 <SortableHeader
+                  column="sales_order"
+                  label={t("thSalesOrder")}
+                  className="hidden lg:table-cell"
+                />
+                <SortableHeader
                   column="template"
                   label={t("thTemplate")}
                   className="hidden md:table-cell"
@@ -278,139 +286,168 @@ export default async function ManufacturingOrdersPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map(({ mo, tplLabel, typeLabel, colourLabel, client }) => {
-                const overdue = isMOOverdue(
-                  mo.status,
-                  mo.planned_completion_date,
-                  today,
-                );
-                return (
-                  <TableRow
-                    key={mo.id}
-                    className={cn(
-                      "hover:bg-muted/50 cursor-pointer",
-                      overdue && OVERDUE_BORDER,
-                    )}
-                  >
-                    <TableCell className="p-0 text-xs">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        <SegmentedId value={mo.mo_number} />
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden p-0 text-xs whitespace-nowrap sm:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        {formatDate(mo.created_at)}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 text-sm md:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        {client ?? (
-                          <span className="text-muted-foreground italic">
-                            {t("stockBuild")}
-                          </span>
-                        )}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 md:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        {tplLabel ? (
-                          <>
-                            <div className="font-medium">{tplLabel}</div>
-                            <div className="text-muted-foreground text-xs">
-                              v{mo.bike_template?.version}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground italic">
-                            {t("oneOff")}
-                          </span>
-                        )}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 lg:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        <Badge variant="outline" className="font-normal">
-                          {typeLabel ?? "—"}
-                        </Badge>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 text-sm lg:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        {mo.color && colourLabel ? (
-                          <ColorChip hex={mo.color.hex} label={colourLabel} />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        <span className="font-medium">
-                          {mo.completed_quantity}
-                        </span>
-                        <span className="text-muted-foreground"> / </span>
-                        <span>{mo.target_quantity}</span>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="p-0">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        <Badge
-                          variant={
-                            MO_STATUS_VARIANT[mo.status as MOStatus] ??
-                            "outline"
-                          }
+              {rows.map(
+                ({
+                  mo,
+                  tplLabel,
+                  typeLabel,
+                  colourLabel,
+                  client,
+                  soNumber,
+                }) => {
+                  const overdue = isMOOverdue(
+                    mo.status,
+                    mo.planned_completion_date,
+                    today,
+                  );
+                  return (
+                    <TableRow
+                      key={mo.id}
+                      className={cn(
+                        "hover:bg-muted/50 cursor-pointer",
+                        overdue && OVERDUE_BORDER,
+                      )}
+                    >
+                      <TableCell className="p-0 text-xs">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
                         >
-                          {tStatus.has(mo.status)
-                            ? tStatus(mo.status)
-                            : mo.status}
-                        </Badge>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">
-                      <Link
-                        href={`/manufacturing-orders/${mo.id}`}
-                        className="block px-4 py-2.5"
-                      >
-                        {formatDate(mo.planned_start_date)}
-                        {mo.planned_completion_date ? (
-                          <>
-                            {" "}
-                            –{" "}
-                            {formatDeliveryTarget(
-                              mo.planned_completion_date,
-                              mo.planned_completion_precision,
-                            )}
-                          </>
-                        ) : null}
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                          <SegmentedId value={mo.mo_number} />
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden p-0 text-xs whitespace-nowrap sm:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          {formatDate(mo.created_at)}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden p-0 text-sm md:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          {client ?? (
+                            <span className="text-muted-foreground italic">
+                              {t("stockBuild")}
+                            </span>
+                          )}
+                        </Link>
+                      </TableCell>
+                      {/* The one cell that does NOT go to the MO: from a list of
+                        production you often want the customer's order, and the
+                        number is the thing you would otherwise go hunting for. */}
+                      <TableCell className="hidden p-0 text-xs lg:table-cell">
+                        {mo.sales_order && soNumber ? (
+                          <Link
+                            href={`/sales-orders/${mo.sales_order.id}`}
+                            className="block px-4 py-2.5 hover:underline"
+                          >
+                            <SegmentedId value={soNumber} />
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/manufacturing-orders/${mo.id}`}
+                            className="text-muted-foreground block px-4 py-2.5"
+                          >
+                            —
+                          </Link>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden p-0 md:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          {tplLabel ? (
+                            <>
+                              <div className="font-medium">{tplLabel}</div>
+                              <div className="text-muted-foreground text-xs">
+                                v{mo.bike_template?.version}
+                              </div>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground italic">
+                              {t("oneOff")}
+                            </span>
+                          )}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden p-0 lg:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          <Badge variant="outline" className="font-normal">
+                            {typeLabel ?? "—"}
+                          </Badge>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden p-0 text-sm lg:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          {mo.color && colourLabel ? (
+                            <ColorChip hex={mo.color.hex} label={colourLabel} />
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="hidden p-0 text-right tabular-nums md:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          <span className="font-medium">
+                            {mo.completed_quantity}
+                          </span>
+                          <span className="text-muted-foreground"> / </span>
+                          <span>{mo.target_quantity}</span>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="p-0">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          <Badge
+                            variant={
+                              MO_STATUS_VARIANT[mo.status as MOStatus] ??
+                              "outline"
+                            }
+                          >
+                            {tStatus.has(mo.status)
+                              ? tStatus(mo.status)
+                              : mo.status}
+                          </Badge>
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">
+                        <Link
+                          href={`/manufacturing-orders/${mo.id}`}
+                          className="block px-4 py-2.5"
+                        >
+                          {formatDate(mo.planned_start_date)}
+                          {mo.planned_completion_date ? (
+                            <>
+                              {" "}
+                              –{" "}
+                              {formatDeliveryTarget(
+                                mo.planned_completion_date,
+                                mo.planned_completion_precision,
+                              )}
+                            </>
+                          ) : null}
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                },
+              )}
             </TableBody>
           </Table>
         </Panel>

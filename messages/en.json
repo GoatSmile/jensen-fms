@@ -1438,6 +1438,7 @@
     "thPlanned": "Planned",
     "thDate": "Date",
     "thClient": "Client",
+    "thSalesOrder": "Sales order",
     "stockBuild": "Stock build",
     "oneOff": "One-off",
     "crumbNew": "New",
