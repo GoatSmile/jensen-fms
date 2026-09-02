@@ -178,11 +178,7 @@ export function LinesSection({
 
       {dialog.kind !== "closed" ? (
         <LineDialog
-          key={
-            dialog.kind === "add"
-              ? "add"
-              : `edit-${dialog.initial.lineId}`
-          }
+          key={dialog.kind === "add" ? "add" : `edit-${dialog.initial.lineId}`}
           open
           onOpenChange={(next) => {
             if (!next) setDialog({ kind: "closed" });
@@ -268,12 +264,30 @@ function SOLineTableRow({
       <TableCell className="min-w-0 whitespace-normal">
         {row.kind === "template" ? (
           <>
-            <Link
-              href={`/bike-templates/${row.bikeTemplateId}`}
-              className="font-medium break-words hover:underline"
-            >
-              {row.templateLabel ?? "—"}
-            </Link>
+            {/* Spawn MO sits BESIDE the template, not in the row's ⋯ menu
+                (owner, 2026-09-02): it is the one action that turns a sold
+                line into work on the floor, and a line that has never been
+                spawned looks identical to one that has until you open the
+                menu. It renders only while it can fire — template line, no MO
+                yet — so its presence is the state. */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/bike-templates/${row.bikeTemplateId}`}
+                className="font-medium break-words hover:underline"
+              >
+                {row.templateLabel ?? "—"}
+              </Link>
+              {canSpawnHere ? (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={runSpawn}
+                  disabled={pending}
+                >
+                  <Hammer aria-hidden /> {t("spawnMo")}
+                </Button>
+              ) : null}
+            </div>
             <div className="text-muted-foreground text-[10px]">
               {t("bikeTemplate")}
               {row.colorName ? ` · ${row.colorName}` : ""}
@@ -320,7 +334,7 @@ function SOLineTableRow({
         {formatPrice(row.total, currency)}
       </TableCell>
       <TableCell className="text-right">
-        {editable || canSpawnHere ? (
+        {editable ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -333,41 +347,26 @@ function SOLineTableRow({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {canSpawnHere ? (
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    runSpawn();
-                  }}
-                  disabled={pending}
-                >
-                  <Hammer aria-hidden /> {t("spawnMo")}
-                </DropdownMenuItem>
-              ) : null}
-              {editable ? (
-                <>
-                  <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      onEdit();
-                    }}
-                  >
-                    <Pencil aria-hidden /> {t("edit")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    variant="destructive"
-                    disabled={pending}
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      if (confirmDelete) runDelete();
-                      else setConfirmDelete(true);
-                    }}
-                  >
-                    <Trash2 aria-hidden />{" "}
-                    {confirmDelete ? t("clickAgainConfirm") : t("delete")}
-                  </DropdownMenuItem>
-                </>
-              ) : null}
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onEdit();
+                }}
+              >
+                <Pencil aria-hidden /> {t("edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={pending}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  if (confirmDelete) runDelete();
+                  else setConfirmDelete(true);
+                }}
+              >
+                <Trash2 aria-hidden />{" "}
+                {confirmDelete ? t("clickAgainConfirm") : t("delete")}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
