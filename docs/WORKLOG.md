@@ -86,4 +86,14 @@ treat the early totals as floors, not truth.
 
 ---
 
-**Project total: ~254 h across 41 working days (2026-05-07 → 2026-08-26)**
+## September 2026
+
+| Date | Hours | Work |
+|---|---|---|
+| Wed 2026-09-02 | ~2 | **Sep 1 client call turned into a plan** — transcript checked against the app (paint-from-SO already exists; real gaps are the picker, a painter PDF + email, painted-frame stock), local DB refreshed from prod; Metacoat was already default painter (a wrong slug had hidden it). |
+
+**September so far: ~2 h** (1 working day)
+
+---
+
+**Project total: ~256 h across 42 working days (2026-05-07 → 2026-09-02)**

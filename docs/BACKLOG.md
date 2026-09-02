@@ -67,7 +67,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   agent does say so in the line note, so nothing is silently wrong. Fix:
   promote `quantity` to a slot the CommandPlanPanel can edit before Apply —
   worth doing the first time a real multi-quantity enquiry arrives.
-- `audit_log` triggers (wait on auth for user_id).
 - SQL-side pagination + stock-status filtering for the parts list at scale
   (currently in-memory in `src/app/parts/page.tsx`).
 - Offline write-queue for the workshop-floor PWA.
@@ -139,6 +138,26 @@ OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
 path to a personal inbox, so it would have to be a Jensen-owned sender.
 
 ## Parked product ideas
+- **Sub-assemblies — what Dennis calls a "kit"** (escalated as a modelling
+  question 2026-09-02; owner's call to escalate, not build). On the 1 Sep call
+  Dennis described a kit as the frame plus the motor, cables, display and
+  sensor that MUST travel together because they fit that frame — while saddle,
+  handlebar, tyres and rims vary freely. That is a **sub-assembly**: a named,
+  reusable group of parts inside a recipe. The app has no such concept. What it
+  has instead: `kits` are colour+number sticker labels for part boxes (a floor
+  picking aid, CLAUDE.md), and template reuse is "Duplicate template" / "Save
+  as new version" — neither expresses "these parts belong together". Dennis's
+  blocker was real: they held off building templates until "kit" was defined.
+  Questions for the planning chat: (1) is a sub-assembly a **template
+  fragment** (a reusable part-group that templates include by reference, so a
+  motor-system change propagates) or just a **duplicate-from base template**
+  (copy, then edit — no propagation, zero schema)? (2) does a sub-assembly ever
+  get *built or stocked* on its own (then it is a part with its own BOM, i.e.
+  a phantom/assembled part in inventory), or is it purely a recipe grouping?
+  (3) does it interact with paint — the frame+fork pair already lives in
+  `bike_template_service_parts`? Cheapest honest answer today: tell Dennis kits
+  are box stickers and unblock with Duplicate template; decide (1)–(3) before
+  anyone models it.
 - **Sales track: website bike-configurator + AI lead-gen agent** (parked
   2026-07-09 by the owner — "lay the bottom first"; his framing: earliest
   next year, debt down first):

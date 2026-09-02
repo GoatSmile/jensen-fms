@@ -117,17 +117,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `apply_migration` / `deploy_edge_function` / `pause_project` /
   `delete_branch` are available. Don't report this as a misconfiguration.
 - Two consequences worth carrying: it **bypasses RLS**, so it is no way to test
-  policies (M1's user-scoped rules won't constrain it either); and there is ONE
-  project with no staging copy, so a write lands in production.
+  policies (M1's user-scoped rules won't constrain it either); and it is bound to
+  PRODUCTION whatever `.env.local` points at, so a write lands in production.
   `.claude/settings.json` pre-approves the read tools, so writes prompt first.
 
 ### Established views
 - `v_current_stock` — `(part_id, location_id, quantity_on_hand, last_movement_at)`.
   **Per-location**, so for a single stock figure per part, sum
   `quantity_on_hand` grouped by `part_id` (don't assume one row per part).
-- `v_part_last_cost` — one row per part with `last_cost_dkk`,
-  `last_purchase_quantity`, `last_order_date` from the most recent
-  `purchase_order_lines` row. Defined in `migrations/04_v_part_last_cost.sql`.
+- `v_part_last_cost` — one row per part: `last_cost_dkk` + `last_cost_basis` +
+  `last_cost_at` come from the most recent costed inbound event across
+  `inventory_movements` AND `purchase_order_lines` (newest wins, a movement
+  wins ties); `last_purchase_quantity` / `last_order_date` stay PURCHASE-sourced
+  because they size reordering, not valuation. Born in
+  `migrations/04_v_part_last_cost.sql`, redefined in migration 88.
 
 ## Architectural decisions — do not silently change these
 - Money is always `(amount NUMERIC(15,4), currency CHAR(3))`. No naked numbers.
@@ -276,7 +279,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   by kit as a pick list.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
   RFID, AirTag, fleet_number (customers' own numbering).
-- `audit_log` table exists; apply triggers per-table as needed.
+- `audit_log` is fed by NARROW triggers (migration 87) on the tables where a
+  number can move without a visible event — part prices and duty fields, painter
+  tier prices, `app_settings`, `people`, corrections to who built a bike — with
+  `WHEN` clauses so a description edit logs nothing. The actor rides on the row
+  (`last_actor_id`) because a trigger cannot see the session. Forensics among
+  trusted colleagues, not a security control; no UI by design (DECISIONS
+  2026-08-25).
 - **Product entity = `bike_templates`** (models/variants collapsed,
   migration 09). Size and color split:
   - **Frame size** is baked into the template — `Norma S` and `Norma L` are
@@ -542,7 +551,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Two repeatable checks exist — use them instead of hand-rolling one.**
   `npm run smoke` (`scripts/smoke-routes.mjs`) fetches every page route with real
   ids from the DB and asserts status, dev-overlay markers and missing i18n keys;
-  it needs a dev server running. `scripts/audit-invariants.sql` is 16 queries that
+  it needs a dev server running. `scripts/audit-invariants.sql` is a set of queries that
   must each return zero rows (run it in the SQL editor, `psql`, or via the MCP).
   Both are read-only and safe against prod. **Their baselines are in STATUS.md and
   are not all-zero** — two invariants have known standing hits, so "clean" means
@@ -631,7 +640,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     Raw palette colours don't inherit the theme and are cooler than B's
     measured set — that mix is fruit salad. Text on a filled hue uses
     `text-on-{hue}`, never `text-white`. Exempt (decorative identity, not
-    meaning): `bike-templates/family-colors.ts`, `kits/colors.ts`.
+    meaning): `src/lib/bike-templates/family-colors.ts`, `src/lib/kits/colors.ts`.
     The old four-hue tint vocabulary is **superseded**: sky/blue →
     `brand`, emerald/green → `good`, amber → `money` (or `alert` where it
     meant *warning*), violet → `system`, rose/red → `alert`.
@@ -766,8 +775,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Frame number** — unique per bike, primary physical identifier
 - **Service agreement** — customer contract; if active, covered repairs are
   not invoiced
-- **Customer segments** — Hospital, Municipality, Facility Management (FM),
-  B2B, B2C, Hotel
+- **Customer segments** — a controlled vocab (`customer_segments`,
+  `/admin/lists?vocab=segments`): Hospital, Municipality, Facility Management
+  (FM), Hotel, B2B, B2C and more. The table is the list; this file is not.
 
 ## Out of scope for v1.0
 - RLS policy tightening (RLS is ON across all tables — migration 50 — with a
@@ -780,9 +790,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 
 ## Migrations
 Never modify SQL files that have already been applied. Add new ones with
-sequential numbering and apply them through the Supabase SQL editor, the MCP
-`apply_migration` tool, or `supabase db push` once the CLI is configured.
-Whichever route: `/migrations/` is the source of truth, so nothing reaches the
+sequential numbering and apply them to PRODUCTION through the Supabase SQL
+editor or the MCP `apply_migration` tool — AND to the local copy (`psql` against
+`127.0.0.1:54322`, or `supabase db reset` after a fresh dump). Whichever route: `/migrations/` is the source of truth, so nothing reaches the
 DB without its numbered file committed alongside.
 
 ## Strategy escalation
