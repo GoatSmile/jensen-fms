@@ -2098,3 +2098,19 @@ one). Default `en` means nothing changes for any existing supplier until
 someone flips it on the supplier form. This supersedes the "POs stay English
 until taught" clause in the entry above; migration 90 only rewrites the column
 comment that said so.
+
+## 2026-09-02 — Test data is prefixed TEST, in capitals
+Owner's rule. Every row created to try something out — a bike, an order, a
+customer, a supplier, a template, a family — carries `TEST` at the front of the
+first thing a human reads: the name, the frame number, or, for anything with a
+gapless document number, the notes (numbers are never renamed). Why: the
+26 August cleanup of production had to argue row by row which bikes and invoices
+were real; a greppable prefix makes the next cleanup a query. Applied the same
+day to the LOCAL copy — the walk-through fixture, the July test MOs and POs, the
+owner's own test customer and test supplier, the two archived test families.
+Not applied to production: it holds the same July test rows, but Dennis's own
+trial rows there (`PNT-2026-0008`, the 1 Sep colour) are his to name, so the
+production pass waits for his word. Rejected: an `is_test` boolean (another
+column on a dozen tables, invisible on paper and in a dropdown, and not what a
+person on the floor sees); a marker inside document numbers (the series are
+gapless by design).

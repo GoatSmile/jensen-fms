@@ -619,6 +619,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   underlying string sentence-case; don't "fix" these.
 - **Primary action buttons + empty-state CTAs use "New X"** (e.g. "New
   part", "New MO") — not "Add X" or "Create X".
+- **Test data wears the word TEST, in capitals, at the front of whatever a human
+  reads first** (owner's rule, 2026-09-02): an organisation's or supplier's name
+  (`TEST Midtjysk Ejendomsmægler ApS`), a family's, template's or part's name, a
+  bike's frame number (`TEST-JP-2026-E_BIKE-038`) — and for anything with a
+  gapless document number (SO, MO, PO, paint order, invoice) the **notes**
+  field, because the number itself is never renamed. Nothing else counts as a
+  marker: `Jp -test 1`, "fixture", "throwaway" and a cancel reason of "test" all
+  had to be hunted for by hand. The point is that the next cleanup is a query
+  (`… like 'TEST%'`), not an argument about which rows were real — the 26 Aug
+  production cleanup had exactly that argument. Applies wherever the row lives:
+  the local copy by default, production whenever someone tests there.
 - **Navigation / IA — seven collapsible groups** (reset with the owner
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·

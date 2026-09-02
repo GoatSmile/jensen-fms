@@ -61,15 +61,17 @@ so a screen you demo in English looks different on his tablet.
 - **Local database copy** refreshed from the 2 Sep production dump, then
   migration 89 applied. Known divergences from production: the local
   `PNT-2026-0008` was flipped to `sent` + emailed by today's test (prod: still
-  `planned`), and the walk-through fixture below exists only locally. Re-dump
-  before trusting local for anything data-shaped.
+  `planned`), the walk-through fixture below exists only locally, and every
+  clearly-test row on local now carries the `TEST` prefix (owner's rule,
+  DECISIONS 2026-09-02) while production's copies of the same July test rows
+  do not yet. Re-dump before trusting local for anything data-shaped.
 - **Jerudan is gone from both databases** (owner's call 2 Sep): it was an
   unreferenced duplicate of Jeudan. `Jeurodan` remains as version 1 of the
   Jeudan chain.
 
 ## Next actions
 1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
-   customer *Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
+   customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
    CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,
    both frames, linked back to the SO). Every step was driven through the real
    UI today, so it is the demo script as well as the test. Point the dev
