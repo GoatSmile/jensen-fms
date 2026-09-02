@@ -74,6 +74,13 @@ it says so: *N need paint*. This is the app answering the question you asked me
 on the phone — *"do you want to create a paint order? if it's black and we have
 it on stock, I just put no."*
 
+> **This only works once the parts are marked.** Coverage asks the paint
+> question about a part only if that part carries **Paintable as** on its part
+> form (Parts → All parts → the part → Edit). A recipe where the frame has not
+> been marked reads as fully covered, because as far as the app knows nothing on
+> that bike ever goes to the painter. Marking the real frames and forks is the
+> one piece of data entry left before any of this tells the truth.
+
 **6. Send the frames.**
 **Send frames to painter** on the MO. Tick the frames, and you get a paint
 order that is linked back to the sales order. (The same thing exists from the
@@ -165,6 +172,13 @@ wait.
   a typed-in colour name cannot be counted, priced or matched to a painted
   frame. Admin → Lists → Colours, once per colour, and it is available
   everywhere.
+- **A template's *Paintwork* is a price, not a requirement.** The **Paintwork**
+  section on a bike template says what one bike sends to the painter, and that
+  is what feeds cost-to-paint and the margin. It is a separate statement from
+  **Paintable as** on the parts, and the two do not check each other yet: a
+  template can declare a frame and a fork to the painter while the MO's coverage
+  says nothing needs paint, because the parts in its recipe were never marked.
+  Right now that is the state of most templates.
 - **"Kit" still means the wrong thing here.** In the app a kit is a
   colour-and-number sticker on a parts box, so the floor can pick a complete
   set by code. What you described — a middle motor with its cable and display,
