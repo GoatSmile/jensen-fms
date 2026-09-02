@@ -3,6 +3,11 @@
  * print page (/purchase-orders/[id]/print) and the email-to-supplier action,
  * so paper and mail can never disagree about what was ordered.
  *
+ * Renders in the SUPPLIER's document language (`suppliers.document_language`,
+ * default English — suppliers span HK/DE/NL/FI/BE/SE, and a Danish one reads
+ * Danish); labels live in PO_LABELS below, the same shape as the paint
+ * document's DOC_LABELS, because the email renderer has no next-intl context.
+ *
  * Deliberately EXCLUDES the internal cost basis (FX, transport %, tariff,
  * anti-dumping, landed DKK) AND all notes fields: PO/line notes are internal
  * working notes (machine-drafted lines carry "set price before placing",
@@ -15,6 +20,64 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { countryName } from "@/lib/countries";
+import {
+  asDocumentLanguage,
+  type DocumentLanguage,
+} from "@/lib/documents/language";
+
+export type PODocumentLabels = {
+  title: string;
+  supplier: string;
+  orderDate: string;
+  requestedDelivery: string;
+  lines: string;
+  item: string;
+  yourRef: string;
+  qty: string;
+  unitPrice: string;
+  amount: string;
+  total: string;
+  pricePending: string;
+  unpricedNote: string;
+  draftWatermark: string;
+};
+
+export const PO_LABELS: Record<DocumentLanguage, PODocumentLabels> = {
+  en: {
+    title: "Purchase order",
+    supplier: "Supplier",
+    orderDate: "Order date",
+    requestedDelivery: "Requested delivery",
+    lines: "Lines",
+    item: "Item",
+    yourRef: "Your ref.",
+    qty: "Qty",
+    unitPrice: "Unit price",
+    amount: "Amount",
+    total: "Total",
+    pricePending: "price pending",
+    unpricedNote:
+      "Lines marked “price pending” await your quotation — please confirm prices on the order confirmation.",
+    draftWatermark: "DRAFT",
+  },
+  da: {
+    title: "Indkøbsordre",
+    supplier: "Leverandør",
+    orderDate: "Ordredato",
+    requestedDelivery: "Ønsket levering",
+    lines: "Linjer",
+    item: "Vare",
+    yourRef: "Jeres varenr.",
+    qty: "Antal",
+    unitPrice: "Stykpris",
+    amount: "Beløb",
+    total: "I alt",
+    pricePending: "pris afventer",
+    unpricedNote:
+      "Linjer markeret “pris afventer” afventer jeres tilbud — bekræft venligst priserne på ordrebekræftelsen.",
+    draftWatermark: "UDKAST",
+  },
+};
 
 export type PODocumentLine = {
   position: number;
@@ -34,6 +97,8 @@ export type PODocument = {
   id: string;
   poNumber: string;
   status: string;
+  /** The supplier's document language — every label on paper and in mail follows it. */
+  lang: DocumentLanguage;
   orderDate: string | null;
   expectedDate: string | null;
   supplier: {
@@ -65,7 +130,7 @@ export async function loadPODocument(
         `id, po_number, status, order_date, expected_date,
          supplier:suppliers!supplier_id(
            id, name, address_line1, address_line2, zip_code, town,
-           country_code, email_primary, email_secondary
+           country_code, email_primary, email_secondary, document_language
          )`,
       )
       .eq("id", poId)
@@ -83,6 +148,7 @@ export async function loadPODocument(
   const po = poRes.data;
   if (!po) return null;
   const supplierRaw = Array.isArray(po.supplier) ? po.supplier[0] : po.supplier;
+  const lang = asDocumentLanguage(supplierRaw?.document_language);
 
   // Generic-client embeds type as arrays — normalize each line's part.
   const lineRows = (linesRes.data ?? []).map((l) => ({
@@ -136,6 +202,7 @@ export async function loadPODocument(
     id: po.id,
     poNumber: po.po_number,
     status: po.status,
+    lang,
     orderDate: po.order_date,
     expectedDate: po.expected_date,
     supplier: supplierRaw
@@ -147,7 +214,7 @@ export async function loadPODocument(
           zipCode: supplierRaw.zip_code,
           town: supplierRaw.town,
           country: supplierRaw.country_code
-            ? countryName(supplierRaw.country_code)
+            ? countryName(supplierRaw.country_code, lang)
             : null,
           emailPrimary: supplierRaw.email_primary,
           emailSecondary: supplierRaw.email_secondary,

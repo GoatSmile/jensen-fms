@@ -545,9 +545,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - Deliberately English: `parts.name_en` / template / family names, org
   identity, `hs_codes.description`, kit sticker colours, `countries` lib.
   Per-document language (not UI locale): invoice print (per
-  `invoices.language`), PO print (always English — supplier-facing, and not yet
-  reading `suppliers.document_language`), paint-order print + email (per
-  `suppliers.document_language`), the public `/b/[bikeId]` + `/report` flow.
+  `invoices.language`), PO and paint-order print + email (per
+  `suppliers.document_language`, default `en`; country names via
+  `countryName(code, lang)`), the public `/b/[bikeId]` + `/report` flow.
 - Go-live = flip `app_language` / `worker_language` to `da` in app_settings.
   Sweep history: `docs/archive/i18n-danish-sweep.md`.
 

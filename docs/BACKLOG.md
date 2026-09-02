@@ -74,13 +74,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 - Bulk CSV import for parts/suppliers.
 - Dashboard service-order aging card + the service-order detail page don't
   filter by service type — fix when service type #2 becomes real.
-- **The PO document ignores `suppliers.document_language`** (2026-09-02). The
-  paint document renders in the supplier's language via `DOC_LABELS` in
-  `src/lib/services/service-order-document.ts`; the PO print page,
-  `po-document.ts` and `po-email-html.ts` still hardcode English. Teach them
-  the same label-map pattern the first time a Danish parts supplier gets a PO.
-  Same pass: country names on a Danish document print in English (the
-  `countries` lib is English by design) — map DK → "Danmark" for `da`.
 
 ## Providers & channels (the swappable seams)
 

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 import { PrintButton } from "@/app/parts/print/_components/print-button";
 import { Logo } from "@/components/logo";
 import { createClient } from "@/lib/supabase/server";
 import { COMPANY } from "@/lib/invoicing/company";
 import { loadCommunicationSettings } from "@/lib/communication/settings";
-import { loadPODocument } from "@/lib/purchasing/po-document";
+import { PO_LABELS, loadPODocument } from "@/lib/purchasing/po-document";
 import { formatPrice } from "@/lib/format";
 import { formatDate } from "@/lib/parts/format";
 import { formatQuantity } from "@/lib/parts/stock";
@@ -16,8 +17,9 @@ export const dynamic = "force-dynamic";
 /**
  * Print-friendly purchase order — the supplier-facing artifact, printed or
  * saved as PDF via the browser (same pattern as the invoice print page).
- * English only: suppliers span HK/DE/NL/FI/BE/SE, and the PO is a trade
- * document. Shows the supplier's own article numbers where on file and NO
+ * Rendered in the SUPPLIER's document language (`suppliers.document_language`,
+ * default English — suppliers span HK/DE/NL/FI/BE/SE); only the print-hidden
+ * toolbar follows the UI locale. Shows the supplier's own article numbers where on file and NO
  * internal cost basis (FX/transport/tariff stay ours). Drafts print with a
  * DRAFT watermark. The email-to-supplier action renders the same
  * loadPODocument payload, so paper and mail always match.
@@ -30,12 +32,15 @@ export default async function PurchaseOrderPrintPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [doc, comm] = await Promise.all([
+  const [doc, comm, t] = await Promise.all([
     loadPODocument(supabase, id),
     loadCommunicationSettings(supabase),
+    getTranslations("poDetail"),
   ]);
   if (!doc) notFound();
 
+  const L = PO_LABELS[doc.lang];
+  const country = doc.lang === "da" ? COMPANY.countryDa : COMPANY.countryEn;
   const isDraft = doc.status === "draft";
   // COMPANY still carries [placeholders] for some contact fields; prefer the
   // admin-configured communication settings and drop the line when neither
@@ -54,7 +59,7 @@ export default async function PurchaseOrderPrintPage({
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
         >
           <span className="-rotate-30 text-[6rem] font-bold tracking-widest text-black/[0.07] select-none">
-            DRAFT
+            {L.draftWatermark}
           </span>
         </div>
       ) : null}
@@ -65,11 +70,11 @@ export default async function PurchaseOrderPrintPage({
             href={`/purchase-orders/${doc.id}`}
             className="underline underline-offset-4"
           >
-            ← Back to the PO
+            {t("printBack")}
           </Link>
           {doc.hasUnpricedLines ? (
             <span className="ml-3 text-money">
-              Some lines have no price yet — they print as “price pending”.
+              {t("printUnpricedNotice")}
             </span>
           ) : null}
         </div>
@@ -78,9 +83,7 @@ export default async function PurchaseOrderPrintPage({
 
       <header className="flex items-start justify-between gap-6">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Purchase order
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{L.title}</h1>
           <div className="font-mono text-sm">{doc.poNumber}</div>
         </div>
         <div className="flex flex-col items-end gap-1 text-right">
@@ -92,7 +95,7 @@ export default async function PurchaseOrderPrintPage({
             ) : null}
             {!COMPANY.zipCity.includes("[") ? (
               <div>
-                {COMPANY.zipCity}, {COMPANY.countryEn}
+                {COMPANY.zipCity}, {country}
               </div>
             ) : null}
             {contactEmail ? <div>{contactEmail}</div> : null}
@@ -104,7 +107,7 @@ export default async function PurchaseOrderPrintPage({
       <div className="flex items-start justify-between gap-6">
         <div className="text-sm leading-relaxed">
           <div className="text-muted-foreground text-xs tracking-wide uppercase">
-            Supplier
+            {L.supplier}
           </div>
           <div className="mt-1 font-medium">{doc.supplier?.name ?? "—"}</div>
           {doc.supplier?.addressLine1 ? (
@@ -128,19 +131,19 @@ export default async function PurchaseOrderPrintPage({
           ) : null}
         </div>
         <dl className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-muted-foreground">Order date</dt>
+          <dt className="text-muted-foreground">{L.orderDate}</dt>
           <dd className="text-right tabular-nums">
             {formatDate(doc.orderDate)}
           </dd>
           {doc.expectedDate ? (
             <>
-              <dt className="text-muted-foreground">Requested delivery</dt>
+              <dt className="text-muted-foreground">{L.requestedDelivery}</dt>
               <dd className="text-right tabular-nums">
                 {formatDate(doc.expectedDate)}
               </dd>
             </>
           ) : null}
-          <dt className="text-muted-foreground">Lines</dt>
+          <dt className="text-muted-foreground">{L.lines}</dt>
           <dd className="text-right tabular-nums">{doc.lines.length}</dd>
         </dl>
       </div>
@@ -149,13 +152,13 @@ export default async function PurchaseOrderPrintPage({
         <thead>
           <tr className="border-b-2 border-black text-left">
             <th className="py-1.5 pr-2 font-medium">#</th>
-            <th className="py-1.5 pr-2 font-medium">Item</th>
+            <th className="py-1.5 pr-2 font-medium">{L.item}</th>
             {showSupplierRef ? (
-              <th className="py-1.5 pr-2 font-medium">Your ref.</th>
+              <th className="py-1.5 pr-2 font-medium">{L.yourRef}</th>
             ) : null}
-            <th className="py-1.5 pr-2 text-right font-medium">Qty</th>
-            <th className="py-1.5 pr-2 text-right font-medium">Unit price</th>
-            <th className="py-1.5 text-right font-medium">Amount</th>
+            <th className="py-1.5 pr-2 text-right font-medium">{L.qty}</th>
+            <th className="py-1.5 pr-2 text-right font-medium">{L.unitPrice}</th>
+            <th className="py-1.5 text-right font-medium">{L.amount}</th>
           </tr>
         </thead>
         <tbody>
@@ -178,7 +181,7 @@ export default async function PurchaseOrderPrintPage({
               </td>
               <td className="py-1.5 pr-2 text-right tabular-nums">
                 {l.unitPrice == null ? (
-                  <span className="italic">price pending</span>
+                  <span className="italic">{L.pricePending}</span>
                 ) : (
                   formatPrice(l.unitPrice, l.currency)
                 )}
@@ -198,7 +201,7 @@ export default async function PurchaseOrderPrintPage({
                 colSpan={showSupplierRef ? 5 : 4}
                 className="py-2 pr-2 text-right font-medium"
               >
-                Total ({tot.currency})
+                {L.total} ({tot.currency})
               </td>
               <td className="py-2 text-right font-semibold tabular-nums">
                 {formatPrice(tot.amount, tot.currency)}
@@ -209,10 +212,7 @@ export default async function PurchaseOrderPrintPage({
       </table>
 
       {doc.hasUnpricedLines ? (
-        <p className="text-muted-foreground text-xs">
-          Lines marked “price pending” await your quotation — please confirm
-          prices on the order confirmation.
-        </p>
+        <p className="text-muted-foreground text-xs">{L.unpricedNote}</p>
       ) : null}
     </div>
   );

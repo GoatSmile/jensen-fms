@@ -25,15 +25,12 @@ import { colorFinishLabel } from "@/lib/colors/coating";
 import { localizedName } from "@/i18n/vocab";
 import { one } from "@/lib/supabase/embed";
 import { loadCurrentPriceList, priceOrderItems } from "@/lib/services/pricing";
+import {
+  asDocumentLanguage,
+  type DocumentLanguage,
+} from "@/lib/documents/language";
 
-export type DocumentLanguage = "en" | "da";
-
-/** `suppliers.document_language` is a CHAR(2) with a CHECK; anything else is English. */
-export function asDocumentLanguage(
-  v: string | null | undefined,
-): DocumentLanguage {
-  return v?.trim().toLowerCase() === "da" ? "da" : "en";
-}
+export type { DocumentLanguage } from "@/lib/documents/language";
 
 export type DocumentLabels = {
   supplier: string;
@@ -335,7 +332,7 @@ export async function loadServiceOrderDocument(
           zipCode: supplier.zip_code,
           town: supplier.town,
           country: supplier.country_code
-            ? countryName(supplier.country_code)
+            ? countryName(supplier.country_code, lang)
             : null,
           emailPrimary: supplier.email_primary,
           emailSecondary: supplier.email_secondary,

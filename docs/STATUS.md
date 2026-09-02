@@ -8,7 +8,8 @@ first); the paint order's *Add bike* picker groups bikes by customer order with
 multi-select; an MO built for an SO offers *Send frames to painter* as its next
 step; the SO detail shows frames per MO with an at-painter count; and `/bikes`
 gained a paint filter (at painter · painted, not yet built · not painted) with
-row badges. All verified in the browser on the local copy, including a real
+row badges. The PO document reads the same supplier language, and country
+names on both documents follow it. All verified in the browser on the local copy, including a real
 Resend send to the owner's test inbox. Decisions in DECISIONS 2026-09-01 and
 2026-09-02. tsc + lint + build clean; smoke 0 fail.
 
@@ -77,8 +78,9 @@ so a screen you demo in English looks different on his tablet.
    the test address (see Waiting on).
 3. **Kit = sub-assembly** goes to the planning chat (BACKLOG has the three
    questions).
-4. Parked deliberately: PO document in the supplier's language (BACKLOG);
-   painted frames as a dashboard metric (not asked for).
+4. Parked deliberately: painted frames as a dashboard metric (not asked for).
+   The PO document reads the supplier language since the same afternoon
+   (DECISIONS 2026-09-02, later) — set it on the supplier form.
 
 ## Preflight harness — run before showing anyone the app
 ```

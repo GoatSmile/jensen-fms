@@ -6,7 +6,7 @@
  */
 
 import { formatPrice } from "@/lib/format";
-import type { PODocument } from "./po-document";
+import { PO_LABELS, type PODocument } from "./po-document";
 
 function escapeHtml(s: string): string {
   return s
@@ -32,6 +32,7 @@ export function renderPOEmailHtml(
     intended: string[];
   },
 ): string {
+  const L = PO_LABELS[doc.lang];
   const showRef = doc.lines.some((l) => l.supplierSku != null);
 
   const testBanner = opts.testMode
@@ -53,7 +54,7 @@ export function renderPOEmailHtml(
           <span style="color:#737373;font-family:monospace;font-size:12px;">${escapeHtml(l.ourSku)}</span></td>
         ${showRef ? `<td style="${cellStyle}font-family:monospace;font-size:12px;">${escapeHtml(l.supplierSku ?? "—")}</td>` : ""}
         <td style="${rightCell}">${l.quantity}</td>
-        <td style="${rightCell}">${l.unitPrice == null ? "<em>price pending</em>" : escapeHtml(formatPrice(l.unitPrice, l.currency))}</td>
+        <td style="${rightCell}">${l.unitPrice == null ? `<em>${escapeHtml(L.pricePending)}</em>` : escapeHtml(formatPrice(l.unitPrice, l.currency))}</td>
         <td style="${rightCell}">${l.lineTotal == null ? "—" : escapeHtml(formatPrice(l.lineTotal, l.currency))}</td>
       </tr>`,
     )
@@ -62,7 +63,7 @@ export function renderPOEmailHtml(
   const totals = doc.totalsByCurrency
     .map(
       (t) => `<tr>
-        <td colspan="${showRef ? 5 : 4}" style="padding:8px;text-align:right;font-weight:600;">Total (${escapeHtml(t.currency)})</td>
+        <td colspan="${showRef ? 5 : 4}" style="padding:8px;text-align:right;font-weight:600;">${escapeHtml(L.total)} (${escapeHtml(t.currency)})</td>
         <td style="padding:8px;text-align:right;font-weight:600;white-space:nowrap;">${escapeHtml(formatPrice(t.amount, t.currency))}</td>
       </tr>`,
     )
@@ -73,21 +74,21 @@ export function renderPOEmailHtml(
 <body style="font-family:Arial,Helvetica,sans-serif;color:#171717;font-size:14px;line-height:1.5;margin:0;padding:24px;">
   <div style="max-width:640px;margin:0 auto;">
     ${testBanner}
-    <h1 style="font-size:20px;margin:0 0 2px;">Purchase order</h1>
+    <h1 style="font-size:20px;margin:0 0 2px;">${escapeHtml(L.title)}</h1>
     <div style="font-family:monospace;font-size:14px;margin-bottom:16px;">${escapeHtml(doc.poNumber)}</div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
       <tr>
-        <td style="padding:2px 0;color:#737373;">Supplier</td>
+        <td style="padding:2px 0;color:#737373;">${escapeHtml(L.supplier)}</td>
         <td style="padding:2px 0;text-align:right;">${escapeHtml(doc.supplier?.name ?? "—")}</td>
       </tr>
       <tr>
-        <td style="padding:2px 0;color:#737373;">Order date</td>
+        <td style="padding:2px 0;color:#737373;">${escapeHtml(L.orderDate)}</td>
         <td style="padding:2px 0;text-align:right;">${escapeHtml(doc.orderDate ?? "—")}</td>
       </tr>
       ${
         doc.expectedDate
           ? `<tr>
-        <td style="padding:2px 0;color:#737373;">Requested delivery</td>
+        <td style="padding:2px 0;color:#737373;">${escapeHtml(L.requestedDelivery)}</td>
         <td style="padding:2px 0;text-align:right;">${escapeHtml(doc.expectedDate)}</td>
       </tr>`
           : ""
@@ -98,11 +99,11 @@ export function renderPOEmailHtml(
       <thead>
         <tr style="border-bottom:2px solid #171717;text-align:left;">
           <th style="padding:6px 8px;">#</th>
-          <th style="padding:6px 8px;">Item</th>
-          ${showRef ? `<th style="padding:6px 8px;">Your ref.</th>` : ""}
-          <th style="padding:6px 8px;text-align:right;">Qty</th>
-          <th style="padding:6px 8px;text-align:right;">Unit price</th>
-          <th style="padding:6px 8px;text-align:right;">Amount</th>
+          <th style="padding:6px 8px;">${escapeHtml(L.item)}</th>
+          ${showRef ? `<th style="padding:6px 8px;">${escapeHtml(L.yourRef)}</th>` : ""}
+          <th style="padding:6px 8px;text-align:right;">${escapeHtml(L.qty)}</th>
+          <th style="padding:6px 8px;text-align:right;">${escapeHtml(L.unitPrice)}</th>
+          <th style="padding:6px 8px;text-align:right;">${escapeHtml(L.amount)}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -110,7 +111,7 @@ export function renderPOEmailHtml(
     </table>
     ${
       doc.hasUnpricedLines
-        ? `<p style="color:#737373;font-size:12px;">Lines marked “price pending” await your quotation — please confirm prices on the order confirmation.</p>`
+        ? `<p style="color:#737373;font-size:12px;">${escapeHtml(L.unpricedNote)}</p>`
         : ""
     }
     <p style="color:#737373;font-size:12px;margin-top:24px;">

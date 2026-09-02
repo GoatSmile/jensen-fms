@@ -2086,3 +2086,15 @@ Rejected: a server-rendered PDF attachment — no PDF pipeline exists, browser
 print is what invoices and POs already do, and the HTML mail carries the same
 content. Verified end to end on the local copy with a real Resend send to the
 owner's test inbox.
+
+## 2026-09-02 (later) — The supplier language covers purchase orders too
+Owner's call the same afternoon: don't park it. The PO document (print + email)
+now reads `suppliers.document_language` exactly like the paint document, with
+its own label map (`PO_LABELS` in `po-document.ts`) and the same shared
+`DocumentLanguage` type (`src/lib/documents/language.ts`); country names on
+both documents come from `Intl.DisplayNames` in the document's language
+(`countryName(code, lang)` already took a locale — the callers had never passed
+one). Default `en` means nothing changes for any existing supplier until
+someone flips it on the supplier form. This supersedes the "POs stay English
+until taught" clause in the entry above; migration 90 only rewrites the column
+comment that said so.

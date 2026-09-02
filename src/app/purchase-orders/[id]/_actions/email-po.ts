@@ -10,7 +10,7 @@ import {
 } from "@/lib/communication/settings";
 import { sendViaResend } from "@/lib/email/send";
 import { COMPANY } from "@/lib/invoicing/company";
-import { loadPODocument } from "@/lib/purchasing/po-document";
+import { PO_LABELS, loadPODocument } from "@/lib/purchasing/po-document";
 import { renderPOEmailHtml } from "@/lib/purchasing/po-email-html";
 
 export type EmailPOResult =
@@ -69,7 +69,7 @@ export async function emailPOToSupplier(
   }
 
   const trimmedMessage = message?.trim() || null;
-  const subject = `${resolved.testMode ? "[TEST] " : ""}Purchase order ${doc.poNumber} — ${COMPANY.name}`;
+  const subject = `${resolved.testMode ? "[TEST] " : ""}${PO_LABELS[doc.lang].title} ${doc.poNumber} — ${COMPANY.name}`;
   const html = renderPOEmailHtml(doc, {
     companyName: COMPANY.name,
     contactEmail: settings.replyToEmail,
