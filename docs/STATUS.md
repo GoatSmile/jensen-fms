@@ -79,7 +79,9 @@ so a screen you demo in English looks different on his tablet.
    forks *paintable as* on their part forms in production, enter today's painted
    shelf as variants with a stated cost, and watch one real paint order go round.
    The owner plans a round of TEST-prefixed test data first.
-1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
+1. **Tuesday's meeting with Dennis — walk the fixture.** The script is
+   `docs/WALKTHROUGH-PAINT-2026-09.md` (+ PDF): five scenarios lifted from his
+   own words on the 1 Sep call, every screen named. On the LOCAL copy:
    customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
    CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,
    both frames, linked back to the SO). Every step was driven through the real
