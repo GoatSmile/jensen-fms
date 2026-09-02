@@ -69,7 +69,7 @@ export default async function PaintFromSOPage({
         .from("bikes")
         .select(
           `id, frame_number, status,
-           color:colors(name_en, name_da, hex),
+           color:colors(id, name_en, name_da, hex),
            template:bike_templates(family:bike_families(name), frame_size, name_en)`,
         )
         .in("manufacturing_order_id", moIds)
@@ -94,8 +94,7 @@ export default async function PaintFromSOPage({
     const inOpenOrder = new Set(
       (openLinksRes.data ?? [])
         .filter(
-          (r) =>
-            one(one(r.service_order)?.service_type)?.blocks_build === true,
+          (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
         )
         .map((r) => r.bike_id),
     );
@@ -107,6 +106,7 @@ export default async function PaintFromSOPage({
           id: b.id,
           frameNumber: b.frame_number,
           status: b.status as BikeStatus,
+          colorId: b.color?.id ?? null,
           colorName: b.color
             ? localizedName(locale, b.color.name_en, b.color.name_da)
             : null,
@@ -137,6 +137,20 @@ export default async function PaintFromSOPage({
 
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
+
+  // Pre-select the colour when the frames agree on one — they came off a
+  // sales order line that named it, and the screen that sent you here already
+  // said "no painted stock in White". Frames in two colours have no single
+  // right answer for a batch default, so leave it blank rather than guess.
+  const distinctColourIds = [
+    ...new Set(
+      eligibleBikes
+        .map((b) => b.colorId)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  const defaultColorId =
+    distinctColourIds.length === 1 ? distinctColourIds[0] : "";
   // Pre-select the painting type's configured default supplier, if it's still
   // an active supplier in the picker.
   const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
@@ -207,6 +221,7 @@ export default async function PaintFromSOPage({
           suppliers={suppliers}
           colors={colors}
           defaultSupplierId={defaultSupplierId}
+          defaultColorId={defaultColorId}
         />
       )}
     </div>

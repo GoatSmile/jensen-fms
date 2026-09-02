@@ -32,6 +32,8 @@ export type EligibleSOBike = {
   id: string;
   frameNumber: string;
   templateLabel: string | null;
+  /** The bike's colour; seeds the batch default when the frames agree. */
+  colorId: string | null;
   colorName: string | null;
   colorHex: string | null;
   status: BikeStatus;
@@ -44,6 +46,8 @@ type Props = {
   suppliers: SupplierOption[];
   colors: ColorOption[];
   defaultSupplierId: string;
+  /** The frames' shared colour, or "" when they disagree. */
+  defaultColorId: string;
 };
 
 export function PaintFromSOForm({
@@ -53,6 +57,7 @@ export function PaintFromSOForm({
   suppliers,
   colors,
   defaultSupplierId,
+  defaultColorId,
 }: Props) {
   const t = useTranslations("soDetail");
   const tCommon = useTranslations("common");
@@ -64,7 +69,7 @@ export function PaintFromSOForm({
     () => new Set(eligibleBikes.map((b) => b.id)),
   );
   const [supplierId, setSupplierId] = useState(defaultSupplierId);
-  const [colorId, setColorId] = useState("");
+  const [colorId, setColorId] = useState(defaultColorId);
   const [plannedSendDate, setPlannedSendDate] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -182,7 +187,9 @@ export function PaintFromSOForm({
                     </span>
                   ) : null}
                   <Badge variant={BIKE_STATUS_VARIANT[b.status] ?? "outline"}>
-                    {tBikeStatus.has(b.status) ? tBikeStatus(b.status) : b.status}
+                    {tBikeStatus.has(b.status)
+                      ? tBikeStatus(b.status)
+                      : b.status}
                   </Badge>
                 </label>
               </li>
@@ -196,66 +203,74 @@ export function PaintFromSOForm({
         description={t("painterColourDesc")}
         contentClassName="flex flex-col gap-3"
       >
-          <Field
-            label={t("supplier")}
-            htmlFor="paint-supplier"
-            required
-            error={errorField === "supplier_id" ? error : null}
+        <Field
+          label={t("supplier")}
+          htmlFor="paint-supplier"
+          required
+          error={errorField === "supplier_id" ? error : null}
+        >
+          <Select
+            value={supplierId}
+            onValueChange={(v) => {
+              setSupplierId(v);
+              clearFieldError("supplier_id");
+            }}
           >
-            <Select
-              value={supplierId}
-              onValueChange={(v) => {
-                setSupplierId(v);
-                clearFieldError("supplier_id");
-              }}
-            >
-              <SelectTrigger id="paint-supplier">
-                <SelectValue placeholder={t("pickSupplierPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+            <SelectTrigger id="paint-supplier">
+              <SelectValue placeholder={t("pickSupplierPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {suppliers.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
-          <Field
-            label={t("colour")}
-            htmlFor="paint-color"
-            required
-            error={errorField === "color_id" ? error : null}
+        <Field
+          label={t("colour")}
+          htmlFor="paint-color"
+          required
+          error={errorField === "color_id" ? error : null}
+        >
+          <Select
+            value={colorId}
+            onValueChange={(v) => {
+              setColorId(v);
+              clearFieldError("color_id");
+            }}
           >
-            <Select
-              value={colorId}
-              onValueChange={(v) => {
-                setColorId(v);
-                clearFieldError("color_id");
-              }}
-            >
-              <SelectTrigger id="paint-color">
-                <SelectValue placeholder={t("pickColourPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {colors.map((c) => {
-                  const label = localizedName(locale, c.name_en, c.name_da);
-                  return (
+            <SelectTrigger id="paint-color">
+              <SelectValue placeholder={t("pickColourPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {colors.map((c) => {
+                const label = localizedName(locale, c.name_en, c.name_da);
+                return (
                   <SelectItem key={c.id} value={c.id}>
                     <ColorSwatch hex={c.hex} label={label} />
                     {label}
-                    {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en") ? (
+                    {colorFinishLabel(
+                      c.ral_code,
+                      c.coating,
+                      locale === "da" ? "da" : "en",
+                    ) ? (
                       <span className="text-muted-foreground ml-1.5 text-xs">
-                        {colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en")}
+                        {colorFinishLabel(
+                          c.ral_code,
+                          c.coating,
+                          locale === "da" ? "da" : "en",
+                        )}
                       </span>
                     ) : null}
                   </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </Field>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </Field>
       </Panel>
 
       <Panel
@@ -263,23 +278,23 @@ export function PaintFromSOForm({
         description={t("scheduleDesc")}
         contentClassName="flex flex-col gap-3"
       >
-          <Field label={t("plannedSendDate")} htmlFor="paint-send-date">
-            <Input
-              id="paint-send-date"
-              type="date"
-              value={plannedSendDate}
-              onChange={(e) => setPlannedSendDate(e.target.value)}
-            />
-          </Field>
-          <Field label={t("notes")} htmlFor="paint-notes">
-            <Textarea
-              id="paint-notes"
-              rows={3}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("paintNotesPlaceholder")}
-            />
-          </Field>
+        <Field label={t("plannedSendDate")} htmlFor="paint-send-date">
+          <Input
+            id="paint-send-date"
+            type="date"
+            value={plannedSendDate}
+            onChange={(e) => setPlannedSendDate(e.target.value)}
+          />
+        </Field>
+        <Field label={t("notes")} htmlFor="paint-notes">
+          <Textarea
+            id="paint-notes"
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t("paintNotesPlaceholder")}
+          />
+        </Field>
       </Panel>
 
       {error && !errorField ? (
