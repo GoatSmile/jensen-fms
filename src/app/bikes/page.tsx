@@ -39,6 +39,7 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
+import { loadPaintStates } from "@/lib/services/at-supplier";
 
 type SearchParams = {
   q?: string;
@@ -49,6 +50,7 @@ type SearchParams = {
   template?: string;
   built?: string;
   fleet?: string;
+  paint?: string;
   sort?: string;
 };
 
@@ -57,6 +59,17 @@ const BUILT_PRESETS: { value: string; labelKey: string }[] = [
   { value: "last-12m", labelKey: "builtLast12m" },
   { value: "over-1y", labelKey: "builtOver1y" },
   { value: "over-2y", labelKey: "builtOver2y" },
+];
+
+// Paint is DERIVED from service orders (never a bike column). "painted" is
+// deliberately "painted and not yet built" — the question behind it is which
+// painted frames are on the shelf, and a delivered bike's paint is no longer
+// stock. Unbuilt = planning / building.
+const UNBUILT_STATUSES: BikeStatus[] = ["planning", "building"];
+const PAINT_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: "at-painter", labelKey: "paintAtPainter" },
+  { value: "painted", labelKey: "paintPainted" },
+  { value: "unpainted", labelKey: "paintUnpainted" },
 ];
 
 const SORT_OPTIONS: { value: string; labelKey: string }[] = [
@@ -101,6 +114,10 @@ export default async function BikesPage({
       ? sp.built
       : null;
   const fleetFilter = sp.fleet === "1";
+  const paintFilter =
+    sp.paint && PAINT_OPTIONS.some((p) => p.value === sp.paint)
+      ? sp.paint
+      : null;
   const sortFilter =
     sp.sort && SORT_OPTIONS.some((s) => s.value === sp.sort)
       ? sp.sort
@@ -133,7 +150,10 @@ export default async function BikesPage({
   // per-row coverage line and the maintenance-fleet filter. PostgREST can't
   // join the agreement onto the bike's owner, so for the filter we pre-cut
   // by org id in SQL and refine unit scoping in memory after the fetch.
-  const activeAgreements = await loadActiveAgreements(supabase);
+  const [activeAgreements, paintStates] = await Promise.all([
+    loadActiveAgreements(supabase),
+    loadPaintStates(supabase),
+  ]);
   let fleetOrgIds: string[] | null = null;
   if (fleetFilter) {
     fleetOrgIds = Array.from(
@@ -254,6 +274,22 @@ export default async function BikesPage({
   if (builtLt) bikesQuery = bikesQuery.lt("built_at", builtLt);
   if (bikeIdsForPart) bikesQuery = bikesQuery.in("id", bikeIdsForPart);
   if (bikeIdsForQuery) bikesQuery = bikesQuery.in("id", bikeIdsForQuery);
+  // Paint filter: resolve to id sets (same zero-uuid sentinel as above).
+  const NONE = ["00000000-0000-0000-0000-000000000000"];
+  if (paintFilter === "at-painter") {
+    const ids = [...paintStates.atPainter];
+    bikesQuery = bikesQuery.in("id", ids.length ? ids : NONE);
+  } else if (paintFilter === "painted") {
+    const ids = [...paintStates.painted];
+    bikesQuery = bikesQuery
+      .in("id", ids.length ? ids : NONE)
+      .in("status", UNBUILT_STATUSES);
+  } else if (paintFilter === "unpainted") {
+    const known = [...paintStates.atPainter, ...paintStates.painted];
+    if (known.length > 0) {
+      bikesQuery = bikesQuery.not("id", "in", `(${known.join(",")})`);
+    }
+  }
 
   // Sort: newest/oldest built (nulls last), else by frame number.
   if (sortFilter === "built-desc") {
@@ -394,6 +430,10 @@ export default async function BikesPage({
   }
   if (fleetFilter)
     activeChips.push({ key: "fleet", label: t("chipFleet") });
+  if (paintFilter) {
+    const p = PAINT_OPTIONS.find((x) => x.value === paintFilter);
+    if (p) activeChips.push({ key: "paint", label: t(p.labelKey) });
+  }
   if (hasPartName)
     activeChips.push({
       key: "has-part",
@@ -551,6 +591,27 @@ export default async function BikesPage({
           >
             <option value="">{t("anyBuildDate")}</option>
             {BUILT_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {t(p.labelKey)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm" htmlFor="bikes-paint">
+            {t("paintLabel")}
+          </label>
+          <select
+            id="bikes-paint"
+            name="paint"
+            defaultValue={paintFilter ?? ""}
+            className={cn(
+              "border-input bg-background h-9 rounded-md border px-2 text-sm",
+              paintFilter && FILTER_ACTIVE_CLASS,
+            )}
+          >
+            <option value="">{t("anyPaint")}</option>
+            {PAINT_OPTIONS.map((p) => (
               <option key={p.value} value={p.value}>
                 {t(p.labelKey)}
               </option>
@@ -777,6 +838,19 @@ export default async function BikesPage({
                       >
                         {tStatus(b.status)}
                       </Badge>
+                      {/* Paint is derived (service orders), not a status — so it
+                          sits beside the status, and "painted" only while the
+                          frame is still on the shelf. */}
+                      {paintStates.atPainter.has(b.id) ? (
+                        <Badge variant="warning" className="ml-1.5 font-normal">
+                          {t("badgeAtPainter")}
+                        </Badge>
+                      ) : paintStates.painted.has(b.id) &&
+                        UNBUILT_STATUSES.includes(b.status as BikeStatus) ? (
+                        <Badge variant="success" className="ml-1.5 font-normal">
+                          {t("badgePainted")}
+                        </Badge>
+                      ) : null}
                     </Link>
                   </TableCell>
                   <TableCell className="hidden p-0 text-sm xl:table-cell">

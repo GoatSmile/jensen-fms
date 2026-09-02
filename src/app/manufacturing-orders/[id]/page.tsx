@@ -61,7 +61,8 @@ export default async function ManufacturingOrderDetailPage({
         planned_start_date, planned_completion_date, planned_completion_precision,
         actual_start_date, actual_completion_date,
         notes, created_at,
-        bike_template_id, bike_type_id, color_id,
+        bike_template_id, bike_type_id, color_id, sales_order_id,
+        sales_order:sales_orders!sales_order_id(id, sales_order_number),
         bike_type:bike_types(id, name_en, name_da, slug),
         bike_template:bike_templates(id, name_en, family:bike_families(name), frame_size, version, is_current),
         color:colors(id, slug, name_en, name_da, hex)
@@ -372,6 +373,9 @@ export default async function ManufacturingOrderDetailPage({
             : null
         }
         colorHex={mo.color?.hex ?? null}
+        salesOrderId={mo.sales_order?.id ?? null}
+        salesOrderNumber={mo.sales_order?.sales_order_number ?? null}
+        closed={closed}
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

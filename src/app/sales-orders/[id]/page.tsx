@@ -25,6 +25,7 @@ import {
   LinkedPaintOrdersSection,
   type LinkedPaintRow,
 } from "./_components/linked-paint-orders-section";
+import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
 import {
   LinesSection,
@@ -212,6 +213,32 @@ export default async function SODetailPage({
     linkedMoCount: linkedCountsByLine.get(l.id) ?? 0,
   }));
 
+  // Frames per MO and how many are away at the painter — the phone question
+  // ("is my frame at the painter?") answered from the SO without opening each MO.
+  const moIds = (mosRes.data ?? []).map((m) => m.id);
+  const framesByMo = new Map<string, { total: number; atPainter: number }>();
+  if (moIds.length > 0) {
+    const { data: moBikes } = await supabase
+      .from("bikes")
+      .select("id, manufacturing_order_id")
+      .in("manufacturing_order_id", moIds)
+      .is("deleted_at", null);
+    const away = await loadAtSupplierBikeIds(
+      supabase,
+      (moBikes ?? []).map((b) => b.id),
+    );
+    for (const b of moBikes ?? []) {
+      if (!b.manufacturing_order_id) continue;
+      const cur = framesByMo.get(b.manufacturing_order_id) ?? {
+        total: 0,
+        atPainter: 0,
+      };
+      cur.total += 1;
+      if (away.has(b.id)) cur.atPainter += 1;
+      framesByMo.set(b.manufacturing_order_id, cur);
+    }
+  }
+
   const moRows: LinkedMORow[] = (mosRes.data ?? []).map((m) => ({
     id: m.id,
     mo_number: m.mo_number,
@@ -219,6 +246,8 @@ export default async function SODetailPage({
     target_quantity: m.target_quantity,
     completed_quantity: m.completed_quantity,
     planned_completion_date: m.planned_completion_date,
+    bikeCount: framesByMo.get(m.id)?.total ?? 0,
+    atPainterCount: framesByMo.get(m.id)?.atPainter ?? 0,
     templateLabel: m.bike_template
       ? [
           m.bike_template.family?.name,

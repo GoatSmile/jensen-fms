@@ -90,10 +90,10 @@ treat the early totals as floors, not truth.
 
 | Date | Hours | Work |
 |---|---|---|
-| Wed 2026-09-02 | ~6 | **The painter gets a document** (migration 89): paint-order print + email in the supplier's own language, emailing marks the order sent. Also: Sep 1 call checked against the app (paint-from-SO already existed), local DB refreshed, September CLAUDE.md consolidation. |
+| Wed 2026-09-02 | ~8 | **SO → paint order becomes walkable** (migration 89): painter document in the supplier's language (print + email, emailing = sending), a picker grouped by customer order, an MO next step to the painter, a paint filter on /bikes. Plus the Sep 1 call analysis and the September consolidation. |
 
-**September so far: ~6 h** (1 working day)
+**September so far: ~8 h** (1 working day)
 
 ---
 
-**Project total: ~260 h across 42 working days (2026-05-07 → 2026-09-02)**
+**Project total: ~262 h across 42 working days (2026-05-07 → 2026-09-02)**

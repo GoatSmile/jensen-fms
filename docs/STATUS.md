@@ -1,12 +1,16 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-02 (mid-session, after shipping the painter document).**
-Most recent: **the painter receives a document.** A paint order now has a print
-view (browser → PDF) and an *Email painter* action, both rendered in the
-supplier's own language (`suppliers.document_language`, migration 89); emailing a
-planned order marks it sent and freezes the prices first. Verified end to end on
-the local copy with a real Resend send to the owner's test inbox. Decisions in
-DECISIONS 2026-09-01 and 2026-09-02. tsc + lint + build clean.
+**Last updated: 2026-09-02 (session end).** Most recent: **the whole sales
+order → paint order path is now walkable without knowing a frame number.** The
+painter receives a document (print + *Email painter*, in the supplier's own
+language, migration 89; emailing marks a planned order sent and freezes prices
+first); the paint order's *Add bike* picker groups bikes by customer order with
+multi-select; an MO built for an SO offers *Send frames to painter* as its next
+step; the SO detail shows frames per MO with an at-painter count; and `/bikes`
+gained a paint filter (at painter · painted, not yet built · not painted) with
+row badges. All verified in the browser on the local copy, including a real
+Resend send to the owner's test inbox. Decisions in DECISIONS 2026-09-01 and
+2026-09-02. tsc + lint + build clean; smoke 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -53,20 +57,28 @@ so a screen you demo in English looks different on his tablet.
 - **Painted frames** are derived state (DECISIONS 2026-09-01 §5): a filter over
   bikes, not a SKU. Item C below.
 - **Local database copy** refreshed from the 2 Sep production dump, then
-  migration 89 applied. One known divergence: the local `PNT-2026-0008` was
-  flipped to `sent` + emailed by today's test; in production it is still
-  `planned`. Re-dump before trusting local for anything data-shaped.
+  migration 89 applied. Known divergences from production: the local
+  `PNT-2026-0008` was flipped to `sent` + emailed by today's test (prod: still
+  `planned`), and the walk-through fixture below exists only locally. Re-dump
+  before trusting local for anything data-shaped.
+- **Jerudan is gone from both databases** (owner's call 2 Sep): it was an
+  unreferenced duplicate of Jeudan. `Jeurodan` remains as version 1 of the
+  Jeudan chain.
 
-## In flight — agreed with the owner 2 Sep, in this order
-1. **B · Picker + entry points**: the paint order's *Add bike* dialog searches
-   customer / SO / MO and groups by order, with multi-select; MO detail gets a
-   "Send frames to painter" next step when the MO belongs to an SO; the SO
-   detail's linked-MOs section shows frames at the painter per MO.
-2. **C · Painted frames**: a paint filter on `/bikes` (at painter · painted and
-   unbuilt · unpainted) plus a row badge, via a helper in `at-supplier.ts`.
-3. **Fixture**: the real-estate-dealer order built on the LOCAL copy as the
-   walk-through for Tuesday's meeting with Dennis.
-4. Session end: overwrite this file again.
+## Next actions
+1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
+   customer *Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
+   CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,
+   both frames, linked back to the SO). Every step was driven through the real
+   UI today, so it is the demo script as well as the test. Point the dev
+   server at local (`scripts/use-db.sh`), sign in with `dev-login.mjs`.
+2. **Then decide with Dennis** whether the same order goes into production for
+   real (his real-estate customer), and whether Metacoat's real email replaces
+   the test address (see Waiting on).
+3. **Kit = sub-assembly** goes to the planning chat (BACKLOG has the three
+   questions).
+4. Parked deliberately: PO document in the supplier's language (BACKLOG);
+   painted frames as a dashboard metric (not asked for).
 
 ## Preflight harness — run before showing anyone the app
 ```
@@ -91,9 +103,6 @@ scripts/audit-invariants.sql       # SQL editor, psql, or the MCP
 - **Kit = sub-assembly** modelling question — escalated to the planning chat
   (BACKLOG, "Parked product ideas"). Until answered: kits are box stickers,
   template reuse is Duplicate template.
-- **Jerudan** template: an unreferenced duplicate of Jeudan (current, no family).
-  Owner is finding out where it came from; do not delete yet. `Jeurodan` is
-  version 1 of the Jeudan chain and stays as history.
 - **e-conomic production agreement** grant token — long overdue; the long-lead
   item in the ladder's last rung.
 - **`orders@valent.dk`** alias in Google Workspace — it is the outbound

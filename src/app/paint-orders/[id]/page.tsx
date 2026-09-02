@@ -123,12 +123,22 @@ export default async function PaintOrderDetailPage({
       )
       .eq("service_order_id", id)
       .order("added_at", { ascending: true }),
+    // The picker groups by customer order, so each bike carries its MO → SO →
+    // customer chain (and its slated owner as the fallback name).
     supabase
       .from("bikes")
       .select(
         `
-          id, frame_number,
-          template:bike_templates(id, name_en, family:bike_families(name), frame_size)
+          id, frame_number, status,
+          template:bike_templates(id, name_en, family:bike_families(name), frame_size),
+          owner_organization:organizations!owner_organization_id(legal_name, display_name_en, display_name_da),
+          manufacturing_order:manufacturing_orders!manufacturing_order_id(
+            mo_number,
+            sales_order:sales_orders!sales_order_id(
+              id, sales_order_number,
+              organization:organizations!organization_id(legal_name, display_name_en, display_name_da)
+            )
+          )
         `,
       )
       .is("deleted_at", null)
@@ -288,6 +298,17 @@ export default async function PaintOrderDetailPage({
       )
       .map((r) => r.bike_id),
   );
+  const orgLabel = (
+    o:
+      | { legal_name: string; display_name_en: string | null; display_name_da: string | null }
+      | null
+      | undefined,
+  ) =>
+    o
+      ? ((locale === "da"
+          ? (o.display_name_da ?? o.display_name_en)
+          : (o.display_name_en ?? o.display_name_da)) ?? o.legal_name)
+      : null;
   const eligibleBikes: EligibleBikeOption[] = (allBikesRes.data ?? [])
     .filter((b) => !inOpenOrder.has(b.id))
     .map((b) => {
@@ -297,10 +318,19 @@ export default async function PaintOrderDetailPage({
             .filter(Boolean)
             .join(" · ")
         : null;
+      const mo = one(b.manufacturing_order);
+      const so = mo ? one(mo.sales_order) : null;
       return {
         id: b.id,
         frameNumber: b.frame_number,
         templateLabel,
+        status: b.status as BikeStatus,
+        moNumber: mo?.mo_number ?? null,
+        soId: so?.id ?? null,
+        soNumber: so?.sales_order_number ?? null,
+        customerName:
+          orgLabel(so ? one(so.organization) : null) ??
+          orgLabel(one(b.owner_organization)),
       };
     });
 

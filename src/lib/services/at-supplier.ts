@@ -61,3 +61,48 @@ export async function loadAtSupplierBikeIds(
   }
   return result;
 }
+
+export type PaintStates = {
+  /** Away on a build-blocking order that is `sent` / `at_supplier`. */
+  atPainter: Set<string>;
+  /** Came back from a build-blocking order (`received_back`) and is not away again. */
+  painted: Set<string>;
+};
+
+/**
+ * Paint state for EVERY bike, derived the same way as the gate above — from
+ * `service_order_bikes` joined to the order's live status — so "painted" is
+ * never a bike column either (DECISIONS 2026-09-01 §5: painted frames are
+ * derived state, not inventory). One query, no bike filter: the link table is
+ * small and the list page needs the answer for every row it shows. A bike that
+ * came back and was sent out again reads as at-painter, not painted. Fail-open
+ * like the gate: on error both sets are empty and the list simply shows no
+ * paint badges.
+ */
+export async function loadPaintStates(
+  supabase: SupabaseClient<Database>,
+): Promise<PaintStates> {
+  const atPainter = new Set<string>();
+  const painted = new Set<string>();
+  const { data, error } = await supabase
+    .from("service_order_bikes")
+    .select(
+      `bike_id,
+       service_order:service_orders!service_order_id(
+         status,
+         service_type:service_types!service_type_id(blocks_build)
+       )`,
+    );
+  if (error || !data) return { atPainter, painted };
+
+  for (const row of data) {
+    const order = one(row.service_order);
+    if (!order) continue;
+    if (!one(order.service_type)?.blocks_build) continue;
+    const status = order.status as ServiceOrderStatus;
+    if (AT_SUPPLIER_STATUSES.includes(status)) atPainter.add(row.bike_id);
+    else if (status === "received_back") painted.add(row.bike_id);
+  }
+  for (const id of atPainter) painted.delete(id);
+  return { atPainter, painted };
+}

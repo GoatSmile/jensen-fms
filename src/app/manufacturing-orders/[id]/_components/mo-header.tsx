@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, ChevronDown, Printer } from "lucide-react";
+import { CheckCircle2, ChevronDown, Paintbrush, Printer } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,11 @@ type Props = {
   bikeTypeName: string | null;
   colorName: string | null;
   colorHex: string | null;
+  /** The SO this MO builds for — null for a stock build. */
+  salesOrderId: string | null;
+  salesOrderNumber: string | null;
+  /** completed / cancelled: no frames go anywhere from here. */
+  closed: boolean;
 };
 
 export function MOHeader({
@@ -62,6 +67,9 @@ export function MOHeader({
   bikeTypeName,
   colorName,
   colorHex,
+  salesOrderId,
+  salesOrderNumber,
+  closed,
 }: Props) {
   const t = useTranslations("moDetail");
   const tStatus = useTranslations("moStatus");
@@ -154,9 +162,29 @@ export function MOHeader({
             {colorName ? (
               <ColorChip hex={colorHex} label={colorName} />
             ) : null}
+            {salesOrderId && salesOrderNumber ? (
+              <Link
+                href={`/sales-orders/${salesOrderId}`}
+                className="hover:text-foreground underline-offset-4 hover:underline"
+              >
+                {t("linkedSalesOrder")}{" "}
+                <span className="font-mono">{salesOrderNumber}</span>
+              </Link>
+            ) : null}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* The next step after spawning an MO for a customer order: the
+              frames go to the painter, and that is created from the SO so the
+              paint order links back to it (D3). Stock builds attach bikes from
+              the paint order's own picker instead. */}
+          {salesOrderId && !closed ? (
+            <Button variant="outline" asChild>
+              <Link href={`/sales-orders/${salesOrderId}/paint/new`}>
+                <Paintbrush aria-hidden /> {t("sendToPainter")}
+              </Link>
+            </Button>
+          ) : null}
           <Button variant="outline" asChild>
             <Link
               href={`/manufacturing-orders/${moId}/print`}

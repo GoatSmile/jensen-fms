@@ -21,6 +21,9 @@ export type LinkedMORow = {
   target_quantity: number;
   completed_quantity: number;
   planned_completion_date: string | null;
+  /** Bikes on this MO, and how many are currently away at the painter. */
+  bikeCount: number;
+  atPainterCount: number;
   templateLabel: string | null;
 };
 
@@ -48,6 +51,7 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
                 </TableHead>
                 <TableHead>{t("thStatus")}</TableHead>
                 <TableHead className="text-right">{t("thProgress")}</TableHead>
+                <TableHead className="text-right">{t("thFrames")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
                   {t("thPlannedCompletion")}
                 </TableHead>
@@ -88,6 +92,14 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
                       <span className="text-muted-foreground text-[10px]">
                         ({pct}%)
                       </span>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {mo.bikeCount}
+                      {mo.atPainterCount > 0 ? (
+                        <Badge variant="warning" className="ml-2 font-normal">
+                          {t("framesAtPainter", { count: mo.atPainterCount })}
+                        </Badge>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden text-right text-xs lg:table-cell">
                       {formatDate(mo.planned_completion_date)}

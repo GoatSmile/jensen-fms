@@ -349,7 +349,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     (flips only at the deliberate "Confirm frame" step — new bikes start
     with a provisional generated frame number) and blocks at-painter bikes.
     "At painter" is **derived** (bike ∈ service order with a blocking
-    status via `src/lib/services/at-supplier.ts`), never a bike column. No
+    status via `src/lib/services/at-supplier.ts`), never a bike column — and neither is "painted":
+    `loadPaintStates` (same module) derives it from a `received_back` blocking
+    order, `/bikes?paint=` filters on both, and "painted" means painted AND not
+    yet built, because the question behind it is which painted frames are on
+    the shelf (DECISIONS 2026-09-01 §5). No
     silent MO auto-complete — completion is a one-click "Complete MO".
   - `bike_parts` rows with `inventory_movement_id IS NOT NULL` are frozen
     (qty / removal disallowed); pre-consumption rows are editable.

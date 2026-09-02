@@ -6,28 +6,31 @@ import { getTranslations } from "next-intl/server";
 import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
-export type AddBikeToPaintResult =
-  | { ok: true }
+export type AddBikesToPaintResult =
+  | { ok: true; added: number; skipped: number }
   | { ok: false; error: string };
 
 /**
- * Attach a bike to a service order. The bike link drives the at-supplier
- * build gate + traceability; WHAT gets done and the pricing live on the
- * order's item lines (per-bike colour/scope columns are legacy history from
- * the pre-items paint model). Only valid while the order is non-terminal —
- * adding bikes to a `received_back` or `cancelled` order makes no sense.
+ * Attach one or more bikes to a service order. The bike link drives the
+ * at-supplier build gate + traceability; WHAT gets done and the pricing live
+ * on the order's item lines (per-bike colour/scope columns are legacy history
+ * from the pre-items paint model). Only valid while the order is non-terminal
+ * — adding bikes to a `received_back` or `cancelled` order makes no sense.
  *
- * The (service_order_id, bike_id) pair is the primary key on
- * `service_order_bikes`, so re-adds collide gracefully.
+ * Takes a LIST because the picker groups bikes by customer order and a
+ * customer's frames go to the painter together (2026-09-02). Bikes already on
+ * this order are skipped rather than failing the whole batch; the
+ * (service_order_id, bike_id) primary key still catches a race.
  */
-export async function addBikeToPaintOrder(
+export async function addBikesToPaintOrder(
   serviceOrderId: string,
-  bikeId: string,
+  bikeIds: string[],
   opts: { notes?: string | null } = {},
-): Promise<AddBikeToPaintResult> {
+): Promise<AddBikesToPaintResult> {
   const t = await getTranslations("errors");
   if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
-  if (!bikeId) return { ok: false, error: t("paintPickBike") };
+  const requested = [...new Set((bikeIds ?? []).filter(Boolean))];
+  if (requested.length === 0) return { ok: false, error: t("paintPickBike") };
 
   const supabase = await createClient();
 
@@ -51,11 +54,29 @@ export async function addBikeToPaintOrder(
     };
   }
 
-  const { error: insErr } = await supabase.from("service_order_bikes").insert({
-    service_order_id: serviceOrderId,
-    bike_id: bikeId,
-    notes: nullable(opts.notes ?? null),
-  });
+  const { data: existing, error: existingErr } = await supabase
+    .from("service_order_bikes")
+    .select("bike_id")
+    .eq("service_order_id", serviceOrderId)
+    .in("bike_id", requested);
+  if (existingErr) {
+    return {
+      ok: false,
+      error: t("paintCouldNotAddBike", { detail: existingErr.message }),
+    };
+  }
+  const already = new Set((existing ?? []).map((r) => r.bike_id));
+  const toAdd = requested.filter((id) => !already.has(id));
+  if (toAdd.length === 0) return { ok: false, error: t("paintBikeAlreadyOn") };
+
+  const notes = nullable(opts.notes ?? null);
+  const { error: insErr } = await supabase.from("service_order_bikes").insert(
+    toAdd.map((bikeId) => ({
+      service_order_id: serviceOrderId,
+      bike_id: bikeId,
+      notes,
+    })),
+  );
   if (insErr) {
     if (insErr.code === "23505") {
       return { ok: false, error: t("paintBikeAlreadyOn") };
@@ -68,5 +89,5 @@ export async function addBikeToPaintOrder(
 
   revalidatePath(`/paint-orders/${serviceOrderId}`);
   revalidatePath("/paint-orders");
-  return { ok: true };
+  return { ok: true, added: toAdd.length, skipped: already.size };
 }
