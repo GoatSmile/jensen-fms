@@ -17,9 +17,15 @@ export type CoverageRow = {
   perBike: number;
   /** perBike × remainingToBuild */
   demand: number;
+  /** Raw on hand, plus painted on hand in the MO's colour for a paintable part. */
   onHand: number;
   /** max(0, demand − onHand) */
   shortfall: number;
+  /** Painted variant on hand in the MO's colour (0 for a non-paintable part). */
+  paintedOnHand: number;
+  /** Of the covered demand, how many units are covered only by RAW parts that
+   * still have to go to the painter (0 when the part is not paintable). */
+  needsPaint: number;
 };
 
 export type MOCoverage = {
@@ -46,17 +52,32 @@ export function computeCoverageRows(
   }[],
   remainingToBuild: number,
   stockByPart: Map<string, number>,
+  /**
+   * Painted stock in the MO's colour per RAW part id, with an entry for EVERY
+   * paintable recipe part (0 when no variant exists) — membership is what marks
+   * a part paintable (docs/plan-painted-parts.md). Absent = colour-blind.
+   */
+  paintedByPart?: Map<string, number>,
 ): CoverageRow[] {
   return recipe
     .filter((r) => !r.deleted)
     .map((r) => {
       const demand = r.perBike * remainingToBuild;
-      const onHand = stockByPart.get(r.partId) ?? 0;
+      const raw = stockByPart.get(r.partId) ?? 0;
+      // Only PAINTABLE parts appear in the map (the caller builds it from the
+      // catalogue's paintable set); everything else is colour-blind.
+      const paintable = paintedByPart?.has(r.partId) ?? false;
+      const painted = paintable ? (paintedByPart?.get(r.partId) ?? 0) : 0;
+      const onHand = raw + painted;
+      // Painted covers first; what raw then covers still has to be painted.
+      const coveredByRaw = Math.max(0, Math.min(raw, demand - painted));
       return {
         ...r,
         demand,
         onHand,
         shortfall: Math.max(0, demand - onHand),
+        paintedOnHand: painted,
+        needsPaint: paintable ? coveredByRaw : 0,
       };
     })
     .sort((a, b) => b.shortfall - a.shortfall || a.sku.localeCompare(b.sku));

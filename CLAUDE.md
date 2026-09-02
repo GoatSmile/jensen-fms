@@ -286,11 +286,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   time that base × colour comes back from the painter. **Painting is the
   conversion event**: a STOCK paint order (no bikes attached) reaching
   `received_back` posts `paint_out` on the base and `paint_in` on the variant,
-  cost = raw prevailing cost + the frozen paint price, basis `derived`.
-  Order-tied paint orders do NOT convert until phase 2 makes build consumption
-  colour-aware (otherwise the raw part is consumed twice). Paint stays a
-  service type; the variant is its product. `/parts/painted` is the shelf view.
-  Never model a painted part as a bike, and never as a paint-as-part SKU.
+  cost = raw prevailing cost + the frozen paint price, basis `derived`; since
+  phase 2 that applies to order-tied paint orders too. **Builds pick the painted
+  variant**: `applyPaintedVariantsToBike` re-points a bike's unfrozen
+  `bike_parts` rows at the variant in the bike's colour (or back to raw, flagged
+  *needs paint*) after the recipe copy and again at the top of
+  `finishBikeBuild`, so the shelf at build time decides and the raw part is
+  consumed once — when it goes to paint. Coverage and the floor queue use the
+  same `resolvePaintedPick`; *needs paint* blocks readiness like *at painter*.
+  Paint stays a service type; the variant is its product. `/parts/painted` is
+  the shelf view. Never model a painted part as a bike, and never as a
+  paint-as-part SKU.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
   RFID, AirTag, fleet_number (customers' own numbering).
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a

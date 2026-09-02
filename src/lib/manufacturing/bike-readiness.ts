@@ -32,6 +32,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/database";
 import { one } from "@/lib/supabase/embed";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
+import {
+  loadPaintedStockLookup,
+  resolvePaintedPick,
+} from "@/lib/parts/painted-variants";
 
 export type BuildQueueBike = {
   bikeId: string;
@@ -52,6 +56,9 @@ export type BuildQueueBike = {
   ready: boolean;
   /** Count of distinct parts short of stock. */
   shortfallCount: number;
+  /** Paintable parts the bike's colour has no painted stock for (phase 2) —
+   * the frame or fork must go to the painter before this bike can be built. */
+  needsPaintCount: number;
   /** Physically away on a build-blocking service order (takes precedence
    * over a parts shortfall as the blocked reason — the frame isn't here).
    * The consuming screen composes the human label, in its own language. */
@@ -68,7 +75,7 @@ export async function loadBuildQueue(
   const { data: bikes } = await supabase
     .from("bikes")
     .select(
-      `id, frame_number, frame_number_confirmed, status,
+      `id, frame_number, frame_number_confirmed, status, color_id,
        color:colors(name_en, name_da, hex),
        bike_template:bike_templates(family:bike_families(name), frame_size),
        owner_organization:organizations!owner_organization_id(
@@ -97,7 +104,7 @@ export async function loadBuildQueue(
     ),
   ];
 
-  const [stockRes, bikePartsRes, recipeRes, atPainterIds] = await Promise.all([
+  const [stockRes, bikePartsRes, recipeRes, atPainterIds, painted] = await Promise.all([
     supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
     supabase
       .from("bike_parts")
@@ -113,6 +120,7 @@ export async function loadBuildQueue(
       )
       .in("manufacturing_order_id", moIds),
     loadAtSupplierBikeIds(supabase, bikeIds),
+    loadPaintedStockLookup(supabase),
   ]);
 
   const stockByPart = new Map<string, number>();
@@ -168,15 +176,27 @@ export async function loadBuildQueue(
     const req = startedBikes.has(b.id)
       ? (reqByBike.get(b.id) ?? [])
       : (reqByMo.get(moId) ?? []);
+    // Painted parts are stock (phase 2): a paintable requirement is satisfied
+    // by the painted variant in the bike's colour when the shelf has it; the
+    // raw part covers stock but the bike still cannot be built until it has
+    // been painted, so that counts separately and blocks readiness. The claim
+    // map is per bike — the queue does not model bikes competing for variants,
+    // same as it never modelled competition for raw parts.
     let shortfallCount = 0;
+    let needsPaintCount = 0;
+    const claimed = new Map<string, number>();
     for (const r of req) {
-      if ((stockByPart.get(r.partId) ?? 0) < r.qty) shortfallCount += 1;
+      const pick = resolvePaintedPick(painted, r.partId, r.qty, b.color_id, claimed);
+      if (pick.needsPaint) needsPaintCount += 1;
+      if (!pick.viaVariant && (stockByPart.get(pick.partId) ?? 0) < r.qty) {
+        shortfallCount += 1;
+      }
     }
 
     // At-supplier takes precedence over a parts shortfall: the frame isn't
     // here to build, so that's the reason to surface no matter the stock.
     const atSupplier = atPainterIds.has(b.id);
-    const ready = !atSupplier && shortfallCount === 0;
+    const ready = !atSupplier && shortfallCount === 0 && needsPaintCount === 0;
 
     return {
       bikeId: b.id,
@@ -198,6 +218,7 @@ export async function loadBuildQueue(
       moNumber: mo.mo_number as string,
       buildNote,
       ready,
+      needsPaintCount,
       shortfallCount,
       atSupplier,
     };

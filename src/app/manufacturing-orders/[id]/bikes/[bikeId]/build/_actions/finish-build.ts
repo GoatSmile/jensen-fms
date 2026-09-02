@@ -11,6 +11,7 @@ import {
   resolveUnitCosts,
 } from "@/lib/inventory/unit-cost";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
+import { applyPaintedVariantsToBike } from "@/lib/parts/painted-variants";
 
 import { autoAdvanceMOAfterBuild } from "../../../../_actions/transition-mo";
 
@@ -119,6 +120,13 @@ export async function finishBikeBuild(
     return { ok: false, error: locResult.error };
   }
   const location = { id: locResult.id };
+
+  // Painted parts are stock (phase 2): re-point every not-yet-consumed
+  // paintable row at the painted variant in the bike's colour if the shelf has
+  // it NOW, back to raw if it does not — the rows were first swapped when the
+  // recipe was copied, but stock has moved since. Frozen rows are untouched,
+  // so a retry after a partial run keeps what it already consumed.
+  await applyPaintedVariantsToBike(supabase, bikeId);
 
   // Pull the bike's parts list. Anything with an inventory_movement_id is
   // already consumed from a prior partial run.

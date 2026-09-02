@@ -1,7 +1,7 @@
 # Plan — painted parts are stock
 
-**Status: model locked with the owner 2026-09-02 (chat); phase 1 built the same
-day. Phases 2–4 open.** Working document; the decision record is DECISIONS
+**Status: model locked with the owner 2026-09-02 (chat); phases 1 and 2 built
+the same day. Phases 3–4 open.** Working document; the decision record is DECISIONS
 2026-09-02 ("Painted parts are stock, per part and colour").
 
 ## 1. The problem, stated once
@@ -80,14 +80,19 @@ to raw parts of the line's type. Receiving back a bike-less order converts stock
 The part detail shows a base part's variants with on-hand per colour, and a
 variant's base. The painter document names the specific part under the type.
 
-**Phase 2 — colour-aware build.** When a bike's recipe is copied into
-`bike_parts` (workbench, bulk build), a paintable BOM part is swapped for its
-variant in the bike's colour when that variant has stock; otherwise the raw part
-stays and the line is flagged *needs paint*. Order-tied paint orders then convert
-stock at receipt too, and the raw part stops being consumed twice. MO coverage
-reads painted stock first. This is the phase that closes the loop; it touches
-`finishBikeBuild`, the recipe copy and coverage, so it gets its own verification
-pass against fixtures before it ships.
+**Phase 2 — colour-aware build (shipped 2026-09-02).** One rule in one place,
+`resolvePaintedPick` in `painted-variants.ts`: a paintable requirement for a
+bike in colour X draws from the painted variant in X when the shelf has enough,
+otherwise from the raw base with *needs paint* set. `applyPaintedVariantsToBike`
+re-points a bike's not-yet-consumed `bike_parts` rows by that rule — right
+after the recipe copy (so the pick list shows what is physically picked) and
+again at the top of `finishBikeBuild` (so the shelf at build time decides;
+frozen rows are never touched). Consumption then runs off the rows unchanged,
+so the variant's cost (raw + paint) flows into the bike. Order-tied paint orders
+convert stock at receipt like stock orders, and the raw part is consumed once,
+at the moment it goes to paint. MO coverage counts painted stock in the MO's
+colour first and flags what raw still covers as *needs paint*; the floor queue
+treats *needs paint* as a block alongside *at painter* and *parts short*.
 
 **Phase 3 — the shelf view.** Parts list groups variants under their base with
 a colour column; a "painted parts in stock" panel (per base × colour, with
@@ -117,6 +122,9 @@ frame can be sent for repaint.
 ## 6. Files (phase 1)
 
 - `migrations/91_painted_parts.sql` · `src/lib/types/database.ts` (hand-patched)
+- Phase 2: `finish-build.ts`, `manage-bike-parts.ts` (recipe copy),
+  `coverage.ts` + `coverage-section.tsx`, `bike-readiness.ts` + `/work`, the
+  workbench row badge, `transition-status.ts` (order-tied conversion).
 - `src/lib/parts/painted-variants.ts` — find-or-create a variant; convert stock
   for a received-back order.
 - `src/app/paint-orders/[id]/_actions/transition-status.ts` — conversion on

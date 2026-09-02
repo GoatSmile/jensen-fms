@@ -51,6 +51,8 @@ export function CoverageSection({
   const shortfall = rows.filter((r) => r.shortfall > 0);
   const covered = rows.filter((r) => r.shortfall === 0);
   const allCovered = shortfall.length === 0;
+  // Covered by RAW parts that still have to go to the painter (phase 2).
+  const needPaint = rows.filter((r) => r.needsPaint > 0);
 
   function onDraftPOs() {
     setResult(null);
@@ -82,6 +84,11 @@ export function CoverageSection({
               {t("partsShort", { count: shortfall.length })}
             </Badge>
           )}
+          {remainingToBuild > 0 && needPaint.length > 0 ? (
+            <Badge variant="warning">
+              {t("partsNeedPaint", { count: needPaint.length })}
+            </Badge>
+          ) : null}
           {!readOnly && shortfall.length > 0 && remainingToBuild > 0 ? (
             <Button
               type="button"
@@ -209,11 +216,21 @@ function CoverageLine({ row, short }: { row: CoverageRow; short?: boolean }) {
             have: formatQuantity(row.onHand),
           })}
         </span>
+        {row.paintedOnHand > 0 ? (
+          <span className="ml-2 text-good">
+            {t("paintedHave", { count: formatQuantity(row.paintedOnHand) })}
+          </span>
+        ) : null}
+        {row.needsPaint > 0 ? (
+          <span className="ml-2 text-money">
+            {t("needPaintCount", { count: row.needsPaint })}
+          </span>
+        ) : null}
         {short ? (
           <span className="text-destructive ml-2 font-semibold">
             {t("shortBy", { qty: formatQuantity(row.shortfall) })}
           </span>
-        ) : (
+        ) : row.needsPaint > 0 ? null : (
           <span className="ml-2 text-good">
             {t("ok")}
           </span>

@@ -14,6 +14,10 @@ import { localizedName } from "@/i18n/vocab";
 import { readPersonId } from "@/lib/auth/read-session";
 import { loadActivePeople } from "@/lib/people/queries";
 import { createClient } from "@/lib/supabase/server";
+import {
+  loadPaintedStockLookup,
+  resolvePaintedPick,
+} from "@/lib/parts/painted-variants";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
 import { loadBikeIdentifierContext } from "@/lib/bikes/identifier-context";
@@ -71,7 +75,7 @@ export default async function BikeBuildWorkbenchPage({
     supabase
       .from("bikes")
       .select(
-        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id",
+        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id, color_id",
       )
       .eq("id", bikeId)
       .maybeSingle(),
@@ -139,6 +143,26 @@ export default async function BikeBuildWorkbenchPage({
     }
   }
 
+  // Painted parts are stock (phase 2): flag paintable rows the bike's colour has
+  // no painted stock for. The rows were already re-pointed at variants when the
+  // recipe was copied; this is the display-time read of the same rule.
+  const paintedLookup = await loadPaintedStockLookup(supabase);
+  const needsPaintByRow = new Map<string, boolean>();
+  {
+    const claimed = new Map<string, number>();
+    for (const r of bikePartsRes.data ?? []) {
+      if (!r.part_id || r.inventory_movement_id != null) continue;
+      const pick = resolvePaintedPick(
+        paintedLookup,
+        r.part_id,
+        Number(r.quantity),
+        bike.color_id,
+        claimed,
+      );
+      needsPaintByRow.set(r.id, pick.needsPaint);
+    }
+  }
+
   const bikeParts: BikePartRow[] = (bikePartsRes.data ?? [])
     .filter((r) => r.part_id)
     .map((r) => ({
@@ -163,6 +187,7 @@ export default async function BikeBuildWorkbenchPage({
         (r.part.default_retail_currency ?? "DKK") === "DKK"
           ? Number(r.part.default_retail_price)
           : null,
+      needsPaint: needsPaintByRow.get(r.id) ?? false,
     }));
 
   const categories: CategoryOption[] = (categoriesRes.data ?? []).map((c) => ({

@@ -74,12 +74,11 @@ so a screen you demo in English looks different on his tablet.
   Jeudan chain.
 
 ## Next actions
-0. **Painted parts, phase 2** (plan §4): colour-aware build consumption — swap a
-   paintable BOM part for its variant in the bike's colour when it has stock,
-   flag *needs paint* otherwise, then let order-tied paint orders convert stock
-   too. Touches `finishBikeBuild`, the recipe copy and coverage; verify against
-   fixtures before shipping. Phases 3–4 (shelf view with demand, fill-from-bikes
-   naming parts) after.
+0. **Painted parts, phases 3–4** (plan §4): the shelf view gains demand from open
+   MOs per colour and counts *at the painter* from sent-order lines; the
+   fill-from-bikes seeder names the specific BOM parts so order-tied paint orders
+   convert stock without a hand edit. Phase 2 (colour-aware build) shipped
+   2026-09-02 — builds pick the painted variant, *needs paint* blocks the floor.
 1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
    customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
    CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,

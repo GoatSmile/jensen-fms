@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { applyPaintedVariantsToBike } from "@/lib/parts/painted-variants";
 import { one } from "@/lib/supabase/embed";
 
 export type BikePartsResult = { ok: true } | { ok: false; error: string };
@@ -115,6 +116,11 @@ export async function copyMoRecipeToBike(
       error: t("moCouldNotCopyRecipe", { detail: insErr.message }),
     };
   }
+
+  // Painted parts are stock (docs/plan-painted-parts.md, phase 2): a paintable
+  // recipe part is picked from its painted variant in the bike's colour when
+  // the shelf has one, so the pick list shows what is physically picked.
+  await applyPaintedVariantsToBike(supabase, bikeId);
 
   revalidatePath(`/manufacturing-orders/${moId}/bikes/${bikeId}/build`);
   revalidatePath(`/bikes/${bikeId}`);

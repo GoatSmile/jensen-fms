@@ -132,11 +132,12 @@ export async function transitionServiceOrderStatus(
     };
   }
 
-  // Painted parts are stock (docs/plan-painted-parts.md). A STOCK paint order —
-  // one with no bikes attached — coming back converts raw stock into painted
-  // variants, line by line. Order-tied paint orders keep today's behaviour until
-  // phase 2 makes build consumption colour-aware; converting them now would
-  // consume the raw part twice.
+  // Painted parts are stock (docs/plan-painted-parts.md). A paint order coming
+  // back converts raw stock into painted variants, line by line, for every line
+  // that names a specific part — stock orders and order-tied orders alike, since
+  // phase 2 made build consumption colour-aware (finishBikeBuild re-points the
+  // bike's rows at the variant before consuming, so the raw part is consumed
+  // once, here).
   let conversion: ConversionResult | undefined;
   if (toStatus === "received_back") {
     conversion = await convertReceivedStockOrder(supabase, serviceOrderId);
@@ -155,12 +156,6 @@ async function convertReceivedStockOrder(
   supabase: Awaited<ReturnType<typeof createClient>>,
   serviceOrderId: string,
 ): Promise<ConversionResult | undefined> {
-  const { count: bikeCount } = await supabase
-    .from("service_order_bikes")
-    .select("bike_id", { count: "exact", head: true })
-    .eq("service_order_id", serviceOrderId);
-  if ((bikeCount ?? 0) > 0) return undefined;
-
   const { data: order } = await supabase
     .from("service_orders")
     .select(

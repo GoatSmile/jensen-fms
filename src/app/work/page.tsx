@@ -378,7 +378,9 @@ function BuildStream({
                       <span className="rounded-full bg-money-wash px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-money">
                         {b.atSupplier
                           ? t("chipAtPainter")
-                          : t("chipPartsShort", { count: b.shortfallCount })}
+                          : b.shortfallCount > 0
+                            ? t("chipPartsShort", { count: b.shortfallCount })
+                            : t("chipNeedsPaint", { count: b.needsPaintCount })}
                       </span>
                     )}
                     {!b.frameConfirmed ? (

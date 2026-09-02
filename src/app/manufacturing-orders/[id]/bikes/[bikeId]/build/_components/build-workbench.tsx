@@ -94,6 +94,9 @@ export type BikePartRow = {
   onHand: number;
   /** Customer (retail) price in DKK; null when unset or non-DKK. */
   retailDkk: number | null;
+  /** Paintable part with no painted stock in the bike's colour — it goes to the
+   * painter before this bike can be built (docs/plan-painted-parts.md). */
+  needsPaint: boolean;
 };
 
 type Props = {
@@ -1080,6 +1083,11 @@ function RecipeLine({
           {row.consumed ? (
             <Badge variant="success" className="text-[10px]">
               {t("consumedBadge")}
+            </Badge>
+          ) : null}
+          {row.needsPaint && !row.consumed ? (
+            <Badge variant="warning" className="text-[10px]">
+              {t("needsPaintBadge")}
             </Badge>
           ) : null}
           {!frozen ? (

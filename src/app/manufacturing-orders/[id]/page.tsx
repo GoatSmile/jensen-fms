@@ -26,6 +26,7 @@ import {
   remainingToBuildCount,
 } from "@/lib/manufacturing/coverage";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
+import { loadPaintedStockLookup } from "@/lib/parts/painted-variants";
 
 import { CoverageSection } from "./_components/coverage-section";
 import { MOBikesSection, type MOBikeRow } from "./_components/mo-bikes-section";
@@ -298,6 +299,19 @@ export default async function ManufacturingOrderDetailPage({
   });
   const projectedBuildCost = projectedPartsCostPerBike * outstandingBikes;
 
+  // Painted parts are stock (docs/plan-painted-parts.md): for a paintable recipe
+  // part, painted stock in the MO's colour covers demand first; what raw covers
+  // is flagged as still needing paint.
+  const paintedByPart = new Map<string, number>();
+  if (mo.color_id) {
+    const lookup = await loadPaintedStockLookup(supabase);
+    for (const row of moPartsRes.data ?? []) {
+      if (!lookup.paintable.has(row.part_id)) continue;
+      const base = lookup.baseOf.get(row.part_id) ?? row.part_id;
+      const variantId = lookup.variantByBaseColour.get(`${base}:${mo.color_id}`);
+      paintedByPart.set(row.part_id, variantId ? (lookup.onHand.get(variantId) ?? 0) : 0);
+    }
+  }
   const coverageRows = computeCoverageRows(
     (moPartsRes.data ?? []).map((row) => ({
       partId: row.part_id,
@@ -308,6 +322,7 @@ export default async function ManufacturingOrderDetailPage({
     })),
     outstandingBikes,
     stockByPart,
+    mo.color_id ? paintedByPart : undefined,
   );
 
   // Frame-number suggestion for the next bike. With models gone, we derive

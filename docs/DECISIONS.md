@@ -2149,3 +2149,19 @@ painted frames) — see the failure above. Plan and phases:
 `docs/plan-painted-parts.md`. Phase 1 verified end to end on the local copy
 (TEST order PNT-2026-0010: two frames and a fork in Maisgleb became three
 painted variants with real costs, raw stock down by three).
+
+## 2026-09-02 (later) — Colour-aware builds: the shelf at build time decides
+Phase 2 of painted parts, same day, owner's "do it". Decided: ONE pure rule
+(`resolvePaintedPick`) says which part a paintable requirement draws from for a
+bike in colour X — the painted variant when the shelf has enough, otherwise the
+raw base flagged *needs paint* — and every reader uses it: the recipe copy, the
+finish-build pre-pass, MO coverage and the floor queue. The bike's parts rows are
+re-pointed twice, after the recipe copy and again at the top of `finishBikeBuild`,
+because stock moves between the two moments and the ledger must record what was
+physically picked; frozen rows are never touched. With builds consuming variants,
+order-tied paint orders convert stock at receipt too, and the raw part is consumed
+exactly once, when it goes to paint. *Needs paint* blocks readiness: a bike in a
+colour with no painted frame is not buildable, whatever the raw stock says.
+Rejected: swapping only at copy time (a variant sold out by build time would drive
+its stock negative); a per-part colour override (open question 1 in the plan — one
+colour per bike until someone asks).

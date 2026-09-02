@@ -212,3 +212,148 @@ export async function convertPaintedStock(
   }
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 2 — colour-aware build (docs/plan-painted-parts.md §4)
+// ---------------------------------------------------------------------------
+
+export type PaintedStockLookup = {
+  /** `${basePartId}:${colorId}` → variant part id. Every live variant in the catalogue. */
+  variantByBaseColour: Map<string, string>;
+  /** part id → base part id for variants (raw parts map to themselves). */
+  baseOf: Map<string, string>;
+  /** part id → paintable? (true when the part or its base carries a service part type). */
+  paintable: Set<string>;
+  /** part id → on hand (summed across locations). */
+  onHand: Map<string, number>;
+};
+
+/**
+ * One read of the catalogue's paintable parts and their stock, shared by the
+ * recipe swap, finish-build, coverage and the floor queue so they cannot
+ * disagree about what a colour has on the shelf.
+ */
+export async function loadPaintedStockLookup(
+  supabase: SupabaseServerClient,
+): Promise<PaintedStockLookup> {
+  const lookup: PaintedStockLookup = {
+    variantByBaseColour: new Map(),
+    baseOf: new Map(),
+    paintable: new Set(),
+    onHand: new Map(),
+  };
+  const { data: parts } = await supabase
+    .from("parts")
+    .select("id, base_part_id, color_id, service_part_type_id")
+    .not("service_part_type_id", "is", null)
+    .is("deleted_at", null);
+  const ids: string[] = [];
+  for (const p of parts ?? []) {
+    lookup.paintable.add(p.id);
+    lookup.baseOf.set(p.id, p.base_part_id ?? p.id);
+    if (p.base_part_id && p.color_id) {
+      lookup.variantByBaseColour.set(`${p.base_part_id}:${p.color_id}`, p.id);
+    }
+    ids.push(p.id);
+  }
+  if (ids.length > 0) {
+    const { data: stock } = await supabase
+      .from("v_current_stock")
+      .select("part_id, quantity_on_hand")
+      .in("part_id", ids);
+    for (const r of stock ?? []) {
+      if (!r.part_id) continue;
+      lookup.onHand.set(
+        r.part_id,
+        (lookup.onHand.get(r.part_id) ?? 0) + Number(r.quantity_on_hand ?? 0),
+      );
+    }
+  }
+  return lookup;
+}
+
+/**
+ * Decide which part a paintable requirement should draw from for a bike in
+ * `colorId`: the painted variant when it has enough on the shelf, otherwise
+ * the raw base with `needsPaint` set. Pure, so coverage and readiness can
+ * reason with the same rule. `alreadyClaimed` lets a caller reserve variant
+ * stock across several rows (two frames on one MO, or many bikes in a queue).
+ */
+export function resolvePaintedPick(
+  lookup: PaintedStockLookup,
+  partId: string,
+  qty: number,
+  colorId: string | null,
+  alreadyClaimed?: Map<string, number>,
+): { partId: string; needsPaint: boolean; viaVariant: boolean } {
+  if (!lookup.paintable.has(partId) || !colorId) {
+    return { partId, needsPaint: false, viaVariant: false };
+  }
+  const base = lookup.baseOf.get(partId) ?? partId;
+  const variant = lookup.variantByBaseColour.get(`${base}:${colorId}`);
+  if (variant) {
+    const claimed = alreadyClaimed?.get(variant) ?? 0;
+    const free = (lookup.onHand.get(variant) ?? 0) - claimed;
+    if (free >= qty) {
+      alreadyClaimed?.set(variant, claimed + qty);
+      return { partId: variant, needsPaint: false, viaVariant: true };
+    }
+  }
+  // No painted stock in this colour: the raw base goes on the list and the
+  // row is flagged. A row that already pointed at the variant falls back too —
+  // the shelf, not the earlier choice, decides.
+  return { partId: base, needsPaint: true, viaVariant: false };
+}
+
+export type ApplyVariantsResult = {
+  swappedToPainted: number;
+  swappedToRaw: number;
+  needsPaint: number;
+};
+
+/**
+ * Re-point a bike's not-yet-consumed `bike_parts` rows at the painted variant
+ * in the bike's colour where the shelf has it, and back at the raw base where
+ * it does not. Called right after the recipe is copied (so the workbench pick
+ * list shows what is physically picked) and again at the top of
+ * `finishBikeBuild` (so the shelf at build time, not at copy time, decides).
+ * Frozen rows — those with an `inventory_movement_id` — are never touched.
+ */
+export async function applyPaintedVariantsToBike(
+  supabase: SupabaseServerClient,
+  bikeId: string,
+): Promise<ApplyVariantsResult> {
+  const result: ApplyVariantsResult = { swappedToPainted: 0, swappedToRaw: 0, needsPaint: 0 };
+  const { data: bike } = await supabase
+    .from("bikes")
+    .select("id, color_id")
+    .eq("id", bikeId)
+    .maybeSingle();
+  if (!bike?.color_id) return result;
+
+  const { data: rows } = await supabase
+    .from("bike_parts")
+    .select("id, part_id, quantity")
+    .eq("bike_id", bikeId)
+    .is("removed_at", null)
+    .is("inventory_movement_id", null);
+  if (!rows || rows.length === 0) return result;
+
+  const lookup = await loadPaintedStockLookup(supabase);
+  const claimed = new Map<string, number>();
+  for (const row of rows) {
+    if (!lookup.paintable.has(row.part_id)) continue;
+    const pick = resolvePaintedPick(lookup, row.part_id, Number(row.quantity), bike.color_id, claimed);
+    if (pick.needsPaint) result.needsPaint += 1;
+    if (pick.partId === row.part_id) continue;
+    const { error } = await supabase
+      .from("bike_parts")
+      .update({ part_id: pick.partId })
+      .eq("id", row.id)
+      .is("inventory_movement_id", null);
+    if (error) continue;
+    if (pick.viaVariant) result.swappedToPainted += 1;
+    else result.swappedToRaw += 1;
+  }
+  return result;
+}
