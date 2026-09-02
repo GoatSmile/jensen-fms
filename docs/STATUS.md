@@ -1,21 +1,21 @@
 # Status — Jensen FMS
 
 **Last updated: 2026-09-02 (session end).** Most recent: **painted parts are
-stock** (migration 91, `docs/plan-painted-parts.md`, phase 1 shipped): a part
-can be paintable, a painted variant is a part per colour, a stock paint order
-coming back converts raw stock into painted stock with a real cost, and
-`/parts/painted` shows raw beside painted per colour. Before that, **the whole
-sales order → paint order path became walkable without knowing a frame number.** The
-painter receives a document (print + *Email painter*, in the supplier's own
-language, migration 89; emailing marks a planned order sent and freezes prices
-first); the paint order's *Add bike* picker groups bikes by customer order with
-multi-select; an MO built for an SO offers *Send frames to painter* as its next
-step; the SO detail shows frames per MO with an at-painter count; and `/bikes`
-gained a paint filter (at painter · painted, not yet built · not painted) with
-row badges. The PO document reads the same supplier language, and country
-names on both documents follow it. All verified in the browser on the local copy, including a real
-Resend send to the owner's test inbox. Decisions in DECISIONS 2026-09-01 and
-2026-09-02. tsc + lint + build clean; smoke 0 fail.
+stock — all four phases shipped** (migrations 91–92, `docs/plan-painted-parts.md`):
+a part is *paintable as* a painter part type, a painted variant is a part per
+colour, a paint order coming back converts raw into painted stock at raw + paint
+cost, builds pick the painted variant in the bike's colour (or flag *needs
+paint*), MO coverage and the floor queue read the same rule, `/parts/painted`
+shows raw · at painter · painted · promised · free per colour, and the
+fill-from-bikes seeder names the specific parts. Earlier the same day: the
+**painter and PO documents** render in the supplier's own language and emailing
+marks a paint order sent (migrations 89–90); the paint order's *Add bike* picker
+groups bikes by customer order; an MO built for an SO offers *Send frames to
+painter*; the SO shows frames per MO with an at-painter count; `/bikes` has a
+paint filter. Everything verified in the browser on the local copy, including a
+real Resend send to the owner's test inbox. **The walk-through for Dennis is
+`docs/WALKTHROUGH-PAINT-2026-09.md` (+ PDF).** Decisions in DECISIONS
+2026-09-01 and 2026-09-02. tsc + lint + build clean; smoke 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
