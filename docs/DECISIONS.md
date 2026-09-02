@@ -2182,3 +2182,23 @@ and more bikes want it than there are — the only reading where a promise was
 actually made twice. Rejected: dropping "over-promised" altogether (the
 double-promise case is real and worth red), and "Paintable parts" as the title
 (names the list, not the question the page answers).
+
+## 2026-09-02 (later still) — Paintwork declared vs. parts marked paintable
+Found while checking a spawned MO: template **Paintwork** (what one bike sends
+to the painter, priced into margin) and **needs paint** on the MO and the floor
+(derived from recipe parts carrying `service_part_type_id`) read from two
+different places and never checked each other. MO-2026-0018 reported "all
+covered for 3 bikes" while its own template declared Frame ×2, Fork ×1, Basket
+×1, Sign ×2 to the painter — across current templates, 15 declared paintwork
+lines had 2 backed by a paintable recipe part. Decided (owner, "do 1 + 2"):
+**warn, don't unify.** The paintwork table marks each unbacked row *not marked
+in the recipe* and the section names them with the fix (Parts → the part → Edit
+→ *Paintable as*), because the declaration is legitimately coarser than the
+recipe — a bike can send a sign or a basket the parts list does not itemise, and
+`bike_template_service_parts` is priced per part TYPE on purpose. Plus the data:
+frames, forks, the Svajer cargo bed and its mudguard set are now marked on the
+LOCAL copy (7 parts), which is what turned MO-2026-0018 into "2 parts need
+paint". Rejected: deriving paintwork from the recipe (kills the coarser
+declaration, and every existing template's paint price with it), and blocking a
+declaration whose type no recipe part carries (the recipe is edited after the
+declaration as often as before).

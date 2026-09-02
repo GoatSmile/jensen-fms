@@ -748,6 +748,8 @@
     "paintPerBikeWithList": "Lak pr. cykel (estimeret, {list}):",
     "unpricedLines": "{count, plural, one {# linje har} other {# linjer har}} ingen pris på den aktuelle liste.",
     "noPriceList": "Ingen aktuel lakprisliste fundet — lakeringen kan ikke prissættes, så produktionsomkostningen viser kun dele.",
+    "paintworkUnbackedBadge": "ikke markeret i opskriften",
+    "paintworkUnbackedNote": "Angivet til lakereren, men ikke dækket af opskriften: {types}. Ingen del i skabelonens stykliste er markeret “Kan lakeres som” den type, så prisen ovenfor regner den med, mens lagerdækning og værkstedet aldrig markerer den som “skal lakeres”. Ret det på delen: Dele → delen → Redigér → Kan lakeres som.",
     "noPrice": "ingen pris",
     "paintQtyAria": "Antal af {name}",
     "paintRemoveAria": "Fjern lakeringslinjen {name}",

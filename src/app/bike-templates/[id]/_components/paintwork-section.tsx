@@ -43,6 +43,12 @@ type Props = {
   unpricedCount: number;
   /** Why no list priced this, when none did. */
   unavailable: PaintListUnavailable | null;
+  /**
+   * Painter part types the template's RECIPE can satisfy — a recipe part
+   * marked *Paintable as* that type. A declared row outside this set is priced
+   * into margin but invisible to the MO's coverage and the build floor.
+   */
+  backedPartTypeIds: string[];
 };
 
 /**
@@ -65,11 +71,15 @@ export function PaintworkSection({
   listLabel,
   unpricedCount,
   unavailable,
+  backedPartTypeIds,
 }: Props) {
   const t = useTranslations("templateDetail");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = isCurrent;
+
+  const backed = new Set(backedPartTypeIds);
+  const unbacked = rows.filter((r) => !backed.has(r.partTypeId));
 
   const declaredIds = new Set(rows.map((r) => r.partTypeId));
   const addablePartTypes = partTypes.filter((pt) => !declaredIds.has(pt.id));
@@ -122,6 +132,7 @@ export function PaintworkSection({
                     key={r.id}
                     templateId={templateId}
                     row={r}
+                    backedByRecipe={backed.has(r.partTypeId)}
                     canEdit={canEdit}
                     onError={setError}
                     onChange={() => router.refresh()}
@@ -183,6 +194,18 @@ export function PaintworkSection({
                 : t("noPriceList")}
           </p>
         ) : null}
+
+        {/* The declaration and the shop floor read from two different places:
+            this table prices what goes to the painter, while "needs paint" on
+            the MO and in the build queue comes from recipe parts marked
+            *Paintable as*. Say so where it can be fixed. */}
+        {unbacked.length > 0 ? (
+          <p className="text-money mt-2 text-xs">
+            {t("paintworkUnbackedNote", {
+              types: unbacked.map((r) => r.partTypeName).join(", "),
+            })}
+          </p>
+        ) : null}
       </div>
     </Panel>
   );
@@ -191,12 +214,14 @@ export function PaintworkSection({
 function PaintworkRow({
   templateId,
   row,
+  backedByRecipe,
   canEdit,
   onError,
   onChange,
 }: {
   templateId: string;
   row: TemplatePaintworkRow;
+  backedByRecipe: boolean;
   canEdit: boolean;
   onError: (msg: string | null) => void;
   onChange: () => void;
@@ -235,7 +260,14 @@ function PaintworkRow({
 
   return (
     <tr>
-      <td className="px-4 py-2.5">{row.partTypeName}</td>
+      <td className="px-4 py-2.5">
+        {row.partTypeName}
+        {backedByRecipe ? null : (
+          <span className="text-money ml-2 text-xs">
+            {t("paintworkUnbackedBadge")}
+          </span>
+        )}
+      </td>
       <td className="px-4 py-2.5">
         {canEdit ? (
           <Input
@@ -271,9 +303,7 @@ function PaintworkRow({
             <span className="tabular-nums">{row.unitPriceLabel}</span>
           </span>
         ) : (
-          <span className="text-money">
-            {t("noPrice")}
-          </span>
+          <span className="text-money">{t("noPrice")}</span>
         )}
       </td>
       <td className="px-4 py-2.5 text-right tabular-nums">

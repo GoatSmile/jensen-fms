@@ -103,7 +103,7 @@ export default async function BikeTemplateDetailPage({
         `
         id, quantity, is_optional, notes,
         parts:parts(
-          id, internal_sku, name_en,
+          id, internal_sku, name_en, service_part_type_id,
           default_retail_price, default_retail_currency,
           category:part_categories(id, name_en, name_da)
         )
@@ -155,6 +155,21 @@ export default async function BikeTemplateDetailPage({
     }
   }
 
+  // Which painter part types this template's RECIPE can actually satisfy.
+  // The paintwork declaration below is a PRICE (what one bike sends to the
+  // painter); "needs paint" on the MO and the floor is derived from recipe
+  // parts carrying `service_part_type_id`. Nothing joined the two, so a
+  // template could price a frame and a fork into its margin while coverage
+  // reported the bike fully covered — found 2026-09-02 on MO-2026-0018, where
+  // 15 declared paintwork lines across current templates had 2 backed.
+  const backedPartTypeIds = [
+    ...new Set(
+      (recipeRes.data ?? [])
+        .map((row) => row.parts?.service_part_type_id)
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+
   const initialRows: RecipeRow[] = (recipeRes.data ?? [])
     .map((row) => ({
       partId: row.parts?.id ?? "",
@@ -170,7 +185,7 @@ export default async function BikeTemplateDetailPage({
         (row.parts.default_retail_currency ?? "DKK") === "DKK"
           ? Number(row.parts.default_retail_price)
           : null,
-      costDkk: row.parts?.id ? costByPart.get(row.parts.id) ?? null : null,
+      costDkk: row.parts?.id ? (costByPart.get(row.parts.id) ?? null) : null,
     }))
     .filter((r) => r.partId !== "")
     .sort((a, b) => a.partSku.localeCompare(b.partSku));
@@ -277,7 +292,9 @@ export default async function BikeTemplateDetailPage({
               {tpl.frame_size}
             </span>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{tpl.name_en}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {tpl.name_en}
+          </h1>
           {tpl.name_da && tpl.name_da !== tpl.name_en ? (
             <p className="text-muted-foreground text-sm">{tpl.name_da}</p>
           ) : null}
@@ -351,6 +368,7 @@ export default async function BikeTemplateDetailPage({
         listLabel={paintEstimate.listLabel}
         unpricedCount={paintEstimate.unpricedCount}
         unavailable={paintEstimate.unavailable}
+        backedPartTypeIds={backedPartTypeIds}
       />
 
       <LabelBomKit

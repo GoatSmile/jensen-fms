@@ -748,6 +748,8 @@
     "paintPerBikeWithList": "Paint per bike (estimated, {list}):",
     "unpricedLines": "{count, plural, one {# line has} other {# lines have}} no price on the current list.",
     "noPriceList": "No current painting price list found — the paintwork can't be priced, so the cost-to-produce box shows parts only.",
+    "paintworkUnbackedBadge": "not marked in the recipe",
+    "paintworkUnbackedNote": "Declared to the painter but not backed by the recipe: {types}. No part in this template’s parts list is marked “Paintable as” that type, so the price above counts it while stock coverage and the workshop floor never flag it as needing paint. Fix it on the part: Parts → the part → Edit → Paintable as.",
     "noPrice": "no price",
     "paintQtyAria": "Quantity of {name}",
     "paintRemoveAria": "Remove {name} paintwork line",
