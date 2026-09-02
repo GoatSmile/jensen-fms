@@ -9,9 +9,10 @@
  * person-targeted rather than role-broadcast — pass `directPersonId`.
  *
  * Deliberately fire-and-forget from the caller's perspective: a failed
- * email must NEVER fail the business action that triggered it. Every
- * provider-accepted send is recorded in `notification_log` (migration 74)
- * — the overdue cron uses it for idempotency, everything else as audit.
+ * email must NEVER fail the business action that triggered it. Every attempt
+ * — accepted or refused — is recorded in `outbound_messages` (migration 94,
+ * superseding `notification_log`) with its subject and body; the overdue cron
+ * reads it for idempotency, everything else as audit.
  *
  * Email copy is bilingual-by-recipient: each person gets their
  * `preferred_language`. Content lives with the hook (a `(lang) =>
@@ -24,7 +25,7 @@ import {
   loadCommunicationSettings,
   resolveRecipients,
 } from "@/lib/communication/settings";
-import { sendViaResend } from "@/lib/email/send";
+import { sendAndRecord } from "@/lib/email/outbox";
 import type { Database } from "@/lib/types/database";
 
 import type { NotificationEvent } from "./notifications";
@@ -165,28 +166,30 @@ async function deliver(
         content.html
       : content.html;
 
-    const result = await sendViaResend({
+    // One row per message, carrying every entity it covered — the digest is
+    // one email about N invoices, and the cron asks about the set.
+    const result = await sendAndRecord(supabase, {
+      target: {
+        kind: "notification",
+        eventKey,
+        // A null entity means "not about a row" (an event with no subject of
+        // its own); the array simply omits it.
+        entityIds: entityIds.filter((id): id is string => id != null),
+        personId: person.id,
+      },
       from: settings.fromEmail,
       to: resolved.to,
+      intended: resolved.intended,
       replyTo: settings.replyToEmail,
       subject,
       html,
+      testMode: resolved.testMode,
     });
     if (!result.ok) {
       skipped += 1;
       continue;
     }
     sent += 1;
-    await supabase.from("notification_log").insert(
-      entityIds.map((entity_id) => ({
-        event_key: eventKey,
-        entity_id,
-        person_id: person.id,
-        channel: "email",
-        recipient: person.email,
-        test_mode: resolved.testMode,
-      })),
-    );
   }
   return { sent, skipped };
 }
@@ -247,16 +250,25 @@ export async function notifyDigest(
   }
 }
 
-/** Has this event ever been logged for this entity? (Cron idempotency.) */
+/**
+ * Has this event ever been SENT for this entity? (Cron idempotency.)
+ *
+ * Reads `outbound_messages` since migration 94, and counts only `sent`: the
+ * old log held successes only, so a rejected send used to look like no send at
+ * all and got retried. That behaviour is preserved deliberately — a digest the
+ * provider refused should go out tomorrow.
+ */
 export async function hasNotified(
   supabase: Supabase,
   eventKey: NotificationEvent,
   entityId: string,
 ): Promise<boolean> {
   const { count } = await supabase
-    .from("notification_log")
+    .from("outbound_messages")
     .select("id", { count: "exact", head: true })
+    .eq("kind", "notification")
     .eq("event_key", eventKey)
-    .eq("entity_id", entityId);
+    .eq("status", "sent")
+    .contains("entity_ids", [entityId]);
   return (count ?? 0) > 0;
 }

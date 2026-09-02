@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * invoice.overdue (people & roles P4) — the state-scan event: a daily
  * digest of invoices that crossed their due date, to the roles subscribed
  * in role_notifications (seeds: owner + accountant). Idempotent via
- * notification_log — an invoice is digested ONCE when first seen overdue,
+ * outbound_messages — an invoice is digested ONCE when first seen overdue,
  * not re-nagged daily (the dashboard money band is the standing reminder).
  *
  * Auth mirrors the other crons: Vercel sends `Authorization: Bearer
@@ -75,16 +75,21 @@ export async function GET(request: Request) {
   }
 
   // Drop invoices any recipient was already told about (one query).
+  // A digest is ONE message covering N invoices, so the ids live in an array
+  // on the row and the filter is an overlap. Only `sent` counts: a refused
+  // digest should go out tomorrow rather than be marked as delivered.
   const { data: logged } = await supabase
-    .from("notification_log")
-    .select("entity_id")
+    .from("outbound_messages")
+    .select("entity_ids")
+    .eq("kind", "notification")
     .eq("event_key", "invoice.overdue")
-    .in(
-      "entity_id",
+    .eq("status", "sent")
+    .overlaps(
+      "entity_ids",
       all.map((i) => i.id),
     );
   const alreadyNotified = new Set(
-    (logged ?? []).map((l) => l.entity_id).filter(Boolean),
+    (logged ?? []).flatMap((l) => l.entity_ids ?? []),
   );
   const fresh = all.filter((i) => !alreadyNotified.has(i.id));
   if (fresh.length === 0) {

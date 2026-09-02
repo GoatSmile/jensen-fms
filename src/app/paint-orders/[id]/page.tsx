@@ -40,6 +40,8 @@ import {
   type ServiceOrderItemRow,
 } from "./_components/service-order-items-section";
 import { Section } from "./_components/section";
+import { OutboundMessageList } from "@/components/outbound-message-list";
+import { loadOutboundForOrder } from "@/lib/email/outbox-queries";
 
 export default async function PaintOrderDetailPage({
   params,
@@ -47,10 +49,11 @@ export default async function PaintOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tPo, tCommon, locale] = await Promise.all([
+  const [t, tPo, tCommon, tOutbox, locale] = await Promise.all([
     getTranslations("paintOrderDetail"),
     getTranslations("paintOrders"),
     getTranslations("common"),
+    getTranslations("outbox"),
     getLocale(),
   ]);
   // Read-only labels for the pre-items paint model's per-bike scope.
@@ -59,6 +62,9 @@ export default async function PaintOrderDetailPage({
     svaj: t("legacySvaj"),
   };
   const supabase = await createClient();
+  const sentMessages = await loadOutboundForOrder(supabase, {
+    serviceOrderId: id,
+  });
 
   const orderRes = await supabase
     .from("service_orders")
@@ -515,6 +521,13 @@ export default async function PaintOrderDetailPage({
         rows={bikeRows}
         eligibleBikes={eligibleBikes}
       />
+
+      {/* What the painter actually received, kept verbatim (migration 94).
+          Prices freeze at send, but the message typed in the dialog lived
+          nowhere until now — and a refused send left no trace at all. */}
+      <Section title={tOutbox("title")} description={tOutbox("panelDesc")}>
+        <OutboundMessageList rows={sentMessages} />
+      </Section>
     </div>
   );
 }

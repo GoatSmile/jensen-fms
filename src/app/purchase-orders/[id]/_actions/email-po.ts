@@ -8,7 +8,8 @@ import {
   loadCommunicationSettings,
   resolveRecipients,
 } from "@/lib/communication/settings";
-import { sendViaResend } from "@/lib/email/send";
+import { sendAndRecord } from "@/lib/email/outbox";
+import { readPersonId } from "@/lib/auth/read-session";
 import { COMPANY } from "@/lib/invoicing/company";
 import { PO_LABELS, loadPODocument } from "@/lib/purchasing/po-document";
 import { renderPOEmailHtml } from "@/lib/purchasing/po-email-html";
@@ -78,12 +79,16 @@ export async function emailPOToSupplier(
     intended: resolved.intended,
   });
 
-  const sent = await sendViaResend({
+  const sent = await sendAndRecord(supabase, {
+    target: { kind: "purchase_order", purchaseOrderId: poId },
     from: settings.fromEmail,
     to: resolved.to,
+    intended: resolved.intended,
     replyTo: settings.replyToEmail,
     subject,
     html,
+    testMode: resolved.testMode,
+    actorPersonId: await readPersonId(),
   });
   if (!sent.ok) return sent;
 

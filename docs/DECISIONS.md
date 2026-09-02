@@ -2218,3 +2218,60 @@ per document type (a second field nobody fills; the cost of sharing is that the
 text has to read "our next order", not "our next paint order"), and `{order}`
 placeholders (a typo prints literally, and the order number is already in the
 subject and on the attached document).
+
+## 2026-09-02 (later still) — Every outgoing message is kept, with its body
+Owner: *"do we save all emails/communications that go out? we should, no? I want
+to see them in the app."* We did not. `purchase_orders` and `service_orders`
+each held `emailed_at` + `emailed_to`; `notification_log` held an event key and
+a recipient; the bodies lived only in Resend's dashboard, and a REFUSED send
+left no trace anywhere. Decided: **`outbound_messages` (migration 94), one row
+per attempt, storing the exact `body_html`** — because both documents are
+re-rendered from live data, so a later price, language or message change would
+otherwise rewrite history, and the dialog's free text was stored nowhere at all.
+`sendAndRecord()` is the only way mail leaves the app; recording never blocks a
+send (a failed insert logs loudly and the mail still goes) because the business
+action outranks its own bookkeeping. Both surfaces, per the owner: a *Sent
+messages* panel on each order, and `/admin/outbox` for everything including
+failures, with bodies in a `sandbox=""` iframe. `notification_log` is superseded
+rather than dropped — rows copied, table left in place, so the change is
+reversible; cron idempotency moved to `entity_ids && …` (migration 95 turned the
+single `entity_id` into an array: one email digests many invoices and the row is
+now the email) and counts only `status = 'sent'`, so a refused digest goes out
+tomorrow instead of being marked delivered. Rejected: keeping two logs (the same
+send recorded twice, and the notification half still bodiless), and storing a
+rendered PDF instead of the HTML (the HTML is what the provider was handed —
+anything else is a reconstruction).
+
+## 2026-09-02 (later still) — Every outgoing message is kept, with its body
+Owner: *"do we save all emails/communications that go out? we should, no? I
+want to see them in the app."* We did not. A send left `emailed_at` +
+`emailed_to` on the order and, for role notifications, a `notification_log`
+line with the event key — no subject, no body, and no trace whatsoever of a
+send the provider refused. So "what exactly did the painter get" could only be
+answered by re-rendering the document from today's data, and the free-text
+message typed into the dialog was stored nowhere at all.
+
+Decided: **`outbound_messages`** (migration 94; 95 turns the single entity id
+into `entity_ids` so a digest can name every invoice it covered; 96 fixes the
+recipient column on the copied rows), one row per ATTEMPT, written `pending`
+before the provider is called and stamped `sent`/`failed` after — a crash
+between the two leaves a `pending` row, which is the honest record of an
+attempt nobody saw the end of. `body_html` holds the exact bytes, which is the
+whole point: everything else is re-rendered from live data. `to_emails` and
+`intended_to` are separate columns so "we emailed the painter" and "test mode
+sent it to us instead" can never read the same afterwards.
+
+The single writer is `sendAndRecord` (`src/lib/email/outbox.ts`); a failing
+INSERT never blocks the send, because the business action outranks its own
+bookkeeping — the one hole, and it shouts into the server log. It supersedes
+`notification_log`: rows copied, nothing writes there, table left in place so
+this is reversible, and the overdue-invoice cron's idempotency moves here
+counting only `sent` (a refused digest should go out tomorrow, not look
+delivered). Two surfaces, per the owner: a *Sent messages* panel on each
+purchase and paint order, and `/admin/outbox` for everything — bodies fetched
+one at a time and rendered in a `sandbox=""` iframe, so a stored document is
+inert and its CSS cannot leak into the app. Rejected: a UI-less table like
+`audit_log` (the ask was explicitly to see them); storing only a hash or a
+provider id and trusting Resend's dashboard (outside the app, limited
+retention, no link to an order); and one row per (message × entity), which
+would duplicate a document body per invoice in a digest.

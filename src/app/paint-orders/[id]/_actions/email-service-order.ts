@@ -9,7 +9,8 @@ import {
   loadCommunicationSettings,
   resolveRecipients,
 } from "@/lib/communication/settings";
-import { sendViaResend } from "@/lib/email/send";
+import { sendAndRecord } from "@/lib/email/outbox";
+import { readPersonId } from "@/lib/auth/read-session";
 import { COMPANY } from "@/lib/invoicing/company";
 import { loadServiceOrderDocument } from "@/lib/services/service-order-document";
 import { renderServiceOrderEmailHtml } from "@/lib/services/service-order-email-html";
@@ -121,12 +122,16 @@ export async function emailServiceOrderToSupplier(
     intended: resolved.intended,
   });
 
-  const sent = await sendViaResend({
+  const sent = await sendAndRecord(supabase, {
+    target: { kind: "service_order", serviceOrderId },
     from: settings.fromEmail,
     to: resolved.to,
+    intended: resolved.intended,
     replyTo: settings.replyToEmail,
     subject,
     html,
+    testMode: resolved.testMode,
+    actorPersonId: await readPersonId(),
   });
   if (!sent.ok) {
     // The status may already have moved; the page must show that.

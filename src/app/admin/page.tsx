@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Coins,
   List,
+  Mail,
   Map as MapIcon,
   Package,
   Percent,
@@ -50,6 +51,7 @@ export default async function AdminLandingPage() {
     priceListsRes,
     peopleRes,
     rolesRes,
+    failedSendsRes,
   ] = await Promise.all([
     supabase
       .from("app_settings")
@@ -87,6 +89,11 @@ export default async function AdminLandingPage() {
       .from("roles")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    // Failures are the reason this tile carries a number at all.
+    supabase
+      .from("outbound_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "failed"),
   ]);
 
   const defaultTransportPct = Number(
@@ -99,6 +106,7 @@ export default async function AdminLandingPage() {
   const currentPriceListCount = priceListsRes.count ?? 0;
   const activePeopleCount = peopleRes.count ?? 0;
   const activeRoleCount = rolesRes.count ?? 0;
+  const failedSendCount = failedSendsRes.count ?? 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -203,6 +211,17 @@ export default async function AdminLandingPage() {
               people: activePeopleCount,
               roles: activeRoleCount,
             })}
+          />
+          <Tile
+            href="/admin/outbox"
+            icon={Mail}
+            title={t("outboxTitle")}
+            description={t("outboxDesc")}
+            stat={
+              failedSendCount > 0
+                ? t("outboxStatFailed", { count: failedSendCount })
+                : t("outboxStatClean")
+            }
           />
           <Tile
             href="/admin/settings"

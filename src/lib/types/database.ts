@@ -2116,6 +2116,110 @@ export type Database = {
           },
         ]
       }
+      outbound_messages: {
+        Row: {
+          actor_person_id: string | null
+          body_html: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          entity_ids: string[]
+          error_detail: string | null
+          event_key: string | null
+          from_email: string
+          id: string
+          intended_to: string[]
+          kind: string
+          person_id: string | null
+          provider: string
+          provider_id: string | null
+          purchase_order_id: string | null
+          reply_to: string | null
+          service_order_id: string | null
+          status: string
+          subject: string
+          test_mode: boolean
+          to_emails: string[]
+        }
+        Insert: {
+          actor_person_id?: string | null
+          body_html: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          entity_ids?: string[]
+          error_detail?: string | null
+          event_key?: string | null
+          from_email: string
+          id?: string
+          intended_to?: string[]
+          kind: string
+          person_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          purchase_order_id?: string | null
+          reply_to?: string | null
+          service_order_id?: string | null
+          status?: string
+          subject: string
+          test_mode?: boolean
+          to_emails: string[]
+        }
+        Update: {
+          actor_person_id?: string | null
+          body_html?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          entity_ids?: string[]
+          error_detail?: string | null
+          event_key?: string | null
+          from_email?: string
+          id?: string
+          intended_to?: string[]
+          kind?: string
+          person_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          purchase_order_id?: string | null
+          reply_to?: string | null
+          service_order_id?: string | null
+          status?: string
+          subject?: string
+          test_mode?: boolean
+          to_emails?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_messages_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_lines: {
         Row: {
           bike_template_id: string | null

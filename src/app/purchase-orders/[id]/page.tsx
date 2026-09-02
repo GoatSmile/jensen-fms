@@ -20,6 +20,9 @@ import type { ImportTaxBasis, PartOrigin } from "@/lib/purchasing/import-tax";
 
 import { POHeader } from "./_components/po-header";
 import { LinesSection, type POLineRow } from "./_components/lines-section";
+import { OutboundMessageList } from "@/components/outbound-message-list";
+import { Panel } from "@/components/ui/panel";
+import { loadOutboundForOrder } from "@/lib/email/outbox-queries";
 import type { CurrencyChoice, PartChoice } from "./_components/line-dialog";
 import {
   ReceiveForm,
@@ -33,13 +36,17 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tPo, tCommon, locale] = await Promise.all([
+  const [t, tPo, tCommon, tOutbox, locale] = await Promise.all([
     getTranslations("poDetail"),
     getTranslations("po"),
     getTranslations("common"),
+    getTranslations("outbox"),
     getLocale(),
   ]);
   const supabase = await createClient();
+  const sentMessages = await loadOutboundForOrder(supabase, {
+    purchaseOrderId: id,
+  });
 
   const [
     poRes,
@@ -320,6 +327,13 @@ export default async function PurchaseOrderDetailPage({
           primaryLocationId={primaryLocationId}
         />
       ) : null}
+
+      {/* What the supplier actually received, kept verbatim (migration 94) —
+          the document is re-rendered from live data everywhere else, so this
+          is the only place that still holds the version they read. */}
+      <Panel title={tOutbox("title")} description={tOutbox("panelDesc")}>
+        <OutboundMessageList rows={sentMessages} />
+      </Panel>
     </div>
   );
 }

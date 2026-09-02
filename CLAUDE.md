@@ -306,6 +306,21 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (`last_actor_id`) because a trigger cannot see the session. Forensics among
   trusted colleagues, not a security control; no UI by design (DECISIONS
   2026-08-25).
+- **Every outgoing message is kept, and `sendAndRecord` is the only way out.**
+  `outbound_messages` (migration 94, extended by 95/96) holds one row per
+  ATTEMPT — the subject, the **exact `body_html` sent**, who pressed the button,
+  who it really went to versus who it was `intended_to` under test mode, and
+  `failed` with the provider's complaint when it never arrived. Write it ONLY
+  through `sendAndRecord` in `src/lib/email/outbox.ts`; calling `sendViaResend`
+  directly is how mail escapes unlogged. It **supersedes `notification_log`**
+  (rows copied, nothing writes there, table kept so the change is reversible),
+  so the overdue-invoice cron's idempotency reads
+  `entity_ids && …` here — and counts only `status = 'sent'`, which means a
+  refused digest now retries instead of looking delivered. Unlike `audit_log`
+  this one HAS a UI, because the question is operational rather than forensic:
+  a *Sent messages* panel on each PO and paint order, and `/admin/outbox` for
+  everything including notifications, each opening the stored document in a
+  sandboxed iframe.
 - **Product entity = `bike_templates`** (models/variants collapsed,
   migration 09). Size and color split:
   - **Frame size** is baked into the template — `Norma S` and `Norma L` are
@@ -445,6 +460,22 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
   residency.
+- **Outbound is kept, whole, and only `sendAndRecord` may send** (migration 94,
+  `src/lib/email/outbox.ts`). One `outbound_messages` row per ATTEMPT — written
+  `pending` before the provider is called, stamped `sent` with its id or
+  `failed` with its complaint — holding the exact `body_html` that left, the
+  real recipients AND the ones test mode replaced. Documents are re-rendered
+  from live data, so without the stored body a later price or language change
+  rewrites what we "sent"; the dialog's free-text message existed nowhere else
+  at all. **Never call `sendViaResend` directly** — it is the transport, and a
+  send that skips the outbox is a send nobody can prove. Recording never blocks
+  a send: a failed insert logs to the console and the mail still goes, the same
+  rule that keeps a failed notification from failing its business action.
+  `notification_log` is SUPERSEDED (rows copied, nothing writes there); the
+  overdue-invoice cron's idempotency is now `entity_ids && …` plus
+  `status = 'sent'`, so a refused digest retries tomorrow. Read it at
+  `/admin/outbox` and in the *Sent messages* panel on each PO and paint order;
+  bodies render in a `sandbox=""` iframe, never inline.
 - **People & roles (auth v0.5).** Four separated concepts — person / role /
   credential / assignment — across `people`, `roles`, `person_roles`,
   `role_capabilities`, `role_notifications` (capability/event keys
