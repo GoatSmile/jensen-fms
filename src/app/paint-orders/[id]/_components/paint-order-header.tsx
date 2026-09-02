@@ -74,6 +74,7 @@ export function PaintOrderHeader({
   const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] =
     useState<PendingTransition>(null);
@@ -99,6 +100,17 @@ export function PaintOrderHeader({
         setError(r.error);
         return;
       }
+      // Receiving back converts raw stock into painted stock line by line;
+      // say what happened, including lines that named no part and so could not.
+      if (r.conversion) {
+        setInfo(
+          t("receivedConversion", {
+            converted: r.conversion.converted,
+            skipped: r.conversion.skippedNoPart,
+            failed: r.conversion.failures.length,
+          }),
+        );
+      }
       setTransitionDialog(null);
       router.refresh();
     });
@@ -109,6 +121,11 @@ export function PaintOrderHeader({
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
+        </p>
+      ) : null}
+      {info ? (
+        <p className="bg-good-wash text-good rounded-lg px-4 py-2 text-sm" role="status">
+          {info}
         </p>
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4">

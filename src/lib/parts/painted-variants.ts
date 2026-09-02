@@ -124,6 +124,8 @@ export type ConversionResult = {
   variantsCreated: number;
   /** Lines that could not be converted, with why — the order is still received. */
   failures: { partId: string; error: string }[];
+  /** Lines that named no specific part (or no colour), so nothing could convert. */
+  skippedNoPart: number;
 };
 
 /**
@@ -144,7 +146,7 @@ export async function convertPaintedStock(
     lines: ConversionLine[];
   },
 ): Promise<ConversionResult> {
-  const result: ConversionResult = { converted: 0, variantsCreated: 0, failures: [] };
+  const result: ConversionResult = { converted: 0, variantsCreated: 0, failures: [], skippedNoPart: 0 };
   const nowIso = new Date().toISOString();
 
   for (const line of input.lines) {
@@ -356,4 +358,105 @@ export async function applyPaintedVariantsToBike(
     else result.swappedToRaw += 1;
   }
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — the shelf view: promised and in transit, per part and colour
+// ---------------------------------------------------------------------------
+
+export type PaintedDemand = {
+  /** `${basePartId}:${colorId}` → units unbuilt bikes on open MOs still require. */
+  promised: Map<string, number>;
+  /** `${basePartId}:${colorId}` → units on sent / at-supplier paint-order lines. */
+  atPainter: Map<string, number>;
+};
+
+const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
+const AT_PAINTER_ORDER_STATUSES = ["sent", "at_supplier"];
+
+/**
+ * What the painted shelf is already spoken for, and what is on its way back.
+ * Promised uses the same requirement rule as the floor queue: a bike whose
+ * build has started requires its own not-yet-consumed rows, otherwise its MO's
+ * recipe; only paintable parts count, keyed by the RAW base so a row already
+ * pointing at the variant and a recipe row for the raw part land on one key.
+ * At-painter counts the quantities on lines of sent orders that name a part
+ * and a colour — stock frames in transit have no bike, so the line is the only
+ * place they exist.
+ */
+export async function loadPaintedDemand(
+  supabase: SupabaseServerClient,
+  lookup: PaintedStockLookup,
+): Promise<PaintedDemand> {
+  const demand: PaintedDemand = { promised: new Map(), atPainter: new Map() };
+  const bump = (m: Map<string, number>, key: string, qty: number) =>
+    m.set(key, (m.get(key) ?? 0) + qty);
+
+  const { data: bikes } = await supabase
+    .from("bikes")
+    .select("id, color_id, manufacturing_order_id, mo:manufacturing_orders!manufacturing_order_id(status)")
+    .in("status", ["planning", "building"])
+    .is("deleted_at", null)
+    .not("color_id", "is", null);
+  const openBikes = (bikes ?? []).filter((b) => {
+    const mo = Array.isArray(b.mo) ? b.mo[0] : b.mo;
+    return mo && OPEN_MO_STATUSES.includes(mo.status as string) && b.manufacturing_order_id;
+  });
+  if (openBikes.length > 0) {
+    const bikeIds = openBikes.map((b) => b.id);
+    const moIds = [...new Set(openBikes.map((b) => b.manufacturing_order_id as string))];
+    const [{ data: rows }, { data: recipe }] = await Promise.all([
+      supabase
+        .from("bike_parts")
+        .select("bike_id, part_id, quantity, inventory_movement_id")
+        .in("bike_id", bikeIds)
+        .is("removed_at", null),
+      supabase
+        .from("manufacturing_order_parts")
+        .select("manufacturing_order_id, part_id, quantity_per_bike")
+        .in("manufacturing_order_id", moIds),
+    ]);
+    const started = new Set<string>();
+    const reqByBike = new Map<string, { partId: string; qty: number }[]>();
+    for (const r of rows ?? []) {
+      started.add(r.bike_id);
+      if (r.inventory_movement_id) continue;
+      const list = reqByBike.get(r.bike_id) ?? [];
+      list.push({ partId: r.part_id, qty: Number(r.quantity) });
+      reqByBike.set(r.bike_id, list);
+    }
+    const reqByMo = new Map<string, { partId: string; qty: number }[]>();
+    for (const r of recipe ?? []) {
+      const list = reqByMo.get(r.manufacturing_order_id) ?? [];
+      list.push({ partId: r.part_id, qty: Number(r.quantity_per_bike) });
+      reqByMo.set(r.manufacturing_order_id, list);
+    }
+    for (const b of openBikes) {
+      const req = started.has(b.id)
+        ? (reqByBike.get(b.id) ?? [])
+        : (reqByMo.get(b.manufacturing_order_id as string) ?? []);
+      for (const r of req) {
+        if (!lookup.paintable.has(r.partId)) continue;
+        const base = lookup.baseOf.get(r.partId) ?? r.partId;
+        bump(demand.promised, `${base}:${b.color_id}`, r.qty);
+      }
+    }
+  }
+
+  const { data: lines } = await supabase
+    .from("service_order_items")
+    .select(
+      "part_id, color_id, quantity, order:service_orders!service_order_id(status, service_type:service_types!service_type_id(blocks_build))",
+    )
+    .not("part_id", "is", null)
+    .not("color_id", "is", null);
+  for (const l of lines ?? []) {
+    const order = Array.isArray(l.order) ? l.order[0] : l.order;
+    if (!order || !AT_PAINTER_ORDER_STATUSES.includes(order.status as string)) continue;
+    const type = Array.isArray(order.service_type) ? order.service_type[0] : order.service_type;
+    if (!type?.blocks_build) continue;
+    const base = lookup.baseOf.get(l.part_id as string) ?? (l.part_id as string);
+    bump(demand.atPainter, `${base}:${l.color_id}`, Number(l.quantity));
+  }
+  return demand;
 }

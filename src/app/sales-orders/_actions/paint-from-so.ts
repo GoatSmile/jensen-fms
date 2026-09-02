@@ -8,6 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import { PAINT_SERVICE_SLUG, loadServiceTypeBySlug } from "@/lib/services/vocab";
+import {
+  planPaintSeed,
+  type SeedBike,
+  type SeedRecipePart,
+} from "@/lib/services/paint-seed";
 
 export type PaintFromSOInput = {
   soId: string;
@@ -36,11 +41,13 @@ export type PaintFromSOResult =
  * belong to this SO and aren't already committed to an OPEN build-blocking
  * service order — the same eligibility the add-bike picker uses.
  *
- * Two starter item lines (frame + fork, qty = frame count, in the chosen
- * colour) are seeded automatically — the painter's list prices them
- * per piece and virtually every batch paints frames and forks. They're
- * ordinary editable lines on the detail page: adjust, add mudguards/sign/
- * carrier, or remove, while the order is still planned.
+ * Item lines are seeded from the chosen bikes' templates the same way
+ * "Re-fill from bikes" does (paint-seed.ts): the template's paintwork rows, in
+ * the chosen colour, each naming the specific recipe part paintable as that
+ * type — so the order converts raw into painted stock when it comes back
+ * (docs/plan-painted-parts.md). Bikes whose template declares no paintwork fall
+ * back to two starter lines (frame + fork, by type only). Lines stay ordinary
+ * editable lines while the order is planned.
  */
 export async function createPaintOrderFromSO(
   input: PaintFromSOInput,
@@ -101,6 +108,8 @@ export async function createPaintOrderFromSO(
       .from("bikes")
       .select("id")
       .in("manufacturing_order_id", moIds)
+      // A built bike has nothing left to paint; only unbuilt frames go.
+      .in("status", ["planning", "building"])
       .is("deleted_at", null);
     if (bikesErr) {
       return { ok: false, error: t("soCouldNotLoadBikes", { detail: bikesErr.message }) };
@@ -204,17 +213,72 @@ export async function createPaintOrderFromSO(
     };
   }
 
-  // Starter item lines: frame + fork × frame count, in the batch colour.
-  const partTypesRes = await supabase
-    .from("service_part_types")
-    .select("id, slug")
-    .in("slug", ["stel", "forgaffel"]);
-  const starterItems = (partTypesRes.data ?? []).map((pt) => ({
-    service_order_id: created.id,
-    service_part_type_id: pt.id,
-    quantity: requested.length,
-    color_id: input.colorId,
+  // Item lines from the bikes' templates, naming the specific parts (phase 4).
+  // The batch colour overrides each bike's own colour: this order paints in ONE
+  // colour by construction, and the form said which.
+  const { data: seedBikeRows } = await supabase
+    .from("bikes")
+    .select("id, template_id")
+    .in("id", requested);
+  const seedBikes: SeedBike[] = (seedBikeRows ?? []).map((b) => ({
+    id: b.id,
+    templateId: b.template_id,
+    colorId: input.colorId,
   }));
+  const templateIds = [...new Set(seedBikes.map((b) => b.templateId).filter((x): x is string => !!x))];
+  const [{ data: paintwork }, { data: recipeRows }] = templateIds.length
+    ? await Promise.all([
+        supabase
+          .from("bike_template_service_parts")
+          .select("template_id, service_part_type_id, quantity")
+          .in("template_id", templateIds),
+        supabase
+          .from("bike_template_parts")
+          .select("template_id, part_id, quantity, part:parts!part_id(service_part_type_id, deleted_at)")
+          .in("template_id", templateIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const recipeParts: SeedRecipePart[] = [];
+  for (const r of recipeRows ?? []) {
+    const part = one(r.part);
+    if (!part || part.deleted_at || !part.service_part_type_id) continue;
+    recipeParts.push({
+      templateId: r.template_id,
+      partId: r.part_id,
+      servicePartTypeId: part.service_part_type_id,
+      quantityPerBike: Number(r.quantity),
+    });
+  }
+  const plan = planPaintSeed(
+    seedBikes,
+    (paintwork ?? []).map((r) => ({
+      templateId: r.template_id,
+      servicePartTypeId: r.service_part_type_id,
+      quantity: r.quantity,
+    })),
+    recipeParts,
+  );
+  let starterItems = plan.lines.map((l) => ({
+    service_order_id: created.id,
+    service_part_type_id: l.servicePartTypeId,
+    quantity: l.quantity,
+    color_id: l.colorId,
+    part_id: l.partId,
+  }));
+  if (starterItems.length === 0) {
+    // No paintwork declared on these templates: the old frame + fork starters.
+    const partTypesRes = await supabase
+      .from("service_part_types")
+      .select("id, slug")
+      .in("slug", ["stel", "forgaffel"]);
+    starterItems = (partTypesRes.data ?? []).map((pt) => ({
+      service_order_id: created.id,
+      service_part_type_id: pt.id,
+      quantity: requested.length,
+      color_id: input.colorId,
+      part_id: null,
+    }));
+  }
   if (starterItems.length > 0) {
     const { error: itemsErr } = await supabase
       .from("service_order_items")

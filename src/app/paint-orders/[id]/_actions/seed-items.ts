@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { planPaintSeed, type SeedBike } from "@/lib/services/paint-seed";
+import {
+  planPaintSeed,
+  type SeedBike,
+  type SeedRecipePart,
+} from "@/lib/services/paint-seed";
 import { createClient } from "@/lib/supabase/server";
 
 export type SeedItemsResult =
@@ -94,6 +98,28 @@ export async function seedItemsFromBikes(
     };
   }
 
+  // Phase 4 (docs/plan-painted-parts.md): the recipe parts paintable as each
+  // type, so the seeded line names the specific part and can convert stock.
+  const { data: recipeRows } = templateIds.length
+    ? await supabase
+        .from("bike_template_parts")
+        .select("template_id, part_id, quantity, part:parts!part_id(service_part_type_id, deleted_at)")
+        .in("template_id", templateIds)
+    : { data: [] as { template_id: string; part_id: string; quantity: number; part: unknown }[] };
+  const recipeParts: SeedRecipePart[] = [];
+  for (const r of recipeRows ?? []) {
+    const part = (Array.isArray(r.part) ? r.part[0] : r.part) as
+      | { service_part_type_id: string | null; deleted_at: string | null }
+      | null;
+    if (!part || part.deleted_at || !part.service_part_type_id) continue;
+    recipeParts.push({
+      templateId: r.template_id,
+      partId: r.part_id,
+      servicePartTypeId: part.service_part_type_id,
+      quantityPerBike: Number(r.quantity),
+    });
+  }
+
   const plan = planPaintSeed(
     bikes,
     (rows ?? []).map((r) => ({
@@ -101,6 +127,7 @@ export async function seedItemsFromBikes(
       servicePartTypeId: r.service_part_type_id,
       quantity: r.quantity,
     })),
+    recipeParts,
   );
 
   // Nothing to write means nothing gets destroyed either — refusing here
@@ -117,6 +144,7 @@ export async function seedItemsFromBikes(
         service_part_type_id: l.servicePartTypeId,
         quantity: l.quantity,
         color_id: l.colorId,
+        part_id: l.partId,
       })),
     },
   );

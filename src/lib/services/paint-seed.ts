@@ -37,10 +37,25 @@ export type SeedTemplateRow = {
   quantity: number;
 };
 
+/** A recipe part of a template that is paintable as some service part type. */
+export type SeedRecipePart = {
+  templateId: string;
+  partId: string;
+  servicePartTypeId: string;
+  /** Per bike, from the recipe. Used when the template declares no paintwork rows. */
+  quantityPerBike?: number;
+};
+
 export type SeedLine = {
   servicePartTypeId: string;
   colorId: string | null;
   quantity: number;
+  /**
+   * The specific recipe part (docs/plan-painted-parts.md, phase 4) — what lets
+   * the line convert raw into painted stock when the order comes back. Null when
+   * the template's recipe has no part paintable as this type.
+   */
+  partId: string | null;
 };
 
 export type SeedPlan = {
@@ -55,20 +70,31 @@ export type SeedPlan = {
   bikesWithoutColour: number;
 };
 
-/** Stable key for one line: a part type in one colour (null = no colour). */
-function lineKey(partTypeId: string, colorId: string | null): string {
-  return `${partTypeId}::${colorId ?? ""}`;
+/** Stable key for one line: a part type, a specific part (or none), one colour. */
+function lineKey(partTypeId: string, partId: string | null, colorId: string | null): string {
+  return `${partTypeId}::${partId ?? ""}::${colorId ?? ""}`;
 }
 
 export function planPaintSeed(
   bikes: SeedBike[],
   templateRows: SeedTemplateRow[],
+  recipeParts: SeedRecipePart[] = [],
 ): SeedPlan {
   const rowsByTemplate = new Map<string, SeedTemplateRow[]>();
   for (const r of templateRows) {
     const list = rowsByTemplate.get(r.templateId) ?? [];
     list.push(r);
     rowsByTemplate.set(r.templateId, list);
+  }
+  // template → part type → the recipe parts paintable as that type. One part
+  // is the normal case and names the line; several give a line per part (no
+  // guessing); none leaves the line by type only, as before.
+  const partsByTemplateType = new Map<string, string[]>();
+  for (const rp of recipeParts) {
+    const key = `${rp.templateId}::${rp.servicePartTypeId}`;
+    const list = partsByTemplateType.get(key) ?? [];
+    if (!list.includes(rp.partId)) list.push(rp.partId);
+    partsByTemplateType.set(key, list);
   }
 
   const byLine = new Map<string, SeedLine>();
@@ -82,7 +108,19 @@ export function planPaintSeed(
       bikesWithoutTemplate += 1;
       continue;
     }
-    const rows = rowsByTemplate.get(bike.templateId) ?? [];
+    let rows = rowsByTemplate.get(bike.templateId) ?? [];
+    if (rows.length === 0) {
+      // No paintwork declared: the recipe's paintable parts ARE the paintwork
+      // (phase 4). One synthetic row per paintable recipe part, at its recipe
+      // quantity, so the template needs no separate declaration to seed right.
+      rows = recipeParts
+        .filter((rp) => rp.templateId === bike.templateId)
+        .map((rp) => ({
+          templateId: rp.templateId,
+          servicePartTypeId: rp.servicePartTypeId,
+          quantity: rp.quantityPerBike ?? 1,
+        }));
+    }
     if (rows.length === 0) {
       bikesWithoutPaintwork += 1;
       continue;
@@ -93,15 +131,21 @@ export function planPaintSeed(
 
     for (const row of rows) {
       if (row.quantity <= 0) continue;
-      const key = lineKey(row.servicePartTypeId, bike.colorId);
-      const existing = byLine.get(key);
-      if (existing) existing.quantity += row.quantity;
-      else
-        byLine.set(key, {
-          servicePartTypeId: row.servicePartTypeId,
-          colorId: bike.colorId,
-          quantity: row.quantity,
-        });
+      const candidates =
+        partsByTemplateType.get(`${bike.templateId}::${row.servicePartTypeId}`) ?? [];
+      const partIds: (string | null)[] = candidates.length > 0 ? candidates : [null];
+      for (const partId of partIds) {
+        const key = lineKey(row.servicePartTypeId, partId, bike.colorId);
+        const existing = byLine.get(key);
+        if (existing) existing.quantity += row.quantity;
+        else
+          byLine.set(key, {
+            servicePartTypeId: row.servicePartTypeId,
+            colorId: bike.colorId,
+            quantity: row.quantity,
+            partId,
+          });
+      }
     }
   }
 

@@ -477,6 +477,11 @@ export default async function DashboardPage() {
               href: "/paint-orders",
             },
             {
+              label: t("pipeline.needsPaint"),
+              value: pipelines.build.needsPaint,
+              href: "/parts/painted",
+            },
+            {
               label: t("pipeline.inStock"),
               value: pipelines.build.inStock,
               href: "/bikes?status=in_stock",

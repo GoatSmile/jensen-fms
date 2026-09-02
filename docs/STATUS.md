@@ -74,11 +74,11 @@ so a screen you demo in English looks different on his tablet.
   Jeudan chain.
 
 ## Next actions
-0. **Painted parts, phases 3–4** (plan §4): the shelf view gains demand from open
-   MOs per colour and counts *at the painter* from sent-order lines; the
-   fill-from-bikes seeder names the specific BOM parts so order-tied paint orders
-   convert stock without a hand edit. Phase 2 (colour-aware build) shipped
-   2026-09-02 — builds pick the painted variant, *needs paint* blocks the floor.
+0. **Painted parts: all four phases shipped 2026-09-02** (migrations 91–92, plan in
+   `docs/plan-painted-parts.md`). What it needs now is DATA: mark the frames and
+   forks *paintable as* on their part forms in production, enter today's painted
+   shelf as variants with a stated cost, and watch one real paint order go round.
+   The owner plans a round of TEST-prefixed test data first.
 1. **Tuesday's meeting with Dennis — walk the fixture.** On the LOCAL copy:
    customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
    CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,

@@ -164,6 +164,7 @@ async function convertReceivedStockOrder(
     .eq("id", serviceOrderId)
     .maybeSingle();
   if (!order) return undefined;
+  const skippedNoPart = (order.items ?? []).filter((i) => !(i.part_id && i.color_id)).length;
   const lines = (order.items ?? [])
     .filter((i) => i.part_id && i.color_id)
     .map((i) => ({
@@ -175,7 +176,9 @@ async function convertReceivedStockOrder(
           ? null
           : Math.round(Number(i.unit_price) * Number(i.fx_rate_to_dkk ?? 1) * 10000) / 10000,
     }));
-  if (lines.length === 0) return { converted: 0, variantsCreated: 0, failures: [] };
+  if (lines.length === 0) {
+    return { converted: 0, variantsCreated: 0, failures: [], skippedNoPart };
+  }
 
   const location = await resolveDefaultLocationId(supabase);
   if (!location.ok) {
@@ -183,16 +186,18 @@ async function convertReceivedStockOrder(
       converted: 0,
       variantsCreated: 0,
       failures: lines.map((l) => ({ partId: l.partId, error: location.error })),
+      skippedNoPart,
     };
   }
   const actorId = await readPersonId();
-  return convertPaintedStock(supabase, {
+  const result = await convertPaintedStock(supabase, {
     serviceOrderId,
     orderNumber: order.order_number,
     locationId: location.id,
     actorId,
     lines,
   });
+  return { ...result, skippedNoPart };
 }
 
 /**

@@ -1,7 +1,7 @@
 # Plan — painted parts are stock
 
-**Status: model locked with the owner 2026-09-02 (chat); phases 1 and 2 built
-the same day. Phases 3–4 open.** Working document; the decision record is DECISIONS
+**Status: model locked with the owner 2026-09-02 (chat); all four phases built
+the same day. Open: question 1 below (one colour per bike).** Working document; the decision record is DECISIONS
 2026-09-02 ("Painted parts are stock, per part and colour").
 
 ## 1. The problem, stated once
@@ -94,14 +94,23 @@ at the moment it goes to paint. MO coverage counts painted stock in the MO's
 colour first and flags what raw still covers as *needs paint*; the floor queue
 treats *needs paint* as a block alongside *at painter* and *parts short*.
 
-**Phase 3 — the shelf view.** Parts list groups variants under their base with
-a colour column; a "painted parts in stock" panel (per base × colour, with
-demand from open MOs in that colour) on the stock-value page; "at the painter"
-counted from sent-order lines rather than from bikes.
+**Phase 3 — the shelf view (shipped 2026-09-02).** `/parts/painted` shows, per
+paintable part and colour, painted on hand, how much of it is promised to
+unbuilt bikes on open MOs (same requirement rule as the floor queue, keyed by the
+raw base so a row already on the variant and a recipe row on the raw part meet on
+one key), what is free, and what is at the painter — counted from sent and
+at-supplier order lines that name a part and a colour, because stock frames in
+transit have no bike. A colour with demand but no variant yet still gets a line.
+The dashboard's build band gained *need paint*: unbuilt bikes whose colour has no
+painted stock for at least one part.
 
-**Phase 4 — fill-from-bikes sets the part.** The seeder maps a template's
-paintwork rows to the specific BOM parts of that type, so an order-tied paint
-order arrives with parts named and needs no hand edit before sending.
+**Phase 4 — fill-from-bikes names the part (shipped 2026-09-02).** The seeder
+maps each paintwork row to the recipe parts paintable as that type: one part
+names the line, several give a line per part (no guessing), none leaves the line
+by type only with a hint on the order page that it will not convert. Migration
+92 taught the atomic replace RPC the `part_id` column. Receiving an order back
+now reports how many lines converted and how many were skipped for lack of a
+part.
 
 ## 5. Schema (migration 91)
 
@@ -125,6 +134,11 @@ frame can be sent for repaint.
 - Phase 2: `finish-build.ts`, `manage-bike-parts.ts` (recipe copy),
   `coverage.ts` + `coverage-section.tsx`, `bike-readiness.ts` + `/work`, the
   workbench row badge, `transition-status.ts` (order-tied conversion).
+- Phase 3: `loadPaintedDemand` in `painted-variants.ts`, `/parts/painted`,
+  `src/lib/dashboard/queries.ts` + the build band on `/`.
+- Phase 4: `migrations/92_seed_lines_carry_part.sql`, `paint-seed.ts`,
+  `seed-items.ts`, the no-part hint on the items section, the receipt summary
+  in the paint-order header.
 - `src/lib/parts/painted-variants.ts` — find-or-create a variant; convert stock
   for a received-back order.
 - `src/app/paint-orders/[id]/_actions/transition-status.ts` — conversion on

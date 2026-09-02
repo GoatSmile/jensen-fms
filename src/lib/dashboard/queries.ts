@@ -19,6 +19,7 @@ import {
 import { round2 } from "@/lib/invoicing/status";
 import { one } from "@/lib/supabase/embed";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
+import { loadBuildQueue } from "@/lib/manufacturing/bike-readiness";
 import { OPEN_MO_STATUSES } from "@/lib/mo/status";
 import { OPEN_TICKET_STATUSES } from "@/lib/maintenance/ticket-status";
 import { OPEN_WO_STATUSES } from "@/lib/maintenance/work-order-status";
@@ -233,6 +234,8 @@ export type Pipelines = {
     planning: number;
     building: number;
     atPainter: number;
+    /** Unbuilt bikes whose colour has no painted stock for at least one part (phase 3). */
+    needsPaint: number;
     inStock: number;
   };
   repair: { openTickets: number; openWOs: number; doneLast7: number };
@@ -310,7 +313,12 @@ export async function loadPipelines(
   ]);
 
   const unbuiltIds = (unbuiltIdsRes.data ?? []).map((b) => b.id as string);
-  const atPainter = (await loadAtSupplierBikeIds(supabase, unbuiltIds)).size;
+  const [atPainterIds, queue] = await Promise.all([
+    loadAtSupplierBikeIds(supabase, unbuiltIds),
+    loadBuildQueue(supabase),
+  ]);
+  const atPainter = atPainterIds.size;
+  const needsPaint = queue.filter((b) => !b.atSupplier && b.needsPaintCount > 0).length;
 
   const soRows = sosRes.data ?? [];
   const soValueDkk = round2(
@@ -324,6 +332,7 @@ export async function loadPipelines(
       planning: planningRes.count ?? 0,
       building: buildingRes.count ?? 0,
       atPainter,
+      needsPaint,
       inStock: inStockRes.count ?? 0,
     },
     repair: {

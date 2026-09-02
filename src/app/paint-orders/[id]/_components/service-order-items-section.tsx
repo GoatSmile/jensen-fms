@@ -337,6 +337,9 @@ function ItemRow({
           ) : row.partLabel ? (
             <span className="text-muted-foreground text-xs">{row.partLabel}</span>
           ) : null}
+          {canEdit && !row.partId && partOptions.length > 0 ? (
+            <span className="text-money text-xs">{t("noPartHint")}</span>
+          ) : null}
           {row.supplierItemNo ? (
             <span className="text-muted-foreground font-mono text-xs">
               {row.supplierItemNo}

@@ -73,6 +73,7 @@ export default async function PaintFromSOPage({
            template:bike_templates(family:bike_families(name), frame_size, name_en)`,
         )
         .in("manufacturing_order_id", moIds)
+        .in("status", ["planning", "building"])
         .is("deleted_at", null)
         .order("frame_number", { ascending: true }),
       // Same eligibility the createPaintOrderFromSO action enforces: a frame
