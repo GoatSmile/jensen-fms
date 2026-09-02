@@ -4132,6 +4132,7 @@ export type Database = {
           country_code: string | null
           created_at: string
           default_currency: string | null
+          default_email_message: string | null
           deleted_at: string | null
           document_language: string
           email_primary: string | null
@@ -4155,6 +4156,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           default_currency?: string | null
+          default_email_message?: string | null
           deleted_at?: string | null
           document_language?: string
           email_primary?: string | null
@@ -4178,6 +4180,7 @@ export type Database = {
           country_code?: string | null
           created_at?: string
           default_currency?: string | null
+          default_email_message?: string | null
           deleted_at?: string | null
           document_language?: string
           email_primary?: string | null

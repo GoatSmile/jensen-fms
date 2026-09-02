@@ -50,6 +50,10 @@ type Props = {
   emailTestMode: boolean;
   /** Test inboxes (comma-separated) shown in the dialog while test mode is on. */
   emailTestRecipients: string | null;
+  /** The supplier's own addresses — what the mail really goes to. */
+  supplierEmails: string[];
+  /** Saved on the supplier; seeds the message box, edits never write back. */
+  supplierDefaultMessage: string | null;
 };
 
 export function POHeader({
@@ -62,6 +66,8 @@ export function POHeader({
   emailedTo,
   emailTestMode,
   emailTestRecipients,
+  supplierEmails,
+  supplierDefaultMessage,
 }: Props) {
   const t = useTranslations("poDetail");
   const tStatus = useTranslations("poStatus");
@@ -121,7 +127,7 @@ export function POHeader({
                 {supplierName}
               </Link>
             ) : (
-              supplierName ?? "—"
+              (supplierName ?? "—")
             )}
           </h1>
           {emailedAt ? (
@@ -220,6 +226,8 @@ export function POHeader({
         supplierName={supplierName}
         testMode={emailTestMode}
         testRecipients={emailTestRecipients}
+        supplierEmails={supplierEmails}
+        defaultMessage={supplierDefaultMessage}
         onSent={() => router.refresh()}
       />
     </div>
@@ -239,6 +247,8 @@ function EmailSupplierDialog({
   supplierName,
   testMode,
   testRecipients,
+  supplierEmails,
+  defaultMessage,
   onSent,
 }: {
   open: boolean;
@@ -248,14 +258,23 @@ function EmailSupplierDialog({
   supplierName: string | null;
   testMode: boolean;
   testRecipients: string | null;
+  supplierEmails: string[];
+  defaultMessage: string | null;
   onSent: () => void;
 }) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(defaultMessage ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [isSending, startSending] = useTransition();
+  // Re-seed on every opening — same reasoning as the paint order's dialog.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setMessage(defaultMessage ?? "");
+  }
+  const noRecipient = supplierEmails.length === 0 && !testMode;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -292,9 +311,7 @@ function EmailSupplierDialog({
                 {t.rich("emailSentDesc", {
                   po: poNumber,
                   to: sentTo,
-                  mono: (chunks) => (
-                    <span className="font-mono">{chunks}</span>
-                  ),
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
                 })}
               </DialogDescription>
             </UiDialogHeader>
@@ -315,13 +332,26 @@ function EmailSupplierDialog({
               </DialogDescription>
             </UiDialogHeader>
 
+            {supplierEmails.length > 0 ? (
+              <p className="text-ink-2 text-xs">
+                {testMode ? t("emailIntendedPrefix") : t("emailGoesToPrefix")}{" "}
+                <span className="text-ink-1 font-mono">
+                  {supplierEmails.join(", ")}
+                </span>
+              </p>
+            ) : (
+              <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
+                {t("emailNoRecipient", {
+                  supplier: supplierName ?? t("theSupplier"),
+                })}
+              </p>
+            )}
+
             {testMode ? (
               <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
                 {t.rich("testModeBanner", {
                   recipients: testRecipients ?? t("noTestInbox"),
-                  mono: (chunks) => (
-                    <span className="font-mono">{chunks}</span>
-                  ),
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
                 })}
               </p>
             ) : null}
@@ -352,7 +382,7 @@ function EmailSupplierDialog({
               >
                 {tCommon("cancel")}
               </Button>
-              <Button type="submit" disabled={isSending}>
+              <Button type="submit" disabled={isSending || noRecipient}>
                 {isSending ? t("sending") : t("sendEmail")}
               </Button>
             </DialogFooter>

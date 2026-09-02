@@ -28,6 +28,7 @@ type ParsedSupplier = {
   payment_terms_days: number | null;
   import_duty_prepaid_default: boolean;
   document_language: "en" | "da";
+  default_email_message: string | null;
   notes: string | null;
   is_active: boolean;
 };
@@ -97,6 +98,7 @@ function parseFormData(
       // CHAR(2) with a CHECK in the DB; anything but Danish is English.
       document_language:
         nullable(formData.get("document_language")) === "da" ? "da" : "en",
+      default_email_message: nullable(formData.get("default_email_message")),
       notes: nullable(formData.get("notes")),
       is_active: formData.get("is_active") === "on",
     },

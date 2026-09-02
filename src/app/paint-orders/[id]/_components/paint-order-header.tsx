@@ -53,6 +53,10 @@ type Props = {
   /** Outbound test mode + its inboxes, so the dialog says where mail really goes. */
   emailTestMode: boolean;
   emailTestRecipients: string | null;
+  /** The supplier's own addresses — what the mail really goes to. */
+  supplierEmails: string[];
+  /** Saved on the supplier; seeds the message box, edits never write back. */
+  supplierDefaultMessage: string | null;
 };
 
 export function PaintOrderHeader({
@@ -68,6 +72,8 @@ export function PaintOrderHeader({
   emailedTo,
   emailTestMode,
   emailTestRecipients,
+  supplierEmails,
+  supplierDefaultMessage,
 }: Props) {
   const t = useTranslations("paintOrderDetail");
   const tStatus = useTranslations("serviceOrderStatus");
@@ -124,7 +130,10 @@ export function PaintOrderHeader({
         </p>
       ) : null}
       {info ? (
-        <p className="bg-good-wash text-good rounded-lg px-4 py-2 text-sm" role="status">
+        <p
+          className="bg-good-wash text-good rounded-lg px-4 py-2 text-sm"
+          role="status"
+        >
           {info}
         </p>
       ) : null}
@@ -248,6 +257,8 @@ export function PaintOrderHeader({
         willMarkSent={status === "planned"}
         testMode={emailTestMode}
         testRecipients={emailTestRecipients}
+        supplierEmails={supplierEmails}
+        defaultMessage={supplierDefaultMessage}
         onSent={() => router.refresh()}
       />
     </div>
@@ -269,6 +280,8 @@ function EmailPainterDialog({
   willMarkSent,
   testMode,
   testRecipients,
+  supplierEmails,
+  defaultMessage,
   onSent,
 }: {
   open: boolean;
@@ -279,16 +292,31 @@ function EmailPainterDialog({
   willMarkSent: boolean;
   testMode: boolean;
   testRecipients: string | null;
+  supplierEmails: string[];
+  defaultMessage: string | null;
   onSent: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(defaultMessage ?? "");
   const [error, setError] = useState<string | null>(null);
-  const [sentTo, setSentTo] = useState<{ to: string; markedSent: boolean } | null>(
-    null,
-  );
+  const [sentTo, setSentTo] = useState<{
+    to: string;
+    markedSent: boolean;
+  } | null>(null);
   const [isSending, startSending] = useTransition();
+  // Re-seed on every opening. The dialog stays mounted for the page's
+  // lifetime, so without this a message edited and then cancelled would come
+  // back on the next send instead of the supplier's saved text. This is the
+  // documented adjust-state-when-props-change shape, not an effect.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setMessage(defaultMessage ?? "");
+  }
+  // No address and no test inbox to catch it = nothing to send to. Say it here
+  // rather than failing in the action after the click.
+  const noRecipient = supplierEmails.length === 0 && !testMode;
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -333,9 +361,7 @@ function EmailPainterDialog({
                 {t.rich("emailSentDesc", {
                   order: orderNumber,
                   to: sentTo.to,
-                  mono: (chunks) => (
-                    <span className="font-mono">{chunks}</span>
-                  ),
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
                 })}
                 {sentTo.markedSent ? ` ${t("emailSentMarked")}` : null}
               </DialogDescription>
@@ -358,6 +384,24 @@ function EmailPainterDialog({
               <DialogDescription>{t("emailDesc")}</DialogDescription>
             </UiDialogHeader>
 
+            {/* Which address, spelled out. "their email on file" was true and
+                useless — you could not tell whether it was the right one
+                without opening the supplier in another tab. */}
+            {supplierEmails.length > 0 ? (
+              <p className="text-ink-2 text-xs">
+                {testMode ? t("emailIntendedPrefix") : t("emailGoesToPrefix")}{" "}
+                <span className="text-ink-1 font-mono">
+                  {supplierEmails.join(", ")}
+                </span>
+              </p>
+            ) : (
+              <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
+                {t("emailNoRecipient", {
+                  supplier: supplierName ?? t("theSupplier"),
+                })}
+              </p>
+            )}
+
             {willMarkSent ? (
               <p className="rounded-md border border-brand/30 bg-brand-wash px-3 py-2 text-xs text-brand">
                 {t("emailWillMarkSent")}
@@ -368,9 +412,7 @@ function EmailPainterDialog({
               <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
                 {t.rich("testModeBanner", {
                   recipients: testRecipients ?? t("noTestInbox"),
-                  mono: (chunks) => (
-                    <span className="font-mono">{chunks}</span>
-                  ),
+                  mono: (chunks) => <span className="font-mono">{chunks}</span>,
                 })}
               </p>
             ) : null}
@@ -401,7 +443,7 @@ function EmailPainterDialog({
               >
                 {tCommon("cancel")}
               </Button>
-              <Button type="submit" disabled={isSending}>
+              <Button type="submit" disabled={isSending || noRecipient}>
                 {isSending ? t("sending") : t("sendEmail")}
               </Button>
             </DialogFooter>

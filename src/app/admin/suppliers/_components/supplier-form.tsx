@@ -45,6 +45,8 @@ export type SupplierFormValues = {
   import_duty_prepaid_default: boolean;
   /** Language of the documents this supplier receives (paint orders today). */
   document_language: string;
+  /** Pre-fills the message box when emailing this supplier an order. */
+  default_email_message: string;
   notes: string;
   is_active: boolean;
 };
@@ -65,6 +67,7 @@ const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   payment_terms_days: "",
   import_duty_prepaid_default: false,
   document_language: "en",
+  default_email_message: "",
   notes: "",
   is_active: true,
 };
@@ -126,6 +129,11 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
       fd.set("import_duty_prepaid_default", "on");
     }
     appendField(fd, "document_language", values.document_language);
+    appendField(
+      fd,
+      "default_email_message",
+      values.default_email_message.trim(),
+    );
     appendField(fd, "notes", values.notes.trim());
     if (values.is_active) fd.set("is_active", "on");
     return fd;
@@ -158,14 +166,14 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
   // and rarely revisited — folded unless this supplier already has some.
   const hasMore = Boolean(
     seed.phone ||
-      seed.website ||
-      seed.email_secondary ||
-      seed.address_line1 ||
-      seed.address_line2 ||
-      seed.zip_code ||
-      seed.town ||
-      seed.province ||
-      seed.notes,
+    seed.website ||
+    seed.email_secondary ||
+    seed.address_line1 ||
+    seed.address_line2 ||
+    seed.zip_code ||
+    seed.town ||
+    seed.province ||
+    seed.notes,
   );
 
   return (
@@ -237,6 +245,23 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
             </Select>
           </Field>
           <p className="text-ink-2 text-xs">{t("docLanguageHint")}</p>
+        </div>
+
+        {/* The one piece of free text that reaches this supplier. Order and
+            line notes stay internal (PO doctrine), so the greeting was retyped
+            on every send. Shared by purchase orders and paint orders, which is
+            why the hint asks for wording that fits both. */}
+        <div className="flex flex-col gap-1">
+          <Field label={t("emailMessageLabel")} htmlFor="sup-email-message">
+            <Textarea
+              id="sup-email-message"
+              rows={4}
+              value={values.default_email_message}
+              onChange={(e) => update("default_email_message", e.target.value)}
+              placeholder={t("emailMessagePlaceholder")}
+            />
+          </Field>
+          <p className="text-ink-2 text-xs">{t("emailMessageHint")}</p>
         </div>
 
         <Field label={t("fieldEmailPrimary")} htmlFor="sup-email1">

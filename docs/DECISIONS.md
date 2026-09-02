@@ -2202,3 +2202,19 @@ paint". Rejected: deriving paintwork from the recipe (kills the coarser
 declaration, and every existing template's paint price with it), and blocking a
 declaration whose type no recipe part carries (the recipe is edited after the
 declaration as often as before).
+
+## 2026-09-02 (later still) — One saved email message per supplier
+Owner: *"each supplier gets its own text."* Decided: `suppliers.default_email_message`
+(migration 93) — **one** plain-text message per supplier, no placeholders,
+seeding the message box on BOTH outbound documents (purchase order, paint
+order). The dialog re-seeds every time it opens and an edit there never writes
+back, so the saved text stays the supplier's standing greeting rather than
+drifting with one send. Email only: the printed document keeps carrying the
+order alone, so paper and mail cannot disagree about what was ordered. The
+same dialog now names the actual recipient (`Goes to …`, or `Normally goes to …`
+above the test-mode banner) and says up front when a supplier has no address —
+that check used to fire in the action, after the click. Rejected: one column
+per document type (a second field nobody fills; the cost of sharing is that the
+text has to read "our next order", not "our next paint order"), and `{order}`
+placeholders (a typo prints literally, and the order number is already in the
+subject and on the attached document).

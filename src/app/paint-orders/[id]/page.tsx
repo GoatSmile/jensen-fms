@@ -67,7 +67,7 @@ export default async function PaintOrderDetailPage({
         id, order_number, status, supplier_id, service_type_id,
         planned_send_date, sent_at, expected_return_at, received_at,
         notes, created_at, emailed_at, emailed_to,
-        supplier:suppliers(id, name),
+        supplier:suppliers(id, name, email_primary, email_secondary, default_email_message),
         color:colors(id, slug, name_en, name_da, hex, ral_code, coating),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
@@ -314,7 +314,11 @@ export default async function PaintOrderDetailPage({
   );
   const orgLabel = (
     o:
-      | { legal_name: string; display_name_en: string | null; display_name_da: string | null }
+      | {
+          legal_name: string;
+          display_name_en: string | null;
+          display_name_da: string | null;
+        }
       | null
       | undefined,
   ) =>
@@ -382,6 +386,11 @@ export default async function PaintOrderDetailPage({
         emailedTo={order.emailed_to}
         emailTestMode={settingsRes.data?.outbound_test_mode ?? true}
         emailTestRecipients={settingsRes.data?.outbound_test_email ?? null}
+        supplierEmails={[
+          order.supplier?.email_primary,
+          order.supplier?.email_secondary,
+        ].filter((e): e is string => Boolean(e))}
+        supplierDefaultMessage={order.supplier?.default_email_message ?? null}
         colorName={
           order.color
             ? localizedName(locale, order.color.name_en, order.color.name_da)

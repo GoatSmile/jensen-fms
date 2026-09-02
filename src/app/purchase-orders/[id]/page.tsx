@@ -16,20 +16,11 @@ import { Money } from "@/components/money";
 import { SegmentedId } from "@/components/segmented-id";
 import { formatDate } from "@/lib/parts/format";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
-import type {
-  ImportTaxBasis,
-  PartOrigin,
-} from "@/lib/purchasing/import-tax";
+import type { ImportTaxBasis, PartOrigin } from "@/lib/purchasing/import-tax";
 
 import { POHeader } from "./_components/po-header";
-import {
-  LinesSection,
-  type POLineRow,
-} from "./_components/lines-section";
-import type {
-  CurrencyChoice,
-  PartChoice,
-} from "./_components/line-dialog";
+import { LinesSection, type POLineRow } from "./_components/lines-section";
+import type { CurrencyChoice, PartChoice } from "./_components/line-dialog";
 import {
   ReceiveForm,
   type LineRow,
@@ -65,7 +56,7 @@ export default async function PurchaseOrderDetailPage({
         `
           id, po_number, status, order_date, expected_date, received_date,
           total_amount, total_currency, notes, emailed_at, emailed_to,
-          suppliers(id, name, import_duty_prepaid_default)
+          suppliers(id, name, import_duty_prepaid_default, email_primary, email_secondary, default_email_message)
         `,
       )
       .eq("id", id)
@@ -207,16 +198,13 @@ export default async function PurchaseOrderDetailPage({
   const currencies: CurrencyChoice[] = currenciesRes.data ?? [];
 
   const defaultTransportPct = Number(
-    settingsRes.data?.default_transport_pct ?? 0.10,
+    settingsRes.data?.default_transport_pct ?? 0.1,
   );
   const hideLocations = settingsRes.data?.hide_location_info ?? false;
   const primaryLocationId = settingsRes.data?.primary_location_id ?? null;
 
   const totalOrdered = poLineRows.reduce((s, l) => s + l.quantity, 0);
-  const totalReceived = poLineRows.reduce(
-    (s, l) => s + l.receivedQuantity,
-    0,
-  );
+  const totalReceived = poLineRows.reduce((s, l) => s + l.receivedQuantity, 0);
   // Landed total in DKK from the lines (matches the list / v_po_totals):
   // includes transport, tariff and anti-dumping, unified across currencies.
   // Partial total over priced lines only — unpriced lines (NULL landed cost)
@@ -268,6 +256,11 @@ export default async function PurchaseOrderDetailPage({
         emailedTo={po.emailed_to ?? null}
         emailTestMode={settingsRes.data?.outbound_test_mode ?? true}
         emailTestRecipients={settingsRes.data?.outbound_test_email ?? null}
+        supplierEmails={[
+          po.suppliers?.email_primary,
+          po.suppliers?.email_secondary,
+        ].filter((e): e is string => Boolean(e))}
+        supplierDefaultMessage={po.suppliers?.default_email_message ?? null}
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
@@ -276,9 +269,7 @@ export default async function PurchaseOrderDetailPage({
         <Stat label={t("statReceived")}>{formatDate(po.received_date)}</Stat>
         <Stat label={t("statOrderTotal")}>
           <Money
-            amount={
-              po.total_amount != null ? Number(po.total_amount) : null
-            }
+            amount={po.total_amount != null ? Number(po.total_amount) : null}
             currency={po.total_currency}
           />
         </Stat>
