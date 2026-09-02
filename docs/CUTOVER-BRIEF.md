@@ -3,7 +3,7 @@
 For Dennis. Written 26 July 2026, revised 29 July, to read before we meet in
 the week of 17 August.
 
-This follows on from `docs/PLAYBOOK-AUGUST.md`, which is your guide for the
+This follows on from `docs/archive/PLAYBOOK-AUGUST.md`, which was the guide for the
 solo stretch from 3 August. That one is about using the system. This one is
 about *switching to it*.
 

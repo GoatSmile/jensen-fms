@@ -66,7 +66,7 @@ export default async function PaintOrderDetailPage({
       `
         id, order_number, status, supplier_id, service_type_id,
         planned_send_date, sent_at, expected_return_at, received_at,
-        notes, created_at,
+        notes, created_at, emailed_at, emailed_to,
         supplier:suppliers(id, name),
         color:colors(id, slug, name_en, name_da, hex, ral_code, coating),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
@@ -95,6 +95,7 @@ export default async function PaintOrderDetailPage({
     colorsRes,
     partTypes,
     priceList,
+    settingsRes,
   ] = await Promise.all([
     supabase
       .from("service_order_items")
@@ -151,6 +152,12 @@ export default async function PaintOrderDetailPage({
       .order("name_en", { ascending: true }),
     loadActiveServicePartTypes(supabase),
     loadCurrentPriceList(supabase, order.supplier_id, order.service_type_id),
+    // Outbound test mode + inboxes: the email dialog says where mail really goes.
+    supabase
+      .from("app_settings")
+      .select("outbound_test_mode, outbound_test_email")
+      .eq("id", 1)
+      .maybeSingle(),
   ]);
 
   const items = itemsRes.data ?? [];
@@ -325,7 +332,12 @@ export default async function PaintOrderDetailPage({
         serviceOrderId={order.id}
         orderNumber={order.order_number}
         status={order.status as ServiceOrderStatus}
+        supplierId={order.supplier?.id ?? null}
         supplierName={order.supplier?.name ?? null}
+        emailedAt={order.emailed_at}
+        emailedTo={order.emailed_to}
+        emailTestMode={settingsRes.data?.outbound_test_mode ?? true}
+        emailTestRecipients={settingsRes.data?.outbound_test_email ?? null}
         colorName={
           order.color
             ? localizedName(locale, order.color.name_en, order.color.name_da)

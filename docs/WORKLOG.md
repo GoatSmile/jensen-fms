@@ -90,10 +90,10 @@ treat the early totals as floors, not truth.
 
 | Date | Hours | Work |
 |---|---|---|
-| Wed 2026-09-02 | ~2 | **Sep 1 client call turned into a plan** — transcript checked against the app (paint-from-SO already exists; real gaps are the picker, a painter PDF + email, painted-frame stock), local DB refreshed from prod; Metacoat was already default painter (a wrong slug had hidden it). |
+| Wed 2026-09-02 | ~6 | **The painter gets a document** (migration 89): paint-order print + email in the supplier's own language, emailing marks the order sent. Also: Sep 1 call checked against the app (paint-from-SO already existed), local DB refreshed, September CLAUDE.md consolidation. |
 
-**September so far: ~2 h** (1 working day)
+**September so far: ~6 h** (1 working day)
 
 ---
 
-**Project total: ~256 h across 42 working days (2026-05-07 → 2026-09-02)**
+**Project total: ~260 h across 42 working days (2026-05-07 → 2026-09-02)**

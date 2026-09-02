@@ -29,10 +29,11 @@ rule is what stops a file accreting:
 **Munin (`~/workspace/code/munin`) uses this same seven-slot scheme**, so the
 rituals below transfer between projects unchanged.
 
-**Owner-facing deliverables are not slots.** `docs/PLAYBOOK-AUGUST.md` (for
-Dennis's solo stretch) is a dated artifact written for a human, not a session
-doc: *rewrite it when its period or audience changes; archive it when the
-period ends.* Don't grow the seven slots to hold this class of file.
+**Owner-facing deliverables are not slots.** `PLAYBOOK-AUGUST.md` (Dennis's
+August stretch, archived 2026-09-02 when the period ended) is the example: a
+dated artifact written for a human, not a session doc — *rewrite it when its
+period or audience changes; archive it when the period ends.* Don't grow the
+seven slots to hold this class of file.
 
 **Anything that leaves this repo for a HUMAN is a PDF.** The moment a
 deliverable is destined for someone who is not in the session — Dennis on the
@@ -372,8 +373,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     editable while `planned` with LIVE estimates; **send freezes**
     supplier_item_no + unit_price + currency + fx_rate_to_dkk onto each
     line (the purchase_order_lines pattern) and is blocked while any line
-    is unpriced. Libs: `src/lib/services/{vocab,status,at-supplier,pricing,
-    template-paint}.ts`.
+    is unpriced. **Send has a document** (2026-09-02): `/paint-orders/<id>/print`
+    (browser → PDF) and *Email painter* share one loader,
+    `src/lib/services/service-order-document.ts`, and both render in the
+    SUPPLIER's language (`suppliers.document_language`), never the UI locale.
+    **Emailing IS the send** — a `planned` order transitions to `sent` (gate +
+    price freeze) BEFORE the document renders, so mail, paper and ledger carry
+    the same numbers. Order/line notes never reach the painter; the dialog
+    message is the only free text (PO doctrine). Libs:
+    `src/lib/services/{vocab,status,at-supplier,pricing,template-paint,
+    service-order-document}.ts`.
   - **Nav/routes are PER SERVICE TYPE, permanently** — "Paint orders" stays
     at /paint-orders; a future service type gets its own nav item; shared
     components parameterized by type, no unified list page.
@@ -532,8 +541,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - Deliberately English: `parts.name_en` / template / family names, org
   identity, `hs_codes.description`, kit sticker colours, `countries` lib.
   Per-document language (not UI locale): invoice print (per
-  `invoices.language`), PO print (always English — supplier-facing), the
-  public `/b/[bikeId]` + `/report` flow.
+  `invoices.language`), PO print (always English — supplier-facing, and not yet
+  reading `suppliers.document_language`), paint-order print + email (per
+  `suppliers.document_language`), the public `/b/[bikeId]` + `/report` flow.
 - Go-live = flip `app_language` / `worker_language` to `da` in app_settings.
   Sweep history: `docs/archive/i18n-danish-sweep.md`.
 

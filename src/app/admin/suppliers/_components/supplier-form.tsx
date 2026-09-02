@@ -43,6 +43,8 @@ export type SupplierFormValues = {
   payment_terms_days: string;
   /** Supplier delivers duty-paid — new PO lines default to no import tax. */
   import_duty_prepaid_default: boolean;
+  /** Language of the documents this supplier receives (paint orders today). */
+  document_language: string;
   notes: string;
   is_active: boolean;
 };
@@ -62,6 +64,7 @@ const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   default_currency: "",
   payment_terms_days: "",
   import_duty_prepaid_default: false,
+  document_language: "en",
   notes: "",
   is_active: true,
 };
@@ -122,6 +125,7 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
     if (values.import_duty_prepaid_default) {
       fd.set("import_duty_prepaid_default", "on");
     }
+    appendField(fd, "document_language", values.document_language);
     appendField(fd, "notes", values.notes.trim());
     if (values.is_active) fd.set("is_active", "on");
     return fd;
@@ -215,6 +219,24 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
               className="max-w-[140px]"
             />
           </Field>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Field label={t("docLanguageLabel")} htmlFor="sup-doc-lang">
+            <Select
+              value={values.document_language === "da" ? "da" : "en"}
+              onValueChange={(v) => update("document_language", v)}
+            >
+              <SelectTrigger id="sup-doc-lang" className="max-w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{t("docLangEn")}</SelectItem>
+                <SelectItem value="da">{t("docLangDa")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <p className="text-ink-2 text-xs">{t("docLanguageHint")}</p>
         </div>
 
         <Field label={t("fieldEmailPrimary")} htmlFor="sup-email1">

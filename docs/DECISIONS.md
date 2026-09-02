@@ -2026,3 +2026,63 @@ cannot change after they have read it. Source stays markdown in `docs/`,
 rendered with `scripts/build-doc-pdf.py`. An artifact or link may accompany the
 PDF; it never replaces it. Rule recorded in CLAUDE.md; first applied to
 `docs/PARTS-REVIEW-2026-08.md`.
+
+## 2026-09-01 — The cutover date passed; the project is re-planned with the owner
+Status-update call, Dennis and Nazar. The 31 August transfer date did not happen
+and no replacement date was set. Decided:
+1. **Parallel running is the reality, by the owner's choice.** The old system
+   (Excel, paper, the bookkeeping) stays the system of record; the workshop does
+   small things in the FMS while it is fine-tuned. This supersedes
+   `plan-cutover.md` §2 ("one hard line for input") as the operating principle
+   for now — the risk that section describes, two systems that disagree, is
+   accepted knowingly rather than by drift.
+2. **Targets: core functionality by October, go-live by Christmas.** Dennis
+   expects municipal orders from October.
+3. **Nazar acts as project manager, with Dennis's explicit consent**: weekly
+   check-ins (Tuesday morning as the default), deadlines, follow-ups. Dennis
+   commits 15–20 minutes each morning in the system so every meeting has
+   findings.
+4. **Two-pronged scope.** Modules first: bike templates and parts. Processes
+   first: sales order → paint order. Purchase orders and work orders are parked
+   until those two are solid.
+5. **Painted frames are derived state, not inventory** (clarified 2 Sep).
+   Frames are normally painted against an order; painted frames in stock exist
+   but are the exception. So "painted frames in stock" becomes a filter over
+   bikes (in planning, paint received back, no owner), not a colour-variant SKU.
+   Rejected: modelling a painted frame as a part — it collides with paint being
+   a service type rather than a BOM line, for a case that is rare.
+6. **"Kit" as Dennis uses it is a sub-assembly** (frame + motor + cables +
+   display that must travel together), and is escalated as a modelling question
+   (BACKLOG). In the app kits stay box-sticker labels; template reuse is
+   "Duplicate template".
+Rejected: keeping the 31 Aug plan alive with a new hard date — the owner did not
+want one yet. The cutover ladder itself (irreversibility ascending, e-conomic
+last) still stands for whenever a date is set.
+
+## 2026-09-02 — The painter receives a document, in their own language
+"Send" on a paint order was a status change that froze prices and told nobody;
+the workshop handed Metacoat a hand-written copy. Decided:
+1. **`suppliers.document_language`** (`en` | `da`, default `en`; migration 89).
+   Language is a fact about the RECIPIENT, so it lives on the supplier — not on
+   the order, not on the person at the keyboard. Metacoat is `da`. The PO
+   document keeps its hardcoded English until it is taught to read the column
+   (BACKLOG); default `en` preserves that behaviour for every existing supplier.
+2. **Emailing IS the send.** A `planned` order transitions to `sent` FIRST
+   (running the existing gate: lines present, every line priceable; and freezing
+   prices), and only then is the document rendered — so mail, paper and ledger
+   carry the same numbers. Deterministic failures (no sender, no recipient) are
+   checked before that state change; only a provider failure can leave an order
+   `sent` with no email stamp, and the error says so. Rejected: email without a
+   status change (the painter holds a document the system still calls planned,
+   and its prices can still move); and send-then-transition (the mail could show
+   numbers that then fail to freeze).
+3. **One loader for paper and mail** (`service-order-document.ts`), the PO
+   doctrine. Order and line notes never leave the building; the dialog's message
+   is the only free text the painter sees.
+4. **Per-document labels live in code** (`DOC_LABELS`), the invoice-print
+   pattern, not in `messages/*.json`: the email renderer has no next-intl
+   context, and the language is the supplier's, not the UI's.
+Rejected: a server-rendered PDF attachment — no PDF pipeline exists, browser
+print is what invoices and POs already do, and the HTML mail carries the same
+content. Verified end to end on the local copy with a real Resend send to the
+owner's test inbox.

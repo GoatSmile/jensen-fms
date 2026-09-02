@@ -1,13 +1,16 @@
 # Plan — cutover to the FMS
 
-**Status: draft for the 17–21 Aug sessions with Dennis. Not yet agreed.**
+**Status: the 31 Aug transfer date passed without a cutover; the owner chose
+parallel running for now (DECISIONS 2026-09-01), with core functionality by
+October and go-live by Christmas as the targets. The ladder below still stands
+for whenever a transfer date is set; every August date in this file is stale.**
 Working document for Nazar. The owner-facing version is
 `docs/CUTOVER-BRIEF.md` — that one is written to be handed over and studied;
 this one holds the reasoning, the risk analysis, and the open decisions.
 
 Companion reading: `docs/STATUS.md` (where the build stands),
 `docs/OPERATIONS.md` (accounts, secrets, switches),
-`docs/PLAYBOOK-AUGUST.md` (Dennis's solo stretch, which this follows).
+`docs/archive/PLAYBOOK-AUGUST.md` (Dennis's August stretch, now archived).
 
 ---
 
@@ -74,7 +77,7 @@ different owners and different blockers.
 Master data is the long pole and it is the one thing that cannot be
 compressed by working harder in August. It is also entirely self-serve today
 — the dashboard "Data housekeeping" fold lists it with live counts, and
-`docs/PLAYBOOK-AUGUST.md` §"Quiet-hour tasks" is already Dennis's task list
+`docs/archive/PLAYBOOK-AUGUST.md` §"Quiet-hour tasks" is already Dennis's task list
 for it. **The single most useful thing he can do before 17 Aug is drive those
 counts to zero.**
 

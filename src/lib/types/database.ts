@@ -3706,6 +3706,8 @@ export type Database = {
           color_id: string | null
           created_at: string
           created_by: string | null
+          emailed_at: string | null
+          emailed_to: string | null
           expected_return_at: string | null
           id: string
           notes: string | null
@@ -3723,6 +3725,8 @@ export type Database = {
           color_id?: string | null
           created_at?: string
           created_by?: string | null
+          emailed_at?: string | null
+          emailed_to?: string | null
           expected_return_at?: string | null
           id?: string
           notes?: string | null
@@ -3740,6 +3744,8 @@ export type Database = {
           color_id?: string | null
           created_at?: string
           created_by?: string | null
+          emailed_at?: string | null
+          emailed_to?: string | null
           expected_return_at?: string | null
           id?: string
           notes?: string | null
@@ -4087,6 +4093,7 @@ export type Database = {
           created_at: string
           default_currency: string | null
           deleted_at: string | null
+          document_language: string
           email_primary: string | null
           email_secondary: string | null
           id: string
@@ -4109,6 +4116,7 @@ export type Database = {
           created_at?: string
           default_currency?: string | null
           deleted_at?: string | null
+          document_language?: string
           email_primary?: string | null
           email_secondary?: string | null
           id?: string
@@ -4131,6 +4139,7 @@ export type Database = {
           created_at?: string
           default_currency?: string | null
           deleted_at?: string | null
+          document_language?: string
           email_primary?: string | null
           email_secondary?: string | null
           id?: string
