@@ -1,21 +1,19 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-02 (session end).** Most recent: **painted parts are
-stock — all four phases shipped** (migrations 91–92, `docs/plan-painted-parts.md`):
-a part is *paintable as* a painter part type, a painted variant is a part per
-colour, a paint order coming back converts raw into painted stock at raw + paint
-cost, builds pick the painted variant in the bike's colour (or flag *needs
-paint*), MO coverage and the floor queue read the same rule, `/parts/painted`
-shows raw · at painter · painted · promised · free per colour, and the
-fill-from-bikes seeder names the specific parts. Earlier the same day: the
-**painter and PO documents** render in the supplier's own language and emailing
-marks a paint order sent (migrations 89–90); the paint order's *Add bike* picker
-groups bikes by customer order; an MO built for an SO offers *Send frames to
-painter*; the SO shows frames per MO with an at-painter count; `/bikes` has a
-paint filter. Everything verified in the browser on the local copy, including a
-real Resend send to the owner's test inbox. **The walk-through for Dennis is
-`docs/WALKTHROUGH-PAINT-2026-09.md` (+ PDF).** Decisions in DECISIONS
-2026-09-01 and 2026-09-02. tsc + lint + build clean; smoke 0 fail.
+**Last updated: 2026-09-03 (session end).** Most recent: **"Paintable as" is
+generated from the part category** (migration 97) — a painter type claims a
+category, new parts inherit it, a button on the type's row fills every
+undecided part, and `parts.paint_exempt` is the deliberate *not painted* the
+fill must skip. **Both databases now carry the data**: Frame→Frames,
+Fork→Forks, Cargo bed→Front Cargo Platform, 15 parts assigned, 3 marked not
+painted. Earlier the same session: **every outgoing message is kept**
+(migrations 94–96) with its exact body, readable in a *Sent messages* panel per
+order and at `/admin/outbox`; **each supplier keeps its own email message** and
+the send dialog names the real recipient (93); **spawning an MO asks whether the
+frames need painting**; the frame-number generator reads both tables so a spawn
+can no longer abort half-created; `/parts/painted` is now **Paint shelf**; the
+MO list carries date, client and sales order, sortable. Decisions in DECISIONS
+2026-09-02 and 2026-09-03. tsc + lint clean; smoke 87 pass / 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -35,90 +33,89 @@ Scope is two-pronged: **modules** (bike templates + parts) and **processes**
 (sales order → paint order first). Purchase orders and work orders are parked
 until those two are solid. `docs/plan-cutover.md` keeps the ladder
 (irreversibility ascending, e-conomic last) for whenever a date is set; its
-August dates are stale and its header says so. The cutover brief and the
-August playbook are archived (2 Sep), and every plan in `docs/` was swept the
-same day for facts the re-plan made false.
+August dates are stale and its header says so.
 
-**What Dennis actually did on 1 Sep** (checked in prod, not remembered): created
-paint order `PNT-2026-0008` for Metacoat — five lines in RAL 1006, zero bikes,
-no sales order behind it — after creating the colour "Maisgleb 1006"; booked
-150 stems at a stated cost through the new stock-arrival path. Both Dennis and
-Nazar have passwords since 1 Sep; **Dennis's app is Danish** (person language),
-so a screen you demo in English looks different on his tablet.
+**Dennis's app is Danish** (person language), so a screen demoed in English
+looks different on his tablet. Both he and Nazar have passwords since 1 Sep.
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod),
   gated behind Vercel SSO + the person-password wall. `v1.0.0` is reserved for
   the day this becomes the system of record.
 - Operationally feature-complete for the workshop's daily job (parts, stock
-  ledger, suppliers + POs with frozen landed cost + PO email in test mode,
-  templates, MOs + build workbench, bikes + QR, paint orders with document,
-  sales orders + slating, customers + map, tickets + work orders, `/work`,
-  invoicing, e-conomic push against a trial agreement, inbound voicemail →
-  ticket in shadow mode, whole-app Danish with both locales still `en`).
-- **Paint-from-SO already exists** (`/sales-orders/<id>/paint/new`, D3
-  2026-06-20). Dennis did not find it because he started from the paint-order
-  side, whose bike picker searches frame number and template only — that is
-  item B below, a discoverability fix, not architecture.
-- **Painted frames** are derived state (DECISIONS 2026-09-01 §5): a filter over
-  bikes, not a SKU. Item C below.
-- **Local database copy** refreshed from the 2 Sep production dump, then
-  migration 89 applied. Known divergences from production: the local
-  `PNT-2026-0008` was flipped to `sent` + emailed by today's test (prod: still
-  `planned`), the walk-through fixture below exists only locally, and every
-  clearly-test row on local now carries the `TEST` prefix (owner's rule,
-  DECISIONS 2026-09-02) while production's copies of the same July test rows
-  do not yet. Re-dump before trusting local for anything data-shaped.
-- **Jerudan is gone from both databases** (owner's call 2 Sep): it was an
-  unreferenced duplicate of Jeudan. `Jeurodan` remains as version 1 of the
-  Jeudan chain.
+  ledger, suppliers + POs with frozen landed cost, templates, MOs + build
+  workbench, bikes + QR, paint orders with document, sales orders + slating,
+  customers + map, tickets + work orders, `/work`, invoicing, e-conomic push
+  against a trial agreement, inbound voicemail → ticket in shadow mode,
+  whole-app Danish with both locales still `en`).
+- **Migrations 93–97 are on production AND local.** 93 supplier email message ·
+  94–96 `outbound_messages` (supersedes `notification_log`) · 97 painter-type
+  category defaults + `parts.paint_exempt`.
+- **PRODUCTION now knows what goes to the painter** (entered 3 Sep, identical on
+  both databases): 8 frames, 5 forks, 1 cargo bed, 1 mudguard set assigned;
+  `CJ700CST201-1`, `QC700CST201` (stainless) and `JP-WSLFH01` (WOLT, arrives
+  white) marked *not painted*; 154 of 172 base parts still undecided, which is
+  correct — handlebars and chains never see a painter. **This changes what
+  Dennis sees**: MO coverage will now say *N parts need paint* where it used to
+  say "all covered", and *needs paint* blocks readiness. Tell him before he
+  meets it.
+- **Basket and Mudguards are deliberately unmapped** — majority-exception
+  categories, so a category default there would be wrong more often than right.
+  Their parts get marked by hand.
+- **Local divergences from production** (re-dump before trusting local for
+  anything data-shaped): the walk-through fixtures (`SO-2026-0012` →
+  `MO-2026-0017` → `PNT-2026-0009`, stock order `PNT-2026-0010`, painted
+  variants in Maisgleb, TEST-prefixed rows); today's test MOs `MO-2026-0019`,
+  `MO-2026-0020` (half-spawned, 1 of 2 bikes), `MO-2026-0021`; `SO-2026-0014`
+  given a colour to exercise the paint prompt; `PNT-2026-0012`/`0013` and their
+  conversions; one failed outbound row from a send test; repaired frame-identifier
+  drift (audit 19/20 — production never had any).
 
 ## Next actions
-0. **Painted parts: all four phases shipped 2026-09-02** (migrations 91–92, plan in
-   `docs/plan-painted-parts.md`). What it needs now is DATA: mark the frames and
-   forks *paintable as* on their part forms in production, enter today's painted
-   shelf as variants with a stated cost, and watch one real paint order go round.
-   The owner plans a round of TEST-prefixed test data first.
-1. **Tuesday's meeting with Dennis — walk the fixture.** The script is
-   `docs/WALKTHROUGH-PAINT-2026-09.md` (+ PDF): five scenarios lifted from his
-   own words on the 1 Sep call, every screen named. On the LOCAL copy:
-   customer *TEST Midtjysk Ejendomsmægler ApS* → `SO-2026-0012` (confirmed, two Norma
-   CS in Maisgleb 1006) → `MO-2026-0017` (two bikes) → `PNT-2026-0009` (sent,
-   both frames, linked back to the SO). Every step was driven through the real
-   UI today, so it is the demo script as well as the test. Also on local: TEST
-   stock paint order `PNT-2026-0010` (two frames + a fork in Maisgleb, received
-   back) and the three painted variants it created — show Dennis `/parts/painted`
-   and the base part's *Painted variants* section. Point the dev
-   server at local (`scripts/use-db.sh`), sign in with `dev-login.mjs`.
-2. **Then decide with Dennis** whether the same order goes into production for
-   real (his real-estate customer), and whether Metacoat's real email replaces
-   the test address (see Waiting on).
-3. **Kit = sub-assembly** goes to the planning chat (BACKLOG has the three
+1. **Tuesday 8 Sep with Dennis.** Two things to walk: the paint chain end to end
+   (`docs/WALKTHROUGH-PAINT-2026-09.md` + PDF for the local fixture) and the
+   guide written for him, `docs/PAINT-FLOWS-DENNIS-2026-09.md` (+ PDF) — the map
+   from question to screen, then three flows: a colour we don't have, a colour
+   already on the shelf, a stock batch with no order behind it. **Both are in
+   English buttons by the owner's call**, while his app is Danish.
+2. **Watch one real paint order go round in production** now that the parts are
+   marked — and decide whether Metacoat's real email replaces the test address
+   (see Waiting on) before `outbound_test_mode` goes off.
+3. **Jeudan declares Basket ×1 and Sign ×2** to the painter with no parts behind
+   them; the template now flags both as *not marked in the recipe*. Dennis's call
+   whether those parts should exist at all.
+4. **Kit = sub-assembly** goes to the planning chat (BACKLOG has the three
    questions).
-4. Parked deliberately: painted frames as a dashboard metric (not asked for).
-   The PO document reads the supplier language since the same afternoon
-   (DECISIONS 2026-09-02, later) — set it on the supplier form.
+5. Loose ends, none blocking: `MO-2026-0020` on local is half-spawned (finish or
+   cancel it); the spawn prompt's zero-paint branch has not been clicked in a
+   browser (both spawnable lines had paintable parts); the paint-from-SO screen
+   pre-fills the colour only when every eligible frame agrees.
 
 ## Preflight harness — run before showing anyone the app
 ```
 npm run smoke                      # every page route; needs `npm run dev`
 scripts/audit-invariants.sql       # SQL editor, psql, or the MCP
 ```
-- **Smoke** against the LOCAL copy today: **86 pass · 18 redirect · 7 skip ·
-  0 fail.** The 7 skips are routes with no row to render (invoices, work orders,
-  service agreements) since the 26 Aug cleanup — production would skip the same.
-  A SKIP is not a pass. The 18 redirects are the retired vocab routes.
-- **Invariant audit**: baseline **16 of 18 clean** (unchanged since 26 Aug):
-  check 17 (`JP-BasJen`, 499 units with no known cost — needs the owner's
-  estimate) and check 18 (legacy movements with `unit_cost_basis = 'none'`,
-  can only shrink). Tier 2 — issuing an invoice, any e-conomic push, any real
-  send — is excluded on purpose and stays manual.
+- **Smoke** against the LOCAL copy: **87 pass · 19 redirect · 7 skip · 0 fail.**
+  The 7 skips are routes with no row to render (invoices, work orders, service
+  agreements) since the 26 Aug cleanup — production would skip the same. A SKIP
+  is not a pass. 18 of the redirects are the retired vocab routes; the 19th is
+  `/sales-orders/<id>/edit`, which redirects because the SO the smoke picks is
+  confirmed and the edit page is draft-only — data-dependent, not a regression.
+- **Invariant audit**: baseline **18 of 20 clean**. Standing hits: check 17
+  (`JP-BasJen`, 499 units with no known cost — needs the owner's estimate) and
+  check 18 (legacy movements with `unit_cost_basis = 'none'`, can only shrink).
+  Checks 19 and 20 are new (3 Sep) and clean on both databases: frame identifiers
+  that disagree with their bike, and live bikes with no frame identifier.
+  Tier 2 — issuing an invoice, any e-conomic push, any real send — is excluded
+  on purpose and stays manual.
 
 ## Waiting on (external / owner)
 - **Metacoat's real email address.** `suppliers.email_primary` for Metacoat is
   the OWNER'S TEST ADDRESS (`nazar@valent.dk`) on both databases, on purpose,
   so the flow can be tested. Replace it before `outbound_test_mode` is switched
-  off, or the first real paint order goes to Nazar.
+  off, or the first real paint order goes to Nazar. The send dialog now prints
+  the address it will use, so this is visible at the moment of sending.
 - **Kit = sub-assembly** modelling question — escalated to the planning chat
   (BACKLOG, "Parked product ideas"). Until answered: kits are box stickers,
   template reuse is Duplicate template.
@@ -138,8 +135,12 @@ scripts/audit-invariants.sql       # SQL editor, psql, or the MCP
 ## Landmines
 - **Ad-hoc SQL against a wrong slug returns nothing and looks like "not set".**
   The paint service type's slug is `painting`, not `paint`; a query on the wrong
-  one reported "no default painter" today when Metacoat had been default all
-  along. Check `service_types.slug` before concluding anything from a null.
+  one reported "no default painter" when Metacoat had been default all along.
+  Check `service_types.slug` before concluding anything from a null.
+- **A frame number lives in TWO tables** — `bikes.frame_number` and a
+  `bike_identifiers` row under a table-wide unique index. The generator reads
+  both now (`loadUsedFrameNumbers`); anything that renames a frame number
+  outside the app must update both, or audit check 19 lights up.
 - **`supabase gen types typescript --local` does not reproduce the committed
   types file** — it drops `__InternalSupabase` and the `Relationships` arrays.
   Hand-patch the affected tables (Row + Insert + Update) or regenerate through
@@ -162,7 +163,8 @@ scripts/audit-invariants.sql       # SQL editor, psql, or the MCP
   before the production token swap** — check 14 is at zero today; re-run it
   before the swap.
 - `outbound_test_mode` is the only thing between "Email supplier" / "Email
-  painter" and real inboxes — verify it before demoing send flows.
+  painter" and real inboxes — verify it before demoing send flows. Every attempt
+  is now recorded either way, at `/admin/outbox`.
 - Both locales sit at `en`; Danish appearing app-wide means someone flipped
   `app_settings` (the proven go-live switch), except for Dennis, whose PERSON
   language is `da`.
@@ -185,6 +187,8 @@ not here — query them, don't trust a remembered count.
   purchase qty) drives every badge.
 - **`JP-BasJen`** 499 baskets with no cost (check 17). **`JP-AND-DSP-NTC`** 93
   units of "test" stock counted as real — owner decides.
+- **Painted stock in production is still empty** — the parts are marked, but no
+  paint order has come back there yet, so the shelf shows raw only.
 - Written up for Dennis in `docs/PARTS-REVIEW-2026-08.md` (+ PDF).
 
 ## Standing "not now" decisions (reasons in docs/DECISIONS.md)
