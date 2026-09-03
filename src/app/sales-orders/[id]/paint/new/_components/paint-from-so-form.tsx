@@ -27,12 +27,26 @@ import type {
 } from "@/app/paint-orders/_components/paint-order-form";
 
 import { createPaintOrderFromSO } from "@/app/sales-orders/_actions/paint-from-so";
+import {
+  planPaintSeed,
+  type SeedRecipePart,
+  type SeedTemplateRow,
+} from "@/lib/services/paint-seed";
+
+import {
+  PaintworkPreview,
+  type PreviewPart,
+  type PreviewPartType,
+  type PreviewPriceList,
+} from "./paintwork-preview";
 
 export type EligibleSOBike = {
   id: string;
   frameNumber: string;
+  /** null for a bike recorded outside an MO — no recipe to send. */
+  templateId: string | null;
   templateLabel: string | null;
-  /** The bike's colour; seeds the batch default when the frames agree. */
+  /** The bike's colour; seeds the batch default when the bikes agree. */
   colorId: string | null;
   colorName: string | null;
   colorHex: string | null;
@@ -46,8 +60,15 @@ type Props = {
   suppliers: SupplierOption[];
   colors: ColorOption[];
   defaultSupplierId: string;
-  /** The frames' shared colour, or "" when they disagree. */
+  /** The bikes' shared colour, or "" when they disagree. */
   defaultColorId: string;
+  /** Seed inputs for the paintwork preview — see PaintworkPreview. */
+  paintworkRows: SeedTemplateRow[];
+  recipeParts: SeedRecipePart[];
+  partTypes: PreviewPartType[];
+  parts: PreviewPart[];
+  priceLists: PreviewPriceList[];
+  fallbackPartTypeIds: string[];
 };
 
 export function PaintFromSOForm({
@@ -58,13 +79,19 @@ export function PaintFromSOForm({
   colors,
   defaultSupplierId,
   defaultColorId,
+  paintworkRows,
+  recipeParts,
+  partTypes,
+  parts,
+  priceLists,
+  fallbackPartTypeIds,
 }: Props) {
   const t = useTranslations("soDetail");
   const tCommon = useTranslations("common");
   const tBikeStatus = useTranslations("bikeStatus");
   const locale = useLocale();
   const router = useRouter();
-  // Default: every eligible frame selected.
+  // Default: every eligible bike selected.
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(eligibleBikes.map((b) => b.id)),
   );
@@ -93,6 +120,46 @@ export function PaintFromSOForm({
     );
 
   const selectedCount = useMemo(() => selected.size, [selected]);
+  // Stable array identity for the preview's useMemo — a fresh [...set] on
+  // every render would recompute the plan on every keystroke in Notes.
+  const selectedBikeIds = useMemo(
+    () => eligibleBikes.filter((b) => selected.has(b.id)).map((b) => b.id),
+    [eligibleBikes, selected],
+  );
+  const bikeTemplates = useMemo(
+    () => eligibleBikes.map((b) => ({ id: b.id, templateId: b.templateId })),
+    [eligibleBikes],
+  );
+  const chosenColor = useMemo(
+    () => colors.find((c) => c.id === colorId) ?? null,
+    [colors, colorId],
+  );
+  // What the order will actually contain — the count the submit button shows,
+  // because "1 frame" was a bike count that read as "only the frame".
+  const previewPartCount = useMemo(() => {
+    const selectedSet = new Set(selectedBikeIds);
+    const seedBikes = eligibleBikes
+      .filter((b) => selectedSet.has(b.id))
+      .map((b) => ({
+        id: b.id,
+        templateId: b.templateId,
+        colorId: colorId || null,
+      }));
+    const plan = planPaintSeed(seedBikes, paintworkRows, recipeParts);
+    if (plan.lines.length === 0) {
+      return seedBikes.length > 0
+        ? fallbackPartTypeIds.length * seedBikes.length
+        : 0;
+    }
+    return plan.lines.reduce((sum, l) => sum + l.quantity, 0);
+  }, [
+    selectedBikeIds,
+    eligibleBikes,
+    colorId,
+    paintworkRows,
+    recipeParts,
+    fallbackPartTypeIds,
+  ]);
 
   function clearFieldError(field: string) {
     if (errorField === field) {
@@ -106,7 +173,7 @@ export function PaintFromSOForm({
     setError(null);
     setErrorField(null);
     if (selected.size === 0) {
-      setError(t("errPickFrame"));
+      setError(t("errPickBike"));
       return;
     }
     startTransition(async () => {
@@ -130,9 +197,9 @@ export function PaintFromSOForm({
       // Page-level notice, so it gets its own Panel: the page background already
       // IS --ground, so a bg-ground fill here would render as floating text.
       <Panel contentClassName="flex flex-col items-center gap-2 py-8 text-center">
-        <p className="text-sm font-medium">{t("noFramesTitle")}</p>
+        <p className="text-sm font-medium">{t("noBikesTitle")}</p>
         <p className="text-ink-2 text-xs">
-          {t("noFramesDesc", { so: soNumber })}
+          {t("noBikesDesc", { so: soNumber })}
         </p>
         <Button
           type="button"
@@ -149,8 +216,8 @@ export function PaintFromSOForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-6">
       <Panel
-        title={t("framesToPaint")}
-        description={t("framesSelected", {
+        title={t("bikesInBatch")}
+        description={t("bikesSelected", {
           selected: selectedCount,
           total: eligibleBikes.length,
         })}
@@ -273,6 +340,31 @@ export function PaintFromSOForm({
         </Field>
       </Panel>
 
+      {/* Sits AFTER painter + colour, because it prices against the chosen
+          painter's list and colours its lines — and directly above the submit
+          button, which is where the truth has to be. */}
+      <PaintworkPreview
+        selectedBikeIds={selectedBikeIds}
+        bikeTemplates={bikeTemplates}
+        paintworkRows={paintworkRows}
+        recipeParts={recipeParts}
+        partTypes={partTypes}
+        parts={parts}
+        priceLists={priceLists}
+        fallbackPartTypeIds={fallbackPartTypeIds}
+        supplierId={supplierId}
+        supplierName={
+          suppliers.find((s) => s.id === supplierId)?.name ?? null
+        }
+        colorId={colorId}
+        colorName={
+          chosenColor
+            ? localizedName(locale, chosenColor.name_en, chosenColor.name_da)
+            : null
+        }
+        colorHex={chosenColor?.hex ?? null}
+      />
+
       <Panel
         title={t("schedule")}
         description={t("scheduleDesc")}
@@ -315,7 +407,7 @@ export function PaintFromSOForm({
         <Button type="submit" disabled={isPending || selectedCount === 0}>
           {isPending
             ? t("creating")
-            : t("createPaintOrder", { count: selectedCount })}
+            : t("createPaintOrder", { parts: previewPartCount })}
         </Button>
       </div>
     </form>

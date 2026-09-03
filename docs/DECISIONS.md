@@ -2342,3 +2342,42 @@ Rejected: resolving the type through the category at read time (a re-filed part
 would rewrite priced history), and dropping the part-level field entirely (the
 exceptions make the category alone a wrong answer, loudly — a stainless frame
 that "needs paint" is unbuildable).
+
+## 2026-09-03 (later) — The paint screen shows what goes, not how many frames
+The 3 Sep call produced a bug report against working code: *"the system
+currently only flags frames for painting, excluding other necessary parts like
+forks and mudguards."* It never did. The paint order created live on that call
+(`PNT-2026-0014`) carried four lines — frame, fork, cargo bed, mudguards, each
+naming its part and priced off Metacoat's list. What misled two people for five
+minutes was one string: `Create paint order (1 frame)`, where the count was the
+number of **bikes** in the batch. The screen asked which bikes go and then never
+said what they send, so the only way to find out was to create the order.
+
+Decided:
+1. **A "What goes to the painter" panel on `/sales-orders/<id>/paint/new`** —
+   part type × our part × colour × qty × per-piece (with its tier badge) ×
+   line total, plus the estimate. It sits after painter + colour, because it
+   prices against the chosen painter's list, and directly above the submit
+   button, because that is where the truth has to be.
+2. **It runs the SAME pure functions as the action** — `planPaintSeed` and
+   `priceOrderItems` over the same inputs `createPaintOrderFromSO` seeds from.
+   A preview computing its own answer would be a second source of truth and it
+   would drift. It also mirrors the action's two quirks on purpose: the batch
+   colour overrides each bike's own, and an empty plan becomes frame + fork
+   starter lines. Preview them, or the screen lies where it is most trusted.
+3. **The submit button counts PARTS** (`Create paint order (4 parts)`). A bike
+   count in a unit that names one of the parts is what caused this.
+4. **"Frames" gives way to "bikes" wherever the page means bikes** — breadcrumb
+   and title become *Send to painter*, the panel becomes *Bikes in this batch*,
+   and the MO header button drops to *Send to painter*. Danish alongside.
+5. **No price substitution, and every caveat shown at the moment it matters** —
+   a painter with no current list previews quantities only and is named (same
+   rule as `loadDefaultPaintList`); unpriced lines, bikes whose templates
+   declare no paintwork and whose recipe parts are unmarked, and bikes recorded
+   outside an MO each get their own sentence.
+Rejected: **making the panel collapsible** (owner asked, then agreed) — the seed
+aggregates by part type × part × colour, so twenty bikes of one template is
+still four lines at qty 20. The panel is small by construction, and a fold would
+restore exactly the silence it exists to end. Also rejected: fixing this by
+renaming the button alone, which would have left the screen still unable to
+answer "what are we actually sending?"

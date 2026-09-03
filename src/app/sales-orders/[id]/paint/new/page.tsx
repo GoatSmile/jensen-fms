@@ -21,6 +21,15 @@ import {
   loadServiceTypeBySlug,
 } from "@/lib/services/vocab";
 import type {
+  SeedRecipePart,
+  SeedTemplateRow,
+} from "@/lib/services/paint-seed";
+import type {
+  PreviewPart,
+  PreviewPartType,
+  PreviewPriceList,
+} from "./_components/paintwork-preview";
+import type {
   ColorOption,
   SupplierOption,
 } from "@/app/paint-orders/_components/paint-order-form";
@@ -55,7 +64,7 @@ export default async function PaintFromSOPage({
 
   const blocked = so.status === "cancelled" || so.status === "delivered";
 
-  // Resolve the SO's frames: SO → MOs → bikes.
+  // Resolve the SO's bikes: SO → MOs → bikes.
   const { data: mos } = await supabase
     .from("manufacturing_orders")
     .select("id")
@@ -68,7 +77,7 @@ export default async function PaintFromSOPage({
       supabase
         .from("bikes")
         .select(
-          `id, frame_number, status,
+          `id, frame_number, status, template_id,
            color:colors(id, name_en, name_da, hex),
            template:bike_templates(family:bike_families(name), frame_size, name_en)`,
         )
@@ -106,6 +115,7 @@ export default async function PaintFromSOPage({
           id: b.id,
           frameNumber: b.frame_number,
           status: b.status as BikeStatus,
+          templateId: b.template_id,
           colorId: b.color?.id ?? null,
           colorName: b.color
             ? localizedName(locale, b.color.name_en, b.color.name_da)
@@ -160,6 +170,113 @@ export default async function PaintFromSOPage({
       ? serviceType.default_supplier_id
       : "";
 
+  // WHAT ACTUALLY GOES TO THE PAINTER.
+  //
+  // The screen used to ask which bikes go and then say "1 frame" — a count of
+  // BIKES that read as "only the frame gets painted" (3 Sep: it cost a meeting
+  // and became a bug report against working code). So the page now loads the
+  // very inputs `createPaintOrderFromSO` seeds from and previews the lines.
+  // Both sides run `planPaintSeed` over this data, so the preview and the
+  // order that gets created cannot disagree.
+  const templateIds = [
+    ...new Set(
+      eligibleBikes
+        .map((b) => b.templateId)
+        .filter((x): x is string => typeof x === "string"),
+    ),
+  ];
+  let paintworkRows: SeedTemplateRow[] = [];
+  const recipeParts: SeedRecipePart[] = [];
+  let parts: PreviewPart[] = [];
+  if (templateIds.length > 0) {
+    const [paintworkRes, recipeRes] = await Promise.all([
+      supabase
+        .from("bike_template_service_parts")
+        .select("template_id, service_part_type_id, quantity")
+        .in("template_id", templateIds),
+      supabase
+        .from("bike_template_parts")
+        .select(
+          `template_id, part_id, quantity,
+           part:parts!part_id(internal_sku, name_en, service_part_type_id, deleted_at)`,
+        )
+        .in("template_id", templateIds),
+    ]);
+    paintworkRows = (paintworkRes.data ?? []).map((r) => ({
+      templateId: r.template_id,
+      servicePartTypeId: r.service_part_type_id,
+      quantity: r.quantity,
+    }));
+    // Soft-deleted and unmarked parts are skipped for the same reason the
+    // action skips them: a frozen history row is not demand, and an unmarked
+    // part is one the app has never been told goes to a painter.
+    const byPartId = new Map<string, PreviewPart>();
+    for (const r of recipeRes.data ?? []) {
+      const part = one(r.part);
+      if (!part || part.deleted_at || !part.service_part_type_id) continue;
+      recipeParts.push({
+        templateId: r.template_id,
+        partId: r.part_id,
+        servicePartTypeId: part.service_part_type_id,
+        quantityPerBike: Number(r.quantity),
+      });
+      byPartId.set(r.part_id, {
+        id: r.part_id,
+        sku: part.internal_sku,
+        name: part.name_en,
+      });
+    }
+    parts = [...byPartId.values()];
+  }
+
+  const partTypesRes = await supabase
+    .from("service_part_types")
+    .select("id, slug, name_en, name_da, sort_order")
+    .order("sort_order", { ascending: true });
+  const partTypes: PreviewPartType[] = (partTypesRes.data ?? []).map((p) => ({
+    id: p.id,
+    name: localizedName(locale, p.name_en, p.name_da),
+    sortOrder: p.sort_order,
+  }));
+  // Mirror the action's empty-plan fallback (frame + fork starter lines), or
+  // the preview would show nothing and then an order would arrive with two
+  // lines in it.
+  const fallbackPartTypeIds = ["stel", "forgaffel"]
+    .map((slug) => (partTypesRes.data ?? []).find((p) => p.slug === slug)?.id)
+    .filter((x): x is string => typeof x === "string");
+
+  // Every painter's CURRENT list, so the preview re-prices live when the
+  // supplier changes without a round trip. Keyed by supplier and NEVER
+  // substituted for one another — same rule as `loadDefaultPaintList`: a price
+  // from a painter nobody chose is worse than no price, so a supplier with no
+  // current list previews quantities only.
+  let priceLists: PreviewPriceList[] = [];
+  if (serviceType) {
+    const { data: lists } = await supabase
+      .from("service_price_lists")
+      .select(
+        `supplier_id, name, currency,
+         items:service_price_items(
+           id, service_part_type_id, supplier_item_no, tier_min, tier_max, unit_price
+         )`,
+      )
+      .eq("service_type_id", serviceType.id)
+      .eq("is_current", true);
+    priceLists = (lists ?? []).map((l) => ({
+      supplierId: l.supplier_id,
+      name: l.name,
+      currency: l.currency,
+      items: (l.items ?? []).map((i) => ({
+        id: i.id,
+        service_part_type_id: i.service_part_type_id,
+        supplier_item_no: i.supplier_item_no,
+        tier_min: i.tier_min,
+        tier_max: i.tier_max,
+        unit_price: Number(i.unit_price),
+      })),
+    }));
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
       <Breadcrumb>
@@ -185,17 +302,17 @@ export default async function PaintFromSOPage({
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{t("crumbPaintFrames")}</BreadcrumbPage>
+            <BreadcrumbPage>{t("crumbSendToPainter")}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {t("paintFramesTitle", { so: so.sales_order_number })}
+          {t("sendToPainterTitle", { so: so.sales_order_number })}
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {t("paintFramesSubtitle")}
+          {t("sendToPainterSubtitle")}
         </p>
       </div>
 
@@ -222,6 +339,12 @@ export default async function PaintFromSOPage({
           colors={colors}
           defaultSupplierId={defaultSupplierId}
           defaultColorId={defaultColorId}
+          paintworkRows={paintworkRows}
+          recipeParts={recipeParts}
+          partTypes={partTypes}
+          parts={parts}
+          priceLists={priceLists}
+          fallbackPartTypeIds={fallbackPartTypeIds}
         />
       )}
     </div>
