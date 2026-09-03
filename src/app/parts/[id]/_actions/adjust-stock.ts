@@ -41,6 +41,25 @@ export type AdjustStockInput = {
    */
   unitCostDkk: number | null;
   /**
+   * Why stock is going OUT — required when the resolved delta is negative,
+   * ignored when it is positive.
+   *
+   * `adjustment` and `disposed` are economically different events that look
+   * identical on screen: one corrects a measurement, the other writes off real
+   * value. The ledger is immutable and append-only, so the distinction can only
+   * be recorded at the moment it is known — the same argument that put
+   * `unit_cost_basis` and `import_tax_basis` on their rows. A free-text reason
+   * saying "cracked at the weld" is readable by a human and unqueryable
+   * forever, and there is no reclassifying it later without editing rows we
+   * promise never to edit.
+   *
+   * Not defaulted: until now every scrap silently became an `adjustment`, which
+   * is a wrong default rather than an absent one. `adjustment` nets +2056 in
+   * production — it is overwhelmingly the inbound-correction bucket — so
+   * write-offs hiding in it is exactly the conflation a revisor asks about.
+   */
+  outboundKind?: "correction" | "disposal" | null;
+  /**
    * Alternative to `unitCostDkk` — the original foreign amount plus the FX
    * rate the dialog looked up (or the user overrode) for the purchase date.
    * The server computes `unit_cost_dkk = amount × fxRate` and appends the
@@ -218,10 +237,22 @@ export async function adjustStock(
     if (unitCostDkk != null) {
       return { ok: false, error: t("partUnitCostOnDecrease") };
     }
+    if (!input.outboundKind) {
+      return { ok: false, error: t("partOutboundKindRequired") };
+    }
     costFields = outboundCostFields(
       await resolveUnitCost(supabase, input.partId),
     );
   }
+
+  // The SERVER owns the sign: `mode: 'set'` resolves the delta against a fresh
+  // read, so a client that thought this was an increase can be wrong. Hence
+  // the kind is demanded here rather than trusted from there — and simply
+  // IGNORED on an increase rather than refused, because an unused field cannot
+  // corrupt a row (unlike a cost on an outbound, which is refused above).
+  const movementType = delta < 0 && input.outboundKind === "disposal"
+    ? "disposed"
+    : "adjustment";
 
   const personId = await readPersonId();
   const { error: insertErr } = await supabase
@@ -229,7 +260,7 @@ export async function adjustStock(
     .insert({
       part_id: input.partId,
       location_id: input.locationId,
-      movement_type: "adjustment",
+      movement_type: movementType,
       quantity_delta: delta,
       ...costFields,
       reason: costProvenance ? `${reason} · ${costProvenance}` : reason,

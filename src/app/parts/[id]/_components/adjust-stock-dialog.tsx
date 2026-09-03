@@ -171,6 +171,11 @@ function AdjustStockForm({
   );
   const [costCurrency, setCostCurrency] = useState("DKK");
   const [fxRateText, setFxRateText] = useState("");
+  // Unanswered until the user says. Cleared whenever the movement stops being
+  // a decrease, so a lingering answer can't ride along on an increase.
+  const [outboundKind, setOutboundKind] = useState<
+    "correction" | "disposal" | null
+  >(null);
   const [fxLookup, setFxLookup] = useState<
     | { kind: "idle" }
     | { kind: "loading" }
@@ -242,6 +247,11 @@ function AdjustStockForm({
   // prevailing cost server-side (migration 88), so the box is hidden rather
   // than ignored — an input nobody should fill is worse than no input.
   const isDecrease = preview != null && preview.delta < 0;
+  if (!isDecrease && outboundKind !== null) {
+    // Render-time reset of derived state: cheaper and less surprising than an
+    // effect, and React re-renders with the new value before painting.
+    setOutboundKind(null);
+  }
 
   // Live DKK/unit for a foreign cost — same arithmetic the action persists.
   const foreignCostDkk = useMemo(() => {
@@ -260,6 +270,11 @@ function AdjustStockForm({
     const value = Number(valueText);
     if (!Number.isFinite(value)) {
       setError(t("qtyNumberError"));
+      return;
+    }
+
+    if (isDecrease && outboundKind === null) {
+      setError(t("outboundKindRequired"));
       return;
     }
 
@@ -308,6 +323,7 @@ function AdjustStockForm({
         reason,
         unitCostDkk,
         unitCostForeign,
+        outboundKind: isDecrease ? outboundKind : null,
         occurredAt: dateText.trim() || null,
       });
       if (!result.ok) {
@@ -447,9 +463,41 @@ function AdjustStockForm({
       </div>
 
       {isDecrease ? (
-        <p className="text-muted-foreground text-sm">
-          {t("costInheritedOnDecrease")}
-        </p>
+        <>
+          {/* Why it is going out. Not defaulted: a scrap silently filed as an
+              adjustment is a wrong default, and the ledger is immutable so the
+              distinction cannot be added later. */}
+          <div className="bg-ground flex flex-col gap-2 rounded-lg p-3">
+            <span className="text-sm font-medium">
+              {t("outboundKindQuestion")}
+            </span>
+            <div className="flex flex-col gap-1.5">
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="adjust-outbound-kind"
+                  className="accent-primary mt-1"
+                  checked={outboundKind === "correction"}
+                  onChange={() => setOutboundKind("correction")}
+                />
+                <span>{t("outboundKindCorrection")}</span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="adjust-outbound-kind"
+                  className="accent-primary mt-1"
+                  checked={outboundKind === "disposal"}
+                  onChange={() => setOutboundKind("disposal")}
+                />
+                <span>{t("outboundKindDisposal")}</span>
+              </label>
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {t("costInheritedOnDecrease")}
+          </p>
+        </>
       ) : (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="adjust-cost">{t("unitCostRequired")}</Label>

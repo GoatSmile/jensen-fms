@@ -1151,7 +1151,10 @@
     "thTo": "Til",
     "noPricing": "Ingen salgsprishistorik endnu.",
     "rawStockTitle": "Råt lager",
-    "rawStockByLocation": "Råt lager pr. lokation"
+    "rawStockByLocation": "Råt lager pr. lokation",
+    "outboundKindQuestion": "Hvorfor falder antallet?",
+    "outboundKindCorrection": "Retter antallet — varerne er der, tallet var forkert.",
+    "outboundKindDisposal": "Smidt ud — beskadiget, revnet eller kasseret. Registreres som en kassation, ikke en rettelse."
   },
   "maintenance": {
     "crumb": "Vedligehold"
@@ -4175,7 +4178,9 @@
     "paintedBaseIsVariant": "Det er allerede en lakeret del. At lakere den om i en anden farve hører til på en lakordre.",
     "paintedNotEnoughRaw": "Der er kun {raw} rå på lager på denne lokation, så {qty} kan ikke trækkes fra det rå lager. Sæt antallet ned, eller svar \"nej\" — stykkerne var ikke talt med som rå.",
     "paintedCouldNotCreateVariant": "Kunne ikke oprette den lakerede del til den farve: {detail}",
-    "colourNeedsAdmin": "Det kræver admin-rettigheder at tilføje en farve. Bed en administrator om at oprette den, og vælg den så."
+    "colourNeedsAdmin": "Det kræver admin-rettigheder at tilføje en farve. Bed en administrator om at oprette den, og vælg den så.",
+    "outboundKindRequired": "Angiv hvorfor antallet falder — en rettelse og en kassation er forskellige hændelser, og lagerbogen kan ikke ændres bagefter.",
+    "partOutboundKindRequired": "Fjernelse af lager kræver en årsagstype: en rettelse af antallet eller en kassation."
   },
   "inbox": {
     "title": "Indbakke",

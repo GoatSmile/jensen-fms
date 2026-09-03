@@ -2428,3 +2428,48 @@ Rejected: a "provisional colour" flag (the Admin colours list already shows the
 missing RAL, which is where vocab gets tidied), and generalising an
 inline-vocab-create framework now — this is the FIRST such picker in the app, so
 `createColourInline` says so and the second one generalises it.
+
+## 2026-09-03 (last) — A scrap is a `disposed`, and the ledger asks which
+`disposed` sat in the movement enum unused since migration 01 while every
+write-off went in as an `adjustment` with the meaning in free text. Four of the
+ten enum values are unwritten, but `disposed` is not dormant schema like the
+other three: `transfer_in`/`transfer_out` are unreachable by design (one
+location, `hide_location_info` on) and `returned_to_supplier` has no PO return
+path, whereas frames already crack. It was a mislabelled live event.
+
+The argument for fixing it now rather than at cutover — the owner's push-back on
+an earlier "park it with a trigger" recommendation, and he was right: the whole
+reason to record the distinction is that the ledger is IMMUTABLE, which makes
+*before the first real write-off* the deadline, not after. Waiting for a scrap
+to prove the need guarantees that scrap is mislabelled and unfixable. "No
+disposals in the data" only described the app not yet being the system of
+record, and parallel running started 1 September.
+
+Decided:
+1. **`adjustStock` takes an `outboundKind`** (`correction | disposal`), REQUIRED
+   when the resolved delta is negative and ignored when positive. `disposal`
+   writes `movement_type = 'disposed'`; everything else stays `adjustment`.
+2. **The server owns the sign.** `mode: 'set'` resolves the delta against a
+   fresh read, so a client that thought it was adding can be wrong; the kind is
+   therefore demanded server-side rather than trusted. An unused kind on an
+   increase is ignored, not refused — unlike a cost on an outbound, it cannot
+   corrupt the row.
+3. **Not defaulted**, for the same reason as the paint/raw question: until now
+   every scrap silently became an `adjustment`, which is a wrong default, not an
+   absent one. Two options on the negative path only, and submit is blocked
+   until one is picked. The outbound path is rare through this dialog (5 negative
+   adjustments ever in production), so the cost of asking is near zero.
+4. **No backfill.** Editing immutable ledger rows to improve a category is worse
+   than an imperfect category, and a production scan found zero adjustments whose
+   reason reads like a disposal anyway.
+Nothing else changed, because nothing else could: `movement_type` is written in
+seven places and READ in exactly one — the part page's movement list, for
+display, whose badge map and both locales already carried `disposed`. No view,
+report, cost resolver or audit check aggregates by it; stock is
+`SUM(quantity_delta)` and type-blind. That is also why the value was worth
+having rather than deleting: it costs nothing to write and it is the only way
+the question "what did we write off?" can ever be asked of history.
+Rejected: a full type picker (ten options invites wrong picks where two suffice),
+and deleting `disposed` instead — the event is real, and a dead enum value that
+appears in the type union, the badge map and both translations lies to the next
+reader.

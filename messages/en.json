@@ -1151,7 +1151,10 @@
     "thTo": "To",
     "noPricing": "No retail price history yet.",
     "rawStockTitle": "Raw stock",
-    "rawStockByLocation": "Raw stock by location"
+    "rawStockByLocation": "Raw stock by location",
+    "outboundKindQuestion": "Why is it going down?",
+    "outboundKindCorrection": "Correcting the count — the stock is there, the number was wrong.",
+    "outboundKindDisposal": "Thrown out — damaged, cracked or scrapped. Recorded as a disposal, not a correction."
   },
   "maintenance": {
     "crumb": "Maintenance"
@@ -4175,7 +4178,9 @@
     "paintedBaseIsVariant": "That is already a painted part. Repainting it in another colour belongs on a paint order.",
     "paintedNotEnoughRaw": "Only {raw} raw in stock at this location, so {qty} cannot come off the raw count. Either lower the quantity, or answer \"no\" — the pieces were not counted as raw.",
     "paintedCouldNotCreateVariant": "Could not create the painted part for that colour: {detail}",
-    "colourNeedsAdmin": "Adding a colour needs the admin capability. Ask an admin to create it, then pick it."
+    "colourNeedsAdmin": "Adding a colour needs the admin capability. Ask an admin to create it, then pick it.",
+    "outboundKindRequired": "Say why the stock is going down — a correction and a disposal are different events, and the ledger cannot be changed afterwards.",
+    "partOutboundKindRequired": "Removing stock needs a reason type: a correction to the count, or a disposal."
   },
   "inbox": {
     "title": "Inbox",
