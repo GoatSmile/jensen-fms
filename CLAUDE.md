@@ -96,8 +96,13 @@ known:
 - `@supabase/ssr` for server components; `@supabase/supabase-js` elsewhere
 - Publishable key in `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe with RLS)
 - Secret key in `SUPABASE_SECRET_KEY` (server-only, bypasses RLS)
-- Real auth (M1) deliberately delayed — see docs/STATUS.md. Perimeter today:
-  Vercel SSO + the people-&-roles person-password UX wall.
+- Real auth (M1) deliberately delayed — see docs/STATUS.md. **Perimeter today is
+  the person-password wall ALONE.** Vercel SSO was long recorded as sitting in
+  front of it; verified 2026-09-03 that it does not — `https://jensen-fms.vercel.app`
+  serves the app's own `/login` with no SSO interstitial and no `_vercel_sso`
+  cookie. Since CLAUDE.md itself calls that wall "a UX wall, not a security
+  boundary", do not lean on SSO when judging what may be deferred. (The anon key
+  is NOT in the public bundle — checked the same day.)
 
 ## Database
 Schema introspectable via the `supabase` MCP server, `execute_sql` included.
@@ -253,6 +258,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - `inventory_movements.unit_cost_basis` (`purchase | stated | derived | none`)
     is frozen at insert — same reason `import_tax_basis` exists. **`none` is
     legacy-only**; new writes must not produce it, and audit check 18 watches.
+  - **An outbound adjustment must say WHY**: `adjustStock` takes an
+    `outboundKind` (`correction | disposal`), required whenever the resolved
+    delta is negative, and `disposal` writes `movement_type = 'disposed'`. The
+    server owns the sign (`mode: 'set'` resolves against a fresh read), so the
+    kind is demanded there, not trusted from the client. Correcting a count and
+    writing off value are different events, the ledger is immutable, and a
+    free-text reason can never be aggregated — the same argument as the basis
+    columns (DECISIONS 2026-09-03).
   - `v_part_last_cost` resolves the most recent costed inbound event across
     **movements AND PO lines**, newest wins — a `stated` cost CAN outrank an
     older `purchase` one (DECISIONS 2026-08-26). The UI must show the basis
@@ -281,9 +294,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Painted parts are STOCK, per part and colour** (migration 91, DECISIONS
   2026-09-02, plan in `docs/plan-painted-parts.md`). A part can be paintable
   (`parts.service_part_type_id` = which of the painter's part types it is); a
-  painted variant is a PART with `base_part_id` + `color_id`, created lazily by
-  `findOrCreatePaintedVariant` (`src/lib/parts/painted-variants.ts`) the first
-  time that base × colour comes back from the painter. **Painting is the
+  painted variant is a PART with `base_part_id` + `color_id`, created by
+  `findOrCreatePaintedVariant` (`src/lib/parts/painted-variants.ts`) through
+  exactly TWO doors: a paint order reaching `received_back`, and *Record painted
+  stock* on the raw part's Painted stock panel (`recordPaintedStock`) for stock
+  the shop already owned in a colour that never went through the app. The second
+  asks **"take these off the raw count too?" with no default** — yes writes the
+  balanced `paint_out`/`paint_in` pair, no writes a lone `adjustment`, and
+  defaulting either way silently mis-states total inventory (DECISIONS
+  2026-09-03). Keep it at two doors. **Painting is the
   conversion event**: a STOCK paint order (no bikes attached) reaching
   `received_back` posts `paint_out` on the base and `paint_in` on the variant,
   cost = raw prevailing cost + the frozen paint price, basis `derived`; since

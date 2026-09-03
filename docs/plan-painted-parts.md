@@ -3,7 +3,10 @@
 **Status: model locked with the owner 2026-09-02 (chat); all four phases built
 the same day, and the *paintable-as* half was made self-filling on 2026-09-03 —
 a painter type claims a part category, parts inherit it, `paint_exempt` is the
-deliberate no (migration 97, DECISIONS 2026-09-03). Open: question 1 below (one
+deliberate no (migration 97, DECISIONS 2026-09-03). Also 2026-09-03: a SECOND
+door to a variant — *Record painted stock* on the raw part, for stock the shop
+already owned in a colour that never went through the app; and the shelf became
+a panel you can act on, with Adjust per colour. Open: question 1 below (one
 colour per bike).** Kept in `docs/` rather than archived for that open question,
 and because ten source files cite this file as the model's rationale. Working
 document; the decision records are DECISIONS 2026-09-02 ("Painted parts are
@@ -167,7 +170,11 @@ frame can be sent for repaint.
 2. **Negative raw stock at conversion.** Receiving back three painted frames
    when the raw SKU shows zero (opening stock never counted) will drive the raw
    part negative — the same standing audit hit as `JP-sap271`. Phase 1 allows it
-   and reports it; the physical count fixes it, not a guard.
+   and reports it; the physical count fixes it, not a guard. **The hand-recorded
+   door added 2026-09-03 DOES guard it** (`recordPaintedStock` refuses to take
+   more off raw than exists, naming the figure) — deliberately different, because
+   there the quantity is being typed rather than arriving from a real order.
+   `convertPaintedStock` is unchanged.
 3. **Repaint.** A painted variant sent to the painter again in a new colour is a
    variant of the base in the new colour, and the old variant is `paint_out`.
    Phase 1 lets a variant be picked on a line; the conversion resolves its base.
