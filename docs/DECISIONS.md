@@ -2381,3 +2381,50 @@ still four lines at qty 20. The panel is small by construction, and a fold would
 restore exactly the silence it exists to end. Also rejected: fixing this by
 renaming the button alone, which would have left the screen still unable to
 answer "what are we actually sending?"
+
+## 2026-09-03 (later still) — Painted stock can be recorded by hand, and the raw question has no default
+`findOrCreatePaintedVariant` had exactly ONE caller — a paint order reaching
+`received_back`. So painted parts the shop already owned in a colour that had
+never been through the app could not be recorded at all: no row to adjust, and
+no way to make one. That is most of Dennis's existing painted stock, and it is
+why "painted stock can't be corrected" was believed.
+
+Decided — a second, and deliberately only one more, door:
+
+1. **"Record painted stock" on the raw part's Painted stock panel**, creating the
+   colour's variant if needed. Only on a raw, paintable part; a variant would
+   mean repainting, which belongs on a paint order.
+2. **"Take these off the raw count too?" is NEVER pre-answered** (owner's
+   explicit call). Both answers are right in different situations and the wrong
+   one is silent: YES is a conversion we never recorded (the pieces left as raw
+   and came back painted — posting only the painted half inflates total
+   inventory), NO is a physical count where the raw figure is corrected
+   separately (taking them off as well double-subtracts). Submit stays disabled
+   until one is chosen; a default would be guessed by everyone and read by
+   no one. The ANSWER picks the movement type: yes ⇒ the balanced
+   `paint_out`/`paint_in` pair `convertPaintedStock` writes, no ⇒ a single
+   `adjustment` on the variant, because a `paint_in` with no `paint_out` behind
+   it leaves the paint ledger unable to explain itself. Taking more off raw than
+   exists is refused server-side, naming the real figure and both ways out.
+3. **The variant's cost is `stated`, and it is SUGGESTED, not demanded** — the
+   raw part's prevailing cost plus the default painter's current price for its
+   painter type, re-resolved at the entered quantity's tier (175,29 + 185,00 at
+   1–9; + 110,00 at 20+). Inbound must carry a cost, and asking a human to
+   invent one is the failure this avoids. `stated` keeps it wearing the clothes
+   of an estimate.
+4. **A colour can be created from the picker**, gated on `admin`. Blocking and
+   sending the user to Admin bought nothing — `createColor` requires only a
+   name, so it was the same single field on a different screen, and the detour
+   is on record as the owner's own complaint. What stays deliberate is that a
+   colour is a real `colors` row, never free text. The gate matters because
+   `createColor` carries no check of its own (its ROUTE is the gate) and the
+   part page is gated on `parts`, so ungated this would hand vocab-writing to
+   anyone who can count stock. **The guardrail is near-matches, not required
+   fields**: the unique slug already refuses a second "Red", but it accepts
+   "Rød" beside it, and a variant keyed to the wrong twin can never be matched
+   to an order. RAL and finish stay optional — nobody knows the RAL of something
+   painted two years ago, and refusing over that loses the count.
+Rejected: a "provisional colour" flag (the Admin colours list already shows the
+missing RAL, which is where vocab gets tidied), and generalising an
+inline-vocab-create framework now — this is the FIRST such picker in the app, so
+`createColourInline` says so and the second one generalises it.

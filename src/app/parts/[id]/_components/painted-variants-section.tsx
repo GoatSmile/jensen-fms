@@ -18,6 +18,7 @@ import {
   type CurrencyOption,
   type LocationOption,
 } from "./adjust-stock-dialog";
+import { RecordPaintedStockDialog } from "./record-painted-stock-dialog";
 import { Section } from "./section";
 
 export type PaintedVariantRow = {
@@ -62,6 +63,7 @@ export async function PaintedVariantsSection({
   currencies = [],
   primaryLocationId = null,
   hideLocations = false,
+  record = null,
 }: {
   /** The service part type this part is paintable as (localized), or null. */
   paintableAs: string | null;
@@ -72,6 +74,12 @@ export async function PaintedVariantsSection({
   currencies?: CurrencyOption[];
   primaryLocationId?: string | null;
   hideLocations?: boolean;
+  /**
+   * Everything the "Record painted stock" action needs. Null when this part
+   * isn't a raw paintable part — then there is nothing to record and the
+   * header carries no action.
+   */
+  record?: React.ComponentProps<typeof RecordPaintedStockDialog> | null;
 }) {
   const t = await getTranslations("parts");
   const painted = variants.reduce((sum, v) => sum + v.onHand, 0);
@@ -106,6 +114,7 @@ export async function PaintedVariantsSection({
           : t("paintedVariantsNotPaintable")
       }
       hue="brand"
+      action={record ? <RecordPaintedStockDialog {...record} /> : null}
     >
       {variants.length === 0 ? (
         <div className="text-ink-2 bg-surface flex h-16 items-center justify-center rounded-lg px-4 text-center text-sm">

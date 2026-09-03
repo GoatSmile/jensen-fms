@@ -11,6 +11,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
+import { readAllowedCaps } from "@/lib/auth/read-session";
+import {
+  PAINT_SERVICE_SLUG,
+  loadServiceTypeBySlug,
+} from "@/lib/services/vocab";
+import type { ServicePriceItem } from "@/lib/services/pricing";
 import { localizedName } from "@/i18n/vocab";
 import { lookupDkkRate } from "@/lib/format";
 import { getStockStatus } from "@/lib/parts/stock";
@@ -37,6 +44,7 @@ import {
   PaintedVariantsSection,
   type PaintedVariantRow,
 } from "./_components/painted-variants-section";
+import type { ColourChoice } from "./_components/record-painted-stock-dialog";
 import { colorFinishLabel } from "@/lib/colors/coating";
 
 const MOVEMENTS_LIMIT = 50;
@@ -290,7 +298,7 @@ export default async function PartDetailPage({
   const [variantsRes, baseRes] = await Promise.all([
     supabase
       .from("parts")
-      .select("id, internal_sku, color:colors!color_id(name_en, name_da, hex, ral_code, coating)")
+      .select("id, internal_sku, color_id, color:colors!color_id(name_en, name_da, hex, ral_code, coating)")
       .eq("base_part_id", part.id)
       .is("deleted_at", null),
     part.base_part_id
@@ -302,6 +310,11 @@ export default async function PartDetailPage({
       : Promise.resolve({ data: null }),
   ]);
   const variantIds = (variantsRes.data ?? []).map((v) => v.id);
+  // Colours already on the shelf for this part — the record dialog flags them
+  // so "3 more in Red" is visibly topping up rather than starting a colour.
+  const variantColourIds = (variantsRes.data ?? [])
+    .map((v) => v.color_id)
+    .filter((x): x is string => typeof x === "string");
   const variantStock = new Map<string, number>();
   const variantLastMovement = new Map<string, string>();
   // Per LOCATION too, not just the total: the adjust dialog's `currentOnHand`
@@ -567,6 +580,63 @@ export default async function PartDetailPage({
   );
   const activeLocationIds = new Set(locationOptions.map((l) => l.id));
 
+  // ------- "Record painted stock": colour vocab + a cost to pre-fill -------
+  // Only a RAW, paintable part can take painted stock by hand; on a variant or
+  // an unmarked part the panel carries no action.
+  const canRecordPainted = !part.base_part_id && !!part.service_part_type_id;
+  let colourChoices: ColourChoice[] = [];
+  let paintPriceItems: ServicePriceItem[] = [];
+  let paintPriceListLabel: string | null = null;
+  let mayCreateColour = false;
+  if (canRecordPainted) {
+    const caps = await readAllowedCaps();
+    // null = the gate is off entirely (local dev), so nothing is scoped.
+    mayCreateColour = caps === null || caps.includes("admin");
+
+    const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
+    const [coloursRes, listRes] = await Promise.all([
+      supabase
+        .from("colors")
+        .select("id, name_en, name_da, hex, ral_code, coating")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+      serviceType?.default_supplier_id
+        ? supabase
+            .from("service_price_lists")
+            .select(
+              `name, currency, supplier:suppliers(name),
+               items:service_price_items(
+                 id, service_part_type_id, supplier_item_no, tier_min, tier_max, unit_price
+               )`,
+            )
+            .eq("service_type_id", serviceType.id)
+            .eq("supplier_id", serviceType.default_supplier_id)
+            .eq("is_current", true)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    colourChoices = coloursRes.data ?? [];
+    const list = listRes.data;
+    // DKK only: the pre-filled figure is added to a DKK raw cost, and mixing
+    // currencies into one number is how a wrong cost basis gets written. A
+    // non-DKK painter simply contributes no paint half.
+    if (list && list.currency === "DKK") {
+      paintPriceItems = (list.items ?? [])
+        .filter((i) => i.service_part_type_id === part.service_part_type_id)
+        .map((i) => ({
+          id: i.id,
+          service_part_type_id: i.service_part_type_id,
+          supplier_item_no: i.supplier_item_no,
+          tier_min: i.tier_min,
+          tier_max: i.tier_max,
+          unit_price: Number(i.unit_price),
+        }));
+      paintPriceListLabel = [list.name, one(list.supplier)?.name]
+        .filter(Boolean)
+        .join(" · ");
+    }
+  }
+
   // Painted-stock rows, each carrying ITS OWN per-location on-hand for the
   // dialog. Built here rather than with `variantRows` above because it needs
   // the active-location list, which is resolved further down the page.
@@ -690,6 +760,24 @@ export default async function PartDetailPage({
         currencies={currenciesRes.data ?? []}
         primaryLocationId={primaryLocationId}
         hideLocations={hideLocations}
+        record={
+          canRecordPainted
+            ? {
+                basePartId: part.id,
+                basePartSku: part.internal_sku,
+                locations: locationOptions,
+                primaryLocationId,
+                hideLocations,
+                colours: colourChoices,
+                existingVariantColourIds: variantColourIds,
+                rawCostDkk: lastCostDkk,
+                paintPriceItems,
+                paintPartTypeId: part.service_part_type_id,
+                paintPriceListLabel,
+                mayCreateColour,
+              }
+            : null
+        }
         paintableAs={paintableAs}
         variants={paintedVariantRows}
         base={baseRow}
