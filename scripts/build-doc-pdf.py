@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import base64
 from pathlib import Path
 
 import markdown
@@ -112,6 +113,17 @@ tr:last-child td {
   max-width: 100%; max-height: 530pt;
 }
 
+/* A screenshot sits inline with the step it illustrates — no page break, so a
+   picture stays beside the sentence that sends you looking for it. */
+.shot { margin: 10pt 0; break-inside: avoid; text-align: center; }
+.shot img {
+  max-width: 100%; max-height: 300pt;
+  border: 0.5pt solid var(--rule); border-radius: 6pt;
+}
+.shot figcaption {
+  margin-top: 4pt; font-size: 8pt; color: var(--ink-2); text-align: left;
+}
+
 blockquote {
   margin: 8pt 0; padding: 7pt 10pt;
   background: var(--brand-wash); border-radius: 8pt;
@@ -141,6 +153,24 @@ def build(md_path: Path) -> Path:
         return f'<div class="diagram">{svg}</div>'
 
     src = re.sub(r"!\[([^\]]*)\]\(([^)]+\.svg)\)", inline_svg, src)
+
+    # Raster screenshots, inlined as data URIs for the same reason as the SVG
+    # above: the HTML is written to a temp dir, so Chrome resolves no relative
+    # path from here. A caption is the alt text, rendered under the figure.
+    def inline_img(match: re.Match[str]) -> str:
+        img_file = md_path.parent / match.group(2)
+        if not img_file.exists():
+            raise SystemExit(f"image not found: {img_file}")
+        mime = "image/png" if img_file.suffix.lower() == ".png" else "image/jpeg"
+        b64 = base64.b64encode(img_file.read_bytes()).decode("ascii")
+        caption = match.group(1)
+        cap = f"<figcaption>{caption}</figcaption>" if caption else ""
+        return (
+            f'<figure class="shot">'
+            f'<img src="data:{mime};base64,{b64}" alt="{caption}">{cap}</figure>'
+        )
+
+    src = re.sub(r"!\[([^\]]*)\]\(([^)]+\.(?:png|jpg|jpeg))\)", inline_img, src)
 
     body = markdown.markdown(src, extensions=["tables", "smarty", "attr_list"])
     html = (
