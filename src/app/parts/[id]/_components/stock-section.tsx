@@ -42,6 +42,13 @@ type Props = {
   currencies?: CurrencyOption[];
   /** Prevailing unit cost, pre-filled into the adjust dialog. */
   prevailingCostDkk?: number | null;
+  /**
+   * True when this part has painted variants, i.e. a "Painted stock" panel
+   * sits beside this one. Then plain "Stock" is ambiguous — the figure here is
+   * the RAW count, and reading it as the total is the mistake this titling
+   * prevents. On a part with no variants it stays "Stock".
+   */
+  hasPaintedVariants?: boolean;
 };
 
 export async function StockSection({
@@ -54,6 +61,7 @@ export async function StockSection({
   primaryLocationId = null,
   currencies = [],
   prevailingCostDkk = null,
+  hasPaintedVariants = false,
 }: Props) {
   const t = await getTranslations("partDetail");
   if (hideLocations) {
@@ -67,7 +75,7 @@ export async function StockSection({
     );
     return (
       <Section
-        title={t("stockTitle")}
+        title={hasPaintedVariants ? t("rawStockTitle") : t("stockTitle")}
         description={t("stockDescriptionSingle")}
         hue="brand"
       >
@@ -103,7 +111,9 @@ export async function StockSection({
 
   return (
     <Section
-      title={t("stockByLocation")}
+      title={
+        hasPaintedVariants ? t("rawStockByLocation") : t("stockByLocation")
+      }
       description={t("stockByLocationDescription")}
       hue="brand"
     >

@@ -891,8 +891,6 @@
     "paintableUndecided": "Ikke afklaret",
     "paintableInherited": "Dele i denne kategori er “{type}” som standard — ret det her, hvis netop denne er undtagelsen.",
     "paintableHint": "Hvilken af lakererens deltyper dette er (stel, forgaffel, lad…). Gør delen valgbar på en lakeringsordrelinje; en lager-lakeringsordre, der kommer retur, opretter en lakeret variant pr. farve.",
-    "paintedVariantsTitle": "Lakerede varianter",
-    "paintedVariantsDesc": "Lakerede {type} på lager, pr. farve. Oprettes når en lager-lakeringsordre kommer retur — tastes aldrig ind.",
     "paintedVariantsNotPaintable": "Delen er ikke markeret som lakerbar, så den har ingen lakerede varianter.",
     "paintedVariantsNone": "Ingen endnu — intet af denne del er kommet lakeret retur til lager.",
     "paintedVariantsMarkHint": "Markér delen som lakerbar i redigeringsformularen for at sende den til lakering.",
@@ -938,7 +936,10 @@
     "keyPlaceholder": "nøgle",
     "valuePlaceholder": "værdi",
     "createPart": "Opret del",
-    "saveChanges": "Gem ændringer"
+    "saveChanges": "Gem ændringer",
+    "paintedStockTitle": "Lakeret lager",
+    "paintedStockDesc": "En række pr. farve, hver med sit eget antal og sin egen kostpris. En farve dukker op, når en lakordre kommer retur — ret antallet her.",
+    "thLastMovement": "Seneste bevægelse"
   },
   "unitCostBasis": {
     "purchase": "indkøbt",
@@ -1117,7 +1118,9 @@
     "thPrice": "Pris",
     "thFrom": "Fra",
     "thTo": "Til",
-    "noPricing": "Ingen salgsprishistorik endnu."
+    "noPricing": "Ingen salgsprishistorik endnu.",
+    "rawStockTitle": "Råt lager",
+    "rawStockByLocation": "Råt lager pr. lokation"
   },
   "maintenance": {
     "crumb": "Vedligehold"

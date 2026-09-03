@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { Badge } from "@/components/ui/badge";
 import { ColorChip } from "@/components/color-swatch";
 import {
   Table,
@@ -12,7 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatQuantity } from "@/lib/parts/stock";
+import { formatDateTime } from "@/lib/parts/format";
 
+import {
+  AdjustStockDialog,
+  type CurrencyOption,
+  type LocationOption,
+} from "./adjust-stock-dialog";
 import { Section } from "./section";
 
 export type PaintedVariantRow = {
@@ -22,6 +27,17 @@ export type PaintedVariantRow = {
   colourHex: string | null;
   colourFinish: string | null;
   onHand: number;
+  /** Newest movement on this variant, for the parallel with Stock. */
+  lastMovementAt: string | null;
+  /** This variant's own prevailing cost (raw + paint), pre-filled on adjust. */
+  prevailingCostDkk: number | null;
+  /**
+   * Active locations carrying THIS variant's on-hand. Per row, not shared:
+   * `currentOnHand` drives the dialog's "Currently N on hand", its resulting
+   * -quantity preview and the delta "Set on-hand to…" writes, so the base
+   * part's figure here would corrupt the ledger.
+   */
+  locations: LocationOption[];
 };
 
 export type VariantBase = {
@@ -43,12 +59,19 @@ export async function PaintedVariantsSection({
   paintableAs,
   variants,
   base,
+  currencies = [],
+  primaryLocationId = null,
+  hideLocations = false,
 }: {
   /** The service part type this part is paintable as (localized), or null. */
   paintableAs: string | null;
   variants: PaintedVariantRow[];
   /** Set when THIS part is a painted variant. */
   base: VariantBase | null;
+  /** Adjust-dialog inputs, same sources the Stock panel uses. */
+  currencies?: CurrencyOption[];
+  primaryLocationId?: string | null;
+  hideLocations?: boolean;
 }) {
   const t = await getTranslations("parts");
   const painted = variants.reduce((sum, v) => sum + v.onHand, 0);
@@ -73,58 +96,104 @@ export async function PaintedVariantsSection({
 
   return (
     <Section
-      title={t("paintedVariantsTitle")}
+      /* Same hue as Stock, deliberately: a painted cargo bed IS stock (the
+         painted-parts doctrine). Two adjacent panels in one wash normally
+         weakens what hue carries; here it is the statement. */
+      title={t("paintedStockTitle")}
       description={
         paintableAs
-          ? t("paintedVariantsDesc", { type: paintableAs })
+          ? t("paintedStockDesc")
           : t("paintedVariantsNotPaintable")
       }
+      hue="brand"
     >
       {variants.length === 0 ? (
-        <div className="text-ink-3 bg-ground flex h-16 items-center justify-center rounded-lg px-4 text-center text-sm">
+        <div className="text-ink-2 bg-surface flex h-16 items-center justify-center rounded-lg px-4 text-center text-sm">
           {paintableAs ? t("paintedVariantsNone") : t("paintedVariantsMarkHint")}
         </div>
       ) : (
         <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("thColour")}</TableHead>
-                <TableHead className="hidden sm:table-cell">{t("thVariantSku")}</TableHead>
-                <TableHead className="text-right">{t("thOnHand")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {variants.map((v) => (
-                <TableRow key={v.partId} className="hover:bg-muted/50">
-                  <TableCell className="p-0">
-                    <Link
-                      href={`/parts/${v.partId}`}
-                      className="flex items-center gap-2 px-4 py-2.5 hover:underline"
-                    >
-                      <ColorChip hex={v.colourHex} label={v.colourName} />
-                      {v.colourFinish ? (
-                        <span className="text-muted-foreground text-xs">{v.colourFinish}</span>
-                      ) : null}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden font-mono text-xs sm:table-cell">
-                    {v.sku}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {v.onHand <= 0 ? (
-                      <Badge variant="outline" className="font-normal">
-                        {formatQuantity(v.onHand)}
-                      </Badge>
-                    ) : (
-                      formatQuantity(v.onHand)
-                    )}
-                  </TableCell>
+          {/* bg-surface, not bg-ground: inside a hued panel, ground reads as
+              muddy near-white (CLAUDE.md section tinting). Mirrors the
+              stock-by-location table, which is the same shape — rows with a
+              count and their own Adjust button. */}
+          <div className="bg-surface overflow-hidden rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("thColour")}</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    {t("thVariantSku")}
+                  </TableHead>
+                  <TableHead className="text-right">{t("thOnHand")}</TableHead>
+                  <TableHead className="text-muted-foreground hidden text-xs sm:table-cell">
+                    {t("thLastMovement")}
+                  </TableHead>
+                  <TableHead className="w-[90px] text-right sm:w-[120px]" />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <p className="text-muted-foreground mt-2 text-right text-xs">
+              </TableHeader>
+              <TableBody>
+                {variants.map((v) => (
+                  <TableRow key={v.partId}>
+                    {/* The WHOLE row is the link, not just the colour chip.
+                        Only the chip was clickable before, so the table read
+                        as a dead end and nobody found the variant's page. */}
+                    <TableCell className="p-0">
+                      <Link
+                        href={`/parts/${v.partId}`}
+                        className="flex items-center gap-2 px-4 py-2.5 hover:underline"
+                      >
+                        <ColorChip hex={v.colourHex} label={v.colourName} />
+                        {v.colourFinish ? (
+                          <span className="text-muted-foreground text-xs">
+                            {v.colourFinish}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="hidden p-0 sm:table-cell">
+                      <Link
+                        href={`/parts/${v.partId}`}
+                        className="text-muted-foreground block px-4 py-2.5 font-mono text-xs hover:underline"
+                      >
+                        {v.sku}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="p-0 text-right">
+                      <Link
+                        href={`/parts/${v.partId}`}
+                        className="block px-4 py-2.5 font-medium tabular-nums hover:underline"
+                      >
+                        {formatQuantity(v.onHand)}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground hidden text-xs sm:table-cell">
+                      {formatDateTime(v.lastMovementAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {/* Its own prevailing cost — raw + the frozen paint
+                          price — not the base part's raw figure. */}
+                      <AdjustStockDialog
+                        partId={v.partId}
+                        partName={v.sku}
+                        locations={v.locations}
+                        defaultLocationId={
+                          hideLocations
+                            ? (primaryLocationId ?? undefined)
+                            : undefined
+                        }
+                        hideLocation={hideLocations}
+                        triggerVariant="row"
+                        currencies={currencies}
+                        prevailingCostDkk={v.prevailingCostDkk}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-ink-2 mt-2 text-right text-xs">
             {t("paintedTotal", { count: formatQuantity(painted) })}
           </p>
         </>

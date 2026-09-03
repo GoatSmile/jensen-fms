@@ -33,7 +33,10 @@ import { PurchaseHistorySection } from "./_components/purchase-history-section";
 import { WhereUsedSection } from "./_components/where-used-section";
 import { StatStrip } from "./_components/stat-strip";
 import { StockSection } from "./_components/stock-section";
-import { PaintedVariantsSection } from "./_components/painted-variants-section";
+import {
+  PaintedVariantsSection,
+  type PaintedVariantRow,
+} from "./_components/painted-variants-section";
 import { colorFinishLabel } from "@/lib/colors/coating";
 
 const MOVEMENTS_LIMIT = 50;
@@ -300,14 +303,44 @@ export default async function PartDetailPage({
   ]);
   const variantIds = (variantsRes.data ?? []).map((v) => v.id);
   const variantStock = new Map<string, number>();
+  const variantLastMovement = new Map<string, string>();
+  // Per LOCATION too, not just the total: the adjust dialog's `currentOnHand`
+  // drives "Currently N on hand", the resulting-quantity preview AND the delta
+  // that "Set on-hand to…" writes. Hand it the base part's figure and a
+  // "set to 13" on a variant writes 13 − 89 = −76.
+  const variantStockByLocation = new Map<string, Map<string, number>>();
+  // Each variant's OWN prevailing cost (raw + the frozen paint price), so its
+  // adjust dialog pre-fills its own figure and not the base part's raw one.
+  // Two batched queries, never one per row.
+  const variantCost = new Map<string, number>();
   if (variantIds.length > 0) {
-    const { data: vs } = await supabase
-      .from("v_current_stock")
-      .select("part_id, quantity_on_hand")
-      .in("part_id", variantIds);
+    const [{ data: vs }, { data: vc }] = await Promise.all([
+      supabase
+        .from("v_current_stock")
+        .select("part_id, location_id, quantity_on_hand, last_movement_at")
+        .in("part_id", variantIds),
+      supabase
+        .from("v_part_last_cost")
+        .select("part_id, last_cost_dkk")
+        .in("part_id", variantIds),
+    ]);
     for (const r of vs ?? []) {
       if (!r.part_id) continue;
       variantStock.set(r.part_id, (variantStock.get(r.part_id) ?? 0) + Number(r.quantity_on_hand ?? 0));
+      if (r.location_id) {
+        const byLoc = variantStockByLocation.get(r.part_id) ?? new Map();
+        byLoc.set(r.location_id, Number(r.quantity_on_hand ?? 0));
+        variantStockByLocation.set(r.part_id, byLoc);
+      }
+      // v_current_stock is PER LOCATION, so keep the newest across rows.
+      const prev = variantLastMovement.get(r.part_id);
+      if (r.last_movement_at && (!prev || r.last_movement_at > prev)) {
+        variantLastMovement.set(r.part_id, r.last_movement_at);
+      }
+    }
+    for (const r of vc ?? []) {
+      if (!r.part_id || r.last_cost_dkk == null) continue;
+      variantCost.set(r.part_id, Number(r.last_cost_dkk));
     }
   }
   const variantRows = (variantsRes.data ?? [])
@@ -320,6 +353,8 @@ export default async function PartDetailPage({
         ? colorFinishLabel(v.color.ral_code, v.color.coating, locale === "da" ? "da" : "en")
         : null,
       onHand: variantStock.get(v.id) ?? 0,
+      lastMovementAt: variantLastMovement.get(v.id) ?? null,
+      prevailingCostDkk: variantCost.get(v.id) ?? null,
     }))
     .sort((a, b) => b.onHand - a.onHand || a.colourName.localeCompare(b.colourName));
   // On a variant, the banner names the base and THIS part's own colour.
@@ -532,6 +567,19 @@ export default async function PartDetailPage({
   );
   const activeLocationIds = new Set(locationOptions.map((l) => l.id));
 
+  // Painted-stock rows, each carrying ITS OWN per-location on-hand for the
+  // dialog. Built here rather than with `variantRows` above because it needs
+  // the active-location list, which is resolved further down the page.
+  const paintedVariantRows: PaintedVariantRow[] = variantRows.map((v) => ({
+    ...v,
+    locations: (locationsRes.data ?? []).map((row) => ({
+      id: row.id,
+      code: row.code,
+      name: localizedName(locale, row.name_en, row.name_da),
+      currentOnHand: variantStockByLocation.get(v.partId)?.get(row.id) ?? 0,
+    })),
+  }));
+
   // ------- Pricing history with current-row flag -------
   // Server component runs once per request — a single wall-clock read here
   // is exactly what we want. The react-hooks purity rule can't tell a server
@@ -639,14 +687,18 @@ export default async function PartDetailPage({
       <KitsSection partId={part.id} chips={kitChips} options={kitOptions} />
 
       <PaintedVariantsSection
+        currencies={currenciesRes.data ?? []}
+        primaryLocationId={primaryLocationId}
+        hideLocations={hideLocations}
         paintableAs={paintableAs}
-        variants={variantRows}
+        variants={paintedVariantRows}
         base={baseRow}
       />
 
       {/* Section order tells a story: identity (neutral) → availability
           (sky) → sourcing (amber) → usage/selling (neutral tail). */}
       <StockSection
+        hasPaintedVariants={variantRows.length > 0}
         rows={stockRows}
         partId={part.id}
         partName={part.name_en}

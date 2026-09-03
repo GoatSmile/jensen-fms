@@ -891,8 +891,6 @@
     "paintableUndecided": "Not decided",
     "paintableInherited": "Parts in this category are “{type}” by default — change it here if this one is the exception.",
     "paintableHint": "Which of the painter's part types this is (frame, fork, cargo bed…). Makes the part pickable on a paint-order line; a stock paint order coming back creates a painted variant of it per colour.",
-    "paintedVariantsTitle": "Painted variants",
-    "paintedVariantsDesc": "Painted {type}s on the shelf, per colour. Born when a stock paint order comes back — never typed in.",
     "paintedVariantsNotPaintable": "This part is not marked as paintable, so it has no painted variants.",
     "paintedVariantsNone": "None yet — none of this part has come back painted for stock.",
     "paintedVariantsMarkHint": "Mark the part as paintable on its edit form to send it to the painter.",
@@ -938,7 +936,10 @@
     "keyPlaceholder": "key",
     "valuePlaceholder": "value",
     "createPart": "Create part",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "paintedStockTitle": "Painted stock",
+    "paintedStockDesc": "One row per colour, each with its own count and cost. A colour appears when a paint order comes back — adjust its count here.",
+    "thLastMovement": "Last movement"
   },
   "unitCostBasis": {
     "purchase": "purchased",
@@ -1117,7 +1118,9 @@
     "thPrice": "Price",
     "thFrom": "From",
     "thTo": "To",
-    "noPricing": "No retail price history yet."
+    "noPricing": "No retail price history yet.",
+    "rawStockTitle": "Raw stock",
+    "rawStockByLocation": "Raw stock by location"
   },
   "maintenance": {
     "crumb": "Maintenance"

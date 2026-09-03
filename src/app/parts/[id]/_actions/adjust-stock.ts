@@ -10,6 +10,23 @@ import {
 } from "@/lib/inventory/unit-cost";
 import { createClient } from "@/lib/supabase/server";
 
+/**
+ * The base part behind a painted variant, or null when this part is a base
+ * itself. Only used to widen revalidation — a failure here must not fail the
+ * adjustment, which has already been written.
+ */
+async function loadBasePartId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  partId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("parts")
+    .select("base_part_id")
+    .eq("id", partId)
+    .maybeSingle();
+  return data?.base_part_id ?? null;
+}
+
 export type AdjustStockInput = {
   partId: string;
   locationId: string;
@@ -230,6 +247,14 @@ export async function adjustStock(
   // The list page summarises stock; the detail page reads movements + stock.
   revalidatePath("/parts");
   revalidatePath(`/parts/${input.partId}`);
+  // A painted variant's count is ALSO read on two other surfaces: its base
+  // part's "Painted stock" panel and the paint shelf. Without these, adjusting
+  // a variant left both showing the old number — silently, because nothing
+  // errors. Found 2026-09-03 with JP-LS2b-RED at 13 in the ledger and 11 on
+  // its base part's page.
+  revalidatePath("/parts/painted");
+  const basePartId = await loadBasePartId(supabase, input.partId);
+  if (basePartId) revalidatePath(`/parts/${basePartId}`);
 
   return { ok: true };
 }
