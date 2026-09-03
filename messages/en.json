@@ -427,6 +427,8 @@
     "overdueLabel": "Overdue invoices"
   },
   "common": {
+    "saved": "Saved",
+    "close": "Close",
     "sortAria": "Sort by {label}",
     "sortAriaDir": "Sort by {label}, currently {direction}",
     "dirAsc": "ascending",

@@ -46,6 +46,7 @@ export function VocabRowEditor({
   coatingOptions,
   categoryOptions,
   onDone,
+  keepOpenOnSave = false,
   usageCount = 0,
   extraControls,
 }: {
@@ -64,6 +65,14 @@ export function VocabRowEditor({
    * descriptor-driven.
    */
   extraControls?: React.ReactNode;
+  /**
+   * Keep the row OPEN after a successful save instead of collapsing it. Set for
+   * the vocabulary whose row carries an action that only becomes available once
+   * the value is stored (service part types: the apply button keys off the
+   * SAVED category, so collapsing on save hid the very control the save
+   * enabled).
+   */
+  keepOpenOnSave?: boolean;
 }) {
   const vocab = getVocab(vocabId);
   const t = useTranslations("adminLists");
@@ -72,11 +81,13 @@ export function VocabRowEditor({
     seedValues(vocab, row),
   );
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [pending, start] = useTransition();
 
   const isActive = row ? row.is_active !== false : true;
 
   function update(name: string, value: string) {
+    setSaved(false);
     setValues((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -95,8 +106,16 @@ export function VocabRowEditor({
 
     start(async () => {
       const result = await saveVocabRow(vocabId, row?.id ?? null, formData);
-      if (result.ok) onDone();
-      else setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // Staying open needs its own acknowledgement: without the collapse, a
+      // successful save would look like nothing happened. The action
+      // revalidates, so the `row` prop arrives updated and any control keyed
+      // off the stored value appears in place.
+      if (keepOpenOnSave && row) setSaved(true);
+      else onDone();
     });
   }
 
@@ -152,6 +171,11 @@ export function VocabRowEditor({
       ) : null}
 
       <div className="flex items-center justify-end gap-2">
+        {saved ? (
+          <span className="text-good mr-auto text-xs" role="status">
+            {tCommon("saved")}
+          </span>
+        ) : null}
         <Button
           type="button"
           variant="outline"
@@ -159,7 +183,7 @@ export function VocabRowEditor({
           onClick={onDone}
           disabled={pending}
         >
-          {tCommon("cancel")}
+          {saved ? tCommon("close") : tCommon("cancel")}
         </Button>
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? tCommon("saving") : t(row ? "saveRow" : "createRow")}

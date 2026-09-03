@@ -427,6 +427,8 @@
     "overdueLabel": "Forfaldne fakturaer"
   },
   "common": {
+    "saved": "Gemt",
+    "close": "Luk",
     "sortAria": "Sortér efter {label}",
     "sortAriaDir": "Sortér efter {label}, aktuelt {direction}",
     "dirAsc": "stigende",

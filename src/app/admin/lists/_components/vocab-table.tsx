@@ -237,6 +237,7 @@ export function VocabTable({
                             coatingOptions={coatingOptions}
                             categoryOptions={categoryOptions}
                             usageCount={usageByRow[row.id] ?? 0}
+                            keepOpenOnSave={vocab.hasPaintCategoryApply}
                             extraControls={
                               vocab.hasLocationControls &&
                               isActive &&
