@@ -33,7 +33,7 @@ export type PaintFromSOResult =
 
 /**
  * Create a paint order from a sales order, painting a chosen SUBSET of the
- * SO's frames (Tier 2 Phase C / decision D3). The order is back-linked to
+ * SO's bikes (Tier 2 Phase C / decision D3). The order is back-linked to
  * the SO (service_orders.sales_order_id) so both detail pages cross-link.
  *
  * Bikes reach an SO through SO → manufacturing_orders → bikes (a bike isn't
@@ -56,7 +56,7 @@ export async function createPaintOrderFromSO(
   const { soId, bikeIds } = input;
   if (!soId) return { ok: false, error: t("missingSoId") };
   if (!bikeIds || bikeIds.length === 0) {
-    return { ok: false, error: t("soPickFrameToPaint") };
+    return { ok: false, error: t("soPickBikeToSend") };
   }
   if (!input.supplierId) {
     return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
@@ -72,7 +72,7 @@ export async function createPaintOrderFromSO(
     return { ok: false, error: t("soPaintServiceMissing") };
   }
 
-  // SO must exist and be in a state where painting its frames makes sense.
+  // SO must exist and be in a state where painting its bikes makes sense.
   const { data: so, error: soErr } = await supabase
     .from("sales_orders")
     .select("id, status")
@@ -91,7 +91,7 @@ export async function createPaintOrderFromSO(
     };
   }
 
-  // Resolve the SO's frames: SO → MOs → bikes. (A bike isn't directly on an
+  // Resolve the SO's bikes: SO → MOs → bikes. (A bike isn't directly on an
   // SO.) PostgREST can't subquery, so walk it in two hops.
   const { data: mos, error: moErr } = await supabase
     .from("manufacturing_orders")
@@ -108,7 +108,7 @@ export async function createPaintOrderFromSO(
       .from("bikes")
       .select("id")
       .in("manufacturing_order_id", moIds)
-      // A built bike has nothing left to paint; only unbuilt frames go.
+      // A built bike has nothing left to paint; only unbuilt bikes go.
       .in("status", ["planning", "building"])
       .is("deleted_at", null);
     if (bikesErr) {
@@ -122,11 +122,11 @@ export async function createPaintOrderFromSO(
   if (strayIds.length > 0) {
     return {
       ok: false,
-      error: t("soFramesNotOnOrder", { count: strayIds.length }),
+      error: t("soBikesNotOnOrder", { count: strayIds.length }),
     };
   }
 
-  // None of the chosen frames may already be in an open build-blocking order.
+  // None of the chosen bikes may already be in an open build-blocking order.
   const { data: openLinks, error: linkErr } = await supabase
     .from("service_order_bikes")
     .select(
@@ -150,7 +150,7 @@ export async function createPaintOrderFromSO(
   if (blockedCount > 0) {
     return {
       ok: false,
-      error: t("soFramesInOpenPaint", { count: blockedCount }),
+      error: t("soBikesInOpenPaint", { count: blockedCount }),
     };
   }
 

@@ -85,7 +85,7 @@ export default async function PaintFromSOPage({
         .in("status", ["planning", "building"])
         .is("deleted_at", null)
         .order("frame_number", { ascending: true }),
-      // Same eligibility the createPaintOrderFromSO action enforces: a frame
+      // Same eligibility the createPaintOrderFromSO action enforces: a bike
       // is unavailable while it sits on an OPEN order of a build-blocking
       // service type (a non-blocking type wouldn't take the bike away).
       supabase
@@ -148,9 +148,9 @@ export default async function PaintFromSOPage({
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
 
-  // Pre-select the colour when the frames agree on one — they came off a
+  // Pre-select the colour when the bikes agree on one — they came off a
   // sales order line that named it, and the screen that sent you here already
-  // said "no painted stock in White". Frames in two colours have no single
+  // said "no painted stock in White". Bikes in two colours have no single
   // right answer for a batch default, so leave it blank rather than guess.
   const distinctColourIds = [
     ...new Set(

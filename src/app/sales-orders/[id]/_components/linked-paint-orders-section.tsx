@@ -72,7 +72,7 @@ export async function LinkedPaintOrdersSection({
                 </TableHead>
                 <TableHead>{t("thColour")}</TableHead>
                 <TableHead>{t("thStatus")}</TableHead>
-                <TableHead className="text-right">{t("thFrames")}</TableHead>
+                <TableHead className="text-right">{t("thBikes")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

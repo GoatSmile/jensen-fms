@@ -51,7 +51,7 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
                 </TableHead>
                 <TableHead>{t("thStatus")}</TableHead>
                 <TableHead className="text-right">{t("thProgress")}</TableHead>
-                <TableHead className="text-right">{t("thFrames")}</TableHead>
+                <TableHead className="text-right">{t("thBikes")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
                   {t("thPlannedCompletion")}
                 </TableHead>
@@ -97,7 +97,7 @@ export async function LinkedMOsSection({ rows }: { rows: LinkedMORow[] }) {
                       {mo.bikeCount}
                       {mo.atPainterCount > 0 ? (
                         <Badge variant="warning" className="ml-2 font-normal">
-                          {t("framesAtPainter", { count: mo.atPainterCount })}
+                          {t("bikesAtPainter", { count: mo.atPainterCount })}
                         </Badge>
                       ) : null}
                     </TableCell>
