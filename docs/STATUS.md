@@ -12,8 +12,10 @@ order and at `/admin/outbox`; **each supplier keeps its own email message** and
 the send dialog names the real recipient (93); **spawning an MO asks whether the
 frames need painting**; the frame-number generator reads both tables so a spawn
 can no longer abort half-created; `/parts/painted` is now **Paint shelf**; the
-MO list carries date, client and sales order, sortable. Decisions in DECISIONS
-2026-09-02 and 2026-09-03. tsc + lint clean; smoke 87 pass / 0 fail.
+MO list carries date, client and sales order, sortable. Saving a painter type
+now KEEPS ITS ROW OPEN, because the apply button keys off the stored value and
+collapsing hid the control the save enabled. Decisions in DECISIONS 2026-09-02
+and 2026-09-03. tsc + lint + build clean; smoke 87 pass / 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -61,7 +63,10 @@ looks different on his tablet. Both he and Nazar have passwords since 1 Sep.
   meets it.
 - **Basket and Mudguards are deliberately unmapped** — majority-exception
   categories, so a category default there would be wrong more often than right.
-  Their parts get marked by hand.
+  Their parts get marked by hand. The discriminator when judging one: Metacoat's
+  price list proves a mudguard IS painted (130/125/120 kr. by tier), and the
+  template paintwork declarations prove WHICH — `JP-SS60`, the Svajer steel set,
+  already marked.
 - **Local divergences from production** (re-dump before trusting local for
   anything data-shaped): the walk-through fixtures (`SO-2026-0012` →
   `MO-2026-0017` → `PNT-2026-0009`, stock order `PNT-2026-0010`, painted
@@ -81,9 +86,18 @@ looks different on his tablet. Both he and Nazar have passwords since 1 Sep.
 2. **Watch one real paint order go round in production** now that the parts are
    marked — and decide whether Metacoat's real email replaces the test address
    (see Waiting on) before `outbound_test_mode` goes off.
-3. **Jeudan declares Basket ×1 and Sign ×2** to the painter with no parts behind
-   them; the template now flags both as *not marked in the recipe*. Dennis's call
-   whether those parts should exist at all.
+3. **Three paint questions for Dennis, all data not code.** (a) Jeudan declares
+   Basket ×1 and Sign ×2 to the painter with no parts behind them; the template
+   flags both as *not marked in the recipe*. (b) `JP-Ni42` (polished stainless)
+   and `JP-SKSA46` (SKS, bought black) sit UNDECIDED in Mudguards — the evidence
+   says mark them *Not painted* (no current template uses `JP-Ni42`; the four
+   that use `JP-SKSA46` declare no mudguard paintwork), which also closes the
+   category so a future apply cannot sweep them up. Recommended and NOT done —
+   awaiting the owner. (c) **Svajer F uses `JP-SS60` but declares no mudguard
+   paintwork**, while Svajer C, Svajer cargo F 350 and Svajer classic all do.
+   Coverage follows the PART, so a Svajer F build will now say *1 part needs
+   paint* and block; either its declaration is incomplete or its mudguards
+   genuinely stay raw.
 4. **Kit = sub-assembly** goes to the planning chat (BACKLOG has the three
    questions).
 5. Loose ends, none blocking: `MO-2026-0020` on local is half-spawned (finish or

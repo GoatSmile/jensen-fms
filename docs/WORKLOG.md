@@ -91,10 +91,10 @@ treat the early totals as floors, not truth.
 | Date | Hours | Work |
 |---|---|---|
 | Wed 2026-09-02 | ~12 | **SO → paint order walkable, painted parts become stock** (migrations 89–92): painter + PO documents in the supplier's language, a picker by customer order, painted variants per colour with shelf view and colour-aware builds, the TEST rule, a docs sweep, Dennis's walkthrough. |
-| Thu 2026-09-03 | ~2 | **Painter types claim a part category** (migration 97): parts inherit *Paintable as* from their category, a per-row button fills every undecided part, and `paint_exempt` makes "never painted" a deliberate state the apply action skips. |
+| Thu 2026-09-03 | ~3 | **Painter types claim a part category** (migration 97): parts inherit *Paintable as* from their category, a per-row button fills every undecided part, `paint_exempt` makes "never painted" deliberate, and the mapping was entered on both databases — 15 parts assigned, 3 exempt. |
 
-**September so far: ~14 h** (2 working days)
+**September so far: ~15 h** (2 working days)
 
 ---
 
-**Project total: ~268 h across 43 working days (2026-05-07 → 2026-09-03)**
+**Project total: ~269 h across 43 working days (2026-05-07 → 2026-09-03)**

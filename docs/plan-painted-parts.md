@@ -1,8 +1,13 @@
 # Plan — painted parts are stock
 
 **Status: model locked with the owner 2026-09-02 (chat); all four phases built
-the same day. Open: question 1 below (one colour per bike).** Working document; the decision record is DECISIONS
-2026-09-02 ("Painted parts are stock, per part and colour").
+the same day, and the *paintable-as* half was made self-filling on 2026-09-03 —
+a painter type claims a part category, parts inherit it, `paint_exempt` is the
+deliberate no (migration 97, DECISIONS 2026-09-03). Open: question 1 below (one
+colour per bike).** Kept in `docs/` rather than archived for that open question,
+and because ten source files cite this file as the model's rationale. Working
+document; the decision records are DECISIONS 2026-09-02 ("Painted parts are
+stock, per part and colour") and 2026-09-03.
 
 ## 1. The problem, stated once
 
