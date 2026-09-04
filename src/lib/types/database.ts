@@ -4197,6 +4197,24 @@ export type Database = {
           },
         ]
       }
+      schema_migrations: {
+        Row: {
+          applied_at: string
+          name: string
+          version: number
+        }
+        Insert: {
+          applied_at?: string
+          name: string
+          version: number
+        }
+        Update: {
+          applied_at?: string
+          name?: string
+          version?: number
+        }
+        Relationships: []
+      }
       shipments: {
         Row: {
           actual_delivery_date: string | null

@@ -1,19 +1,17 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-04 (session end, evening).** The offer module went from decided
-to usable. `/offers` shipped (migration 98) — list, create, edit, a
-customer-facing document in the customer's language, print, email through
-`sendAndRecord`, reopen-for-revision, convert to a sales order — and then four
-things closed around it. **Sending now FREEZES a snapshot of the whole document**
-(migration 99), because freezing was status-only and a printed-then-revised
-offer silently lost what revision 1 said. **A line's price prefills** from the
-catalogue, currency-guarded. **A picture can be attached per line**, and it
-reaches the print document, the email and the snapshot. And the shared
-commercial-lines layer finally has every caller: `draft-writers.ts` calls
-`insertLine`, and both detail pages share their picker queries and row mapping.
-Danish *tilbud* was reserved for the customer document; an invalid RAL code is
-now impossible to save; and the RAL deck question is settled — **ours wins**
-(DECISIONS 2026-09-04). tsc + lint + build clean; smoke 93 pass / 0 fail.
+**Last updated: 2026-09-04 (session end, night).** `/offers` shipped in the
+morning and **threw a 500 in production from the moment it did**: migrations 98
+and 99 had never been applied. The previous session recorded them as
+owner-reported and explicitly unverified, and they were not there. They are
+applied now, with **100** (RLS on `offer_revisions` — it was the only table in
+the schema without it) and **101** (a migration ledger). The rest of the session
+was the *never again*: **production now records which migrations it has**,
+`npm run check:prod` answers that in seconds, and a `git push` hook refuses to
+ship code ahead of the schema. Three smaller things: the customer offers panel
+no longer renders a failed query as "no offers", *Spawn MO* moved to the actions
+column, and *Orders* was reordered by the life of a job. tsc + lint + build
+clean; smoke 93 pass / 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -33,38 +31,39 @@ demoed in English looks different on his tablet.
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 100** is the latest, and **production is verified at 100**
-  (2026-09-04, queried directly). 98 and 99 had **never actually been applied**
-  — the previous session recorded them as owner-reported and explicitly not
-  verified, and they were not there. `/offers` threw a 500 in production for
-  every visitor from the moment it shipped until they were applied.
-- **Verify production with `supabase db query --linked`**, which reaches the
-  linked project through the Management API using the CLI token in the keychain
-  — no DB password, and it works when the MCP does not. This is the instrument
-  whose absence let 98/99 go unverified; there is no longer an excuse for
-  "no way to query prod".
-- **Local and production are both at migration 100**, verified on both sides
-  the same day: same six offer objects, and zero tables without RLS on either.
-- **Migration 101 (the schema ledger) is on BOTH**, and `npm run check:prod` /
-  `check:local` both report *at migration 101 — all 101 applied*. That command
-  is now the answer to "is production up to date?", and it takes seconds.
-- **Schema drift is now mechanised** (the "never again" for the `/offers`
-  outage): `public.schema_migrations` is written by each migration,
-  `npm run check:prod` / `check:local` diffs it against `migrations/*.sql`, and
-  `.claude/hooks/prod-schema-gate.sh` denies `git push` while production is
-  behind — including when it cannot check at all, since "no way to query prod"
-  is the excuse that caused this. Override: `SKIP_SCHEMA_GATE=1`.
-  CI still does not run it (secret-free by choice); parked in BACKLOG.
-- **`/offers` answers in production and has never been used there.** No
-  production offer exists. The first real one is still the test.
-  **A route answering `307 → /login` proves nothing** — the redirect happens in
-  middleware, before the page runs a single query, so it cannot see a schema
-  error. That check is what made 98/99 look fine.
+- **Migration 101 is the latest, and BOTH databases are verified at it.**
+  `npm run check:prod` and `npm run check:local` each report *all 101 applied*.
+  That command is the answer to "is production up to date?" — ask it, do not
+  reason about it.
+- **Query production with `supabase db query --linked`** (Management API, CLI
+  token in the keychain; no DB password, works when the MCP does not; `-f` for a
+  whole migration). Its absence is what let 98/99 go unverified, so **"no way to
+  query prod" is never true**. Neither an owner's report nor a route answering
+  `307 → /login` is verification — that redirect fires in middleware, before the
+  page runs a query, so it cannot see a schema error. Both stood in for a check
+  while production was broken.
+- **Schema drift is mechanised** — `public.schema_migrations` written by each
+  migration, `check:prod`/`check:local` diffing it against `migrations/*.sql`,
+  and `.claude/hooks/prod-schema-gate.sh` denying `git push` while production is
+  behind, *including when it cannot check at all*. Override: `SKIP_SCHEMA_GATE=1`.
+  CI does not run it (secret-free by choice); parked in BACKLOG.
+- **The Supabase CLI is pre-approved for WRITES** (owner, 2026-09-04) — a
+  migration applies to production with no prompt, and so would any other SQL.
+  A prompt is no longer what protects production; `/migrations`, `check:prod`
+  and the push gate are.
 - **`docs/plan-sep3-meeting.md` is still the live plan.** Its Tier 2 item 8
   (build `/offers`) shipped today; item 9 (a picture on the offer) did not, and
   Tier 0/1 items remain. Do not archive it yet.
 
 ## Next actions
+0. **Click `/offers` in production and confirm it renders.** Everything below
+   the UI is verified — all six offers queries return 200 against production,
+   and the identical code renders locally against an identical schema — but the
+   authenticated page itself was never seen. **It could not be**: the gate needs
+   `SITE_PASSWORD`, which lives only in Vercel (not in `env/prod.env`), and
+   there is no Vercel CLI on this machine, so no production session can be
+   minted. One human click closes it. Expect an empty list — production still
+   has no offer.
 1. **Send Dennis the two documents. Still not sent, still the bottleneck.**
    `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` and
    `docs/COLOUR-LISTS-DENNIS-2026-09.md`. The colour sheet's question is now
@@ -123,9 +122,15 @@ match what the customer configured. That is Dennis's call — hence document (1)
 
 ## Preflight harness — run before showing anyone the app
 ```
+npm run check:prod                 # is production at the latest migration?
+npm run check:local                # …and the local copy
 npm run smoke                      # every page route; needs `npm run dev`
 scripts/audit-invariants.sql       # SQL editor, psql, or the MCP
 ```
+- **`check:prod` first, because it is the cheapest and the one that was
+  missing.** It reads the ledger over the network in seconds and needs no
+  server. The `git push` hook runs it anyway, so a drift cannot ship; running it
+  here just means finding out before writing the commit.
 - **Smoke** against the LOCAL copy: **93 pass · 20 redirect · 5 skip · 0 fail**
   (was 89/19/5 — the four new passes are the offers routes; the extra redirect is
   `/offers/[id]/edit` correctly refusing a converted offer). A SKIP is not a pass.

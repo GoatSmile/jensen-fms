@@ -2757,3 +2757,28 @@ identically on a wrong one.
 
 **The other lesson is behavioural, and is the cheaper half:** a refusal from a
 classifier is not a verdict. Retry once before reporting something as blocked.
+
+## 2026-09-04 (night, nav) — *Orders* is ordered by the life of a job, paint before manufacturing
+
+**Decided (owner).** The *Orders* group reads **Offers · Sales · Paint ·
+Manufacturing · Invoices · Purchase**. It was Manufacturing · Purchase · Offers ·
+Sales · Paint · Invoices — no order at all, with the two documents that BEGIN a
+job stranded below the two that continue it.
+
+- **The sequence is the work, not the paperwork.** Quote it, sell it, paint it,
+  build it, bill it. Each document is created from the one above, so the rail
+  doubles as the order Dennis works through instead of a list to memorise.
+- **Paint sits ABOVE manufacturing** (owner: *"in this biz Paint orders come
+  before MOs"*). Frames are painted before anything is assembled, and the code
+  already enforced exactly that — paint's service type is `blocks_build`, an
+  at-painter bike cannot be finished, and a build picks the PAINTED variant off
+  the shelf. I had ordered it the other way because an MO offers to spawn the
+  paint order, which describes the software's flow rather than the shop's.
+  **Rejected: ordering by which record creates which**, for that reason.
+- **Purchase orders last, as the deliberate exception** — supplier-side,
+  continuous, tied to stock rather than to any customer's job. Sitting second it
+  cut the chain in half, which is most of why the old order read as random.
+  **Rejected: alphabetical and by-frequency**, both of which split the chain.
+- A new document on the chain goes **at its place in the sequence**, not on the
+  end. CLAUDE.md's nav paragraph carries the rule; it had also gone stale (it
+  still described a five-item group and never gained Offers), and was corrected.
