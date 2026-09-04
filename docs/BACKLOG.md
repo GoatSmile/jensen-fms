@@ -33,6 +33,14 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   Handover note: Tier 2 is the executable half of any team handover — the
   manual browser-verification discipline the owner relies on ("I like the
   discipline") does not transfer with the repo.
+- **Should CI also run `npm run check:prod`?** The schema-drift check shipped
+  2026-09-04 as a local `git push` hook, which covers the one machine that
+  pushes. CI would cover every route to `main`, but it needs a production
+  credential as a repo secret, and `ci.yml` is deliberately secret-free ("none
+  of these three steps touch the network or the database"). That trade is the
+  owner's to make, not a side effect of fixing the outage that prompted it —
+  the same secret question the smoke-sweep entry above is already waiting on,
+  so decide both together or neither.
 - **Public-action rate limits are IP-spoofable** (perimeter audit
   2026-07-23, low sev). `submit-report.ts`, `submit-general-report.ts`,
   `find-bike.ts` key their 5/hr (reports) and 30/hr (lookup) caps off the

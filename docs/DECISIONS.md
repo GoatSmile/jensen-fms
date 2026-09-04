@@ -2648,3 +2648,55 @@ live parallel edit surface — stands. The justification did not.
   test. Reversible when the sales-order side gets built. **Rejected:**
   copy-on-convert, which I had originally scoped, on the grounds that
   speculative rows are worse than a join that already exists.
+
+## 2026-09-04 (night) — Production says which migrations it has, and the push gate enforces it
+
+**Context.** `/offers` threw a 500 in production for every visitor from the
+moment it shipped: migrations 98 and 99 had never been applied. The previous
+session recorded them as *"owner-reported and then pushed; not independently
+verified — the Supabase MCP did not connect, so there was no way to query
+prod."* They were not there.
+
+- **A migration is applied only once something has QUERIED the database and seen
+  it.** An owner's report is a claim, not a check. So is a route answering
+  `307 → /login` — the redirect happens in middleware, before the page runs any
+  query, so it cannot see a schema error. Both stood in for verification and
+  both passed while production was broken.
+- **`supabase db query --linked` is the instrument**, and its existence retires
+  the excuse. It runs SQL against the linked project through the Management API
+  on the CLI token in the keychain: no DB password, no MCP, `-f` for a whole
+  migration. **Rejected: waiting on the MCP** — it is one transport, it was down
+  for this entire session, and treating it as the only door is what made "no way
+  to query prod" sound reasonable. **Rejected: a direct `psql`/pooler
+  connection** — no production DB password is recorded anywhere, and adding one
+  to the secret set to enable a check is a worse trade than using the token that
+  already exists.
+- **`public.schema_migrations` (migration 101) is the ledger, written BY each
+  migration.** Nothing recorded applied state before, in either database, which
+  is precisely why the question was unanswerable. Every migration now ends with
+  its own `insert … on conflict do nothing`. **Rejected: a hand-maintained list**
+  — the whole failure was a human claiming applied state. **Rejected: probing for
+  a declared object per migration** — it works without a ledger, but every
+  migration would need a hand-written assertion, which is the same trust problem
+  one level down. The ledger's asymmetry is the point: a forgotten insert reports
+  a migration missing when it is applied (noisy, safe), and the reverse cannot
+  happen, because only the migration's own body writes its row.
+- **The gate is on `git push`, not `git commit`.** Push-to-`main` is the deploy;
+  a commit harms nobody. **It denies when it cannot check at all** — an auth or
+  network failure blocks the push rather than waving it through, because a gate
+  that fails open on an unreachable database rebuilds the exact hole this closes.
+  Deliberate override: `SKIP_SCHEMA_GATE=1 git push origin main`.
+- **CI still does not run it.** `ci.yml` is deliberately secret-free and this
+  check needs a production key. Parked in `docs/BACKLOG.md` rather than decided
+  here — reversing that is the owner's call, not a side effect of fixing an
+  outage.
+- **Migration 100 (RLS on `offer_revisions`) came out of the same reading.** 99
+  created the only table in the schema without RLS or an `anon_all` policy.
+  Nothing was exploitable — the policy is permissive and the app writes with the
+  secret key — but at M1 the user-scoped policies get written against the tables
+  that HAVE RLS, and this one was not among them.
+- **A failed query must never render as an empty state.** The customer offers
+  panel discarded its `error` and reported "no offers for this customer" while
+  the query was failing outright — the single most misleading thing it could say
+  to a salesperson. It now renders the failure and stays a panel rather than
+  throwing, so one broken section cannot take the customer page down.

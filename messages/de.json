@@ -119,5 +119,8 @@
     "archiving": "Archiving…",
     "restore": "Restore",
     "restoring": "Restoring…"
+  },
+  "offers": {
+    "customerLoadFailed": "Offers could not be loaded — which is not the same as this customer having none. Check that the database has every migration applied (npm run check:prod)."
   }
 }

@@ -235,6 +235,29 @@ the wrong database.
 BEFORE the push that deploys code reading the new columns. `/migrations` stays
 the source of truth; `supabase db reset` after a fresh dump re-syncs local.
 
+**This trap is now mechanised** (2026-09-04, after it fired: `/offers` served a
+500 to every visitor because migrations 98 and 99 had never been applied).
+
+- **Run SQL against production with `supabase db query --linked`** — Management
+  API, authenticated by the CLI token in the macOS Keychain. No DB password, and
+  it works when the MCP does not. `-f migrations/NNN_x.sql` applies a whole
+  migration; `--local` targets the copy. There is no longer any situation in
+  which production cannot be queried.
+- **`public.schema_migrations` (migration 101) records what has been applied.**
+  Every migration ends with its own `insert … on conflict do nothing`, so the
+  ledger maintains itself. Never hand-write a row — a row is a claim the DDL ran.
+  A forgotten insert fails SAFE (reported missing while actually applied); the
+  reverse cannot happen.
+- **`npm run check:prod`** (and `check:local`) diffs `migrations/*.sql` against
+  that ledger and names exactly what is missing. Read-only.
+- **`.claude/hooks/prod-schema-gate.sh` refuses `git push` while production is
+  behind** — push-to-`main` is the deploy, so that is the moment the divergence
+  would ship. It also denies when it *cannot* check, because "there was no way to
+  query prod" is the exact excuse that let 98/99 through. Deliberate override:
+  `SKIP_SCHEMA_GATE=1 git push origin main`.
+- **CI does not run this check.** `ci.yml` is deliberately secret-free and would
+  need a production key; the entry sits in `docs/BACKLOG.md`.
+
 **Trap — types.** `supabase gen types typescript --local` does NOT reproduce the
 committed `src/lib/types/database.ts` (it drops `__InternalSupabase` and the
 `Relationships` arrays). After a migration, hand-patch the affected tables (Row +

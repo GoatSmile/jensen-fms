@@ -2045,7 +2045,8 @@
     "notes": "Internal notes",
     "notesHint": "For the shop only — never printed and never emailed.",
     "notesPlaceholder": "What was agreed on the phone, who to chase, what to watch.",
-    "noName": "(no name)"
+    "noName": "(no name)",
+    "customerLoadFailed": "Offers could not be loaded — which is not the same as this customer having none. Check that the database has every migration applied (npm run check:prod)."
   },
   "offerStatus": {
     "draft": "Draft",

@@ -2045,7 +2045,8 @@
     "notes": "Interne noter",
     "notesHint": "Kun til værkstedet — udskrives aldrig og sendes aldrig med.",
     "notesPlaceholder": "Hvad blev aftalt i telefonen, hvem skal rykkes, hvad skal holdes øje med.",
-    "noName": "(uden navn)"
+    "noName": "(uden navn)",
+    "customerLoadFailed": "Tilbud kunne ikke indlæses — det er ikke det samme som, at kunden ingen har. Kontrollér, at databasen har alle migrationer anvendt (npm run check:prod)."
   },
   "offerStatus": {
     "draft": "Kladde",

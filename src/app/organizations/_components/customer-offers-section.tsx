@@ -40,13 +40,29 @@ export async function CustomerOffersSection({
   ]);
   const supabase = await createClient();
 
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from("offers")
     .select(
       "id, offer_number, status, revision, issued_date, expiry_date, total_amount, currency",
     )
     .eq("organization_id", organizationId)
     .order("created_at", { ascending: false });
+
+  // A failed query must NOT render as "no offers". This panel discarded its
+  // error until 2026-09-04, and while production was missing migrations 98/99
+  // every customer page cheerfully reported that nobody had ever been quoted
+  // anything — the one reading a salesperson would act on. It stays a panel
+  // rather than a throw because one broken section should not take the whole
+  // customer page down with it.
+  if (error) {
+    return (
+      <Panel title={t("title")} description={t("customerPanelDesc")}>
+        <p className="rounded-lg bg-ground p-4 text-sm text-alert">
+          {t("customerLoadFailed")}
+        </p>
+      </Panel>
+    );
+  }
 
   return (
     <Panel title={t("title")} description={t("customerPanelDesc")}>

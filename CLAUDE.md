@@ -982,10 +982,29 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 
 ## Migrations
 Never modify SQL files that have already been applied. Add new ones with
-sequential numbering and apply them to PRODUCTION through the Supabase SQL
-editor or the MCP `apply_migration` tool — AND to the local copy (`psql` against
-`127.0.0.1:54322`, or `supabase db reset` after a fresh dump). Whichever route: `/migrations/` is the source of truth, so nothing reaches the
-DB without its numbered file committed alongside.
+sequential numbering and apply them to PRODUCTION — `supabase db query --linked
+-f migrations/NNN_x.sql`, the Supabase SQL editor, or the MCP `apply_migration`
+tool — AND to the local copy (`--local`, `psql` against `127.0.0.1:54322`, or
+`supabase db reset` after a fresh dump). Whichever route: `/migrations/` is the
+source of truth, so nothing reaches the DB without its numbered file committed
+alongside.
+
+**Every migration ends with its own ledger insert**, which is what makes
+"is production up to date?" answerable at all:
+
+```sql
+insert into public.schema_migrations (version, name)
+  values (NNN, 'NNN_name') on conflict (version) do nothing;
+```
+
+`npm run check:prod` / `check:local` diffs `migrations/*.sql` against that
+ledger (migration 101) and names what is missing, and a `git push` hook refuses
+the push while production is behind — push-to-`main` is the deploy. **A migration
+counts as applied only once something has queried the database and seen it**: an
+owner's report is not verification, and neither is a route answering
+`307 → /login`, which redirects in middleware before any query runs. Both of
+those stood in for a check on 2026-09-04 and `/offers` served a 500 to every
+visitor for as long as it took to notice.
 
 ## Strategy escalation
 Architectural questions ("should this be one table or two?", "how do we

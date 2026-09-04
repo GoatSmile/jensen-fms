@@ -72,6 +72,27 @@ was rejected. See the `log-decision` skill.
   `src/lib/types/database.ts` (Row + Insert + Update): `supabase gen types
   typescript --local` does not reproduce the committed file.
 
+  **End every migration with its own ledger insert**, or the checker below will
+  keep reporting it missing:
+
+  ```sql
+  insert into public.schema_migrations (version, name)
+    values (NNN, 'NNN_name') on conflict (version) do nothing;
+  ```
+
+  Apply with `supabase db query --linked -f migrations/NNN_name.sql` (production)
+  and `--local` (the copy), then prove it landed:
+
+  ```bash
+  npm run check:prod && npm run check:local
+  ```
+
+  **Neither an owner's report nor a route answering `307 → /login` is
+  verification** — that redirect happens in middleware, before any query runs.
+  A migration is applied when something has queried the database and seen it.
+  The `git push` hook runs `check:prod` for you and refuses the push on drift;
+  running it here just means you find out before you have written the commit.
+
 ## 6. Durable residue → `CLAUDE.md`, edited in place
 
 Only if this changed a **rule**, or added an invariant, gotcha, or vocabulary term.
