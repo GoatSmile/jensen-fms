@@ -18,6 +18,7 @@ const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, Capability]> = [
   ["/qr", "bikes"],
   ["/manufacturing-orders", "mo"],
   ["/purchase-orders", "po"],
+  ["/offers", "so"],
   ["/sales-orders", "so"],
   ["/paint-orders", "paint"],
   ["/invoices", "invoices"],

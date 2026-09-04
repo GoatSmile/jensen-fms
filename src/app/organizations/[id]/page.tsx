@@ -16,6 +16,7 @@ import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
 import { AssignedBikesSection } from "../_components/assigned-bikes-section";
+import { CustomerOffersSection } from "../_components/customer-offers-section";
 import { OrganizationHeader } from "../_components/organization-header";
 import {
   ContactsSection,
@@ -309,6 +310,7 @@ export default async function OrganizationDetailPage({
       <UnitsSection organizationId={o.id} rows={unitRows} />
       <ContactsSection organizationId={o.id} rows={contactRows} />
       <AssignedBikesSection organizationId={o.id} />
+      <CustomerOffersSection organizationId={o.id} />
     </div>
   );
 }

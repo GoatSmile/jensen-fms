@@ -130,6 +130,9 @@ export const NAV_GROUPS: NavGroup[] = [
         labelKey: "purchaseOrders",
         capability: "po",
       },
+      // Same `so` capability as sales orders: whoever sells quotes. An offer
+      // precedes the order it becomes, so it sits above it.
+      { href: "/offers", labelKey: "offers", capability: "so" },
       { href: "/sales-orders", labelKey: "salesOrders", capability: "so" },
       { href: "/paint-orders", labelKey: "paintOrders", capability: "paint" },
       { href: "/invoices", labelKey: "invoices", capability: "invoices" },

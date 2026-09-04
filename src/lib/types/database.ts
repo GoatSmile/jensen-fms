@@ -2130,6 +2130,7 @@ export type Database = {
           id: string
           intended_to: string[]
           kind: string
+          offer_id: string | null
           person_id: string | null
           provider: string
           provider_id: string | null
@@ -2154,6 +2155,7 @@ export type Database = {
           id?: string
           intended_to?: string[]
           kind: string
+          offer_id?: string | null
           person_id?: string | null
           provider?: string
           provider_id?: string | null
@@ -2178,6 +2180,7 @@ export type Database = {
           id?: string
           intended_to?: string[]
           kind?: string
+          offer_id?: string | null
           person_id?: string | null
           provider?: string
           provider_id?: string | null
@@ -2202,6 +2205,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
             referencedColumns: ["id"]
           },
           {
@@ -2332,6 +2342,7 @@ export type Database = {
           offer_number: string
           organization_id: string
           organization_unit_id: string | null
+          revision: number
           status: Database["public"]["Enums"]["offer_status"]
           subtotal_amount: number | null
           total_amount: number | null
@@ -2352,6 +2363,7 @@ export type Database = {
           offer_number: string
           organization_id: string
           organization_unit_id?: string | null
+          revision?: number
           status?: Database["public"]["Enums"]["offer_status"]
           subtotal_amount?: number | null
           total_amount?: number | null
@@ -2372,6 +2384,7 @@ export type Database = {
           offer_number?: string
           organization_id?: string
           organization_unit_id?: string | null
+          revision?: number
           status?: Database["public"]["Enums"]["offer_status"]
           subtotal_amount?: number | null
           total_amount?: number | null

@@ -2533,3 +2533,45 @@ reader.
   per table, and the two insert payloads refuse to unify because
   `offer_lines.unit_price` is nullable where the sales-order one is NOT NULL.
   Only `from()` is loosened; every payload is still built as a typed object.
+
+## 2026-09-04 (later still) — A counteroffer reopens the offer; it never edits it
+
+- **Sending freezes an offer, and a counteroffer REOPENS it for revision**
+  (migration 98). Back to `draft`, `revision` + 1, the same `OFF-` number, and
+  print and email say "rev. N". The question this answers is identity, not
+  evidence: `outbound_messages.body_html` already keeps the exact document every
+  send put in front of the customer, so unfreezing loses nothing — but without a
+  revision marker he ends up holding two different papers that both read
+  OFF-2026-0001, and neither he nor Dennis can tell six weeks later which one
+  was live. Allowed from `sent`, `accepted` and `rejected` — a dead deal revived
+  is the same motion — and never from `converted`, where the sales order is the
+  thing to change.
+  **Rejected: revision ROWS** (the `service_price_lists` pattern) — they would
+  duplicate `offer_lines` per negotiation round, which is heavy for something
+  that turns two or three times when the stored document already answers "what
+  did we quote first?". The counter upgrades to rows later; the reverse does
+  not. **Rejected: a silent unfreeze** (edit and re-send, no marker) — cheapest,
+  and precisely the ambiguity above. **Rejected: a fresh `OFF-` per round** —
+  every document immutable and no new column, but three rounds burn three
+  numbers and "which one is live" becomes a query instead of a fact.
+- **`expired` is derived, never stored.** The enum has carried the value since
+  migration 01 and nothing writes it; `isExpired` computes it for the badge, and
+  only while the offer is still `sent` — an accepted or declined offer already
+  has an ending. A customer who says yes a day late has said yes, and no clock
+  should refuse him. Same precedent as *at painter* and *painted*.
+  **Rejected:** a cron that expires offers, which would need a reason to exist
+  before it had one.
+- **Converting copies the lines** into a new sales order rather than pointing at
+  the offer's. `converted_from_offer_id` is the link back and the SO page shows
+  it. The offer then keeps saying what the customer actually agreed to while the
+  order is edited as an order — the same argument as the MO recipe snapshotting
+  into `bike_parts`. **Rejected:** a shared line table read by both, which would
+  let an order edit rewrite the quote's history.
+- **Validity is a code constant** (`DEFAULT_OFFER_VALIDITY_DAYS = 30`), not an
+  `app_settings` knob, until the shop wants to argue about the number — the same
+  call as `DEFAULT_PAYMENT_TERMS_DAYS`. Blank on the form means "decide at
+  send", and `markOfferSent` fills it from the day it actually goes out.
+- **`is_price_template` stays an unused boolean.** A standing price sheet for a
+  hotel chain is a real want, but it would need its own numbering (a template is
+  not a document and should not burn an `OFF-` number), so it is a decision, not
+  a checkbox. Deliberately not built in v1.

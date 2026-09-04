@@ -69,7 +69,8 @@ export default async function SODetailPage({
          id, legal_name, display_name_en, display_name_da, default_vat_code
        ),
        organization_unit:organization_units!organization_unit_id(id, name),
-       contact:contacts!contact_id(id, first_name, last_name, role)`,
+       contact:contacts!contact_id(id, first_name, last_name, role),
+       offer:offers!converted_from_offer_id(id, offer_number)`,
     )
     .eq("id", id)
     .maybeSingle();
@@ -408,6 +409,20 @@ export default async function SODetailPage({
           )}
         </Stat>
       </dl>
+
+      {/* Where this order came from. An order converted from an offer must say
+          so: the offer holds what the customer actually agreed to. */}
+      {so.offer ? (
+        <p className="text-muted-foreground text-sm">
+          {tSo("fromOffer")}{" "}
+          <Link
+            href={`/offers/${so.offer.id}`}
+            className="font-mono hover:underline"
+          >
+            {so.offer.offer_number}
+          </Link>
+        </p>
+      ) : null}
 
       {so.notes ? (
         <p className="text-muted-foreground bg-muted/30 rounded-md border p-3 text-sm whitespace-pre-wrap">

@@ -345,7 +345,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   trusted colleagues, not a security control; no UI by design (DECISIONS
   2026-08-25).
 - **Every outgoing message is kept, and `sendAndRecord` is the only way out.**
-  `outbound_messages` (migration 94, extended by 95/96) holds one row per
+  `outbound_messages` (migration 94, extended by 95/96/98 — POs, paint orders,
+  offers and notifications) holds one row per
   ATTEMPT — the subject, the **exact `body_html` sent**, who pressed the button,
   who it really went to versus who it was `intended_to` under test mode, and
   `failed` with the provider's complaint when it never arrived. Write it ONLY
@@ -359,6 +360,31 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   a *Sent messages* panel on each PO and paint order, and `/admin/outbox` for
   everything including notifications, each opening the stored document in a
   sandboxed iframe.
+- **The OFFER is the customer-facing quote, and it is its own entity**
+  (`offers` / `offer_lines`, `OFF-` series, migration 98; DECISIONS 2026-09-04).
+  It is not an SO draft wearing a different word — a quote must be able to be
+  DECLINED and stay on the customer, which `cancelled` on a sales order cannot
+  say. Its lines are the shared commercial-lines machine (see Conventions).
+  - **Sending FREEZES it, and emailing IS the send** — `markOfferSent` runs the
+    gate (≥1 line) and stamps `issued_date` + `expiry_date` BEFORE the document
+    renders, so mail, paper and ledger carry the same numbers. Both doors go
+    through it: *Markér som sendt* for the printed hand-over, and
+    `emailOfferToCustomer`.
+  - **A counteroffer REOPENS for revision; it never edits a sent offer.** Back
+    to `draft`, `offers.revision` + 1, same `offer_number`, and the document
+    prints "rev. N" — otherwise the customer holds two different papers both
+    reading OFF-2026-0001. It is a COUNTER, not revision rows: the exact body of
+    every send already lives in `outbound_messages.body_html`. Converted offers
+    cannot reopen; change the sales order instead.
+  - **`expired` is DERIVED and never written** (`isExpired`), like *at painter*
+    and *painted*. A customer who accepts a day late has accepted.
+  - **Converting COPIES the lines** into a new SO with
+    `converted_from_offer_id`, so the offer keeps saying what was agreed while
+    the order is edited as an order — the `bike_parts` snapshot argument.
+  - The document renders in `offers.language` (defaulted from
+    `organizations.preferred_language`), never the UI locale;
+    `src/lib/offers/offer-document.ts` feeds both print and email.
+    `offers.notes` are INTERNAL and never travel.
 - **Product entity = `bike_templates`** (models/variants collapsed,
   migration 09). Size and color split:
   - **Frame size** is baked into the template — `Norma S` and `Norma L` are

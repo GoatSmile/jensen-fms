@@ -27,11 +27,12 @@ export type OutboundRow = {
   /** The document this belonged to, for the admin list's link. */
   purchaseOrderId: string | null;
   serviceOrderId: string | null;
+  offerId: string | null;
 };
 
 const SELECT = `
   id, created_at, kind, subject, to_emails, intended_to, test_mode, status,
-  error_detail, event_key, purchase_order_id, service_order_id,
+  error_detail, event_key, purchase_order_id, service_order_id, offer_id,
   actor:people!actor_person_id(id, full_name)
 `;
 
@@ -48,6 +49,7 @@ type Raw = {
   event_key: string | null;
   purchase_order_id: string | null;
   service_order_id: string | null;
+  offer_id: string | null;
   actor:
     | { id: string; full_name: string }
     | { id: string; full_name: string }[]
@@ -74,13 +76,17 @@ function toRow(r: Raw): OutboundRow {
     actorName: actor?.full_name ?? null,
     purchaseOrderId: r.purchase_order_id,
     serviceOrderId: r.service_order_id,
+    offerId: r.offer_id,
   };
 }
 
 /** Everything ever sent for one document, newest first. */
 export async function loadOutboundForOrder(
   supabase: Supabase,
-  target: { purchaseOrderId: string } | { serviceOrderId: string },
+  target:
+    | { purchaseOrderId: string }
+    | { serviceOrderId: string }
+    | { offerId: string },
 ): Promise<OutboundRow[]> {
   const query = supabase
     .from("outbound_messages")
@@ -89,7 +95,9 @@ export async function loadOutboundForOrder(
   const { data, error } =
     "purchaseOrderId" in target
       ? await query.eq("purchase_order_id", target.purchaseOrderId)
-      : await query.eq("service_order_id", target.serviceOrderId);
+      : "serviceOrderId" in target
+        ? await query.eq("service_order_id", target.serviceOrderId)
+        : await query.eq("offer_id", target.offerId);
   if (error) {
     throw new Error(`Failed to load sent messages: ${error.message}`);
   }

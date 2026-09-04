@@ -30,6 +30,7 @@ type Supabase = SupabaseClient<Database>;
 export type OutboundTarget =
   | { kind: "purchase_order"; purchaseOrderId: string }
   | { kind: "service_order"; serviceOrderId: string }
+  | { kind: "offer"; offerId: string }
   | {
       kind: "notification";
       eventKey: string;
@@ -56,15 +57,43 @@ export type SendAndRecordInput = {
   actorPersonId?: string | null;
 };
 
-function targetColumns(target: OutboundTarget) {
+/**
+ * One uniform row shape with explicit nulls, rather than a per-kind object.
+ * PostgREST's insert typing rejects a union whose branches carry different
+ * keys, and spelling every id out also makes the DB's kind-shape constraint
+ * legible from here: exactly one of these ids is non-null, and which one is
+ * decided by `kind`.
+ */
+type TargetColumns = {
+  kind: OutboundTarget["kind"];
+  purchase_order_id: string | null;
+  service_order_id: string | null;
+  offer_id: string | null;
+  event_key: string | null;
+  entity_ids: string[];
+  person_id: string | null;
+};
+
+function targetColumns(target: OutboundTarget): TargetColumns {
+  const base: TargetColumns = {
+    kind: target.kind,
+    purchase_order_id: null,
+    service_order_id: null,
+    offer_id: null,
+    event_key: null,
+    entity_ids: [],
+    person_id: null,
+  };
   switch (target.kind) {
     case "purchase_order":
-      return { kind: target.kind, purchase_order_id: target.purchaseOrderId };
+      return { ...base, purchase_order_id: target.purchaseOrderId };
     case "service_order":
-      return { kind: target.kind, service_order_id: target.serviceOrderId };
+      return { ...base, service_order_id: target.serviceOrderId };
+    case "offer":
+      return { ...base, offer_id: target.offerId };
     case "notification":
       return {
-        kind: target.kind,
+        ...base,
         event_key: target.eventKey,
         entity_ids: target.entityIds ?? [],
         person_id: target.personId ?? null,

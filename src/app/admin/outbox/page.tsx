@@ -17,7 +17,7 @@ import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
-const KINDS = ["purchase_order", "service_order", "notification"] as const;
+const KINDS = ["purchase_order", "service_order", "offer", "notification"] as const;
 const STATUSES = ["sent", "failed", "pending"] as const;
 const LIMIT = 200;
 
