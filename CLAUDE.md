@@ -136,7 +136,19 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - Two consequences worth carrying: it **bypasses RLS**, so it is no way to test
   policies (M1's user-scoped rules won't constrain it either); and it is bound to
   PRODUCTION whatever `.env.local` points at, so a write lands in production.
-  `.claude/settings.json` pre-approves the read tools, so writes prompt first.
+  `.claude/settings.json` pre-approves the read MCP tools, so an MCP write
+  prompts first.
+- **The CLI is the exception, and it is deliberate (owner, 2026-09-04):
+  `Bash(supabase db query*)` is pre-approved, WRITES INCLUDED.** So a migration
+  applies to production without a prompt — and so would any other SQL sent that
+  way, `drop`/`delete` included. The trade was made knowingly after the reverse
+  cost real time: the permission classifier judges each command afresh, refused
+  a migration apply twice, allowed the identical command minutes later, and the
+  flakiness was mistaken for a standing rule — which stalled the fix for the
+  `/offers` outage. **Prompting is no longer the thing standing between a typo
+  and production**; the migration files, `npm run check:prod` and the push gate
+  are. Write SQL against `--linked` as if nothing will stop you, because
+  nothing will.
 
 ### Established views
 - `v_current_stock` — `(part_id, location_id, quantity_on_hand, last_movement_at)`.
