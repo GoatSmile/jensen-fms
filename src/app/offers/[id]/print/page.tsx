@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { COMPANY, companyDetailsIncomplete } from "@/lib/invoicing/company";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
-import { loadOfferDocument } from "@/lib/offers/offer-document";
+import { loadIssuedOfferDocument } from "@/lib/offers/offer-document";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,10 @@ export default async function OfferPrintPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const doc = await loadOfferDocument(supabase, id);
+  // AS ISSUED, not as it would look today: past draft this is the snapshot
+  // taken at send, so reprinting an offer shows the customer's copy rather
+  // than a re-render against current prices.
+  const { doc } = await loadIssuedOfferDocument(supabase, id);
   if (!doc) notFound();
 
   const L = doc.labels;

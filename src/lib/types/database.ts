@@ -2327,8 +2327,57 @@ export type Database = {
           },
         ]
       }
+      offer_revisions: {
+        Row: {
+          document: Json
+          expiry_date: string | null
+          id: string
+          issued_date: string
+          offer_id: string
+          revision: number
+          sent_at: string
+          sent_by: string | null
+        }
+        Insert: {
+          document: Json
+          expiry_date?: string | null
+          id?: string
+          issued_date: string
+          offer_id: string
+          revision: number
+          sent_at?: string
+          sent_by?: string | null
+        }
+        Update: {
+          document?: Json
+          expiry_date?: string | null
+          id?: string
+          issued_date?: string
+          offer_id?: string
+          revision?: number
+          sent_at?: string
+          sent_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_revisions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_revisions_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offers: {
         Row: {
+          accepted_revision: number | null
           contact_id: string | null
           created_at: string
           created_by: string | null
@@ -2350,6 +2399,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_revision?: number | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2371,6 +2421,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_revision?: number | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null

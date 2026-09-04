@@ -2535,6 +2535,8 @@ reader.
   Only `from()` is loosened; every payload is still built as a typed object.
 
 ## 2026-09-04 (later still) — A counteroffer reopens the offer; it never edits it
+**PARTLY SUPERSEDED** by 2026-09-04 (last) below: the claim that the stored
+email body already preserved every send was true only of the emailed path.
 
 - **Sending freezes an offer, and a counteroffer REOPENS it for revision**
   (migration 98). Back to `draft`, `revision` + 1, the same `OFF-` number, and
@@ -2575,3 +2577,41 @@ reader.
   hotel chain is a real want, but it would need its own numbering (a template is
   not a document and should not burn an `OFF-` number), so it is a decision, not
   a checkbox. Deliberately not built in v1.
+
+## 2026-09-04 (last) — What the offer SAID when it was sent is stored, not inferred
+
+SUPERSEDES the "counter, not revision rows" reasoning in the entry above. The
+decision it reached — a revision COUNTER on the same offer number, rather than a
+live parallel edit surface — stands. The justification did not.
+
+- **The claim was wrong on the path Dennis is most likely to use.** I argued that
+  revision rows were unnecessary because `outbound_messages.body_html` already
+  keeps the exact document of every send. That is true only when the offer is
+  EMAILED. *Markér som sendt* — printing it and handing it over on the floor —
+  stored nothing at all: `markOfferSent` stamped dates and flipped a status, and
+  the print page rendered live from current data. So a printed offer that was
+  then reopened for revision lost what revision 1 said, silently and
+  irrecoverably. The same wrong claim appeared in migration 98's header and in
+  the `reopenOfferForRevision` docstring.
+- **Decided: `offer_revisions`** (migration 99), one row per revision, written
+  inside `markOfferSent` — the single function BOTH send doors already pass
+  through, so this is one write in one place rather than two paths to keep in
+  step. It stores the WHOLE rendered document as JSONB, labels included, so a
+  later change to wording or price cannot rewrite what the customer was handed.
+  Anything customer-facing (print, email) now renders the snapshot once the
+  offer is past draft; a draft has nothing frozen yet and renders live under its
+  watermark.
+- **Rejected: blocking the send when the snapshot write fails.** The customer is
+  about to be holding the document either way, and refusing the transition would
+  leave the offer reading `draft` while the paper says otherwise. It logs loudly
+  and proceeds — the same rule that stops a failed outbox insert from failing
+  the send.
+- **The snapshot and the outbox are complements, not duplicates.** One is
+  structured data, the other the rendered artifact actually transmitted; neither
+  should later be "optimised away" as redundant.
+- **`offers.accepted_revision`** now records WHICH revision the customer said yes
+  to. Nothing did before, so "he accepted" was ambiguous the moment a
+  counteroffer bumped the revision.
+- Done while `offers` had **zero production rows**, which is the cheapest this
+  fix will ever be: every offer sent before it would have been one whose
+  earlier revisions were unrecoverable.

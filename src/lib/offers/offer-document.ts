@@ -247,3 +247,86 @@ export async function loadOfferDocument(
     })),
   };
 }
+
+
+/**
+ * Freeze the document as it stands, against the offer's current revision.
+ *
+ * Called by `markOfferSent` — the one function BOTH send doors go through — so
+ * printing-and-handing-over is recorded exactly as emailing is. Before this,
+ * only the emailed path left a trace (`outbound_messages.body_html`), and an
+ * offer printed then reopened for revision lost what revision 1 said.
+ *
+ * The whole document is stored, labels included, so later edits to wording or
+ * price cannot rewrite what the customer was handed.
+ *
+ * A failed write does NOT fail the send: the customer is about to be holding
+ * this document either way, and refusing the transition would leave the offer
+ * reading `draft` while the paper says otherwise. Same rule as the outbox —
+ * the business action outranks its own bookkeeping — so it is logged loudly
+ * and the send proceeds.
+ */
+export async function writeOfferRevisionSnapshot(
+  supabase: SupabaseClient<Database>,
+  offerId: string,
+  sentBy: string | null,
+): Promise<void> {
+  const doc = await loadOfferDocument(supabase, offerId);
+  if (!doc) {
+    console.error(`[offer-snapshot] ${offerId}: document would not load`);
+    return;
+  }
+  const { error } = await supabase.from("offer_revisions").insert({
+    offer_id: offerId,
+    revision: doc.revision,
+    issued_date: doc.issuedDate ?? new Date().toISOString().slice(0, 10),
+    expiry_date: doc.expiryDate,
+    sent_by: sentBy,
+    document: doc as unknown as Database["public"]["Tables"]["offer_revisions"]["Insert"]["document"],
+  });
+  if (error) {
+    console.error(
+      `[offer-snapshot] ${offerId} rev ${doc.revision}: ${error.message}`,
+    );
+  }
+}
+
+/**
+ * The document AS ISSUED, for anything a customer sees.
+ *
+ * Past draft this returns the snapshot taken at send — what they were actually
+ * handed — rather than a re-render of today's data. A draft has nothing to
+ * freeze yet, so it renders live and prints with its watermark.
+ *
+ * `fromSnapshot: false` on a sent offer means no snapshot exists: an offer sent
+ * before migration 99, or one whose snapshot write failed. Rendering live is
+ * the honest fallback, and it is the only case where a later edit can still
+ * rewrite what "was sent".
+ */
+export async function loadIssuedOfferDocument(
+  supabase: SupabaseClient<Database>,
+  offerId: string,
+): Promise<{ doc: OfferDocument | null; fromSnapshot: boolean }> {
+  const { data: offer } = await supabase
+    .from("offers")
+    .select("status, revision")
+    .eq("id", offerId)
+    .maybeSingle();
+
+  if (offer && offer.status !== "draft") {
+    const { data: snap } = await supabase
+      .from("offer_revisions")
+      .select("document")
+      .eq("offer_id", offerId)
+      .eq("revision", Number(offer.revision ?? 1))
+      .maybeSingle();
+    if (snap?.document) {
+      return {
+        doc: snap.document as unknown as OfferDocument,
+        fromSnapshot: true,
+      };
+    }
+  }
+
+  return { doc: await loadOfferDocument(supabase, offerId), fromSnapshot: false };
+}

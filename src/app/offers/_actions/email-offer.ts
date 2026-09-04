@@ -11,7 +11,7 @@ import {
 import { sendAndRecord } from "@/lib/email/outbox";
 import { readPersonId } from "@/lib/auth/read-session";
 import { COMPANY } from "@/lib/invoicing/company";
-import { loadOfferDocument } from "@/lib/offers/offer-document";
+import { loadIssuedOfferDocument } from "@/lib/offers/offer-document";
 import { renderOfferEmailHtml } from "@/lib/offers/offer-email-html";
 
 import { markOfferSent } from "./transition-offer";
@@ -102,7 +102,10 @@ export async function emailOfferToCustomer(
     markedSent = true;
   }
 
-  const doc = await loadOfferDocument(supabase, offerId);
+  // The snapshot markOfferSent just wrote — or, when re-emailing an offer that
+  // was already sent, the one written then. Either way the mail carries the
+  // same document as the paper.
+  const { doc } = await loadIssuedOfferDocument(supabase, offerId);
   if (!doc) return { ok: false, error: t("notFound") };
 
   const trimmedMessage = message?.trim() || null;

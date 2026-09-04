@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { readPersonId } from "@/lib/auth/read-session";
+import { writeOfferRevisionSnapshot } from "@/lib/offers/offer-document";
 import {
   canReopenForRevision,
   defaultExpiryDate,
@@ -64,6 +66,12 @@ export async function markOfferSent(
   if (error) {
     return { ok: false, error: t("offerCouldNotUpdate", { detail: error.message }) };
   }
+
+  // Freeze what the customer is about to be holding. AFTER the update, so the
+  // snapshot carries the stamped dates and the `sent` status rather than the
+  // draft it was a moment ago. Never blocks the send — see the writer.
+  await writeOfferRevisionSnapshot(supabase, offerId, await readPersonId());
+
   return { ok: true };
 }
 
@@ -104,9 +112,23 @@ export async function transitionOffer(
     return { ok: false, error: t("offerBadTransition", { from, to }) };
   }
 
+  // Record WHICH revision they said yes to. Without it, "he accepted" is
+  // ambiguous the moment a counteroffer bumps the revision.
+  const { data: current } = await supabase
+    .from("offers")
+    .select("revision")
+    .eq("id", offerId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("offers")
-    .update({ status: to, updated_at: new Date().toISOString() })
+    .update({
+      status: to,
+      ...(to === "accepted"
+        ? { accepted_revision: Number(current?.revision ?? 1) }
+        : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", offerId);
   if (error) {
     return { ok: false, error: t("offerCouldNotUpdate", { detail: error.message }) };
@@ -123,7 +145,9 @@ export async function transitionOffer(
  * The offer NUMBER never changes — Dennis and the customer go on talking about
  * "tilbud 0001" — but the document says which revision it is, so the two are
  * distinguishable. What the customer was previously sent is not lost by this:
- * the exact body of every send is kept in `outbound_messages`.
+ * `markOfferSent` wrote the whole document to `offer_revisions` before this
+ * revision existed (migration 99). Earlier comments here claimed
+ * `outbound_messages` covered that; it only ever covered the EMAILED path.
  */
 export async function reopenOfferForRevision(
   offerId: string,
