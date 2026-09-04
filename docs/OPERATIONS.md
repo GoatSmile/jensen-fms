@@ -9,7 +9,7 @@ every secret lives, and how to rebuild or hand over the whole thing.
 | System | Role | Identifiers / notes | Secrets (name → location) |
 |---|---|---|---|
 | GitHub | Source of truth | `GoatSmile/jensen-fms` (private) | — |
-| Vercel | Hosting + deploy | push-to-`main` → prod; prod gated behind Vercel SSO | mirrors all server env vars below |
+| Vercel | Hosting + deploy | push-to-`main` → prod. **No Vercel SSO in front of it** — verified 2026-09-03; the perimeter is the app's own person-password wall alone, which CLAUDE.md calls a UX wall, not a security boundary | mirrors all server env vars below |
 | Supabase | Postgres + storage | EU West (Ireland), project ref `jzlphajunfrqvpogzsiz` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe with RLS), `SUPABASE_SECRET_KEY` (server-only, bypasses RLS) → `.env.local` + Vercel |
 | Resend | Outbound email | domain `valent.dk` VERIFIED (EU region); all mail reroutes while `outbound_test_mode` is on | `RESEND_API_KEY` → `.env.local` + Vercel |
 | Dynadot | DNS for `valent.dk` | Resend DKIM (`resend._domainkey`) + `send` subdomain MX/SPF; Google MX/SPF rows untouched; reference copy in the `/admin/settings` "Sending domain (DNS)" card | Dynadot account (dev's) |
@@ -26,6 +26,23 @@ The inbound provider registries (`TRANSCRIPTION_PROVIDERS` etc. in
 `src/lib/inbound/settings.ts`) are the authoritative list of which env
 secret each provider needs; the admin card shows present/missing per the
 config doctrine in CLAUDE.md.
+
+### The owner's public websites (surveyed 2026-09-04)
+
+Not ours to deploy, but the FMS reads from one of them, so what each actually
+serves matters. We have modify access to all of them.
+
+| Domain | What it serves | Bearing on the FMS |
+|---|---|---|
+| `logocykler.dk` | Lovable SPA. **The bike designer lives here**, at `/cykeldesigner` | The only source of the bike art: ~16 pre-registered 1182×796 greyscale PNGs under `/assets/`, four of them (frame, mudguards, front carrier, plate) tinted in CSS, plus a 191-entry RAL→hex table in the `Designer-*.js` chunk |
+| `kommune-cykler.dk` | A SEPARATE Lovable build, "Jensen Kommunecykler" | No designer — `/cykeldesigner` there returns 200 only because the SPA catches every path. Don't read it as a second asset set |
+| `jensenproduction.dk` | A 438-byte page that iframes `jensen-cykler.dk` | Nothing. BACKLOG once named it as the future configurator's home; the designer is on logocykler.dk instead |
+| `jensen-cykler.dk` | WordPress, "Jensen Cykler" | Nothing today |
+
+**Asset filenames are content-hashed and served `immutable`** (`base-JZcS44DB.png`),
+so they change on every rebuild of that site. Anything in the FMS that hardcodes
+one is a silent time bomb — the fix is a published manifest with stable paths,
+not a copied URL.
 
 ### Full env-var inventory
 

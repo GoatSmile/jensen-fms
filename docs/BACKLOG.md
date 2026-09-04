@@ -161,11 +161,15 @@ path to a personal inbox, so it would have to be a Jensen-owned sender.
 - **Sales track: website bike-configurator + AI lead-gen agent** (parked
   2026-07-09 by the owner — "lay the bottom first"; his framing: earliest
   next year, debt down first):
-  - Homepage configurator that talks to the app: customer designs a bike on
-    jensenproduction.dk (phone-first), colour input → closest RAL from the
-    `colors` vocab, pick paintable parts with live pricing (the per-part
-    paint catalog makes this priceable), "send me an offer" → offer/quote
-    in the FMS.
+  - Homepage configurator that talks to the app. **Half of this already
+    exists and is not ours**: the bike designer runs at
+    `logocykler.dk/cykeldesigner` — frame, colour from a 191-entry RAL table,
+    saddle, grips, box, logo. (It is NOT on jensenproduction.dk, which this
+    entry used to claim; that domain just iframes jensen-cykler.dk. Survey in
+    OPERATIONS.) What is missing is the link back: "send me an offer" →
+    a draft offer in the FMS, with the configuration and its picture attached.
+    Also unbuilt there: pick paintable parts with live pricing, which the
+    per-part paint catalog now makes priceable.
   - Lead-gen agent: monitor prospect signals (e.g. companies relocating to
     nearby business parks — the owner's DXC/Nordhavn example), identify the
     right contact, auto-draft outreach with the configurator link.
