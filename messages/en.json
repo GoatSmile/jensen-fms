@@ -2056,6 +2056,11 @@
     "converted": "Converted"
   },
   "offerDetail": {
+    "imageAdd": "Add picture",
+    "imageUploading": "Uploading…",
+    "imageRemove": "Remove picture",
+    "imageAlt": "The bike on this line",
+    "imageCouldNotRead": "That file could not be read as an image.",
     "title": "Offers",
     "noName": "(no name)",
     "rev": "rev. {n}",

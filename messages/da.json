@@ -2056,6 +2056,11 @@
     "converted": "Konverteret"
   },
   "offerDetail": {
+    "imageAdd": "Tilføj billede",
+    "imageUploading": "Uploader…",
+    "imageRemove": "Fjern billede",
+    "imageAlt": "Cyklen på denne linje",
+    "imageCouldNotRead": "Filen kunne ikke læses som et billede.",
     "title": "Tilbud",
     "noName": "(uden navn)",
     "rev": "rev. {n}",

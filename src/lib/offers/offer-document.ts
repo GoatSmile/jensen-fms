@@ -25,6 +25,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/database";
 import { localizedName } from "@/i18n/vocab";
+import { loadOfferLineImages } from "@/lib/offers/line-images";
 import {
   asDocumentLanguage,
   type DocumentLanguage,
@@ -110,6 +111,10 @@ export const OFFER_DOC_LABELS: Record<DocumentLanguage, OfferDocumentLabels> = {
 
 export type OfferDocumentLine = {
   lineNumber: number;
+  /** The picture attached to this line, if any. Frozen into the snapshot with
+   *  everything else, so a later removal cannot blank a document already sent —
+   *  which is why removing one only soft-deletes the row. */
+  imageUrl: string | null;
   description: string;
   colorName: string | null;
   quantity: number;
@@ -173,7 +178,7 @@ export async function loadOfferDocument(
   const { data: lineRows } = await supabase
     .from("v_offer_lines_localized")
     .select(
-      "line_number, effective_description, color_id, quantity, unit_price, vat_rate, line_subtotal, line_total",
+      "id, line_number, effective_description, color_id, quantity, unit_price, vat_rate, line_subtotal, line_total",
     )
     .eq("offer_id", offerId)
     .order("line_number", { ascending: true });
@@ -194,6 +199,11 @@ export async function loadOfferDocument(
       colorNames.set(c.id, localizedName(language, c.name_en, c.name_da));
     }
   }
+
+  const imagesByLine = await loadOfferLineImages(
+    supabase,
+    (lineRows ?? []).map((l) => l.id).filter((v): v is string => Boolean(v)),
+  );
 
   const org = offer.organization;
   const customerName =
@@ -237,6 +247,7 @@ export async function loadOfferDocument(
     contactName,
     lines: (lineRows ?? []).map((l) => ({
       lineNumber: Number(l.line_number),
+      imageUrl: l.id ? (imagesByLine[l.id] ?? null) : null,
       description: l.effective_description ?? "—",
       colorName: l.color_id ? (colorNames.get(l.color_id) ?? null) : null,
       quantity: Number(l.quantity),

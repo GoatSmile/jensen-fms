@@ -14,6 +14,7 @@ import {
   updateLine,
 } from "@/lib/commercial/write-lines";
 import { isOfferEditable, type OfferStatus } from "@/lib/offers/status";
+import { OFFER_LINE_ENTITY } from "@/lib/offers/line-images";
 
 /**
  * Offer lines. Shape, validation, money and the parent-total recompute are the
@@ -115,6 +116,16 @@ export async function deleteOfferLine(
 
   const result = await deleteLine(supabase, OFFER_DOC, lineId, offerId, t);
   if (!result.ok) return result;
+
+  // `attachments` is keyed by (entity_type, entity_id) with no FK, so nothing
+  // cascades — the line's picture would be stranded. Soft-delete, like the
+  // remove button does, so any frozen document still resolves its URL.
+  await supabase
+    .from("attachments")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("entity_type", OFFER_LINE_ENTITY)
+    .eq("entity_id", lineId)
+    .is("deleted_at", null);
 
   revalidatePath(`/offers/${offerId}`);
   return { ok: true };

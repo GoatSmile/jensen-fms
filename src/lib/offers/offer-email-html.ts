@@ -61,6 +61,10 @@ export function renderOfferEmailHtml(
           l.colorName
             ? ` <span style="color:#737373;">· ${escapeHtml(l.colorName)}</span>`
             : ""
+        }${
+          l.imageUrl
+            ? `<br /><img src="${escapeHtml(l.imageUrl)}" alt="" width="220" style="display:block;margin-top:8px;max-width:220px;height:auto;border:1px solid #e5e5e5;border-radius:4px;" />`
+            : ""
         }</td>
         <td style="${rightCell}">${l.quantity}</td>
         <td style="${rightCell}">${escapeHtml(formatPrice(l.unitPrice, doc.currency))}</td>

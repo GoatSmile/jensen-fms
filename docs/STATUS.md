@@ -65,10 +65,12 @@ demoed in English looks different on his tablet.
    offer* button that does NOT carry that customer — a defect, and the cheapest
    fix (`/offers/new?org=<id>` + a header button). Then **duplicate an offer**,
    the only sane path for a *converted* offer, since those cannot reopen.
-6. **A picture per offer LINE** (sep3 plan Tier 2 #9). `attachments.entity_type`
-   is free text so it needs no migration, but it needs an upload action, a slot
-   on the shared lines table, thumbnails in print + email, orphan cleanup on line
-   delete, and copy-on-convert.
+6. **The picture on an offer line is BUILT** (sep3 plan Tier 2 #9) — upload,
+   thumbnail, print and email, frozen into the revision snapshot. Two things
+   were deliberately left: it is NOT copied onto the sales order at conversion
+   (nothing renders a sales-order line picture yet, and the SO links back to the
+   offer, so copying would create rows with no reader), and generating the
+   picture from the logocykler layers is the separate B′ work.
 7. **Company details: CVR, invoice email, bank name + reg. + account.** Address
    and phone went in today; the red *"Firmaoplysninger mangler"* banner on every
    offer and invoice stays until all five are filled, and they block the first
@@ -169,7 +171,8 @@ both null and STATUS records Mudguards as deliberately unmapped**; test data on
 `disposed`), the inline-created colour `TEST Petrol` and its variant
 `JP-LS2b-TEST-PETROL` at 3; **the offers verification: `OFF-2026-0001`
 (converted, revision 2) and the `SO-2026-0017` it converted into**; and
-**`OFF-2026-0004`** (snapshot verification: two revisions, accepted at rev 2)
+**`OFF-2026-0004`** (snapshot verification, now three revisions, with a
+synthetic TEST bike picture on its line at rev 3)
 and **`OFF-2026-0003`, an empty EUR offer kept deliberately** — it is the only
 fixture that exercises the retail-price currency guard, since every template is
 priced in DKK. All TEST-marked in their notes.

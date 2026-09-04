@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
 import type { CommercialLineRow } from "@/lib/commercial/lines";
+import { loadOfferLineImages } from "@/lib/offers/line-images";
 import {
   COMMERCIAL_LINE_SELECT,
   loadCommercialLineOptions,
@@ -96,6 +97,13 @@ export default async function OfferDetailPage({
     toCommercialLineRow(l as unknown as RawCommercialLine, locale),
   );
   const { parts, templates, vatCodes, colors } = options;
+
+  // The picture on each line. One query for the whole table rather than one per
+  // row; a line has at most one live picture (the uploader retires the old one).
+  const imagesByLine = await loadOfferLineImages(
+    supabase,
+    lineRows.map((l) => l.id),
+  );
 
   const customerName =
     offer.organization?.display_name_da ??
@@ -234,6 +242,7 @@ export default async function OfferDetailPage({
         defaultVatCode={offer.organization?.default_vat_code ?? null}
         editable={editable}
         rows={lineRows}
+        imagesByLine={imagesByLine}
         parts={parts}
         templates={templates}
         vatCodes={vatCodes}

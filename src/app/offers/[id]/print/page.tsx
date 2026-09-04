@@ -175,6 +175,17 @@ export default async function OfferPrintPage({
                   {l.colorName ? (
                     <span className="text-muted-foreground"> · {l.colorName}</span>
                   ) : null}
+                  {/* What the customer is looking at. Deliberately a plain
+                      <img>: this page is printed, and Next's optimiser would
+                      add nothing a print pipeline uses. */}
+                  {l.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={l.imageUrl}
+                      alt=""
+                      className="mt-1.5 block h-28 w-auto max-w-[16rem] rounded border object-contain"
+                    />
+                  ) : null}
                 </td>
                 <td className="py-1.5 pr-2 text-right tabular-nums">
                   {l.quantity}
