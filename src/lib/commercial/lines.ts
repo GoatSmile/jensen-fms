@@ -82,6 +82,9 @@ export type PartChoice = {
   id: string;
   internal_sku: string;
   name_en: string;
+  /** As on TemplateChoice — a spare on an offer is priced the same way. */
+  default_retail_price: number | null;
+  default_retail_currency: string | null;
 };
 
 export type TemplateChoice = {
@@ -93,6 +96,13 @@ export type TemplateChoice = {
   /** Admin-set family sort_order (page-side family-adjacent ordering). */
   family_sort: number | null;
   frame_size: string | null;
+  /**
+   * List price, and the currency it is quoted in. BOTH are needed: the price
+   * is a bare number, so offering it on a document in another currency would
+   * silently quote EUR figures as DKK. Same guard as `draft-writers.ts`.
+   */
+  default_retail_price: number | null;
+  default_retail_currency: string | null;
 };
 
 export type VatCodeChoice = {
@@ -154,4 +164,31 @@ export function sumLineMoney(
     total += Number(l.line_total ?? 0);
   }
   return { subtotal: round4(subtotal), vat: round4(vat), total: round4(total) };
+}
+
+/**
+ * The list price to put on a line for a catalogue item, or null when there
+ * isn't one to offer.
+ *
+ * GUARDED ON CURRENCY, and that is the whole point: `default_retail_price` is a
+ * bare number with its currency in a sibling column, so offering a EUR-priced
+ * template on a DKK document would quote the figure unconverted and understate
+ * the line by the exchange rate. A missing currency is read as DKK, the same
+ * assumption `draft-writers.ts` makes.
+ */
+export function retailPriceIn(
+  item:
+    | {
+        default_retail_price: number | null;
+        default_retail_currency: string | null;
+      }
+    | null
+    | undefined,
+  documentCurrency: string,
+): number | null {
+  if (!item || item.default_retail_price == null) return null;
+  const priced = (item.default_retail_currency ?? "DKK").toUpperCase();
+  if (priced !== documentCurrency.toUpperCase()) return null;
+  const n = Number(item.default_retail_price);
+  return Number.isFinite(n) ? n : null;
 }

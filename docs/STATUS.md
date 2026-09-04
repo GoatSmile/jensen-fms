@@ -49,21 +49,38 @@ demoed in English looks different on his tablet.
    system's?* — and **it blocks the bike-picture work**.
 2. **B′ — the bike picture on the offer.** Decided this session; see the section
    below. Blocked on (1).
-3. **Offer quick-paths.** The Offers panel on a customer's page has a *New
-   offer* button that does NOT carry that customer — a defect shipped today, and
-   the cheapest fix (`/offers/new?org=<id>` + a header button). Then **duplicate
-   an offer**, which is also the only sane path for a *converted* offer, since
-   those deliberately cannot reopen. *Quote from a bike template* is speculative
-   until Dennis has used the module.
-4. **A picture per offer LINE** (sep3 plan Tier 2 #9). `attachments.entity_type`
+3. **Send-time snapshot — the one place the design can LOSE data.** Freezing is
+   status-only: `markOfferSent` stamps dates and nothing else, and the print page
+   renders live, so an offer printed, handed over and then reopened for revision
+   loses what revision 1 said. Only the EMAILED path is safe
+   (`outbound_messages.body_html`). Write an `offer_revisions` row inside
+   `markOfferSent` — both doors already go through it, so it is one write in one
+   place — render print from the snapshot once past draft, and stamp which
+   revision the customer ACCEPTED, which nothing records today. Then fix the
+   three comments asserting history is already kept: the
+   `reopenOfferForRevision` docstring, migration 98's header, and DECISIONS
+   2026-09-04. **Cheapest now**, while `offers` has no production rows.
+4. **Finish the sharing Phase 1 started.** `draft-writers.ts` still hand-mirrors
+   the line money maths (its own header admits it); both detail pages inline the
+   same four vocab queries, template sort and row mapping; `offer-form.tsx` is
+   largely `so-form.tsx`.
+5. **Offer quick-paths.** The Offers panel on a customer's page has a *New
+   offer* button that does NOT carry that customer — a defect, and the cheapest
+   fix (`/offers/new?org=<id>` + a header button). Then **duplicate an offer**,
+   the only sane path for a *converted* offer, since those cannot reopen.
+6. **Margin beside each line on the offer.** The template page already computes
+   cost to produce from `v_part_last_cost` plus paint; the offer shows none of
+   it, so Dennis prices blind. **Blocked on the paintwork data debts** in
+   Dennis's checklist, or the margin lies.
+7. **A picture per offer LINE** (sep3 plan Tier 2 #9). `attachments.entity_type`
    is free text so it needs no migration, but it needs an upload action, a slot
    on the shared lines table, thumbnails in print + email, orphan cleanup on line
    delete, and copy-on-convert.
-5. **Company details: CVR, invoice email, bank name + reg. + account.** Address
+8. **Company details: CVR, invoice email, bank name + reg. + account.** Address
    and phone went in today; the red *"Firmaoplysninger mangler"* banner on every
    offer and invoice stays until all five are filled, and they block the first
    real invoice.
-6. Still open from the 3 Sep call: the two small copy fixes (sep3 plan Tier 1),
+9. Still open from the 3 Sep call: the two small copy fixes (sep3 plan Tier 1),
    and confirming whether Vercel SSO being off is deliberate (Landmines).
 
 ## The bike picture — B′ (decided 2026-09-04, unbuilt)
@@ -157,9 +174,11 @@ The walk-through fixtures (`SO-2026-0012`…`PNT-2026-0010`, TEST-prefixed rows)
 both null and STATUS records Mudguards as deliberately unmapped**; test data on
 `JP-LS2b` — raw 86, `JP-LS2b-RED` 10 (three TEST-marked movements incl. one
 `disposed`), the inline-created colour `TEST Petrol` and its variant
-`JP-LS2b-TEST-PETROL` at 3; and **today's offers verification: `OFF-2026-0001`
-(converted, revision 2) and the `SO-2026-0017` it converted into, both
-TEST-marked in their notes.**
+`JP-LS2b-TEST-PETROL` at 3; **the offers verification: `OFF-2026-0001`
+(converted, revision 2) and the `SO-2026-0017` it converted into**; and
+**`OFF-2026-0003`, an empty EUR offer kept deliberately** — it is the only
+fixture that exercises the retail-price currency guard, since every template is
+priced in DKK. All TEST-marked in their notes.
 
 ## Production data debts — the full list is Dennis's checklist
 `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` holds all of it with click paths.

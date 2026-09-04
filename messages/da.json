@@ -1962,6 +1962,7 @@
     "cancelSo": "Annullér SO"
   },
   "commercialLines": {
+    "priceFromList": "Listepris — ret den, hvis denne aftale er en anden.",
     "addLine": "Tilføj linje",
     "editLineTitle": "Redigér linje",
     "saveChanges": "Gem ændringer",

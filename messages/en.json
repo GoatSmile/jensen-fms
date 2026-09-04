@@ -1962,6 +1962,7 @@
     "cancelSo": "Cancel SO"
   },
   "commercialLines": {
+    "priceFromList": "List price — change it if this deal differs.",
     "addLine": "Add line",
     "editLineTitle": "Edit line",
     "saveChanges": "Save changes",

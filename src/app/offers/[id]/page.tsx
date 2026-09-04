@@ -101,14 +101,14 @@ export default async function OfferDetailPage({
         .order("line_number", { ascending: true }),
       supabase
         .from("parts")
-        .select("id, internal_sku, name_en")
+        .select("id, internal_sku, name_en, default_retail_price, default_retail_currency")
         .is("deleted_at", null)
         .order("internal_sku", { ascending: true }),
       // bike_templates archives with is_current, not deleted_at.
       supabase
         .from("bike_templates")
         .select(
-          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size",
+          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, default_retail_price, default_retail_currency",
         )
         .eq("is_current", true)
         .order("frame_size", { ascending: true }),
@@ -163,6 +163,9 @@ export default async function OfferDetailPage({
     id: p.id,
     internal_sku: p.internal_sku,
     name_en: p.name_en,
+    default_retail_price:
+      p.default_retail_price != null ? Number(p.default_retail_price) : null,
+    default_retail_currency: p.default_retail_currency,
   }));
   const templates: TemplateChoice[] = (templatesRes.data ?? [])
     .map((tpl) => ({
@@ -172,6 +175,11 @@ export default async function OfferDetailPage({
       family_id: tpl.family_id ?? null,
       family_sort: tpl.family?.sort_order ?? null,
       frame_size: tpl.frame_size,
+      default_retail_price:
+        tpl.default_retail_price != null
+          ? Number(tpl.default_retail_price)
+          : null,
+      default_retail_currency: tpl.default_retail_currency,
     }))
     .sort(
       (a, b) =>

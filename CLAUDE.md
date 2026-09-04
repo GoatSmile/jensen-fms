@@ -744,6 +744,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   supplier-side, carrying fx rate, transport, tariff and anti-dumping instead of
   VAT, with no template and no colour, so `/purchase-orders` keeps its own lines
   UI. Don't "finish the job" by folding it in.
+  **One caller is still outside the machine**: `src/lib/commercial/draft-writers.ts`
+  (the voice-command apply path) mirrors the line money maths BY HAND and says so
+  in its own header — change the shared rules and you must change it there too,
+  until someone repoints it at `insertLine`. The interactive dialog is fine: its
+  preview calls the same `computeLineMoney` the writer does.
+  **A line's unit price prefills from the catalogue** (`retailPriceIn`) — the
+  template's or part's `default_retail_price`, but ONLY when its currency matches
+  the document's, because the price is a bare number and quoting it unconverted
+  would understate the line by the exchange rate. Typing over it stops the
+  catalogue touching it again.
 - **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
   `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`

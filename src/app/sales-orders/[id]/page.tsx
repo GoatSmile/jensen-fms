@@ -128,7 +128,7 @@ export default async function SODetailPage({
         .order("created_at", { ascending: true }),
       supabase
         .from("parts")
-        .select("id, internal_sku, name_en")
+        .select("id, internal_sku, name_en, default_retail_price, default_retail_currency")
         .is("deleted_at", null)
         .order("internal_sku", { ascending: true }),
       // bike_templates uses is_current as the soft-archive flag (no
@@ -136,7 +136,7 @@ export default async function SODetailPage({
       supabase
         .from("bike_templates")
         .select(
-          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, is_current",
+          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, is_current, default_retail_price, default_retail_currency",
         )
         .eq("is_current", true)
         .order("frame_size", { ascending: true }),
@@ -309,6 +309,9 @@ export default async function SODetailPage({
     id: p.id,
     internal_sku: p.internal_sku,
     name_en: p.name_en,
+    default_retail_price:
+      p.default_retail_price != null ? Number(p.default_retail_price) : null,
+    default_retail_currency: p.default_retail_currency,
   }));
   // Family-adjacent ordering (admin sort_order, then name) so all sizes of
   // e.g. "Norma" sit together in the picker instead of interleaving by size.
@@ -320,6 +323,9 @@ export default async function SODetailPage({
       family_id: t.family_id ?? null,
       family_sort: t.family?.sort_order ?? null,
       frame_size: t.frame_size,
+      default_retail_price:
+        t.default_retail_price != null ? Number(t.default_retail_price) : null,
+      default_retail_currency: t.default_retail_currency,
     }))
     .sort(
       (a, b) =>

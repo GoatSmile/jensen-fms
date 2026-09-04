@@ -31,6 +31,7 @@ import { localizedName } from "@/i18n/vocab";
 import { familyTint } from "@/lib/bike-templates/family-colors";
 import {
   computeLineMoney,
+  retailPriceIn,
   round2,
   type ColorChoice,
   type CommercialLineResult,
@@ -95,6 +96,10 @@ export function LineDialog({
   const [unitPrice, setUnitPrice] = useState(
     initial != null ? String(initial.unitPrice) : "",
   );
+  // Once the human types a price, the catalogue stops overwriting it. Editing
+  // an existing line counts as taken: that price is what was agreed.
+  const [priceTouched, setPriceTouched] = useState(initial != null);
+  const [pricedFromList, setPricedFromList] = useState(false);
   const [vatCode, setVatCode] = useState<string>(
     initial?.vatCode ?? defaultVatCode ?? "",
   );
@@ -124,6 +129,21 @@ export function LineDialog({
   }, [templates, filter]);
 
   const selectedVat = vatCodes.find((v) => v.code === vatCode) ?? null;
+
+  /**
+   * Put the catalogue's list price on the line when the user picks something,
+   * unless they have already typed a price of their own. Dennis was retyping
+   * the list price on every template line; the voice-command draft writer has
+   * done this since it was written, and the interactive path had not.
+   */
+  function applyListPrice(
+    item: Parameters<typeof retailPriceIn>[0],
+  ) {
+    if (priceTouched) return;
+    const listed = retailPriceIn(item, currency);
+    setUnitPrice(listed == null ? "" : String(listed));
+    setPricedFromList(listed != null);
+  }
 
   const preview = useMemo(() => {
     const q = Number(quantity.replace(",", "."));
@@ -252,7 +272,10 @@ export function LineDialog({
                             <li key={tpl.id}>
                               <button
                                 type="button"
-                                onClick={() => setTemplateId(tpl.id)}
+                                onClick={() => {
+                                  setTemplateId(tpl.id);
+                                  applyListPrice(tpl);
+                                }}
                                 className={`hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
                                   isPicked ? "bg-muted" : ""
                                 }`}
@@ -298,7 +321,10 @@ export function LineDialog({
                           <li key={p.id}>
                             <button
                               type="button"
-                              onClick={() => setPartId(p.id)}
+                              onClick={() => {
+                                setPartId(p.id);
+                                applyListPrice(p);
+                              }}
                               className={`hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
                                 isPicked ? "bg-muted" : ""
                               }`}
@@ -344,9 +370,18 @@ export function LineDialog({
                 id="line-price"
                 inputMode="decimal"
                 value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
+                onChange={(e) => {
+                  setUnitPrice(e.target.value);
+                  setPriceTouched(true);
+                  setPricedFromList(false);
+                }}
                 required
               />
+              {pricedFromList ? (
+                <span className="text-muted-foreground text-xs">
+                  {t("priceFromList")}
+                </span>
+              ) : null}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="line-vat">{t("vatCode")}</Label>
