@@ -169,10 +169,16 @@ path to a personal inbox, so it would have to be a Jensen-owned sender.
   - Lead-gen agent: monitor prospect signals (e.g. companies relocating to
     nearby business parks — the owner's DXC/Nordhavn example), identify the
     right contact, auto-draft outreach with the configurator link.
-  Both belong with the offers/quotes module below.
-- **Offers/quotes module** (old "Tier 5") — the price-breakdown surface
-  lives here; service-contract → auto-add to the maintenance fleet rides
-  along.
+  The configurator's "send me an offer" now has somewhere to land: `/offers`
+  shipped 2026-09-04.
+- **Price breakdown on an offer** — cost to produce (parts + paint, which the
+  template box already computes) shown beside the quoted price, so the margin
+  is visible while quoting rather than after. Internal only: it must never
+  reach the printed or emailed document. Was bundled into the offers module
+  entry; that module shipped 2026-09-04 without it.
+- **Service contract on an offer → auto-add to the maintenance fleet** — the
+  other rider on the old offers entry, also unbuilt. Wait for a real quote that
+  includes an agreement.
 - **Template retirement flag** — an `is_active` archive for a
   referenced-but-discontinued template: designed, not built; add it when
   the first real case appears (unreferenced templates can already be
