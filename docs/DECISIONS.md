@@ -2700,3 +2700,29 @@ prod."* They were not there.
   the query was failing outright — the single most misleading thing it could say
   to a salesperson. It now renders the failure and stays a panel rather than
   throwing, so one broken section cannot take the customer page down.
+
+## 2026-09-04 (night, later) — "Spawn MO" moves to the actions column
+
+**Supersedes the placement half of the 2026-09-02 entry**, which put the button
+beside the template name. The reasoning there still holds and is unchanged: it
+stays OUT of the ⋯ menu, because a line that has never been spawned looks
+identical to one that has until you open the menu, so the button's presence is
+how you read the state. Only *where* it sits changed (owner): it now lives in the
+actions column, immediately left of the ⋯ menu.
+
+**Why the move is an improvement, not just a preference.** Beside the item name
+the button sat in a variable-width cell and moved the template text left and
+right as rows gained and lost it — the item column never lined up down the table.
+In the actions column every row's controls share one right edge.
+
+**It is a third slot on the shared lines machine (`renderRowActions`), not a
+branch.** The offer's per-line picture keeps `renderItemExtra`; adding a
+document-specific control to the actions column is now a slot rather than an
+edit to the shared table, which is the property that file exists to preserve.
+
+**The slot deliberately sits OUTSIDE the `editable` gate.** `canSpawn` is true
+for draft, confirmed and in_production, while lines lock after draft — so on a
+confirmed order the ⋯ menu is correctly gone while Spawn MO must remain.
+Rendering the slot inside the gate would have silently removed the only way to
+spawn an MO from a confirmed sales order. Verified in the browser on both a draft
+and a (temporarily) confirmed order.

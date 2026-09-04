@@ -21,13 +21,15 @@ import { spawnMOFromSOLine } from "../../_actions/spawn-mo";
 /**
  * "Spawn MO" — the one action that turns a sold line into work on the floor.
  *
- * It sits BESIDE the template rather than in the row's ⋯ menu (owner,
- * 2026-09-02): a line that has never been spawned looks identical to one that
- * has until you open the menu. It renders only while it can fire — template
- * line, no MO yet — so its presence IS the state.
+ * It stays OUT of the row's ⋯ menu (owner, 2026-09-02): a line that has never
+ * been spawned looks identical to one that has until you open the menu. It
+ * renders only while it can fire — template line, no MO yet — so its presence
+ * IS the state. It sits in the actions column immediately left of the ⋯ menu
+ * (owner, 2026-09-04); it was beside the template name until then, which pushed
+ * the item text around as rows gained and lost the button.
  *
  * Sales-order-only, which is why it lives here and reaches the shared lines
- * table through its `renderItemExtra` slot rather than being a prop on it.
+ * table through its `renderRowActions` slot rather than being a prop on it.
  */
 export function SpawnMoButton({
   soId,

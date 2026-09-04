@@ -70,7 +70,7 @@ export function LinesSection({
       onAdd={(fd) => addSOLine(soId, fd)}
       onUpdate={(lineId, fd) => updateSOLine(lineId, fd)}
       onDelete={(lineId) => deleteSOLine(lineId)}
-      renderItemExtra={(row, h) =>
+      renderRowActions={(row, h) =>
         canSpawn && (linkedMoCounts.get(row.id) ?? 0) === 0 ? (
           <SpawnMoButton
             soId={soId}

@@ -40,10 +40,11 @@ import type {
  * the add/edit dialog and the delete confirm.
  *
  * Everything document-SPECIFIC arrives as a prop rather than a branch — the
- * panel's own wording, the three writers, and two render slots for UI that
- * belongs to one document only (a sales order's "Spawn MO" button and MO badge;
- * an offer's per-line picture). A new document type therefore adds nothing
- * here, which is the whole reason this file exists instead of a third copy.
+ * panel's own wording, the three writers, and three render slots for UI that
+ * belongs to one document only (a sales order's MO badge and its "Spawn MO"
+ * row action; an offer's per-line picture). A new document type therefore adds
+ * nothing here, which is the whole reason this file exists instead of a third
+ * copy.
  */
 
 /** Helpers handed to the render slots so document-specific UI reports errors
@@ -68,10 +69,17 @@ type Props = {
   onAdd: (fd: FormData) => Promise<CommercialLineResult>;
   onUpdate: (lineId: string, fd: FormData) => Promise<CommercialLineResult>;
   onDelete: (lineId: string) => Promise<CommercialLineResult>;
-  /** Rendered beside the item name — e.g. the SO's "Spawn MO" button. */
+  /** Rendered beside the item name — e.g. the offer's line picture. */
   renderItemExtra?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
   /** Rendered under the item name — e.g. the SO's linked-MO badge. */
   renderItemBadges?: (row: CommercialLineRow) => ReactNode;
+  /**
+   * Rendered in the actions column, immediately left of the ⋯ menu — e.g. the
+   * SO's "Spawn MO" button. Unlike the ⋯ menu it does NOT depend on `editable`,
+   * so a row action stays available on a locked document when its own rule
+   * allows it.
+   */
+  renderRowActions?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
 };
 
 type DialogState =
@@ -95,6 +103,7 @@ export function CommercialLinesSection({
   onDelete,
   renderItemExtra,
   renderItemBadges,
+  renderRowActions,
 }: Props) {
   const t = useTranslations("commercialLines");
   const router = useRouter();
@@ -141,7 +150,7 @@ export function CommercialLinesSection({
                 {t("thVat")}
               </TableHead>
               <TableHead className="text-right">{t("thLineTotal")}</TableHead>
-              <TableHead className="w-[40px]" />
+              <TableHead className="w-[1%] whitespace-nowrap" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -173,6 +182,7 @@ export function CommercialLinesSection({
                 onAfterAction={() => router.refresh()}
                 renderItemExtra={renderItemExtra}
                 renderItemBadges={renderItemBadges}
+                renderRowActions={renderRowActions}
               />
             ))}
           </TableBody>
@@ -214,6 +224,7 @@ function LineTableRow({
   onAfterAction,
   renderItemExtra,
   renderItemBadges,
+  renderRowActions,
 }: {
   row: CommercialLineRow;
   currency: string;
@@ -224,6 +235,7 @@ function LineTableRow({
   onAfterAction: () => void;
   renderItemExtra?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
   renderItemBadges?: (row: CommercialLineRow) => ReactNode;
+  renderRowActions?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
 }) {
   const t = useTranslations("commercialLines");
   const tCommon = useTranslations("common");
@@ -303,43 +315,49 @@ function LineTableRow({
       <TableCell className="text-right font-medium tabular-nums">
         {formatPrice(row.total, currency)}
       </TableCell>
-      <TableCell className="text-right">
-        {editable ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t("lineActionsAria")}
-                disabled={pending}
-              >
-                <MoreVertical aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  onEdit();
-                }}
-              >
-                <Pencil aria-hidden /> {t("edit")}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={pending}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  if (confirmDelete) runDelete();
-                  else setConfirmDelete(true);
-                }}
-              >
-                <Trash2 aria-hidden />{" "}
-                {confirmDelete ? tCommon("confirmRepeat") : t("delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
+      <TableCell className="text-right whitespace-nowrap">
+        {/* Row actions sit OUTSIDE the `editable` gate: the SO's "Spawn MO"
+            has its own rule (template line, no MO yet) and stays available on a
+            confirmed order, where the ⋯ menu is correctly gone. */}
+        <div className="flex items-center justify-end gap-2">
+          {renderRowActions?.(row, slotHelpers)}
+          {editable ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={t("lineActionsAria")}
+                  disabled={pending}
+                >
+                  <MoreVertical aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    onEdit();
+                  }}
+                >
+                  <Pencil aria-hidden /> {t("edit")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={pending}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    if (confirmDelete) runDelete();
+                    else setConfirmDelete(true);
+                  }}
+                >
+                  <Trash2 aria-hidden />{" "}
+                  {confirmDelete ? tCommon("confirmRepeat") : t("delete")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
       </TableCell>
     </TableRow>
   );
