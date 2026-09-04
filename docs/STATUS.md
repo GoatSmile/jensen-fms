@@ -33,14 +33,24 @@ demoed in English looks different on his tablet.
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 99** is the latest. 98 and 99 are both on production
-  (owner-reported and then pushed; **not independently verified** — the Supabase
-  MCP did not connect, so there was no way to query prod). If a send ever logs a
-  failed `offer_revisions` insert, or print falls back to rendering live, 99 did
-  not land.
-- **`/offers` is live in production and has never been used there.** The route
-  answers (307 → `/login`); no production offer exists. The first real one is
-  the test.
+- **Migration 100** is the latest, and **production is verified at 100**
+  (2026-09-04, queried directly). 98 and 99 had **never actually been applied**
+  — the previous session recorded them as owner-reported and explicitly not
+  verified, and they were not there. `/offers` threw a 500 in production for
+  every visitor from the moment it shipped until they were applied.
+- **Verify production with `supabase db query --linked`**, which reaches the
+  linked project through the Management API using the CLI token in the keychain
+  — no DB password, and it works when the MCP does not. This is the instrument
+  whose absence let 98/99 go unverified; there is no longer an excuse for
+  "no way to query prod".
+- **Migration 100 is NOT yet on the local copy** — Docker was down when it was
+  applied to production. Run it against `127.0.0.1:54322` after `supabase start`.
+  Local is the side that is behind.
+- **`/offers` answers in production and has never been used there.** No
+  production offer exists. The first real one is still the test.
+  **A route answering `307 → /login` proves nothing** — the redirect happens in
+  middleware, before the page runs a single query, so it cannot see a schema
+  error. That check is what made 98/99 look fine.
 - **`docs/plan-sep3-meeting.md` is still the live plan.** Its Tier 2 item 8
   (build `/offers`) shipped today; item 9 (a picture on the offer) did not, and
   Tier 0/1 items remain. Do not archive it yet.

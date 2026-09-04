@@ -117,6 +117,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `127.0.0.1:54322`, never `execute_sql`; and `scripts/use-db.sh` plus the
   dev-only banner (green LOCAL / red PRODUCTION) are how you know which one is
   live. A write through the MCP still lands in production.
+- **The MCP is not the only way to reach production — `supabase db query
+  --linked` is, and it works when the MCP does not.** It runs SQL against the
+  linked project through the Management API, authenticated by the CLI token in
+  the macOS Keychain: no DB password, no MCP, `-f file.sql` for a whole
+  migration, and it connects as `postgres`. **So "the MCP did not connect, so
+  there was no way to query prod" is never true.** That sentence is what let
+  migrations 98 and 99 be recorded as applied when they were not, leaving
+  `/offers` throwing a 500 in production from the day it shipped (2026-09-04).
+  A migration is not applied until something has *queried production and seen
+  the object* — an owner's report is not verification, and neither is a route
+  answering `307 → /login`, which redirects in middleware before any query runs.
 - **The MCP server has WRITE access, deliberately** — it is not read-only and
   is not to be made read-only. Verified 2026-07-28: `execute_sql` connects as
   `postgres` with `rolbypassrls = true` and `transaction_read_only = off`, and
