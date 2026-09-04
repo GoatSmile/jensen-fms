@@ -119,23 +119,33 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "orders",
     labelKey: "groupOrders",
     icon: ClipboardList,
+    // ORDERED BY THE LIFE OF A JOB, because that is the only order a reader can
+    // predict: quote it, sell it, build it, paint it, bill it. Each one is
+    // literally created from the one above — an offer converts to a sales
+    // order, a sales order line spawns an MO, a build sends parts to the
+    // painter, a delivered order is invoiced — so the list doubles as the
+    // sequence Dennis works through.
+    //
+    // Purchase orders come last because they are the one document NOT on that
+    // chain: supplier-side, continuous, and tied to stock rather than to any
+    // customer's job. Alphabetical or by-frequency would both split the chain,
+    // and the chain is the thing worth being able to read off the rail.
     items: [
+      // Same `so` capability as sales orders: whoever sells, quotes.
+      { href: "/offers", labelKey: "offers", capability: "so" },
+      { href: "/sales-orders", labelKey: "salesOrders", capability: "so" },
       {
         href: "/manufacturing-orders",
         labelKey: "manufacturingOrders",
         capability: "mo",
       },
+      { href: "/paint-orders", labelKey: "paintOrders", capability: "paint" },
+      { href: "/invoices", labelKey: "invoices", capability: "invoices" },
       {
         href: "/purchase-orders",
         labelKey: "purchaseOrders",
         capability: "po",
       },
-      // Same `so` capability as sales orders: whoever sells quotes. An offer
-      // precedes the order it becomes, so it sits above it.
-      { href: "/offers", labelKey: "offers", capability: "so" },
-      { href: "/sales-orders", labelKey: "salesOrders", capability: "so" },
-      { href: "/paint-orders", labelKey: "paintOrders", capability: "paint" },
-      { href: "/invoices", labelKey: "invoices", capability: "invoices" },
     ],
   },
   {
