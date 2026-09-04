@@ -43,9 +43,8 @@ demoed in English looks different on his tablet.
   — no DB password, and it works when the MCP does not. This is the instrument
   whose absence let 98/99 go unverified; there is no longer an excuse for
   "no way to query prod".
-- **Migration 100 is NOT yet on the local copy** — Docker was down when it was
-  applied to production. Run it against `127.0.0.1:54322` after `supabase start`.
-  Local is the side that is behind.
+- **Local and production are both at migration 100**, verified on both sides
+  the same day: same six offer objects, and zero tables without RLS on either.
 - **`/offers` answers in production and has never been used there.** No
   production offer exists. The first real one is still the test.
   **A route answering `307 → /login` proves nothing** — the redirect happens in
