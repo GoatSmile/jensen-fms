@@ -2615,3 +2615,36 @@ live parallel edit surface — stands. The justification did not.
 - Done while `offers` had **zero production rows**, which is the cheapest this
   fix will ever be: every offer sent before it would have been one whose
   earlier revisions were unrecoverable.
+
+## 2026-09-04 (evening) — Our RAL deck wins, and a picture belongs to a LINE
+
+- **The RAL deck question is settled: OURS wins** (owner, *"the answer is, for
+  now, ours wins"*). `src/lib/colors/ral.ts` is the single source for what a RAL
+  code looks like on a screen, in the FMS and — once pushed — on
+  logocykler.dk. Reasons: it has fuller coverage (216 codes against his 191, and
+  his are a strict subset); it is traceable to a cited source and matches it
+  exactly on every code checked; the FMS's four stored hexes already came from
+  it, so switching cost was four rows; and with modify access to his site there
+  is one deck by construction rather than two that can drift.
+  **Rejected: adopting his 191** — no evidence either is more correct, and it
+  would have left 25 codes with no value. **Rejected: leaving them different** —
+  that is the failure the offer picture exists to avoid, since a customer who
+  configures a colour on the website must see the same colour on the quote.
+  **The consequence is still Dennis's to accept**: 82 of the 191 shared codes
+  shift visibly on his public website and 10 substantially. The comparison sheet
+  asks him that narrower question now, not which deck should win.
+- **A picture belongs to an offer LINE, not to the offer.** A quote can hold a
+  Norma in red and a Svajer in blue; one hero image would be wrong for at least
+  one of them. It hangs on `renderItemExtra`, the slot the shared lines section
+  already exposes, so the table stays document-blind and the sales order is
+  untouched. **Rejected:** an offer-level picture, which is cheaper and wrong.
+- **Removing a line's picture SOFT-deletes and keeps the file.** A sent offer's
+  frozen document holds that URL; hard-deleting would put a broken image into a
+  document the customer already has. Deleting the line itself does the same,
+  because `attachments` has no FK and nothing cascades.
+- **The picture is NOT copied onto the sales order at conversion.** Nothing
+  renders a sales-order line picture, and the SO links back to the offer via
+  `converted_from_offer_id`, so copying would create rows with no reader and no
+  test. Reversible when the sales-order side gets built. **Rejected:**
+  copy-on-convert, which I had originally scoped, on the grounds that
+  speculative rows are worse than a join that already exists.

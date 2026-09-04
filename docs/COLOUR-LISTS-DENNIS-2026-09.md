@@ -19,9 +19,14 @@ the customer receives. If the two lists stay different, a customer who designs a
 bike on your website in one colour will get an offer showing a noticeably
 different one.
 
-**What we need from you: may we change your website to use the system's list?**
-It is the fuller of the two (216 colours against 191) and it is the one your
-existing bike records were already built from.
+**The system's side is now settled** — it keeps its own list, which is the
+fuller of the two (216 colours against 191) and the one your existing bike
+records were already built from.
+
+**What we need from you is the other half: may we change your website to match
+it?** If the answer is no, tell us — but then the two stay different, and a
+customer who picks a colour on your website will get an offer showing a
+noticeably different one. That is the thing we cannot leave standing.
 
 **Important:** this changes only what colours look like *on a screen*. It does
 not change any paint, any RAL number, or anything Metacoat mixes. A screen is
@@ -81,18 +86,18 @@ typical one.
 
 ## 4 · What we suggest, and what happens next
 
-**Use the system's list everywhere, and update the website to match.** Reasons:
-it covers 25 colours the website's list does not; your existing bike colours
-were already created from it, so nothing in your records has to change; and once
-both use the same list they cannot drift apart again.
+**Update the website to match the system's list.** Reasons: it covers 25 colours
+the website's list does not; your existing bike colours were already created
+from it, so nothing in your records has to change; and once both use the same
+list they cannot drift apart again.
 
 The cost is that **your website's colours will visibly shift** — that is what the
 tables above are showing you. Nobody but you can judge whether that is
 acceptable on your public site.
 
-If you would rather keep the website exactly as it looks today, say so and we
-will change the system's list instead. That works too. What we cannot do is
-leave them different and still put a truthful picture on the offer.
+If you would rather keep the website exactly as it looks today, say so — but
+that is a real conversation, not a shrug, because what we cannot do is leave the
+two different and still put a truthful picture on the offer.
 
 ---
 

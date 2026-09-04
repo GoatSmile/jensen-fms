@@ -1,17 +1,19 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-04 (session end).** The offer got built. It was the
-largest thing blocked on an owner decision, and the decision came back as
-*build it as designed, on a shared lines layer* — so the sales order's 1,300-line
-lines UI became one machine both documents use, and `/offers` was built on top of
-it: list, create, edit, a customer-facing document in the customer's language,
-print, email through `sendAndRecord`, reopen-for-revision, and convert to a sales
-order. Migration 98. Around it: Danish *tilbud* was reserved for the customer
-document before the module existed to confuse it; the bike designer on
-logocykler.dk was reverse-engineered and a plan agreed for putting its picture on
-the offer; an invalid RAL code became impossible to save; and the company
-letterhead got a real address. Decisions in DECISIONS 2026-09-04.
-tsc + lint + build clean; smoke 93 pass / 0 fail.
+**Last updated: 2026-09-04 (session end, evening).** The offer module went from decided
+to usable. `/offers` shipped (migration 98) — list, create, edit, a
+customer-facing document in the customer's language, print, email through
+`sendAndRecord`, reopen-for-revision, convert to a sales order — and then four
+things closed around it. **Sending now FREEZES a snapshot of the whole document**
+(migration 99), because freezing was status-only and a printed-then-revised
+offer silently lost what revision 1 said. **A line's price prefills** from the
+catalogue, currency-guarded. **A picture can be attached per line**, and it
+reaches the print document, the email and the snapshot. And the shared
+commercial-lines layer finally has every caller: `draft-writers.ts` calls
+`insertLine`, and both detail pages share their picker queries and row mapping.
+Danish *tilbud* was reserved for the customer document; an invalid RAL code is
+now impossible to save; and the RAL deck question is settled — **ours wins**
+(DECISIONS 2026-09-04). tsc + lint + build clean; smoke 93 pass / 0 fail.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -33,9 +35,9 @@ demoed in English looks different on his tablet.
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
 - **Migration 99** is the latest. 98 and 99 are both on production
   (owner-reported and then pushed; **not independently verified** — the Supabase
-  MCP did not connect this session, so there was no way to query prod). If a
-  send ever logs a failed `offer_revisions` insert, or print falls back to
-  rendering live, 99 did not land.
+  MCP did not connect, so there was no way to query prod). If a send ever logs a
+  failed `offer_revisions` insert, or print falls back to rendering live, 99 did
+  not land.
 - **`/offers` is live in production and has never been used there.** The route
   answers (307 → `/login`); no production offer exists. The first real one is
   the test.
@@ -44,37 +46,34 @@ demoed in English looks different on his tablet.
   Tier 0/1 items remain. Do not archive it yet.
 
 ## Next actions
-1. **Two documents now wait on Dennis, and neither has been sent.**
-   `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` (data debts, with click paths)
-   and `docs/COLOUR-LISTS-DENNIS-2026-09.md` (new today). The colour one asks a
-   single question — *may we change your website's colours to match the
-   system's?* — and **it blocks the bike-picture work**.
-2. **B′ — the bike picture on the offer.** Decided this session; see the section
-   below. Blocked on (1).
-3. **The last of the sharing: the header FORM.** `offer-form.tsx` is largely
-   `so-form.tsx` — a shared form with a slot for document-specific fields (the
-   SO's delivery week, the offer's expiry). Pure refactor, no visible change, so
-   it can wait for a quiet hour. The lines half is done: `draft-writers.ts` now
-   calls `insertLine`, and `src/lib/commercial/options.ts` holds the picker
-   queries and row mapping both detail pages had inlined.
+1. **Send Dennis the two documents. Still not sent, still the bottleneck.**
+   `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` and
+   `docs/COLOUR-LISTS-DENNIS-2026-09.md`. The colour sheet's question is now
+   NARROWER — the FMS keeps its own deck either way; what he is being asked is
+   whether his public website may shift to match. Three answers are needed from
+   him and nothing moves without them (see *Waiting on*).
+2. **A picture per TEMPLATE** — the cheap 80%, and NOT blocked on colour. Seven
+   templates, studio shots already on logocykler.dk (`/lovable-uploads/…`, the
+   Danish domain serves them). Store as `bike_template` attachments — no
+   migration, `attachments.entity_type` is free text — show on the template page
+   and use as the default on an offer line that has no picture of its own.
+   Blocked only on Dennis mapping the public models to the FMS templates, and on
+   a clean Svajer shot.
+3. **The generated render** for the Svajer, keyed on the line's colour. See the
+   section below. Now unblocked on the deck; still wants the manifest.
 4. **Margin beside each line on the offer.** The template page already computes
-   cost to produce from `v_part_last_cost` plus paint; the offer shows none of
-   it, so Dennis prices blind. **Blocked on the paintwork data debts** in
-   Dennis's checklist, or the margin lies.
+   cost to produce; the offer shows none of it. **Blocked on the paintwork data
+   debts** in Dennis's checklist, or the margin lies.
 5. **Offer quick-paths.** The Offers panel on a customer's page has a *New
    offer* button that does NOT carry that customer — a defect, and the cheapest
    fix (`/offers/new?org=<id>` + a header button). Then **duplicate an offer**,
    the only sane path for a *converted* offer, since those cannot reopen.
-6. **The picture on an offer line is BUILT** (sep3 plan Tier 2 #9) — upload,
-   thumbnail, print and email, frozen into the revision snapshot. Two things
-   were deliberately left: it is NOT copied onto the sales order at conversion
-   (nothing renders a sales-order line picture yet, and the SO links back to the
-   offer, so copying would create rows with no reader), and generating the
-   picture from the logocykler layers is the separate B′ work.
-7. **Company details: CVR, invoice email, bank name + reg. + account.** Address
-   and phone went in today; the red *"Firmaoplysninger mangler"* banner on every
-   offer and invoice stays until all five are filled, and they block the first
-   real invoice.
+6. **The last of the sharing: the header FORM.** `offer-form.tsx` is largely
+   `so-form.tsx` — a shared form with a slot for document-specific fields. Pure
+   refactor, no visible change; a quiet hour.
+7. **Company details: CVR, invoice email, bank name + reg. + account.** The red
+   *"Firmaoplysninger mangler"* banner on every offer and invoice stays until all
+   five are filled, and they block the first real invoice.
 8. Still open from the 3 Sep call: the two small copy fixes (sep3 plan Tier 1),
    and confirming whether Vercel SSO being off is deliberate (Landmines).
 

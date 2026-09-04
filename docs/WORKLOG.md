@@ -92,10 +92,10 @@ treat the early totals as floors, not truth.
 |---|---|---|
 | Wed 2026-09-02 | ~12 | **SO → paint order walkable, painted parts become stock** (migrations 89–92): painter + PO documents in the supplier's language, a picker by customer order, painted variants per colour with shelf view and colour-aware builds, the TEST rule, a docs sweep, Dennis's walkthrough. |
 | Thu 2026-09-03 | ~12 | **Painter types claim a part category** (migration 97), then the 3 Sep call: the paint screen now shows what goes to the painter, "frames" gave way to "bikes", painted stock became an actionable panel plus a way to record stock already owned, and a scrap became a `disposed`. |
-| Fri 2026-09-04 | ~13 | **The offer, built** (migration 98): a shared lines layer, then `/offers` on it — document in the customer's language, print, email, revision, convert. Danish *tilbud* reserved; the bike designer reverse-engineered; RAL codes validated. |
+| Fri 2026-09-04 | ~12 | **The offer, built and then hardened** (migrations 98–99): `/offers` on a shared lines layer — document, print, email, revision, convert — then a send-time snapshot, catalogue price prefill, a picture per line, and the last callers folded into the shared machine. |
 
-**September so far: ~37 h** (3 working days)
+**September so far: ~36 h** (3 working days)
 
 ---
 
-**Project total: ~291 h across 44 working days (2026-05-07 → 2026-09-04)**
+**Project total: ~290 h across 44 working days (2026-05-07 → 2026-09-04)**
