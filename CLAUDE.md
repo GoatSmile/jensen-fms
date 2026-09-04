@@ -744,11 +744,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   supplier-side, carrying fx rate, transport, tariff and anti-dumping instead of
   VAT, with no template and no colour, so `/purchase-orders` keeps its own lines
   UI. Don't "finish the job" by folding it in.
-  **One caller is still outside the machine**: `src/lib/commercial/draft-writers.ts`
-  (the voice-command apply path) mirrors the line money maths BY HAND and says so
-  in its own header — change the shared rules and you must change it there too,
-  until someone repoints it at `insertLine`. The interactive dialog is fine: its
-  preview calls the same `computeLineMoney` the writer does.
+  **EVERY line writer goes through it, including the non-interactive one**:
+  `draft-writers.ts` (the voice-command apply path) calls `insertLine` rather
+  than mirroring the money maths, and the dialog's live preview calls the same
+  `computeLineMoney` the writer does. So the rounding, the VAT and the
+  parent-total recompute exist ONCE — don't reintroduce a hand-rolled copy for a
+  new caller. The header fields of a document are still mirrored by hand.
+  `src/lib/commercial/options.ts` holds the other half: the picker queries, the
+  family-adjacent template sort and the row mapping, which both detail pages had
+  inlined identically.
   **A line's unit price prefills from the catalogue** (`retailPriceIn`) — the
   template's or part's `default_retail_price`, but ONLY when its currency matches
   the document's, because the price is a bare number and quoting it unconverted

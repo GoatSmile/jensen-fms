@@ -51,10 +51,12 @@ demoed in English looks different on his tablet.
    system's?* — and **it blocks the bike-picture work**.
 2. **B′ — the bike picture on the offer.** Decided this session; see the section
    below. Blocked on (1).
-3. **Finish the sharing Phase 1 started.** `draft-writers.ts` still hand-mirrors
-   the line money maths (its own header admits it) instead of calling
-   `insertLine`; both detail pages inline the same four vocab queries, template
-   sort and row mapping; `offer-form.tsx` is largely `so-form.tsx`.
+3. **The last of the sharing: the header FORM.** `offer-form.tsx` is largely
+   `so-form.tsx` — a shared form with a slot for document-specific fields (the
+   SO's delivery week, the offer's expiry). Pure refactor, no visible change, so
+   it can wait for a quiet hour. The lines half is done: `draft-writers.ts` now
+   calls `insertLine`, and `src/lib/commercial/options.ts` holds the picker
+   queries and row mapping both detail pages had inlined.
 4. **Margin beside each line on the offer.** The template page already computes
    cost to produce from `v_part_last_cost` plus paint; the offer shows none of
    it, so Dennis prices blind. **Blocked on the paintwork data debts** in

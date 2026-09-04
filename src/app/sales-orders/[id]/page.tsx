@@ -28,12 +28,12 @@ import {
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
 import { LinesSection, type SOLineRow } from "./_components/lines-section";
-import type {
-  ColorChoice,
-  PartChoice,
-  TemplateChoice,
-  VatCodeChoice,
-} from "@/lib/commercial/lines";
+import {
+  COMMERCIAL_LINE_SELECT,
+  loadCommercialLineOptions,
+  toCommercialLineRow,
+  type RawCommercialLine,
+} from "@/lib/commercial/options";
 import {
   LinkedMOsSection,
   type LinkedMORow,
@@ -85,26 +85,10 @@ export default async function SODetailPage({
     status === "in_production";
 
   // Lines, MOs, paint orders, and picker/catalog data in parallel.
-  const [
-    linesRes,
-    mosRes,
-    paintRes,
-    partsRes,
-    templatesRes,
-    vatRes,
-    colorsRes,
-    invoicesRes,
-  ] = await Promise.all([
+  const [linesRes, mosRes, paintRes, options, invoicesRes] = await Promise.all([
       supabase
         .from("sales_order_lines")
-        .select(
-          `id, line_number, part_id, bike_template_id, quantity, unit_price,
-           vat_code, vat_rate, line_subtotal, line_vat_amount, line_total,
-           color_id, description_en, description_da,
-           part:parts!part_id(id, internal_sku, name_en),
-           template:bike_templates!bike_template_id(id, name_en, family:bike_families(name), frame_size),
-           color:colors!color_id(name_en, name_da)`,
-        )
+        .select(COMMERCIAL_LINE_SELECT)
         .eq("sales_order_id", id)
         .order("line_number", { ascending: true }),
       supabase
@@ -126,31 +110,7 @@ export default async function SODetailPage({
         )
         .eq("sales_order_id", id)
         .order("created_at", { ascending: true }),
-      supabase
-        .from("parts")
-        .select("id, internal_sku, name_en, default_retail_price, default_retail_currency")
-        .is("deleted_at", null)
-        .order("internal_sku", { ascending: true }),
-      // bike_templates uses is_current as the soft-archive flag (no
-      // deleted_at column on this table — that's a parts/orgs convention).
-      supabase
-        .from("bike_templates")
-        .select(
-          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, is_current, default_retail_price, default_retail_currency",
-        )
-        .eq("is_current", true)
-        .order("frame_size", { ascending: true }),
-      supabase
-        .from("vat_codes")
-        .select("code, name_en, name_da, default_rate, is_active")
-        .eq("is_active", true)
-        .order("default_rate", { ascending: false }),
-      supabase
-        .from("colors")
-        .select("id, name_en, name_da, hex, ral_code, coating, is_active")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("name_en", { ascending: true }),
+      loadCommercialLineOptions(supabase),
       supabase
         .from("invoices")
         .select(
@@ -183,31 +143,8 @@ export default async function SODetailPage({
   }
 
   const lineRows: SOLineRow[] = (linesRes.data ?? []).map((l) => ({
-    id: l.id,
-    lineNumber: l.line_number,
-    kind: l.bike_template_id ? "template" : "part",
-    partId: l.part_id ?? null,
-    partSku: l.part?.internal_sku ?? null,
-    partName: l.part?.name_en ?? null,
-    bikeTemplateId: l.bike_template_id ?? null,
-    templateLabel: l.template
-      ? [l.template.family?.name, l.template.frame_size, l.template.name_en]
-          .filter(Boolean)
-          .join(" · ")
-      : null,
-    colorId: l.color_id ?? null,
-    colorName: l.color
-      ? localizedName(locale, l.color.name_en, l.color.name_da)
-      : null,
-    quantity: Number(l.quantity),
-    unitPrice: Number(l.unit_price),
-    vatCode: l.vat_code ?? null,
-    vatRate: Number(l.vat_rate ?? 0),
-    subtotal: Number(l.line_subtotal ?? 0),
-    vatAmount: Number(l.line_vat_amount ?? 0),
-    total: Number(l.line_total ?? 0),
-    descriptionEn: l.description_en ?? null,
-    descriptionDa: l.description_da ?? null,
+    ...toCommercialLineRow(l as unknown as RawCommercialLine, locale),
+    // The one thing a sales-order line carries that an offer line does not.
     linkedMoCount: linkedCountsByLine.get(l.id) ?? 0,
   }));
 
@@ -305,45 +242,7 @@ export default async function SODetailPage({
     ? `${[so.contact.first_name, so.contact.last_name].filter(Boolean).join(" ").trim() || tSo("noName")}${so.contact.role ? ` · ${so.contact.role}` : ""}`
     : null;
 
-  const parts: PartChoice[] = (partsRes.data ?? []).map((p) => ({
-    id: p.id,
-    internal_sku: p.internal_sku,
-    name_en: p.name_en,
-    default_retail_price:
-      p.default_retail_price != null ? Number(p.default_retail_price) : null,
-    default_retail_currency: p.default_retail_currency,
-  }));
-  // Family-adjacent ordering (admin sort_order, then name) so all sizes of
-  // e.g. "Norma" sit together in the picker instead of interleaving by size.
-  const templates: TemplateChoice[] = (templatesRes.data ?? [])
-    .map((t) => ({
-      id: t.id,
-      name_en: t.name_en,
-      family: t.family?.name ?? null,
-      family_id: t.family_id ?? null,
-      family_sort: t.family?.sort_order ?? null,
-      frame_size: t.frame_size,
-      default_retail_price:
-        t.default_retail_price != null ? Number(t.default_retail_price) : null,
-      default_retail_currency: t.default_retail_currency,
-    }))
-    .sort(
-      (a, b) =>
-        (a.family_sort ?? Number.MAX_SAFE_INTEGER) -
-          (b.family_sort ?? Number.MAX_SAFE_INTEGER) ||
-        (a.family ?? a.name_en).localeCompare(b.family ?? b.name_en) ||
-        (a.frame_size ?? "").localeCompare(b.frame_size ?? "", undefined, {
-          numeric: true,
-        }) ||
-        a.name_en.localeCompare(b.name_en),
-    );
-  const vatCodes: VatCodeChoice[] = (vatRes.data ?? []).map((v) => ({
-    code: v.code,
-    name_en: v.name_en,
-    name_da: v.name_da,
-    default_rate: Number(v.default_rate),
-  }));
-  const colors: ColorChoice[] = colorsRes.data ?? [];
+  const { parts, templates, vatCodes, colors } = options;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">

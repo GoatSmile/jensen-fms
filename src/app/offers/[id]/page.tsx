@@ -20,14 +20,13 @@ import { loadOutboundForOrder } from "@/lib/email/outbox-queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/parts/format";
 import { formatPrice } from "@/lib/format";
-import { localizedName } from "@/i18n/vocab";
-import type {
-  ColorChoice,
-  CommercialLineRow,
-  PartChoice,
-  TemplateChoice,
-  VatCodeChoice,
-} from "@/lib/commercial/lines";
+import type { CommercialLineRow } from "@/lib/commercial/lines";
+import {
+  COMMERCIAL_LINE_SELECT,
+  loadCommercialLineOptions,
+  toCommercialLineRow,
+  type RawCommercialLine,
+} from "@/lib/commercial/options";
 import {
   OFFER_STATUS_VARIANT,
   isExpired,
@@ -78,126 +77,25 @@ export default async function OfferDetailPage({
     ? "expired"
     : status;
 
-  const [
-    linesRes,
-    partsRes,
-    templatesRes,
-    vatRes,
-    colorsRes,
-    settingsRes,
-    sentMessages,
-  ] = await Promise.all([
-      supabase
-        .from("offer_lines")
-        .select(
-          `id, line_number, part_id, bike_template_id, quantity, unit_price,
-           vat_code, vat_rate, line_subtotal, line_vat_amount, line_total,
-           color_id, description_en, description_da,
-           part:parts!part_id(id, internal_sku, name_en),
-           template:bike_templates!bike_template_id(id, name_en, family:bike_families(name), frame_size),
-           color:colors!color_id(name_en, name_da)`,
-        )
-        .eq("offer_id", id)
-        .order("line_number", { ascending: true }),
-      supabase
-        .from("parts")
-        .select("id, internal_sku, name_en, default_retail_price, default_retail_currency")
-        .is("deleted_at", null)
-        .order("internal_sku", { ascending: true }),
-      // bike_templates archives with is_current, not deleted_at.
-      supabase
-        .from("bike_templates")
-        .select(
-          "id, name_en, family_id, family:bike_families(name, sort_order), frame_size, default_retail_price, default_retail_currency",
-        )
-        .eq("is_current", true)
-        .order("frame_size", { ascending: true }),
-      supabase
-        .from("vat_codes")
-        .select("code, name_en, name_da, default_rate")
-        .eq("is_active", true)
-        .order("default_rate", { ascending: false }),
-      supabase
-        .from("colors")
-        .select("id, name_en, name_da, hex, ral_code, coating")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true })
-        .order("name_en", { ascending: true }),
-      supabase
-        .from("app_settings")
-        .select("outbound_test_mode, outbound_test_email")
-        .eq("id", 1)
-        .maybeSingle(),
-      loadOutboundForOrder(supabase, { offerId: id }),
-    ]);
+  const [linesRes, options, settingsRes, sentMessages] = await Promise.all([
+    supabase
+      .from("offer_lines")
+      .select(COMMERCIAL_LINE_SELECT)
+      .eq("offer_id", id)
+      .order("line_number", { ascending: true }),
+    loadCommercialLineOptions(supabase),
+    supabase
+      .from("app_settings")
+      .select("outbound_test_mode, outbound_test_email")
+      .eq("id", 1)
+      .maybeSingle(),
+    loadOutboundForOrder(supabase, { offerId: id }),
+  ]);
 
-  const lineRows: CommercialLineRow[] = (linesRes.data ?? []).map((l) => ({
-    id: l.id,
-    lineNumber: l.line_number,
-    kind: l.bike_template_id ? "template" : "part",
-    partId: l.part_id ?? null,
-    partSku: l.part?.internal_sku ?? null,
-    partName: l.part?.name_en ?? null,
-    bikeTemplateId: l.bike_template_id ?? null,
-    templateLabel: l.template
-      ? [l.template.family?.name, l.template.frame_size, l.template.name_en]
-          .filter(Boolean)
-          .join(" · ")
-      : null,
-    colorId: l.color_id ?? null,
-    colorName: l.color
-      ? localizedName(locale, l.color.name_en, l.color.name_da)
-      : null,
-    quantity: Number(l.quantity),
-    unitPrice: Number(l.unit_price ?? 0),
-    vatCode: l.vat_code ?? null,
-    vatRate: Number(l.vat_rate ?? 0),
-    subtotal: Number(l.line_subtotal ?? 0),
-    vatAmount: Number(l.line_vat_amount ?? 0),
-    total: Number(l.line_total ?? 0),
-    descriptionEn: l.description_en ?? null,
-    descriptionDa: l.description_da ?? null,
-  }));
-
-  const parts: PartChoice[] = (partsRes.data ?? []).map((p) => ({
-    id: p.id,
-    internal_sku: p.internal_sku,
-    name_en: p.name_en,
-    default_retail_price:
-      p.default_retail_price != null ? Number(p.default_retail_price) : null,
-    default_retail_currency: p.default_retail_currency,
-  }));
-  const templates: TemplateChoice[] = (templatesRes.data ?? [])
-    .map((tpl) => ({
-      id: tpl.id,
-      name_en: tpl.name_en,
-      family: tpl.family?.name ?? null,
-      family_id: tpl.family_id ?? null,
-      family_sort: tpl.family?.sort_order ?? null,
-      frame_size: tpl.frame_size,
-      default_retail_price:
-        tpl.default_retail_price != null
-          ? Number(tpl.default_retail_price)
-          : null,
-      default_retail_currency: tpl.default_retail_currency,
-    }))
-    .sort(
-      (a, b) =>
-        (a.family_sort ?? Number.MAX_SAFE_INTEGER) -
-          (b.family_sort ?? Number.MAX_SAFE_INTEGER) ||
-        (a.family ?? a.name_en).localeCompare(b.family ?? b.name_en) ||
-        (a.frame_size ?? "").localeCompare(b.frame_size ?? "", undefined, {
-          numeric: true,
-        }) ||
-        a.name_en.localeCompare(b.name_en),
-    );
-  const vatCodes: VatCodeChoice[] = (vatRes.data ?? []).map((v) => ({
-    code: v.code,
-    name_en: v.name_en,
-    name_da: v.name_da,
-    default_rate: Number(v.default_rate),
-  }));
-  const colors: ColorChoice[] = colorsRes.data ?? [];
+  const lineRows: CommercialLineRow[] = (linesRes.data ?? []).map((l) =>
+    toCommercialLineRow(l as unknown as RawCommercialLine, locale),
+  );
+  const { parts, templates, vatCodes, colors } = options;
 
   const customerName =
     offer.organization?.display_name_da ??
