@@ -3,156 +3,28 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { nullableString as nullable } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import type { CommercialLineResult } from "@/lib/commercial/lines";
+import {
+  SALES_ORDER_DOC,
+  deleteLine,
+  findLineParentId,
+  insertLine,
+  parseLineFields,
+  updateLine,
+} from "@/lib/commercial/write-lines";
 
-export type SOLineResult = { ok: true } | { ok: false; error: string };
+/**
+ * Sales-order lines. The line SHAPE, its validation, its money and the parent
+ * total recompute are shared with offers in `src/lib/commercial/` — what stays
+ * here is what is true of a SALES ORDER only: lines lock once it leaves
+ * `draft`, and a line that already spawned an MO cannot be deleted out from
+ * under it.
+ */
+
+export type SOLineResult = CommercialLineResult;
 
 type Translator = Awaited<ReturnType<typeof getTranslations>>;
-
-/**
- * SO lines reference EITHER a part (spare/service) OR a bike_template (a
- * complete bike). Exactly one of the two FKs is set; the line dialog enforces
- * this. VAT defaults to the customer's default_vat_code; per-line override is
- * supported via the form.
- */
-
-type ParsedLine = {
-  kind: "part" | "template";
-  part_id: string | null;
-  bike_template_id: string | null;
-  quantity: number;
-  unit_price: number;
-  vat_code: string | null;
-  vat_rate: number;
-  color_id: string | null;
-  description_en: string | null;
-  description_da: string | null;
-};
-
-function parsePositiveNumber(
-  raw: string | null,
-  field: string,
-  t: Translator,
-  opts: { allowZero?: boolean } = {},
-): { ok: true; value: number } | { ok: false; error: string } {
-  if (!raw) return { ok: false, error: t("fieldRequired", { field }) };
-  const n = Number(raw.replace(",", "."));
-  if (!Number.isFinite(n)) {
-    return { ok: false, error: t("fieldMustBeNumber", { field }) };
-  }
-  if (opts.allowZero ? n < 0 : n <= 0) {
-    return {
-      ok: false,
-      error: opts.allowZero
-        ? t("fieldNonNegative", { field })
-        : t("fieldPositive", { field }),
-    };
-  }
-  return { ok: true, value: n };
-}
-
-async function resolveVatRate(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  vatCode: string | null,
-): Promise<number> {
-  if (!vatCode) return 0;
-  const { data } = await supabase
-    .from("vat_codes")
-    .select("default_rate")
-    .eq("code", vatCode)
-    .maybeSingle();
-  return Number(data?.default_rate ?? 0);
-}
-
-function parseFields(
-  formData: FormData,
-  t: Translator,
-): { ok: true; values: Omit<ParsedLine, "vat_rate"> } | { ok: false; error: string } {
-  const kindRaw = nullable(formData.get("kind"));
-  if (kindRaw !== "part" && kindRaw !== "template") {
-    return { ok: false, error: t("soLineKindRequired") };
-  }
-  const kind = kindRaw;
-
-  const part_id = kind === "part" ? nullable(formData.get("part_id")) : null;
-  const bike_template_id =
-    kind === "template" ? nullable(formData.get("bike_template_id")) : null;
-  if (kind === "part" && !part_id) {
-    return { ok: false, error: t("soPickPart") };
-  }
-  if (kind === "template" && !bike_template_id) {
-    return { ok: false, error: t("soPickBikeTemplate") };
-  }
-
-  const qty = parsePositiveNumber(
-    nullable(formData.get("quantity")),
-    t("fieldQuantity"),
-    t,
-  );
-  if (!qty.ok) return { ok: false, error: qty.error };
-
-  const price = parsePositiveNumber(
-    nullable(formData.get("unit_price")),
-    t("fieldUnitPrice"),
-    t,
-    { allowZero: true },
-  );
-  if (!price.ok) return { ok: false, error: price.error };
-
-  const vat_code = nullable(formData.get("vat_code"));
-  // vat_code is optional per line — DB allows null. Domestic default is
-  // applied via the customer's default_vat_code at line creation when blank.
-
-  return {
-    ok: true,
-    values: {
-      kind,
-      part_id,
-      bike_template_id,
-      quantity: qty.value,
-      unit_price: price.value,
-      vat_code,
-      color_id: nullable(formData.get("color_id")),
-      description_en: nullable(formData.get("description_en")),
-      description_da: nullable(formData.get("description_da")),
-    },
-  };
-}
-
-/**
- * Recompute SO subtotal / VAT / total from its lines. Called after every
- * line edit. Values stay in NUMERIC with 4dp precision (matches column
- * scale); rounding for display happens in the UI.
- */
-async function recomputeSOTotal(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  soId: string,
-): Promise<void> {
-  const { data: lines } = await supabase
-    .from("sales_order_lines")
-    .select("line_subtotal, line_vat_amount, line_total")
-    .eq("sales_order_id", soId);
-
-  let subtotal = 0;
-  let vat = 0;
-  let total = 0;
-  for (const l of lines ?? []) {
-    subtotal += Number(l.line_subtotal ?? 0);
-    vat += Number(l.line_vat_amount ?? 0);
-    total += Number(l.line_total ?? 0);
-  }
-
-  await supabase
-    .from("sales_orders")
-    .update({
-      subtotal_amount: Math.round(subtotal * 10000) / 10000,
-      total_vat_amount: Math.round(vat * 10000) / 10000,
-      total_amount: Math.round(total * 10000) / 10000,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", soId);
-}
 
 async function assertDraft(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -166,10 +38,7 @@ async function assertDraft(
     .maybeSingle();
   if (!so) return { ok: false, error: t("soNotFound") };
   if (so.status !== "draft") {
-    return {
-      ok: false,
-      error: t("soLinesLocked", { status: so.status }),
-    };
+    return { ok: false, error: t("soLinesLocked", { status: so.status }) };
   }
   return { ok: true };
 }
@@ -180,54 +49,23 @@ export async function addSOLine(
 ): Promise<SOLineResult> {
   const t = await getTranslations("errors");
   if (!soId) return { ok: false, error: t("missingSoId") };
-  const parsed = parseFields(formData, t);
+
+  const parsed = parseLineFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
   const guard = await assertDraft(supabase, soId, t);
   if (!guard.ok) return guard;
 
-  const v = parsed.values;
-  const vat_rate = await resolveVatRate(supabase, v.vat_code);
+  const result = await insertLine(
+    supabase,
+    SALES_ORDER_DOC,
+    soId,
+    parsed.values,
+    t,
+  );
+  if (!result.ok) return result;
 
-  // line_number = max(existing) + 1. Stable so the UI can render rows in
-  // the same order the user added them.
-  const { data: maxRow } = await supabase
-    .from("sales_order_lines")
-    .select("line_number")
-    .eq("sales_order_id", soId)
-    .order("line_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const nextLineNumber = (maxRow?.line_number ?? 0) + 1;
-
-  // Compute the line money fields server-side so they're consistent
-  // regardless of how the client previewed them.
-  const lineSubtotal = v.quantity * v.unit_price;
-  const lineVat = lineSubtotal * (vat_rate / 100);
-  const lineTotal = lineSubtotal + lineVat;
-
-  const { error } = await supabase.from("sales_order_lines").insert({
-    sales_order_id: soId,
-    line_number: nextLineNumber,
-    part_id: v.part_id,
-    bike_template_id: v.bike_template_id,
-    quantity: v.quantity,
-    unit_price: v.unit_price,
-    vat_code: v.vat_code,
-    vat_rate,
-    color_id: v.color_id,
-    description_en: v.description_en,
-    description_da: v.description_da,
-    line_subtotal: Math.round(lineSubtotal * 10000) / 10000,
-    line_vat_amount: Math.round(lineVat * 10000) / 10000,
-    line_total: Math.round(lineTotal * 10000) / 10000,
-  });
-  if (error) {
-    return { ok: false, error: t("soCouldNotAddLine", { detail: error.message }) };
-  }
-
-  await recomputeSOTotal(supabase, soId);
   revalidatePath(`/sales-orders/${soId}`);
   return { ok: true };
 }
@@ -238,49 +76,28 @@ export async function updateSOLine(
 ): Promise<SOLineResult> {
   const t = await getTranslations("errors");
   if (!lineId) return { ok: false, error: t("missingLineId") };
-  const parsed = parseFields(formData, t);
+
+  const parsed = parseLineFields(formData, t);
   if (!parsed.ok) return parsed;
 
   const supabase = await createClient();
-  const { data: line } = await supabase
-    .from("sales_order_lines")
-    .select("id, sales_order_id")
-    .eq("id", lineId)
-    .maybeSingle();
-  if (!line) return { ok: false, error: t("soLineNotFound") };
+  const soId = await findLineParentId(supabase, SALES_ORDER_DOC, lineId);
+  if (!soId) return { ok: false, error: t("lineNotFound") };
 
-  const guard = await assertDraft(supabase, line.sales_order_id, t);
+  const guard = await assertDraft(supabase, soId, t);
   if (!guard.ok) return guard;
 
-  const v = parsed.values;
-  const vat_rate = await resolveVatRate(supabase, v.vat_code);
-  const lineSubtotal = v.quantity * v.unit_price;
-  const lineVat = lineSubtotal * (vat_rate / 100);
-  const lineTotal = lineSubtotal + lineVat;
+  const result = await updateLine(
+    supabase,
+    SALES_ORDER_DOC,
+    lineId,
+    soId,
+    parsed.values,
+    t,
+  );
+  if (!result.ok) return result;
 
-  const { error } = await supabase
-    .from("sales_order_lines")
-    .update({
-      part_id: v.part_id,
-      bike_template_id: v.bike_template_id,
-      quantity: v.quantity,
-      unit_price: v.unit_price,
-      vat_code: v.vat_code,
-      vat_rate,
-      color_id: v.color_id,
-      description_en: v.description_en,
-      description_da: v.description_da,
-      line_subtotal: Math.round(lineSubtotal * 10000) / 10000,
-      line_vat_amount: Math.round(lineVat * 10000) / 10000,
-      line_total: Math.round(lineTotal * 10000) / 10000,
-    })
-    .eq("id", lineId);
-  if (error) {
-    return { ok: false, error: t("soCouldNotUpdateLine", { detail: error.message }) };
-  }
-
-  await recomputeSOTotal(supabase, line.sales_order_id);
-  revalidatePath(`/sales-orders/${line.sales_order_id}`);
+  revalidatePath(`/sales-orders/${soId}`);
   return { ok: true };
 }
 
@@ -289,19 +106,15 @@ export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
   if (!lineId) return { ok: false, error: t("missingLineId") };
 
   const supabase = await createClient();
-  const { data: line } = await supabase
-    .from("sales_order_lines")
-    .select("id, sales_order_id")
-    .eq("id", lineId)
-    .maybeSingle();
-  if (!line) return { ok: false, error: t("soLineNotFound") };
+  const soId = await findLineParentId(supabase, SALES_ORDER_DOC, lineId);
+  if (!soId) return { ok: false, error: t("lineNotFound") };
 
-  const guard = await assertDraft(supabase, line.sales_order_id, t);
+  const guard = await assertDraft(supabase, soId, t);
   if (!guard.ok) return guard;
 
-  // Block delete if a MO was already spawned from this line — the link
-  // should be unwound deliberately (cancel the MO first) rather than
-  // silently orphaned.
+  // Block delete if a MO was already spawned from this line — the link should
+  // be unwound deliberately (cancel the MO first) rather than silently
+  // orphaned.
   const { count: linkedMoCount } = await supabase
     .from("manufacturing_orders")
     .select("id", { count: "exact", head: true })
@@ -313,15 +126,9 @@ export async function deleteSOLine(lineId: string): Promise<SOLineResult> {
     };
   }
 
-  const { error } = await supabase
-    .from("sales_order_lines")
-    .delete()
-    .eq("id", lineId);
-  if (error) {
-    return { ok: false, error: t("couldNotDelete", { detail: error.message }) };
-  }
+  const result = await deleteLine(supabase, SALES_ORDER_DOC, lineId, soId, t);
+  if (!result.ok) return result;
 
-  await recomputeSOTotal(supabase, line.sales_order_id);
-  revalidatePath(`/sales-orders/${line.sales_order_id}`);
+  revalidatePath(`/sales-orders/${soId}`);
   return { ok: true };
 }

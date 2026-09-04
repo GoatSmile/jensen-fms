@@ -27,16 +27,13 @@ import {
 } from "./_components/linked-paint-orders-section";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
-import {
-  LinesSection,
-  type SOLineRow,
-} from "./_components/lines-section";
+import { LinesSection, type SOLineRow } from "./_components/lines-section";
 import type {
   ColorChoice,
   PartChoice,
   TemplateChoice,
   VatCodeChoice,
-} from "./_components/line-dialog";
+} from "@/lib/commercial/lines";
 import {
   LinkedMOsSection,
   type LinkedMORow,

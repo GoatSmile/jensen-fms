@@ -29,65 +29,33 @@ import { formatPrice } from "@/lib/format";
 import { colorFinishLabel } from "@/lib/colors/coating";
 import { localizedName } from "@/i18n/vocab";
 import { familyTint } from "@/lib/bike-templates/family-colors";
+import {
+  computeLineMoney,
+  round2,
+  type ColorChoice,
+  type CommercialLineResult,
+  type LineDialogInitial,
+  type PartChoice,
+  type TemplateChoice,
+  type VatCodeChoice,
+} from "@/lib/commercial/lines";
 
-import { addSOLine, updateSOLine } from "../../_actions/manage-so-lines";
-
-export type PartChoice = {
-  id: string;
-  internal_sku: string;
-  name_en: string;
-};
-export type TemplateChoice = {
-  id: string;
-  name_en: string;
-  family: string | null;
-  /** FK to bike_families — drives the family's app-wide tint dot. */
-  family_id: string | null;
-  /** Admin-set family sort_order (page-side family-adjacent ordering). */
-  family_sort: number | null;
-  frame_size: string | null;
-};
-export type VatCodeChoice = {
-  code: string;
-  name_en: string;
-  name_da?: string | null;
-  default_rate: number;
-};
-export type ColorChoice = {
-  id: string;
-  name_en: string;
-  name_da?: string | null;
-  hex: string | null;
-  ral_code: string | null;
-  coating: string | null;
-};
-
-export type LineDialogInitial = {
-  lineId: string;
-  kind: "part" | "template";
-  partId: string | null;
-  bikeTemplateId: string | null;
-  quantity: number;
-  unitPrice: number;
-  vatCode: string | null;
-  colorId: string | null;
-  descriptionEn: string | null;
-  descriptionDa: string | null;
-};
-
-type Mode =
-  | { kind: "add"; soId: string; defaultVatCode: string | null; soCurrency: string }
-  | {
-      kind: "edit";
-      initial: LineDialogInitial;
-      defaultVatCode: string | null;
-      soCurrency: string;
-    };
+/**
+ * Add / edit one line on a commercial document (offer or sales order).
+ *
+ * The document is not named here: the caller passes `onSubmit`, which closes
+ * over its own server action. That is what lets one dialog serve both without
+ * a `docKind` switch — and it means a new document type adds no branch here.
+ */
 
 type Props = {
   open: boolean;
   onOpenChange: (next: boolean) => void;
-  mode: Mode;
+  /** null = add mode; a value = edit that line. */
+  initial: LineDialogInitial | null;
+  defaultVatCode: string | null;
+  currency: string;
+  onSubmit: (fd: FormData) => Promise<CommercialLineResult>;
   parts: PartChoice[];
   templates: TemplateChoice[];
   vatCodes: VatCodeChoice[];
@@ -100,20 +68,19 @@ const NO_COLOR = "__none__";
 export function LineDialog({
   open,
   onOpenChange,
-  mode,
+  initial,
+  defaultVatCode,
+  currency,
+  onSubmit,
   parts,
   templates,
   vatCodes,
   colors,
 }: Props) {
-  const t = useTranslations("soDetail");
+  const t = useTranslations("commercialLines");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const initial = mode.kind === "edit" ? mode.initial : null;
-  const defaultVatCode =
-    mode.kind === "add" ? mode.defaultVatCode : mode.defaultVatCode;
-  const soCurrency = mode.kind === "add" ? mode.soCurrency : mode.soCurrency;
 
   const [kind, setKind] = useState<"part" | "template">(
     initial?.kind ?? "template",
@@ -136,7 +103,7 @@ export function LineDialog({
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const partLocked = mode.kind === "edit";
+  const partLocked = initial != null;
 
   const filteredParts = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -165,12 +132,13 @@ export function LineDialog({
     if (!Number.isFinite(q) || !Number.isFinite(u) || q <= 0 || u < 0) {
       return null;
     }
-    const subtotal = q * u;
-    const vat = subtotal * (rate / 100);
+    // Same function the server writes with, so the preview cannot drift from
+    // what gets stored.
+    const money = computeLineMoney(q, u, rate);
     return {
-      subtotal: Math.round(subtotal * 100) / 100,
-      vat: Math.round(vat * 100) / 100,
-      total: Math.round((subtotal + vat) * 100) / 100,
+      subtotal: round2(money.subtotal),
+      vat: round2(money.vat),
+      total: round2(money.total),
     };
   }, [quantity, unitPrice, selectedVat]);
 
@@ -191,7 +159,7 @@ export function LineDialog({
     return fd;
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
@@ -205,11 +173,7 @@ export function LineDialog({
     }
 
     start(async () => {
-      const fd = buildFormData();
-      const r =
-        mode.kind === "add"
-          ? await addSOLine(mode.soId, fd)
-          : await updateSOLine(mode.initial.lineId, fd);
+      const r = await onSubmit(buildFormData());
       if (!r.ok) {
         setError(r.error);
         return;
@@ -219,20 +183,20 @@ export function LineDialog({
     });
   }
 
-  const title = mode.kind === "add" ? t("addLine") : t("editLineTitle");
-  const submitLabel = mode.kind === "add" ? t("addLine") : t("saveChanges");
+  const title = initial == null ? t("addLine") : t("editLineTitle");
+  const submitLabel = initial == null ? t("addLine") : t("saveChanges");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
-        <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{t("lineDialogDesc")}</DialogDescription>
           </DialogHeader>
 
-          {/* Kind toggle — locked in edit mode (changes are subtle and the
-              spawn-MO action depends on this). */}
+          {/* Kind toggle — locked in edit mode (changes are subtle, and on a
+              sales order the spawn-MO action depends on this). */}
           {!partLocked ? (
             <div className="flex flex-col gap-1.5">
               <Label>{t("lineType")}</Label>
@@ -312,7 +276,7 @@ export function LineDialog({
                                   ) : null}
                                 </div>
                                 {isPicked ? (
-                                  <span className="text-xs text-good">
+                                  <span className="text-good text-xs">
                                     {t("selected")}
                                   </span>
                                 ) : null}
@@ -346,7 +310,7 @@ export function LineDialog({
                                 </span>
                               </div>
                               {isPicked ? (
-                                <span className="text-xs text-good">
+                                <span className="text-good text-xs">
                                   {t("selected")}
                                 </span>
                               ) : null}
@@ -374,7 +338,7 @@ export function LineDialog({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="line-price">
-                {t("unitPriceCurrency", { currency: soCurrency })}
+                {t("unitPriceCurrency", { currency })}
               </Label>
               <Input
                 id="line-price"
@@ -388,9 +352,7 @@ export function LineDialog({
               <Label htmlFor="line-vat">{t("vatCode")}</Label>
               <Select
                 value={vatCode === "" ? NO_VAT : vatCode}
-                onValueChange={(v) =>
-                  setVatCode(v === NO_VAT ? "" : v)
-                }
+                onValueChange={(v) => setVatCode(v === NO_VAT ? "" : v)}
               >
                 <SelectTrigger id="line-vat">
                   <SelectValue placeholder={t("customerDefault")} />
@@ -416,9 +378,7 @@ export function LineDialog({
               <Label htmlFor="line-color">{t("colourOptional")}</Label>
               <Select
                 value={colorId === "" ? NO_COLOR : colorId}
-                onValueChange={(v) =>
-                  setColorId(v === NO_COLOR ? "" : v)
-                }
+                onValueChange={(v) => setColorId(v === NO_COLOR ? "" : v)}
               >
                 <SelectTrigger id="line-color">
                   <SelectValue placeholder={t("colourNotPicked")} />
@@ -430,7 +390,11 @@ export function LineDialog({
                     </span>
                   </SelectItem>
                   {colors.map((c) => {
-                    const finish = colorFinishLabel(c.ral_code, c.coating, locale === "da" ? "da" : "en");
+                    const finish = colorFinishLabel(
+                      c.ral_code,
+                      c.coating,
+                      locale === "da" ? "da" : "en",
+                    );
                     const label = localizedName(locale, c.name_en, c.name_da);
                     return (
                       <SelectItem key={c.id} value={c.id}>
@@ -480,24 +444,26 @@ export function LineDialog({
             <div className="flex justify-between">
               <span className="text-muted-foreground">{t("subtotal")}</span>
               <span className="tabular-nums">
-                {formatPrice(preview?.subtotal ?? null, soCurrency)}
+                {formatPrice(preview?.subtotal ?? null, currency)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">
                 {t("vat")}{" "}
                 {selectedVat ? (
-                  <span className="font-mono">({selectedVat.default_rate}%)</span>
+                  <span className="font-mono">
+                    ({selectedVat.default_rate}%)
+                  </span>
                 ) : null}
               </span>
               <span className="tabular-nums">
-                {formatPrice(preview?.vat ?? null, soCurrency)}
+                {formatPrice(preview?.vat ?? null, currency)}
               </span>
             </div>
             <div className="flex justify-between border-t pt-1.5">
               <span className="text-muted-foreground">{t("lineTotal")}</span>
               <span className="font-semibold tabular-nums">
-                {formatPrice(preview?.total ?? null, soCurrency)}
+                {formatPrice(preview?.total ?? null, currency)}
               </span>
             </div>
           </div>

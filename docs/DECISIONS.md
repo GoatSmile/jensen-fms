@@ -2503,3 +2503,33 @@ reader.
   offering".
 - Swept **before** `/offers` exists, deliberately. Afterwards a grep for either
   word returns two meanings at once and every string becomes a judgement call.
+
+## 2026-09-04 (later) — The offer is its own entity, on a shared lines machine
+
+- **Build `offers` rather than dressing up an SO draft** (owner's call, after
+  the 3 September call where Dennis asked for the document he sends *before* the
+  order). **Rejected — treat the SO draft as the offer + bolt on print/email:**
+  it reads cheaper than it is, because there is no sales-order document either
+  (only invoices, POs and paint orders have one), so the document work is
+  identical either way. What actually differs is that every quote would burn a
+  gapless `SO-2026-####` — the series would stop meaning "an order" — and "he
+  said no" would have to be spelled `cancelled`, which reads as a mistake rather
+  than a lost deal. Dennis was explicit that it is not: *"if they decide no, it
+  will just stay in the system as an offer for this customer."*
+- **Implemented as a SHARED commercial-lines layer, not a copy of the SO's.**
+  `sales_order_lines` and `offer_lines` are column-identical (migration 09), and
+  the SO's lines UI + action are ~1,300 lines. Copying them would be exactly the
+  regression the shared-surfaces rule in `CLAUDE.md` exists to prevent, so the
+  shape, the VAT maths, the writer and the parent-total recompute now live once
+  in `src/lib/commercial/` + `src/components/commercial/`. Each document keeps
+  its OWN lifecycle guard — an SO locks its lines past `draft` — because that is
+  a statement about the document, not about lines.
+- **Purchase orders stay out.** A PO line carries fx rate, transport, tariff and
+  anti-dumping instead of VAT, and has no template and no colour. It is a
+  supplier document that happens to have lines, not the same thing with fewer
+  fields. **Rejected:** unifying all three, which would have forced a shape onto
+  the one document that does not share it.
+- One documented cast buys the spec-driven `from()`: PostgREST builders are typed
+  per table, and the two insert payloads refuse to unify because
+  `offer_lines.unit_price` is nullable where the sales-order one is NOT NULL.
+  Only `from()` is loosened; every payload is still built as a typed object.

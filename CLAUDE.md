@@ -698,6 +698,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   a `Panel`) · `TableSkeleton` · `SortableHeader` (a list's clickable column
   head — writes `?sort=col` / `?sort=col:desc`, third click clears; the page
   owns the whitelist and whether it orders in SQL or in memory).
+- **A customer-facing document's LINES are one shared machine** —
+  `src/lib/commercial/` (shape, VAT maths, the spec-driven writer that always
+  recomputes the parent's totals) plus `CommercialLinesSection` /
+  `LineDialog` in `src/components/commercial/`. A document names itself with a
+  `CommercialDocSpec`, passes its own writers, and hangs anything of its own on
+  the `renderItemExtra` / `renderItemBadges` slots (that is where the sales
+  order's *Opret MO* button and MO badge live) — so a new document type adds no
+  branch. **Purchase orders are deliberately NOT in it**: a PO line is
+  supplier-side, carrying fx rate, transport, tariff and anti-dumping instead of
+  VAT, with no template and no colour, so `/purchase-orders` keeps its own lines
+  UI. Don't "finish the job" by folding it in.
 - **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
   `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`
