@@ -393,6 +393,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - **Color** is picked at order time (`sales_order_line.color_id`) and at
     build time (`manufacturing_orders.color_id`). FK to controlled-vocab
     `colors` (carries `ral_code` + `coating`); never free-text.
+  - **A `ral_code` must be a real RAL Classic code**, validated against the deck
+    in `src/lib/colors/ral.ts` (`isRalCode`) and stored NORMALISED to the bare
+    four digits, so "RAL 1006" and "1006" are not two strings in a column that
+    gets joined on. Both writers gate on it — `manage-colors.ts` and the
+    picker's `create-colour.ts` — and **a third writer must too**: "RAL 5013"
+    reached production carrying the code 2150, which is not a RAL code, because
+    the field was free text and `ralToHex` merely returned null. The deck is a
+    code module, not a table, for the same reason `countries` is: it is an
+    external standard, and a DB row invites someone to edit what RAL 5013 means.
   - Templates are versioned (`version` + `is_current`); the as-built BOM is
     snapshotted into `manufacturing_order_parts.origin` so editing a
     template doesn't rewrite history.
