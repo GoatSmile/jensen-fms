@@ -3633,6 +3633,7 @@
     "cap": "Showing the {count} most recent."
   },
   "errors": {
+    "adminColorRalUnknown": "“{code}” is not a RAL Classic code. Leave it blank, or use the four-digit code from the painter’s fan deck (e.g. 5013).",
     "offerPickCustomer": "Pick a customer.",
     "offerCouldNotAllocateNumber": "Could not allocate offer number: {detail}",
     "offerCouldNotCreate": "Could not create the offer: {detail}",
@@ -4483,6 +4484,7 @@
     "other": "Something else"
   },
   "adminLists": {
+    "ralUnknown": "Not a RAL Classic code — the painter cannot mix this.",
     "title": "Lists",
     "subtitle": "The controlled vocabularies the rest of the app picks from. Pick a list, then click a row to edit it.",
     "crumbAdmin": "Admin",

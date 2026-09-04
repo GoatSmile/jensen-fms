@@ -1,7 +1,13 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight, List, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  List,
+  Plus,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { ColorSwatch } from "@/components/color-swatch";
@@ -23,6 +29,7 @@ import {
   type VocabDescriptor,
   type VocabId,
 } from "@/lib/admin/vocabularies";
+import { isRalCode } from "@/lib/colors/ral";
 import { cn } from "@/lib/utils";
 
 import { LocationVisibilityToggle } from "./location-visibility-toggle";
@@ -179,25 +186,49 @@ export function VocabTable({
                           {rowTitle(vocab, row, locale)}
                         </span>
                       </TableCell>
-                      {vocab.columns.map((column) => (
-                        <TableCell
-                          key={column.name}
-                          className={cn(
-                            column.className,
-                            column.align === "right" && "text-right",
-                            "text-ink-2",
-                          )}
-                        >
-                          {cellValue(
-                            vocab,
-                            column.name,
-                            row,
-                            parentOptions,
-                            coatingOptions,
-                            categoryOptions,
-                          )}
-                        </TableCell>
-                      ))}
+                      {vocab.columns.map((column) => {
+                        // A stored code the deck doesn't know is flagged where
+                        // it gets fixed, not only in a checklist PDF. Caution
+                        // is `money`, not `alert` — nothing is on fire, the row
+                        // just can't be trusted to mean a colour.
+                        // asText() yields null (not "") for an absent value —
+                        // comparing against "" flagged every colour that simply
+                        // has no RAL code, which is not a defect.
+                        const ralText = asText(row.ral_code)?.trim() ?? "";
+                        const badRal =
+                          column.name === "ral_code" &&
+                          ralText !== "" &&
+                          !isRalCode(ralText);
+                        return (
+                          <TableCell
+                            key={column.name}
+                            className={cn(
+                              column.className,
+                              column.align === "right" && "text-right",
+                              "text-ink-2",
+                            )}
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              {cellValue(
+                                vocab,
+                                column.name,
+                                row,
+                                parentOptions,
+                                coatingOptions,
+                                categoryOptions,
+                              )}
+                              {badRal ? (
+                                <AlertTriangle
+                                  className="text-money size-3.5 shrink-0"
+                                  aria-label={t("ralUnknown")}
+                                >
+                                  <title>{t("ralUnknown")}</title>
+                                </AlertTriangle>
+                              ) : null}
+                            </span>
+                          </TableCell>
+                        );
+                      })}
                       {showUsage ? (
                         <TableCell className="text-ink-2 hidden text-right lg:table-cell">
                           {usageByRow[row.id] ?? 0}

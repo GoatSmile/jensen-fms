@@ -86,8 +86,35 @@ const RAL_CLASSIC_HEX: Record<string, string> = {
  * unknown so the caller leaves the hex untouched.
  */
 export function ralToHex(ralCode: string | null | undefined): string | null {
+  const digits = normaliseRalCode(ralCode);
+  return digits ? RAL_CLASSIC_HEX[digits] : null;
+}
+
+/**
+ * The bare 4-digit form of a code that is actually IN the deck, or null.
+ *
+ * Storing the normalised form is what lets `colors.ral_code` be joined on at
+ * all — "RAL 1006" and "1006" are the same colour and must not be two rows'
+ * worth of different strings.
+ */
+export function normaliseRalCode(
+  ralCode: string | null | undefined,
+): string | null {
   if (!ralCode) return null;
   const digits = ralCode.replace(/[^0-9]/g, "");
   if (digits.length !== 4) return null;
-  return RAL_CLASSIC_HEX[digits] ?? null;
+  return digits in RAL_CLASSIC_HEX ? digits : null;
+}
+
+/**
+ * Is this a real RAL Classic code?
+ *
+ * The reason this exists: a colour reached production named "RAL 5013" carrying
+ * the code 2150, which is not a RAL code at all, and nothing objected — the
+ * form took it as free text and `ralToHex` merely returned null, so the row
+ * saved with a mismatched hex and went onto two orders. An unknown code is now
+ * refused at the source.
+ */
+export function isRalCode(ralCode: string | null | undefined): boolean {
+  return normaliseRalCode(ralCode) !== null;
 }

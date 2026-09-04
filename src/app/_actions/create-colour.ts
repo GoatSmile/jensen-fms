@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { readAllowedCaps } from "@/lib/auth/read-session";
-import { ralToHex } from "@/lib/colors/ral";
+import { normaliseRalCode, ralToHex } from "@/lib/colors/ral";
 import { slugify } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -55,7 +55,13 @@ export async function createColourInline(input: {
   const slug = slugify(nameEn);
   if (!slug) return { ok: false, error: t("adminSlugFromName") };
 
-  const ralCode = input.ralCode?.trim() || null;
+  // Same gate as the admin form — a colour created from a picker must not be
+  // able to carry a code the admin form would refuse.
+  const ralRaw = input.ralCode?.trim() || null;
+  const ralCode = ralRaw ? normaliseRalCode(ralRaw) : null;
+  if (ralRaw && !ralCode) {
+    return { ok: false, error: t("adminColorRalUnknown", { code: ralRaw }) };
+  }
   const coating = input.coating?.trim() || null;
 
   const supabase = await createClient();

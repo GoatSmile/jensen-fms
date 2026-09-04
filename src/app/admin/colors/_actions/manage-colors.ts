@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { ralToHex } from "@/lib/colors/ral";
+import { normaliseRalCode, ralToHex } from "@/lib/colors/ral";
 import { nullableString as nullable, slugify } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,7 +44,17 @@ function parseFormData(
   }
 
   const ralRaw = nullable(formData.get("ral_code"))?.trim() ?? null;
-  const ral_code = ralRaw && ralRaw !== "" ? ralRaw : null;
+  // An unknown code is refused rather than stored as free text: "RAL 5013" with
+  // the code 2150 reached production and went onto two orders precisely because
+  // nothing checked. Stored in the bare 4-digit form so the column can be
+  // joined on — "RAL 1006" and "1006" must not be two different strings.
+  let ral_code: string | null = null;
+  if (ralRaw && ralRaw !== "") {
+    ral_code = normaliseRalCode(ralRaw);
+    if (!ral_code) {
+      return { ok: false, error: t("adminColorRalUnknown", { code: ralRaw }) };
+    }
+  }
 
   // Server backstop: if no explicit hex but the RAL code resolves to a known
   // sRGB approximation, store it so the swatch shows a real colour everywhere —
