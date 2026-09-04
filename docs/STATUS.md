@@ -45,15 +45,9 @@ demoed in English looks different on his tablet.
   "no way to query prod".
 - **Local and production are both at migration 100**, verified on both sides
   the same day: same six offer objects, and zero tables without RLS on either.
-- **Migration 101 (the schema ledger) is on LOCAL ONLY — production still needs
-  it.** Applying it to production was blocked by the sandbox's permission
-  classifier, twice, and was not worked around. Until it lands, `npm run
-  check:prod` reports the ledger missing and **the `git push` hook refuses every
-  push** — correctly, but it means nothing ships until someone runs:
-
-  ```bash
-  supabase db query --linked -f migrations/101_schema_ledger.sql
-  ```
+- **Migration 101 (the schema ledger) is on BOTH**, and `npm run check:prod` /
+  `check:local` both report *at migration 101 — all 101 applied*. That command
+  is now the answer to "is production up to date?", and it takes seconds.
 - **Schema drift is now mechanised** (the "never again" for the `/offers`
   outage): `public.schema_migrations` is written by each migration,
   `npm run check:prod` / `check:local` diffs it against `migrations/*.sql`, and
