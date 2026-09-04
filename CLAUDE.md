@@ -893,6 +893,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Customer segments** — a controlled vocab (`customer_segments`,
   `/admin/lists?vocab=segments`): Hospital, Municipality, Facility Management
   (FM), Hotel, B2B, B2C and more. The table is the list; this file is not.
+- **Offer = *tilbud*, and the word is reserved** (DECISIONS 2026-09-04). An
+  **offer** is the CUSTOMER-facing quote (`offers` / `offer_lines`, `OFF-`
+  series); in Danish, bare *tilbud* means that and only that. A supplier's price
+  to US is a **`leverandørtilbud`** (`part_supplier_offerings`) — never bare
+  *tilbud*, and never *varetilbud*, which is retired. The parts housekeeping
+  filter that counts them is `?gap=purchase-price`, after the column it reads.
 
 ## Out of scope for v1.0
 - RLS policy tightening (RLS is ON across all tables — migration 50 — with a

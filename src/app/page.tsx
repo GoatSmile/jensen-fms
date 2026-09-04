@@ -706,9 +706,9 @@ export default async function DashboardPage() {
               </BandRow>
             ) : null}
             {housekeeping.offeringsNoPrice > 0 ? (
-              <BandRow href="/parts?gap=offer-price">
+              <BandRow href="/parts?gap=purchase-price">
                 <span className="truncate">
-                  {t("gapOfferPrice", { count: housekeeping.offeringsNoPrice })}
+                  {t("gapPurchasePrice", { count: housekeeping.offeringsNoPrice })}
                 </span>
               </BandRow>
             ) : null}

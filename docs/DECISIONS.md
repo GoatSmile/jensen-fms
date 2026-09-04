@@ -2473,3 +2473,33 @@ Rejected: a full type picker (ten options invites wrong picks where two suffice)
 and deleting `disposed` instead — the event is real, and a dead enum value that
 appears in the type union, the badge map and both translations lies to the next
 reader.
+
+## 2026-09-04 — *Tilbud* is the customer's offer; the supplier's is a *leverandørtilbud*
+
+- **Bare *tilbud* is reserved for the customer-facing offer** — Dennis's own word
+  on the 3 September call, and the Danish name of the `offers` module. The
+  supplier side (`part_supplier_offerings`, a supplier's price to *us*) is always
+  **`leverandørtilbud`**. This was already broken in shipped Danish *before* the
+  module exists: 13 strings used bare *tilbud* for the supplier meaning, and the 9
+  that were compounded split across two rival compounds (`leverandørtilbud` ×5,
+  `varetilbud` ×4). 15 strings swept; `varetilbud` retired. The two remaining bare
+  uses — `templates.formSectionPriceDesc` and `errors.tplBlockerOfferLine`, both
+  *tilbudslinje* — already meant the customer offer and are left alone; they are
+  the proof the translator reached for the same word first.
+  **Rejected:** leaving it to context. A panel headed *Leverandørtilbud* does
+  disambiguate its own buttons, but a nav item reading *Tilbud* weakens that, and
+  an error string ("Kunne ikke gemme tilbud") carries no panel with it.
+- **`offer` stays the English and code word.** `offers`, `offer_lines`,
+  `sales_orders.converted_from_offer_id` and `next_document_number('offer')` →
+  `OFF-` are already in production, and *offer* is the standard business-English
+  rendering of *tilbud*. **Rejected:** renaming the module to `quote` for
+  unambiguity — in English the collision was one filter key wide, and renaming a
+  designed schema to clear a naming smell costs more than clearing the naming.
+- **The parts housekeeping filter is `?gap=purchase-price`** (message keys
+  `gapPurchasePrice*`), not `offer-price`. It names the column it actually filters
+  on, `part_supplier_offerings.default_purchase_price`, and it was the only place
+  English read ambiguously. `part_supplier_offerings` keeps its own name —
+  "offering" is a distinct noun and every English string already said "supplier
+  offering".
+- Swept **before** `/offers` exists, deliberately. Afterwards a grep for either
+  word returns two meanings at once and every string becomes a judgement call.

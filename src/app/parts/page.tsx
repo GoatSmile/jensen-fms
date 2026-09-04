@@ -57,9 +57,9 @@ type SearchParams = {
 const GAP_FILTERS = {
   origin: { titleKey: "gapOriginTitle", hintKey: "gapOriginHint" },
   hs: { titleKey: "gapHsTitle", hintKey: "gapHsHint" },
-  "offer-price": {
-    titleKey: "gapOfferPriceTitle",
-    hintKey: "gapOfferPriceHint",
+  "purchase-price": {
+    titleKey: "gapPurchasePriceTitle",
+    hintKey: "gapPurchasePriceHint",
   },
 } as const;
 
@@ -155,7 +155,7 @@ export default async function PartsPage({
   // offerings directly.
   let gapFilteredIds: string[] | null = null;
   if (gap) {
-    if (gap === "offer-price") {
+    if (gap === "purchase-price") {
       const { data } = await supabase
         .from("part_supplier_offerings")
         .select("part_id")
