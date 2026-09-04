@@ -807,15 +807,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·
   Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
-  orders · Workshop floor · Inbox) · *Orders* (Offers · Sales · Manufacturing ·
-  Paint orders · Invoices · Purchase) · *Customers* (All customers · Service
+  orders · Workshop floor · Inbox) · *Orders* (Offers · Sales · Paint orders ·
+  Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
   - ***Orders* is ordered by the LIFE OF A JOB, not alphabetically or by
-    frequency** (owner, 2026-09-04): quote it, sell it, build it, paint it, bill
-    it — each document is created from the one above it, so the rail doubles as
-    the sequence. **Purchase orders sit last as the exception**: supplier-side,
-    continuous, tied to stock rather than to any customer's job. A new document
-    on the chain goes at its place in the sequence, not at the end.
+    frequency** (owner, 2026-09-04): quote it, sell it, **paint it, build it**,
+    bill it. **Paint is ABOVE manufacturing because that is the shop's real
+    sequence** — frames are painted before anything is assembled, which the
+    code already enforces (paint `blocks_build`, an at-painter bike cannot be
+    finished, a build picks the painted variant). Ordering by the paperwork
+    instead — an MO offers to spawn the paint order, so MO "comes first" on
+    screen — describes the software, not the work. **Purchase orders sit last as
+    the exception**: supplier-side, continuous, tied to stock rather than to any
+    customer's job. A new document on the chain goes at its place in the
+    sequence, not on the end.
   - **Group names are CONCEPTS, not pages, and the rail stays at seven** — that
     is the point of the shape, not an incidental count. A new service type
     becomes another child of *Orders* (nav is per-service-type permanently),
