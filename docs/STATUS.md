@@ -31,11 +31,11 @@ demoed in English looks different on his tablet.
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 99** is the latest. 98 is on production (owner-reported, not
-  independently verified — the Supabase MCP did not connect). **99 is LOCAL
-  ONLY and must reach production before the next deploy**: without
-  `offer_revisions`, `markOfferSent` logs a failed insert on every send and the
-  print page silently falls back to rendering live.
+- **Migration 99** is the latest. 98 and 99 are both on production
+  (owner-reported and then pushed; **not independently verified** — the Supabase
+  MCP did not connect this session, so there was no way to query prod). If a
+  send ever logs a failed `offer_revisions` insert, or print falls back to
+  rendering live, 99 did not land.
 - **`/offers` is live in production and has never been used there.** The route
   answers (307 → `/login`); no production offer exists. The first real one is
   the test.

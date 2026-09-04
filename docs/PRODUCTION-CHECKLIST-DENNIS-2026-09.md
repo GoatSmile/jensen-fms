@@ -1,7 +1,8 @@
 # What to fix in the system — a walk through your real data
 
-**For Dennis, 3 September 2026.** Everything here was read from **production**
-today — your live data, not a test copy. Nothing has been changed for you.
+**For Dennis, 3 September 2026** (one note added 4 September, marked below).
+Everything here was read from **production** — your live data, not a test copy.
+Nothing has been changed for you.
 
 Each item says where to click. A path like **Bikes → Bike templates → Jeudan**
 means: the group in the left menu, then the page, then the row. Buttons are
@@ -71,7 +72,11 @@ cost-to-produce shows **no paint cost**, so the margin on them is overstated.
 **A colour contradicts itself.** The colour named **"RAL 5013"** carries the RAL
 code **2150**. RAL 5013 is a blue; 2150 is not a RAL code at all. One of the two
 is wrong, and this colour is on two production orders.
-→ **Admin → Lists → Colours**.
+→ **Admin → Lists → Colours**. The row now shows a warning triangle, and the app
+will **not let you save it until the code is a real one** — so decide which half
+is right before you open it: is this colour the blue RAL 5013, or something else?
+(New colours can no longer be saved with a code that isn't in the RAL deck, so
+this cannot happen again.)
 
 **Red and Purple have no RAL code**, so the painter cannot reproduce them and
 the price list cannot match them. Same place.
