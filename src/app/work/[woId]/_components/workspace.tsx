@@ -34,6 +34,8 @@ type Props = {
   language: "da" | "en";
   initialDiagnosis: string;
   initialWorkPerformed: string;
+  /** Whether a transcription provider is configured — see lib/dictation/ready. */
+  dictationReady: boolean;
   bikeId: string | null;
   /** Ticket number that finishing this WO will auto-resolve, else null. */
   resolvesTicketNumber: string | null;
@@ -47,6 +49,7 @@ export function Workspace({
   language,
   initialDiagnosis,
   initialWorkPerformed,
+  dictationReady,
   resolvesTicketNumber,
   partRows,
   photos,
@@ -135,6 +138,7 @@ export function Workspace({
           onChange={setDiagnosis}
           dictateLang={defaultDictateLang}
           dictateLabel={t("diagnosisDictate")}
+          dictateReady={dictationReady}
           readOnly={readOnly}
         />
 
@@ -149,6 +153,7 @@ export function Workspace({
           onChange={setWorkPerformed}
           dictateLang={defaultDictateLang}
           dictateLabel={t("workPerformedDictate")}
+          dictateReady={dictationReady}
           readOnly={readOnly}
         />
 
@@ -284,6 +289,7 @@ type FieldProps = {
   onChange: (v: string) => void;
   dictateLang: DictateLanguage;
   dictateLabel: string;
+  dictateReady: boolean;
   readOnly: boolean;
 };
 
@@ -297,6 +303,7 @@ function NotesField({
   onChange,
   dictateLang,
   dictateLabel,
+  dictateReady,
   readOnly,
 }: FieldProps) {
   const t = useTranslations("wo");
@@ -347,6 +354,7 @@ function NotesField({
             defaultLanguage={dictateLang}
             onAppend={appendDictated}
             label={dictateLabel}
+            ready={dictateReady}
           />
           <p className="text-muted-foreground text-xs">{t("micTip")}</p>
         </>

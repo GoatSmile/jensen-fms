@@ -2782,3 +2782,51 @@ job stranded below the two that continue it.
 - A new document on the chain goes **at its place in the sequence**, not on the
   end. CLAUDE.md's nav paragraph carries the rule; it had also gone stale (it
   still described a five-item group and never gained Offers), and was corrected.
+
+## 2026-09-13 — Dictation records here and transcribes on our side; the browser's speech API is gone
+
+**Decided (owner, on seeing it fail on his own laptop).** *"Let's remove this
+relying on the browser. This needs to be bulletproof."*
+
+The Dictate button used the **Web Speech API**, which does no local work on
+desktop Chrome — it streams the audio to Google's servers. So it returned a bare
+`network` error on every Chromium without Google's speech key (Electron shells,
+in-app browsers, most Linux builds) and behind any proxy that blocks the
+endpoint, with **nothing app-side able to fix it**. It also discarded the
+utterance on failure.
+
+**It now records locally and transcribes through the provider the inbound
+pipeline already uses** (Gladia, EU-resident). Three things make that a
+different class of reliable:
+
+- **`getUserMedia` + the Web Audio API, encoding 16-bit 16 kHz mono WAV in the
+  browser** — supported in Firefox, Safari and every Chromium fork, with no
+  third party between the mic and the blob. **Rejected: `MediaRecorder`**, which
+  emits webm/opus on Chromium and mp4 on Safari, so the provider would see two
+  formats and the client would need mime negotiation; WAV at 16 kHz mono is one
+  format everywhere and is what ASR resamples to anyway. The encoder is ported
+  from **Munin's `SurpriseRecorder`**, in production there since August.
+- **The browser PUTs the audio straight to storage via a signed upload URL**,
+  and only the PATH reaches our server. A 3-minute WAV is ~5.7 MB — past
+  Vercel's 4.5 MB request cap, and far past a server action's 1 MB body limit.
+  Munin's `createSurpriseUploadUrl` pattern.
+- **A failed transcription keeps the recording** and offers Retry. Losing what
+  someone just said is the one failure this must not have; the old button had
+  exactly that failure.
+
+**The audio is deleted the moment the text comes back** — a dictation is a
+worker's own voice and the transcript goes straight into a field they are
+looking at, so there is nothing to retain. It shares the private `inbound`
+bucket but **not** the voicemail lifecycle, and because the retention cron only
+walks `inbound_messages.media_path`, that cron gained a sweep for anything left
+under `dictation/` by a crash between upload and delete.
+
+**Dictation shares the inbound transcription provider selection** rather than
+gaining config of its own — it is the same capability, so there is exactly one
+place to choose the provider and exactly one key. Readiness is resolved
+server-side and passed to the button, so a missing key disables it with a reason
+instead of failing after the tech has already spoken.
+
+**Consequence for local work:** the provider FETCHES the signed URL, so a dev
+server on the local Supabase cannot transcribe at all — Gladia cannot reach
+`127.0.0.1`. Verifying this end to end means pointing at production.

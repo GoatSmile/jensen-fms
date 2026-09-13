@@ -13,11 +13,16 @@ import { createCommandFromText } from "../_actions/command";
 
 /**
  * In-app command ingress (VC-1, Option A — text-first). Type a task or dictate
- * it with the browser speech button; on submit the command agent drafts the
- * actions and we jump to the command row's review panel. No audio upload — the
- * phone/Gladia ingress folds in with VC-3 (DECISIONS 2026-07-23).
+ * it; on submit the command agent drafts the actions and we jump to the command
+ * row's review panel.
+ *
+ * The 2026-07-23 note here said "no audio upload — the phone/Gladia ingress
+ * folds in with VC-3". That is superseded: dictation records in the browser and
+ * transcribes through the configured inbound provider as of 2026-09-13, because
+ * the browser speech API it used before could not reach its own backend on a
+ * laptop.
  */
-export function NewCommand() {
+export function NewCommand({ dictationReady }: { dictationReady: boolean }) {
   const t = useTranslations("inboxCommand");
   const router = useRouter();
   const [text, setText] = useState("");
@@ -61,6 +66,7 @@ export function NewCommand() {
         <DictateButton
           onAppend={(txt) => setText((prev) => (prev.trim() ? `${prev}\n${txt}` : txt))}
           label={t("dictate")}
+          ready={dictationReady}
         />
       </div>
       {error ? (

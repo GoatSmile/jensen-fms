@@ -31,6 +31,7 @@ import {
 import { isSpamFolded } from "@/lib/inbound/triage";
 
 import { NewCommand } from "./_components/new-command";
+import { dictationReady } from "@/lib/dictation/ready";
 import { UploadVoicemail } from "./_components/upload-voicemail";
 
 /**
@@ -40,12 +41,13 @@ import { UploadVoicemail } from "./_components/upload-voicemail";
  * second channel lands it shows here too, tagged by its channel badge.
  */
 export default async function InboundPage() {
-  const [t, tCommon, tStatus, tChannel, tCmd] = await Promise.all([
+  const [t, tCommon, tStatus, tChannel, tCmd, canDictate] = await Promise.all([
     getTranslations("inbox"),
     getTranslations("common"),
     getTranslations("inboundStatus"),
     getTranslations("inboundChannel"),
     getTranslations("inboxCommand"),
+    dictationReady(),
   ]);
 
   const supabase = await createClient();
@@ -99,7 +101,7 @@ export default async function InboundPage() {
       </header>
 
       {/* In-app command ingress (VC-1) — dictate/type a task, agent drafts it. */}
-      <NewCommand />
+      <NewCommand dictationReady={canDictate} />
 
       {/* Client uploader lives here so the harness ingress is one click away. */}
       <UploadVoicemail />

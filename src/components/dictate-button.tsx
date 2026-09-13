@@ -1,57 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Mic, Square, X } from "lucide-react";
+import { Loader2, Mic, RotateCcw, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { mintDictationUpload } from "@/app/_actions/dictation";
+import {
+  MAX_RECORD_SECONDS,
+  recordingSupported,
+  useRecorder,
+} from "@/lib/dictation/use-recorder";
 import { cn } from "@/lib/utils";
-
-/* -----------------------------------------------------------------------
- * Minimal Web Speech API surface — the standard `lib.dom.d.ts` doesn't
- * ship these types, and the polyfill names are vendor-prefixed in older
- * Safari. We declare just enough to avoid `any` while staying narrow.
- * -------------------------------------------------------------------- */
-
-type SpeechRecognitionResult = {
-  isFinal: boolean;
-  0: { transcript: string };
-};
-
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: ArrayLike<SpeechRecognitionResult>;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-  message?: string;
-}
-
-interface SpeechRecognitionLike {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((e: SpeechRecognitionEvent) => void) | null;
-  onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-}
-
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
-
-function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-/* --------------------------------------------------------------------- */
 
 export type DictateLanguage = "da-DK" | "en-US";
 
@@ -62,186 +22,182 @@ type Props = {
   onAppend: (text: string) => void;
   /** Optional small label inside the trigger button. */
   label?: string;
+  /**
+   * Whether a transcription provider is actually configured (server-resolved —
+   * see src/lib/dictation/ready.ts). False disables the button with a reason
+   * instead of letting the tech speak into something that cannot answer.
+   */
+  ready?: boolean;
   className?: string;
 };
 
 /**
- * Voice-to-text capture using the browser's Web Speech API. Lives next
- * to a textarea (or wherever the resulting text should land).
+ * What the BUTTON is doing. Recording is not in here on purpose — the recorder
+ * hook already owns that state, and mirroring it into a second variable is how
+ * the two drift apart.
+ */
+type Stage = "idle" | "transcribing" | "confirm";
+
+/**
+ * Voice-to-text: record here, transcribe on our server, confirm, append.
+ *
+ * REPLACED the Web Speech API on 2026-09-13. That API does no work locally on
+ * desktop Chrome — it streams the audio to Google's servers — so it returned a
+ * bare `network` error on every Chromium without Google's speech key (Electron
+ * shells, in-app browsers, most Linux builds) and on anything behind a proxy
+ * that blocks the endpoint. It failed for the owner on his own laptop with
+ * nothing app-side to fix. getUserMedia + our own transcription provider has no
+ * third party in the path and works in Firefox and Safari too.
  *
  * Flow:
- *   1. Tap mic → starts listening. Button turns red.
- *   2. Live interim transcript appears beneath the button.
- *   3. Tap again to stop. Two buttons appear: Append / Discard.
- *   4. Append → `onAppend(finalTranscript)`; Discard → throws away.
+ *   1. Tap mic → recording. Timer + level meter say the mic is live.
+ *   2. Tap stop → the WAV uploads straight to storage, we transcribe it.
+ *   3. The transcript is shown for confirmation — never auto-appended.
+ *   4. Append → `onAppend(text)`; Discard → thrown away.
  *
- * The parent owns the actual textarea state. We just hand back a string
- * via `onAppend` when the user confirms — parent decides how to merge it
- * (typically: existing text + "\n" + transcript, or replace if empty).
- *
- * Unsupported browsers (older Safari before iOS 14.5, Firefox) render a
- * disabled button with a tooltip pointing to the keyboard mic key.
+ * The recording stays in memory until the tech accepts or discards, so a failed
+ * transcription offers RETRY on the audio already captured. Losing what someone
+ * just said is the one failure this component must not have.
  */
 export function DictateButton({
   defaultLanguage = "da-DK",
   onAppend,
   label,
+  ready = true,
   className,
 }: Props) {
   const t = useTranslations("dictate");
   const [supported, setSupported] = useState(true);
   const [language, setLanguage] = useState<DictateLanguage>(defaultLanguage);
-  const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
+  const [stage, setStage] = useState<Stage>("idle");
+  const [transcript, setTranscript] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const finalChunksRef = useRef<string[]>([]);
 
-  // Detect support on mount. Done in an effect (not lazy initial state) on
-  // purpose: getSpeechRecognitionCtor() reads `window`, so it must run
-  // client-only — initialising to `true` matches the server render and we
-  // correct it after hydration, avoiding a mismatch. Some browsers also
-  // lazy-define the constructor on first touch, so we check both names.
+  // Client-only detection, after hydration — initialising to `true` matches the
+  // server render, so the button doesn't flicker from disabled to enabled.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only detection, see above
-    setSupported(getSpeechRecognitionCtor() !== null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    setSupported(recordingSupported());
   }, []);
 
-  function start() {
-    const Ctor = getSpeechRecognitionCtor();
-    if (!Ctor) {
-      setSupported(false);
-      return;
-    }
-    setErrorMessage(null);
-    finalChunksRef.current = [];
-    setInterim("");
-    setPending(null);
+  const messageFor = useCallback(
+    (reason: string) => {
+      const key = `error_${reason}`;
+      return t.has(key) ? t(key) : t("error_api_error");
+    },
+    [t],
+  );
 
-    const r = new Ctor();
-    r.lang = language;
-    r.continuous = true;
-    r.interimResults = true;
+  /** Upload the captured WAV and ask the server for its text. */
+  const transcribe = useCallback(
+    async (blob: Blob) => {
+      setStage("transcribing");
+      setErrorMessage(null);
+      try {
+        const minted = await mintDictationUpload();
+        if (!minted.ok) throw new Error(minted.error);
 
-    r.onresult = (e) => {
-      let interimText = "";
-      // Walk only the new results — `resultIndex` marks where the
-      // previous batch ended. Finalized chunks accumulate so a long
-      // dictation survives partial-stop events.
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i];
-        if (!res) continue;
-        const chunk = res[0]?.transcript ?? "";
-        if (res.isFinal) {
-          finalChunksRef.current.push(chunk.trim());
-        } else {
-          interimText += chunk;
+        const put = await fetch(minted.signedUrl, {
+          method: "PUT",
+          headers: { "content-type": "audio/wav" },
+          body: blob,
+        });
+        if (!put.ok) throw new Error(`upload ${put.status}`);
+
+        const res = await fetch("/api/dictate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            path: minted.path,
+            language: language === "da-DK" ? "da" : "en",
+          }),
+        });
+        const json = (await res.json().catch(() => null)) as
+          | { ok: true; text: string }
+          | { ok: false; reason: string }
+          | null;
+
+        if (!json || !json.ok) {
+          setErrorMessage(messageFor(json?.reason ?? "api_error"));
+          setStage("confirm"); // keeps the audio, offers Retry
+          return;
         }
+        setTranscript(json.text);
+        setStage("confirm");
+      } catch {
+        // Offline, storage refused, server unreachable — one message, and the
+        // recording is still here.
+        setErrorMessage(t("error_upload"));
+        setStage("confirm");
       }
-      setInterim(interimText.trim());
-    };
+    },
+    [language, messageFor, t],
+  );
 
-    r.onerror = (e) => {
-      // Map the Web Speech API's terse error codes to plain language a
-      // technician can act on. "no-speech" / "aborted" are routine (nobody
-      // talked, or we stopped/restarted) so we stay quiet on those.
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setErrorMessage(t("errorBlocked"));
-      } else if (e.error === "network") {
-        // The browser couldn't reach its speech backend (Google's, on Chrome
-        // desktop). Nothing app-side can fix the round-trip — point at the
-        // reliable alternatives instead of showing raw "network".
-        setErrorMessage(t("errorNetwork"));
-      } else if (e.error === "audio-capture") {
-        setErrorMessage(t("errorNoMic"));
-      } else if (e.error === "no-speech" || e.error === "aborted") {
-        // ignore — common at the end of an utterance / on stop
-      } else {
-        setErrorMessage(e.message || t("errorGeneric", { code: e.error }));
-      }
-    };
+  // Transcription starts from the recorder's own callback — the one moment the
+  // audio exists — so there is no effect watching for a blob to appear.
+  const recorder = useRecorder({
+    onCaptured: (blob) => void transcribe(blob),
+  });
 
-    r.onend = () => {
-      setListening(false);
-      // Stitch finalized chunks into one transcript and stage it for
-      // confirmation. If nothing was captured we silently bail.
-      const combined = finalChunksRef.current
-        .filter((c) => c.length > 0)
-        .join(" ")
-        .trim();
-      if (combined.length > 0) {
-        setPending(combined);
-      }
-      setInterim("");
-    };
-
-    try {
-      r.start();
-      recRef.current = r;
-      setListening(true);
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : t("errorStart"));
-    }
+  async function startRecording() {
+    setErrorMessage(null);
+    setTranscript("");
+    await recorder.start();
   }
 
-  function stop() {
-    // r.stop() flushes any in-flight final chunk via onresult before
-    // firing onend. Don't null recRef yet — onend uses it.
-    recRef.current?.stop();
+  function accept() {
+    if (transcript) onAppend(transcript);
+    discard();
   }
 
-  function abort() {
-    recRef.current?.abort();
-    recRef.current = null;
-    finalChunksRef.current = [];
-    setInterim("");
-    setListening(false);
+  function discard() {
+    recorder.reset();
+    setTranscript("");
+    setErrorMessage(null);
+    setStage("idle");
   }
 
-  // Tear down on unmount so we don't leave a hot mic when the tech
-  // navigates away mid-dictation.
-  useEffect(() => {
-    return () => {
-      recRef.current?.abort();
-      recRef.current = null;
-    };
-  }, []);
-
-  function acceptPending() {
-    if (pending) {
-      onAppend(pending);
-    }
-    setPending(null);
-    finalChunksRef.current = [];
+  function cancelRecording() {
+    recorder.stop();
+    discard();
   }
 
-  function discardPending() {
-    setPending(null);
-    finalChunksRef.current = [];
-  }
+  const recording = recorder.phase === "recording";
+  const disabled = !supported || !ready;
+  // The recorder owns permission / empty-capture failures; showing its state
+  // directly beats copying it into a second variable that can go stale.
+  const shownError =
+    errorMessage ?? (recorder.error ? t(`error_${recorder.error}`) : null);
+  const mmss = (s: number) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center gap-2">
-        {listening ? (
+        {recording ? (
           <Button
             type="button"
             size="lg"
             variant="destructive"
-            onClick={stop}
+            onClick={recorder.stop}
             className="h-11 flex-1"
           >
             <Square className="size-4 fill-current" aria-hidden />
-            {t("listening")}
+            {t("listening")} {mmss(recorder.seconds)} / {mmss(MAX_RECORD_SECONDS)}
+          </Button>
+        ) : stage === "transcribing" ? (
+          <Button type="button" size="lg" variant="outline" disabled className="h-11 flex-1">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            {t("transcribing")}
           </Button>
         ) : (
           <Button
             type="button"
             size="lg"
             variant="outline"
-            onClick={start}
-            disabled={!supported}
+            onClick={startRecording}
+            disabled={disabled || stage === "confirm"}
             className="h-11 flex-1"
           >
             <Mic className="size-4" aria-hidden />
@@ -249,17 +205,16 @@ export function DictateButton({
           </Button>
         )}
 
-        {/* Language toggle. Tiny chip; defaults to whichever language
-            was passed in (typically work_orders.language). */}
+        {/* Language toggle. Pins the transcription language rather than letting
+            detection guess — it is weakest on exactly the short phrases a tech
+            dictates. Defaults to the surface's own language. */}
         <button
           type="button"
-          onClick={() =>
-            setLanguage((l) => (l === "da-DK" ? "en-US" : "da-DK"))
-          }
-          disabled={listening}
+          onClick={() => setLanguage((l) => (l === "da-DK" ? "en-US" : "da-DK"))}
+          disabled={recording || stage !== "idle"}
           className={cn(
-            "border-input hover:bg-muted shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-mono tabular-nums transition-colors",
-            listening && "cursor-not-allowed opacity-50",
+            "border-input hover:bg-muted shrink-0 rounded-md border px-2.5 py-1.5 font-mono text-xs tabular-nums transition-colors",
+            (recording || stage !== "idle") && "cursor-not-allowed opacity-50",
           )}
           aria-label={t("languageAria", { language })}
         >
@@ -269,53 +224,66 @@ export function DictateButton({
 
       {!supported ? (
         <p className="text-muted-foreground text-xs">{t("unsupported")}</p>
+      ) : !ready ? (
+        <p className="text-muted-foreground text-xs">{t("notConfigured")}</p>
       ) : null}
 
-      {/* Live interim transcript — italic so the tech can see speech is
-          being picked up. Disappears as soon as the chunk is finalized. */}
-      {listening && interim ? (
-        <p className="text-muted-foreground rounded-md bg-muted/40 px-3 py-2 text-sm italic">
-          {interim}…
-        </p>
+      {/* Level meter — the only sign the mic is live now that there is no
+          interim transcript. A silent bar means a muted or wrong input. */}
+      {recording ? (
+        <div
+          className="bg-ground h-1.5 w-full overflow-hidden rounded-full"
+          role="presentation"
+        >
+          <div
+            className="bg-destructive h-full rounded-full transition-[width] duration-100"
+            style={{ width: `${Math.round(recorder.level * 100)}%` }}
+          />
+        </div>
       ) : null}
 
-      {/* Confirmation step — never auto-append; the tech always sees
-          what got captured and can throw it away if dictation went
-          sideways. */}
-      {pending ? (
-        <div className="bg-muted/40 flex flex-col gap-2 rounded-md border p-3">
-          <p className="text-sm">{pending}</p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={acceptPending}
-              className="flex-1"
-            >
-              {t("append")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={discardPending}
-            >
+      {/* Confirmation — never auto-append; the tech always sees what was
+          captured. On a failed transcription the same panel holds the audio
+          and offers Retry, so nobody has to say it twice. */}
+      {stage === "confirm" ? (
+        <div className="bg-ground flex flex-col gap-2 rounded-md p-3">
+          {transcript ? (
+            <p className="text-sm">{transcript}</p>
+          ) : (
+            <p className="text-muted-foreground text-sm">{t("keptRecording")}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {transcript ? (
+              <Button type="button" size="sm" onClick={accept} className="flex-1">
+                {t("append")}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => recorder.blob && transcribe(recorder.blob)}
+                className="flex-1"
+              >
+                <RotateCcw className="size-4" aria-hidden /> {t("retry")}
+              </Button>
+            )}
+            <Button type="button" size="sm" variant="ghost" onClick={discard}>
               <X className="size-4" aria-hidden /> {t("discard")}
             </Button>
           </div>
         </div>
       ) : null}
 
-      {errorMessage ? (
+      {shownError ? (
         <p className="text-destructive text-xs" role="alert">
-          {errorMessage}
+          {shownError}
         </p>
       ) : null}
 
-      {listening ? (
+      {recording ? (
         <button
           type="button"
-          onClick={abort}
+          onClick={cancelRecording}
           className="text-muted-foreground hover:text-foreground self-start text-xs underline-offset-4 hover:underline"
         >
           {t("cancel")}

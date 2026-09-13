@@ -19,6 +19,16 @@
  * `inbound` bucket (minted by the channel adapter); Gladia fetches it
  * itself, the Azure adapter downloads the bytes and re-uploads.
  *
+ * Two callers now: the voicemail channel, and the DICTATE button
+ * (src/lib/dictation/) — the same capability, so the same provider selection
+ * and the same key. A caller that pins `languages` or shortens `timeoutMs` is
+ * the interactive one; the voicemail path passes neither.
+ *
+ * NOTE for local work: the provider FETCHES the signed URL, so a dev server
+ * pointed at the local Supabase (127.0.0.1) cannot transcribe — Gladia cannot
+ * reach it. Point at production (`scripts/use-db.sh prod`) to exercise this
+ * end to end.
+ *
  * Server-only (reads process.env). Import from server actions.
  */
 
@@ -60,6 +70,22 @@ export type TranscribeOptions = {
    * Omitted / 1 → today's single-speaker voicemail path, unchanged.
    */
   channels?: number;
+  /**
+   * ISO 639-1 codes to transcribe as, narrowing the shipped default of "the
+   * workshop's two languages, detected per file". Pinning ONE measurably helps
+   * where detection is weakest — a short dictated phrase — so the dictation
+   * button passes the tech's chosen language and the voicemail path passes
+   * nothing. Shape borrowed from Munin's copy of this module so the two stay
+   * diffable. Adapters map to their own vocabulary (Azure wants locales).
+   */
+  languages?: string[];
+  /**
+   * How long to wait for an async provider before giving up. Defaults to the
+   * voicemail window; an interactive caller passes less, because a platform
+   * function timeout kills the request with no error the UI can show, while a
+   * clean `timeout` leaves the audio in the browser to retry.
+   */
+  timeoutMs?: number;
 };
 
 export async function transcribeAudio(
@@ -67,9 +93,11 @@ export async function transcribeAudio(
   opts: TranscribeOptions,
 ): Promise<TranscribeResult> {
   const twoWay = (opts.channels ?? 1) >= 2;
-  if (opts.provider === "gladia") return transcribeViaGladia(audioUrl, twoWay);
+  if (opts.provider === "gladia") {
+    return transcribeViaGladia(audioUrl, twoWay, opts.languages, opts.timeoutMs);
+  }
   if (opts.provider === "azure") {
-    return transcribeViaAzure(audioUrl, opts.region, twoWay);
+    return transcribeViaAzure(audioUrl, opts.region, twoWay, opts.languages);
   }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
 }
@@ -162,9 +190,14 @@ const GLADIA_INIT_URL = "https://api.gladia.io/v2/pre-recorded";
 const GLADIA_POLL_INTERVAL_MS = 1_000;
 const GLADIA_POLL_TIMEOUT_MS = 90_000;
 
+/** The workshop's two languages — the default when a caller pins none. */
+const DEFAULT_LANGUAGES = ["da", "en"] as const;
+
 async function transcribeViaGladia(
   audioUrl: string,
   twoWay = false,
+  languages?: string[],
+  timeoutMs?: number,
 ): Promise<TranscribeResult> {
   const apiKey = process.env.GLADIA_API_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
@@ -176,8 +209,13 @@ async function transcribeViaGladia(
       headers: { "content-type": "application/json", "x-gladia-key": apiKey },
       body: JSON.stringify({
         audio_url: audioUrl,
-        // The workshop's two languages; detection picks per file.
-        language_config: { languages: ["da", "en"], code_switching: false },
+        // The caller's languages, else the workshop's two with detection
+        // picking per file. One code means "transcribe as this", which is what
+        // a dictating tech has already told us with the DA/EN chip.
+        language_config: {
+          languages: languages?.length ? languages : [...DEFAULT_LANGUAGES],
+          code_switching: false,
+        },
         // NOTE (2026-07-25): deliberately NO diarization for two-way calls.
         // Gladia transcribes multi-channel audio AUTOMATICALLY and tags every
         // utterance with `channel` — which, on a Twilio dual-channel recording,
@@ -204,7 +242,7 @@ async function transcribeViaGladia(
     return { ok: false, reason: "api_error", detail: "no result_url in init response" };
   }
 
-  const deadline = Date.now() + GLADIA_POLL_TIMEOUT_MS;
+  const deadline = Date.now() + (timeoutMs ?? GLADIA_POLL_TIMEOUT_MS);
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, GLADIA_POLL_INTERVAL_MS));
 
@@ -313,10 +351,20 @@ async function transcribeViaGladia(
 // ---------------------------------------------------------------------------
 const AZURE_API_VERSION = "2024-11-15";
 
+/** Azure speaks locales, not bare ISO codes. Our two, plus a safe passthrough
+ *  for anything already written as a locale. */
+const AZURE_LOCALES: Record<string, string> = { da: "da-DK", en: "en-US" };
+
+function azureLocales(languages?: string[]): string[] {
+  if (!languages?.length) return ["da-DK", "en-US"];
+  return languages.map((l) => AZURE_LOCALES[l] ?? l);
+}
+
 async function transcribeViaAzure(
   audioUrl: string,
   region: string | null,
   twoWay = false,
+  languages?: string[],
 ): Promise<TranscribeResult> {
   const apiKey = process.env.AZURE_SPEECH_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
@@ -346,7 +394,7 @@ async function transcribeViaAzure(
   form.set(
     "definition",
     JSON.stringify({
-      locales: ["da-DK", "en-US"],
+      locales: azureLocales(languages),
       ...(twoWay ? { channels: [0, 1] } : {}),
     }),
   );

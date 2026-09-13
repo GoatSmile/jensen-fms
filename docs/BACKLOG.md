@@ -6,6 +6,13 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **`ScriptProcessorNode` → `AudioWorklet` in the dictation recorder**
+  (`src/lib/dictation/use-recorder.ts`). The capture node is formally
+  deprecated; no browser has removed it or announced a date, and Munin has run
+  the same code in production since August. A worklet needs a separately-served
+  module file, which is real complexity for no current gain — so this is a swap
+  to make when it bites, not before. Symptom to watch: a console deprecation
+  that becomes an error, or silent no-op `onaudioprocess` in a browser update.
 - **The dependency tree is internally inconsistent** (surfaced by CI's first
   run, 2026-07-27, pre-existing). `npm ls` reports *invalid*:
   `next-intl@4.13.2` pulls `@swc/core@1.15.43`, which wants

@@ -15,6 +15,7 @@ import {
 import { atTimeLabel, elapsedShort } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
+import { dictationReady } from "@/lib/dictation/ready";
 import type { WOPartRow } from "./_components/parts-section";
 import type { WOPhoto } from "./_components/photos-section";
 
@@ -42,9 +43,10 @@ export default async function WorkspacePage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
-  const [t, locale] = await Promise.all([
+  const [t, locale, canDictate] = await Promise.all([
     getTranslations("wo"),
     getLocale(),
+    dictationReady(),
   ]);
   const supabase = await createClient();
 
@@ -257,6 +259,7 @@ export default async function WorkspacePage({
         language={language}
         initialDiagnosis={wo.diagnosis ?? ""}
         initialWorkPerformed={wo.work_performed ?? ""}
+        dictationReady={canDictate}
         bikeId={wo.bike?.id ?? null}
         resolvesTicketNumber={resolvesTicketNumber}
         partRows={partRows}

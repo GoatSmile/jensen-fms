@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { DICTATION_PREFIX } from "@/lib/dictation/storage";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 
 export const runtime = "nodejs";
@@ -61,10 +62,42 @@ export async function GET(request: Request) {
     removed += 1;
   }
 
+  const strayDictations = await sweepStrayDictations(supabase);
+
   return NextResponse.json({
     ok: true,
     removed,
+    strayDictations,
     cutoff,
     retentionDays: mediaRetentionDays,
   });
+}
+
+/** A dictation's audio is deleted as soon as its text comes back, so anything
+ *  still here is the crash case — no row references it and nothing else walks
+ *  this prefix. An hour is already far longer than the transcription takes;
+ *  24 h is the generous version of "nobody is coming back for it". */
+const STRAY_DICTATION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+async function sweepStrayDictations(
+  supabase: ReturnType<typeof createServiceClient>,
+): Promise<number> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(DICTATION_PREFIX, { limit: 1000 });
+  if (error || !data?.length) return 0;
+
+  const threshold = Date.now() - STRAY_DICTATION_MAX_AGE_MS;
+  const stale = data
+    .filter((o) => {
+      const at = Date.parse(o.created_at ?? "");
+      return Number.isFinite(at) && at < threshold;
+    })
+    .map((o) => `${DICTATION_PREFIX}/${o.name}`);
+  if (stale.length === 0) return 0;
+
+  const { error: removeErr } = await supabase.storage
+    .from(BUCKET)
+    .remove(stale);
+  return removeErr ? 0 : stale.length;
 }

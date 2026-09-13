@@ -556,6 +556,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
   residency.
+- **Dictation records audio and uses that same transcription provider — never
+  the browser's speech API.** The Dictate button (`src/lib/dictation/`,
+  `src/components/dictate-button.tsx`) captures 16 kHz mono WAV via the Web
+  Audio API, PUTs it straight to storage with a signed upload URL (the bytes
+  never ride a server action — a 3-minute WAV is past Vercel's request cap),
+  and `/api/dictate` transcribes it and deletes the audio. It shares the inbound
+  provider selection and key because it is the same capability; there is no
+  second place to configure it. **The Web Speech API it replaced is not an
+  option to revisit**: on desktop Chrome it streams to Google's servers, so it
+  fails with a bare `network` error on any Chromium without Google's key
+  (DECISIONS 2026-09-13). Two consequences: a failed transcription must KEEP the
+  recording for a retry, and **the local Supabase cannot transcribe at all** —
+  the provider fetches the signed URL, so `127.0.0.1` is unreachable to it and
+  end-to-end verification means pointing at production.
 - **Outbound is kept, whole, and only `sendAndRecord` may send** (migration 94,
   `src/lib/email/outbox.ts`). One `outbound_messages` row per ATTEMPT — written
   `pending` before the provider is called, stamped `sent` with its id or
