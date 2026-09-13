@@ -2867,3 +2867,41 @@ written after it — and lands on the browser default: Times.
 Verified by reproducing the deployed failure: stripping the generated class off
 `<html>` leaves the computed family as Geist with `document.fonts.check` true,
 where it previously computed to `"Times"`. Confirmed in production after deploy.
+
+## 2026-09-13 (night) — Test stock is restored by REMOVING the outbound movement, not by reversing it
+
+**Decided (owner approved the outcome; the mechanism is a dev call forced by the
+data).** Purging the `Jp -test 1` bike had to return the 51 units it consumed.
+The obvious move — write reversing inbound movements, leaving an auditable
+in/out pair — was **rejected once the rows were actually read**:
+
+- **Two of the 45 movements carry NULL cost and basis `none`** (they predate
+  migration 88). CLAUDE.md requires every INBOUND movement to carry a cost, and
+  forbids new writes producing `none`. A compliant reversal was therefore
+  impossible without **inventing a cost during a cleanup**.
+- **Every reversal would have been a costed inbound event**, and
+  `v_part_last_cost` ranks *any* movement with `quantity_delta > 0` newest-wins,
+  with no movement-type filter. Measured before acting: reversals dated today
+  would have repriced **4 parts** off a July figure; backdating them to the
+  original timestamp still repriced 1. Silently moving a cost that feeds margin
+  is a worse outcome than a missing audit pair.
+- **Deleting an OUTBOUND movement cannot touch that view** — it filters
+  `quantity_delta > 0` — so removal restores the stock and changes no part's
+  cost. Verified from the snapshot: all 45 were `consumed_build` /
+  `consumed_maintenance`, none inbound.
+
+**The audit pair would have documented nothing**, because the bike, its 44
+`bike_parts`, its MO and its work order were all being removed in the same
+transaction. A reversal referring to a build that no longer exists is noise, not
+provenance.
+
+**Every row was snapshotted to JSON before the transaction** (145 rows) — that
+is the recoverability, not the ledger. Result: stock 62 848 → 62 899 (+51,
+exactly as predicted), and **audit check 18 fell 11 → 9**, the two NULL-cost
+rows, shrinking in the only direction it is allowed to.
+
+**Not deleted, deliberately:** PO-2026-0062 (already cancelled, notes already
+say test, supplier already soft-deleted — neutralised, and a purchase order is
+a supplier-side financial record) and `JP-2026-E_BIKE-035/036/037`, which carry
+no marker and nothing consumed, so nobody can say whether they are real. That
+uncertainty is the whole argument for the TEST-marker rule.

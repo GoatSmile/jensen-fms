@@ -93,9 +93,21 @@ demoed in English looks different on his tablet.
    with no picture of its own. Blocked only on Dennis mapping the public models
    to the FMS templates, and on a clean Svajer shot.
 
+## Checks — the baselines to match
+- **Smoke**: 92 pass · 19 redirect · 7 skip · 0 fail against production (93 on
+  the local copy, where `/offers/[id]` has a row to render). A SKIP is not a pass.
+- **Invariant audit**: two standing hits, both pre-existing. Check 17
+  (`JP-BasJen`, 500 units with no known cost) and check 18 (legacy
+  `unit_cost_basis = 'none'`, **9 rows**, down from 11 — it can only shrink).
+  "Clean" means matching these, not an empty result.
+
 ## Data-entry debts (owner/admin work, not code)
-- Unchanged from 2026-09-04. Production still carries test rows that predate the
-  TEST-marker rule — `Jp -test 1` (the bike on WO-2026-0007) and
-  TKT-2026-0010's "TEST" message are the visible ones. They are exactly what
-  that rule exists to make a query rather than an argument; renaming them is a
-  small, separate job.
+- **The test data is gone (2026-09-13).** The `Jp -test 1` bike, its 44
+  `bike_parts`, 45 inventory movements, MO-2026-0014, WO-2026-0007, all three
+  tickets and two archived test families were purged from production; stock went
+  62 848 → 62 899. Snapshot of all 145 rows kept outside the repo; mechanism and
+  what was deliberately spared in DECISIONS 2026-09-13 (night).
+- **`JP-2026-E_BIKE-035/036/037` are unclassified.** All `planning`, nothing
+  consumed, no owner, no marker — so nobody can say whether they are real bikes
+  or leftovers. They are the entire argument for the TEST rule. One answer from
+  the owner settles them.
