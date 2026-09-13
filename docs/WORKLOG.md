@@ -93,10 +93,10 @@ treat the early totals as floors, not truth.
 | Wed 2026-09-02 | ~12 | **SO → paint order walkable, painted parts become stock** (migrations 89–92): painter + PO documents in the supplier's language, a picker by customer order, painted variants per colour with shelf view and colour-aware builds, the TEST rule, a docs sweep, Dennis's walkthrough. |
 | Thu 2026-09-03 | ~12 | **Painter types claim a part category** (migration 97), then the 3 Sep call: the paint screen now shows what goes to the painter, "frames" gave way to "bikes", painted stock became an actionable panel plus a way to record stock already owned, and a scrap became a `disposed`. |
 | Fri 2026-09-04 | ~13 | **The offer shipped, then 500'd in production** (migrations 98–101): `/offers` — document, print, email, revision, convert — but 98/99 had never been applied. Fixed and verified, then mechanised: a migration ledger, `check:prod`, a push gate. Orders nav reordered by the life of a job. |
-| Sun 2026-09-13 | ~5 | **Dictation stops depending on the browser** — Web Speech replaced by in-app recording transcribed through the inbound provider. Then production turned up in Times (a Vercel font-class mismatch), and the test bike with its 45 movements was purged. |
+| Sun 2026-09-13 | ~4.5 | **Dictation stops depending on the browser** — Web Speech replaced by in-app recording transcribed through the inbound provider. Then production turned up in Times (a Vercel font-class mismatch), and the test bike with its 45 movements was purged. |
 
-**September so far: ~42 h** (4 working days)
+**September so far: ~41.5 h** (4 working days)
 
 ---
 
-**Project total: ~296 h across 45 working days (2026-05-07 → 2026-09-13)**
+**Project total: ~295.5 h across 45 working days (2026-05-07 → 2026-09-13)**
