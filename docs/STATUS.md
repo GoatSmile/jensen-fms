@@ -54,6 +54,14 @@ demoed in English looks different on his tablet.
   `supabase status` fails at the docker socket. `scripts/use-db.sh` says LOCAL,
   which is true of the pointer and false of the stack — start Docker and
   `supabase start` before assuming a local dev server works at all.
+- **Vercel ships HTML whose `next/font` class its own stylesheet does not
+  define** — `__variable_4ac2f6` vs `__variable_246ccd`, deterministically,
+  across builds and routes, and not reproducible locally. It put the whole app
+  in Times on 2026-09-13. Worked around by declaring the font variables on
+  `:root` ourselves (DECISIONS 2026-09-13 evening); **the mismatch is still
+  there in the deployed HTML** — the app simply no longer depends on it. If
+  fonts ever look wrong again, check `--font-geist-sans` in the browser before
+  suspecting anything else.
 - **The DA/EN chip is a HINT, not a constraint.** English dictated with the chip
   on DA came back as clean English (production, 2026-09-13). Gladia evidently
   treats a pinned language as a preference rather than a filter, so the chip

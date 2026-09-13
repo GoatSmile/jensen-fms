@@ -2830,3 +2830,40 @@ instead of failing after the tech has already spoken.
 **Consequence for local work:** the provider FETCHES the signed URL, so a dev
 server on the local Supabase cannot transcribe at all — Gladia cannot reach
 `127.0.0.1`. Verifying this end to end means pointing at production.
+
+## 2026-09-13 (evening) — The font variables are declared by us, not only by next/font
+
+**Decided (dev call, after production rendered in Times).** `globals.css`
+declares `--font-geist-sans` / `--font-geist-mono` on `:root` with exactly the
+values `next/font` emits. **This is deliberate duplication — do not delete it as
+redundant**, which is precisely how it reads if you don't know why it is there.
+
+`next/font` normally sets those variables through a hashed class it also puts on
+`<html>`. On 2026-09-13 Vercel shipped HTML wearing `__variable_4ac2f6` while
+its own stylesheet defined `__variable_246ccd`, so the variables were never set.
+An undefined variable inside `font-family` is invalid **at computed-value time**,
+which discards the whole declaration — including the system fallback chain
+written after it — and lands on the browser default: Times.
+
+- **It was NOT a cache.** Two consecutive builds produced the identical mismatch
+  on every route, so a redeploy with the build cache cleared would not have
+  fixed it. **Rejected: telling the owner to redeploy**, which was the first
+  instinct and would have wasted his time.
+- **It was NOT our source.** The same commit builds self-consistently on a Mac
+  (server chunks, client chunks and CSS all `246ccd`) and dev renders Geist, so
+  it could not be reproduced locally — only observed in the deployed output.
+- **Everything else was already there**: the `@font-face` rules for both
+  families, eleven woff2 files, and the variable values themselves. Only the
+  class name joining them failed to match. Declaring the variables ourselves
+  removes that single point of failure; when the generated class does land it
+  sets identical values, so nothing changes.
+- **Second, separate guard**: every `--font-geist-*` reference now carries an
+  in-`var()` fallback, so an undefined variable substitutes instead of
+  invalidating. That one is about the *class* of failure — this app has rendered
+  in Times three times now from three unrelated causes (a circular `var()`,
+  `@apply font-sans` emitting nothing, and this). The first guard keeps Geist;
+  the second keeps us out of Times when nothing else can.
+
+Verified by reproducing the deployed failure: stripping the generated class off
+`<html>` leaves the computed family as Geist with `document.fonts.check` true,
+where it previously computed to `"Times"`. Confirmed in production after deploy.
