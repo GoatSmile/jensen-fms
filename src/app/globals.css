@@ -12,10 +12,23 @@
      to be `var(--font-sans)` — a circular self-reference that resolved
      to nothing, so Tailwind's font-sans utility fell back to the user-
      agent default (Times New Roman on macOS / iOS). Point both at the
-     real variables instead. */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+     real variables instead.
+
+     EVERY reference carries an in-var() FALLBACK, and that is the whole
+     point of this block: an undefined variable inside font-family is
+     invalid AT COMPUTED-VALUE TIME, which throws away the entire
+     declaration — including the system chain written after it — and lands
+     on Times. A fallback inside var() substitutes instead, so the worst
+     case is system sans that nobody files a bug about. This is the THIRD
+     time this app has rendered in Times (circular var; @apply font-sans
+     emitting nothing; and on 2026-09-13 a Vercel build whose HTML asked
+     for font classes its own stylesheet never defined). The first two
+     were bugs in this file; the third was not, and still produced the
+     identical symptom — which is why the guard belongs here rather than
+     in whatever produced it. */
+  --font-sans: var(--font-geist-sans, ui-sans-serif);
+  --font-mono: var(--font-geist-mono, ui-monospace);
+  --font-heading: var(--font-geist-sans, ui-sans-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -337,11 +350,13 @@
        so the browser fell back to its user-agent default (Times Roman on
        macOS / iOS). Set the family directly from the next/font/google
        variable (--font-geist-sans), with the same system fallback chain
-       Tailwind's default font-sans uses. */
+       Tailwind's default font-sans uses.
+
+       The fallback INSIDE var() is load-bearing — see the @theme block. */
     font-family:
-      var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
-      BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-      sans-serif;
+      var(--font-geist-sans, ui-sans-serif), ui-sans-serif, system-ui,
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
   }
 
   /* Print rules — hide app chrome so /…/print routes (and anything else the
