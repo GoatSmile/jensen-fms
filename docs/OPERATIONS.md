@@ -53,13 +53,13 @@ purposes, here is every variable the code actually reads:
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` | Supabase |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio trunk + webhook signature validation |
-| `GLADIA_API_KEY` | transcription (selected provider) |
+| `GLADIA_API_KEY` | transcription (selected provider) — also what the Dictate button uses; **confirmed present in Vercel production** (owner, 2026-09-13) |
 | `AZURE_SPEECH_KEY` | fallback transcription adapter |
 | `ANTHROPIC_API_KEY` | extraction LLM |
 | `RESEND_API_KEY` | outbound email |
 | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` | e-conomic |
 | `CRON_SECRET` | authenticates all three cron routes; **the FX route 503s without it** on any non-dev deploy |
-| `SITE_PASSWORD` | the opt-in shared-password gate (`middleware.ts`, `/whoami` person claim). Unset = gate locks nothing — prod relies on Vercel SSO |
+| `SITE_PASSWORD` | the opt-in shared-password gate (`middleware.ts`), which signs the `Admin` person session. Unset = the gate locks nothing, **and nothing else is standing behind it** — Vercel SSO was verified 2026-09-03 NOT to front this app. Set in Vercel only, which is why no production session can be minted from a dev machine |
 | `NEXT_PUBLIC_APP_URL` | base URL baked into bike QR codes (`src/lib/qr.ts`) |
 | `NEXT_PUBLIC_NOMINATIM_CONTACT` | geocoding User-Agent contact |
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel Protection-Bypass propagation on inbound webhooks |

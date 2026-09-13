@@ -56,20 +56,21 @@ demoed in English looks different on his tablet.
   audio URL, so `127.0.0.1` is unreachable to it. Exercising dictation end to
   end means `scripts/use-db.sh prod` + restart, which is how it was verified
   today. Switch back afterwards.
-- **`GLADIA_API_KEY` on Vercel is UNVERIFIED.** It is in `.env.local` and
-  `env/prod.env` and listed in OPERATIONS.md, and dictation is dead in
-  production without it — the button will disable itself with "Dictation isn't
-  set up", which is honest but not what anyone wants to discover on the floor.
-  There is no Vercel CLI on this machine, so this needs one look at the Vercel
-  dashboard's env vars. **Do this before telling Dennis dictation works.**
+- **No production session can be minted from this machine.** `SITE_PASSWORD`
+  lives only in Vercel, and there is no Vercel CLI here — so any check that
+  needs an authenticated production page (dictation's own button, `/offers`)
+  needs a human with a browser. `/api/dictate` is behind the same gate.
 - The e-conomic trial-vs-production grant remains as previously recorded.
 
 ## Next actions
-0. **Confirm `GLADIA_API_KEY` is set on Vercel**, then dictate one sentence into
-   a work order in production from a real browser. The mic cannot be driven from
-   the in-app browser pane (capture is blocked there), so the recording leg is
-   the one part verified by reasoning and ported code rather than by a run —
-   everything downstream of the blob is verified against production.
+0. **Dictate one sentence into a work order in production, from a real
+   browser.** `GLADIA_API_KEY` is confirmed present in Vercel (owner,
+   2026-09-13), and everything downstream of the audio blob is verified against
+   production. What is NOT yet verified by a run is the recording leg itself —
+   mic capture is blocked in the in-app browser pane, so `getUserMedia` →
+   encoder → signed PUT has only been proven in pieces (the encoder by
+   round-tripping real audio through it; the PUT by replaying the browser's
+   exact two-stage call). One real dictation closes it.
 1. **Click `/offers` in production and confirm it renders.** Unchanged from the
    4 Sep session: everything below the UI is verified, but the authenticated
    page itself has never been seen, and it cannot be from here (the gate needs
