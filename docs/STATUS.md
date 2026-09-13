@@ -9,7 +9,9 @@ storage with a signed upload URL, and transcribes through the provider the
 inbound pipeline already uses (Gladia). Verified end to end against production:
 200 in 3.7 s, correct Danish transcript, audio deleted after. tsc + lint + build
 clean; smoke 92 pass / 0 fail (against production — the offers/invoice/agreement
-routes skip for want of rows).
+routes skip for want of rows). **The owner then dictated into WO-2026-0007 in
+production and both fields took the text**, so the whole chain — mic, encoder,
+signed upload, provider, delete — is verified by a run, not by reasoning.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -52,6 +54,11 @@ demoed in English looks different on his tablet.
   `supabase status` fails at the docker socket. `scripts/use-db.sh` says LOCAL,
   which is true of the pointer and false of the stack — start Docker and
   `supabase start` before assuming a local dev server works at all.
+- **The DA/EN chip is a HINT, not a constraint.** English dictated with the chip
+  on DA came back as clean English (production, 2026-09-13). Gladia evidently
+  treats a pinned language as a preference rather than a filter, so the chip
+  cannot be relied on to *force* a language — one sample, so do not build on the
+  inverse either.
 - **The local Supabase can never transcribe.** The provider FETCHES the signed
   audio URL, so `127.0.0.1` is unreachable to it. Exercising dictation end to
   end means `scripts/use-db.sh prod` + restart, which is how it was verified
@@ -63,23 +70,15 @@ demoed in English looks different on his tablet.
 - The e-conomic trial-vs-production grant remains as previously recorded.
 
 ## Next actions
-0. **Dictate one sentence into a work order in production, from a real
-   browser.** `GLADIA_API_KEY` is confirmed present in Vercel (owner,
-   2026-09-13), and everything downstream of the audio blob is verified against
-   production. What is NOT yet verified by a run is the recording leg itself —
-   mic capture is blocked in the in-app browser pane, so `getUserMedia` →
-   encoder → signed PUT has only been proven in pieces (the encoder by
-   round-tripping real audio through it; the PUT by replaying the browser's
-   exact two-stage call). One real dictation closes it.
-1. **Click `/offers` in production and confirm it renders.** Unchanged from the
+0. **Click `/offers` in production and confirm it renders.** Unchanged from the
    4 Sep session: everything below the UI is verified, but the authenticated
    page itself has never been seen, and it cannot be from here (the gate needs
    `SITE_PASSWORD`, which lives only in Vercel). One human click closes it.
-2. **Send Dennis the two documents. Still not sent, still the bottleneck.**
+1. **Send Dennis the two documents. Still not sent, still the bottleneck.**
    `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` and
    `docs/COLOUR-LISTS-DENNIS-2026-09.md`. Three answers are needed from him and
    nothing moves without them.
-3. **A picture per TEMPLATE** — the cheap 80%, not blocked on colour. Seven
+2. **A picture per TEMPLATE** — the cheap 80%, not blocked on colour. Seven
    templates, studio shots already on logocykler.dk (`/lovable-uploads/…`).
    Store as `bike_template` attachments (no migration — `attachments.entity_type`
    is free text), show on the template page, use as the default on an offer line
