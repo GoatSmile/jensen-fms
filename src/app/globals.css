@@ -119,6 +119,24 @@
    12px bold uppercase panel titles, which are NOT WCAG "large text".
    ───────────────────────────────────────────────────────────────────── */
 :root {
+  /* Declare the font variables OURSELVES, with exactly the values next/font
+     generates. It normally sets these through a hashed class it also puts on
+     <html> — but on 2026-09-13 Vercel shipped HTML wearing
+     `__variable_4ac2f6` while its own stylesheet defined `__variable_246ccd`,
+     so the variables were never set and the whole app rendered in Times. The
+     @font-face rules, the woff2 files and these very values were all present
+     in that stylesheet; only the class name linking them failed to match.
+
+     Everything on the right-hand side is emitted by next/font into the same
+     stylesheet (`@font-face{font-family:Geist}` and its Fallback twin), so
+     this is not a second source of truth for the FONT — it is the one line
+     that stops the app depending on a generated class name matching across
+     build environments. If those family names ever change, the var still
+     resolves, the families miss, and font-family falls through to the system
+     chain — the same safe landing as the in-var() fallbacks above. */
+  --font-geist-sans: "Geist", "Geist Fallback";
+  --font-geist-mono: "Geist Mono", "Geist Mono Fallback";
+
   /* Ground + ink. The page is #FBFBF9, not #FFFFFF — pure white ground is
      one of the six things that made the old UI read as clinical. */
   --ground: #fbfbf9;
