@@ -149,6 +149,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   and production**; the migration files, `npm run check:prod` and the push gate
   are. Write SQL against `--linked` as if nothing will stop you, because
   nothing will.
+- **So DRY-RUN every destructive statement first, in a `DO` block that ends in
+  `RAISE EXCEPTION`** — not `BEGIN … ROLLBACK`. The exception aborts
+  unconditionally, so the rollback cannot be skipped by whatever transaction
+  handling the Management API applies, and the message carries the row counts
+  back. Open with guards (`if count <> N then raise exception`) so the statement
+  refuses to run against a set that is not the one you surveyed. On 2026-09-15
+  this cost one round trip and caught two things reasoning had missed: a paint
+  order the delete set did not contain, and a CASCADE that would have destroyed
+  the `outbound_messages` rows the plan promised to keep. **Then verify by
+  querying after** — a delete that reported no error is not a delete you have
+  seen happen.
 
 ### Established views
 - `v_current_stock` — `(part_id, location_id, quantity_on_hand, last_movement_at)`.
@@ -448,8 +459,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     is the only path to `in_stock`, it lives under
     `/manufacturing-orders/<mo>/…`, and `/work`'s queue filters to bikes on an
     open MO. An MO-less bike in `building` is **stranded** — only `retired` /
-    `lost_or_stolen` remain. One such bike exists in prod (`JP-3333-12`) and
-    cannot be rescued without an adopt path that does not exist.
+    `lost_or_stolen` remain, because there is no adopt path. No such bike is in
+    production today (audit check 1, verified 2026-09-15); this records the trap,
+    not a live case.
   - `in_stock` from `/bikes/new` mints a bike with **no `build_cost_dkk`** —
     deliberate (owner's call): for a bike we didn't build there is no build cost,
     and every reader of that column null-guards. Do not "fix" it by requiring a

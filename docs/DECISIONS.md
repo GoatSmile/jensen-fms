@@ -2905,3 +2905,50 @@ say test, supplier already soft-deleted — neutralised, and a purchase order is
 a supplier-side financial record) and `JP-2026-E_BIKE-035/036/037`, which carry
 no marker and nothing consumed, so nobody can say whether they are real. That
 uncertainty is the whole argument for the TEST-marker rule.
+
+## 2026-09-15 — A sent message cannot outlive its document, and the marker did not survive a full test chain
+
+A full offer → sales order → MO → build → paint chain was exercised in
+PRODUCTION on 15 September: **20 documents, 9 bikes, 108 inventory movements,
+97 units (14 908,38 kr.) consumed.** It was purged the same evening, after a
+transactional dry-run, with all 423 affected rows snapshotted to
+`~/Backups/jensen-fms-test-purge-2026-09-15/snapshot.json` first. Stock
+62 902 → 62 999; the invariant audit returned to its two standing hits
+(17: `JP-BasJen`; 18: 9 legacy rows).
+
+**The mail log could not be preserved, and that is by design.** The plan was to
+keep the five `outbound_messages` rows and delete only the documents — the
+`sendAndRecord` doctrine says a send nobody can prove is a send that escaped.
+Detaching them (`set offer_id = null`) fails against
+`outbound_messages_kind_shape`, which requires `kind = 'offer'` to carry an
+`offer_id`. So the CASCADE is deliberate: **a sent-message record is meaningless
+without the document it sent**, and orphaning it would leave a body of HTML
+describing a quote that no longer exists. Accepted: the rows went with the
+cascade, and the snapshot — not the table — is where that record now lives.
+Do not "fix" this by relaxing the constraint.
+
+**The TEST rule did not survive the chain: 14 of the 20 documents carried no
+marker.** Only the two offers, two sales orders and two paint orders had one —
+each typed by hand. Everything the app generated *downstream* inherited nothing:
+9 bikes numbered `JP-2026-E_BIKE-038…046`, 4 MOs, and **PNT-2026-0009**, a paint
+order that a marker-based search could not see at all. It surfaced only because
+the dry-run hit `service_order_bikes_bike_id_fkey` and the error named a bike
+the delete set did not contain.
+
+Two consequences:
+
+- **A marker-based sweep is not sufficient to find test data**, so the survey
+  must be by `created_at` date as well. The list produced by marker alone was
+  incomplete and would have left an orphaned paint order behind.
+- **The generators must carry the marker down.** `addBikeToMO`, spawn-MO and the
+  paint-order writers copy type, template and colour from their parent already;
+  a parent whose notes start `TEST` should stamp its children too. Until that
+  exists, a test chain in production is findable only by whoever remembers the
+  date — which is exactly the argument the 26 August cleanup had and the reason
+  the rule was written. Parked in `docs/BACKLOG.md`.
+
+**Dry-run the destructive statement first, in a `DO` block ending in
+`RAISE EXCEPTION`** rather than `BEGIN … ROLLBACK`: the exception aborts
+unconditionally, so the rollback cannot be skipped by whatever transaction
+handling the Management API applies. It cost one round trip and caught both the
+missing paint order and the mail-log cascade before either could land.

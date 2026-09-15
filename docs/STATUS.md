@@ -1,11 +1,14 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-15 (session end).** A housekeeping session: **no code
-shipped, no migration added.** The local Supabase copy was refreshed from
-production for the first time since 2 September, so the copy now reflects the
-13 Sep test-data purge and migrations 98–101. Docker and the local stack were
-started, the copy rebuilt and verified, then both shut down again at session
-end.
+**Last updated: 2026-09-15 (session end).** Two things, **no code shipped and no
+migration added.** The local copy was refreshed from production for the first
+time since 2 September. Then a **full test chain found in production was purged**
+— an offer → SO → MO → build → paint run done that morning: 20 documents, 9
+bikes, 108 movements, 97 units (14 908,38 kr.) of stock. Dry-run first, all 423
+rows snapshotted to `~/Backups/jensen-fms-test-purge-2026-09-15/snapshot.json`,
+then deleted. Stock 62 902 → 62 999; the invariant audit is back to its two
+standing hits. **Local and production are in step** — the refresh was taken
+before that test data existed, and it is now gone from production too.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -103,6 +106,9 @@ demoed in English looks different on his tablet.
 - **Smoke has NOT been run since the 15 Sep refresh** — the dev server had died
   by session end and was not restarted to chase it. Run it first thing next
   session; it is the outstanding verification on the rebuilt copy.
+- **The invariant audit WAS run against production after the purge** and matched
+  the baseline above exactly — that is the verification that the delete broke
+  nothing.
 - **Invariant audit**: two standing hits, both pre-existing. Check 17
   (`JP-BasJen`, 500 units with no known cost) and check 18 (legacy
   `unit_cost_basis = 'none'`, **9 rows** — re-counted on the refreshed copy; it
@@ -112,9 +118,9 @@ demoed in English looks different on his tablet.
 - **Seven unclassified bikes, not three.** `JP-2026-E_BIKE-030/031/032/033` and
   `035/036/037` are all `planning`, no owner, nothing consumed, no TEST marker —
   so nobody can say whether they are real bikes or leftovers. Earlier STATUS
-  entries listed only `035/036/037`; the refreshed copy shows the full set.
-  They are the entire argument for the TEST rule. One answer from the owner
-  settles them.
+  entries listed only `035/036/037`. They are the entire argument for the TEST
+  rule. One answer from the owner settles them. (`038…046` were the 15 Sep test
+  chain and are gone.)
 - **The 13 Sep test-data purge is now reflected locally.** The `Jp -test 1`
   bike, its 44 `bike_parts`, 45 inventory movements, MO-2026-0014, WO-2026-0007,
   all three tickets and two archived test families are gone from both databases.

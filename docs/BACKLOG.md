@@ -6,6 +6,16 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **A TEST marker should travel down the generators.** On 2026-09-15 a full
+  offer → SO → MO → build → paint chain was exercised in production and **14 of
+  the 20 documents carried no marker**: only the six a human typed had one, while
+  the 9 bikes, 4 MOs and one paint order the app generated inherited nothing.
+  The unmarked paint order was invisible to a marker-based search and surfaced
+  only when a dry-run hit its foreign key. `addBikeToMO`, spawn-MO and the
+  paint-order writers already copy type, template and colour from the parent —
+  a parent whose notes start `TEST` should stamp its children the same way.
+  Until then, finding test data needs a `created_at` sweep and someone who
+  remembers the date. See DECISIONS 2026-09-15.
 - **`ScriptProcessorNode` → `AudioWorklet` in the dictation recorder**
   (`src/lib/dictation/use-recorder.ts`). The capture node is formally
   deprecated; no browser has removed it or announced a date, and Munin has run
