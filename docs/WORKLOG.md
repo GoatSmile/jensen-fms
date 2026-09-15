@@ -94,9 +94,10 @@ treat the early totals as floors, not truth.
 | Thu 2026-09-03 | ~12 | **Painter types claim a part category** (migration 97), then the 3 Sep call: the paint screen now shows what goes to the painter, "frames" gave way to "bikes", painted stock became an actionable panel plus a way to record stock already owned, and a scrap became a `disposed`. |
 | Fri 2026-09-04 | ~13 | **The offer shipped, then 500'd in production** (migrations 98–101): `/offers` — document, print, email, revision, convert — but 98/99 had never been applied. Fixed and verified, then mechanised: a migration ledger, `check:prod`, a push gate. Orders nav reordered by the life of a job. |
 | Sun 2026-09-13 | ~4.5 | **Dictation stops depending on the browser** — Web Speech replaced by in-app recording transcribed through the inbound provider. Then production turned up in Times (a Vercel font-class mismatch), and the test bike with its 45 movements was purged. |
+| Tue 2026-09-15 | ~0.5 | **The local copy catches up with production** — Docker and the stack restarted after a fortnight down, then schema + data re-dumped from prod and rebuilt via `db reset`, anonymisation verified. No code shipped. |
 
-**September so far: ~41.5 h** (4 working days)
+**September so far: ~42 h** (5 working days)
 
 ---
 
-**Project total: ~295.5 h across 45 working days (2026-05-07 → 2026-09-13)**
+**Project total: ~296 h across 46 working days (2026-05-07 → 2026-09-15)**
