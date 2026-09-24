@@ -2952,3 +2952,50 @@ Two consequences:
 unconditionally, so the rollback cannot be skipped by whatever transaction
 handling the Management API applies. It cost one round trip and caught both the
 missing paint order and the mail-log cascade before either could land.
+
+## 2026-09-24 — Finn's line goes through Twilio via Relatel option 2; the service calendar is Google's, not ours
+
+From the 24 Sep call with Dennis and the owner's calls afterwards. Plan:
+`docs/plan-service-calendar.md`; telephony facts in `docs/BACKLOG.md` →
+*Providers & channels*.
+
+- **Relatel menu option 2 ("service") forwards to a Danish Twilio number, which
+  bridges to Finn's mobile and records** — the `bridge` mode already built and
+  live-verified 2026-07-25. Dennis keeps his number, provider and menu; only the
+  service branch changes, reversible in minutes. **Rejected:** porting the main
+  number to Twilio — possible (it is landline-type, and Twilio ports Danish
+  geographic numbers but not mobile ones) but ~4 weeks each way and it would make
+  us Jensen's entire phone system; **Relatel's own recording** — recordings stay
+  inside Relatel's app and neither their API nor their webhooks (Aug 2026 guide)
+  hand them over, so a call could be replayed but never become a ticket.
+  Earlier drafts said "option 4"; the notes correct it — 4 is opening hours.
+- **Finn's outgoing calls are captured by a "Call customer" button through
+  Twilio, not by recording his phone.** Covers job call-backs, filed on the ticket
+  they came from. **Rejected:** on-device recording (manual), a softphone in the
+  PWA (unreliable on iOS), Relatel Mobilfeatures (can't reach the pipeline). Calls
+  dialled from his contacts stay uncaptured unless Relatel's API turns out to
+  expose recordings.
+- **The service calendar is a Google calendar; the system keeps only a link and a
+  suggestion queue.** Owner: building calendar and appointment management
+  in-house *"sounds like overkill"*. Google holds the times; Finn edits there
+  freely and the system syncs back. **Rejected:** an appointment module of our
+  own; a subscribed ICS feed (Google refreshes it every several hours); a public
+  calendar (customer names and addresses).
+- **It belongs to the service function, not the person** — a free Google account
+  on the service mailbox (`service@jensenproduction.dk`, to confirm). **Free, on
+  purpose:** API, push notifications and sharing all work; what Workspace adds
+  that matters is a DPA, so events carry minimal personal data (customer + bike +
+  ticket link, no phone numbers or contact names). Switch to Workspace when a
+  customer asks about the DPA. The system reaches it through a **service account
+  the calendar is shared with**, not OAuth as the user — an OAuth consent screen
+  left in "testing" silently expires the token every 7 days.
+- **Every workshop user is a planner** (owner) — the approval right is a
+  capability on the existing Workshop role, not a new role and not a named person.
+- **A plain booking is written directly; only what the system infers from a
+  call is a suggestion** awaiting a workshop user's approval (owner corrected his
+  own "all changes" to this). A suggestion is checked against Google's current
+  event at approval and goes *stale* rather than overwriting an edit.
+- **No customer communication from or about the calendar** (owner): it is
+  internal; the technician talks to customers himself. **Rejected:** booking
+  confirmations by email/SMS, and Google attendee invitations (which would also
+  need Workspace).

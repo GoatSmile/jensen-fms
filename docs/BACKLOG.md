@@ -6,6 +6,15 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **Receiving a paint order whose lines name no part converts nothing — and says
+  nothing.** Found 2026-09-24 in Dennis's own attempt: `PNT-2026-0008` (lines tied
+  to parts) was cancelled *"fejl"*, and `PNT-2026-0012` was created with part
+  types but **no `part_id` on any line**, then marked `received_back` the same
+  day. No `paint_out` / `paint_in` was posted, so no painted stock appeared, and
+  the screen gave no hint why — the likely "unsuccessful" attempt he described.
+  Fix: warn (or refuse) at `received_back` when a stock order has lines without a
+  part, naming them. Walk it through with him first; the Danish guide should show
+  the flow.
 - **A TEST marker should travel down the generators.** On 2026-09-15 a full
   offer → SO → MO → build → paint chain was exercised in production and **14 of
   the 20 documents carried no marker**: only the six a human typed had one, while
@@ -137,11 +146,46 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
   municipalities, so a tender or a DPO asking this question is not hypothetical.
   Park it as a lever we know how to pull, not as work to do now.
 - **Telephony** — built: `twilio` only. Alternatives exist (Sinch, Bird,
-  46elks, Telnyx) and **none has been evaluated**. Deliberately so: the pressing
-  telephony question is not the vendor but connecting Dennis's own Danish number
-  (three options in `docs/ARCHITECTURE-OVERVIEW.md`). Only evaluate a second
-  vendor if Twilio turns out to be unable to port a Danish number on acceptable
-  terms.
+  46elks, Telnyx) and **none has been evaluated**, deliberately: the route is
+  now decided (DECISIONS 2026-09-24 — Relatel menu option 2 forwards to a Danish
+  Twilio number, which bridges to Finn's mobile; no port). What we know about
+  **Relatel** (Dennis's provider for the switchboard AND Finn's mobile; a TDC
+  company; cloud landline numbers — the main number is landline-type, so a
+  Twilio port stays *possible*, ~4 weeks, but is not needed), from their public
+  docs and the Aug 2026 webhook guide:
+  - Relatel records calls (main number: Contact Center/Unlimited; mobile: the
+    *Mobilfeatures* add-on), but **recordings stay inside Relatel's app** — only
+    the employee can listen, outgoing ones must be saved by hand within an hour,
+    and the public API (`dev.relatel.dk/oas`) downloads **voicemails** only.
+  - **Webhooks** (Contact Center/Unlimited) send `call.created` / `call.ended`
+    per MAIN number, `incoming_message.created`, chat and contact events —
+    **no recording event, and mobile numbers are not a subscribable resource.**
+    HMAC-SHA256 signed (`t=…,v1=…`), 8 retries over ~3½ days,
+    `Relatel-Delivery-Id` for dedupe. Good engineering, easy to receive.
+  - Their API can **originate** a call (`POST /calls`) and send SMS.
+  - Open question for Relatel: can call recordings be fetched by API, and is a
+    recording webhook event planned? If yes, *every* call Finn makes becomes
+    capturable however he dials.
+  - Caller ID from municipal callers is **often hidden or cut to 5 digits**
+    (Dennis, 24 Sep) — phone matching will miss them; see the notice line below.
+- **"Call customer" button — Finn's outgoing calls, recorded.** Twilio rings
+  Finn's mobile first, then the customer, recording dual-channel, filed on the
+  ticket it was started from (pre-matched, better than inbound). Covers job
+  callbacks, not calls dialled from his contacts. ~0.5–1 day on the existing
+  trunk. Caller ID shows the Twilio number unless the company number is
+  verified with Twilio. Rejected alternatives: on-phone recording (manual, won't
+  happen consistently), softphone in the PWA (most work, unreliable on iOS in
+  the background), Relatel recording (can't reach the pipeline — above).
+- **Relatel webhooks as a call log** — metadata only (who/when/how long) for
+  main-number calls, onto the customer's timeline. Needs Contact Center or
+  Unlimited. Nice-to-have; only once the Relatel subscription is known.
+- **Recorded notice asks callers to identify themselves** — *"say your name,
+  workplace and the bike's number"*, and voicemail asks for a callback number.
+  Because hidden/short caller IDs defeat phone matching and leave no way to call
+  back. One line of TwiML copy in both languages.
+- **eSIM / second SIM for Finn** came up on the 24 Sep call; **nothing in the
+  bridge design needs one** (Twilio rings his existing number). Find out what it
+  was meant to solve before anyone buys hardware.
 - **Geocoding — the one with a free win sitting on the floor.** Runtime
   geocoding is Nominatim (`src/lib/geocode/nominatim.ts`; keyless, public, and
   their policy wants a contact address in the User-Agent). But the bulk import
@@ -163,6 +207,28 @@ OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
 path to a personal inbox, so it would have to be a Jensen-owned sender.
 
 ## Parked product ideas
+- **A live AI agent that answers calls and books visits** — Dennis asked
+  (24 Sep) to *"test immediately"* an agent that takes calls, logs them to a
+  calendar and takes notes for Finn. That is a talking agent — Munin's product
+  shape (ConversationRelay, TTS), explicitly NOT ours (see *Providers &
+  channels*: we record and draft). What we can show instead: recorded call →
+  draft ticket → suggested calendar entry (`docs/plan-service-calendar.md`).
+  A talking agent is a separate decision, not a slice of this one. Dennis's own
+  stated priority for the next half year is inventory + the core program.
+- **Supplier invoice capture** (discussed 2026-09-24, not yet asked of Dennis):
+  first ask *which* invoices and what for. Bookkeeping → e-conomic's own voucher
+  capture; don't duplicate it. Part costs → the invoice belongs on the PO:
+  (1) an email address into the inbound trunk as a second channel (needs the
+  mailbox; `orders@valent.dk` is already outstanding), (2) a phone-photo
+  "Add invoice" on the PO page — attachments exist on PO *lines* only today,
+  (3) later, extraction compares invoice vs PO and a human confirms. A one-off
+  historical batch = send scans, processed once, no app work. Never "send
+  pictures to the developer" as the standing process.
+- **Customer duplicates to review** — ten customer names appear twice
+  (Rigshospitalet, Herlev SSP, four Nybolig offices, Estate Århus C, Green
+  Building Council Denmark, Mark Skibsbye, Nordicals). Import leftovers or
+  genuinely two departments? Ask before the fleet import attaches bikes to
+  either copy.
 - **Sub-assemblies — what Dennis calls a "kit"** (escalated as a modelling
   question 2026-09-02; owner's call to escalate, not build). On the 1 Sep call
   Dennis described a kit as the frame plus the motor, cables, display and

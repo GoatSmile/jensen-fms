@@ -91,9 +91,12 @@ td {
   padding: 5pt 7pt; border-bottom: 0.8pt solid var(--rule);
   vertical-align: top;
 }
-/* Money column reads right-aligned; it is always the last one. */
-td:last-child, th:last-child { text-align: right; white-space: nowrap; }
-tr:last-child td {
+/* A COST table — one whose last row is a total (see mark_cost_tables) — reads
+   its money column right-aligned and its total row filled. A text table gets
+   neither: styling every table that way highlighted a "Notes" row as if it
+   were a sum, and nowrap squeezed prose into the other columns. */
+table.cost td:last-child, table.cost th:last-child { text-align: right; white-space: nowrap; }
+table.cost tr:last-child td {
   border-bottom: none; border-top: 1.2pt solid var(--rule-strong);
   background: var(--money-wash); font-weight: 650;
 }
@@ -137,6 +140,15 @@ code {
 """
 
 
+def mark_cost_tables(body: str) -> str:
+    """Class a table `cost` when its last row names a total (e.g. "Fixed total")."""
+    def mark(m: re.Match[str]) -> str:
+        rows = re.findall(r"<tr>.*?</tr>", m.group(0), flags=re.S)
+        last = re.sub(r"<[^>]+>", "", rows[-1]).lower() if rows else ""
+        return m.group(0).replace("<table>", '<table class="cost">', 1) if "total" in last else m.group(0)
+    return re.sub(r"<table>.*?</table>", mark, body, flags=re.S)
+
+
 def build(md_path: Path) -> Path:
     src = md_path.read_text(encoding="utf-8")
 
@@ -172,7 +184,7 @@ def build(md_path: Path) -> Path:
 
     src = re.sub(r"!\[([^\]]*)\]\(([^)]+\.(?:png|jpg|jpeg))\)", inline_img, src)
 
-    body = markdown.markdown(src, extensions=["tables", "smarty", "attr_list"])
+    body = mark_cost_tables(markdown.markdown(src, extensions=["tables", "smarty", "attr_list"]))
     html = (
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<style>{CSS}</style></head><body>{body}</body></html>"

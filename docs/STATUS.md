@@ -83,6 +83,65 @@ demoed in English looks different on his tablet.
 - The e-conomic trial-vs-production grant remains as previously recorded.
 
 ## Next actions
+
+### Tuesday 29 Sep, 13:00 — office visit with Dennis and Finn (from the 24 Sep call)
+Goal: run the service phone line end to end with Finn, and put him on the
+system. Decisions: DECISIONS 2026-09-24. Calendar: `docs/plan-service-calendar.md`.
+
+**Before Tuesday — Nazar**
+- [ ] **Danish Twilio number, today/tomorrow** — the account still has only the
+      US trial number: upgrade it, file Twilio's Danish regulatory bundle (a +45
+      *mobile*-range number needs only name + address, no documents — fastest,
+      and fine as a forwarding target). It can take days; nothing else can be
+      tested without it.
+- [ ] **Relatel admin access** (Dennis is sending it) — ask for an
+      *administrator user of your own*, not his login. Then point **option 2** at
+      the Twilio number and check whether the caller's number comes through.
+- [ ] Switch `inbound_bridge_number` to Finn's mobile on the day (mode is
+      already `bridge`, shadow mode on).
+- [ ] **Create Finn and Glenn** as people, Danish language, role **Workshop**
+      (lands on `/work`) — confirm with Dennis who Glenn is and that Workshop fits
+      him too.
+- [ ] **Service calendar slice 0** — free Google account on the service mailbox,
+      calendar "Servicebesøg", service account, sharing, "Open calendar" link.
+      Blocked on the address (notes say `service@yensen.dk` — no such mail
+      domain; probably `service@jensenproduction.dk`).
+- [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order
+      flow for Dennis.
+- [ ] Send Dennis the calendar invite for Tuesday 13:00.
+- [ ] Proposal to Renee (not app work; due ~26 Sep).
+- [ ] Ask Relatel: can call recordings be fetched by API / is a recording
+      webhook event planned? Which subscription does Jensen have?
+
+**Dennis**
+- [ ] Send the **Trello export** of the bikes (frame, battery, service status,
+      community — cleaned by John). It replaces the fleet spreadsheet template.
+- [ ] Relatel login → Nazar; Finn's email address → Nazar; tell Finn the time.
+- [ ] Check whether Finn's phone supports eSIM — **but change no phone or SIM
+      before Tuesday**: nothing in the design needs an eSIM (BACKLOG).
+- [ ] The service-agreement papers (scans) — Trello's "service status" won't
+      say what is covered.
+
+**On the day**
+1. Test calls on option 2: answered, missed → voicemail; read them in `/inbox`.
+2. Finn logs in on his own phone; one repair end to end (find bike, work,
+   parts, photos).
+3. Dennis's paint order together — `PNT-2026-0012` was received with no parts on
+   its lines, so no painted stock was posted (BACKLOG hardening).
+4. Collect the Trello export and agreement papers.
+
+**Needs a small decision:** how imported bikes are marked (a fixed notes marker
+like `IMPORT Trello 2026-09`, or a `source` column) — same argument as the TEST
+rule.
+
+**Finn on the system — gaps to close before he uses it for real:** labour time
+on the `/work` screen (only editable on the office WO page today); start a work
+order from a scanned bike with no ticket; confirm a provisional frame number /
+add identifiers on site; search by customer fleet number + customer name. Open
+questions for Finn: on-site vs workshop, van stock (a second location), signal
+where he works (offline is a real project), how he records time today.
+
+### Carried over from 15 Sep
 0. **Click `/offers` in production and confirm it renders.** Unchanged since 4
    Sep: everything below the UI is verified, but the authenticated page itself
    has never been seen, and it cannot be from here (the gate needs

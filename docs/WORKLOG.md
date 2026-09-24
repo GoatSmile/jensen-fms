@@ -95,9 +95,10 @@ treat the early totals as floors, not truth.
 | Fri 2026-09-04 | ~13 | **The offer shipped, then 500'd in production** (migrations 98–101): `/offers` — document, print, email, revision, convert — but 98/99 had never been applied. Fixed and verified, then mechanised: a migration ledger, `check:prod`, a push gate. Orders nav reordered by the life of a job. |
 | Sun 2026-09-13 | ~4.5 | **Dictation stops depending on the browser** — Web Speech replaced by in-app recording transcribed through the inbound provider. Then production turned up in Times (a Vercel font-class mismatch), and the test bike with its 45 movements was purged. |
 | Tue 2026-09-15 | ~1.5 | **The local copy catches up, then a test chain leaves production** — stack restarted and re-dumped from prod; then 20 documents, 9 bikes and 108 movements from the morning's offer→paint run purged after a dry-run. Stock +97. |
+| Thu 2026-09-24 | ~4 | **Dennis prep and the 24 Sep call → Finn's service line and calendar designed**: fleet/phone/question PDFs, Relatel researched (no recording API), option-2 → Twilio route and a Google service calendar decided; Tuesday 29 Sep visit planned. |
 
-**September so far: ~43 h** (5 working days)
+**September so far: ~47 h** (6 working days)
 
 ---
 
-**Project total: ~297 h across 46 working days (2026-05-07 → 2026-09-15)**
+**Project total: ~301 h across 47 working days (2026-05-07 → 2026-09-24)**
