@@ -131,12 +131,9 @@ system. Decisions: DECISIONS 2026-09-24. Calendar: `docs/plan-service-calendar.m
    its lines, so no painted stock was posted (BACKLOG hardening).
 4. Collect the Trello export and agreement papers.
 
-**Stale Dennis documents from this session:** `FLEET-LIST-GUIDE-DENNIS-2026-09`
-(.md + .pdf) explains a spreadsheet that was deleted (the Trello export replaces
-it), and `FLEET-AND-PHONE-DENNIS-2026-09` promises that spreadsheet and predates
-the call. Neither has been sent. Remove the guide and mark the brief superseded
-— asked, not yet answered. `QUESTIONS-DENNIS-2026-09-24` is still useful for
-Tuesday (menu option corrected to 2).
+**Dennis documents:** `QUESTIONS-DENNIS-2026-09-24` is the one for Tuesday
+(menu option corrected to 2). `FLEET-AND-PHONE-DENNIS-2026-09` is marked
+SUPERSEDED (never sent); the fleet-list guide was removed with its spreadsheet.
 
 **Needs a small decision:** how imported bikes are marked (a fixed notes marker
 like `IMPORT Trello 2026-09`, or a `source` column) — same argument as the TEST

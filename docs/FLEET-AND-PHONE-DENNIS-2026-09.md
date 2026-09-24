@@ -1,5 +1,10 @@
 # What I need from you — your bikes, your agreements, and Finn's phone
 
+> **SUPERSEDED 2026-09-24 — never sent.** Written before the 24 Sep call. The
+> bike list now comes from Dennis's Trello export, not the spreadsheet this page
+> mentions (deleted); the phone plan is settled in `docs/DECISIONS.md`
+> (2026-09-24). Kept for the record only — do not send.
+
 **For Dennis, 24 September 2026.** Two things we want to start soon: repair
 orders on the bikes already out with your customers, and recording Finn's repair
 calls. Both are waiting on information only you have. This page says exactly
