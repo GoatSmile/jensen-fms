@@ -1,14 +1,14 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-15 (session end).** Two things, **no code shipped and no
-migration added.** The local copy was refreshed from production for the first
-time since 2 September. Then a **full test chain found in production was purged**
-— an offer → SO → MO → build → paint run done that morning: 20 documents, 9
-bikes, 108 movements, 97 units (14 908,38 kr.) of stock. Dry-run first, all 423
-rows snapshotted to `~/Backups/jensen-fms-test-purge-2026-09-15/snapshot.json`,
-then deleted. Stock 62 902 → 62 999; the invariant audit is back to its two
-standing hits. **Local and production are in step** — the refresh was taken
-before that test data existed, and it is now gone from production too.
+**Last updated: 2026-09-24 (session end).** **No app code shipped and no
+migration added** — a planning session around the 24 Sep call with Dennis. It
+settled how Finn's service line gets recorded (Relatel menu option 2 → a Danish
+Twilio number → Finn's mobile; the `bridge` mode already built) and designed the
+service calendar (a free Google calendar the system books into and syncs back
+from; `docs/plan-service-calendar.md`). Decisions: DECISIONS 2026-09-24. Relatel
+research, the Call-customer button, invoice capture and a paint-order gap
+Dennis hit are in BACKLOG. **Next: the Tuesday 29 Sep office visit** — checklist
+below; the Danish Twilio number is the critical path.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -32,8 +32,9 @@ demoed in English looks different on his tablet.
   `npm run check:prod` and `npm run check:local` each report *all 101 applied*.
   That command is the answer to "is production up to date?" — ask it, do not
   reason about it.
-- **The local copy is fresh as of 2026-09-15** and matches production row for
-  row: 25 bikes · 196 parts · 533 organisations · 0 offers · 937 movements.
+- **The local copy was refreshed 2026-09-15; production has moved on since**
+  (at least Dennis's 24 Sep paint orders), so it is behind in DATA, not schema.
+  At the refresh it matched production row for row: 25 bikes · 196 parts · 533 organisations · 0 offers · 937 movements.
   Refreshed per the OPERATIONS runbook — two `supabase db dump --linked` files
   into `supabase/{schema,data}.sql` (gitignored), then `supabase db reset`,
   which re-runs `anonymise.sql` as part of the seed. Anonymisation verified:
@@ -129,6 +130,13 @@ system. Decisions: DECISIONS 2026-09-24. Calendar: `docs/plan-service-calendar.m
 3. Dennis's paint order together — `PNT-2026-0012` was received with no parts on
    its lines, so no painted stock was posted (BACKLOG hardening).
 4. Collect the Trello export and agreement papers.
+
+**Stale Dennis documents from this session:** `FLEET-LIST-GUIDE-DENNIS-2026-09`
+(.md + .pdf) explains a spreadsheet that was deleted (the Trello export replaces
+it), and `FLEET-AND-PHONE-DENNIS-2026-09` promises that spreadsheet and predates
+the call. Neither has been sent. Remove the guide and mark the brief superseded
+— asked, not yet answered. `QUESTIONS-DENNIS-2026-09-24` is still useful for
+Tuesday (menu option corrected to 2).
 
 **Needs a small decision:** how imported bikes are marked (a fixed notes marker
 like `IMPORT Trello 2026-09`, or a `source` column) — same argument as the TEST
