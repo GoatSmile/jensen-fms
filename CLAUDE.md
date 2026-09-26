@@ -1065,10 +1065,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 Never modify SQL files that have already been applied. Add new ones with
 sequential numbering and apply them to PRODUCTION — `supabase db query --linked
 -f migrations/NNN_x.sql`, the Supabase SQL editor, or the MCP `apply_migration`
-tool — AND to the local copy (`--local`, `psql` against `127.0.0.1:54322`, or
-`supabase db reset` after a fresh dump). Whichever route: `/migrations/` is the
-source of truth, so nothing reaches the DB without its numbered file committed
-alongside.
+tool — AND to the local copy: `docker exec -i supabase_db_jensen-fms psql -v
+ON_ERROR_STOP=1 -U postgres -d postgres < migrations/NNN_x.sql`, or `supabase
+db reset` after a fresh dump. **`supabase db query --local` takes ONE statement
+per call** (a multi-statement file fails with "cannot insert multiple commands
+into a prepared statement"), and there is no `psql` on the host — only the
+container's. `--linked` has no such limit. Whichever route: `/migrations/` is
+the source of truth, so nothing reaches the DB without its numbered file
+committed alongside.
 
 **Every migration ends with its own ledger insert**, which is what makes
 "is production up to date?" answerable at all:
