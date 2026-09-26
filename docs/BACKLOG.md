@@ -146,26 +146,32 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
   municipalities, so a tender or a DPO asking this question is not hypothetical.
   Park it as a lever we know how to pull, not as work to do now.
 - **Telephony** — built: `twilio` only. Alternatives exist (Sinch, Bird,
-  46elks, Telnyx) and **none has been evaluated**, deliberately: the route is
-  now decided (DECISIONS 2026-09-24 — Relatel menu option 2 forwards to a Danish
-  Twilio number, which bridges to Finn's mobile; no port). What we know about
+  46elks, Telnyx) and **none has been evaluated**, deliberately. **Relatel is
+  tested first** (DECISIONS 2026-09-26): Jensen's plan (*Professional*) includes
+  the API and Finn's mobile already has *Mobilfeatures*, so a free test decides
+  whether Relatel replaces Twilio for Finn; if it fails, the 2026-09-24 route
+  stands (option 2 → a Danish Twilio number → Finn's mobile). What we know about
   **Relatel** (Dennis's provider for the switchboard AND Finn's mobile; a TDC
   company; cloud landline numbers — the main number is landline-type, so a
   Twilio port stays *possible*, ~4 weeks, but is not needed), from their public
   docs and the Aug 2026 webhook guide:
   - Relatel records calls (main number: Contact Center/Unlimited; mobile: the
-    *Mobilfeatures* add-on), but **recordings stay inside Relatel's app** — only
-    the employee can listen, outgoing ones must be saved by hand within an hour,
-    and the public API (`dev.relatel.dk/oas`) downloads **voicemails** only.
+    *Mobilfeatures* add-on, automatic in and out, kept 30 days–1 year). Only the
+    number's own user may listen, so the API token must be Finn's own. The API
+    spec (v2.1.2) gives each call a `recording.sound.url` "if available" and
+    downloads voicemails (mobile and main) as MP3 — **whether Mobilfeatures
+    recordings of MOBILE calls appear in `GET /calls` is the one unknown**
+    (Munr's research, 2026-09-26). The main number's one-hour manual save does
+    not apply to mobile recording.
   - **Webhooks** (Contact Center/Unlimited) send `call.created` / `call.ended`
     per MAIN number, `incoming_message.created`, chat and contact events —
     **no recording event, and mobile numbers are not a subscribable resource.**
     HMAC-SHA256 signed (`t=…,v1=…`), 8 retries over ~3½ days,
     `Relatel-Delivery-Id` for dedupe. Good engineering, easy to receive.
   - Their API can **originate** a call (`POST /calls`) and send SMS.
-  - Open question for Relatel: can call recordings be fetched by API, and is a
-    recording webhook event planned? If yes, *every* call Finn makes becomes
-    capturable however he dials.
+  - If the test passes, *every* call Finn makes or takes becomes capturable
+    however he dials — polled, not pushed (no mobile webhooks), mono audio
+    (diarization, not channels), and no operator plays a recording notice.
   - Caller ID from municipal callers is **often hidden or cut to 5 digits**
     (Dennis, 24 Sep) — phone matching will miss them; see the notice line below.
 - **"Call customer" button — Finn's outgoing calls, recorded.** Twilio rings
@@ -175,7 +181,7 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
   trunk. Caller ID shows the Twilio number unless the company number is
   verified with Twilio. Rejected alternatives: on-phone recording (manual, won't
   happen consistently), softphone in the PWA (most work, unreliable on iOS in
-  the background), Relatel recording (can't reach the pipeline — above).
+  the background). Unnecessary if the Relatel test passes (above).
 - **Relatel webhooks as a call log** — metadata only (who/when/how long) for
   main-number calls, onto the customer's timeline. Needs Contact Center or
   Unlimited. Nice-to-have; only once the Relatel subscription is known.

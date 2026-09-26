@@ -1,14 +1,13 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-24 (session end).** **No app code shipped and no
-migration added** — a planning session around the 24 Sep call with Dennis. It
-settled how Finn's service line gets recorded (Relatel menu option 2 → a Danish
-Twilio number → Finn's mobile; the `bridge` mode already built) and designed the
-service calendar (a free Google calendar the system books into and syncs back
-from; `docs/plan-service-calendar.md`). Decisions: DECISIONS 2026-09-24. Relatel
-research, the Call-customer button, invoice capture and a paint-order gap
-Dennis hit are in BACKLOG. **Next: the Tuesday 29 Sep office visit** — checklist
-below; the Danish Twilio number is the critical path.
+**Last updated: 2026-09-26 (mid-session checkpoint).** Planning plus one shipped
+slice. **Every open to-do now lives in one ordered list: `docs/plan-go-live.md`**
+— STATUS, BACKLOG, the live plans and the 15 Sep meeting (every item extracted
+with timestamp + quote, saved beside the transcript in
+`~/Documents/1-Projects/Jensen/Misc - Transcripts/`). Shipped: **migration 102**
+(import provenance + the recognition code), the **Imported bikes** nav item, and
+`scripts/import_fleet.py review`. Decided: **test Relatel before buying a Twilio
+number** (DECISIONS 2026-09-26). **Next: the Tuesday 29 Sep visit** — plan §1.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -16,177 +15,94 @@ History belongs in `docs/archive/`, decisions in `docs/DECISIONS.md`, parked
 ideas in `docs/BACKLOG.md`.
 
 ## The frame
-The 31 August cutover **did not happen** and no new date is set. The owner's
-choice (DECISIONS 2026-09-01): **parallel running** — the old system stays the
-system of record while the workshop does small things in the FMS as it is
-fine-tuned. Targets: **core functionality by October, go-live by Christmas.**
-Nazar acts as project manager: **weekly Tuesday-morning check-ins**, Dennis
-spends 15–20 min in the system each morning so every meeting has findings.
-Scope is **modules** (bike templates + parts) and **processes** (sales order →
-paint order first). **Dennis's app is Danish** (person language), so a screen
-demoed in English looks different on his tablet.
+The 31 August cutover did not happen. **Parallel running** (DECISIONS
+2026-09-01): the old system stays the system of record while the workshop does
+small things in the FMS. Targets: **core functionality by October; Dennis wants
+the system fully in use by 1 January** (15 Sep, 02:52) — money is tight and he
+needs "something proven" for investors. Weekly Tuesday check-ins; Dennis's app
+is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 101 is the latest, and BOTH databases are verified at it.**
-  `npm run check:prod` and `npm run check:local` each report *all 101 applied*.
-  That command is the answer to "is production up to date?" — ask it, do not
-  reason about it.
-- **The local copy was refreshed 2026-09-15; production has moved on since**
-  (at least Dennis's 24 Sep paint orders), so it is behind in DATA, not schema.
-  At the refresh it matched production row for row: 25 bikes · 196 parts · 533 organisations · 0 offers · 937 movements.
-  Refreshed per the OPERATIONS runbook — two `supabase db dump --linked` files
-  into `supabase/{schema,data}.sql` (gitignored), then `supabase db reset`,
-  which re-runs `anonymise.sql` as part of the seed. Anonymisation verified:
-  every email is `@example.invalid` except the deliberate `Nazar Taras`
-  organisation + person.
-- **Query production with `supabase db query --linked`** (Management API, CLI
-  token in the keychain; no DB password, works when the MCP does not; `-f` for a
-  whole migration). Neither an owner's report nor a route answering
-  `307 → /login` is verification — that redirect fires in middleware, before the
-  page runs a query.
-- **Schema drift is mechanised** — `public.schema_migrations` written by each
-  migration, `check:prod`/`check:local` diffing it against `migrations/*.sql`,
-  and `.claude/hooks/prod-schema-gate.sh` denying `git push` while production is
-  behind, *including when it cannot check at all*. Override: `SKIP_SCHEMA_GATE=1`.
-- **The Supabase CLI is pre-approved for WRITES** (owner, 2026-09-04) — a
-  migration applies to production with no prompt, and so would any other SQL.
-- **`docs/plan-sep3-meeting.md` is still the live plan.** Tier 0/1 items remain;
-  Tier 2 item 9 (a picture on the offer) has not shipped. Do not archive it yet.
+- **Migration 102 is the latest, and BOTH databases are verified at it**
+  (`npm run check:prod` / `check:local`). Ask the command, do not reason about it.
+- **Query production with `supabase db query --linked`** (writes pre-approved,
+  owner 2026-09-04; `-f` takes a whole multi-statement file). **Locally, the CLI
+  takes ONE statement per call** — apply a migration to the local copy with
+  `docker exec -i supabase_db_jensen-fms psql -v ON_ERROR_STOP=1 -U postgres -d postgres < migrations/NNN_x.sql`
+  (there is no host `psql`).
+- **Finn Nysom and Glenn exist in production as people** — Danish, role
+  *Workshop*, **no password on purpose**, so neither can log in until
+  technicians stop seeing costs (plan §1C). Finn's email is
+  `service@jensenproduction.dk` (his Relatel login). Glenn's surname, email and
+  phone: ask Dennis.
+- **Relatel, read 2026-09-26 (nothing changed there):** plan *Omstilling
+  Professional* (includes the API; no webhooks); **Finn, 42 47 15 51, already has
+  Mobilfeatures** (network-side recording in and out); main number 70 21 05 46,
+  menu 1 → Oprettelse, **2 → Finn**, 3 → Dennis, 4 → a message. Full notes in
+  plan §1A. Finn's Relatel edit page shows his SIM PIN/PUK — never copy them.
+- **Fleet register review files** (no database written):
+  `~/Documents/1-Projects/Jensen/Fleet/import-review-2026-09-26/` — summary,
+  bikes, customers/departments, frames listed twice, number conflicts, the
+  renewal schedule. ~926 distinct frames on 26 customer sheets; 11 personal-data
+  sheets skipped; the monthly sheets are the per-bike renewal schedule (1 704 kr =
+  142 × 12; + 480 kr GPS). Re-run: `python3 scripts/import_fleet.py review`.
+
+## In flight — decisions waiting on the owner
+- **Workshop role trim + a `costs` capability** (plan §1C): keep work, scan,
+  bikes, parts; drop dashboard, inbox, maintenance; one capability gates every
+  money figure. Must land before Finn and Glenn get passwords.
+- **Bug found, not fixed: a Workshop user cannot open the build workbench** —
+  `routes.ts` gates `/manufacturing-orders/*` on `mo` (plan §1C).
+- **Fleet import load** waits for the review of files 2–4 and the scope/status
+  questions in plan §7. **Service agreements are per bike in reality**; the app
+  models them per customer — the modelling decision is plan §2A (escalate).
+- **Google calendar**: Nazar is creating it from the steps given on 26 Sep; the
+  build needs the Calendar ID (not secret) and `GOOGLE_CALENDAR_SA_KEY` in
+  Vercel + `.env.local` (secret — never in chat).
 
 ## Landmines
-- **Docker is stopped, and so is the local stack.** Both were running this
-  session and were shut down at the end. `supabase stop` keeps the volume, so
-  `supabase start` brings the refreshed copy straight back — but Docker Desktop
-  must be launched first, and `scripts/use-db.sh` will say LOCAL whether or not
-  the stack is actually up. That pointer is true of the file and says nothing
-  about the containers.
+- **Docker and the local stack are RUNNING** (started 2026-09-26); `supabase
+  stop` keeps the volume. `scripts/use-db.sh` says LOCAL whether or not the
+  containers are up.
+- **The bikes list is unpaginated and the API caps a response at 1000 rows** —
+  the imported fleet will bring it close (CLAUDE.md caveat). Paginate first.
+- **Charger "numbers" on newer bikes are model codes** (`FY2010001` on dozens of
+  bikes) — never import them as unique charger identifiers; the script already
+  keeps them in the source row only.
 - **Vercel ships HTML whose `next/font` class its own stylesheet does not
-  define** — `__variable_4ac2f6` vs `__variable_246ccd`, deterministically,
-  across builds and routes, and not reproducible locally. It put the whole app
-  in Times on 2026-09-13. Worked around by declaring the font variables on
-  `:root` ourselves (DECISIONS 2026-09-13 evening); **the mismatch is still
-  there in the deployed HTML** — the app simply no longer depends on it. If
-  fonts ever look wrong again, check `--font-geist-sans` in the browser before
-  suspecting anything else.
-- **The DA/EN chip is a HINT, not a constraint.** English dictated with the chip
-  on DA came back as clean English (production, 2026-09-13). Gladia evidently
-  treats a pinned language as a preference rather than a filter, so the chip
-  cannot be relied on to *force* a language — one sample, so do not build on the
-  inverse either.
-- **The local Supabase can never transcribe.** The provider FETCHES the signed
-  audio URL, so `127.0.0.1` is unreachable to it. Exercising dictation end to
-  end means `scripts/use-db.sh prod` + restart. Switch back afterwards.
-- **No production session can be minted from this machine.** `SITE_PASSWORD`
-  lives only in Vercel, and there is no Vercel CLI here — so any check that
-  needs an authenticated production page (dictation's own button, `/offers`)
-  needs a human with a browser. `/api/dictate` is behind the same gate.
+  define** — worked around by declaring the font variables on `:root`
+  (DECISIONS 2026-09-13). If fonts look wrong, check `--font-geist-sans` first.
+- **The DA/EN dictation chip is a hint, not a constraint** (one sample, 13 Sep).
+- **The local Supabase can never transcribe** (the provider fetches the signed
+  URL; `127.0.0.1` is unreachable) — end-to-end dictation means `use-db.sh prod`.
+- **No production session can be minted from this machine** (`SITE_PASSWORD`
+  lives only in Vercel) — authenticated production pages need a human.
 - The e-conomic trial-vs-production grant remains as previously recorded.
 
-## Next actions
-
-### Tuesday 29 Sep, 13:00 — office visit with Dennis and Finn (from the 24 Sep call)
-Goal: run the service phone line end to end with Finn, and put him on the
-system. Decisions: DECISIONS 2026-09-24. Calendar: `docs/plan-service-calendar.md`.
-
-**Before Tuesday — Nazar**
-- [ ] **Danish Twilio number, today/tomorrow** — the account still has only the
-      US trial number: upgrade it, file Twilio's Danish regulatory bundle (a +45
-      *mobile*-range number needs only name + address, no documents — fastest,
-      and fine as a forwarding target). It can take days; nothing else can be
-      tested without it.
-- [ ] **Relatel admin access** (Dennis is sending it) — ask for an
-      *administrator user of your own*, not his login. Then point **option 2** at
-      the Twilio number and check whether the caller's number comes through.
-- [ ] Switch `inbound_bridge_number` to Finn's mobile on the day (mode is
-      already `bridge`, shadow mode on).
-- [ ] **Create Finn and Glenn** as people, Danish language, role **Workshop**
-      (lands on `/work`) — confirm with Dennis who Glenn is and that Workshop fits
-      him too.
-- [ ] **Service calendar slice 0** — free Google account on the service mailbox,
-      calendar "Servicebesøg", service account, sharing, "Open calendar" link.
-      Blocked on the address (notes say `service@yensen.dk` — no such mail
-      domain; probably `service@jensenproduction.dk`).
-- [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order
-      flow for Dennis.
-- [ ] Send Dennis the calendar invite for Tuesday 13:00.
-- [ ] Proposal to Renee (not app work; due ~26 Sep).
-- [ ] Ask Relatel: can call recordings be fetched by API / is a recording
-      webhook event planned? Which subscription does Jensen have?
-
-**Dennis**
-- [ ] Send the **Trello export** of the bikes (frame, battery, service status,
-      community — cleaned by John). It replaces the fleet spreadsheet template.
-- [ ] Relatel login → Nazar; Finn's email address → Nazar; tell Finn the time.
-- [ ] Check whether Finn's phone supports eSIM — **but change no phone or SIM
-      before Tuesday**: nothing in the design needs an eSIM (BACKLOG).
-- [ ] The service-agreement papers (scans) — Trello's "service status" won't
-      say what is covered.
-
-**On the day**
-1. Test calls on option 2: answered, missed → voicemail; read them in `/inbox`.
-2. Finn logs in on his own phone; one repair end to end (find bike, work,
-   parts, photos).
-3. Dennis's paint order together — `PNT-2026-0012` was received with no parts on
-   its lines, so no painted stock was posted (BACKLOG hardening).
-4. Collect the Trello export and agreement papers.
-
-**Dennis documents:** `QUESTIONS-DENNIS-2026-09-24` is the one for Tuesday
-(menu option corrected to 2). `FLEET-AND-PHONE-DENNIS-2026-09` is marked
-SUPERSEDED (never sent); the fleet-list guide was removed with its spreadsheet.
-
-**Needs a small decision:** how imported bikes are marked (a fixed notes marker
-like `IMPORT Trello 2026-09`, or a `source` column) — same argument as the TEST
-rule.
-
-**Finn on the system — gaps to close before he uses it for real:** labour time
-on the `/work` screen (only editable on the office WO page today); start a work
-order from a scanned bike with no ticket; confirm a provisional frame number /
-add identifiers on site; search by customer fleet number + customer name. Open
-questions for Finn: on-site vs workshop, van stock (a second location), signal
-where he works (offline is a real project), how he records time today.
-
-### Carried over from 15 Sep
-0. **Click `/offers` in production and confirm it renders.** Unchanged since 4
-   Sep: everything below the UI is verified, but the authenticated page itself
-   has never been seen, and it cannot be from here (the gate needs
-   `SITE_PASSWORD`, which lives only in Vercel). One human click closes it.
-1. **Send Dennis the two documents. Still not sent, still the bottleneck.**
-   `docs/PRODUCTION-CHECKLIST-DENNIS-2026-09.md` and
-   `docs/COLOUR-LISTS-DENNIS-2026-09.md`. Three answers are needed from him and
-   nothing moves without them.
-2. **A picture per TEMPLATE** — the cheap 80%, not blocked on colour. Seven
-   templates, studio shots already on logocykler.dk (`/lovable-uploads/…`).
-   Store as `bike_template` attachments (no migration — `attachments.entity_type`
-   is free text), show on the template page, use as the default on an offer line
-   with no picture of its own. Blocked only on Dennis mapping the public models
-   to the FMS templates, and on a clean Svajer shot.
+## Next actions — see `docs/plan-go-live.md` §1 (before Tuesday 29 Sep, 13:00)
+1. Relatel test kit: Finn's one-page Danish instruction (recording on + a
+   personal access token, as himself) + a probe script; run it on Tuesday.
+2. Owner's answers on the Workshop role / costs, then build it; then passwords.
+3. Fleet import: review files 2–4 with the owner/Dennis → generate the load.
+4. Finn's Danish user guide (PDF); calendar slice 0 once the ID + key exist.
+5. Carried over: click `/offers` in production; send Dennis the production
+   checklist + colour lists; walk `PNT-2026-0012` with him.
 
 ## Checks — the baselines to match
-- **Smoke**: 92 pass · 19 redirect · 7 skip · 0 fail against production. **The
-  local baseline is now the same 92, not the old 93** — that extra pass came
-  from `/offers/[id]` having a row to render, and the refreshed copy mirrors
-  production, which has no offers. A SKIP is not a pass.
-- **Smoke has NOT been run since the 15 Sep refresh** — the dev server had died
-  by session end and was not restarted to chase it. Run it first thing next
-  session; it is the outstanding verification on the rebuilt copy.
-- **The invariant audit WAS run against production after the purge** and matched
-  the baseline above exactly — that is the verification that the delete broke
-  nothing.
-- **Invariant audit**: two standing hits, both pre-existing. Check 17
+- **Smoke, local (2026-09-26): 87 pass · 19 redirect · 12 skip · 0 fail.** The
+  drop from 92 is data, not code: the local copy (refreshed 15 Sep, after the
+  purges) has no ticket, work order, invoice, agreement or offer to render, so
+  those detail routes SKIP. A SKIP is not a pass. Production last measured 92 · 19
+  · 7 · 0 before the purges.
+- **Invariant audit** (not re-run today): two standing hits — check 17
   (`JP-BasJen`, 500 units with no known cost) and check 18 (legacy
-  `unit_cost_basis = 'none'`, **9 rows** — re-counted on the refreshed copy; it
-  can only shrink). "Clean" means matching these, not an empty result.
+  `unit_cost_basis = 'none'`, 9 rows; can only shrink).
 
 ## Data-entry debts (owner/admin work, not code)
-- **Seven unclassified bikes, not three.** `JP-2026-E_BIKE-030/031/032/033` and
-  `035/036/037` are all `planning`, no owner, nothing consumed, no TEST marker —
-  so nobody can say whether they are real bikes or leftovers. Earlier STATUS
-  entries listed only `035/036/037`. They are the entire argument for the TEST
-  rule. One answer from the owner settles them. (`038…046` were the 15 Sep test
-  chain and are gone.)
-- **The 13 Sep test-data purge is now reflected locally.** The `Jp -test 1`
-  bike, its 44 `bike_parts`, 45 inventory movements, MO-2026-0014, WO-2026-0007,
-  all three tickets and two archived test families are gone from both databases.
-  Snapshot of all 145 rows kept outside the repo; mechanism and what was
-  deliberately spared in DECISIONS 2026-09-13 (night).
+- **Seven unclassified bikes** `JP-2026-E_BIKE-030…037` (planning, no owner,
+  no TEST marker) — real or test? One answer from Dennis.
+- **Recognition prefixes per customer** (BK, GK, …) — the register implies
+  most; Dennis confirms. The column exists (`organizations.recognition_prefix`).
+- Glenn's surname, email, phone; Dennis's Trello export (does it replace the
+  register?); the service-agreement papers.
