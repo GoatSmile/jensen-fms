@@ -3502,6 +3502,7 @@
     "capabilitiesLegend": "Områder i appen",
     "capabilitiesHint": "Hvilke områder rollen kan se og åbne. Navigationen og siderne følger dette, når rolle-login slås til.",
     "capScan": "Scan",
+    "capCosts": "Se kostpriser og priser",
     "eventsLegend": "Får besked om",
     "eventsHint": "Abonnementer på hændelser. Udsendelsen er ikke koblet til endnu — det er sikkert at redigere.",
     "eventTicketCreated": "Ny sag oprettet",

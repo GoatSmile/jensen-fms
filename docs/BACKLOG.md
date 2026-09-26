@@ -6,6 +6,10 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **Delete the v1-session `costs` upgrade after 2026-10-27** — the block at the
+  end of `verifySessionToken` in `src/lib/auth/session.ts`. Sessions last 30
+  days, so every version-1 cookie (minted before migration 103) is expired by
+  then; the upgrade only existed so Dennis kept his figures across the deploy.
 - **Receiving a paint order whose lines name no part converts nothing — and says
   nothing.** Found 2026-09-24 in Dennis's own attempt: `PNT-2026-0008` (lines tied
   to parts) was cancelled *"fejl"*, and `PNT-2026-0012` was created with part

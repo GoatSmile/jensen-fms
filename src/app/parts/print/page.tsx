@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 
 import { PrintButton } from "./_components/print-button";
 
@@ -46,9 +47,10 @@ export default async function PartsPrintPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const [t, tStock] = await Promise.all([
+  const [t, tStock, canSeeCosts] = await Promise.all([
     getTranslations("parts"),
     getTranslations("stockStatus"),
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
 
@@ -118,7 +120,9 @@ export default async function PartsPrintPage({
               <TableHead>{t("thSupplier")}</TableHead>
               <TableHead className="text-right">{t("thStock")}</TableHead>
               <TableHead className="text-right">{t("thReorder")}</TableHead>
-              <TableHead className="text-right">{t("thLastCost")}</TableHead>
+              {canSeeCosts ? (
+                <TableHead className="text-right">{t("thLastCost")}</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,12 +146,14 @@ export default async function PartsPrintPage({
                     ? "—"
                     : Math.trunc(Number(p.reorder_point))}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatPrice(
-                    p.last_cost_dkk == null ? null : Number(p.last_cost_dkk),
-                    "DKK",
-                  )}
-                </TableCell>
+                {canSeeCosts ? (
+                  <TableCell className="text-right tabular-nums">
+                    {formatPrice(
+                      p.last_cost_dkk == null ? null : Number(p.last_cost_dkk),
+                      "DKK",
+                    )}
+                  </TableCell>
+                ) : null}
               </TableRow>
             ))}
           </TableBody>

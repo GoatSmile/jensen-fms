@@ -64,7 +64,10 @@ export async function PaintedVariantsSection({
   primaryLocationId = null,
   hideLocations = false,
   record = null,
+  showMoney,
 }: {
+  /** `costs` capability: no money and no stock adjusting for a technician. */
+  showMoney: boolean;
   /** The service part type this part is paintable as (localized), or null. */
   paintableAs: string | null;
   variants: PaintedVariantRow[];
@@ -182,6 +185,7 @@ export async function PaintedVariantsSection({
                     <TableCell className="text-right">
                       {/* Its own prevailing cost — raw + the frozen paint
                           price — not the base part's raw figure. */}
+                      {showMoney ? (
                       <AdjustStockDialog
                         partId={v.partId}
                         partName={v.sku}
@@ -196,6 +200,7 @@ export async function PaintedVariantsSection({
                         currencies={currencies}
                         prevailingCostDkk={v.prevailingCostDkk}
                       />
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}

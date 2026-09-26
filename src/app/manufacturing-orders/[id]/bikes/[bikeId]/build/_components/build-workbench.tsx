@@ -143,6 +143,12 @@ type Props = {
   readOnly: boolean;
   /** Server-rendered "pick list by kit" card, shown above the workbench. */
   pickListSlot?: React.ReactNode;
+  /**
+   * `costs` capability. The builder at the bench sees parts and quantities;
+   * retail prices and the running total are for the office (retailDkk
+   * arrives null when this is false — withheld, not merely hidden).
+   */
+  showMoney: boolean;
 };
 
 export function BuildWorkbench({
@@ -171,6 +177,7 @@ export function BuildWorkbench({
   requiredRegisteredCount,
   readOnly,
   pickListSlot,
+  showMoney,
 }: Props) {
   const t = useTranslations("build");
   const tStatus = useTranslations("bikeStatus");
@@ -754,7 +761,7 @@ export function BuildWorkbench({
                 <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                   {t("selectedParts", { count: rows.length })}
                 </span>
-                {rows.length > 0 ? (
+                {showMoney && rows.length > 0 ? (
                   <span className="text-xs tabular-nums">
                     {t("retailTotal")}{" "}
                     <span className="font-semibold">
@@ -804,6 +811,7 @@ export function BuildWorkbench({
                                 bikeId={bikeId}
                                 row={r}
                                 readOnly={readOnly}
+                                showMoney={showMoney}
                                 onError={setError}
                               />
                             ))}
@@ -1014,12 +1022,14 @@ function RecipeLine({
   bikeId,
   row,
   readOnly,
+  showMoney,
   onError,
 }: {
   moId: string;
   bikeId: string;
   row: BikePartRow;
   readOnly: boolean;
+  showMoney: boolean;
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslations("build");
@@ -1140,11 +1150,13 @@ function RecipeLine({
             ? t("shortBy", { qty: formatQuantity(shortfall) })
             : t("stocked")}
         </span>
-        <span className="text-muted-foreground ml-auto tabular-nums">
-          {row.retailDkk != null
-            ? `${formatDkk(row.quantity * row.retailDkk)}`
-            : t("noRetailPrice")}
-        </span>
+        {showMoney ? (
+          <span className="text-muted-foreground ml-auto tabular-nums">
+            {row.retailDkk != null
+              ? `${formatDkk(row.quantity * row.retailDkk)}`
+              : t("noRetailPrice")}
+          </span>
+        ) : null}
       </div>
     </li>
   );

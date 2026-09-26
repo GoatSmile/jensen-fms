@@ -11,7 +11,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { localizedName } from "@/i18n/vocab";
-import { readPersonId } from "@/lib/auth/read-session";
+import { readCanSeeCosts, readPersonId } from "@/lib/auth/read-session";
 import { loadActivePeople } from "@/lib/people/queries";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -41,9 +41,11 @@ export default async function BikeBuildWorkbenchPage({
   params: Promise<{ id: string; bikeId: string }>;
 }) {
   const { id: moId, bikeId } = await params;
-  const [t, locale] = await Promise.all([
+  const [t, locale, canSeeCosts] = await Promise.all([
     getTranslations("build"),
     getLocale(),
+    // The builder sees parts, never prices (the `costs` capability).
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
   // Everyone pickable as the builder, plus who is logged in (the default).
@@ -183,6 +185,7 @@ export default async function BikeBuildWorkbenchPage({
       notes: r.notes,
       onHand: stockByPart.get(r.part_id) ?? 0,
       retailDkk:
+        canSeeCosts &&
         r.part?.default_retail_price != null &&
         (r.part.default_retail_currency ?? "DKK") === "DKK"
           ? Number(r.part.default_retail_price)
@@ -203,6 +206,7 @@ export default async function BikeBuildWorkbenchPage({
     category_id: p.category_id ?? null,
     onHand: stockByPart.get(p.id) ?? 0,
     retailDkk:
+      canSeeCosts &&
       p.default_retail_price != null &&
       (p.default_retail_currency ?? "DKK") === "DKK"
         ? Number(p.default_retail_price)
@@ -437,6 +441,7 @@ export default async function BikeBuildWorkbenchPage({
         requiredIdentifierCount={otherRequiredCount}
         requiredRegisteredCount={otherRequiredRegisteredCount}
         readOnly={isReadOnly}
+        showMoney={canSeeCosts}
         pickListSlot={
           pickGroups.length > 0 ? (
             <PickList

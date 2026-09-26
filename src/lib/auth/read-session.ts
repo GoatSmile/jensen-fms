@@ -37,6 +37,17 @@ export async function readAllowedCaps(): Promise<string[] | null> {
   return gate.kind === "session" ? gate.session.caps : null;
 }
 
+/**
+ * May this viewer see money — costs, prices, margins, stock value? The `costs`
+ * capability (2026-09-26). Pages that a technician can open ask this, and then
+ * neither render nor SEND the figures: a hidden column that still ships its
+ * numbers to the browser is not hidden. Gate off → everything shows.
+ */
+export async function readCanSeeCosts(): Promise<boolean> {
+  const caps = await readAllowedCaps();
+  return caps === null || caps.includes("costs");
+}
+
 /** Who is working — people.id, or null when the gate is off entirely. */
 export async function readPersonId(): Promise<string | null> {
   const gate = await readGate();

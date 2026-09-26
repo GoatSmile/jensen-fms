@@ -611,12 +611,28 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **People & roles (auth v0.5).** Four separated concepts — person / role /
   credential / assignment — across `people`, `roles`, `person_roles`,
   `role_capabilities`, `role_notifications` (capability/event keys
-  validated against code registries in `src/lib/people/`). `can()` gates nav
-  (via shared nav-items ids) / routes / dashboard bands; per-role `home_path`
-  landing. Explicitly a **UX wall, not a security boundary** (perimeter stays
-  Vercel SSO until M1; at M1 the passwords die and the model survives — RLS
-  policies get written against `role_capabilities`). Design:
-  `docs/plan-people-roles.md`; build state: `docs/STATUS.md`.
+  validated against code registries in `src/lib/people/`). Capabilities gate
+  nav (the item's `capability` in nav-items), routes (`src/lib/people/routes.ts`,
+  the one place, read by middleware) and dashboard bands; per-role `home_path`
+  landing. Explicitly a **UX wall, not a security boundary** (the perimeter is
+  the person-password wall alone — see Stack; at M1 the passwords die and the
+  model survives — RLS policies get written against `role_capabilities`).
+  Design: `docs/plan-people-roles.md`; build state: `docs/STATUS.md`.
+  - **Technicians see no money: the `costs` capability** (migration 103,
+    DECISIONS 2026-09-26; supersedes the July "workshop sees costs" rule). It is
+    the one capability that is not an app area. Every role but *Workshop* holds
+    it. A screen a technician can open — parts, a bike, the floor, the build
+    workbench — **withholds** money without it (`readCanSeeCosts()`): the server
+    neither renders nor sends the figures, because a hidden column that still
+    ships its numbers is not hidden. The Stock value page and the part
+    create/edit/import forms need it outright, and so does adjusting stock —
+    **technicians cannot add stock** (owner). Screens whose job IS money
+    (invoices, orders, dashboard, office ticket/WO pages) show it to whoever may
+    open them, so granting such an area implies money.
+  - **Workshop = `work`, `scan`, `bikes`, `parts`** (re-evaluated 2026-09-26):
+    no dashboard, inbox or office maintenance pages. The build workbench, batch
+    build and pick list live under an MO's URL but open with `work` OR `mo`, and
+    Kits (`/admin/kits`) open with `parts` — each was a bounce before.
   - **The credential is on the PERSON, not the role** (migration 80,
     supersedes the 2026-07-17 role-password design). Login = pick a NAME +
     that person's own scrypt `people.password_hash`; the session cookie is

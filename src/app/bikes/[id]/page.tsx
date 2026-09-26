@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { type BikeStatus } from "@/lib/bikes/status";
 import { localizedName } from "@/i18n/vocab";
@@ -63,11 +64,12 @@ export default async function BikeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tc, tStatus, locale] = await Promise.all([
+  const [t, tc, tStatus, locale, canSeeCosts] = await Promise.all([
     getTranslations("bikeDetail"),
     getTranslations("common"),
     getTranslations("bikeStatus"),
     getLocale(),
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
 
@@ -525,6 +527,7 @@ export default async function BikeDetailPage({
               <Muted>{t("notRecorded")}</Muted>
             )}
           </Field>
+          {canSeeCosts ? (
           <Field label={t("buildCost")}>
             {b.build_cost_dkk != null ? (
               <span className="tabular-nums">
@@ -538,6 +541,7 @@ export default async function BikeDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
+          ) : null}
           <Field label={t("notes")}>
             {b.notes ? b.notes : <Muted>—</Muted>}
           </Field>

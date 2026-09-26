@@ -118,6 +118,7 @@ export async function capsFor(env, personId) {
 export const ALL_CAPS = [
   "dashboard", "bikes", "templates", "parts", "maintenance", "inbox", "work",
   "scan", "mo", "po", "so", "paint", "invoices", "agreements", "customers", "admin",
+  "costs",
 ];
 
 /** The whole job: person → cookie value. */
@@ -128,7 +129,7 @@ export async function mintCookie(env, who, { allCaps = false } = {}) {
   const access = await capsFor(env, person.id);
   const token = signSession(
     {
-      v: 1,
+      v: 2,
       role: access.role,
       caps: allCaps ? ALL_CAPS : access.caps,
       home: access.home,

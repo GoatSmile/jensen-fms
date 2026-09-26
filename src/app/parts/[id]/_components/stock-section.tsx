@@ -42,6 +42,8 @@ type Props = {
   currencies?: CurrencyOption[];
   /** Prevailing unit cost, pre-filled into the adjust dialog. */
   prevailingCostDkk?: number | null;
+  /** `costs` capability: false for a technician — no money, no stock adjusting. */
+  showMoney: boolean;
   /**
    * True when this part has painted variants, i.e. a "Painted stock" panel
    * sits beside this one. Then plain "Stock" is ambiguous — the figure here is
@@ -61,6 +63,7 @@ export async function StockSection({
   primaryLocationId = null,
   currencies = [],
   prevailingCostDkk = null,
+  showMoney,
   hasPaintedVariants = false,
 }: Props) {
   const t = await getTranslations("partDetail");
@@ -95,15 +98,17 @@ export async function StockSection({
               </span>
             ) : null}
           </div>
-          <AdjustStockDialog
-            partId={partId}
-            partName={partName}
-            locations={locations}
-            defaultLocationId={primaryLocationId ?? undefined}
-            hideLocation
-            currencies={currencies}
-            prevailingCostDkk={prevailingCostDkk}
-          />
+          {showMoney ? (
+            <AdjustStockDialog
+              partId={partId}
+              partName={partName}
+              locations={locations}
+              defaultLocationId={primaryLocationId ?? undefined}
+              hideLocation
+              currencies={currencies}
+              prevailingCostDkk={prevailingCostDkk}
+            />
+          ) : null}
         </div>
       </Section>
     );
@@ -152,7 +157,7 @@ export async function StockSection({
                     {formatDateTime(row.lastMovementAt)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {activeLocationIds.has(row.locationId) ? (
+                    {!showMoney ? null : activeLocationIds.has(row.locationId) ? (
                       <AdjustStockDialog
                         partId={partId}
                         partName={partName}

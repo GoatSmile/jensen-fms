@@ -58,7 +58,9 @@ export default async function NewRolePage() {
         mode={{ kind: "create" }}
         capabilityOptions={CAPABILITIES.map((c) => ({
           key: c.key,
-          label: c.navLabelKey ? tNav(c.navLabelKey) : t("capScan"),
+          label: c.navLabelKey
+            ? tNav(c.navLabelKey)
+            : t("adminLabelKey" in c ? c.adminLabelKey : "capScan"),
         }))}
         eventOptions={NOTIFICATION_EVENTS.map((e) => ({
           key: e,

@@ -24,6 +24,8 @@ type Props = {
   woId: string;
   rows: WOPartRow[];
   readOnly: boolean;
+  /** `costs` capability — technicians see parts and quantities, never money. */
+  showMoney: boolean;
 };
 
 /**
@@ -31,7 +33,7 @@ type Props = {
  * already-consumed parts; "Add parts" navigates to the dedicated
  * full-screen add-parts page (kit shortcuts, multi-add, steppers).
  */
-export function PartsSection({ woId, rows, readOnly }: Props) {
+export function PartsSection({ woId, rows, readOnly, showMoney }: Props) {
   const t = useTranslations("wo");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +79,13 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
         <span className="flex items-center gap-1.5">
           {rows.length === 0 ? (
             t("noneYet")
-          ) : (
+          ) : showMoney ? (
             <>
               {rows.length} ·{" "}
               <Money amount={totalCost} currency="DKK" bold={false} />
             </>
+          ) : (
+            rows.length
           )}
         </span>
       }
@@ -125,14 +129,20 @@ export function PartsSection({ woId, rows, readOnly }: Props) {
                 <div className="flex items-center gap-2.5 shrink-0">
                   <div className="text-right">
                     <div className="tabular-nums text-sm">
-                      {row.quantity} ×{" "}
-                      <Money
-                        amount={row.unitPrice}
-                        currency="DKK"
-                        bold={false}
-                      />
+                      {showMoney ? (
+                        <>
+                          {row.quantity} ×{" "}
+                          <Money
+                            amount={row.unitPrice}
+                            currency="DKK"
+                            bold={false}
+                          />
+                        </>
+                      ) : (
+                        `× ${row.quantity}`
+                      )}
                     </div>
-                    {lineTotal != null ? (
+                    {showMoney && lineTotal != null ? (
                       <div className="text-muted-foreground text-xs">
                         ={" "}
                         <Money

@@ -20,6 +20,8 @@ type Props = {
   attributes: Record<string, unknown>;
   /** Count of CURRENT bike templates that include this part. */
   templateUsageCount?: number;
+  /** `costs` capability: false for a technician — no money, no stock adjusting. */
+  showMoney: boolean;
 };
 
 export async function DetailsSection({
@@ -30,6 +32,7 @@ export async function DetailsSection({
   lastCostDkk,
   lastCostDate,
   lastCostBasis = null,
+  showMoney,
   reorderPoint,
   reorderQuantity,
   notes,
@@ -70,6 +73,7 @@ export async function DetailsSection({
             <Muted>—</Muted>
           )}
         </Field>
+        {showMoney ? (
         <Field label={t("lastLandedCost")}>
           {lastCostDkk != null ? (
             <span className="tabular-nums">
@@ -90,6 +94,7 @@ export async function DetailsSection({
             <Muted>—</Muted>
           )}
         </Field>
+        ) : null}
         <Field label={t("reorderPoint")}>
           {reorderPoint != null ? (
             <span className="tabular-nums">{reorderPoint}</span>

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { localizedName } from "@/i18n/vocab";
 import { compareKits } from "@/lib/kits/colors";
@@ -30,6 +31,8 @@ export default async function AddPartsPage({
 }) {
   const { woId } = await params;
   const locale = await getLocale();
+  // A technician gets the catalogue without prices (the `costs` capability).
+  const canSeeCosts = await readCanSeeCosts();
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -70,7 +73,8 @@ export default async function AddPartsPage({
     sku: r.part?.internal_sku ?? "—",
     name: r.part?.name_en ?? "—",
     quantity: Number(r.quantity),
-    unitPrice: r.unit_price != null ? Number(r.unit_price) : null,
+    unitPrice:
+      canSeeCosts && r.unit_price != null ? Number(r.unit_price) : null,
   }));
 
   const catalog: CatalogPart[] = (catalogRes.data ?? []).map((p) => ({
@@ -80,6 +84,7 @@ export default async function AddPartsPage({
     categoryName:
       localizedName(locale, p.category?.name_en, p.category?.name_da) || null,
     retailDkk:
+      canSeeCosts &&
       p.default_retail_price != null &&
       (p.default_retail_currency ?? "DKK") === "DKK"
         ? Number(p.default_retail_price)
@@ -168,6 +173,7 @@ export default async function AddPartsPage({
       initialTray={trayRows}
       catalog={catalog}
       kits={kitCards}
+      showMoney={canSeeCosts}
     />
   );
 }

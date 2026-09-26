@@ -79,27 +79,14 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
       customer's own number"); paginate the bikes list before it passes 1000 rows.
 
 ### 1C · Finn on the system
-- [ ] **Technicians see no money — before Finn and Glenn log in** (owner, 2026-09-26; Dennis,
-      02:39:47). The *Workshop* role today holds `bikes, dashboard, inbox, maintenance, parts,
-      scan, work`, and ~20 screens under those show costs or prices: part prices, stock value
-      and the Stock value page, a bike's build cost, work-order part prices and totals, the
-      dashboard's money, the build workbench. Proposed: one new capability (`costs` — see
-      costs, prices, margins, stock value) granted to Owner, IT admin, Accountant and Sales, not
-      Workshop; every money figure and the Stock value nav item render only with it. Stock
-      *inbound* adjustments ask for a cost, so they become an office task (or the prevailing
-      cost applies silently) — decide. ~0.5–1 day.
-      **Reassess the role first (owner, 2026-09-26) — proposed:** keep `work`, `scan`,
-      `bikes`, `parts` (Kits lives under parts; Glenn labels boxes); **drop** `dashboard`
-      (office KPIs, money), `inbox` (call triage is office work; Finn's calls reach him as
-      jobs) and `maintenance` (the office ticket/WO pages — techs work jobs from `/work/[woId]`,
-      whose gaps get closed instead). Then the cost gate covers only parts, bike detail, the
-      floor repair screen and the build workbench.
-- [ ] **Bug: a Workshop user cannot open the build workbench.** `/work`'s *To build* links to
-      `/manufacturing-orders/<mo>/bikes/<bike>/build`, and `routes.ts` gates every
-      `/manufacturing-orders/*` path on `mo`, which Workshop lacks — Glenn would be bounced
-      from his own queue. Gate the workbench, batch build and pick list on `work`.
-- [x] **Finn Nysom and Glenn** created (2026-09-26): Danish, role *Workshop*, **no password** — so
-      neither can log in until technicians stop seeing costs. Glenn's surname, email, phone: Dennis.
+- [x] **Technicians see no money** (2026-09-26, migration 103): a `costs` capability every role
+      but Workshop holds; parts, bike, floor and workbench screens withhold money without it;
+      Stock value, part create/edit/import and stock adjusting need it — **technicians cannot
+      add stock** (owner). Workshop trimmed to `work`, `scan`, `bikes`, `parts`; the workbench,
+      batch build, pick list and Kits now open for it (they bounced before).
+- [x] **Finn Nysom and Glenn** created (2026-09-26): Danish, role *Workshop*.
+- [ ] **Give Finn and Glenn passwords** (Admin → People) — nothing blocks it now; Tuesday, with
+      them in the room. Glenn's surname, email, phone: Dennis.
 - [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order flow for Dennis.
 - [ ] **Service calendar slice 0** — now unblocked: Finn's address is `service@jensenproduction.dk`.
 - [ ] `/work` gaps before real use: labour time on `/work`; start a WO from a scanned bike with

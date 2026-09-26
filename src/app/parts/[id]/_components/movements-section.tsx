@@ -47,9 +47,12 @@ const MOVEMENT_BADGE_VARIANT: Record<
 export async function MovementsSection({
   rows,
   hideLocations = false,
+  showMoney,
 }: {
   rows: MovementRow[];
   hideLocations?: boolean;
+  /** `costs` capability: the unit-cost column is office information. */
+  showMoney: boolean;
 }) {
   const [t, tType] = await Promise.all([
     getTranslations("partDetail"),
@@ -78,9 +81,11 @@ export async function MovementsSection({
                   </TableHead>
                 )}
                 <TableHead className="text-right">{t("thDeltaQty")}</TableHead>
-                <TableHead className="hidden text-right md:table-cell">
-                  {t("thUnitCost")}
-                </TableHead>
+                {showMoney ? (
+                  <TableHead className="hidden text-right md:table-cell">
+                    {t("thUnitCost")}
+                  </TableHead>
+                ) : null}
                 <TableHead className="hidden md:table-cell">
                   {t("thBy")}
                 </TableHead>
@@ -122,9 +127,11 @@ export async function MovementsSection({
                   >
                     {formatSignedQuantity(row.quantityDelta)}
                   </TableCell>
-                  <TableCell className="hidden text-right tabular-nums md:table-cell">
-                    {formatDkk(row.unitCostDkk)}
-                  </TableCell>
+                  {showMoney ? (
+                    <TableCell className="hidden text-right tabular-nums md:table-cell">
+                      {formatDkk(row.unitCostDkk)}
+                    </TableCell>
+                  ) : null}
                   <TableCell className="text-muted-foreground hidden text-xs md:table-cell">
                     {row.movedByName ?? "—"}
                   </TableCell>

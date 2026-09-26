@@ -16,6 +16,7 @@ import { atTimeLabel, elapsedShort } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
 import { dictationReady } from "@/lib/dictation/ready";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 import type { WOPartRow } from "./_components/parts-section";
 import type { WOPhoto } from "./_components/photos-section";
 
@@ -43,10 +44,11 @@ export default async function WorkspacePage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
-  const [t, locale, canDictate] = await Promise.all([
+  const [t, locale, canDictate, canSeeCosts] = await Promise.all([
     getTranslations("wo"),
     getLocale(),
     dictationReady(),
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
 
@@ -56,7 +58,7 @@ export default async function WorkspacePage({
       `
         id, wo_number, status, language,
         diagnosis, work_performed,
-        labor_minutes, labor_rate_dkk, is_billable,
+        labor_minutes, is_billable,
         started_at, completed_at, created_at,
         bike:bikes!bike_id(
           id, frame_number,
@@ -104,7 +106,9 @@ export default async function WorkspacePage({
     partSku: r.part?.internal_sku ?? "—",
     partName: r.part?.name_en ?? "—",
     quantity: Number(r.quantity),
-    unitPrice: r.unit_price != null ? Number(r.unit_price) : null,
+    // Withheld, not just hidden, from a technician (the `costs` capability).
+    unitPrice:
+      canSeeCosts && r.unit_price != null ? Number(r.unit_price) : null,
   }));
 
   const photos: WOPhoto[] = (photosRes.data ?? []).map((p) => ({
@@ -263,6 +267,7 @@ export default async function WorkspacePage({
         bikeId={wo.bike?.id ?? null}
         resolvesTicketNumber={resolvesTicketNumber}
         partRows={partRows}
+        showMoney={canSeeCosts}
         photos={photos}
       />
     </div>

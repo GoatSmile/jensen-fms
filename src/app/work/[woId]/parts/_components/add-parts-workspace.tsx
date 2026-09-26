@@ -62,13 +62,16 @@ type Props = {
   initialTray: TrayRow[];
   catalog: CatalogPart[];
   kits: KitCard[];
+  /** `costs` capability; a technician gets no prices (they arrive as null). */
+  showMoney: boolean;
 };
 
 /**
  * Full-screen add-parts flow for the technician. Everything adds in place —
  * no dialog, nothing closes between adds — and the tech returns to the work
  * order with one big Done button when the bench is restocked. Prices shown
- * are retail (what the customer pays); cost never appears here.
+ * are retail (what the customer pays); cost never appears here — and a viewer
+ * without the `costs` capability sees no prices at all.
  */
 export function AddPartsWorkspace({
   woId,
@@ -77,6 +80,7 @@ export function AddPartsWorkspace({
   initialTray,
   catalog,
   kits,
+  showMoney,
 }: Props) {
   const t = useTranslations("woParts");
   const router = useRouter();
@@ -260,7 +264,7 @@ export function AddPartsWorkspace({
         <Panel
           title={t("trayTitle", { count: tray.length })}
           action={
-            tray.length > 0 ? (
+            showMoney && tray.length > 0 ? (
               <span className="text-xs tabular-nums">
                 {t("trayTotal")}{" "}
                 <span className="font-semibold">

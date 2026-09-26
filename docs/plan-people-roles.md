@@ -239,7 +239,7 @@ and RLS, not a detour.
 
 ## Deliberately NOT building
 
-Field-level permissions / cost redaction (locked: workshop sees costs) ·
+Field-level permissions / cost redaction (locked: workshop sees costs — SUPERSEDED 2026-09-26 by the `costs` capability; technicians see no money) ·
 per-person PINs (locked: self-claimed) · temp auto-archival (locked: picker
 filtering only) · any RLS tightening now (that IS M1). Per-person passwords
 WERE built before M1 (2026-08-23) — the credential, not the perimeter.

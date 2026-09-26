@@ -4,12 +4,18 @@
  * because a capability only means something once code enforces it (nav
  * filtering, route gating, dashboard bands — arriving with role login, P2).
  *
- * One capability = one app area, coarse by design (locked with the owner:
- * no field-level redaction — workshop sees costs). Keys line up with the
- * shared nav (src/components/nav-items.ts); `navLabelKey` points into the
- * `nav` message namespace so the admin checkboxes reuse the exact nav
- * wording. `scan` has no nav item and carries its own label in
- * `adminPeople.capScan`.
+ * One capability = one app area, coarse by design — with ONE exception,
+ * `costs`, which is not an area but the right to see money: costs, prices,
+ * margins, stock value. It superseded the 2026-07 "no field-level redaction —
+ * workshop sees costs" rule (owner, 2026-09-26: technicians see no money).
+ * `costs` gates the money on the screens a technician uses (parts, a bike,
+ * the floor, the build workbench); areas whose job IS money (invoices, orders,
+ * the dashboard, the office ticket/WO pages) show it to whoever may open them.
+ *
+ * Keys line up with the shared nav (src/components/nav-items.ts);
+ * `navLabelKey` points into the `nav` message namespace so the admin
+ * checkboxes reuse the exact nav wording. A capability without a nav item
+ * carries its own label in `adminPeople` (`adminLabelKey`).
  */
 export const CAPABILITIES = [
   { key: "dashboard", navLabelKey: "dashboard" },
@@ -19,7 +25,7 @@ export const CAPABILITIES = [
   { key: "maintenance", navLabelKey: "maintenance" },
   { key: "inbox", navLabelKey: "inbox" },
   { key: "work", navLabelKey: "workshopFloor" },
-  { key: "scan", navLabelKey: null },
+  { key: "scan", navLabelKey: null, adminLabelKey: "capScan" },
   { key: "mo", navLabelKey: "manufacturingOrders" },
   { key: "po", navLabelKey: "purchaseOrders" },
   { key: "so", navLabelKey: "salesOrders" },
@@ -28,6 +34,7 @@ export const CAPABILITIES = [
   { key: "agreements", navLabelKey: "serviceAgreements" },
   { key: "customers", navLabelKey: "customers" },
   { key: "admin", navLabelKey: "admin" },
+  { key: "costs", navLabelKey: null, adminLabelKey: "capCosts" },
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["key"];

@@ -24,7 +24,7 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 102 is the latest, and BOTH databases are verified at it**
+- **Migration 103 is the latest, and BOTH databases are verified at it**
   (`npm run check:prod` / `check:local`). Ask the command, do not reason about it.
 - **Query production with `supabase db query --linked`** (writes pre-approved,
   owner 2026-09-04; `-f` takes a whole multi-statement file). **Locally, the CLI
@@ -32,8 +32,7 @@ is Danish (person language).
   `docker exec -i supabase_db_jensen-fms psql -v ON_ERROR_STOP=1 -U postgres -d postgres < migrations/NNN_x.sql`
   (there is no host `psql`).
 - **Finn Nysom and Glenn exist in production as people** — Danish, role
-  *Workshop*, **no password on purpose**, so neither can log in until
-  technicians stop seeing costs (plan §1C). Finn's email is
+  *Workshop*, no password yet (nothing blocks setting one now). Finn's email is
   `service@jensenproduction.dk` (his Relatel login). Glenn's surname, email and
   phone: ask Dennis.
 - **Relatel, read 2026-09-26 (nothing changed there):** plan *Omstilling
@@ -49,11 +48,10 @@ is Danish (person language).
   142 × 12; + 480 kr GPS). Re-run: `python3 scripts/import_fleet.py review`.
 
 ## In flight — decisions waiting on the owner
-- **Workshop role trim + a `costs` capability** (plan §1C): keep work, scan,
-  bikes, parts; drop dashboard, inbox, maintenance; one capability gates every
-  money figure. Must land before Finn and Glenn get passwords.
-- **Bug found, not fixed: a Workshop user cannot open the build workbench** —
-  `routes.ts` gates `/manufacturing-orders/*` on `mo` (plan §1C).
+- **Done this session: technicians see no money** (migration 103, both
+  databases): the `costs` capability, Workshop trimmed to work/scan/bikes/parts,
+  technicians cannot add stock, and the workbench/Kits bounces fixed. **Finn
+  and Glenn can be given passwords** (Admin → People) — planned for Tuesday.
 - **Fleet import load** waits for the review of files 2–4 and the scope/status
   questions in plan §7. **Service agreements are per bike in reality**; the app
   models them per customer — the modelling decision is plan §2A (escalate).
@@ -83,7 +81,7 @@ is Danish (person language).
 ## Next actions — see `docs/plan-go-live.md` §1 (before Tuesday 29 Sep, 13:00)
 1. Relatel test kit: Finn's one-page Danish instruction (recording on + a
    personal access token, as himself) + a probe script; run it on Tuesday.
-2. Owner's answers on the Workshop role / costs, then build it; then passwords.
+2. Passwords for Finn and Glenn (Tuesday), then walk Finn's repair flow as him.
 3. Fleet import: review files 2–4 with the owner/Dennis → generate the load.
 4. Finn's Danish user guide (PDF); calendar slice 0 once the ID + key exist.
 5. Carried over: click `/offers` in production; send Dennis the production

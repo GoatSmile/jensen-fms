@@ -19,6 +19,8 @@ type Props = {
   retailPrice: number | null;
   retailCurrency: string | null;
   supplierCount: number;
+  /** `costs` capability: false for a technician — no money, no stock adjusting. */
+  showMoney: boolean;
 };
 
 export async function StatStrip({
@@ -28,6 +30,7 @@ export async function StatStrip({
   retailPrice,
   retailCurrency,
   supplierCount,
+  showMoney,
 }: Props) {
   const [t, tStock] = await Promise.all([
     getTranslations("partDetail"),
@@ -50,6 +53,8 @@ export async function StatStrip({
           </Badge>
         </div>
       </Stat>
+      {showMoney ? (
+      <>
       <Stat label={t("statRetail")} hue="money">
         <Money
           amount={retailPrice}
@@ -68,6 +73,8 @@ export async function StatStrip({
           <span className="text-ink-3 text-xs">{t("stockValueNote")}</span>
         ) : null}
       </Stat>
+      </>
+      ) : null}
       <Stat label={t("statSuppliers")} hue="buy">
         <span className="text-[1.8rem] font-bold leading-none tracking-[-0.03em] tabular-nums">
           {supplierCount}

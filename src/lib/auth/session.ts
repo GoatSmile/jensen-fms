@@ -24,7 +24,11 @@
  */
 
 export type AppSession = {
-  v: 1;
+  /**
+   * 2 since 2026-09-26, when `costs` joined the registry. A v1 session was
+   * minted before it existed: see the upgrade in `verifySessionToken`.
+   */
+  v: 1 | 2;
   /** Primary role key ('owner', 'workshop', 'admin') — display + home. */
   role: string;
   /** Capability keys frozen at login (validated against the registry). */
@@ -111,7 +115,7 @@ export async function verifySessionToken(
   if (typeof parsed !== "object" || parsed === null) return null;
   const s = parsed as Partial<AppSession>;
   if (
-    s.v !== 1 ||
+    (s.v !== 1 && s.v !== 2) ||
     typeof s.role !== "string" ||
     !Array.isArray(s.caps) ||
     !s.caps.every((c) => typeof c === "string") ||
@@ -124,5 +128,20 @@ export async function verifySessionToken(
   ) {
     return null;
   }
-  return s as AppSession;
+  // A v1 session predates `costs` (2026-09-26), so it cannot say whether its
+  // holder may see money. Everyone who could open invoices could already see
+  // money everywhere, and the one role without invoices — Workshop — is the one
+  // `costs` exists to exclude; so a v1 session holding `invoices` gets `costs`.
+  // Without this, deploying the gate would hide Dennis's costs until his next
+  // login (sessions last 30 days). Every v1 cookie has expired by 2026-10-27;
+  // delete this block then.
+  const session = s as AppSession;
+  if (
+    session.v === 1 &&
+    session.caps.includes("invoices") &&
+    !session.caps.includes("costs")
+  ) {
+    return { ...session, caps: [...session.caps, "costs"] };
+  }
+  return session;
 }

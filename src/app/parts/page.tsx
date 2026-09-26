@@ -17,6 +17,7 @@ import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 import { descendantIds, type FlatCategory } from "@/lib/parts/categories";
 import type { StockStatus } from "@/lib/parts/stock";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 
 import { findPartsBelowReorderPoint } from "./_actions/draft-po-from-reorder";
 import { PartsFilters } from "./_components/parts-filters";
@@ -112,7 +113,14 @@ export default async function PartsPage({
   const stockFilter = parseStockFilter(sp.stock);
   const gap = parseGapFilter(sp.gap);
   const page = parsePage(sp.page);
-  const { column: sortColumn, ascending: sortAscending } = parseSort(sp.sort);
+  // Sorting by price would leak the order of prices to a viewer without
+  // `costs`, so that sort falls back to the default for them.
+  const canSeeCosts = await readCanSeeCosts();
+  const parsedSort = parseSort(sp.sort);
+  const { column: sortColumn, ascending: sortAscending } =
+    !canSeeCosts && parsedSort.column === "default_retail_price"
+      ? parseSort(undefined)
+      : parsedSort;
 
   const [t, tCommon, tStock, locale] = await Promise.all([
     getTranslations("parts"),
@@ -389,11 +397,13 @@ export default async function PartsPage({
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/parts/stock-value">
-                <Coins aria-hidden /> {t("stockValue")}
-              </Link>
-            </Button>
+            {canSeeCosts ? (
+              <Button variant="outline" asChild>
+                <Link href="/parts/stock-value">
+                  <Coins aria-hidden /> {t("stockValue")}
+                </Link>
+              </Button>
+            ) : null}
             <Button variant="outline" asChild>
               <Link
                 href={`/parts/print${
@@ -410,16 +420,21 @@ export default async function PartsPage({
                 <Printer aria-hidden /> {t("print")}
               </Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/parts/import">
-                <Upload aria-hidden /> {t("importCsv")}
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/parts/new">
-                <Plus aria-hidden /> {t("newPart")}
-              </Link>
-            </Button>
+            {/* Creating and importing parts means pricing them — office work. */}
+            {canSeeCosts ? (
+              <>
+                <Button variant="outline" asChild>
+                  <Link href="/parts/import">
+                    <Upload aria-hidden /> {t("importCsv")}
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/parts/new">
+                    <Plus aria-hidden /> {t("newPart")}
+                  </Link>
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
@@ -460,8 +475,14 @@ export default async function PartsPage({
           icon={Boxes}
           title={t("emptyTitle")}
           description={t("emptyDescription")}
-          action={{ label: t("newPart"), href: "/parts/new" }}
-          secondaryAction={{ label: t("importCsv"), href: "/parts/import" }}
+          action={
+            canSeeCosts ? { label: t("newPart"), href: "/parts/new" } : undefined
+          }
+          secondaryAction={
+            canSeeCosts
+              ? { label: t("importCsv"), href: "/parts/import" }
+              : undefined
+          }
         />
       ) : (
         <>

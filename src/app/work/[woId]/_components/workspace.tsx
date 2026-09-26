@@ -40,6 +40,8 @@ type Props = {
   /** Ticket number that finishing this WO will auto-resolve, else null. */
   resolvesTicketNumber: string | null;
   partRows: WOPartRow[];
+  /** `costs` capability: false for technicians — no prices on the floor. */
+  showMoney: boolean;
   photos: WOPhoto[];
 };
 
@@ -52,6 +54,7 @@ export function Workspace({
   dictationReady,
   resolvesTicketNumber,
   partRows,
+  showMoney,
   photos,
 }: Props) {
   const t = useTranslations("wo");
@@ -203,7 +206,12 @@ export function Workspace({
           </div>
         ) : null}
 
-        <PartsSection woId={woId} rows={partRows} readOnly={readOnly} />
+        <PartsSection
+          woId={woId}
+          rows={partRows}
+          readOnly={readOnly}
+          showMoney={showMoney}
+        />
 
         <PhotosSection woId={woId} photos={photos} readOnly={readOnly} />
       </div>

@@ -3502,6 +3502,7 @@
     "capabilitiesLegend": "App areas",
     "capabilitiesHint": "Which areas this role can see and open. The navigation and pages follow this once role login is switched on.",
     "capScan": "Scan",
+    "capCosts": "See costs and prices",
     "eventsLegend": "Notified about",
     "eventsHint": "Event subscriptions. Delivery is not wired up yet — editing is safe.",
     "eventTicketCreated": "New ticket created",

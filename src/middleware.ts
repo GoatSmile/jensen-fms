@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { AUTH_COOKIE } from "@/lib/auth/gate";
 import { verifySessionToken } from "@/lib/auth/session";
-import { routeCapability } from "@/lib/people/routes";
+import { routeAllows } from "@/lib/people/routes";
 
 // Stays reachable without the password: the login screen + logout, and the
 // public customer-facing flows (QR sticker landing `/b/<id>` and the report
@@ -51,8 +51,7 @@ export async function middleware(req: NextRequest) {
   if (token) {
     const session = await verifySessionToken(token, expected);
     if (session) {
-      const needed = routeCapability(pathname);
-      if (!needed || session.caps.includes(needed)) {
+      if (routeAllows(pathname, session.caps)) {
         return nextWithPathname(req);
       }
       // Uncapable route → bounce to their home. If home itself is the

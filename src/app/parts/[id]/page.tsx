@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
-import { readAllowedCaps } from "@/lib/auth/read-session";
+import { readAllowedCaps, readCanSeeCosts } from "@/lib/auth/read-session";
 import {
   PAINT_SERVICE_SLUG,
   loadServiceTypeBySlug,
@@ -650,6 +650,12 @@ export default async function PartDetailPage({
     })),
   }));
 
+  // A technician (no `costs` capability) gets the part, its kits and its stock
+  // — no prices, no stock value, no sourcing history, and no stock adjusting
+  // (technicians cannot add stock; owner, 2026-09-26). Withheld server-side:
+  // the client components below never receive the figures.
+  const canSeeCosts = await readCanSeeCosts();
+
   // ------- Pricing history with current-row flag -------
   // Server component runs once per request — a single wall-clock read here
   // is exactly what we want. The react-hooks purity rule can't tell a server
@@ -710,9 +716,10 @@ export default async function PartDetailPage({
         locations={locationOptions}
         hideLocations={hideLocations}
         primaryLocationId={primaryLocationId}
-        prevailingCostDkk={lastCostDkk}
+        prevailingCostDkk={canSeeCosts ? lastCostDkk : null}
         heroUrl={heroPhoto?.fileUrl ?? null}
-        currencies={currenciesRes.data ?? []}
+        currencies={canSeeCosts ? (currenciesRes.data ?? []) : []}
+        showMoney={canSeeCosts}
       />
 
       <StatStrip
@@ -726,6 +733,7 @@ export default async function PartDetailPage({
         }
         retailCurrency={part.default_retail_currency}
         supplierCount={offeringRows.length}
+        showMoney={canSeeCosts}
       />
 
       <PhotosSection partId={part.id} photos={photoRows} />
@@ -752,6 +760,7 @@ export default async function PartDetailPage({
         notes={part.notes}
         attributes={(part.attributes as Record<string, unknown>) ?? {}}
         templateUsageCount={templateUsageCount}
+        showMoney={canSeeCosts}
       />
 
       <KitsSection partId={part.id} chips={kitChips} options={kitOptions} />
@@ -760,8 +769,9 @@ export default async function PartDetailPage({
         currencies={currenciesRes.data ?? []}
         primaryLocationId={primaryLocationId}
         hideLocations={hideLocations}
+        showMoney={canSeeCosts}
         record={
-          canRecordPainted
+          canRecordPainted && canSeeCosts
             ? {
                 basePartId: part.id,
                 basePartSku: part.internal_sku,
@@ -796,10 +806,16 @@ export default async function PartDetailPage({
         primaryLocationId={primaryLocationId}
         currencies={currenciesRes.data ?? []}
         prevailingCostDkk={lastCostDkk}
+        showMoney={canSeeCosts}
       />
 
-      <MovementsSection rows={movementRows} hideLocations={hideLocations} />
+      <MovementsSection
+        rows={movementRows}
+        hideLocations={hideLocations}
+        showMoney={canSeeCosts}
+      />
 
+      {canSeeCosts ? (
       <OfferingsSection
         partId={part.id}
         rows={offeringRows}
@@ -811,13 +827,17 @@ export default async function PartDetailPage({
         currencies={currenciesRes.data ?? []}
       />
 
-      <PurchaseHistorySection
-        rows={purchaseRows}
-        internalSku={part.internal_sku}
-        hsCode={
-          part.hs_code && part.hs_code.is_active ? part.hs_code.code : null
-        }
-      />
+      ) : null}
+
+      {canSeeCosts ? (
+        <PurchaseHistorySection
+          rows={purchaseRows}
+          internalSku={part.internal_sku}
+          hsCode={
+            part.hs_code && part.hs_code.is_active ? part.hs_code.code : null
+          }
+        />
+      ) : null}
 
       <WhereUsedSection
         partId={part.id}
@@ -826,7 +846,7 @@ export default async function PartDetailPage({
         installedBikeCount={installedBikeCount}
       />
 
-      <PricingHistorySection rows={pricingRows} />
+      {canSeeCosts ? <PricingHistorySection rows={pricingRows} /> : null}
     </div>
   );
 }

@@ -46,6 +46,8 @@ type Props = {
   currencies?: CurrencyOption[];
   /** Prevailing unit cost, pre-filled into the adjust dialog. */
   prevailingCostDkk?: number | null;
+  /** `costs` capability: false for a technician — no money, no stock adjusting. */
+  showMoney: boolean;
 };
 
 /**
@@ -70,6 +72,7 @@ export function PartHeader({
   heroUrl,
   currencies = [],
   prevailingCostDkk = null,
+  showMoney,
 }: Props) {
   const t = useTranslations("partDetail");
   const tCommon = useTranslations("common");
@@ -132,6 +135,10 @@ export function PartHeader({
             ) : null}
           </div>
         </div>
+        {/* Editing, retiring and adjusting a part are office work: the edit
+            form holds purchase and retail prices, and technicians cannot add
+            stock (owner, 2026-09-26). Without `costs` the header is read-only. */}
+        {showMoney ? (
         <div className="flex gap-2">
           <Button variant="outline" asChild disabled={isPending}>
             <Link href={`/parts/${partId}/edit`}>
@@ -191,6 +198,7 @@ export function PartHeader({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        ) : null}
       </div>
     </div>
   );

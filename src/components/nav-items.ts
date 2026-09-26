@@ -92,10 +92,11 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Boxes,
     items: [
       { href: "/parts", labelKey: "allParts", capability: "parts" },
+      // Nothing but money, so it follows `costs`, not `parts` (2026-09-26).
       {
         href: "/parts/stock-value",
         labelKey: "stockValue",
-        capability: "parts",
+        capability: "costs",
       },
       { href: "/parts/painted", labelKey: "paintedStock", capability: "parts" },
       { href: "/admin/kits", labelKey: "kits", capability: "parts" },

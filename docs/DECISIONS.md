@@ -3040,3 +3040,40 @@ the Relatel findings in its §1A.
 - **Nav matching became query-aware** so a filtered view can be a nav item; as a
   side effect *Families* (`/admin/lists?vocab=families`) finally lights up
   instead of *Admin*.
+
+## 2026-09-26 (night) — Technicians see no money; the Workshop role keeps only what the floor needs; technicians cannot add stock
+
+Owner, in the 26 Sep session: Finn and Glenn — the technicians — must not see
+costs or prices of anything. **Supersedes** the July rule "no field-level
+redaction — workshop sees costs" (`docs/plan-people-roles.md`), which was locked
+before anyone who is not the owner was going to log in.
+
+- **One capability, `costs`, gates money** (migration 103). Not an app area but
+  the right to see costs, prices, margins, stock value. Granted to Owner, IT
+  admin, Accountant and Sales; not Workshop. The screens a technician can open
+  withhold money server-side rather than hide it. **Rejected:** hiding money per
+  screen by role name (the next role would inherit nothing); gating every money
+  figure app-wide (areas whose job is money — invoices, orders — are money by
+  definition, so holding the area implies it).
+- **Workshop re-evaluated against the work: `work`, `scan`, `bikes`, `parts`.**
+  Dashboard (office KPIs and money), inbox (call triage is office work; Finn's
+  calls reach him as jobs) and the office ticket/WO pages go. To revisit when
+  Finn's own recorded calls arrive: a small "my calls" view on the floor, not
+  the whole inbox.
+- **Technicians cannot add stock** (owner, "for now"): every stock increase must
+  carry a cost, and a technician may not see one. Adjusting stock and recording
+  painted stock need `costs`. By the same reasoning (a dev call, consistent with
+  it): creating, editing, importing and retiring parts need `costs` — the part
+  form holds purchase and retail prices.
+- **Found and fixed on the way:** the build workbench, batch build and pick list
+  sit under `/manufacturing-orders/*`, gated on `mo`, so a Workshop user was
+  bounced from their own *To build* queue; they now open with `work` or `mo`.
+  Kits sat under `/admin` (gated on `admin`) while the nav offered them to
+  `parts`; they now open with `parts`.
+- **No one who could see money loses it on deploy.** Sessions freeze
+  capabilities at login and last 30 days, so a pre-`costs` session would have
+  hidden Dennis's figures until he logged in again. New sessions are version 2;
+  a version-1 session that holds `invoices` is treated as holding `costs`
+  (every such role could already see money; Workshop, the role excluded, holds
+  no invoices). Verified by minting both versions against the local server.
+  The upgrade dies with the last v1 cookie on 2026-10-27 (BACKLOG).

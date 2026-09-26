@@ -24,6 +24,7 @@ import {
 import { kitCode, stickerColor } from "@/lib/kits/colors";
 
 import { SortableHeader } from "@/components/sortable-header";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 
 /** Map a stock status to a per-row left-edge accent so low/out parts pop
  *  while scanning. The class targets the row's first cell so the colour
@@ -60,9 +61,11 @@ export type PartRow = {
 };
 
 export async function PartsTable({ rows }: { rows: PartRow[] }) {
-  const [t, tStock] = await Promise.all([
+  const [t, tStock, canSeeCosts] = await Promise.all([
     getTranslations("parts"),
     getTranslations("stockStatus"),
+    // A technician finds parts and stock, never prices (`costs`).
+    readCanSeeCosts(),
   ]);
   if (rows.length === 0) {
     return (
@@ -107,12 +110,14 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
               align="right"
               className="text-right"
             />
-            <SortableHeader
-              column="default_retail_price"
-              label={t("thRetail")}
-              align="right"
-              className="hidden text-right md:table-cell"
-            />
+            {canSeeCosts ? (
+              <SortableHeader
+                column="default_retail_price"
+                label={t("thRetail")}
+                align="right"
+                className="hidden text-right md:table-cell"
+              />
+            ) : null}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -244,14 +249,16 @@ export async function PartsTable({ rows }: { rows: PartRow[] }) {
                   )}
                 </Link>
               </TableCell>
-              <TableCell className="hidden p-0 text-right md:table-cell">
-                <Link
-                  href={`/parts/${row.id}`}
-                  className="block px-4 py-2.5 tabular-nums"
-                >
-                  {formatDkk(row.retailDkk)}
-                </Link>
-              </TableCell>
+              {canSeeCosts ? (
+                <TableCell className="hidden p-0 text-right md:table-cell">
+                  <Link
+                    href={`/parts/${row.id}`}
+                    className="block px-4 py-2.5 tabular-nums"
+                  >
+                    {formatDkk(row.retailDkk)}
+                  </Link>
+                </TableCell>
+              ) : null}
             </TableRow>
           ))}
         </TableBody>
