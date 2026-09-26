@@ -61,19 +61,22 @@ bridge (option-2 calls only) and a "Call customer" button (app-started calls onl
 
 ### 1B · Fleet import, slice 1 — real bikes in the system *(stretch for Tuesday)*
 The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings in §6.
-- [ ] Owner decisions (§7): provenance column; recognition-code field; scope; status mapping.
-- [ ] Migration: `import_batches` + `bikes.import_batch_id` + `bikes.import_row` (the source row
-      verbatim, so nothing in the register is lost); `organizations.recognition_prefix`;
-      relabel the `fleet_number` identifier type as the recognition code (*genkendelseskode*).
-- [ ] **Nav: *Imported bikes*** under *Bikes*, a filtered `/bikes` (`?origin=imported`) with a
-      chip; nav matching made query-aware (it also fixes *Families* lighting up *Admin*).
+- [x] Owner decisions (2026-09-26): provenance column; recognition code = the relabelled
+      `fleet_number` identifier + a customer prefix. Scope and status mapping: §7.
+- [x] Migration 102 (both databases): `import_batches` + `bikes.import_batch_id` +
+      `bikes.import_row`; `organizations.recognition_prefix`; `fleet_number` relabelled
+      *Recognition code / Genkendelseskode*.
+- [x] **Nav: *Imported bikes*** under *Bikes* = `/bikes?origin=imported`; query-aware nav
+      matching (fixes *Families* lighting up *Admin*); recognition-code column + *Imported*
+      badge on the bikes list.
 - [ ] `scripts/import_fleet.py` → review CSVs (duplicate frames, unmatched customers,
       departments) → generated data migration: bikes at the **customer** level (department
       where confident, the rest refined later), identifiers (frame, recognition code, battery,
       charger, key, battery key), delivered date → `assigned_at`, site → `current_location_text`.
       Applied to production and local, verified by query.
-- [ ] Recognition code + frame visible in bike lists and on the customer page; search finds a
-      bike by its code (identifiers already feed search).
+- [ ] Recognition code on the customer page and the bike page header (the list has it now);
+      teach the call extraction the code's shape (BKTM01, LTKUL11 — it still says "the
+      customer's own number"); paginate the bikes list before it passes 1000 rows.
 
 ### 1C · Finn on the system
 - [ ] **Technicians see no money — before Finn and Glenn log in** (owner, 2026-09-26; Dennis,
@@ -85,7 +88,18 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
       Workshop; every money figure and the Stock value nav item render only with it. Stock
       *inbound* adjustments ask for a cost, so they become an office task (or the prevailing
       cost applies silently) — decide. ~0.5–1 day.
-- [ ] Create **Finn and Glenn** as people, Danish, role *Workshop* (confirm Glenn's role).
+      **Reassess the role first (owner, 2026-09-26) — proposed:** keep `work`, `scan`,
+      `bikes`, `parts` (Kits lives under parts; Glenn labels boxes); **drop** `dashboard`
+      (office KPIs, money), `inbox` (call triage is office work; Finn's calls reach him as
+      jobs) and `maintenance` (the office ticket/WO pages — techs work jobs from `/work/[woId]`,
+      whose gaps get closed instead). Then the cost gate covers only parts, bike detail, the
+      floor repair screen and the build workbench.
+- [ ] **Bug: a Workshop user cannot open the build workbench.** `/work`'s *To build* links to
+      `/manufacturing-orders/<mo>/bikes/<bike>/build`, and `routes.ts` gates every
+      `/manufacturing-orders/*` path on `mo`, which Workshop lacks — Glenn would be bounced
+      from his own queue. Gate the workbench, batch build and pick list on `work`.
+- [x] **Finn Nysom and Glenn** created (2026-09-26): Danish, role *Workshop*, **no password** — so
+      neither can log in until technicians stop seeing costs. Glenn's surname, email, phone: Dennis.
 - [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order flow for Dennis.
 - [ ] **Service calendar slice 0** — now unblocked: Finn's address is `service@jensenproduction.dk`.
 - [ ] `/work` gaps before real use: labour time on `/work`; start a WO from a scanned bike with
@@ -247,11 +261,8 @@ his former bank director; the wheel-machine homepage; supplier box labelling; me
 
 ## 7 · Open questions
 **For Nazar — these unblock 1A/1B:**
-1. Test Relatel first and pause the Danish Twilio number?
-2. Mark imported bikes with a provenance column (`import_batches` + `bikes.import_batch_id`)
-   rather than a notes marker — and call the nav link *Imported bikes* (*Importerede cykler*)?
-3. Recognition code = the existing `fleet_number` identifier, relabelled, plus a 2–4 letter
-   prefix on the customer — rather than a new bike column?
+1. ~~Relatel first~~ — yes (DECISIONS 2026-09-26). 2. ~~Provenance column + *Imported
+   bikes*~~ — yes. 3. ~~Recognition code = relabelled identifier + prefix~~ — yes.
 4. Import only the 26 customer sheets (skip loan registers and private buyers)?
 5. Status mapping: in service by default; *stjålet* → lost or stolen; *udgået* → retired.
 6. Old models (V1–V8, Svajer V4/V6): keep the model as text for now, templates later?

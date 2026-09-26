@@ -52,6 +52,8 @@ type SearchParams = {
   fleet?: string;
   paint?: string;
   sort?: string;
+  /** `imported` = the "Imported bikes" view: bikes carrying an import batch. */
+  origin?: string;
 };
 
 const BUILT_PRESETS: { value: string; labelKey: string }[] = [
@@ -122,6 +124,10 @@ export default async function BikesPage({
     sp.sort && SORT_OPTIONS.some((s) => s.value === sp.sort)
       ? sp.sort
       : "frame";
+  // A VIEW, not a filter chip: the nav item "Imported bikes" lands here, and
+  // the other filters refine within it (Clear all keeps it). Migration 102.
+  const importedView = sp.origin === "imported";
+  const basePath = importedView ? "/bikes?origin=imported" : "/bikes";
 
   const supabase = await createClient();
 
@@ -250,6 +256,7 @@ export default async function BikesPage({
         deleted_at,
         built_at,
         owner_unit_id,
+        import_batch_id,
         bike_type:bike_types(id, name_en, name_da),
         template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
         color:colors(id, name_en, name_da, hex, ral_code, coating),
@@ -259,12 +266,16 @@ export default async function BikesPage({
         ),
         owner_organization:organizations!owner_organization_id(
           id, legal_name, display_name_en, display_name_da
+        ),
+        identifiers:bike_identifiers(
+          identifier_value, is_active, type:bike_identifier_types(slug)
         )
       `,
       { count: "exact" },
     )
     .is("deleted_at", null);
 
+  if (importedView) bikesQuery = bikesQuery.not("import_batch_id", "is", null);
   if (statusFilter) bikesQuery = bikesQuery.eq("status", statusFilter);
   if (typeFilter) bikesQuery = bikesQuery.eq("bike_type_id", typeFilter);
   if (ownerFilter) bikesQuery = bikesQuery.eq("owner_organization_id", ownerFilter);
@@ -306,10 +317,11 @@ export default async function BikesPage({
 
   // Facet sources for the Customer + Template pickers: only orgs/templates that
   // actually own/back a bike, so the dropdowns stay short and relevant.
-  const facetQuery = supabase
+  let facetQuery = supabase
     .from("bikes")
     .select("owner_organization_id, template_id")
     .is("deleted_at", null);
+  if (importedView) facetQuery = facetQuery.not("import_batch_id", "is", null);
 
   const [bikesRes, typesRes, facetRes] = await Promise.all([
     bikesQuery,
@@ -383,6 +395,13 @@ export default async function BikesPage({
   const rows = fleetFilter
     ? allRows.filter((r) => coverageByBikeId.get(r.id))
     : allRows;
+  // Jensen's recognition code (the `fleet_number` identifier, migration 102) —
+  // what a customer reads off the bike's label, so it gets its own column.
+  const recognitionCode = (b: (typeof allRows)[number]): string | null =>
+    (b.identifiers ?? []).find((i) => {
+      const type = Array.isArray(i.type) ? i.type[0] : i.type;
+      return i.is_active && type?.slug === "fleet_number";
+    })?.identifier_value ?? null;
   const totalCount = fleetFilter
     ? rows.length
     : (bikesRes.count ?? rows.length);
@@ -397,6 +416,7 @@ export default async function BikesPage({
     const qs = p.toString();
     return qs ? `/bikes?${qs}` : "/bikes";
   }
+  const title = importedView ? t("titleImported") : t("title");
 
   const activeChips: { key: string; label: string }[] = [];
   if (q) activeChips.push({ key: "q", label: t("chipFrame", { q }) });
@@ -451,15 +471,25 @@ export default async function BikesPage({
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
+            {importedView ? (
+              <>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/bikes">{t("title")}</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+              </>
+            ) : null}
             <BreadcrumbItem>
-              <BreadcrumbPage>{t("title")}</BreadcrumbPage>
+              <BreadcrumbPage>{title}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {t("title")}
+              {title}
             </h1>
             <p className="text-muted-foreground text-sm">
               {t("count", { count: totalCount })}
@@ -640,6 +670,9 @@ export default async function BikesPage({
         {hasPartId ? (
           <input type="hidden" name="has-part" value={hasPartId} />
         ) : null}
+        {importedView ? (
+          <input type="hidden" name="origin" value="imported" />
+        ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2 lg:col-span-3">
           <label
@@ -660,7 +693,7 @@ export default async function BikesPage({
           <div className="flex items-center gap-2">
             {activeChips.length > 0 ? (
               <Button asChild variant="ghost" size="sm">
-                <Link href="/bikes">{tc("clearAll")}</Link>
+                <Link href={basePath}>{tc("clearAll")}</Link>
               </Button>
             ) : null}
             <Button type="submit" size="sm" variant="outline">
@@ -692,6 +725,12 @@ export default async function BikesPage({
           <Panel contentClassName="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm">
             {t("noMatch")}
           </Panel>
+        ) : importedView ? (
+          <EmptyState
+            icon={Bike}
+            title={t("importedEmptyTitle")}
+            description={t("importedEmptyDesc")}
+          />
         ) : (
           <EmptyState
             icon={Bike}
@@ -712,6 +751,7 @@ export default async function BikesPage({
                 <TableHead className="w-[160px] sm:w-[200px]">
                   {t("thFrame")}
                 </TableHead>
+                <TableHead>{t("thRecognitionCode")}</TableHead>
                 <TableHead className="hidden md:table-cell">
                   {t("thType")}
                 </TableHead>
@@ -754,6 +794,18 @@ export default async function BikesPage({
                             <span className="font-mono">{m.value}</span>
                           </div>
                         ))}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <Link
+                      href={`/bikes/${b.id}`}
+                      className="block px-4 py-2.5 font-mono text-sm font-medium"
+                    >
+                      {recognitionCode(b) ?? (
+                        <span className="text-muted-foreground font-sans font-normal">
+                          —
+                        </span>
+                      )}
                     </Link>
                   </TableCell>
                   <TableCell className="hidden p-0 md:table-cell">
@@ -849,6 +901,11 @@ export default async function BikesPage({
                         UNBUILT_STATUSES.includes(b.status as BikeStatus) ? (
                         <Badge variant="success" className="ml-1.5 font-normal">
                           {t("badgePainted")}
+                        </Badge>
+                      ) : null}
+                      {b.import_batch_id && !importedView ? (
+                        <Badge variant="outline" className="ml-1.5 font-normal">
+                          {t("badgeImported")}
                         </Badge>
                       ) : null}
                     </Link>

@@ -2999,3 +2999,44 @@ From the 24 Sep call with Dennis and the owner's calls afterwards. Plan:
   internal; the technician talks to customers himself. **Rejected:** booking
   confirmations by email/SMS, and Google attendee invitations (which would also
   need Workspace).
+
+## 2026-09-26 — Relatel is tested before a Twilio number is bought; imported bikes carry a provenance column; the fleet number is Jensen's recognition code
+
+Owner's answers in the 26 Sep planning session. Plan: `docs/plan-go-live.md`;
+the Relatel findings in its §1A.
+
+- **Test Relatel on Finn's existing line first; the Danish Twilio number is paused**
+  (partly supersedes 2026-09-24). Reading Dennis's Relatel account showed two
+  facts the 24 Sep decision did not have: the switchboard plan is **Omstilling
+  Professional**, which includes the REST API and personal access tokens, and
+  **Finn's mobile already carries Mobilfeatures**, which records a mobile
+  number's calls in and out on the network. Munr's research (26 Sep) found the
+  API returns `recording.sound.url` on `GET /calls` and voicemail MP3s for
+  mobile numbers; the one unknown is whether Mobilfeatures recordings of mobile
+  calls appear there. That is a test on a line that is already paid for — so
+  the 24 Sep rejection of "Relatel's own recording" stands only until the test
+  says so. **Pass:** Relatel replaces Twilio for Finn, captures his own-dialer
+  calls too (the bridge only ever heard option 2), and needs no regulatory
+  bundle. **Fail:** the Twilio route as decided 2026-09-24. **Rejected:** buying
+  the Twilio number first (days of paperwork for a route that may be
+  unnecessary); ordering both as insurance.
+- **Imported bikes are marked by a column, not a notes marker** (migration 102).
+  `import_batches` + `bikes.import_batch_id` + `bikes.import_row` (the source
+  row verbatim, minus people's names and phone numbers). The *Imported bikes*
+  nav item is `/bikes?origin=imported` — a view, with the other filters
+  refining inside it. **Rejected:** a fixed `IMPORT …` notes prefix — the TEST
+  rule's own history (a marker that has to be hunted for, and one that failed to
+  travel to 14 of 20 generated documents on 15 Sep) is the argument; and the
+  name "Existing fleet", which stops being true the first time a new bike is
+  delivered.
+- **The recognition code is the existing `fleet_number` identifier, renamed**
+  (migration 102), plus `organizations.recognition_prefix` (2–4 uppercase
+  letters). Dennis, 15 Sep (02:29): the code on the bike's label (BKTM01) is
+  Jensen's own — customer prefix + department + running number — not the
+  customer's numbering, which is what the identifier was described as. The slug
+  stays, because search and the call extraction already key on it. **Rejected:**
+  a new `bikes.recognition_code` column — a second home for a value the
+  identifier system already stores, searches and de-duplicates.
+- **Nav matching became query-aware** so a filtered view can be a nav item; as a
+  side effect *Families* (`/admin/lists?vocab=families`) finally lights up
+  instead of *Admin*.

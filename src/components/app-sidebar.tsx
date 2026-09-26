@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ChevronRight,
@@ -47,6 +47,8 @@ export function AppSidebar({
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  // Filtered views in the rail ("Imported bikes") are told apart by query.
+  const searchParams = useSearchParams();
   const groups = filterNavGroups(allowedCaps);
   // Both preferences arrive from the server already resolved (they live on
   // the person now, migration 81), so the rail paints correctly on the FIRST
@@ -103,7 +105,7 @@ export function AppSidebar({
           {groups.map((group) => {
             const Icon = group.icon;
             const groupLabel = t(group.labelKey);
-            const groupActive = isGroupActive(group, pathname);
+            const groupActive = isGroupActive(group, pathname, searchParams);
             const single = group.items.length === 1;
 
             // Collapsed rail: one icon per group, linking to its first item.
@@ -134,7 +136,7 @@ export function AppSidebar({
             // disclosure — an expander hiding a single child is pure friction.
             if (single) {
               const item = group.items[0];
-              const active = isNavItemActive(item, pathname);
+              const active = isNavItemActive(item, pathname, searchParams);
               return (
                 <Link
                   key={group.id}
@@ -185,7 +187,7 @@ export function AppSidebar({
                 {isOpen ? (
                   <div className="mt-0.5 flex flex-col gap-0.5 pl-4">
                     {group.items.map((item) => {
-                      const active = isNavItemActive(item, pathname);
+                      const active = isNavItemActive(item, pathname, searchParams);
                       return (
                         <Link
                           key={item.href}

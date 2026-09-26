@@ -64,16 +64,21 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Bike,
     items: [
       { href: "/bikes", labelKey: "allBikes", capability: "bikes" },
+      // The fleet that existed before the system: bikes carrying an import
+      // batch (migration 102). A filtered /bikes, not a route of its own.
+      {
+        href: "/bikes?origin=imported",
+        labelKey: "importedBikes",
+        capability: "bikes",
+      },
       {
         href: "/bike-templates",
         labelKey: "bikeTemplates",
         capability: "templates",
       },
       // Families' own route was retired into /admin/lists (2026-07-29). Pointed
-      // straight at the tab rather than through the redirect. Known cost:
-      // `pathMatches` compares pathname only, so on /admin/lists the ADMIN item
-      // lights up, not this one — it already pointed into /admin/*, so the group
-      // it lives in was always a label rather than a path.
+      // straight at the tab rather than through the redirect. Matching is
+      // query-aware, so this item (not Admin) lights up on that tab.
       {
         href: "/admin/lists?vocab=families",
         labelKey: "families",
@@ -200,13 +205,42 @@ export function filterNavGroups(allowed: string[] | null): NavGroup[] {
 
 const ALL_NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
-function pathMatches(item: NavItem, pathname: string): boolean {
-  if (item.exact) return pathname === item.href;
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+/** The current URL's query — a string, or anything with URLSearchParams' `get`. */
+type Search = string | { get(name: string): string | null };
+
+function readSearch(search: Search): { get(name: string): string | null } {
+  return typeof search === "string" ? new URLSearchParams(search) : search;
+}
+
+/** An href is a path plus, for a filtered view, the query pairs it requires. */
+function splitHref(href: string): { path: string; query: [string, string][] } {
+  const [path, qs = ""] = href.split("?");
+  return { path, query: [...new URLSearchParams(qs).entries()] };
+}
+
+function pathMatches(
+  item: NavItem,
+  pathname: string,
+  search: { get(name: string): string | null },
+): boolean {
+  const { path, query } = splitHref(item.href);
+  // A filtered view (`/bikes?origin=imported`) is that one page carrying those
+  // params — never its detail pages, which belong to the unfiltered parent.
+  if (query.length > 0) {
+    return pathname === path && query.every(([k, v]) => search.get(k) === v);
+  }
+  if (item.exact) return pathname === path;
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+/** Longer paths are more specific, and a required query beats any path. */
+function specificity(item: NavItem): number {
+  const { path, query } = splitHref(item.href);
+  return path.length + query.length * 1000;
 }
 
 /**
- * Route-active logic shared by both navs: LONGEST matching href wins.
+ * Route-active logic shared by both navs: the MOST SPECIFIC matching item wins.
  *
  * Grouping put parents and children side by side in the rail — `/parts` next
  * to `/parts/stock-value`, `/admin` next to `/admin/kits`, `/organizations`
@@ -215,16 +249,30 @@ function pathMatches(item: NavItem, pathname: string): boolean {
  * that, so adding a nested child later needs no new exception. Marking the
  * parents `exact` instead would have broken every detail page (`/parts/<id>`
  * must still highlight "All parts").
+ *
+ * Query-aware since 2026-09-26: an item whose href carries a query ("Imported
+ * bikes" = `/bikes?origin=imported`, "Families" = `/admin/lists?vocab=families`)
+ * matches only when the URL has those params, and then outranks the plain path.
+ * Before this, Families could never light up — `/admin` did instead.
  */
-export function isNavItemActive(item: NavItem, pathname: string): boolean {
-  if (!pathMatches(item, pathname)) return false;
-  const best = ALL_NAV_ITEMS.filter((i) => pathMatches(i, pathname)).reduce(
-    (a, b) => (b.href.length > a.href.length ? b : a),
-  );
+export function isNavItemActive(
+  item: NavItem,
+  pathname: string,
+  search: Search = "",
+): boolean {
+  const params = readSearch(search);
+  if (!pathMatches(item, pathname, params)) return false;
+  const best = ALL_NAV_ITEMS.filter((i) =>
+    pathMatches(i, pathname, params),
+  ).reduce((a, b) => (specificity(b) > specificity(a) ? b : a));
   return best.href === item.href;
 }
 
 /** Does this group contain the current page? Drives the closed-group dot. */
-export function isGroupActive(group: NavGroup, pathname: string): boolean {
-  return group.items.some((item) => isNavItemActive(item, pathname));
+export function isGroupActive(
+  group: NavGroup,
+  pathname: string,
+  search: Search = "",
+): boolean {
+  return group.items.some((item) => isNavItemActive(item, pathname, search));
 }

@@ -23,6 +23,8 @@ function isPublic(pathname: string): boolean {
 function nextWithPathname(req: NextRequest) {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-pathname", req.nextUrl.pathname);
+  // The query too: a filtered view in the nav ("Imported bikes") is a query.
+  requestHeaders.set("x-search", req.nextUrl.search);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 

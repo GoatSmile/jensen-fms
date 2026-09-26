@@ -370,7 +370,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   reflex cover) and Mudguards (bought-black plastic) are majority-exception and
   stay hand-marked.
 - Bikes have polymorphic identifiers: frame, lock, battery, charger, QR,
-  RFID, AirTag, fleet_number (customers' own numbering).
+  RFID, AirTag, and the **recognition code** (slug `fleet_number`). The
+  recognition code is **Jensen's own** code on the bike's label — the
+  customer's `organizations.recognition_prefix` + department + a running
+  number (BKTM01) — **not the customer's numbering** (Dennis 2026-09-15;
+  migration 102). The slug stays because search and call extraction key on it.
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a
   number can move without a visible event — part prices and duty fields, painter
   tier prices, `app_settings`, `people`, corrections to who built a bike — with
@@ -467,6 +471,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     and every reader of that column null-guards. Do not "fix" it by requiring a
     cost, and do not extend it to bikes we DO build — that is what
     `finishBikeBuild` protects.
+  - **The third door is an import** — bikes that were with customers before the
+    system (the fleet register). An imported bike carries `import_batch_id`
+    (→ `import_batches`) and its source row in `import_row`; **that column, never
+    a notes marker, is what "imported" means**, and the *Imported bikes* view
+    (`/bikes?origin=imported`) filters on it (migration 102, DECISIONS
+    2026-09-26). Bikes made in the app never set it.
 - **Per-bike parts are the source of truth at build time.** `bike_parts`
   (one row per bike per part, with `inventory_movement_id`) records what was
   actually consumed for a specific bike. The MO recipe
@@ -831,8 +841,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   the local copy by default, production whenever someone tests there.
 - **Navigation / IA — seven collapsible groups** (reset with the owner
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
-  headings): *Today* (Dashboard) · *Bikes* (All bikes · Bike templates ·
-  Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
+  headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike
+  templates · Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
   orders · Workshop floor · Inbox) · *Orders* (Offers · Sales · Paint orders ·
   Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
@@ -853,7 +863,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     never an eighth group. Each group opens independently; open/collapsed
     state lives in `people.ui_preferences` and is resolved server-side.
   - Both navs render from the shared `src/components/nav-items.ts` — add or
-    move items THERE so desktop sidebar and mobile drawer can't drift.
+    move items THERE so desktop sidebar and mobile drawer can't drift. An item
+    may be a filtered view (`/bikes?origin=imported`): matching is query-aware
+    and the most specific item wins, so a view outranks its unfiltered page.
   - **Templates, families and kits are NOT Admin.** Kits are a floor picking
     aid and families group templates; neither is configuration.
   - The customer **Map** (`/organizations/map`) is in the nav under
@@ -933,6 +945,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Parts list pagination + stock filter** are in-memory in
   `src/app/parts/page.tsx`. Fine at small scale; past a few thousand rows,
   push down to SQL (extended view or RPC).
+- **The bikes list is unpaginated, and the API returns at most 1000 rows per
+  request** (Supabase's default `max_rows`). With the imported fleet the list
+  sits just under that; past it, rows vanish silently rather than erroring.
+  Paginate `src/app/bikes/page.tsx` before the fleet grows past the cap.
 - **Pagination prev/next links don't preserve other filters** — thread
   `searchParams` through to `PartsPagination` or make it a client component.
 - **MO stock coverage is per-MO** (`src/lib/manufacturing/coverage.ts`) —

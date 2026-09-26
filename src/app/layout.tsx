@@ -104,7 +104,9 @@ export default async function RootLayout({
   // shift the layout on every navigation. It comes off the PERSON (migration
   // 81), so it follows them between devices. `x-pathname` is stamped by
   // src/middleware.ts (already used for the worker-locale split).
-  const pathname = (await headers()).get("x-pathname") ?? "/";
+  const requestHeaders = await headers();
+  const pathname = requestHeaders.get("x-pathname") ?? "/";
+  const search = requestHeaders.get("x-search") ?? "";
   const openGroups = resolveOpenGroups(
     preferences.navOpen,
     NAV_GROUP_IDS,
@@ -114,7 +116,7 @@ export default async function RootLayout({
     // reopen it, or a dashboard link would undo their setting.
     (id) => {
       const group = NAV_GROUPS.find((g) => g.id === id);
-      return group ? isGroupActive(group, pathname) : false;
+      return group ? isGroupActive(group, pathname, search) : false;
     },
   );
 

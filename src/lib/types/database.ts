@@ -705,6 +705,8 @@ export type Database = {
           frame_number: string
           frame_number_confirmed: boolean
           id: string
+          import_batch_id: string | null
+          import_row: Json | null
           last_actor_id: string | null
           manufacturing_order_id: string | null
           notes: string | null
@@ -731,6 +733,8 @@ export type Database = {
           frame_number: string
           frame_number_confirmed?: boolean
           id?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
           last_actor_id?: string | null
           manufacturing_order_id?: string | null
           notes?: string | null
@@ -757,6 +761,8 @@ export type Database = {
           frame_number?: string
           frame_number_confirmed?: boolean
           id?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
           last_actor_id?: string | null
           manufacturing_order_id?: string | null
           notes?: string | null
@@ -802,6 +808,13 @@ export type Database = {
             columns: ["current_location_id"]
             isOneToOne: false
             referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikes_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
           {
@@ -1257,6 +1270,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      import_batches: {
+        Row: {
+          id: string
+          imported_at: string
+          imported_by: string | null
+          label: string
+          notes: string | null
+          source: string | null
+        }
+        Insert: {
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          label: string
+          notes?: string | null
+          source?: string | null
+        }
+        Update: {
+          id?: string
+          imported_at?: string
+          imported_by?: string | null
+          label?: string
+          notes?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_imported_by_fkey"
+            columns: ["imported_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inbound_messages: {
         Row: {
@@ -2623,6 +2671,7 @@ export type Database = {
           phone: string | null
           pii_redacted_at: string | null
           preferred_language: string
+          recognition_prefix: string | null
           state_province: string | null
           updated_at: string
           vat_number: string | null
@@ -2659,6 +2708,7 @@ export type Database = {
           phone?: string | null
           pii_redacted_at?: string | null
           preferred_language?: string
+          recognition_prefix?: string | null
           state_province?: string | null
           updated_at?: string
           vat_number?: string | null
@@ -2695,6 +2745,7 @@ export type Database = {
           phone?: string | null
           pii_redacted_at?: string | null
           preferred_language?: string
+          recognition_prefix?: string | null
           state_province?: string | null
           updated_at?: string
           vat_number?: string | null

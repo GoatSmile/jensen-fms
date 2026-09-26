@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { ChevronRight, CircleUser, LogOut, Menu, X } from "lucide-react";
@@ -44,6 +44,8 @@ export function MobileNav({
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  // Filtered views in the rail ("Imported bikes") are told apart by query.
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [openGroups, setOpenGroups] =
     useState<Record<string, boolean>>(initialOpenGroups);
@@ -121,11 +123,11 @@ export function MobileNav({
               {groups.map((group) => {
                 const Icon = group.icon;
                 const groupLabel = t(group.labelKey);
-                const groupActive = isGroupActive(group, pathname);
+                const groupActive = isGroupActive(group, pathname, searchParams);
 
                 if (group.items.length === 1) {
                   const item = group.items[0];
-                  const active = isNavItemActive(item, pathname);
+                  const active = isNavItemActive(item, pathname, searchParams);
                   return (
                     <DialogPrimitive.Close asChild key={group.id}>
                       <Link
@@ -172,7 +174,7 @@ export function MobileNav({
                     {isOpen ? (
                       <div className="mt-0.5 flex flex-col gap-0.5 pl-4">
                         {group.items.map((item) => {
-                          const active = isNavItemActive(item, pathname);
+                          const active = isNavItemActive(item, pathname, searchParams);
                           return (
                             <DialogPrimitive.Close asChild key={item.href}>
                               <Link
