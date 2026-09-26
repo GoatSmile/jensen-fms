@@ -56,6 +56,9 @@ is Danish (person language).
   steps; the build needs its Calendar ID and `GOOGLE_CALENDAR_SA_KEY` in Vercel
   + `.env.local` (secret — never in chat). Review fleet files 2–4 (or pass the
   doubtful rows to Dennis).
+- **`QUESTIONS-DENNIS-2026-09-24` is out of date on Relatel** — it says Relatel
+  cannot hand over recordings and that option 2 goes to our own number; both
+  changed on 26 Sep. Do not send it as is.
 - **Owner decision, escalate:** service agreements are per bike in reality; the
   app models them per customer (plan §2A). Fleet-import scope/status questions:
   plan §7.
@@ -88,7 +91,14 @@ is Danish (person language).
 2. **Tuesday**: passwords for Finn and Glenn; Finn logs in on his phone and
    walks one repair; the Relatel test calls; Dennis's paint order
    (`PNT-2026-0012`); collect the agreement papers and the Trello-export answer.
-3. **Fleet import load** after the review → a generated data migration.
+3. **Fleet import: Dennis sorts out the open points** — `docs/FLEET-IMPORT-DENNIS-2026-09.pdf`
+   (written 27 Sep, **not yet sent**): nine sheets whose customer is unclear
+   (146 bikes), five default rules to confirm, four data questions (latest list?
+   *SLUT22*? price 0? each customer's code letters), frames listed twice and
+   number clashes in the appendix. Load after his answers — the ~780 clear bikes
+   need nothing from him but the rules. *SLUT22* in column A on the Høje-Taastrup
+   sheet is a marker, not a code (the codes sit in another column): the load step
+   must not import it as a recognition code.
 4. Finn's Danish user guide (PDF); calendar slice 0 once the ID + key exist.
 5. Carried over: click `/offers` in production; send Dennis the production
    checklist + colour lists.

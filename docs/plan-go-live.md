@@ -69,8 +69,10 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
 - [x] **Nav: *Imported bikes*** under *Bikes* = `/bikes?origin=imported`; query-aware nav
       matching (fixes *Families* lighting up *Admin*); recognition-code column + *Imported*
       badge on the bikes list.
-- [ ] `scripts/import_fleet.py` → review CSVs (duplicate frames, unmatched customers,
-      departments) → generated data migration: bikes at the **customer** level (department
+- [x] `scripts/import_fleet.py review` → review CSVs (2026-09-26).
+- [ ] **Dennis's answers** — `docs/FLEET-IMPORT-DENNIS-2026-09.pdf` (nine unclear customers,
+      five rules, four questions, the duplicate/clash appendix). Then the load step
+      (`import_fleet.py sql`, not built) → generated data migration: bikes at the **customer** level (department
       where confident, the rest refined later), identifiers (frame, recognition code, battery,
       charger, key, battery key), delivered date → `assigned_at`, site → `current_location_text`.
       Applied to production and local, verified by query.
