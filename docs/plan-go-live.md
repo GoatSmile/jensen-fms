@@ -76,6 +76,15 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
       bike by its code (identifiers already feed search).
 
 ### 1C · Finn on the system
+- [ ] **Technicians see no money — before Finn and Glenn log in** (owner, 2026-09-26; Dennis,
+      02:39:47). The *Workshop* role today holds `bikes, dashboard, inbox, maintenance, parts,
+      scan, work`, and ~20 screens under those show costs or prices: part prices, stock value
+      and the Stock value page, a bike's build cost, work-order part prices and totals, the
+      dashboard's money, the build workbench. Proposed: one new capability (`costs` — see
+      costs, prices, margins, stock value) granted to Owner, IT admin, Accountant and Sales, not
+      Workshop; every money figure and the Stock value nav item render only with it. Stock
+      *inbound* adjustments ask for a cost, so they become an office task (or the prevailing
+      cost applies silently) — decide. ~0.5–1 day.
 - [ ] Create **Finn and Glenn** as people, Danish, role *Workshop* (confirm Glenn's role).
 - [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order flow for Dennis.
 - [ ] **Service calendar slice 0** — now unblocked: Finn's address is `service@jensenproduction.dk`.
