@@ -96,9 +96,10 @@ treat the early totals as floors, not truth.
 | Sun 2026-09-13 | ~4.5 | **Dictation stops depending on the browser** — Web Speech replaced by in-app recording transcribed through the inbound provider. Then production turned up in Times (a Vercel font-class mismatch), and the test bike with its 45 movements was purged. |
 | Tue 2026-09-15 | ~1.5 | **The local copy catches up, then a test chain leaves production** — stack restarted and re-dumped from prod; then 20 documents, 9 bikes and 108 movements from the morning's offer→paint run purged after a dry-run. Stock +97. |
 | Thu 2026-09-24 | ~4 | **Dennis prep and the 24 Sep call → Finn's service line and calendar designed**: fleet/phone/question PDFs, Relatel researched (no recording API), option-2 → Twilio route and a Google service calendar decided; Tuesday 29 Sep visit planned. |
+| Sat 2026-09-26 | ~3 | **Planning: Relatel as a Twilio substitute, the fleet-register import, and every to-do from the 15 Sep meeting** — Munr's Relatel research read against Finn's line; the 59-sheet register profiled for import. |
 
-**September so far: ~47 h** (6 working days)
+**September so far: ~50 h** (7 working days)
 
 ---
 
-**Project total: ~301 h across 47 working days (2026-05-07 → 2026-09-24)**
+**Project total: ~304 h across 48 working days (2026-05-07 → 2026-09-26)**
