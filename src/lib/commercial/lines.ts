@@ -112,6 +112,28 @@ export type VatCodeChoice = {
   default_rate: number;
 };
 
+/**
+ * The VAT code a new line starts with when the customer names none: Danish
+ * standard VAT. No customer carries a `default_vat_code` today (every one of
+ * them was blank on 2026-09-27), so every offer line used to open with NO VAT
+ * and a quote could go out 25 % short. Decided on 15 Sep (01:02:37); a
+ * customer's own default still wins, and the dialog can still change it.
+ */
+export const DEFAULT_VAT_CODE = "DK_STANDARD";
+
+/**
+ * The customer's default, else DK standard — but only a code the picker (or
+ * the database) actually offers, so an archived code never pre-fills.
+ */
+export function resolveDefaultVatCode(
+  customerDefault: string | null | undefined,
+  available: { code: string }[],
+): string | null {
+  const offered = new Set(available.map((v) => v.code));
+  if (customerDefault && offered.has(customerDefault)) return customerDefault;
+  return offered.has(DEFAULT_VAT_CODE) ? DEFAULT_VAT_CODE : null;
+}
+
 export type ColorChoice = {
   id: string;
   name_en: string;

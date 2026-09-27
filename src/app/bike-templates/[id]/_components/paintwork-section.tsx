@@ -83,6 +83,13 @@ export function PaintworkSection({
 
   const declaredIds = new Set(rows.map((r) => r.partTypeId));
   const addablePartTypes = partTypes.filter((pt) => !declaredIds.has(pt.id));
+  // The other direction: marked paintable in the recipe, not declared here.
+  // Since 2026-09-27 the paint order sends every such part anyway (the recipe
+  // is the truth), so the only thing the gap still breaks is THIS estimate —
+  // and with it the margin in the cost-to-produce box.
+  const undeclared = partTypes.filter(
+    (pt) => backed.has(pt.id) && !declaredIds.has(pt.id),
+  );
 
   return (
     <Panel
@@ -205,6 +212,19 @@ export function PaintworkSection({
               types: unbacked.map((r) => r.partTypeName).join(", "),
             })}
           </p>
+        ) : null}
+        {undeclared.length > 0 ? (
+          <p className="text-money mt-2 text-xs">
+            {t("paintworkUndeclaredNote", {
+              types: undeclared.map((pt) => pt.name_en).join(", "),
+            })}
+          </p>
+        ) : null}
+
+        {/* The two things Dennis expected to do here on 15 Sep (00:46): paint a
+            part the recipe doesn't have yet, and pick a colour. */}
+        {canEdit ? (
+          <p className="text-ink-2 mt-2 text-xs">{t("paintworkHowItWorks")}</p>
         ) : null}
       </div>
     </Panel>

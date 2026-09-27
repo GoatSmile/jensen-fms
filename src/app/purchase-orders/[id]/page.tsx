@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/parts/format";
 import type { PurchaseOrderStatus } from "@/lib/po/status";
 import type { ImportTaxBasis, PartOrigin } from "@/lib/purchasing/import-tax";
 
+import { dictationReady } from "@/lib/dictation/ready";
 import { POHeader } from "./_components/po-header";
 import { LinesSection, type POLineRow } from "./_components/lines-section";
 import { OutboundMessageList } from "@/components/outbound-message-list";
@@ -56,6 +57,7 @@ export default async function PurchaseOrderDetailPage({
     currenciesRes,
     fxRatesRes,
     settingsRes,
+    canDictate,
   ] = await Promise.all([
     supabase
       .from("purchase_orders")
@@ -63,7 +65,7 @@ export default async function PurchaseOrderDetailPage({
         `
           id, po_number, status, order_date, expected_date, received_date,
           total_amount, total_currency, notes, emailed_at, emailed_to,
-          suppliers(id, name, import_duty_prepaid_default, email_primary, email_secondary, default_email_message)
+          suppliers(id, name, import_duty_prepaid_default, email_primary, email_secondary, default_email_message, document_language)
         `,
       )
       .eq("id", id)
@@ -112,6 +114,7 @@ export default async function PurchaseOrderDetailPage({
       )
       .eq("id", 1)
       .maybeSingle(),
+    dictationReady(),
   ]);
 
   if (poRes.error) {
@@ -268,6 +271,8 @@ export default async function PurchaseOrderDetailPage({
           po.suppliers?.email_secondary,
         ].filter((e): e is string => Boolean(e))}
         supplierDefaultMessage={po.suppliers?.default_email_message ?? null}
+        dictationReady={canDictate}
+        documentLanguage={po.suppliers?.document_language ?? null}
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">

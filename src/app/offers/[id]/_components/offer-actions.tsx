@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, RotateCcw, Send, ShoppingCart, X } from "lucide-react";
+import { Check, Copy, RotateCcw, Send, ShoppingCart, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
 } from "@/lib/offers/status";
 
 import { convertOfferToSalesOrder } from "../../_actions/convert-to-so";
+import { duplicateOffer } from "../../_actions/duplicate-offer";
 import {
   reopenOfferForRevision,
   sendOffer,
@@ -57,7 +58,8 @@ export function OfferActions({
     setError(null);
     start(async () => {
       const r = await fn();
-      // convertOfferToSalesOrder redirects on success, so only a failure lands.
+      // convertOfferToSalesOrder and duplicateOffer redirect on success, so
+      // only a failure lands.
       if (r && !r.ok) {
         setError(r.error ?? null);
         setConfirm(null);
@@ -124,6 +126,18 @@ export function OfferActions({
             <ShoppingCart aria-hidden /> {t("convert")}
           </Button>
         ) : null}
+
+        {/* Any status: a new draft with its own number, this one untouched —
+            the way to reuse a converted offer (15 Sep, 01:01). */}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => run(() => duplicateOffer(offerId))}
+          title={t("duplicateHint")}
+        >
+          <Copy aria-hidden /> {t("duplicate")}
+        </Button>
       </div>
 
       {error ? (

@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DictateButton } from "@/components/dictate-button";
+import { appendDictated, dictateLanguageFor } from "@/lib/dictation/append";
 import {
   PO_STATUS_VARIANT,
   poTransitionRequiresReason,
@@ -54,6 +56,10 @@ type Props = {
   supplierEmails: string[];
   /** Saved on the supplier; seeds the message box, edits never write back. */
   supplierDefaultMessage: string | null;
+  /** A transcription provider is configured (server-resolved). */
+  dictationReady: boolean;
+  /** The supplier's document language — what the message is dictated in. */
+  documentLanguage: string | null;
 };
 
 export function POHeader({
@@ -68,6 +74,8 @@ export function POHeader({
   emailTestRecipients,
   supplierEmails,
   supplierDefaultMessage,
+  dictationReady,
+  documentLanguage,
 }: Props) {
   const t = useTranslations("poDetail");
   const tStatus = useTranslations("poStatus");
@@ -228,6 +236,8 @@ export function POHeader({
         testRecipients={emailTestRecipients}
         supplierEmails={supplierEmails}
         defaultMessage={supplierDefaultMessage}
+        dictationReady={dictationReady}
+        documentLanguage={documentLanguage}
         onSent={() => router.refresh()}
       />
     </div>
@@ -249,6 +259,8 @@ function EmailSupplierDialog({
   testRecipients,
   supplierEmails,
   defaultMessage,
+  dictationReady,
+  documentLanguage,
   onSent,
 }: {
   open: boolean;
@@ -260,10 +272,13 @@ function EmailSupplierDialog({
   testRecipients: string | null;
   supplierEmails: string[];
   defaultMessage: string | null;
+  dictationReady: boolean;
+  documentLanguage: string | null;
   onSent: () => void;
 }) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
+  const tDictate = useTranslations("dictate");
   const [message, setMessage] = useState(defaultMessage ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -364,6 +379,12 @@ function EmailSupplierDialog({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t("messagePlaceholder")}
+              />
+              <DictateButton
+                defaultLanguage={dictateLanguageFor(documentLanguage)}
+                onAppend={(text) => setMessage((prev) => appendDictated(prev, text))}
+                label={tDictate("dictateMessage")}
+                ready={dictationReady}
               />
             </div>
 

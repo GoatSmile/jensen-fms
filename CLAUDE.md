@@ -421,6 +421,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     cannot reopen; change the sales order instead.
   - **`expired` is DERIVED and never written** (`isExpired`), like *at painter*
     and *painted*. A customer who accepts a day late has accepted.
+  - **Duplicating is not revising.** *Duplicate offer* (`duplicateOffer`) makes a
+    NEW draft under a new `OFF-` number from any status, lines and pictures
+    copied, the original untouched — the way to reuse a converted offer.
   - **Converting COPIES the lines** into a new SO with
     `converted_from_offer_id`, so the offer keeps saying what was agreed while
     the order is edited as an order — the `bike_parts` snapshot argument.
@@ -851,7 +854,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   template's or part's `default_retail_price`, but ONLY when its currency matches
   the document's, because the price is a bare number and quoting it unconverted
   would understate the line by the exchange rate. Typing over it stops the
-  catalogue touching it again.
+  catalogue touching it again. **Its VAT code prefills with the customer's
+  default, else `DK_STANDARD`** (`resolveDefaultVatCode`, used by the dialog
+  and the voice-command writer alike) — no customer carries a default, so
+  lines used to open with no VAT at all.
 - **shadcn style is `radix-nova`** — composition uses Radix `Slot` and
   `asChild` (`<Button asChild><Link…/></Button>`). Do NOT re-init shadcn
   fresh; recent CLI defaults pick `base-nova` (`@base-ui/react`, `render`

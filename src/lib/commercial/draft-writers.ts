@@ -18,7 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTranslations } from "next-intl/server";
 
 import type { Database } from "@/lib/types/database";
-import { retailPriceIn } from "@/lib/commercial/lines";
+import { resolveDefaultVatCode, retailPriceIn } from "@/lib/commercial/lines";
 import { SALES_ORDER_DOC, insertLine } from "@/lib/commercial/write-lines";
 
 export type DraftWriteResult<T> =
@@ -56,7 +56,8 @@ export async function insertDraftOrganization(
  * shape). unitPrice falls back to the template's list price via the shared
  * `retailPriceIn` — currency-guarded, so a DKK template on a EUR order yields
  * nothing rather than wrong money — else 0, for the reviewer to set. VAT
- * defaults to the customer's default_vat_code; `insertLine` resolves its rate,
+ * defaults to the customer's default_vat_code, else DK standard
+ * (`resolveDefaultVatCode`); `insertLine` resolves its rate,
  * writes the line and recomputes the header totals.
  */
 export async function insertDraftSalesOrder(
@@ -83,8 +84,16 @@ export async function insertDraftSalesOrder(
     .select("default_vat_code")
     .eq("id", input.organizationId)
     .maybeSingle();
-  // The rate is NOT resolved here — insertLine does it, from this code.
-  const vatCode = (org?.default_vat_code as string | null) ?? null;
+  // The rate is NOT resolved here — insertLine does it, from this code. Same
+  // fallback as the interactive dialog: the customer's code, else DK standard.
+  const { data: activeVat } = await supabase
+    .from("vat_codes")
+    .select("code")
+    .eq("is_active", true);
+  const vatCode = resolveDefaultVatCode(
+    org?.default_vat_code as string | null,
+    activeVat ?? [],
+  );
 
   // unitPrice fallback: the template's list price, through the same
   // currency-guarded helper the interactive dialog uses. A DKK-priced template

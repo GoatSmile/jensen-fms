@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { DictateButton } from "@/components/dictate-button";
+import { appendDictated, dictateLanguageFor } from "@/lib/dictation/append";
 
 import { emailOfferToCustomer } from "../../_actions/email-offer";
 
@@ -31,14 +33,21 @@ export function EmailOfferDialog({
   isDraft,
   testMode,
   testRecipients,
+  dictationReady,
+  documentLanguage,
 }: {
   offerId: string;
   isDraft: boolean;
   testMode: boolean;
   testRecipients: string | null;
+  /** A transcription provider is configured (server-resolved). */
+  dictationReady: boolean;
+  /** The offer's own language — what the customer reads, so what to dictate in. */
+  documentLanguage: string | null;
 }) {
   const t = useTranslations("offerDetail");
   const tCommon = useTranslations("common");
+  const tDictate = useTranslations("dictate");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -93,6 +102,14 @@ export function EmailOfferDialog({
             onChange={(e) => setMessage(e.target.value)}
             placeholder={t("emailMessagePlaceholder")}
             disabled={pending}
+          />
+          {/* Dennis, 15 Sep (00:50): "what did you press?" — the message was
+              dictated in another app. Same recorder as the workshop notes. */}
+          <DictateButton
+            defaultLanguage={dictateLanguageFor(documentLanguage)}
+            onAppend={(text) => setMessage((prev) => appendDictated(prev, text))}
+            label={tDictate("dictateMessage")}
+            ready={dictationReady}
           />
           <p className="text-muted-foreground text-xs">{t("emailNotesStay")}</p>
 

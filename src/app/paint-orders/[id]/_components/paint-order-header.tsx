@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DictateButton } from "@/components/dictate-button";
+import { appendDictated, dictateLanguageFor } from "@/lib/dictation/append";
 import {
   SERVICE_ORDER_STATUS_VARIANT,
   serviceOrderTransitionRequiresReason,
@@ -64,6 +66,10 @@ type Props = {
   supplierEmails: string[];
   /** Saved on the supplier; seeds the message box, edits never write back. */
   supplierDefaultMessage: string | null;
+  /** A transcription provider is configured (server-resolved). */
+  dictationReady: boolean;
+  /** The supplier's document language — what the message is dictated in. */
+  documentLanguage: string | null;
 };
 
 export function PaintOrderHeader({
@@ -83,6 +89,8 @@ export function PaintOrderHeader({
   emailTestRecipients,
   supplierEmails,
   supplierDefaultMessage,
+  dictationReady,
+  documentLanguage,
 }: Props) {
   const t = useTranslations("paintOrderDetail");
   const tStatus = useTranslations("serviceOrderStatus");
@@ -306,6 +314,8 @@ export function PaintOrderHeader({
         testRecipients={emailTestRecipients}
         supplierEmails={supplierEmails}
         defaultMessage={supplierDefaultMessage}
+        dictationReady={dictationReady}
+        documentLanguage={documentLanguage}
         unconvertibleLines={unconvertibleLines}
         onSent={() => router.refresh()}
       />
@@ -330,6 +340,8 @@ function EmailPainterDialog({
   testRecipients,
   supplierEmails,
   defaultMessage,
+  dictationReady,
+  documentLanguage,
   unconvertibleLines,
   onSent,
 }: {
@@ -343,11 +355,14 @@ function EmailPainterDialog({
   testRecipients: string | null;
   supplierEmails: string[];
   defaultMessage: string | null;
+  dictationReady: boolean;
+  documentLanguage: string | null;
   unconvertibleLines: number;
   onSent: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
+  const tDictate = useTranslations("dictate");
   const [message, setMessage] = useState(defaultMessage ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<{
@@ -496,6 +511,12 @@ function EmailPainterDialog({
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t("messagePlaceholder")}
+              />
+              <DictateButton
+                defaultLanguage={dictateLanguageFor(documentLanguage)}
+                onAppend={(text) => setMessage((prev) => appendDictated(prev, text))}
+                label={tDictate("dictateMessage")}
+                ready={dictationReady}
               />
             </div>
 

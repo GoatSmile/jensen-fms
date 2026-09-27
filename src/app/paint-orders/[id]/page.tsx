@@ -34,6 +34,7 @@ import type { ColorOption } from "@/app/paint-orders/_components/paint-order-for
 import type { EligibleBikeOption } from "./_components/add-bike-to-paint-dialog";
 import { PaintOrderBikesSection } from "./_components/paint-order-bikes-section";
 import type { PaintOrderBikeRow } from "./_components/paint-order-bikes-section";
+import { dictationReady } from "@/lib/dictation/ready";
 import { PaintOrderHeader } from "./_components/paint-order-header";
 import {
   ServiceOrderItemsSection,
@@ -73,7 +74,7 @@ export default async function PaintOrderDetailPage({
         id, order_number, status, supplier_id, service_type_id,
         planned_send_date, sent_at, expected_return_at, received_at,
         notes, created_at, emailed_at, emailed_to,
-        supplier:suppliers(id, name, email_primary, email_secondary, default_email_message),
+        supplier:suppliers(id, name, email_primary, email_secondary, default_email_message, document_language),
         color:colors(id, slug, name_en, name_da, hex, ral_code, coating),
         sales_order:sales_orders!sales_order_id(id, sales_order_number)
       `,
@@ -103,6 +104,7 @@ export default async function PaintOrderDetailPage({
     priceList,
     settingsRes,
     paintablePartsRes,
+    canDictate,
   ] = await Promise.all([
     supabase
       .from("service_order_items")
@@ -184,6 +186,7 @@ export default async function PaintOrderDetailPage({
       .not("service_part_type_id", "is", null)
       .is("deleted_at", null)
       .order("internal_sku", { ascending: true }),
+    dictationReady(),
   ]);
 
   const items = itemsRes.data ?? [];
@@ -421,6 +424,8 @@ export default async function PaintOrderDetailPage({
         colorHex={order.color?.hex ?? null}
         lineColours={lineColours}
         unconvertibleLines={unconvertibleLines}
+        dictationReady={canDictate}
+        documentLanguage={order.supplier?.document_language ?? null}
         colorFinish={
           order.color
             ? colorFinishLabel(

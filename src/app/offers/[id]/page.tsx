@@ -35,6 +35,7 @@ import {
   type OfferStatus,
 } from "@/lib/offers/status";
 
+import { dictationReady } from "@/lib/dictation/ready";
 import { EmailOfferDialog } from "./_components/email-offer-dialog";
 import { OfferActions } from "./_components/offer-actions";
 import { OfferLinesSection } from "./_components/offer-lines-section";
@@ -78,7 +79,7 @@ export default async function OfferDetailPage({
     ? "expired"
     : status;
 
-  const [linesRes, options, settingsRes, sentMessages] = await Promise.all([
+  const [linesRes, options, settingsRes, sentMessages, canDictate] = await Promise.all([
     supabase
       .from("offer_lines")
       .select(COMMERCIAL_LINE_SELECT)
@@ -91,6 +92,7 @@ export default async function OfferDetailPage({
       .eq("id", 1)
       .maybeSingle(),
     loadOutboundForOrder(supabase, { offerId: id }),
+    dictationReady(),
   ]);
 
   const lineRows: CommercialLineRow[] = (linesRes.data ?? []).map((l) =>
@@ -186,6 +188,8 @@ export default async function OfferDetailPage({
                 isDraft={editable}
                 testMode={settingsRes.data?.outbound_test_mode ?? true}
                 testRecipients={settingsRes.data?.outbound_test_email ?? null}
+                dictationReady={canDictate}
+                documentLanguage={offer.language}
               />
             ) : null}
           </div>

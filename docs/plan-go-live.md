@@ -175,12 +175,12 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
       app-wide refresh sweep is in BACKLOG).
 
 ### 2E · Offers, sales orders, parts — small items
-- [ ] DK standard VAT as the default on offer lines (01:02:37).
-- [ ] Dictation button in the offer's send dialog (00:50:34).
-- [ ] Reuse a converted offer → *Duplicate offer* (01:01:09).
+- [x] DK standard VAT as the default on offer lines (01:02:37).
+- [x] Dictation button in the offer's send dialog (00:50:34) — and the paint-order and PO ones.
+- [x] Reuse a converted offer → *Duplicate offer* (01:01:09).
 - [ ] Extra battery/charger on the SO, or attached to the customer later (01:52:54).
 - [ ] Create a missing part without leaving the picker (00:25:29).
-- [ ] Template paintwork hint: only recipe parts can be painted; colour is chosen on the order line.
+- [x] Template paintwork hint: only recipe parts can be painted; colour is chosen on the order line.
 
 ### 2F · Templates, kits, labels (mostly Dennis)
 - [ ] Dennis's kit definition, now clear: **a kit = the motor-system parts that must go

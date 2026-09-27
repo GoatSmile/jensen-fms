@@ -34,6 +34,7 @@ import type {
   TemplateChoice,
   VatCodeChoice,
 } from "@/lib/commercial/lines";
+import { resolveDefaultVatCode } from "@/lib/commercial/lines";
 
 /**
  * The lines panel of a commercial document (offer or sales order): the table,
@@ -197,7 +198,7 @@ export function CommercialLinesSection({
             if (!next) setDialog({ kind: "closed" });
           }}
           initial={dialog.kind === "edit" ? dialog.initial : null}
-          defaultVatCode={defaultVatCode}
+          defaultVatCode={resolveDefaultVatCode(defaultVatCode, vatCodes)}
           currency={currency}
           onSubmit={
             dialog.kind === "add"
