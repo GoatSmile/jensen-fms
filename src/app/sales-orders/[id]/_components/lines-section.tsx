@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,11 @@ import {
   deleteSOLine,
   updateSOLine,
 } from "../../_actions/manage-so-lines";
-import { SpawnMoButton } from "./spawn-mo-button";
+import {
+  SpawnMoButton,
+  SpawnPromptDialog,
+  type SpawnPrompt,
+} from "./spawn-mo-button";
 
 /**
  * The sales order's lines panel — the shared commercial-lines table plus the
@@ -54,40 +59,51 @@ export function LinesSection({
 }: Props) {
   const t = useTranslations("soDetail");
   const linkedMoCounts = new Map(rows.map((r) => [r.id, r.linkedMoCount]));
+  // Held HERE, not in the button: the button unmounts as soon as its line has
+  // an MO, which is the very render that must show the question.
+  const [prompt, setPrompt] = useState<SpawnPrompt | null>(null);
 
   return (
-    <CommercialLinesSection
-      title={t("linesTitle")}
-      description={editable ? t("linesDescEditable") : t("linesDescLocked")}
-      currency={currency}
-      defaultVatCode={defaultVatCode}
-      editable={editable}
-      rows={rows}
-      parts={parts}
-      templates={templates}
-      vatCodes={vatCodes}
-      colors={colors}
-      onAdd={(fd) => addSOLine(soId, fd)}
-      onUpdate={(lineId, fd) => updateSOLine(lineId, fd)}
-      onDelete={(lineId) => deleteSOLine(lineId)}
-      renderRowActions={(row, h) =>
-        canSpawn && (linkedMoCounts.get(row.id) ?? 0) === 0 ? (
-          <SpawnMoButton
-            soId={soId}
-            lineId={row.id}
-            disabled={h.pending}
-            onError={h.onError}
-          />
-        ) : null
-      }
-      renderItemBadges={(row) => {
-        const count = linkedMoCounts.get(row.id) ?? 0;
-        return count > 0 ? (
-          <Badge variant="secondary" className="mt-1 text-[10px]">
-            {t("moBadge", { count })}
-          </Badge>
-        ) : null;
-      }}
-    />
+    <>
+      <CommercialLinesSection
+        title={t("linesTitle")}
+        description={editable ? t("linesDescEditable") : t("linesDescLocked")}
+        currency={currency}
+        defaultVatCode={defaultVatCode}
+        editable={editable}
+        rows={rows}
+        parts={parts}
+        templates={templates}
+        vatCodes={vatCodes}
+        colors={colors}
+        onAdd={(fd) => addSOLine(soId, fd)}
+        onUpdate={(lineId, fd) => updateSOLine(lineId, fd)}
+        onDelete={(lineId) => deleteSOLine(lineId)}
+        renderRowActions={(row, h) =>
+          canSpawn && (linkedMoCounts.get(row.id) ?? 0) === 0 ? (
+            <SpawnMoButton
+              soId={soId}
+              lineId={row.id}
+              disabled={h.pending}
+              onError={h.onError}
+              onPrompt={setPrompt}
+            />
+          ) : null
+        }
+        renderItemBadges={(row) => {
+          const count = linkedMoCounts.get(row.id) ?? 0;
+          return count > 0 ? (
+            <Badge variant="secondary" className="mt-1 text-[10px]">
+              {t("moBadge", { count })}
+            </Badge>
+          ) : null;
+        }}
+      />
+      <SpawnPromptDialog
+        soId={soId}
+        prompt={prompt}
+        onClose={() => setPrompt(null)}
+      />
+    </>
   );
 }

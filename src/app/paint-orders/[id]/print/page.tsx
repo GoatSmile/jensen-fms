@@ -268,14 +268,16 @@ export default async function PaintOrderPrintPage({
             <thead>
               <tr className="border-b-2 border-black text-left">
                 <th className="py-1.5 pr-2 font-medium">{L.frameNumber}</th>
-                <th className="py-1.5 font-medium">{L.model}</th>
+                <th className="py-1.5 pr-2 font-medium">{L.model}</th>
+                <th className="py-1.5 font-medium">{L.colour}</th>
               </tr>
             </thead>
             <tbody>
               {doc.bikes.map((b) => (
                 <tr key={b.frameNumber} className="border-b">
                   <td className="py-1.5 pr-2 font-mono">{b.frameNumber}</td>
-                  <td className="py-1.5">{b.templateLabel ?? "—"}</td>
+                  <td className="py-1.5 pr-2">{b.templateLabel ?? "—"}</td>
+                  <td className="py-1.5">{b.colour ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

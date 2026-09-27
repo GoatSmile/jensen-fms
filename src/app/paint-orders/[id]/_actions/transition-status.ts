@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
+import { localizedName } from "@/i18n/vocab";
 import { readPersonId } from "@/lib/auth/read-session";
 import { resolveDefaultLocationId } from "@/lib/inventory/default-location";
 import {
@@ -18,9 +20,25 @@ import {
 } from "@/lib/services/status";
 import { loadCurrentPriceList, priceOrderItems } from "@/lib/services/pricing";
 
+/** A line that cannot turn into painted stock — named for the confirm dialog. */
+export type UnconvertibleLine = {
+  partType: string;
+  colour: string | null;
+  quantity: number;
+  missing: "part" | "colour";
+};
+
 export type TransitionServiceOrderResult =
   | { ok: true; conversion?: ConversionResult }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * Set when receiving back would silently convert nothing for these lines.
+       * The caller asks, then retries with `acceptUnconvertible`.
+       */
+      unconvertible?: UnconvertibleLine[];
+    };
 
 /**
  * Move a service order to `toStatus`. Validates the transition matrix,
@@ -39,6 +57,7 @@ export async function transitionServiceOrderStatus(
   serviceOrderId: string,
   toStatus: ServiceOrderStatus,
   reason: string | null,
+  opts: { acceptUnconvertible?: boolean } = {},
 ): Promise<TransitionServiceOrderResult> {
   const t = await getTranslations("errors");
   if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
@@ -75,6 +94,47 @@ export async function transitionServiceOrderStatus(
       ok: false,
       error: t("reasonRequiredCancel"),
     };
+  }
+
+  // Receiving back converts each line into painted stock — but only a line
+  // that names a part AND a colour can. PNT-2026-0012 (24 Sep) was received
+  // with no part on any line, posted nothing, and the screen said nothing
+  // until after the fact, in green. Ask BEFORE the status moves, name the
+  // lines, and let the person decide — receiving is still a true statement
+  // about the boxes, so this warns rather than refuses.
+  if (toStatus === "received_back" && !opts.acceptUnconvertible) {
+    const { data: lines, error: linesErr } = await supabase
+      .from("service_order_items")
+      .select(
+        "part_id, color_id, quantity, part_type:service_part_types!service_part_type_id(name_en, name_da), color:colors!color_id(name_en, name_da)",
+      )
+      .eq("service_order_id", serviceOrderId);
+    if (linesErr) {
+      return {
+        ok: false,
+        error: t("paintCouldNotLoadItems", { detail: linesErr.message }),
+      };
+    }
+    const locale = await getLocale();
+    const unconvertible: UnconvertibleLine[] = (lines ?? [])
+      .filter((l) => !l.part_id || !l.color_id)
+      .map((l) => {
+        const pt = one(l.part_type);
+        const c = one(l.color);
+        return {
+          partType: pt ? localizedName(locale, pt.name_en, pt.name_da) : "—",
+          colour: c ? localizedName(locale, c.name_en, c.name_da) : null,
+          quantity: Number(l.quantity),
+          missing: l.part_id ? "colour" : "part",
+        };
+      });
+    if (unconvertible.length > 0) {
+      return {
+        ok: false,
+        error: t("paintReceiveUnconvertible", { count: unconvertible.length }),
+        unconvertible,
+      };
+    }
   }
 
   const nowIso = new Date().toISOString();

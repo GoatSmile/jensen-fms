@@ -100,8 +100,8 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
 - [ ] Send Dennis `PRODUCTION-CHECKLIST-DENNIS-2026-09` + `COLOUR-LISTS-DENNIS-2026-09`.
 - [ ] Calendar invite for Tuesday 13:00. Proposal to Renee (not app work).
 - [ ] `npm run smoke` on the refreshed local copy (outstanding since 15 Sep).
-- [ ] Walk `PNT-2026-0012` with Dennis (received with no parts on its lines) → warn at
-      `received_back` when a stock order's lines name no part (BACKLOG hardening).
+- [ ] Walk `PNT-2026-0012` with Dennis (received with no parts on its lines). The warning
+      at `received_back` shipped 2026-09-27.
 - [ ] The seven unclassified bikes (`JP-2026-E_BIKE-030…037`) — Dennis: real or test? (He said
       test bikes "disturb" him on screen, 00:18:02.)
 
@@ -142,12 +142,12 @@ renewing unless cancelled (02:41–02:45). Coverage today is derived from the ow
 
 ### 2C · Paint orders — bugs first, then the lifecycle
 Bugs from the 15 Sep run:
-- [ ] Paint order must **inherit the colours** already on the SO/MO (it asked again, twice).
-- [ ] Inherit **part names and all paintable parts**, not only frames ("No specific part name";
+- [x] Paint order must **inherit the colours** already on the SO/MO (it asked again, twice). *(2026-09-27: each bike in its own colour.)*
+- [x] Inherit **part names and all paintable parts**, not only frames ("No specific part name";
       one part missing; "two parts need painting" vs a frames-only order; all six shown yellow).
-- [ ] **One paint job per sales order**, not one per MO/colour (spawn-MO per line made two).
-- [ ] "No bikes available to send" from the SO: explain that the MO comes first, or create it.
-- [ ] Rename or explain *Refill from bikes*; surface the painter's preview before sending.
+- [x] **One paint job per sales order**, not one per MO/colour (spawn-MO per line made two). *(2026-09-27: a planned order takes more bikes; the paint prompt waits for the last line — and could never show before.)*
+- [x] "No bikes available to send" from the SO: explain that the MO comes first, or create it.
+- [x] Rename or explain *Refill from bikes*; surface the painter's preview before sending.
 Lifecycle (conflicts with "emailing IS the send" — decide before building):
 - [ ] Statuses renamed: planned → confirmed (email + labels) → packed (frames linked) → sent /
       at painter (**automatic on the planned send date**, calendar entry for the drop-off) →

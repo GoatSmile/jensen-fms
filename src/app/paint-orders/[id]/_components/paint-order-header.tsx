@@ -34,7 +34,10 @@ import {
 } from "@/lib/services/status";
 
 import { emailServiceOrderToSupplier } from "../_actions/email-service-order";
-import { transitionServiceOrderStatus } from "../_actions/transition-status";
+import {
+  transitionServiceOrderStatus,
+  type UnconvertibleLine,
+} from "../_actions/transition-status";
 
 type PendingTransition = { to: ServiceOrderStatus } | null;
 
@@ -47,6 +50,10 @@ type Props = {
   colorName: string | null;
   colorHex: string | null;
   colorFinish: string | null;
+  /** The lines' distinct colours — shown when the header has none (a mixed batch). */
+  lineColours: { name: string; hex: string | null }[];
+  /** Lines naming no part or no colour: they cannot become painted stock. */
+  unconvertibleLines: number;
   /** Last-send stamp (migration 89); null = never emailed. */
   emailedAt: string | null;
   emailedTo: string | null;
@@ -68,6 +75,8 @@ export function PaintOrderHeader({
   colorName,
   colorHex,
   colorFinish,
+  lineColours,
+  unconvertibleLines,
   emailedAt,
   emailedTo,
   emailTestMode,
@@ -80,7 +89,12 @@ export function PaintOrderHeader({
   const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [info, setInfo] = useState<{ text: string; caution: boolean } | null>(
+    null,
+  );
+  const [unconvertible, setUnconvertible] = useState<
+    UnconvertibleLine[] | null
+  >(null);
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] =
     useState<PendingTransition>(null);
@@ -98,24 +112,40 @@ export function PaintOrderHeader({
     }
   }
 
-  function runTransition(to: ServiceOrderStatus, reason: string | null) {
+  function runTransition(
+    to: ServiceOrderStatus,
+    reason: string | null,
+    acceptUnconvertible = false,
+  ) {
     setError(null);
     start(async () => {
-      const r = await transitionServiceOrderStatus(serviceOrderId, to, reason);
+      const r = await transitionServiceOrderStatus(serviceOrderId, to, reason, {
+        acceptUnconvertible,
+      });
       if (!r.ok) {
+        // Lines that would convert nothing: ask first, don't just fail.
+        if (r.unconvertible) {
+          setUnconvertible(r.unconvertible);
+          return;
+        }
         setError(r.error);
         return;
       }
+      setUnconvertible(null);
       // Receiving back converts raw stock into painted stock line by line;
-      // say what happened, including lines that named no part and so could not.
+      // say what happened, including lines that named no part and so could
+      // not — in the caution hue when anything was skipped or failed, because
+      // green for "nothing happened" is how PNT-2026-0012 went unnoticed.
       if (r.conversion) {
-        setInfo(
-          t("receivedConversion", {
+        setInfo({
+          text: t("receivedConversion", {
             converted: r.conversion.converted,
             skipped: r.conversion.skippedNoPart,
             failed: r.conversion.failures.length,
           }),
-        );
+          caution:
+            r.conversion.skippedNoPart > 0 || r.conversion.failures.length > 0,
+        });
       }
       setTransitionDialog(null);
       router.refresh();
@@ -131,10 +161,14 @@ export function PaintOrderHeader({
       ) : null}
       {info ? (
         <p
-          className="bg-good-wash text-good rounded-lg px-4 py-2 text-sm"
+          className={
+            info.caution
+              ? "bg-money-wash text-money rounded-lg px-4 py-2 text-sm"
+              : "bg-good-wash text-good rounded-lg px-4 py-2 text-sm"
+          }
           role="status"
         >
-          {info}
+          {info.text}
         </p>
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -165,6 +199,12 @@ export function PaintOrderHeader({
               {colorFinish ? (
                 <span className="text-xs">{colorFinish}</span>
               ) : null}
+            </p>
+          ) : lineColours.length > 0 ? (
+            <p className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
+              {lineColours.map((c) => (
+                <ColorChip key={c.name} hex={c.hex} label={c.name} />
+              ))}
             </p>
           ) : null}
           {emailedAt ? (
@@ -248,6 +288,13 @@ export function PaintOrderHeader({
         }
       />
 
+      <UnconvertibleDialog
+        lines={unconvertible}
+        isPending={pending}
+        onCancel={() => setUnconvertible(null)}
+        onConfirm={() => runTransition("received_back", null, true)}
+      />
+
       <EmailPainterDialog
         open={emailDialogOpen}
         onOpenChange={setEmailDialogOpen}
@@ -259,6 +306,7 @@ export function PaintOrderHeader({
         testRecipients={emailTestRecipients}
         supplierEmails={supplierEmails}
         defaultMessage={supplierDefaultMessage}
+        unconvertibleLines={unconvertibleLines}
         onSent={() => router.refresh()}
       />
     </div>
@@ -282,6 +330,7 @@ function EmailPainterDialog({
   testRecipients,
   supplierEmails,
   defaultMessage,
+  unconvertibleLines,
   onSent,
 }: {
   open: boolean;
@@ -294,6 +343,7 @@ function EmailPainterDialog({
   testRecipients: string | null;
   supplierEmails: string[];
   defaultMessage: string | null;
+  unconvertibleLines: number;
   onSent: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
@@ -408,6 +458,27 @@ function EmailPainterDialog({
               </p>
             ) : null}
 
+            {/* Found out at receive-back is too late to fix cheaply: say it
+                while the order can still be edited. */}
+            {unconvertibleLines > 0 ? (
+              <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
+                {t("emailUnconvertible", { count: unconvertibleLines })}
+              </p>
+            ) : null}
+
+            {/* What the painter will receive, one click away — Dennis on 15
+                Sep: "I want to see when we send this out, what are we
+                sending?" The print page renders the same document. */}
+            <p className="text-xs">
+              <Link
+                href={`/paint-orders/${serviceOrderId}/print`}
+                target="_blank"
+                className="text-brand font-medium underline"
+              >
+                {t("emailPreviewLink")}
+              </Link>
+            </p>
+
             {testMode ? (
               <p className="rounded-md border border-money/30 bg-money-wash px-3 py-2 text-xs text-money">
                 {t.rich("testModeBanner", {
@@ -449,6 +520,66 @@ function EmailPainterDialog({
             </DialogFooter>
           </form>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * "These lines will not become painted stock — receive anyway?" Receiving is
+ * still a true statement about the boxes, so this asks rather than refuses;
+ * what it must not do again is say nothing.
+ */
+function UnconvertibleDialog({
+  lines,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  lines: UnconvertibleLine[] | null;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const t = useTranslations("paintOrderDetail");
+  return (
+    <Dialog
+      open={lines != null}
+      onOpenChange={(open) => {
+        if (!open && !isPending) onCancel();
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <UiDialogHeader>
+          <DialogTitle>{t("unconvertibleTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("unconvertibleDesc", { count: lines?.length ?? 0 })}
+          </DialogDescription>
+        </UiDialogHeader>
+        <ul className="bg-ground flex flex-col gap-1 rounded-md px-3 py-2 text-sm">
+          {(lines ?? []).map((l, i) => (
+            <li key={i} className="flex justify-between gap-3">
+              <span>
+                {l.partType}
+                {l.colour ? ` · ${l.colour}` : ""}
+                <span className="text-ink-2 ml-1.5 text-xs">
+                  {l.missing === "part"
+                    ? t("unconvertibleNoPart")
+                    : t("unconvertibleNoColour")}
+                </span>
+              </span>
+              <span className="tabular-nums">{l.quantity}</span>
+            </li>
+          ))}
+        </ul>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+            {t("unconvertibleNotYet")}
+          </Button>
+          <Button type="button" onClick={onConfirm} disabled={isPending}>
+            {t("unconvertibleReceiveAnyway")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

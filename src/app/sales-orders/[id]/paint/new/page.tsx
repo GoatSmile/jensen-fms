@@ -20,12 +20,8 @@ import {
   PAINT_SERVICE_SLUG,
   loadServiceTypeBySlug,
 } from "@/lib/services/vocab";
+import { loadPaintSeedInputs } from "@/lib/services/paint-seed-inputs";
 import type {
-  SeedRecipePart,
-  SeedTemplateRow,
-} from "@/lib/services/paint-seed";
-import type {
-  PreviewPart,
   PreviewPartType,
   PreviewPriceList,
 } from "./_components/paintwork-preview";
@@ -36,7 +32,10 @@ import type {
 
 import {
   PaintFromSOForm,
+  type BlockingOrder,
   type EligibleSOBike,
+  type EmptyReason,
+  type PlannedPaintOrder,
 } from "./_components/paint-from-so-form";
 
 export default async function PaintFromSOPage({
@@ -65,13 +64,33 @@ export default async function PaintFromSOPage({
   const blocked = so.status === "cancelled" || so.status === "delivered";
 
   // Resolve the SO's bikes: SO → MOs → bikes.
-  const { data: mos } = await supabase
-    .from("manufacturing_orders")
-    .select("id")
-    .eq("sales_order_id", id);
-  const moIds = (mos ?? []).map((m) => m.id);
+  const [mosRes, linesRes] = await Promise.all([
+    supabase
+      .from("manufacturing_orders")
+      .select("id, sales_order_line_id")
+      .eq("sales_order_id", id),
+    supabase
+      .from("sales_order_lines")
+      .select("id")
+      .eq("sales_order_id", id)
+      .not("bike_template_id", "is", null),
+  ]);
+  const moIds = (mosRes.data ?? []).map((m) => m.id);
+  // Bike lines with no MO yet. Their bikes do not exist, so a paint order made
+  // now would miss them — and the next one would be a second paint job for the
+  // same customer (15 Sep).
+  const spawnedLineIds = new Set(
+    (mosRes.data ?? []).map((m) => m.sales_order_line_id).filter(Boolean),
+  );
+  const unspawnedLines = (linesRes.data ?? []).filter(
+    (l) => !spawnedLineIds.has(l.id),
+  ).length;
 
   let eligibleBikes: EligibleSOBike[] = [];
+  // Why the list is empty, when it is — "No bikes available" alone sent two
+  // people hunting on 15 Sep, and there are three different answers.
+  let emptyReason: EmptyReason = moIds.length === 0 ? "noMo" : "allBuilt";
+  let blockingOrders: BlockingOrder[] = [];
   if (!blocked && moIds.length > 0) {
     const [bikesRes, openLinksRes] = await Promise.all([
       supabase
@@ -93,22 +112,32 @@ export default async function PaintFromSOPage({
         .select(
           `bike_id,
            service_order:service_orders!inner(
-             status,
+             id, order_number, status,
              service_type:service_types!service_type_id(blocks_build)
            )`,
         )
         .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES),
     ]);
 
-    const inOpenOrder = new Set(
-      (openLinksRes.data ?? [])
-        .filter(
-          (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
-        )
-        .map((r) => r.bike_id),
-    );
-    eligibleBikes = (bikesRes.data ?? [])
-      .filter((b) => !inOpenOrder.has(b.id))
+    const openOrderByBike = new Map<string, { id: string; number: string }>();
+    for (const r of openLinksRes.data ?? []) {
+      const order = one(r.service_order);
+      if (one(order?.service_type)?.blocks_build !== true || !order) continue;
+      openOrderByBike.set(r.bike_id, { id: order.id, number: order.order_number });
+    }
+    const unbuilt = bikesRes.data ?? [];
+    if (unbuilt.length > 0) emptyReason = "allOnOrder";
+    const blockingById = new Map<string, BlockingOrder>();
+    for (const b of unbuilt) {
+      const order = openOrderByBike.get(b.id);
+      if (!order) continue;
+      const cur = blockingById.get(order.id) ?? { ...order, bikes: 0 };
+      cur.bikes += 1;
+      blockingById.set(order.id, cur);
+    }
+    blockingOrders = [...blockingById.values()];
+    eligibleBikes = unbuilt
+      .filter((b) => !openOrderByBike.has(b.id))
       .map((b) => {
         const tpl = b.template;
         return {
@@ -130,6 +159,28 @@ export default async function PaintFromSOPage({
       });
   }
 
+  // A paint order for this SO that is still PLANNED can simply take more
+  // bikes — one paint job per sales order, not one per MO.
+  const { data: plannedRows } = blocked
+    ? { data: [] }
+    : await supabase
+        .from("service_orders")
+        .select(
+          `id, order_number, supplier_id,
+           supplier:suppliers!supplier_id(name),
+           bikes:service_order_bikes(count)`,
+        )
+        .eq("sales_order_id", id)
+        .eq("status", "planned")
+        .order("created_at", { ascending: true });
+  const plannedOrders: PlannedPaintOrder[] = (plannedRows ?? []).map((o) => ({
+    id: o.id,
+    number: o.order_number,
+    supplierId: o.supplier_id,
+    supplierName: one(o.supplier)?.name ?? null,
+    bikeCount: o.bikes?.[0]?.count ?? 0,
+  }));
+
   // Option lists for the header (same sources as /paint-orders/new).
   const [suppliersRes, colorsRes] = await Promise.all([
     supabase
@@ -148,19 +199,6 @@ export default async function PaintFromSOPage({
   const suppliers: SupplierOption[] = suppliersRes.data ?? [];
   const colors: ColorOption[] = colorsRes.data ?? [];
 
-  // Pre-select the colour when the bikes agree on one — they came off a
-  // sales order line that named it, and the screen that sent you here already
-  // said "no painted stock in White". Bikes in two colours have no single
-  // right answer for a batch default, so leave it blank rather than guess.
-  const distinctColourIds = [
-    ...new Set(
-      eligibleBikes
-        .map((b) => b.colorId)
-        .filter((id): id is string => typeof id === "string"),
-    ),
-  ];
-  const defaultColorId =
-    distinctColourIds.length === 1 ? distinctColourIds[0] : "";
   // Pre-select the painting type's configured default supplier, if it's still
   // an active supplier in the picker.
   const serviceType = await loadServiceTypeBySlug(supabase, PAINT_SERVICE_SLUG);
@@ -174,59 +212,16 @@ export default async function PaintFromSOPage({
   //
   // The screen used to ask which bikes go and then say "1 frame" — a count of
   // BIKES that read as "only the frame gets painted" (3 Sep: it cost a meeting
-  // and became a bug report against working code). So the page now loads the
-  // very inputs `createPaintOrderFromSO` seeds from and previews the lines.
-  // Both sides run `planPaintSeed` over this data, so the preview and the
-  // order that gets created cannot disagree.
-  const templateIds = [
-    ...new Set(
-      eligibleBikes
-        .map((b) => b.templateId)
-        .filter((x): x is string => typeof x === "string"),
-    ),
-  ];
-  let paintworkRows: SeedTemplateRow[] = [];
-  const recipeParts: SeedRecipePart[] = [];
-  let parts: PreviewPart[] = [];
-  if (templateIds.length > 0) {
-    const [paintworkRes, recipeRes] = await Promise.all([
-      supabase
-        .from("bike_template_service_parts")
-        .select("template_id, service_part_type_id, quantity")
-        .in("template_id", templateIds),
-      supabase
-        .from("bike_template_parts")
-        .select(
-          `template_id, part_id, quantity,
-           part:parts!part_id(internal_sku, name_en, service_part_type_id, deleted_at)`,
-        )
-        .in("template_id", templateIds),
-    ]);
-    paintworkRows = (paintworkRes.data ?? []).map((r) => ({
-      templateId: r.template_id,
-      servicePartTypeId: r.service_part_type_id,
-      quantity: r.quantity,
-    }));
-    // Soft-deleted and unmarked parts are skipped for the same reason the
-    // action skips them: a frozen history row is not demand, and an unmarked
-    // part is one the app has never been told goes to a painter.
-    const byPartId = new Map<string, PreviewPart>();
-    for (const r of recipeRes.data ?? []) {
-      const part = one(r.part);
-      if (!part || part.deleted_at || !part.service_part_type_id) continue;
-      recipeParts.push({
-        templateId: r.template_id,
-        partId: r.part_id,
-        servicePartTypeId: part.service_part_type_id,
-        quantityPerBike: Number(r.quantity),
-      });
-      byPartId.set(r.part_id, {
-        id: r.part_id,
-        sku: part.internal_sku,
-        name: part.name_en,
-      });
-    }
-    parts = [...byPartId.values()];
+  // and became a bug report against working code). So the page loads the very
+  // inputs the action seeds from — `loadPaintSeedInputs`, one loader for every
+  // caller — and previews the lines with the same `planPaintSeed`, so the
+  // preview and the order that gets created cannot disagree.
+  const seedInputs = await loadPaintSeedInputs(
+    supabase,
+    eligibleBikes.map((b) => b.id),
+  );
+  if ("error" in seedInputs) {
+    throw new Error(`Failed to load paintwork: ${seedInputs.error}`);
   }
 
   const partTypesRes = await supabase
@@ -338,11 +333,15 @@ export default async function PaintFromSOPage({
           suppliers={suppliers}
           colors={colors}
           defaultSupplierId={defaultSupplierId}
-          defaultColorId={defaultColorId}
-          paintworkRows={paintworkRows}
-          recipeParts={recipeParts}
+          seedBikes={seedInputs.bikes}
+          paintworkRows={seedInputs.templateRows}
+          recipeParts={seedInputs.recipeParts}
           partTypes={partTypes}
-          parts={parts}
+          parts={seedInputs.parts}
+          emptyReason={emptyReason}
+          blockingOrders={blockingOrders}
+          plannedOrders={plannedOrders}
+          unspawnedLines={unspawnedLines}
           priceLists={priceLists}
           fallbackPartTypeIds={fallbackPartTypeIds}
         />

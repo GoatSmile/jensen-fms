@@ -61,12 +61,14 @@ export function renderServiceOrderEmailHtml(
       <thead><tr style="border-bottom:2px solid #171717;text-align:left;">
         <th style="padding:6px 8px;">${escapeHtml(L.frameNumber)}</th>
         <th style="padding:6px 8px;">${escapeHtml(L.model)}</th>
+        <th style="padding:6px 8px;">${escapeHtml(L.colour)}</th>
       </tr></thead>
       <tbody>${doc.bikes
         .map(
           (b) => `<tr>
         <td style="${cellStyle}font-family:monospace;">${escapeHtml(b.frameNumber)}</td>
         <td style="${cellStyle}">${escapeHtml(b.templateLabel ?? "—")}</td>
+        <td style="${cellStyle}">${escapeHtml(b.colour ?? "—")}</td>
       </tr>`,
         )
         .join("")}</tbody>

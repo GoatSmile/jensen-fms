@@ -17,6 +17,7 @@ import { ColorChip } from "@/components/color-swatch";
 import { formatPrice } from "@/lib/format";
 import { formatQuantity } from "@/lib/parts/stock";
 import {
+  fallbackStarterLines,
   planPaintSeed,
   type SeedBike,
   type SeedRecipePart,
@@ -47,20 +48,22 @@ export type PreviewPriceList = {
 type Props = {
   /** Bike ids currently ticked, in the bikes panel above. */
   selectedBikeIds: string[];
-  /** Every eligible bike's template, so the seed can expand its recipe. */
-  bikeTemplates: { id: string; templateId: string | null }[];
+  /** Every eligible bike as the seed sees it — recipe key and OWN colour. */
+  seedBikes: SeedBike[];
   paintworkRows: SeedTemplateRow[];
   recipeParts: SeedRecipePart[];
   partTypes: PreviewPartType[];
   parts: PreviewPart[];
   priceLists: PreviewPriceList[];
-  /** Frame + fork, mirroring the action's empty-plan fallback. */
+  /** Frame + fork, mirroring the create action's empty-plan fallback; [] when adding. */
   fallbackPartTypeIds: string[];
   supplierId: string;
   supplierName: string | null;
-  colorId: string;
-  colorName: string | null;
-  colorHex: string | null;
+  /** Only for bikes with no colour of their own. */
+  fallbackColorId: string | null;
+  colourById: Map<string, { name: string; hex: string | null }>;
+  /** The planned order these lines are being merged into, or null for a new one. */
+  addingTo: string | null;
 };
 
 /**
@@ -68,9 +71,9 @@ type Props = {
  *
  * The page used to ask which bikes go and then label the button "1 frame" — a
  * count of BIKES that reads as "only the frame gets painted". It isn't:
- * `planPaintSeed` expands every part a template declares to the painter, and
- * falls back to the recipe's parts marked *Paintable as* when a template
- * declares none. That was invisible until the order already existed.
+ * `planPaintSeed` sends every recipe part marked *Paintable as*, plus any type
+ * the template declares that no recipe part covers. That was invisible until
+ * the order already existed.
  *
  * Two rules hold this honest:
  *
@@ -79,14 +82,14 @@ type Props = {
  *    seeds from, so a preview that disagrees with the created order is not
  *    possible. Anything this screen computes for itself would be a second
  *    source of truth, and it would drift.
- * 2. **It mirrors the action's quirks, including the ones we would rather not
- *    have.** The batch colour OVERRIDES each bike's own colour, and an empty
- *    plan becomes frame + fork starter lines. Preview them, or the screen
- *    lies at the one moment it is being trusted.
+ * 2. **It mirrors the action's rules exactly.** Each bike in its own colour
+ *    (the fallback only for bikes without one), and an empty plan on a NEW
+ *    order becomes frame + fork starter lines per colour. Preview them, or the
+ *    screen lies at the one moment it is being trusted.
  */
 export function PaintworkPreview({
   selectedBikeIds,
-  bikeTemplates,
+  seedBikes,
   paintworkRows,
   recipeParts,
   partTypes,
@@ -95,9 +98,9 @@ export function PaintworkPreview({
   fallbackPartTypeIds,
   supplierId,
   supplierName,
-  colorId,
-  colorName,
-  colorHex,
+  fallbackColorId,
+  colourById,
+  addingTo,
 }: Props) {
   const t = useTranslations("soDetail");
 
@@ -114,28 +117,18 @@ export function PaintworkPreview({
   const { rows, plan, isFallback, total, currency, unpricedCount } =
     useMemo(() => {
       const selected = new Set(selectedBikeIds);
-      // Colour comes from the FORM, not the bike — the action overrides it,
-      // because a batch is one colour by construction.
-      const seedBikes: SeedBike[] = bikeTemplates
+      const bikes: SeedBike[] = seedBikes
         .filter((b) => selected.has(b.id))
-        .map((b) => ({
-          id: b.id,
-          templateId: b.templateId,
-          colorId: colorId || null,
-        }));
+        .map((b) => ({ ...b, colorId: b.colorId ?? fallbackColorId }));
 
-      const plan = planPaintSeed(seedBikes, paintworkRows, recipeParts);
+      const plan = planPaintSeed(bikes, paintworkRows, recipeParts);
 
-      // The action's fallback: nothing marked anywhere ⇒ a frame and a fork
-      // line, by type only, one per selected bike.
-      const isFallback = plan.lines.length === 0 && seedBikes.length > 0;
+      // The create action's fallback: nothing marked anywhere ⇒ a frame and a
+      // fork line per colour, by type only. Adding to an order has none.
+      const isFallback =
+        plan.lines.length === 0 && bikes.length > 0 && fallbackPartTypeIds.length > 0;
       const lines = isFallback
-        ? fallbackPartTypeIds.map((partTypeId) => ({
-            servicePartTypeId: partTypeId,
-            partId: null as string | null,
-            colorId: colorId || null,
-            quantity: seedBikes.length,
-          }))
+        ? fallbackStarterLines(bikes, fallbackPartTypeIds)
         : plan.lines;
 
       const rows = lines
@@ -144,6 +137,7 @@ export function PaintworkPreview({
           id: `${l.servicePartTypeId}::${l.partId ?? ""}::${i}`,
           servicePartTypeId: l.servicePartTypeId,
           partId: l.partId,
+          colorId: l.colorId,
           quantity: l.quantity,
         }))
         .sort(
@@ -152,6 +146,9 @@ export function PaintworkPreview({
               (partTypeById.get(b.servicePartTypeId)?.sortOrder ?? 0) ||
             (partById.get(a.partId ?? "")?.sku ?? "").localeCompare(
               partById.get(b.partId ?? "")?.sku ?? "",
+            ) ||
+            (colourById.get(a.colorId ?? "")?.name ?? "").localeCompare(
+              colourById.get(b.colorId ?? "")?.name ?? "",
             ),
         );
 
@@ -183,11 +180,12 @@ export function PaintworkPreview({
       };
     }, [
       selectedBikeIds,
-      bikeTemplates,
+      seedBikes,
       paintworkRows,
       recipeParts,
       fallbackPartTypeIds,
-      colorId,
+      fallbackColorId,
+      colourById,
       list,
       partTypeById,
       partById,
@@ -260,8 +258,11 @@ export function PaintworkPreview({
                       )}
                     </TableCell>
                     <TableCell>
-                      {colorName ? (
-                        <ColorChip hex={colorHex} label={colorName} />
+                      {r.colorId && colourById.get(r.colorId) ? (
+                        <ColorChip
+                          hex={colourById.get(r.colorId)?.hex ?? null}
+                          label={colourById.get(r.colorId)?.name ?? ""}
+                        />
                       ) : (
                         <span className="text-ink-2">—</span>
                       )}
@@ -325,7 +326,9 @@ export function PaintworkPreview({
             {t("paintworkUnpriced", { count: unpricedCount })}
           </p>
         ) : null}
-        {hasRows && !colorId ? <p>{t("paintworkPickColour")}</p> : null}
+        {hasRows && rows.some((r) => !r.colorId) ? (
+          <p className="text-money">{t("paintworkPickColour")}</p>
+        ) : null}
         {isFallback ? (
           <p className="text-money">{t("paintworkFallback")}</p>
         ) : null}
@@ -342,6 +345,12 @@ export function PaintworkPreview({
               count: plan.bikesWithoutTemplate,
             })}
           </p>
+        ) : null}
+        {hasRows && rows.some((r) => !r.partId) ? (
+          <p className="text-money">{t("paintworkTypeOnlyWarn")}</p>
+        ) : null}
+        {hasRows && addingTo ? (
+          <p>{t("paintworkMerged", { number: addingTo })}</p>
         ) : null}
         {hasRows ? <p>{t("paintworkEditable")}</p> : null}
       </div>

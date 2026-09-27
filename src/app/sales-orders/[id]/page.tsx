@@ -13,6 +13,7 @@ import {
 import { SegmentedId } from "@/components/segmented-id";
 import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import { formatDate } from "@/lib/parts/format";
 import { formatDeliveryTarget } from "@/lib/iso-week";
 import { formatPrice } from "@/lib/format";
@@ -106,6 +107,7 @@ export default async function SODetailPage({
           `id, order_number, status,
            supplier:suppliers(name),
            color:colors(name_en, name_da, hex),
+           items:service_order_items(color:colors(id, name_en, name_da, hex)),
            service_order_bikes(count)`,
         )
         .eq("sales_order_id", id)
@@ -197,17 +199,35 @@ export default async function SODetailPage({
       : null,
   }));
 
-  const paintRows: LinkedPaintRow[] = (paintRes.data ?? []).map((p) => ({
-    id: p.id,
-    order_number: p.order_number,
-    status: p.status as ServiceOrderStatus,
-    supplierName: p.supplier?.name ?? null,
-    colorName: p.color
-      ? localizedName(locale, p.color.name_en, p.color.name_da)
-      : null,
-    colorHex: p.color?.hex ?? null,
-    bikeCount: p.service_order_bikes?.[0]?.count ?? 0,
-  }));
+  const paintRows: LinkedPaintRow[] = (paintRes.data ?? []).map((p) => {
+    // The header colour when the batch has one; otherwise every colour its
+    // lines carry — a mixed batch has no header colour by design.
+    const lineColours = new Map<string, { name: string; hex: string | null }>();
+    for (const item of p.items ?? []) {
+      const c = one(item.color);
+      if (c && !lineColours.has(c.id)) {
+        lineColours.set(c.id, {
+          name: localizedName(locale, c.name_en, c.name_da),
+          hex: c.hex,
+        });
+      }
+    }
+    return {
+      id: p.id,
+      order_number: p.order_number,
+      status: p.status as ServiceOrderStatus,
+      supplierName: p.supplier?.name ?? null,
+      colours: p.color
+        ? [
+            {
+              name: localizedName(locale, p.color.name_en, p.color.name_da),
+              hex: p.color.hex,
+            },
+          ]
+        : [...lineColours.values()],
+      bikeCount: p.service_order_bikes?.[0]?.count ?? 0,
+    };
+  });
   const canCreatePaint = status !== "cancelled" && status !== "delivered";
 
   // Payments: deposits + final invoices on this SO. credited_invoice_id IS NULL

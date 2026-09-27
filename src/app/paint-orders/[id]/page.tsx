@@ -187,6 +187,22 @@ export default async function PaintOrderDetailPage({
   ]);
 
   const items = itemsRes.data ?? [];
+  // A line that names no part or no colour cannot become painted stock when
+  // the order comes back — said in the email dialog and again at receive.
+  const unconvertibleLines = items.filter((i) => !i.part_id || !i.color).length;
+  const lineColours = [
+    ...new Map(
+      items
+        .filter((i) => i.color)
+        .map((i) => [
+          i.color!.id,
+          {
+            name: localizedName(locale, i.color!.name_en, i.color!.name_da),
+            hex: i.color!.hex,
+          },
+        ]),
+    ).values(),
+  ];
 
   // Pricing: live estimate from the current list while planned; frozen
   // snapshots once sent.
@@ -403,6 +419,8 @@ export default async function PaintOrderDetailPage({
             : null
         }
         colorHex={order.color?.hex ?? null}
+        lineColours={lineColours}
+        unconvertibleLines={unconvertibleLines}
         colorFinish={
           order.color
             ? colorFinishLabel(

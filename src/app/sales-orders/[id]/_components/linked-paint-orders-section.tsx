@@ -22,8 +22,8 @@ export type LinkedPaintRow = {
   id: string;
   order_number: string;
   status: ServiceOrderStatus;
-  colorName: string | null;
-  colorHex: string | null;
+  /** The batch colour, or every colour on its lines for a mixed batch. */
+  colours: { name: string; hex: string | null }[];
   supplierName: string | null;
   bikeCount: number;
 };
@@ -92,8 +92,12 @@ export async function LinkedPaintOrdersSection({
                     )}
                   </TableCell>
                   <TableCell>
-                    {po.colorName ? (
-                      <ColorChip hex={po.colorHex} label={po.colorName} />
+                    {po.colours.length > 0 ? (
+                      <span className="flex flex-wrap gap-1.5">
+                        {po.colours.map((c) => (
+                          <ColorChip key={c.name} hex={c.hex} label={c.name} />
+                        ))}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}

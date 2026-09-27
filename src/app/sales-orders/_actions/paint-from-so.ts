@@ -9,21 +9,38 @@ import { one } from "@/lib/supabase/embed";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
 import { PAINT_SERVICE_SLUG, loadServiceTypeBySlug } from "@/lib/services/vocab";
 import {
+  fallbackStarterLines,
+  paintLineKey,
   planPaintSeed,
-  type SeedBike,
-  type SeedRecipePart,
+  sharedLineColour,
+  type SeedLine,
 } from "@/lib/services/paint-seed";
+import { loadPaintSeedInputs } from "@/lib/services/paint-seed-inputs";
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+type ErrorsT = Awaited<ReturnType<typeof getTranslations>>;
 
 export type PaintFromSOInput = {
   soId: string;
   bikeIds: string[];
   supplierId: string;
-  colorId: string;
+  /**
+   * Only for bikes that have NO colour of their own. Every other bike is
+   * painted in its own colour — the one its sales-order line named.
+   */
+  fallbackColorId: string | null;
   plannedSendDate: string | null;
   notes: string | null;
 };
 
-// Note: on success the action redirect()s (which throws), so the `ok: true`
+export type AddSOBikesToPaintInput = {
+  soId: string;
+  serviceOrderId: string;
+  bikeIds: string[];
+  fallbackColorId: string | null;
+};
+
+// Note: on success the actions redirect() (which throws), so the `ok: true`
 // variant is never actually returned to the caller — it exists only to match
 // the result-union shape used by the sibling actions (createPaintOrder,
 // spawnMOFromSOLine). Callers treat "returned a value" as failure.
@@ -36,33 +53,25 @@ export type PaintFromSOResult =
  * SO's bikes (Tier 2 Phase C / decision D3). The order is back-linked to
  * the SO (service_orders.sales_order_id) so both detail pages cross-link.
  *
- * Bikes reach an SO through SO → manufacturing_orders → bikes (a bike isn't
- * directly on an SO). We resolve that chain and accept only bikes that
- * belong to this SO and aren't already committed to an OPEN build-blocking
- * service order — the same eligibility the add-bike picker uses.
- *
- * Item lines are seeded from the chosen bikes' templates the same way
- * "Re-fill from bikes" does (paint-seed.ts): the template's paintwork rows, in
- * the chosen colour, each naming the specific recipe part paintable as that
- * type — so the order converts raw into painted stock when it comes back
- * (docs/plan-painted-parts.md). Bikes whose template declares no paintwork fall
- * back to two starter lines (frame + fork, by type only). Lines stay ordinary
- * editable lines while the order is planned.
+ * Item lines come from `planPaintSeed` over `loadPaintSeedInputs` — the same
+ * pair the page previews with, so the preview and the created order cannot
+ * disagree. **Each bike keeps its own colour** (15 Sep: a batch colour used to
+ * overwrite every bike's, so a white-and-yellow order came out all yellow).
+ * Bikes where nothing is marked or declared fall back to frame + fork starter
+ * lines per colour, by type only. Lines stay editable while the order is
+ * planned.
  */
 export async function createPaintOrderFromSO(
   input: PaintFromSOInput,
 ): Promise<PaintFromSOResult> {
   const t = await getTranslations("errors");
-  const { soId, bikeIds } = input;
+  const { soId } = input;
   if (!soId) return { ok: false, error: t("missingSoId") };
-  if (!bikeIds || bikeIds.length === 0) {
+  if (!input.bikeIds || input.bikeIds.length === 0) {
     return { ok: false, error: t("soPickBikeToSend") };
   }
   if (!input.supplierId) {
     return { ok: false, error: t("pickSupplier"), field: "supplier_id" };
-  }
-  if (!input.colorId) {
-    return { ok: false, error: t("soPickColour"), field: "color_id" };
   }
 
   const supabase = await createClient();
@@ -72,87 +81,14 @@ export async function createPaintOrderFromSO(
     return { ok: false, error: t("soPaintServiceMissing") };
   }
 
-  // SO must exist and be in a state where painting its bikes makes sense.
-  const { data: so, error: soErr } = await supabase
-    .from("sales_orders")
-    .select("id, status")
-    .eq("id", soId)
-    .maybeSingle();
-  if (soErr || !so) {
-    return {
-      ok: false,
-      error: t("soCouldNotLoad", { detail: soErr?.message ?? t("notFound") }),
-    };
-  }
-  if (so.status === "cancelled" || so.status === "delivered") {
-    return {
-      ok: false,
-      error: t("soCannotPaintFromStatus", { status: so.status }),
-    };
-  }
+  const eligible = await checkSOBikes(supabase, t, soId, input.bikeIds);
+  if (!eligible.ok) return eligible;
+  const requested = eligible.bikeIds;
 
-  // Resolve the SO's bikes: SO → MOs → bikes. (A bike isn't directly on an
-  // SO.) PostgREST can't subquery, so walk it in two hops.
-  const { data: mos, error: moErr } = await supabase
-    .from("manufacturing_orders")
-    .select("id")
-    .eq("sales_order_id", soId);
-  if (moErr) {
-    return { ok: false, error: t("soCouldNotLoadMos", { detail: moErr.message }) };
-  }
-  const moIds = (mos ?? []).map((m) => m.id);
-
-  let validBikeIds = new Set<string>();
-  if (moIds.length > 0) {
-    const { data: soBikes, error: bikesErr } = await supabase
-      .from("bikes")
-      .select("id")
-      .in("manufacturing_order_id", moIds)
-      // A built bike has nothing left to paint; only unbuilt bikes go.
-      .in("status", ["planning", "building"])
-      .is("deleted_at", null);
-    if (bikesErr) {
-      return { ok: false, error: t("soCouldNotLoadBikes", { detail: bikesErr.message }) };
-    }
-    validBikeIds = new Set((soBikes ?? []).map((b) => b.id));
-  }
-
-  const requested = [...new Set(bikeIds)];
-  const strayIds = requested.filter((id) => !validBikeIds.has(id));
-  if (strayIds.length > 0) {
-    return {
-      ok: false,
-      error: t("soBikesNotOnOrder", { count: strayIds.length }),
-    };
-  }
-
-  // None of the chosen bikes may already be in an open build-blocking order.
-  const { data: openLinks, error: linkErr } = await supabase
-    .from("service_order_bikes")
-    .select(
-      `bike_id,
-       service_order:service_orders!inner(
-         status,
-         service_type:service_types!service_type_id(blocks_build)
-       )`,
-    )
-    .in("bike_id", requested)
-    .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES);
-  if (linkErr) {
-    return {
-      ok: false,
-      error: t("soCouldNotCheckOrders", { detail: linkErr.message }),
-    };
-  }
-  const blockedCount = (openLinks ?? []).filter(
-    (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
-  ).length;
-  if (blockedCount > 0) {
-    return {
-      ok: false,
-      error: t("soBikesInOpenPaint", { count: blockedCount }),
-    };
-  }
+  const seeded = await seedLinesFor(supabase, t, requested, input.fallbackColorId, {
+    withFallback: true,
+  });
+  if (!seeded.ok) return seeded;
 
   // Allocate the order number and create the header, linked to the SO.
   const { data: numberData, error: numErr } = await supabase.rpc(
@@ -174,7 +110,8 @@ export async function createPaintOrderFromSO(
       order_number: numberData,
       service_type_id: serviceType.id,
       supplier_id: input.supplierId,
-      color_id: input.colorId,
+      // A header convenience only; a mixed batch leaves it empty.
+      color_id: sharedLineColour(seeded.lines),
       sales_order_id: soId,
       status: "planned",
       planned_send_date: input.plannedSendDate,
@@ -213,76 +150,16 @@ export async function createPaintOrderFromSO(
     };
   }
 
-  // Item lines from the bikes' templates, naming the specific parts (phase 4).
-  // The batch colour overrides each bike's own colour: this order paints in ONE
-  // colour by construction, and the form said which.
-  const { data: seedBikeRows } = await supabase
-    .from("bikes")
-    .select("id, template_id")
-    .in("id", requested);
-  const seedBikes: SeedBike[] = (seedBikeRows ?? []).map((b) => ({
-    id: b.id,
-    templateId: b.template_id,
-    colorId: input.colorId,
-  }));
-  const templateIds = [...new Set(seedBikes.map((b) => b.templateId).filter((x): x is string => !!x))];
-  const [{ data: paintwork }, { data: recipeRows }] = templateIds.length
-    ? await Promise.all([
-        supabase
-          .from("bike_template_service_parts")
-          .select("template_id, service_part_type_id, quantity")
-          .in("template_id", templateIds),
-        supabase
-          .from("bike_template_parts")
-          .select("template_id, part_id, quantity, part:parts!part_id(service_part_type_id, deleted_at)")
-          .in("template_id", templateIds),
-      ])
-    : [{ data: [] }, { data: [] }];
-  const recipeParts: SeedRecipePart[] = [];
-  for (const r of recipeRows ?? []) {
-    const part = one(r.part);
-    if (!part || part.deleted_at || !part.service_part_type_id) continue;
-    recipeParts.push({
-      templateId: r.template_id,
-      partId: r.part_id,
-      servicePartTypeId: part.service_part_type_id,
-      quantityPerBike: Number(r.quantity),
-    });
-  }
-  const plan = planPaintSeed(
-    seedBikes,
-    (paintwork ?? []).map((r) => ({
-      templateId: r.template_id,
-      servicePartTypeId: r.service_part_type_id,
-      quantity: r.quantity,
-    })),
-    recipeParts,
-  );
-  let starterItems = plan.lines.map((l) => ({
-    service_order_id: created.id,
-    service_part_type_id: l.servicePartTypeId,
-    quantity: l.quantity,
-    color_id: l.colorId,
-    part_id: l.partId,
-  }));
-  if (starterItems.length === 0) {
-    // No paintwork declared on these templates: the old frame + fork starters.
-    const partTypesRes = await supabase
-      .from("service_part_types")
-      .select("id, slug")
-      .in("slug", ["stel", "forgaffel"]);
-    starterItems = (partTypesRes.data ?? []).map((pt) => ({
-      service_order_id: created.id,
-      service_part_type_id: pt.id,
-      quantity: requested.length,
-      color_id: input.colorId,
-      part_id: null,
-    }));
-  }
-  if (starterItems.length > 0) {
-    const { error: itemsErr } = await supabase
-      .from("service_order_items")
-      .insert(starterItems);
+  if (seeded.lines.length > 0) {
+    const { error: itemsErr } = await supabase.from("service_order_items").insert(
+      seeded.lines.map((l) => ({
+        service_order_id: created.id,
+        service_part_type_id: l.servicePartTypeId,
+        quantity: l.quantity,
+        color_id: l.colorId,
+        part_id: l.partId,
+      })),
+    );
     if (itemsErr) {
       return {
         ok: false,
@@ -298,4 +175,240 @@ export async function createPaintOrderFromSO(
   revalidatePath("/sales-orders");
   revalidatePath(`/sales-orders/${soId}`);
   redirect(`/paint-orders/${created.id}`);
+}
+
+/**
+ * Add more of the SO's bikes to a paint order that is still PLANNED — the
+ * "one paint job per sales order" path (15 Sep: a two-line SO spawned two MOs,
+ * the first MO's prompt made a paint order, and the second line then had to
+ * make — and email — another). Lines are MERGED into the order's existing ones
+ * by part type × part × colour, so hand edits on the order survive; nothing is
+ * replaced.
+ */
+export async function addSOBikesToPaintOrder(
+  input: AddSOBikesToPaintInput,
+): Promise<PaintFromSOResult> {
+  const t = await getTranslations("errors");
+  const { soId, serviceOrderId } = input;
+  if (!soId) return { ok: false, error: t("missingSoId") };
+  if (!serviceOrderId) return { ok: false, error: t("missingOrderId") };
+  if (!input.bikeIds || input.bikeIds.length === 0) {
+    return { ok: false, error: t("soPickBikeToSend") };
+  }
+
+  const supabase = await createClient();
+
+  const { data: order, error: orderErr } = await supabase
+    .from("service_orders")
+    .select("id, status, sales_order_id, order_number")
+    .eq("id", serviceOrderId)
+    .maybeSingle();
+  if (orderErr || !order) {
+    return {
+      ok: false,
+      error: t("paintCouldNotLoadOrder", { detail: orderErr?.message ?? t("notFound") }),
+    };
+  }
+  if (order.sales_order_id !== soId) {
+    return { ok: false, error: t("soPaintOrderNotThisSo", { number: order.order_number }) };
+  }
+  // Planned only: after send the lines are frozen and priced, and a bike
+  // added then would ride along unpriced.
+  if (order.status !== "planned") {
+    return { ok: false, error: t("paintItemsPlannedOnly", { status: order.status }) };
+  }
+
+  const eligible = await checkSOBikes(supabase, t, soId, input.bikeIds);
+  if (!eligible.ok) return eligible;
+  const requested = eligible.bikeIds;
+
+  // No frame + fork fallback here: guessing lines into an order someone may
+  // already have curated is worse than adding none and saying so.
+  const seeded = await seedLinesFor(supabase, t, requested, input.fallbackColorId, {
+    withFallback: false,
+  });
+  if (!seeded.ok) return seeded;
+
+  const { error: attachErr } = await supabase.from("service_order_bikes").insert(
+    requested.map((bikeId) => ({ service_order_id: serviceOrderId, bike_id: bikeId })),
+  );
+  if (attachErr) {
+    return { ok: false, error: t("paintCouldNotAddBike", { detail: attachErr.message }) };
+  }
+
+  const { data: existing, error: itemsErr } = await supabase
+    .from("service_order_items")
+    .select("id, service_part_type_id, part_id, color_id, quantity")
+    .eq("service_order_id", serviceOrderId);
+  if (itemsErr) {
+    return { ok: false, error: t("paintCouldNotLoadItems", { detail: itemsErr.message }) };
+  }
+  const byKey = new Map(
+    (existing ?? []).map((i) => [
+      paintLineKey(i.service_part_type_id, i.part_id, i.color_id),
+      i,
+    ]),
+  );
+  const inserts: SeedLine[] = [];
+  for (const line of seeded.lines) {
+    const match = byKey.get(paintLineKey(line.servicePartTypeId, line.partId, line.colorId));
+    if (!match) {
+      inserts.push(line);
+      continue;
+    }
+    const { error } = await supabase
+      .from("service_order_items")
+      .update({ quantity: Number(match.quantity) + line.quantity })
+      .eq("id", match.id);
+    if (error) {
+      return {
+        ok: false,
+        error: t("soPaintAddedItemsFailed", { number: order.order_number, detail: error.message }),
+      };
+    }
+  }
+  if (inserts.length > 0) {
+    const { error } = await supabase.from("service_order_items").insert(
+      inserts.map((l) => ({
+        service_order_id: serviceOrderId,
+        service_part_type_id: l.servicePartTypeId,
+        quantity: l.quantity,
+        color_id: l.colorId,
+        part_id: l.partId,
+      })),
+    );
+    if (error) {
+      return {
+        ok: false,
+        error: t("soPaintAddedItemsFailed", { number: order.order_number, detail: error.message }),
+      };
+    }
+  }
+
+  // Re-derive the header colour over ALL lines now on the order.
+  const allColours = [
+    ...(existing ?? []).map((i) => ({ colorId: i.color_id })),
+    ...seeded.lines,
+  ];
+  await supabase
+    .from("service_orders")
+    .update({ color_id: sharedLineColour(allColours), updated_at: new Date().toISOString() })
+    .eq("id", serviceOrderId);
+
+  revalidatePath("/paint-orders");
+  revalidatePath(`/paint-orders/${serviceOrderId}`);
+  revalidatePath(`/sales-orders/${soId}`);
+  redirect(`/paint-orders/${serviceOrderId}`);
+}
+
+/**
+ * The bikes a paint order may take from this SO: on one of its MOs, unbuilt,
+ * and not already on an OPEN build-blocking service order — the same
+ * eligibility the page lists. Bikes reach an SO through SO → MOs → bikes (a
+ * bike isn't directly on an SO), and PostgREST can't subquery, so it walks the
+ * chain in two hops.
+ */
+async function checkSOBikes(
+  supabase: Supabase,
+  t: ErrorsT,
+  soId: string,
+  bikeIds: string[],
+): Promise<{ ok: true; bikeIds: string[] } | { ok: false; error: string }> {
+  const { data: so, error: soErr } = await supabase
+    .from("sales_orders")
+    .select("id, status")
+    .eq("id", soId)
+    .maybeSingle();
+  if (soErr || !so) {
+    return {
+      ok: false,
+      error: t("soCouldNotLoad", { detail: soErr?.message ?? t("notFound") }),
+    };
+  }
+  if (so.status === "cancelled" || so.status === "delivered") {
+    return { ok: false, error: t("soCannotPaintFromStatus", { status: so.status }) };
+  }
+
+  const { data: mos, error: moErr } = await supabase
+    .from("manufacturing_orders")
+    .select("id")
+    .eq("sales_order_id", soId);
+  if (moErr) {
+    return { ok: false, error: t("soCouldNotLoadMos", { detail: moErr.message }) };
+  }
+  const moIds = (mos ?? []).map((m) => m.id);
+
+  let validBikeIds = new Set<string>();
+  if (moIds.length > 0) {
+    const { data: soBikes, error: bikesErr } = await supabase
+      .from("bikes")
+      .select("id")
+      .in("manufacturing_order_id", moIds)
+      // A built bike has nothing left to paint; only unbuilt bikes go.
+      .in("status", ["planning", "building"])
+      .is("deleted_at", null);
+    if (bikesErr) {
+      return { ok: false, error: t("soCouldNotLoadBikes", { detail: bikesErr.message }) };
+    }
+    validBikeIds = new Set((soBikes ?? []).map((b) => b.id));
+  }
+
+  const requested = [...new Set(bikeIds)];
+  const strayIds = requested.filter((id) => !validBikeIds.has(id));
+  if (strayIds.length > 0) {
+    return { ok: false, error: t("soBikesNotOnOrder", { count: strayIds.length }) };
+  }
+
+  const { data: openLinks, error: linkErr } = await supabase
+    .from("service_order_bikes")
+    .select(
+      `bike_id,
+       service_order:service_orders!inner(
+         status,
+         service_type:service_types!service_type_id(blocks_build)
+       )`,
+    )
+    .in("bike_id", requested)
+    .in("service_order.status", OPEN_SERVICE_ORDER_STATUSES);
+  if (linkErr) {
+    return { ok: false, error: t("soCouldNotCheckOrders", { detail: linkErr.message }) };
+  }
+  const blockedCount = (openLinks ?? []).filter(
+    (r) => one(one(r.service_order)?.service_type)?.blocks_build === true,
+  ).length;
+  if (blockedCount > 0) {
+    return { ok: false, error: t("soBikesInOpenPaint", { count: blockedCount }) };
+  }
+  return { ok: true, bikeIds: requested };
+}
+
+/**
+ * The lines for these bikes, each in its own colour, colourless bikes in the
+ * fallback. Refuses when a bike has no colour and no fallback was given — a
+ * line without a colour cannot become painted stock, and silently making one
+ * is how an order comes back and converts nothing.
+ */
+async function seedLinesFor(
+  supabase: Supabase,
+  t: ErrorsT,
+  bikeIds: string[],
+  fallbackColorId: string | null,
+  opts: { withFallback: boolean },
+): Promise<{ ok: true; lines: SeedLine[] } | { ok: false; error: string; field?: string }> {
+  const inputs = await loadPaintSeedInputs(supabase, bikeIds);
+  if ("error" in inputs) {
+    return { ok: false, error: t("paintCouldNotLoadPaintwork", { detail: inputs.error }) };
+  }
+  if (inputs.bikes.some((b) => !b.colorId) && !fallbackColorId) {
+    return { ok: false, error: t("soPickColourForBikes"), field: "color_id" };
+  }
+  const bikes = inputs.bikes.map((b) => ({ ...b, colorId: b.colorId ?? fallbackColorId }));
+  const plan = planPaintSeed(bikes, inputs.templateRows, inputs.recipeParts);
+  if (plan.lines.length > 0 || !opts.withFallback) return { ok: true, lines: plan.lines };
+
+  const { data: partTypes } = await supabase
+    .from("service_part_types")
+    .select("id, slug")
+    .in("slug", ["stel", "forgaffel"]);
+  return { ok: true, lines: fallbackStarterLines(bikes, (partTypes ?? []).map((p) => p.id)) };
 }

@@ -10,15 +10,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   end of `verifySessionToken` in `src/lib/auth/session.ts`. Sessions last 30
   days, so every version-1 cookie (minted before migration 103) is expired by
   then; the upgrade only existed so Dennis kept his figures across the deploy.
-- **Receiving a paint order whose lines name no part converts nothing — and says
-  nothing.** Found 2026-09-24 in Dennis's own attempt: `PNT-2026-0008` (lines tied
-  to parts) was cancelled *"fejl"*, and `PNT-2026-0012` was created with part
-  types but **no `part_id` on any line**, then marked `received_back` the same
-  day. No `paint_out` / `paint_in` was posted, so no painted stock appeared, and
-  the screen gave no hint why — the likely "unsuccessful" attempt he described.
-  Fix: warn (or refuse) at `received_back` when a stock order has lines without a
-  part, naming them. Walk it through with him first; the Danish guide should show
-  the flow.
 - **A TEST marker should travel down the generators.** On 2026-09-15 a full
   offer → SO → MO → build → paint chain was exercised in production and **14 of
   the 20 documents carried no marker**: only the six a human typed had one, while

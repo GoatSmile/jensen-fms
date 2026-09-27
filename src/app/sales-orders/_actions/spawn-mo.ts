@@ -13,8 +13,14 @@ export type SpawnMOResult =
       ok: true;
       moId: string;
       moNumber: string;
-      /** Distinct recipe parts with no painted stock in the line's colour. */
+      /**
+       * Distinct recipe parts with no painted stock in their MO's colour,
+       * summed over EVERY MO on the sales order once the last bike line is
+       * spawned — the paint order covers the whole SO, so the question does.
+       */
       needsPaint: number;
+      /** Bike lines on the SO still without an MO. While > 0, nothing asks about paint. */
+      remainingLines: number;
       /** The line's colour, ready to display; null when the line has none. */
       colourLabel: string | null;
     }
@@ -198,14 +204,35 @@ export async function spawnMOFromSOLine(
   revalidatePath(`/sales-orders/${soId}`);
   revalidatePath("/manufacturing-orders");
 
+  // One paint job per sales order (15 Sep): while other bike lines still have
+  // no MO, their bikes don't exist yet, so a paint order now would be the
+  // first of two. Ask about paint only once the last line is spawned.
+  const [{ data: bikeLines }, { data: soMos }] = await Promise.all([
+    supabase
+      .from("sales_order_lines")
+      .select("id")
+      .eq("sales_order_id", soId)
+      .not("bike_template_id", "is", null),
+    supabase
+      .from("manufacturing_orders")
+      .select("id, sales_order_line_id")
+      .eq("sales_order_id", soId),
+  ]);
+  const spawnedLines = new Set((soMos ?? []).map((m) => m.sales_order_line_id));
+  const remainingLines = (bikeLines ?? []).filter((l) => !spawnedLines.has(l.id)).length;
+
   // The paint question, answered with the SAME rule the MO's coverage panel and
   // the floor queue use — a count of parts, not of pieces, so it reads like the
   // badge on the MO ("2 parts need paint"). A coverage failure is not worth
   // failing a created MO over: no count, no prompt, and the MO page will say it.
   let needsPaint = 0;
-  const coverage = await loadMOCoverage(supabase, mo.id);
-  if (!("error" in coverage)) {
-    needsPaint = coverage.rows.filter((r) => r.needsPaint > 0).length;
+  if (remainingLines === 0) {
+    for (const m of soMos ?? []) {
+      const coverage = await loadMOCoverage(supabase, m.id);
+      if (!("error" in coverage)) {
+        needsPaint += coverage.rows.filter((r) => r.needsPaint > 0).length;
+      }
+    }
   }
   const colour = Array.isArray(line.color) ? line.color[0] : line.color;
 
@@ -214,6 +241,7 @@ export async function spawnMOFromSOLine(
     moId: mo.id,
     moNumber: numberData as string,
     needsPaint,
+    remainingLines,
     colourLabel: colour
       ? localizedName(await getLocale(), colour.name_en, colour.name_da)
       : null,

@@ -27,6 +27,7 @@ import { SegmentedId } from "@/components/segmented-id";
 import { colorFinishLabel } from "@/lib/colors/coating";
 import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { formatDate } from "@/lib/parts/format";
@@ -76,7 +77,8 @@ export default async function PaintOrdersPage({
         id, order_number, status, planned_send_date, sent_at, received_at,
         service_type:service_types!inner(slug),
         supplier:suppliers(id, name),
-        color:colors(id, name_en, name_da, hex, ral_code, coating)
+        color:colors(id, name_en, name_da, hex, ral_code, coating),
+        items:service_order_items(color:colors(id, name_en, name_da, hex))
       `,
     )
     .eq("service_type.slug", PAINT_SERVICE_SLUG)
@@ -281,6 +283,14 @@ export default async function PaintOrdersPage({
                             </span>
                           ) : null}
                         </span>
+                      ) : mixedColours(r.items, locale).length > 0 ? (
+                        // A mixed batch has no header colour by design — show
+                        // what its lines carry instead of a dash.
+                        <span className="flex flex-wrap gap-1.5">
+                          {mixedColours(r.items, locale).map((c) => (
+                            <ColorChip key={c.name} hex={c.hex} label={c.name} />
+                          ))}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -318,4 +328,21 @@ export default async function PaintOrdersPage({
       )}
     </div>
   );
+}
+
+type ColourEmbed = { id: string; name_en: string; name_da: string | null; hex: string | null };
+
+/** The distinct colours on an order's lines, in first-seen order. */
+function mixedColours(
+  items: { color: ColourEmbed | ColourEmbed[] | null }[] | null,
+  locale: string,
+): { name: string; hex: string | null }[] {
+  const seen = new Map<string, { name: string; hex: string | null }>();
+  for (const item of items ?? []) {
+    const c = one(item.color);
+    if (c && !seen.has(c.id)) {
+      seen.set(c.id, { name: localizedName(locale, c.name_en, c.name_da), hex: c.hex });
+    }
+  }
+  return [...seen.values()];
 }

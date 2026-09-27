@@ -750,7 +750,7 @@ function FillFromBikesButton({
         size="sm"
         variant="outline"
         disabled={attachedBikes === 0 || pending}
-        title={attachedBikes === 0 ? t("fillNeedsBikes") : undefined}
+        title={attachedBikes === 0 ? t("fillNeedsBikes") : t("fillHint")}
         onClick={run}
       >
         <Wand2 aria-hidden /> {pending ? t("filling") : label}
@@ -761,7 +761,12 @@ function FillFromBikesButton({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" disabled={attachedBikes === 0}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={attachedBikes === 0}
+          title={attachedBikes === 0 ? t("fillNeedsBikes") : t("fillHint")}
+        >
           <Wand2 aria-hidden /> {label}
         </Button>
       </DialogTrigger>

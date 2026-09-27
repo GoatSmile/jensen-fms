@@ -536,9 +536,19 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     **Emailing IS the send** — a `planned` order transitions to `sent` (gate +
     price freeze) BEFORE the document renders, so mail, paper and ledger carry
     the same numbers. Order/line notes never reach the painter; the dialog
-    message is the only free text (PO doctrine). Libs:
+    message is the only free text (PO doctrine).
+    **Lines are seeded from the RECIPE, each bike in its own colour** — the
+    MO's recipe when the bike has one, else its template's — through ONE
+    loader, `loadPaintSeedInputs`, and `planPaintSeed`, shared by the
+    send-to-painter page, its action and *Rebuild lines*. The template's
+    paintwork declaration only fills types no recipe part covers (by type
+    only), so the order matches what coverage and readiness call "needs
+    paint". **One paint job per sales order**: while the SO has a planned one,
+    more bikes are ADDED to it (lines merged, never replaced). Receiving back
+    lists lines that name no part or colour before converting anything
+    (DECISIONS 2026-09-27). Libs:
     `src/lib/services/{vocab,status,at-supplier,pricing,template-paint,
-    service-order-document}.ts`.
+    service-order-document,paint-seed,paint-seed-inputs}.ts`.
   - **Nav/routes are PER SERVICE TYPE, permanently** — "Paint orders" stays
     at /paint-orders; a future service type gets its own nav item; shared
     components parameterized by type, no unified list page.

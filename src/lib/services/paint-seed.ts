@@ -1,10 +1,9 @@
 /**
- * "Fill from bikes": turn a paint order's attached bikes into item lines.
+ * "Fill from bikes": turn a paint order's bikes into item lines.
  *
- * A template declares what ONE bike sends to the painter
- * (`bike_template_service_parts`). An order sends a batch, in a mix of
- * colours. This groups the first into the second — the tedious, error-prone
- * arithmetic a tech otherwise does from memory for a 20-bike order.
+ * A batch of bikes, in a mix of colours, becomes lines of part × colour × qty —
+ * the tedious, error-prone arithmetic a tech otherwise does from memory for a
+ * 20-bike order.
  *
  * It also makes the PRICE right, not just the typing faster: tier basis is
  * the order-wide total per part type, so twenty bikes each sending one frame
@@ -12,21 +11,38 @@
  * whatever was typed.
  *
  * Pure on purpose (same doctrine as `import-tax.ts`) — the grouping is the
- * part worth being able to reason about without a database.
+ * part worth being able to reason about without a database. The loading lives
+ * in `paint-seed-inputs.ts`, shared by every caller.
  *
- * Two rules that are easy to get wrong:
- * - Use the bike's OWN template version (`bikes.template_id`), never the
- *   family's current one. Two bikes built from v1 and v2 contribute their own
- *   recipes, which is what history says actually happened.
- * - Colour comes from the BIKE (`bikes.color_id`), never
- *   `service_order_bikes.color_id` — that column is legacy from the pre-items
- *   paint model and would silently shadow the truth.
+ * WHAT GOES TO THE PAINTER (2026-09-27, after the 15 Sep run):
+ * - **The RECIPE is the truth.** Every recipe part marked *Paintable as* is a
+ *   line, at its recipe quantity, naming the part — the same set the MO's
+ *   coverage counts as "needs paint" and readiness blocks on. It used to be the
+ *   template's paintwork declaration whenever one existed, so a template that
+ *   declared only the frame sent a frame-only order while the MO said "2 parts
+ *   need paint" (frame + fork) and the fork never came back painted.
+ * - **The declaration fills gaps.** A type the template declares that no recipe
+ *   part covers (a cargo bed nobody has marked yet) still goes, by type only —
+ *   it can be priced but cannot convert stock, and the screen says so.
+ * - **Whose recipe:** the bike's MO recipe when it has one (what will actually
+ *   be built — substitutions included), else its template's. The caller encodes
+ *   that choice as `recipeKey`.
+ *
+ * Colour comes from the BIKE (`bikes.color_id`, copied from the sales-order
+ * line), never `service_order_bikes.color_id` — that column is legacy from the
+ * pre-items paint model and would silently shadow the truth. A caller with a
+ * fallback colour for colourless bikes applies it before calling.
  */
 
 export type SeedBike = {
   id: string;
-  /** null for a bike recorded via /bikes/new — nothing to seed from. */
+  /** Whose paintwork DECLARATION applies. null for a bike recorded via /bikes/new. */
   templateId: string | null;
+  /**
+   * Whose RECIPE the bike is built from — `mo:<id>` when its MO has a recipe,
+   * else `tpl:<id>`. null = nothing to expand.
+   */
+  recipeKey: string | null;
   colorId: string | null;
 };
 
@@ -37,13 +53,13 @@ export type SeedTemplateRow = {
   quantity: number;
 };
 
-/** A recipe part of a template that is paintable as some service part type. */
+/** A recipe part that is paintable as some service part type. */
 export type SeedRecipePart = {
-  templateId: string;
+  recipeKey: string;
+  /** The RAW part — a painted variant in a recipe is resolved to its base. */
   partId: string;
   servicePartTypeId: string;
-  /** Per bike, from the recipe. Used when the template declares no paintwork rows. */
-  quantityPerBike?: number;
+  quantityPerBike: number;
 };
 
 export type SeedLine = {
@@ -52,8 +68,8 @@ export type SeedLine = {
   quantity: number;
   /**
    * The specific recipe part (docs/plan-painted-parts.md, phase 4) — what lets
-   * the line convert raw into painted stock when the order comes back. Null when
-   * the template's recipe has no part paintable as this type.
+   * the line convert raw into painted stock when the order comes back. Null for
+   * a declared type no recipe part covers.
    */
   partId: string | null;
 };
@@ -64,14 +80,18 @@ export type SeedPlan = {
   seededBikes: number;
   /** Attached but recorded outside an MO, so no recipe to expand. */
   bikesWithoutTemplate: number;
-  /** On a template that declares no paintwork at all. */
+  /** Nothing in the recipe is marked paintable and the template declares nothing. */
   bikesWithoutPaintwork: number;
   /** Contributed, but their lines carry no colour. */
   bikesWithoutColour: number;
 };
 
 /** Stable key for one line: a part type, a specific part (or none), one colour. */
-function lineKey(partTypeId: string, partId: string | null, colorId: string | null): string {
+export function paintLineKey(
+  partTypeId: string,
+  partId: string | null,
+  colorId: string | null,
+): string {
   return `${partTypeId}::${partId ?? ""}::${colorId ?? ""}`;
 }
 
@@ -80,72 +100,71 @@ export function planPaintSeed(
   templateRows: SeedTemplateRow[],
   recipeParts: SeedRecipePart[] = [],
 ): SeedPlan {
-  const rowsByTemplate = new Map<string, SeedTemplateRow[]>();
+  const declaredByTemplate = new Map<string, SeedTemplateRow[]>();
   for (const r of templateRows) {
-    const list = rowsByTemplate.get(r.templateId) ?? [];
+    const list = declaredByTemplate.get(r.templateId) ?? [];
     list.push(r);
-    rowsByTemplate.set(r.templateId, list);
+    declaredByTemplate.set(r.templateId, list);
   }
-  // template → part type → the recipe parts paintable as that type. One part
-  // is the normal case and names the line; several give a line per part (no
-  // guessing); none leaves the line by type only, as before.
-  const partsByTemplateType = new Map<string, string[]>();
+  // recipe → its paintable parts, one entry per part (a recipe names a part
+  // once; summing guards a caller that hands in duplicates).
+  const recipeByKey = new Map<string, Map<string, SeedRecipePart>>();
   for (const rp of recipeParts) {
-    const key = `${rp.templateId}::${rp.servicePartTypeId}`;
-    const list = partsByTemplateType.get(key) ?? [];
-    if (!list.includes(rp.partId)) list.push(rp.partId);
-    partsByTemplateType.set(key, list);
+    const parts = recipeByKey.get(rp.recipeKey) ?? new Map<string, SeedRecipePart>();
+    const existing = parts.get(rp.partId);
+    if (existing) existing.quantityPerBike += rp.quantityPerBike;
+    else parts.set(rp.partId, { ...rp });
+    recipeByKey.set(rp.recipeKey, parts);
   }
 
   const byLine = new Map<string, SeedLine>();
+  const add = (line: SeedLine) => {
+    if (line.quantity <= 0) return;
+    const key = paintLineKey(line.servicePartTypeId, line.partId, line.colorId);
+    const existing = byLine.get(key);
+    if (existing) existing.quantity += line.quantity;
+    else byLine.set(key, { ...line });
+  };
+
   let seededBikes = 0;
   let bikesWithoutTemplate = 0;
   let bikesWithoutPaintwork = 0;
   let bikesWithoutColour = 0;
 
   for (const bike of bikes) {
-    if (!bike.templateId) {
+    if (!bike.templateId && !bike.recipeKey) {
       bikesWithoutTemplate += 1;
       continue;
     }
-    let rows = rowsByTemplate.get(bike.templateId) ?? [];
-    if (rows.length === 0) {
-      // No paintwork declared: the recipe's paintable parts ARE the paintwork
-      // (phase 4). One synthetic row per paintable recipe part, at its recipe
-      // quantity, so the template needs no separate declaration to seed right.
-      rows = recipeParts
-        .filter((rp) => rp.templateId === bike.templateId)
-        .map((rp) => ({
-          templateId: rp.templateId,
-          servicePartTypeId: rp.servicePartTypeId,
-          quantity: rp.quantityPerBike ?? 1,
-        }));
-    }
-    if (rows.length === 0) {
+    const recipe = [
+      ...(bike.recipeKey ? (recipeByKey.get(bike.recipeKey)?.values() ?? []) : []),
+    ].filter((rp) => rp.quantityPerBike > 0);
+    const coveredTypes = new Set(recipe.map((rp) => rp.servicePartTypeId));
+    const gaps = (bike.templateId ? (declaredByTemplate.get(bike.templateId) ?? []) : [])
+      .filter((row) => row.quantity > 0 && !coveredTypes.has(row.servicePartTypeId));
+
+    if (recipe.length === 0 && gaps.length === 0) {
       bikesWithoutPaintwork += 1;
       continue;
     }
-
     seededBikes += 1;
     if (!bike.colorId) bikesWithoutColour += 1;
 
-    for (const row of rows) {
-      if (row.quantity <= 0) continue;
-      const candidates =
-        partsByTemplateType.get(`${bike.templateId}::${row.servicePartTypeId}`) ?? [];
-      const partIds: (string | null)[] = candidates.length > 0 ? candidates : [null];
-      for (const partId of partIds) {
-        const key = lineKey(row.servicePartTypeId, partId, bike.colorId);
-        const existing = byLine.get(key);
-        if (existing) existing.quantity += row.quantity;
-        else
-          byLine.set(key, {
-            servicePartTypeId: row.servicePartTypeId,
-            colorId: bike.colorId,
-            quantity: row.quantity,
-            partId,
-          });
-      }
+    for (const rp of recipe) {
+      add({
+        servicePartTypeId: rp.servicePartTypeId,
+        partId: rp.partId,
+        colorId: bike.colorId,
+        quantity: rp.quantityPerBike,
+      });
+    }
+    for (const row of gaps) {
+      add({
+        servicePartTypeId: row.servicePartTypeId,
+        partId: null,
+        colorId: bike.colorId,
+        quantity: row.quantity,
+      });
     }
   }
 
@@ -156,4 +175,39 @@ export function planPaintSeed(
     bikesWithoutPaintwork,
     bikesWithoutColour,
   };
+}
+
+/**
+ * The starter lines for a batch where nothing is marked or declared: one line
+ * per fallback part type (frame + fork) PER COLOUR, by type only. Shared by the
+ * create action and its preview so the two cannot disagree — and per colour
+ * because a two-colour batch collapsed into one colour is how six bikes came
+ * back "all yellow" on 15 Sep.
+ */
+export function fallbackStarterLines(
+  bikes: SeedBike[],
+  fallbackPartTypeIds: string[],
+): SeedLine[] {
+  const bikesByColour = new Map<string | null, number>();
+  for (const b of bikes) {
+    bikesByColour.set(b.colorId, (bikesByColour.get(b.colorId) ?? 0) + 1);
+  }
+  const lines: SeedLine[] = [];
+  for (const [colorId, count] of bikesByColour) {
+    for (const partTypeId of fallbackPartTypeIds) {
+      lines.push({ servicePartTypeId: partTypeId, partId: null, colorId, quantity: count });
+    }
+  }
+  return lines;
+}
+
+/**
+ * The one colour every line shares, or null when they differ (or none has one).
+ * `service_orders.color_id` is a header convenience — the lines are the truth —
+ * so a mixed batch leaves it empty rather than naming whichever came first.
+ */
+export function sharedLineColour(lines: { colorId: string | null }[]): string | null {
+  const colours = new Set(lines.map((l) => l.colorId));
+  if (colours.size !== 1) return null;
+  return [...colours][0] ?? null;
 }

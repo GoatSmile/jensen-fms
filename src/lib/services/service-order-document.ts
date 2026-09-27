@@ -132,6 +132,8 @@ export type ServiceOrderDocumentLine = {
 export type ServiceOrderDocumentBike = {
   frameNumber: string;
   templateLabel: string | null;
+  /** The bike's own colour — a batch can mix colours, so each frame says its own. */
+  colour: string | null;
 };
 
 export type ServiceOrderDocument = {
@@ -202,6 +204,7 @@ export async function loadServiceOrderDocument(
         `added_at,
          bike:bikes!bike_id(
            frame_number, deleted_at,
+           color:colors!color_id(name_en, name_da),
            template:bike_templates(name_en, frame_size, family:bike_families(name))
          )`,
       )
@@ -297,8 +300,12 @@ export async function loadServiceOrderDocument(
     .map((b) => {
       const tpl = one(b.template);
       const family = tpl ? one(tpl.family) : null;
+      const bikeColour = one(b.color);
       return {
         frameNumber: b.frame_number,
+        colour: bikeColour
+          ? localizedName(labelLang, bikeColour.name_en, bikeColour.name_da)
+          : null,
         templateLabel: tpl
           ? [family?.name, tpl.frame_size, tpl.name_en].filter(Boolean).join(" · ")
           : null,

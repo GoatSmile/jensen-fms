@@ -3077,3 +3077,42 @@ before anyone who is not the owner was going to log in.
   (every such role could already see money; Workshop, the role excluded, holds
   no invoices). Verified by minting both versions against the local server.
   The upgrade dies with the last v1 cookie on 2026-10-27 (BACKLOG).
+
+## 2026-09-27 — A paint order is seeded from the recipe, in each bike's own colour, and a sales order makes one paint job
+
+Dev calls implementing what Dennis described on 15 Sep (the three-hour meeting:
+00:52–01:13), none of which needed his input to settle. Paint's lifecycle rework
+(packed, sent on the planned date, pickup) is NOT in this — it contradicts
+"emailing IS the send" and waits for its own decision.
+
+- **The recipe decides what goes to the painter; the template's declaration
+  fills gaps.** Every recipe part marked *Paintable as* is a line naming that
+  part; a declared type no recipe part covers still goes, by type only. It used
+  to be the declaration whenever one existed, so a frame-only declaration sent a
+  frame-only order while the MO said "2 parts need paint" and the fork never
+  came back painted. The recipe read is the **MO's** when the bike has one
+  (substitutions included), else the template's — one loader,
+  `loadPaintSeedInputs`, for the page, its action and *Rebuild lines*.
+  **Rejected:** declaration as truth (it is what diverged from coverage and
+  readiness); recipe only (would drop the cargo beds and signs nobody has
+  marked yet).
+- **Each bike is painted in its own colour.** The form's colour used to overwrite
+  every bike's, so a white-and-yellow order came back all yellow and the white
+  bikes stayed "needs paint". The colour field now exists only for bikes with no
+  colour of their own. The header colour is kept only when every line shares
+  one; a mixed batch shows its line colours.
+- **One paint job per sales order.** While the SO has a planned paint order, the
+  send-to-painter page adds the bikes to it by default (lines merged by part
+  type × part × colour, hand edits kept); a separate order is the deliberate
+  choice. Spawning an MO asks about paint only once the last bike line has its
+  MO. **Rejected:** a unified "spawn all MOs" action (bigger change to a flow
+  that works line by line) and re-seeding the whole order on add (would discard
+  hand edits).
+- **Receiving back asks before converting nothing.** Lines naming no part or no
+  colour are listed before the status moves, with *Receive anyway*; the result
+  message wears the caution hue when anything was skipped. **Rejected:**
+  refusing — the boxes ARE back, and the status must be able to say so.
+- **Found on the way:** the post-spawn paint prompt had never been able to show.
+  The spawn action revalidates the page, the line now has its MO, and the button
+  that held the dialog unmounted with it. The prompt now lives in the lines
+  section.
