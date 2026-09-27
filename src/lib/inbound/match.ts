@@ -196,11 +196,8 @@ export async function matchInbound(
   if (extraction.qrCode)
     idProbes.push({ value: extraction.qrCode.trim(), type: QR_TYPE, via: "qr" });
   if (extraction.fleetNumber)
-    idProbes.push({
-      value: extraction.fleetNumber.trim(),
-      type: FLEET_TYPE,
-      via: "fleet",
-    });
+    for (const value of recognitionCodeVariants(extraction.fleetNumber))
+      idProbes.push({ value, type: FLEET_TYPE, via: "fleet" });
 
   const seenBikeIds = new Set<string>();
   for (const probe of idProbes) {
@@ -286,4 +283,18 @@ export async function matchInbound(
     matchedContactId: soleId(contacts),
     matchedBikeId: soleId(bikes),
   };
+}
+
+/**
+ * The forms a spoken recognition code may take in the register: as said, in
+ * capitals without spaces or dashes, and with a one-digit running number
+ * padded to two ("BKTM 1" → BKTM01). Labels are printed BKTM01, but callers
+ * drop the zero and transcripts insert spaces. Still EXACT matches, each one —
+ * a probe that finds two bikes is ambiguous and stays a candidate list.
+ */
+export function recognitionCodeVariants(raw: string): string[] {
+  const asSaid = raw.trim();
+  const compact = asSaid.toLocaleUpperCase("da-DK").replace(/[\s.-]+/g, "");
+  const padded = compact.replace(/^([A-ZÆØÅ]+)(\d)$/, "$10$2");
+  return [...new Set([asSaid, compact, padded].filter(Boolean))];
 }

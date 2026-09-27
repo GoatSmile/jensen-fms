@@ -36,6 +36,9 @@ import { formatDate } from "@/lib/parts/format";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { one } from "@/lib/supabase/embed";
+import { ListPagination } from "@/components/list-pagination";
 import { cn } from "@/lib/utils";
 import { FILTER_ACTIVE_CLASS } from "@/lib/filter-style";
 import { BIKE_STATUS_VARIANT, type BikeStatus } from "@/lib/bikes/status";
@@ -54,7 +57,11 @@ type SearchParams = {
   sort?: string;
   /** `imported` = the "Imported bikes" view: bikes carrying an import batch. */
   origin?: string;
+  page?: string;
 };
+
+/** Rows per page. The id pass reads every match; only a page is rendered. */
+const PAGE_SIZE = 100;
 
 const BUILT_PRESETS: { value: string; labelKey: string }[] = [
   { value: "this-year", labelKey: "builtThisYear" },
@@ -203,35 +210,43 @@ export default async function BikesPage({
   // uuid and PostgREST rejects a non-uuid in `id.in.(…)`). identifierMatches
   // also drives a per-row "matched via" hint so a non-frame search doesn't read
   // as frame-only.
-  let bikeIdsForQuery: string[] | null = null;
+  let bikeIdsForQuery: Set<string> | null = null;
   const identifierMatches = new Map<
     string,
     { name_en: string; name_da: string; value: string }[]
   >();
   if (q) {
-    const [{ data: frameHits }, { data: idHits }] = await Promise.all([
-      supabase
-        .from("bikes")
-        .select("id")
-        .is("deleted_at", null)
-        .ilike("frame_number", `%${q}%`),
-      supabase
-        .from("bike_identifiers")
-        .select(
-          "identifier_value, bike_id, type:bike_identifier_types(name_en, name_da)",
-        )
-        .eq("is_active", true)
-        .ilike("identifier_value", `%${q}%`)
-        .limit(200),
+    // EVERY hit, not the first 200/1000: "WCK" matches almost every frame, and
+    // a customer's code prefix matches hundreds of identifiers. The sets are
+    // intersected in memory below, never sent back as an `id.in.(…)` list —
+    // at fleet size that URL is tens of kilobytes.
+    const [frameHits, idHits] = await Promise.all([
+      fetchAllRows((from, to) =>
+        supabase
+          .from("bikes")
+          .select("id")
+          .is("deleted_at", null)
+          .ilike("frame_number", `%${q}%`)
+          .order("id")
+          .range(from, to),
+      ),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("bike_identifiers")
+          .select(
+            "id, identifier_value, bike_id, type:bike_identifier_types(name_en, name_da)",
+          )
+          .eq("is_active", true)
+          .ilike("identifier_value", `%${q}%`)
+          .order("id")
+          .range(from, to),
+      ),
     ]);
     const ids = new Set<string>();
-    for (const r of frameHits ?? []) ids.add(r.id);
-    for (const r of idHits ?? []) {
+    for (const r of frameHits.data) ids.add(r.id);
+    for (const r of idHits.data) {
       ids.add(r.bike_id);
-      const type = (Array.isArray(r.type) ? r.type[0] : r.type) as {
-        name_en: string;
-        name_da: string;
-      } | null;
+      const type = one(r.type);
       const list = identifierMatches.get(r.bike_id) ?? [];
       list.push({
         name_en: type?.name_en ?? "",
@@ -240,109 +255,74 @@ export default async function BikesPage({
       });
       identifierMatches.set(r.bike_id, list);
     }
-    bikeIdsForQuery = ids.size
-      ? Array.from(ids)
-      : ["00000000-0000-0000-0000-000000000000"];
+    bikeIdsForQuery = ids;
   }
 
-  let bikesQuery = supabase
-    .from("bikes")
-    .select(
-      `
-        id,
-        frame_number,
-        status,
-        notes,
-        deleted_at,
-        built_at,
-        owner_unit_id,
-        import_batch_id,
-        bike_type:bike_types(id, name_en, name_da),
-        template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
-        color:colors(id, name_en, name_da, hex, ral_code, coating),
-        manufacturing_order:manufacturing_orders(
-          id,
-          sales_order:sales_orders!sales_order_id(id, sales_order_number)
-        ),
-        owner_organization:organizations!owner_organization_id(
-          id, legal_name, display_name_en, display_name_da
-        ),
-        identifiers:bike_identifiers(
-          identifier_value, is_active, type:bike_identifier_types(slug)
-        )
-      `,
-      { count: "exact" },
-    )
-    .is("deleted_at", null);
-
-  if (importedView) bikesQuery = bikesQuery.not("import_batch_id", "is", null);
-  if (statusFilter) bikesQuery = bikesQuery.eq("status", statusFilter);
-  if (typeFilter) bikesQuery = bikesQuery.eq("bike_type_id", typeFilter);
-  if (ownerFilter) bikesQuery = bikesQuery.eq("owner_organization_id", ownerFilter);
-  if (templateFilter) bikesQuery = bikesQuery.eq("template_id", templateFilter);
-  if (fleetOrgIds) bikesQuery = bikesQuery.in("owner_organization_id", fleetOrgIds);
-  if (builtGte) bikesQuery = bikesQuery.gte("built_at", builtGte);
-  if (builtLt) bikesQuery = bikesQuery.lt("built_at", builtLt);
-  if (bikeIdsForPart) bikesQuery = bikesQuery.in("id", bikeIdsForPart);
-  if (bikeIdsForQuery) bikesQuery = bikesQuery.in("id", bikeIdsForQuery);
-  // Paint filter: resolve to id sets (same zero-uuid sentinel as above).
-  const NONE = ["00000000-0000-0000-0000-000000000000"];
-  if (paintFilter === "at-painter") {
-    const ids = [...paintStates.atPainter];
-    bikesQuery = bikesQuery.in("id", ids.length ? ids : NONE);
-  } else if (paintFilter === "painted") {
-    const ids = [...paintStates.painted];
-    bikesQuery = bikesQuery
-      .in("id", ids.length ? ids : NONE)
-      .in("status", UNBUILT_STATUSES);
-  } else if (paintFilter === "unpainted") {
-    const known = [...paintStates.atPainter, ...paintStates.painted];
-    if (known.length > 0) {
-      bikesQuery = bikesQuery.not("id", "in", `(${known.join(",")})`);
+  // PAGED (the fleet import brings the list past PostgREST's silent 1000-row
+  // cap). Two passes: every matching bike's id — cheap columns, read in chunks
+  // by `fetchAllRows`, column filters in SQL and the id-set filters (search,
+  // part, paint, agreement coverage) in memory — then the full rows for ONE
+  // page, by id. Counts stay exact and no filter works on a truncated set.
+  const buildIdQuery = () => {
+    let query = supabase
+      .from("bikes")
+      .select("id, owner_organization_id, owner_unit_id, status")
+      .is("deleted_at", null);
+    if (importedView) query = query.not("import_batch_id", "is", null);
+    if (statusFilter) query = query.eq("status", statusFilter);
+    if (typeFilter) query = query.eq("bike_type_id", typeFilter);
+    if (ownerFilter) query = query.eq("owner_organization_id", ownerFilter);
+    if (templateFilter) query = query.eq("template_id", templateFilter);
+    if (fleetOrgIds) query = query.in("owner_organization_id", fleetOrgIds);
+    if (builtGte) query = query.gte("built_at", builtGte);
+    if (builtLt) query = query.lt("built_at", builtLt);
+    // Sort: newest/oldest built (nulls last), else by frame number. Frame
+    // number is unique, so every order is stable across chunks.
+    if (sortFilter === "built-desc") {
+      query = query
+        .order("built_at", { ascending: false, nullsFirst: false })
+        .order("frame_number", { ascending: true });
+    } else if (sortFilter === "built-asc") {
+      query = query
+        .order("built_at", { ascending: true, nullsFirst: false })
+        .order("frame_number", { ascending: true });
+    } else {
+      query = query.order("frame_number", { ascending: true });
     }
-  }
-
-  // Sort: newest/oldest built (nulls last), else by frame number.
-  if (sortFilter === "built-desc") {
-    bikesQuery = bikesQuery
-      .order("built_at", { ascending: false, nullsFirst: false })
-      .order("frame_number", { ascending: true });
-  } else if (sortFilter === "built-asc") {
-    bikesQuery = bikesQuery
-      .order("built_at", { ascending: true, nullsFirst: false })
-      .order("frame_number", { ascending: true });
-  } else {
-    bikesQuery = bikesQuery.order("frame_number", { ascending: true });
-  }
+    return query;
+  };
 
   // Facet sources for the Customer + Template pickers: only orgs/templates that
   // actually own/back a bike, so the dropdowns stay short and relevant.
-  let facetQuery = supabase
-    .from("bikes")
-    .select("owner_organization_id, template_id")
-    .is("deleted_at", null);
-  if (importedView) facetQuery = facetQuery.not("import_batch_id", "is", null);
-
-  const [bikesRes, typesRes, facetRes] = await Promise.all([
-    bikesQuery,
+  const [idRes, typesRes, facetRes] = await Promise.all([
+    fetchAllRows((from, to) => buildIdQuery().range(from, to)),
     supabase
       .from("bike_types")
       .select("id, name_en, name_da")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
-    facetQuery,
+    fetchAllRows(
+      (from, to) => {
+        let query = supabase
+          .from("bikes")
+          .select("id, owner_organization_id, template_id")
+          .is("deleted_at", null);
+        if (importedView) query = query.not("import_batch_id", "is", null);
+        return query.order("id").range(from, to);
+      },
+    ),
   ]);
 
   const ownerIds = Array.from(
     new Set(
-      (facetRes.data ?? [])
+      facetRes.data
         .map((r) => r.owner_organization_id)
         .filter((x): x is string => !!x),
     ),
   );
   const templateIds = Array.from(
     new Set(
-      (facetRes.data ?? [])
+      facetRes.data
         .map((r) => r.template_id)
         .filter((x): x is string => !!x),
     ),
@@ -373,44 +353,106 @@ export default async function BikesPage({
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
-  if (bikesRes.error) {
-    throw new Error(`Failed to load bikes: ${bikesRes.error.message}`);
+  if (idRes.error) {
+    throw new Error(`Failed to load bikes: ${idRes.error}`);
   }
 
-  // Per-bike coverage (unit-scoped agreements beat org-wide; a different
-  // unit's agreement does not cover). Also the refinement pass for the fleet
-  // filter, whose SQL pre-cut is org-level only.
-  const allRows = bikesRes.data ?? [];
+  // The id-set filters, in memory over the id pass. Per-bike coverage too
+  // (unit-scoped agreements beat org-wide; a different unit's agreement does
+  // not cover) — the refinement of the fleet filter, whose SQL pre-cut is
+  // org-level only, and the per-row coverage line below.
+  const partSet = bikeIdsForPart ? new Set(bikeIdsForPart) : null;
+  const unbuiltSet = new Set<string>(UNBUILT_STATUSES);
   const coverageByBikeId = new Map<string, ActiveAgreement | null>();
-  for (const r of allRows) {
-    coverageByBikeId.set(
-      r.id,
-      resolveCoverage(
-        activeAgreements,
-        r.owner_organization?.id ?? null,
-        r.owner_unit_id,
-      ),
+  const matchingIds: string[] = [];
+  for (const r of idRes.data) {
+    if (bikeIdsForQuery && !bikeIdsForQuery.has(r.id)) continue;
+    if (partSet && !partSet.has(r.id)) continue;
+    if (paintFilter === "at-painter" && !paintStates.atPainter.has(r.id)) continue;
+    if (
+      paintFilter === "painted" &&
+      !(paintStates.painted.has(r.id) && unbuiltSet.has(r.status))
+    )
+      continue;
+    if (
+      paintFilter === "unpainted" &&
+      (paintStates.atPainter.has(r.id) || paintStates.painted.has(r.id))
+    )
+      continue;
+    const coverage = resolveCoverage(
+      activeAgreements,
+      r.owner_organization_id,
+      r.owner_unit_id,
     );
+    if (fleetFilter && !coverage) continue;
+    coverageByBikeId.set(r.id, coverage);
+    matchingIds.push(r.id);
   }
-  const rows = fleetFilter
-    ? allRows.filter((r) => coverageByBikeId.get(r.id))
-    : allRows;
+
+  const totalCount = matchingIds.length;
+  const pageCount = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+  const requestedPage = Number.parseInt(sp.page ?? "1", 10);
+  const safePage = Math.min(
+    Math.max(1, Number.isFinite(requestedPage) ? requestedPage : 1),
+    pageCount,
+  );
+  const pageIds = matchingIds.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  // The full rows for THIS page only, back in the id pass's order.
+  const pageRes = pageIds.length
+    ? await supabase
+        .from("bikes")
+        .select(
+          `
+        id,
+        frame_number,
+        status,
+        notes,
+        deleted_at,
+        built_at,
+        owner_unit_id,
+        import_batch_id,
+        bike_type:bike_types(id, name_en, name_da),
+        template:bike_templates(id, name_en, family:bike_families(name), frame_size, version),
+        color:colors(id, name_en, name_da, hex, ral_code, coating),
+        manufacturing_order:manufacturing_orders(
+          id,
+          sales_order:sales_orders!sales_order_id(id, sales_order_number)
+        ),
+        owner_organization:organizations!owner_organization_id(
+          id, legal_name, display_name_en, display_name_da
+        ),
+        identifiers:bike_identifiers(
+          identifier_value, is_active, type:bike_identifier_types(slug)
+        )
+      `,
+        )
+        .in("id", pageIds)
+    : { data: [], error: null };
+  if (pageRes.error) {
+    throw new Error(`Failed to load bikes: ${pageRes.error.message}`);
+  }
+  const position = new Map(pageIds.map((id, i) => [id, i]));
+  const rows = [...(pageRes.data ?? [])].sort(
+    (a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0),
+  );
   // Jensen's recognition code (the `fleet_number` identifier, migration 102) —
   // what a customer reads off the bike's label, so it gets its own column.
-  const recognitionCode = (b: (typeof allRows)[number]): string | null =>
+  const recognitionCode = (b: (typeof rows)[number]): string | null =>
     (b.identifiers ?? []).find((i) => {
       const type = Array.isArray(i.type) ? i.type[0] : i.type;
       return i.is_active && type?.slug === "fleet_number";
     })?.identifier_value ?? null;
-  const totalCount = fleetFilter
-    ? rows.length
-    : (bikesRes.count ?? rows.length);
 
   // Active-filter chips, each removable (link to the same URL minus that param).
   function hrefWithout(key: string): string {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) {
-      if (k === key) continue;
+      // Dropping a filter changes the set, so the page starts over.
+      if (k === key || k === "page") continue;
       if (typeof v === "string" && v) p.set(k, v);
     }
     const qs = p.toString();
@@ -990,6 +1032,17 @@ export default async function BikesPage({
           </Table>
         </Panel>
       )}
+
+      {totalCount > PAGE_SIZE ? (
+        <ListPagination
+          page={safePage}
+          pageCount={pageCount}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          searchParams={sp as Record<string, string | string[] | undefined>}
+          basePath="/bikes"
+        />
+      ) : null}
     </div>
   );
 }

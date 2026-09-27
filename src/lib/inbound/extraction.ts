@@ -18,7 +18,11 @@ export type InboundExtraction = {
   callbackNumber: string | null;
   frameNumber: string | null;
   qrCode: string | null;
-  /** The customer's own fleet numbering ("bike 25"). */
+  /**
+   * The bike's recognition code — Jensen's own code on its label (BKTM01),
+   * not the customer's numbering (migration 102). The slug keeps the old name
+   * because search and matching key on it.
+   */
   fleetNumber: string | null;
   /** Free-text colour clue ("the red one"). */
   colorHint: string | null;

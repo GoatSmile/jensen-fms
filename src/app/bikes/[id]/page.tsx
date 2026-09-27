@@ -117,7 +117,7 @@ export default async function BikeDetailPage({
       .select(
         `
             id, identifier_value, is_active, created_at, deactivated_at,
-            identifier_type:bike_identifier_types(id, name_en, name_da)
+            identifier_type:bike_identifier_types(id, slug, name_en, name_da)
           `,
       )
       .eq("bike_id", id)
@@ -366,6 +366,11 @@ export default async function BikeDetailPage({
       <BikeHeader
         bikeId={b.id}
         frameNumber={b.frame_number}
+        recognitionCode={
+          (identifiersRes.data ?? []).find(
+            (r) => r.is_active && r.identifier_type?.slug === "fleet_number",
+          )?.identifier_value ?? null
+        }
         status={b.status as BikeStatus}
         bikeTypeName={
           b.bike_type

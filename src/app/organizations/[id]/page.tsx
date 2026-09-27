@@ -59,7 +59,7 @@ export default async function OrganizationDetailPage({
       .select(
         `
           id, legal_name, display_name_en, display_name_da,
-          cvr_number, ean_number, vat_number,
+          cvr_number, ean_number, vat_number, recognition_prefix,
           address_line1, address_line2, zip_code, city, state_province,
           country_code, phone, email, website,
           billing_currency, payment_terms_days, default_vat_code,
@@ -229,6 +229,12 @@ export default async function OrganizationDetailPage({
                   <span className="font-mono text-sm">{o.vat_number}</span>
                 ) : null,
               )}
+              {dlRow(
+                t("recognitionPrefix"),
+                o.recognition_prefix ? (
+                  <span className="font-mono text-sm">{o.recognition_prefix}</span>
+                ) : null,
+              )}
             </dl>
           </Section>
 
@@ -309,7 +315,10 @@ export default async function OrganizationDetailPage({
 
       <UnitsSection organizationId={o.id} rows={unitRows} />
       <ContactsSection organizationId={o.id} rows={contactRows} />
-      <AssignedBikesSection organizationId={o.id} />
+      <AssignedBikesSection
+        organizationId={o.id}
+        recognitionPrefix={o.recognition_prefix ?? null}
+      />
       <CustomerOffersSection organizationId={o.id} />
     </div>
   );

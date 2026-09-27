@@ -986,12 +986,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Parts list pagination + stock filter** are in-memory in
   `src/app/parts/page.tsx`. Fine at small scale; past a few thousand rows,
   push down to SQL (extended view or RPC).
-- **The bikes list is unpaginated, and the API returns at most 1000 rows per
-  request** (Supabase's default `max_rows`). With the imported fleet the list
-  sits just under that; past it, rows vanish silently rather than erroring.
-  Paginate `src/app/bikes/page.tsx` before the fleet grows past the cap.
-- **Pagination prev/next links don't preserve other filters** — thread
-  `searchParams` through to `PartsPagination` or make it a client component.
+- **PostgREST returns at most 1000 rows per request, silently** (Supabase's
+  `max_rows`) — past it, rows simply are not there. A list over a table that
+  grows reads its matching ids through `fetchAllRows`
+  (`src/lib/supabase/fetch-all.ts`, chunked, stable ORDER BY) and loads full
+  rows for ONE page by id; id-set filters (search hits, parts, paint states,
+  agreement coverage) are applied in memory on that id pass, never sent back as
+  a huge `id.in.(…)` list. `/bikes` works this way since 2026-09-27 (100 per
+  page, `ListPagination`, whose links carry every filter), because the fleet
+  import takes it past the cap.
 - **MO stock coverage is per-MO** (`src/lib/manufacturing/coverage.ts`) —
   cross-MO competition for stock isn't modelled (same for /work readiness).
   Coverage, /work readiness, pick lists, and the build-time recipe copy all

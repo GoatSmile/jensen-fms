@@ -458,7 +458,10 @@
     "saving": "Gemmer…",
     "confirmRepeat": "Klik igen for at bekræfte",
     "apply": "Anvend",
-    "clearAll": "Ryd alle"
+    "clearAll": "Ryd alle",
+    "paginationShowing": "Viser <b>{start}</b>–<b>{end}</b> af <b>{total}</b>",
+    "paginationPrevious": "Forrige",
+    "paginationNext": "Næste"
   },
   "bikes": {
     "title": "Cykler",
@@ -661,7 +664,8 @@
     },
     "crumbBikes": "Cykler",
     "newWorkOrder": "Ny arbejdsordre",
-    "newTicket": "Ny sag"
+    "newTicket": "Ny sag",
+    "recognitionCodeTitle": "Genkendelseskode — Jensens kode på cyklens label"
   },
   "templates": {
     "title": "Cykelskabeloner",
@@ -848,9 +852,6 @@
     "thStock": "Lager",
     "thRetail": "Salgspris (DKK, ekskl. moms)",
     "noMatch": "Ingen dele matcher filtrene.",
-    "showing": "Viser <b>{start}</b>–<b>{end}</b> af <b>{total}</b>",
-    "previous": "Forrige",
-    "next": "Næste",
     "reorderCount": "{count, plural, one {# del under genbestillingspunktet} other {# dele under genbestillingspunktet}}",
     "draftPos": "Opret indkøbskladder",
     "drafting": "Opretter…",
@@ -2680,6 +2681,7 @@
   "customerDetail": {
     "archivedBanner": "Denne kunde er arkiveret. Cykler der stadig peger hertil beholder linket til historik.",
     "secIdentification": "Identifikation",
+    "recognitionPrefix": "Genkendelsesprefiks",
     "secAddress": "Adresse",
     "noAddress": "Ingen adresse registreret.",
     "secContact": "Kontakt",
@@ -2707,11 +2709,15 @@
   "assignedBikes": {
     "title": "Tildelte cykler",
     "count": "{count, plural, one {# cykel} other {# cykler}}",
+    "countWithPrefix": "{count, plural, one {# cykel} other {# cykler}} · koderne starter med {prefix}",
+    "seeAll": "{count, plural, one {Se cyklen} other {Se alle # cykler}}",
     "loadError": "Kunne ikke indlæse cykler: {msg}",
     "emptyTitle": "Ingen cykler tildelt endnu",
     "emptyDesc": "Når cykler tildeles denne kunde, vises de her.",
     "thFrame": "Stelnummer",
+    "thCode": "Kode",
     "thTemplate": "Skabelon",
+    "thUnit": "Afdeling",
     "thStatus": "Status",
     "thAssigned": "Tildelt"
   },
@@ -2799,6 +2805,8 @@
     "fldCvr": "CVR-nummer",
     "cvrPlaceholder": "f.eks. 12345678",
     "fldEan": "EAN-nummer",
+    "fldRecognitionPrefix": "Genkendelsesprefiks",
+    "recognitionPrefixHint": "2–4 bogstaver, Jensens egen kode for kunden — starten på hver cykels kode på labelen (GK → GKTM01).",
     "eanPlaceholder": "13-cifret GLN",
     "fldVat": "Momsnummer",
     "vatPlaceholder": "f.eks. DK12345678",
@@ -4248,6 +4256,7 @@
     "orgInvalidWebsite": "Den webadresse ser ikke rigtig ud — kontrollér afsnittet Kontakt.",
     "orgSegmentRequired": "Kundesegment er påkrævet.",
     "orgInvalidLifecycle": "Ugyldigt livscyklusstadie.",
+    "orgRecognitionPrefixFormat": "Genkendelsesprefikset er 2–4 bogstaver (A–Z, Æ, Ø, Å), fx GK.",
     "orgCouldNotCreate": "Kunne ikke oprette kunde: {detail}",
     "saPickCustomer": "Vælg en kunde.",
     "saGiveName": "Giv aftalen et navn.",

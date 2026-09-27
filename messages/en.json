@@ -458,7 +458,10 @@
     "saving": "Saving…",
     "confirmRepeat": "Click again to confirm",
     "apply": "Apply",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "paginationShowing": "Showing <b>{start}</b>–<b>{end}</b> of <b>{total}</b>",
+    "paginationPrevious": "Previous",
+    "paginationNext": "Next"
   },
   "bikes": {
     "title": "Bikes",
@@ -661,7 +664,8 @@
     },
     "crumbBikes": "Bikes",
     "newWorkOrder": "New work order",
-    "newTicket": "New ticket"
+    "newTicket": "New ticket",
+    "recognitionCodeTitle": "Recognition code — Jensen's code on the bike's label"
   },
   "templates": {
     "title": "Bike templates",
@@ -848,9 +852,6 @@
     "thStock": "Stock",
     "thRetail": "Retail (DKK, excl. VAT)",
     "noMatch": "No parts match these filters.",
-    "showing": "Showing <b>{start}</b>–<b>{end}</b> of <b>{total}</b>",
-    "previous": "Previous",
-    "next": "Next",
     "reorderCount": "{count, plural, one {# part below reorder point} other {# parts below reorder point}}",
     "draftPos": "Draft POs",
     "drafting": "Drafting…",
@@ -2680,6 +2681,7 @@
   "customerDetail": {
     "archivedBanner": "This customer is archived. Bikes still pointed here keep that link for historical reference.",
     "secIdentification": "Identification",
+    "recognitionPrefix": "Recognition prefix",
     "secAddress": "Address",
     "noAddress": "No address on file.",
     "secContact": "Contact",
@@ -2707,11 +2709,15 @@
   "assignedBikes": {
     "title": "Assigned bikes",
     "count": "{count, plural, one {# bike} other {# bikes}}",
+    "countWithPrefix": "{count, plural, one {# bike} other {# bikes}} · codes start with {prefix}",
+    "seeAll": "{count, plural, one {See the bike} other {See all # bikes}}",
     "loadError": "Could not load bikes: {msg}",
     "emptyTitle": "No bikes assigned yet",
     "emptyDesc": "Once bikes are assigned to this customer, they appear here.",
     "thFrame": "Frame number",
+    "thCode": "Code",
     "thTemplate": "Template",
+    "thUnit": "Department",
     "thStatus": "Status",
     "thAssigned": "Assigned"
   },
@@ -2799,6 +2805,8 @@
     "fldCvr": "CVR number",
     "cvrPlaceholder": "e.g. 12345678",
     "fldEan": "EAN number",
+    "fldRecognitionPrefix": "Recognition prefix",
+    "recognitionPrefixHint": "2–4 letters, Jensen's own code for this customer — the start of every bike's code on its label (GK → GKTM01).",
     "eanPlaceholder": "13-digit GLN",
     "fldVat": "VAT number",
     "vatPlaceholder": "e.g. DK12345678",
@@ -4248,6 +4256,7 @@
     "orgInvalidWebsite": "That website address doesn't look right — check the Contact section.",
     "orgSegmentRequired": "Customer segment is required.",
     "orgInvalidLifecycle": "Invalid lifecycle stage.",
+    "orgRecognitionPrefixFormat": "The recognition prefix is 2–4 letters (A–Z, Æ, Ø, Å), e.g. GK.",
     "orgCouldNotCreate": "Could not create customer: {detail}",
     "saPickCustomer": "Pick a customer.",
     "saGiveName": "Give the agreement a name.",

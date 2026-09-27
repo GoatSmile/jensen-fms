@@ -10,24 +10,25 @@ type Props = {
   pageSize: number;
   /** Current URL searchParams — used so prev/next preserve filters/sort. */
   searchParams: Record<string, string | string[] | undefined>;
-  /** Defaults to /parts. */
-  basePath?: string;
+  /** The list's path, WITHOUT a query — the query comes from `searchParams`. */
+  basePath: string;
 };
 
 /**
- * Server component pagination. The page passes `searchParams` through so
- * prev/next links carry every active filter and the sort param along.
+ * A list's prev/next pagination — server component, shared by every paged
+ * list (parts, bikes). The page passes `searchParams` through, so the links
+ * carry every active filter, the view and the sort along.
  */
-export async function PartsPagination({
+export async function ListPagination({
   page,
   pageCount,
   totalCount,
   pageSize,
   searchParams,
-  basePath = "/parts",
+  basePath,
 }: Props) {
   if (totalCount === 0) return null;
-  const t = await getTranslations("parts");
+  const t = await getTranslations("common");
 
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCount);
@@ -52,7 +53,7 @@ export async function PartsPagination({
   return (
     <div className="flex items-center justify-between text-sm">
       <p className="text-muted-foreground">
-        {t.rich("showing", {
+        {t.rich("paginationShowing", {
           b: (chunks) => (
             <span className="text-foreground font-medium">{chunks}</span>
           ),
@@ -64,16 +65,16 @@ export async function PartsPagination({
       <div className="flex gap-2">
         <Button variant="outline" size="sm" disabled={!hasPrev} asChild={hasPrev}>
           {hasPrev ? (
-            <Link href={buildHref(page - 1)}>{t("previous")}</Link>
+            <Link href={buildHref(page - 1)}>{t("paginationPrevious")}</Link>
           ) : (
-            <span>{t("previous")}</span>
+            <span>{t("paginationPrevious")}</span>
           )}
         </Button>
         <Button variant="outline" size="sm" disabled={!hasNext} asChild={hasNext}>
           {hasNext ? (
-            <Link href={buildHref(page + 1)}>{t("next")}</Link>
+            <Link href={buildHref(page + 1)}>{t("paginationNext")}</Link>
           ) : (
-            <span>{t("next")}</span>
+            <span>{t("paginationNext")}</span>
           )}
         </Button>
       </div>

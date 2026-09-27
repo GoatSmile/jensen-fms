@@ -26,7 +26,7 @@ import {
   type PartRow,
   type PartRowKit,
 } from "./_components/parts-table";
-import { PartsPagination } from "./_components/pagination";
+import { ListPagination } from "@/components/list-pagination";
 import { ReorderBanner } from "./_components/reorder-banner";
 
 const PAGE_SIZE = 40;
@@ -488,12 +488,13 @@ export default async function PartsPage({
         <>
           <PartsTable rows={pageRows} />
 
-          <PartsPagination
+          <ListPagination
             page={safePage}
             pageCount={pageCount}
             totalCount={totalCount}
             pageSize={PAGE_SIZE}
             searchParams={sp as Record<string, string | string[] | undefined>}
+            basePath="/parts"
           />
         </>
       )}

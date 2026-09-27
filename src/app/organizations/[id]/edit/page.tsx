@@ -40,7 +40,7 @@ export default async function EditOrganizationPage({
         `
           id, legal_name, display_name_en, display_name_da,
           customer_segment_id, lifecycle_stage, preferred_language,
-          cvr_number, ean_number, vat_number,
+          cvr_number, ean_number, vat_number, recognition_prefix,
           address_line1, address_line2, zip_code, city, state_province,
           country_code, phone, email, website,
           billing_currency, payment_terms_days, default_vat_code, notes
@@ -82,6 +82,7 @@ export default async function EditOrganizationPage({
     preferred_language: o.preferred_language ?? "da",
     cvr_number: o.cvr_number ?? "",
     ean_number: o.ean_number ?? "",
+    recognition_prefix: o.recognition_prefix ?? "",
     vat_number: o.vat_number ?? "",
     address_line1: o.address_line1 ?? "",
     address_line2: o.address_line2 ?? "",

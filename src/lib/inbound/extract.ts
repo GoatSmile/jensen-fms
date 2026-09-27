@@ -132,7 +132,7 @@ const EXTRACTION_TOOL = {
       fleetNumber: {
         type: ["string", "null"],
         description:
-          "The customer's own bike number — JUST the bare number or code (e.g. from 'cykel nummer 42' or 'bike 25', extract '42' / '25'), never the surrounding words.",
+          "The bike's RECOGNITION CODE — Jensen's code on the label on the bike: the customer's 2–4 letters, a department, a running number, e.g. 'BKTM01', 'LGKUL11', 'GKHP07'. Callers spell it out ('B K T M nul et', 'be-ka-te-em 1'): return it in capitals with no spaces ('BKTM01'). If the caller only gives a bare number ('cykel nummer 42'), return just that number ('42'). Never the surrounding words.",
       },
       colorHint: {
         type: ["string", "null"],

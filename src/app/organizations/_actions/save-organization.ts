@@ -32,6 +32,7 @@ type ParsedOrganization = {
   cvr_number: string | null;
   ean_number: string | null;
   vat_number: string | null;
+  recognition_prefix: string | null;
   address_line1: string | null;
   address_line2: string | null;
   zip_code: string | null;
@@ -104,6 +105,16 @@ function parseOrganization(
   if (rawStage !== "customer" && rawStage !== "prospect")
     return { error: t("orgInvalidLifecycle"), field: "lifecycle_stage" };
 
+  // Jensen's 2–4 letter code for the customer (GK = Gladsaxe Kommune) — the
+  // first part of every recognition code on its bikes. Stored upper-case, and
+  // checked here because the field sits in a folding section, where native
+  // validation stops applying (CLAUDE.md → conventions). The DB CHECK is the
+  // same rule (migration 102).
+  const rawPrefix = nullable(formData.get("recognition_prefix"));
+  const recognition_prefix = rawPrefix ? rawPrefix.toLocaleUpperCase("da-DK") : null;
+  if (recognition_prefix && !/^[A-ZÆØÅ]{2,4}$/.test(recognition_prefix))
+    return { error: t("orgRecognitionPrefixFormat"), field: "recognition_prefix" };
+
   return {
     legal_name,
     display_name_en: nullable(formData.get("display_name_en")),
@@ -114,6 +125,7 @@ function parseOrganization(
     cvr_number: nullable(formData.get("cvr_number")),
     ean_number: nullable(formData.get("ean_number")),
     vat_number: nullable(formData.get("vat_number")),
+    recognition_prefix,
     address_line1: nullable(formData.get("address_line1")),
     address_line2: nullable(formData.get("address_line2")),
     zip_code: nullable(formData.get("zip_code")),

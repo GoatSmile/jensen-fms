@@ -78,9 +78,11 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
       where confident, the rest refined later), identifiers (frame, recognition code, battery,
       charger, key, battery key), delivered date → `assigned_at`, site → `current_location_text`.
       Applied to production and local, verified by query.
-- [ ] Recognition code on the customer page and the bike page header (the list has it now);
+- [x] Recognition code on the customer page and the bike page header (the list has it now);
       teach the call extraction the code's shape (BKTM01, LTKUL11 — it still says "the
       customer's own number"); paginate the bikes list before it passes 1000 rows.
+      *(2026-09-27: the prefix is editable on the customer form; spoken codes are
+      normalised — "bktm 1" also tries BKTM01.)*
 
 ### 1C · Finn on the system
 - [x] **Technicians see no money** (2026-09-26, migration 103): a `costs` capability every role

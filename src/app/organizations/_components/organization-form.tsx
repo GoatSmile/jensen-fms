@@ -55,6 +55,7 @@ export type OrganizationFormValues = {
   preferred_language: string;
   cvr_number: string;
   ean_number: string;
+  recognition_prefix: string;
   vat_number: string;
   address_line1: string;
   address_line2: string;
@@ -80,6 +81,7 @@ const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
   preferred_language: "da",
   cvr_number: "",
   ean_number: "",
+  recognition_prefix: "",
   vat_number: "",
   address_line1: "",
   address_line2: "",
@@ -139,7 +141,7 @@ export function OrganizationForm({
   // required. `seed`, not `values` — this is a mount-time default, not a
   // rule that should re-fold the section under the user as they type.
   const hasTax = Boolean(
-    seed.cvr_number || seed.ean_number || seed.vat_number,
+    seed.cvr_number || seed.ean_number || seed.vat_number || seed.recognition_prefix,
   );
   const hasContact = Boolean(seed.email || seed.phone || seed.website);
   const hasAddress = Boolean(
@@ -186,6 +188,7 @@ export function OrganizationForm({
     appendField(fd, "preferred_language", values.preferred_language);
     appendField(fd, "cvr_number", values.cvr_number);
     appendField(fd, "ean_number", values.ean_number);
+    appendField(fd, "recognition_prefix", values.recognition_prefix);
     appendField(fd, "vat_number", values.vat_number);
     appendField(fd, "address_line1", values.address_line1);
     appendField(fd, "address_line2", values.address_line2);
@@ -315,6 +318,7 @@ export function OrganizationForm({
         description={t("secTaxDesc")}
         collapsible
         defaultOpen={hasTax}
+        forceOpen={errorField === "recognition_prefix"}
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t("fldCvr")} htmlFor="org-cvr">
@@ -342,6 +346,23 @@ export function OrganizationForm({
               onChange={(e) => update("vat_number", e.target.value)}
               placeholder={t("vatPlaceholder")}
               className="font-mono"
+            />
+          </Field>
+          <Field
+            label={t("fldRecognitionPrefix")}
+            htmlFor="org-recognition-prefix"
+            hint={t("recognitionPrefixHint")}
+            error={errorField === "recognition_prefix" ? error : null}
+          >
+            <Input
+              id="org-recognition-prefix"
+              value={values.recognition_prefix}
+              onChange={(e) =>
+                update("recognition_prefix", e.target.value.toUpperCase())
+              }
+              placeholder="GK"
+              maxLength={4}
+              className="font-mono uppercase"
             />
           </Field>
         </div>

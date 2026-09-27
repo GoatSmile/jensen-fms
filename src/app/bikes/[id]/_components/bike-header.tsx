@@ -47,6 +47,8 @@ import { transitionBike } from "../_actions/transition-bike";
 type Props = {
   bikeId: string;
   frameNumber: string;
+  /** Jensen's code on the bike's label (BKTM01) — what the customer quotes. */
+  recognitionCode: string | null;
   status: BikeStatus;
   bikeTypeName: string | null;
   templateLabel: string | null;
@@ -72,6 +74,7 @@ type PendingTransition = { to: BikeStatus } | null;
 export function BikeHeader({
   bikeId,
   frameNumber,
+  recognitionCode,
   status,
   bikeTypeName,
   templateLabel,
@@ -155,7 +158,16 @@ export function BikeHeader({
       ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {recognitionCode ? (
+              <Badge
+                variant="secondary"
+                className="font-mono text-sm"
+                title={t("recognitionCodeTitle")}
+              >
+                {recognitionCode}
+              </Badge>
+            ) : null}
             <span className="text-muted-foreground font-mono text-xs">
               {frameNumber}
             </span>
