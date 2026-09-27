@@ -1,9 +1,9 @@
-# Questions for Dennis — the phone line, Finn, and your bikes
+# Questions for Dennis — the phone line, Finn, and your service agreements
 
-**24 September 2026 — updated 27 September** (the phone line, section A).
-Everything I need answered to start the next three
-pieces of work: recording Finn's repair calls, moving Finn's repair work into
-the system, and loading the bikes already out with your customers. Each
+**24 September 2026 — updated 27 September** (the phone line, section A; the
+service agreements, section C). Everything I need answered to start the next
+three pieces of work: recording Finn's repair calls, moving Finn's repair work
+into the system, and your service agreements with their yearly invoices. Each
 question says in a line why it matters. *"Don't know"* is a perfectly good
 answer — it tells me who to ask next.
 
@@ -138,46 +138,89 @@ before everyone else.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-## C · Your bikes and service agreements
+## C · Your service agreements
 
-A repair has to be attached to a bike, and the system doesn't know the bikes
-already out with your customers yet. The spreadsheet and guide I sent explain
-the list; these are the questions behind it.
+Your agreements pay about half of what it costs to run the company, and today
+the renewals are invoiced by hand from the spreadsheet. The system should do it
+for you: a month before each bike's anniversary, a ready invoice for the next 12
+months, which you check and send to e-conomic.
 
-**C1. Roughly how many bikes are out with customers, and with how many
-customers?**
+On 15 September you explained that an agreement covers **bikes, not a whole
+customer**: each bike starts on its delivery day, renews every year on that day
+unless it is cancelled, and has its own price. The system does not work that way
+yet — it assumes one agreement covers everything a customer owns — so I am
+changing it **before** your bikes and agreements are loaded. These answers fill
+in the details. *(The questions about loading the bikes themselves are in the
+separate letter "Your bikes into the system".)*
 
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**C2. Where is that information today?** *Excel, delivery notes, e-conomic
-invoices, paper, your head? If it exists anywhere, send it as it is — I'll
-sort it rather than have you retype it.*
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**C3. Do you know the frame numbers, or do customers know their bikes by their
-own numbers ("bike 14")?**
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**C4. How many service agreements are running, and where are the papers?**
-*Scanned PDFs are fine, one per agreement.*
+**C1. Are the twelve month sheets in your big spreadsheet (Januar … December)
+the complete list of bikes you invoice a renewal for?** *They list 867 bikes.
+If the Trello list John is cleaning is newer, I should load from that instead.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**C5. Does any agreement cover only *some* of a customer's bikes — say 20 of
-their 35?** *Today the system assumes an agreement covers every bike that
-customer (or that site) has. I need to know about exceptions before anything
-is loaded, not after.*
+**C2. What does a yearly price of 0 kr mean?** *311 bikes in the month sheets
+show 0 — most of them bought 2012–2017. Free years included in the sale? An
+agreement that has ended? Paid some other way? The system will not invoice a
+0-kr bike until I know.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**C6. What do the agreements typically NOT cover?** *Tyres, vandalism,
-batteries, punctures? That line decides which repairs get invoiced.*
+**C3. What does each contract type cost per bike per year — K1, K3, K5, K10?**
+*Most bikes show 1 704 kr (142 kr × 12), and 2 184 kr with GPS (+480). Others
+show 2 284, 2 160, 1 200 and a few more. Is the price set by the contract type,
+or agreed customer by customer?*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**C7. A few customers appear twice in the system under the same name** —
+**C4. Which contract type is each customer on?** *If it is easier, mark it on
+the customer list I bring on Tuesday.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C5. Can a customer leave before the contract period ends — say, after two
+years of a K5?** *And when the period is over, does it renew one year at a time,
+or for a whole new period?*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C6. When a customer stops covering one bike in the middle of a year — or it
+is stolen or scrapped — do you give money back for the rest of the year, or
+does it simply not renew next time?** *This decides whether the system writes a
+credit note or just stops that bike's renewal.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C7. When a bike is replaced or moved to another department, does its
+agreement move with it — same price, same renewal date?** *The spreadsheet lists
+32 frames twice, which is often a replacement or a move.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C8. Should a customer with several departments get one renewal invoice per
+department (per EAN number), or one invoice for the whole customer?** *Public
+customers usually need the department's EAN on the invoice. The month sheets
+have an EAN on most rows.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C9. How many days do customers have to pay a renewal invoice — 30?** *You
+mentioned 30 days on 15 September; the system uses 14 for everything today.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C10. Please send the text of your service agreement, and scans of the ones
+that are signed.** *You mentioned sending the text — I have not found it.
+Scanned PDFs are fine, one per agreement.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C11. What do the agreements NOT cover?** *Tyres, vandalism, batteries,
+punctures? That line decides which repairs get invoiced.*
+
+<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+
+**C12. A few customers appear twice in the system under the same name** —
 *Rigshospitalet, Herlev SSP, several Nybolig offices and a handful of others.
 Are they really two customers each (two departments, two addresses), or
 duplicates I should merge? I'll bring the list.*
@@ -189,5 +232,7 @@ duplicates I should merge? I'll bring the list.*
 **What happens next.** With A done on Tuesday we know within the hour whether
 Relatel works. If it does, Finn's calls start arriving in the system; if not, I
 order a Danish number of ours (a few days of paperwork) and connect option 2.
-With B answered I adjust Finn's screens and we try it on one customer. With C
-the bikes go in — one customer first, shown to you, then the rest.
+With B answered I adjust Finn's screens and we try it on one customer. With C —
+and the bike letter — your bikes and their agreements go in, one customer first,
+shown to you, then the rest; after that the renewal invoices draft themselves a
+month ahead, for you to check and send.

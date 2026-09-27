@@ -66,7 +66,9 @@ is Danish (person language).
   `.env.local` — secret, never in chat).
 - **Dennis:** answers to `FLEET-IMPORT-DENNIS-2026-09.pdf` (asked; waiting — the
   missing-customer questions). `QUESTIONS-DENNIS-2026-09-24.pdf` is updated for
-  Relatel but not sent; its section C mentions a guide that was never sent.
+  Relatel (section A) and, since 27 Sep evening, the service agreements
+  (section C, 12 questions — prices, 0-kr rows, contract types, cancelling,
+  EAN grouping, payment days, the agreement text); not sent yet.
   MitID validation in Relatel if a second admin *user* is wanted.
 - **Owner decisions, escalate:** service agreements per bike (plan §2A); paint
   lifecycle rework vs "emailing IS the send" (plan §2C); identifier overwrite
