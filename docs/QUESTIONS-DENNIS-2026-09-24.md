@@ -1,6 +1,7 @@
 # Questions for Dennis — the phone line, Finn, and your bikes
 
-**24 September 2026.** Everything I need answered to start the next three
+**24 September 2026 — updated 27 September** (the phone line, section A).
+Everything I need answered to start the next three
 pieces of work: recording Finn's repair calls, moving Finn's repair work into
 the system, and loading the bikes already out with your customers. Each
 question says in a line why it matters. *"Don't know"* is a perfectly good
@@ -12,94 +13,69 @@ answer — it tells me who to ask next.
 
 What we want: a customer rings your number, presses 2 for service, reaches
 Finn, and the call is recorded and turned into a repair ticket by itself. The
-recording side is built and has been tested on a real call. What is missing is
-connecting **your** number to it.
+recording-to-ticket side is built and has been tested on a real call. What is
+missing is getting **your** calls to it.
 
-**You're with Relatel, for the switchboard and Finn's mobile.** That helps: Relatel
-has an API and webhooks, so the system can talk to it. What I read in
-Relatel's own documentation, so we start from the same facts:
+**New since the first version of this page — good news from your own Relatel
+account.** I looked through it on 26 September (and changed nothing):
 
-- Relatel **can record calls** — on the main number, and on a mobile with the
-  *Mobilfeatures* add-on. But the recordings stay **inside Relatel's app**:
-  only the employee (and, for incoming calls, an administrator) can listen,
-  and outgoing recordings must be saved by hand within an hour. Their public
-  API can download **voicemails**, but I found no way to fetch **call
-  recordings**. So Relatel's recording would let Finn listen back — it would
-  not turn calls into written-out repair tickets.
-- **Webhooks** (the system hearing about each call as it happens) and
-  main-number recording come only with the **Contact Center** and
-  **Unlimited** subscriptions. Relatel's webhook guide (August 2026) lists
-  exactly what they send: a call **started** and **ended** on a *main number*,
-  an incoming SMS, chats and contact changes. **Nothing for recordings, and
-  nothing for calls made straight from a mobile number.** So webhooks could
-  give the system a call log for the main number — who, when, how long — but
-  not the conversation. Relatel says more events will follow.
+- Your switchboard plan is **Omstilling Professional**, and it **includes
+  Relatel's API** — the door through which another system can fetch calls from
+  Relatel.
+- **Finn's mobile (42 47 15 51) already has *Mobilfeatures*** — the add-on that
+  **records his calls on the network, incoming and outgoing, automatically**,
+  once it is switched on. That covers the calls he makes from his own phone, not
+  only the ones that come in through option 2.
+- **Option 2** on 70 21 05 46 **already rings Finn**.
+- Relatel's API lists every call with a link to its recording, and hands over
+  voicemails as sound files. The one thing their documentation does not say is
+  whether the recordings of **mobile** calls show up there. That is a test, not
+  a guess.
 
-That is why the plan is still: option 2 goes to a number of ours, and Finn's
-call-backs go out through a *Call customer* button in the system. Relatel can
-answer the questions marked **(Relatel)** below in one call — it may be
-quickest if you ring them, or let me.
+**So the plan changes: we test Relatel first, on Finn's own line, instead of
+buying a new phone number.** It costs nothing extra — everything it needs is
+already on your Relatel bill. If the test passes, nothing changes for Finn or
+your customers: he keeps his number and his phone, and every call he takes or
+makes can become a written note in the system. If it fails, we go back to the
+first plan: option 2 goes to a number of ours, which rings Finn and records the
+call.
 
-**A1. Which Relatel subscription do you have — Professional, Contact Center or
-Unlimited?** *(Relatel)* *Decides whether webhooks and recording are there at
-all. The name is on the invoice or in app.relatel.dk.*
+One thing your plan does not have: *webhooks*, Relatel telling the system about
+a call the moment it ends (those come with Contact Center and Unlimited). So the
+system fetches Finn's new calls every few minutes instead. For repair notes,
+that is fine.
 
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
+**What we test on Tuesday, together with Finn** (about 15 minutes): one call
+through option 2, one call straight to his mobile, one call he makes himself,
+and one voicemail. Then we check that the system can fetch all four, with the
+sound — and whether the caller's number comes through, because the system
+recognises customers by their phone number.
 
-**A2. What is the exact number customers ring?** *It is a landline-type
-number, which is good news: if you ever want the whole number moved to Twilio,
-the phone service the system uses, that is possible (Twilio can take over
-Danish landline numbers, not mobile ones; about four weeks of paperwork). The
-plan does not need it — option 2 alone is enough — so this is a door kept
-open, not a step.*
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**A3. Who set up the menu ("press 2 for service"), and can you change it
-yourself?** *The plan is to point option 2 at a new number of ours instead of
-straight at Finn. That is the whole change — your number and menu stay as they
-are.*
+**A1. Can Finn switch on recording and make a key for the system on Tuesday —
+with us beside him?** *In Relatel's app, logged in as himself: turn on "Optag
+indgående opkald" and "Optag udgående opkald" (30 days is enough), and create a
+personal access token — the key that lets the system fetch his calls. It has to
+be Finn's own: Relatel lets only the number's own user hear its recordings, not
+an administrator. Five minutes; it is the whole test.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**A4. Can option 2 be sent to an outside number?** *(Relatel)* *Relatel's
-switchboard can pass calls to colleagues, ring groups and phone contacts, so
-this is very likely a yes — but it is the one thing the whole plan rests on.*
+**A2. May we add one sentence to the welcome greeting on your main number —
+"Samtaler kan blive optaget"?** *Relatel records without telling the caller,
+and Danish rules require telling people. The greeting covers every call through
+the menu; on calls straight to his mobile, Finn says it himself.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**A5. When a call is passed on, does the caller's own number come with it — or
-does it arrive showing your company number?** *(Relatel)* *The system recognises customers
-by their phone number. If every call shows your own number, it recognises
-nobody.*
+**A3. What should happen when Finn doesn't answer, or outside working hours?**
+*Relatel already takes a voicemail, and the system can fetch those too and
+write them out. Or should the call go to someone else first?*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
-**A6. What should happen when Finn doesn't answer, or outside working hours?**
-*Voicemail is ready: the message is written out and lands in the system the
-same way. Or should the call go to someone else first?*
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**A7. Should Finn's own calls *out* to customers be recorded too?** *The plan
-is a* Call customer *button on each repair job: his phone rings, then the
-customer's, and the call is recorded and filed on that job. Calls he dials
-straight from his contacts would not be captured — unless Relatel says yes to
-the next question.*
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**A7b. Can Relatel's call recordings be fetched through their API — and is a
-recording event planned for webhooks?** *(Relatel)* *Webhooks don't carry
-recordings today (their own guide says so). If the API can hand them over,
-every call Finn makes could be captured however he dials, and the system would
-collect them from Relatel.*
-
-<div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
-
-**A8. Whose name and card should the phone account be in — yours or mine?**
-*It will carry your number and your customers' calls, so I'd rather it were
-yours. It is about 15 kr. a month for the number plus per-minute call charges — for a repair line alone, under the 230–350 kr. a month I estimated for all your calls.*
+**A4. What is your second number, 70 21 05 45, used for?** *Customers ring
+70 21 05 46, where the menu is. If service calls also arrive on the second
+number, the plan should cover it too.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
@@ -151,8 +127,8 @@ want one?*
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
 **B8. Is Finn happy to have his calls recorded, and has he been told in
-writing?** *Callers hear a notice on every call. Telling Finn is the employer's
-job — yours — not the system's.*
+writing?** *Callers will be told through the greeting (A2). Telling Finn is the
+employer's job — yours — not the system's.*
 
 <div style="height:30pt;border-bottom:0.8pt solid #dcdcd5"></div>
 
@@ -210,7 +186,8 @@ duplicates I should merge? I'll bring the list.*
 
 ---
 
-**What happens next.** With A answered I order the Danish number — Twilio
-checks the company paperwork first, usually a few days — and connect option 2. With B answered I adjust Finn's screens and we
-try it on one customer. With C the bikes go in — one customer first, shown to
-you, then the rest.
+**What happens next.** With A done on Tuesday we know within the hour whether
+Relatel works. If it does, Finn's calls start arriving in the system; if not, I
+order a Danish number of ours (a few days of paperwork) and connect option 2.
+With B answered I adjust Finn's screens and we try it on one customer. With C
+the bikes go in — one customer first, shown to you, then the rest.

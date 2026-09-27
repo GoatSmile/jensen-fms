@@ -56,9 +56,11 @@ is Danish (person language).
   steps; the build needs its Calendar ID and `GOOGLE_CALENDAR_SA_KEY` in Vercel
   + `.env.local` (secret — never in chat). Review fleet files 2–4 (or pass the
   doubtful rows to Dennis).
-- **`QUESTIONS-DENNIS-2026-09-24` is out of date on Relatel** — it says Relatel
-  cannot hand over recordings and that option 2 goes to our own number; both
-  changed on 26 Sep. Do not send it as is.
+- **Two documents ready for Dennis, not yet sent:** `FLEET-IMPORT-DENNIS-2026-09.pdf`
+  and `QUESTIONS-DENNIS-2026-09-24.pdf` (phone section rewritten 27 Sep for the
+  Relatel test: Finn switches recording on and makes his token on Tuesday; a
+  recording notice on the main greeting). Its section C still says "the
+  spreadsheet and guide I sent" — that guide was never sent.
 - **Owner decision, escalate:** service agreements are per bike in reality; the
   app models them per customer (plan §2A). Fleet-import scope/status questions:
   plan §7.
