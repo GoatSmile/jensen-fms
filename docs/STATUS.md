@@ -62,7 +62,12 @@ is Danish (person language).
   - Print or send `GUIDE-FINN-DA-2026-09.pdf`, `RELATEL-FINN-2026-09.pdf`,
     `FLEET-IMPORT-DENNIS-2026-09.pdf`, `QUESTIONS-DENNIS-2026-09-24.pdf`, the
     production checklist and colour lists.
-  - Take the agreement brief to the planning chat.
+  - Take the agreement brief AND `SERVICE-AGREEMENTS-HANDLING-2026-09.pdf` to
+    the planning chat.
+  - Find out how the existing agreements exist (its §7): how many as documents,
+    which format, whether they list frame numbers, whether the stepped price is
+    really charged, the template version; and chase e-conomic's production
+    grant — the invoice-history cross-check needs it.
   - The Google calendar on Tuesday (Calendar ID + `GOOGLE_CALENDAR_SA_KEY` in
     Vercel + `.env.local` — secret, never in chat).
 - **Dennis:** the fleet answers, the agreement answers (section C), the
@@ -73,8 +78,8 @@ is Danish (person language).
   overwrite for frames + quantity-driven identifier counts (plan §2D).
 
 ## Landmines
-- **The local stack and dev server are running** (Docker Desktop was started
-  tonight). TEST rows in the local copy: people *TEST Finn*, *TEST Tech EN*
+- **The local Supabase stack is running; the dev server is stopped** (Docker
+  Desktop was started tonight). TEST rows in the local copy: people *TEST Finn*, *TEST Tech EN*
   (Workshop), *TEST Sælger* (Sales); bikes `TEST-WCK-REPAIR-001/002` (codes
   TLKUL07/08) with `WO-2026-0008` in progress; parts `TEST-FRAME-Q1`,
   `TEST-BAT-Q2`; `SO-2026-9902` (delivered, sold 2 batteries); plus 27 Sep's

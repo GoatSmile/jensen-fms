@@ -99,9 +99,10 @@ treat the early totals as floors, not truth.
 | Sat 2026-09-26 | ~1.5 | **One ordered to-do list to go-live, and imported bikes get a home** (migration 102): Relatel tested before Twilio, the 15 Sep meeting extracted, the fleet register turned into review lists, Finn and Glenn created. |
 | Sun 2026-09-27 | ~4 | **Every no-Dennis item from the 15 Sep meeting shipped**: paint seeding, build screen, offers, Relatel kit, paged bikes list, the router.refresh sweep; then the agreement brief for the planning chat and Dennis's agreement questions. |
 | Sun 2026-09-27 (cont.) | ~1.5 | **The no-Dennis build list shipped** (migrations 104–105): `/work` search, a WO from a scanned bike, time spent, a save bug that wiped labour; *Delivered*, sold parts leave stock, part-from-picker, templates Dennis-only, Finn's guide DA+EN. |
+| Sun 2026-09-27 (cont. 2) | ~0.5 | **How existing service agreements get in** — Dennis's templates found and read; spreadsheet bills, documents set terms, e-conomic proves (PDF). |
 
-**September so far: ~54 h** (8 working days)
+**September so far: ~54.5 h** (8 working days)
 
 ---
 
-**Project total: ~308 h across 49 working days (2026-05-07 → 2026-09-27)**
+**Project total: ~308.5 h across 49 working days (2026-05-07 → 2026-09-27)**
