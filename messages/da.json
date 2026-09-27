@@ -1518,7 +1518,8 @@
     "transfer_out": "Overført ud",
     "disposed": "Kasseret",
     "paint_out": "Sendt til lakering",
-    "paint_in": "Retur fra lakering"
+    "paint_in": "Retur fra lakering",
+    "sold": "Solgt (salgsordre)"
   },
   "mo": {
     "title": "Produktionsordrer",
@@ -4417,7 +4418,8 @@
     "woStartNeedsWork": "Kun personer med adgang til værkstedet kan oprette et arbejdskort her.",
     "woBikeCannotTakeWork": "Cyklen er udgået, bortkommet eller slettet og kan ikke få et nyt arbejdskort.",
     "templatesEditOnly": "Kun personer, der må ændre cykelskabeloner, kan gøre dette.",
-    "partCreateNeedsCosts": "Kun personer, der må se priser, kan oprette dele."
+    "partCreateNeedsCosts": "Kun personer, der må se priser, kan oprette dele.",
+    "soCouldNotIssueParts": "Ordrens dele kunne ikke trækkes fra lageret, så intet blev leveret: {detail}"
   },
   "inbox": {
     "title": "Indbakke",

@@ -42,6 +42,7 @@ const MOVEMENT_BADGE_VARIANT: Record<
   disposed: "destructive",
   paint_out: "secondary",
   paint_in: "success",
+  sold: "secondary",
 };
 
 export async function MovementsSection({

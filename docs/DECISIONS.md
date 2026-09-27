@@ -3138,3 +3138,26 @@ and let its holder change them, and Sales and Accountant hold it.
   all, but the first person given *Sales* could create them); a per-person grant
   (capabilities attach to roles — the model has no per-person override, and
   "only Dennis" is what the Owner role means).
+
+## 2026-09-27 — A part sold on a sales order leaves stock on delivery (`sold`)
+
+Owner, choosing between options in session (implements Dennis, 15 Sep 01:52:54:
+an extra battery or charger goes on the order, or is attached later).
+
+- **The extra is a PART line** on the SO — that already worked, and a later
+  extra for the same customer is a new SO with one part line. No new line
+  kind, no "extras" table.
+- **What was missing was stock**: delivering never touched inventory for a part
+  line, so every battery sold stayed on the shelf in the books. `ready →
+  delivered` now writes one `sold` movement per part line (migration 105),
+  cost inherited at the prevailing figure, basis `derived`, traced by
+  `source_entity_type = 'sales_order_line'`. `delivered` is terminal, so it
+  happens once.
+- **At delivery, not at confirmation**: that is when the battery leaves the
+  building. **Never refused for stock**: the handover happened; the count is
+  what is wrong, and refusing would make the books disagree with the van.
+- **Rejected:** `adjustment` or `disposed` (a sale is neither a recount nor a
+  write-off — same argument as `paint_out` / `paint_in`); lines only, stock by
+  hand (the drift is silent and nobody would do it).
+- **Not decided here:** the battery's serial number on the customer's bike —
+  that is identifier work (go-live plan §2D).

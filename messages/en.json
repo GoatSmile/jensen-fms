@@ -1518,7 +1518,8 @@
     "transfer_out": "Transfer out",
     "disposed": "Disposed",
     "paint_out": "Sent to paint",
-    "paint_in": "Back from paint"
+    "paint_in": "Back from paint",
+    "sold": "Sold (sales order)"
   },
   "mo": {
     "title": "Manufacturing orders",
@@ -4417,7 +4418,8 @@
     "woStartNeedsWork": "Only people with access to the workshop floor can start a work order here.",
     "woBikeCannotTakeWork": "This bike is retired, lost or deleted, so it cannot get a new work order.",
     "templatesEditOnly": "Only people allowed to change bike templates can do this.",
-    "partCreateNeedsCosts": "Only people who may see costs can create parts."
+    "partCreateNeedsCosts": "Only people who may see costs can create parts.",
+    "soCouldNotIssueParts": "Could not take the order's parts out of stock, so nothing was delivered: {detail}"
   },
   "inbox": {
     "title": "Inbox",

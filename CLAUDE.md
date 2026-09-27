@@ -730,7 +730,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Sales orders drive slating + delivery automatically.** SO
   `draft → confirmed` slates every unbuilt bike on linked MOs to the SO's
   customer; SO → `delivered` flips those bikes that are `in_stock` to
-  `assigned` in one bulk write. Cancelling unslates still-unbuilt bikes;
+  `assigned` in one bulk write, **and takes every PART line off the shelf as a
+  `sold` movement** (migration 105) — the extra battery or charger; template
+  lines never do, their bikes consumed their parts at build. Stock may go
+  negative rather than refuse a delivery that physically happened. Cancelling unslates still-unbuilt bikes;
   built ones stay slated (workshop unpacks by hand). New bikes added to an
   MO whose SO is past-draft inherit the slate at create time. Spawn-MO
   lives at `src/app/sales-orders/_actions/spawn-mo.ts`; v1 is one MO per

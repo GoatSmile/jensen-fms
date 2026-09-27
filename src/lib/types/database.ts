@@ -5092,6 +5092,7 @@ export type Database = {
         | "disposed"
         | "paint_out"
         | "paint_in"
+        | "sold"
       invoice_status:
         | "draft"
         | "issued"
@@ -5314,6 +5315,7 @@ export const Constants = {
         "disposed",
         "paint_out",
         "paint_in",
+        "sold",
       ],
       invoice_status: [
         "draft",
