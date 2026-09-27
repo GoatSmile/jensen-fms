@@ -78,8 +78,8 @@ is Danish (person language).
   overwrite for frames + quantity-driven identifier counts (plan §2D).
 
 ## Landmines
-- **The local Supabase stack is running; the dev server is stopped** (Docker
-  Desktop was started tonight). TEST rows in the local copy: people *TEST Finn*, *TEST Tech EN*
+- **Docker, the local Supabase stack and the dev server are all stopped.**
+  `open -a Docker`, then `supabase start`, brings the copy back with its data. TEST rows in the local copy: people *TEST Finn*, *TEST Tech EN*
   (Workshop), *TEST Sælger* (Sales); bikes `TEST-WCK-REPAIR-001/002` (codes
   TLKUL07/08) with `WO-2026-0008` in progress; parts `TEST-FRAME-Q1`,
   `TEST-BAT-Q2`; `SO-2026-9902` (delivered, sold 2 batteries); plus 27 Sep's
