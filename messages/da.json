@@ -4416,7 +4416,8 @@
     "noCostsCapability": "Kun personer, der må se priser, kan ændre timeprisen eller om arbejdet faktureres.",
     "woStartNeedsWork": "Kun personer med adgang til værkstedet kan oprette et arbejdskort her.",
     "woBikeCannotTakeWork": "Cyklen er udgået, bortkommet eller slettet og kan ikke få et nyt arbejdskort.",
-    "templatesEditOnly": "Kun personer, der må ændre cykelskabeloner, kan gøre dette."
+    "templatesEditOnly": "Kun personer, der må ændre cykelskabeloner, kan gøre dette.",
+    "partCreateNeedsCosts": "Kun personer, der må se priser, kan oprette dele."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4689,5 +4690,22 @@
     "emptyTitle": "Ingen lakerbare dele endnu",
     "emptyDesc": "Markér en del som “kan lakeres som” stel, forgaffel eller en anden af lakererens deltyper i redigeringsformularen, så vises den her med rå og lakeret lager.",
     "noMatch": "Ingen dele matcher filtrene."
+  },
+  "quickPart": {
+    "title": "Ny del",
+    "description": "Opretter delen i kataloget og vælger den her. Du bliver, hvor du er.",
+    "sku": "Varenummer",
+    "nameEn": "Navn (engelsk)",
+    "nameDa": "Navn (dansk)",
+    "nameDaHint": "Valgfrit — det engelske navn bruges, indtil det er udfyldt.",
+    "category": "Kategori",
+    "pickCategory": "Vælg en kategori",
+    "loading": "Indlæser…",
+    "unit": "Enhed",
+    "laterHint": "Priser, leverandør og HS-kode sættes bagefter på delens egen side.",
+    "create": "Opret del",
+    "creating": "Opretter…",
+    "newPartOption": "+ Ny del…",
+    "newPartButton": "Ny del"
   }
 }

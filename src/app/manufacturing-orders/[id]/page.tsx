@@ -14,6 +14,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { SegmentedId } from "@/components/segmented-id";
+import { readCanSeeCosts } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import {
@@ -54,11 +55,12 @@ export default async function ManufacturingOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tMo, tCommon, locale] = await Promise.all([
+  const [t, tMo, tCommon, locale, canSeeCosts] = await Promise.all([
     getTranslations("moDetail"),
     getTranslations("mo"),
     getTranslations("common"),
     getLocale(),
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
 
@@ -535,6 +537,7 @@ export default async function ManufacturingOrderDetailPage({
         kitParts={kitParts}
         hasTemplate={mo.bike_template?.id != null}
         readOnly={closed}
+        canCreateParts={canSeeCosts}
       />
     </div>
   );

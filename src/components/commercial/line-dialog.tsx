@@ -3,7 +3,10 @@
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 
+import { Plus } from "lucide-react";
+
 import { ColorSwatch } from "@/components/color-swatch";
+import { QuickPartDialog } from "@/components/parts/quick-part-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,6 +81,7 @@ export function LineDialog({
   colors,
 }: Props) {
   const t = useTranslations("commercialLines");
+  const tQuick = useTranslations("quickPart");
   const tCommon = useTranslations("common");
   const locale = useLocale();
 
@@ -108,13 +112,25 @@ export function LineDialog({
 
   const partLocked = initial != null;
 
+  // Parts created from this dialog ("New part"). The page's list does not
+  // carry them until its next render, so they join it here.
+  const [createdParts, setCreatedParts] = useState<PartChoice[]>([]);
+  const [creatingPart, setCreatingPart] = useState(false);
+  const allParts = useMemo(
+    () => [
+      ...createdParts,
+      ...parts.filter((p) => !createdParts.some((c) => c.id === p.id)),
+    ],
+    [parts, createdParts],
+  );
+
   const filteredParts = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return parts;
-    return parts.filter((p) =>
+    if (!q) return allParts;
+    return allParts.filter((p) =>
       `${p.internal_sku} ${p.name_en}`.toLowerCase().includes(q),
     );
-  }, [parts, filter]);
+  }, [allParts, filter]);
 
   const filteredTemplates = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -249,12 +265,26 @@ export function LineDialog({
               </div>
             ) : (
               <>
-                <Input
-                  id="line-filter"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder={t("filterPlaceholder")}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="line-filter"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    placeholder={t("filterPlaceholder")}
+                  />
+                  {/* Everyone who can open an offer or a sales order holds
+                      `costs`, which creating a part needs; the action checks
+                      it anyway. */}
+                  {kind === "part" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCreatingPart(true)}
+                    >
+                      <Plus aria-hidden /> {tQuick("newPartButton")}
+                    </Button>
+                  ) : null}
+                </div>
                 <div className="bg-ground max-h-56 overflow-y-auto rounded-lg">
                   {kind === "template" ? (
                     filteredTemplates.length === 0 ? (
@@ -521,6 +551,23 @@ export function LineDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <QuickPartDialog
+        open={creatingPart}
+        onOpenChange={setCreatingPart}
+        seedText={filter}
+        onCreated={(p) => {
+          const choice: PartChoice = {
+            id: p.id,
+            internal_sku: p.internal_sku,
+            name_en: p.name_en,
+            default_retail_price: null,
+            default_retail_currency: null,
+          };
+          setCreatedParts((prev) => [choice, ...prev]);
+          setPartId(p.id);
+          setFilter("");
+        }}
+      />
     </Dialog>
   );
 }

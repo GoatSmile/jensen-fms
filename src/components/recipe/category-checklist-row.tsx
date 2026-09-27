@@ -35,7 +35,15 @@ type Props = {
   onSelectValue: (v: string) => void;
   onPick: (partId: string, quantity: number) => void;
   disabled: boolean;
+  /**
+   * Offer "+ New part…" at the foot of the picker. The host opens the
+   * quick-create dialog for this category and picks the result, keeping its
+   * unsaved state. Omit it where the viewer may not create parts.
+   */
+  onRequestNewPart?: () => void;
 };
+
+const NEW_PART = "__new_part__";
 
 /**
  * One category line of the recipe checklist: name + picked counter left,
@@ -54,8 +62,10 @@ export function CategoryChecklistRow({
   onSelectValue,
   onPick,
   disabled,
+  onRequestNewPart,
 }: Props) {
   const t = useTranslations("recipe");
+  const tQuick = useTranslations("quickPart");
   const totalCount = parts.length;
   const remaining = parts.filter((p) => !addedIds.has(p.id)).length;
   const done = pickedCount > 0;
@@ -64,7 +74,10 @@ export function CategoryChecklistRow({
   // Tolerates partial input; coerced to a whole number ≥ 1 at pick time.
   const [qtyText, setQtyText] = useState("1");
   const pickQty = Math.max(1, Math.floor(Number(qtyText)) || 1);
-  const pickDisabled = disabled || remaining === 0;
+  // An empty or exhausted category is exactly where a new part is wanted, so
+  // the picker stays open when it can offer one.
+  const pickDisabled =
+    disabled || (remaining === 0 && onRequestNewPart == null);
 
   return (
     <div
@@ -116,6 +129,10 @@ export function CategoryChecklistRow({
         <Select
           value={selectValue}
           onValueChange={(v) => {
+            if (v === NEW_PART) {
+              onRequestNewPart?.();
+              return;
+            }
             onSelectValue(v);
             onPick(v, pickQty);
             setQtyText("1");
@@ -174,6 +191,11 @@ export function CategoryChecklistRow({
                 </SelectItem>
               );
             })}
+            {onRequestNewPart ? (
+              <SelectItem value={NEW_PART} className="text-brand font-medium">
+                {tQuick("newPartOption")}
+              </SelectItem>
+            ) : null}
           </SelectContent>
         </Select>
       </div>

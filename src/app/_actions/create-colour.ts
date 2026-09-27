@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { readAllowedCaps } from "@/lib/auth/read-session";
+import { readHasCapability } from "@/lib/auth/read-session";
 import { normaliseRalCode, ralToHex } from "@/lib/colors/ral";
 import { slugify } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -32,9 +32,10 @@ export type CreateColourInlineResult =
  * really removed. A caller without `admin` is refused here as well as hidden in
  * the UI. `null` caps means the gate is off entirely (local dev).
  *
- * FIRST INSTANCE OF THIS PATTERN in the app — no other picker creates a vocab
- * row. Kits and part categories will want the same thing; when the second one
- * arrives, generalise rather than copying this file.
+ * The first picker-creates-a-row action; `createPartInline`
+ * (src/app/parts/_actions/create-part-inline.ts) is the second. What they
+ * share — the in-action capability check — is `readHasCapability`; the rest
+ * (fields, validation, the dialog) is genuinely per-row-type.
  */
 export async function createColourInline(input: {
   nameEn: string;
@@ -44,8 +45,7 @@ export async function createColourInline(input: {
 }): Promise<CreateColourInlineResult> {
   const t = await getTranslations("errors");
 
-  const caps = await readAllowedCaps();
-  if (caps !== null && !caps.includes("admin")) {
+  if (!(await readHasCapability("admin"))) {
     return { ok: false, error: t("colourNeedsAdmin") };
   }
 

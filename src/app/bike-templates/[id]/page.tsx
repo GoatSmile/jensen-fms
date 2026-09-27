@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
-import { readHasCapability } from "@/lib/auth/read-session";
+import {
+  readCanSeeCosts,
+  readHasCapability,
+} from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
@@ -43,7 +46,7 @@ export default async function BikeTemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tTpl, tCommon, locale, mayEdit] = await Promise.all([
+  const [t, tTpl, tCommon, locale, mayEdit, canSeeCosts] = await Promise.all([
     getTranslations("templateDetail"),
     getTranslations("templates"),
     getTranslations("common"),
@@ -51,6 +54,7 @@ export default async function BikeTemplateDetailPage({
     // Only Dennis creates and changes templates (migration 104). Without it
     // the page is a read-only view; every writer refuses on the server too.
     readHasCapability("templates_edit"),
+    readCanSeeCosts(),
   ]);
   const supabase = await createClient();
 
@@ -337,6 +341,7 @@ export default async function BikeTemplateDetailPage({
         templateId={tpl.id}
         isCurrent={tpl.is_current}
         mayEdit={mayEdit}
+        canCreateParts={canSeeCosts}
         initialRows={initialRows}
         categories={categories}
         parts={parts}

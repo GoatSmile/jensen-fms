@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
+import { Plus } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { QuickPartDialog } from "@/components/parts/quick-part-dialog";
 import {
   Dialog,
   DialogContent,
@@ -118,6 +121,7 @@ export function LineDialog({
 }: Props) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
+  const tQuick = useTranslations("quickPart");
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
   const initialQty =
     mode.kind === "edit" ? String(mode.initial.quantity) : "1";
@@ -177,9 +181,21 @@ export function LineDialog({
   // the part's live rates and zeroes them when "Apply import tax" is off.
   // Edit mode falls back to the line's frozen snapshot only if the part has
   // vanished from the catalog (soft-deleted since the line was added).
+  // Parts created from this dialog ("New part") — the page's list does not
+  // carry them until its next render, so they join it here.
+  const [createdParts, setCreatedParts] = useState<PartChoice[]>([]);
+  const [creatingPart, setCreatingPart] = useState(false);
+  const allParts = useMemo(
+    () => [
+      ...createdParts,
+      ...parts.filter((p) => !createdParts.some((c) => c.id === p.id)),
+    ],
+    [parts, createdParts],
+  );
+
   const selectedPart = useMemo(
-    () => parts.find((p) => p.id === partId) ?? null,
-    [parts, partId],
+    () => allParts.find((p) => p.id === partId) ?? null,
+    [allParts, partId],
   );
   const resolvedTariffPct =
     selectedPart?.tariffPct ??
@@ -250,11 +266,11 @@ export function LineDialog({
 
   const filteredParts = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return parts;
-    return parts.filter((p) =>
+    if (!q) return allParts;
+    return allParts.filter((p) =>
       `${p.internal_sku} ${p.name_en}`.toLowerCase().includes(q),
     );
-  }, [parts, filter]);
+  }, [allParts, filter]);
 
   // Live preview of the additive landed-cost breakdown. Keeping each piece
   // separate so the dialog can show the user "base + transport + import tax".
@@ -369,12 +385,23 @@ export function LineDialog({
               </div>
             ) : (
               <>
-                <Input
-                  id="line-part-filter"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder={t("filterPartsPlaceholder")}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="line-part-filter"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    placeholder={t("filterPartsPlaceholder")}
+                  />
+                  {/* Everyone who can open a PO holds `costs`, which creating
+                      a part needs; the action checks it anyway. */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCreatingPart(true)}
+                  >
+                    <Plus aria-hidden /> {tQuick("newPartButton")}
+                  </Button>
+                </div>
                 <div className="bg-ground max-h-56 overflow-y-auto rounded-lg">
                   {filteredParts.length === 0 ? (
                     <p className="text-muted-foreground p-3 text-center text-sm">
@@ -641,6 +668,27 @@ export function LineDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+      <QuickPartDialog
+        open={creatingPart}
+        onOpenChange={setCreatingPart}
+        seedText={filter}
+        onCreated={(p) => {
+          // A brand-new part has no HS code and no origin: unclassified, so
+          // no import tax until someone classifies it on the part page.
+          const choice: PartChoice = {
+            id: p.id,
+            internal_sku: p.internal_sku,
+            name_en: p.name_en,
+            hsCode: null,
+            tariffPct: 0,
+            antiDumpingPct: 0,
+            origin: null,
+          };
+          setCreatedParts((prev) => [choice, ...prev]);
+          onPickPart(choice);
+          setFilter("");
+        }}
+      />
     </Dialog>
   );
 }

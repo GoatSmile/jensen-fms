@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
+import { QuickPartDialog } from "@/components/parts/quick-part-dialog";
 import { KitBulkAdd, type KitOption } from "@/components/recipe/kit-bulk-add";
 import { formatQuantity } from "@/lib/parts/stock";
 
@@ -83,6 +84,8 @@ type Props = {
   hasTemplate: boolean;
   /** Hide write actions when the MO is completed/cancelled. */
   readOnly: boolean;
+  /** Holds `costs` — may create a missing part from the picker. */
+  canCreateParts: boolean;
 };
 
 type SubstituteState = {
@@ -115,8 +118,10 @@ export function MOPartsSection({
   kitParts,
   hasTemplate,
   readOnly,
+  canCreateParts,
 }: Props) {
   const t = useTranslations("moDetail");
+  const tQuick = useTranslations("quickPart");
   const [error, setError] = useState<string | null>(null);
   const [substitute, setSubstitute] = useState<SubstituteState | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
@@ -125,6 +130,9 @@ export function MOPartsSection({
   >({});
   const [, startAdd] = useTransition();
   const [copying, startCopy] = useTransition();
+  const [newPartCategoryId, setNewPartCategoryId] = useState<string | null>(
+    null,
+  );
 
   // Group catalog parts by category for the picker.
   const partsByCategory = useMemo(() => {
@@ -257,6 +265,11 @@ export function MOPartsSection({
                 onPickFromCategory(category.id, partId, qty)
               }
               disabled={readOnly}
+              onRequestNewPart={
+                !readOnly && canCreateParts
+                  ? () => setNewPartCategoryId(category.id)
+                  : undefined
+              }
             />
           ))}
 
@@ -279,8 +292,22 @@ export function MOPartsSection({
               {showEmpty ? (
                 <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
                   {empty.map((c, i) => (
-                    <li key={c.id} className="py-0.5">
-                      {populated.length + i + 1}. {c.name_en}
+                    <li
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 py-0.5"
+                    >
+                      <span>
+                        {populated.length + i + 1}. {c.name_en}
+                      </span>
+                      {!readOnly && canCreateParts ? (
+                        <button
+                          type="button"
+                          onClick={() => setNewPartCategoryId(c.id)}
+                          className="text-brand hover:underline"
+                        >
+                          {tQuick("newPartOption")}
+                        </button>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -367,6 +394,18 @@ export function MOPartsSection({
           )}
         </div>
       </div>
+
+      <QuickPartDialog
+        open={newPartCategoryId != null}
+        onOpenChange={(next) => {
+          if (!next) setNewPartCategoryId(null);
+        }}
+        defaultCategoryId={newPartCategoryId}
+        onCreated={(part) =>
+          // addMOPart revalidates this page, so the catalogue arrives with it.
+          onPickFromCategory(part.category_id, part.id, 1)
+        }
+      />
 
       {substitute !== null ? (
         <SubstitutePartDialog

@@ -19,6 +19,10 @@ import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { CategoryChecklistRow } from "@/components/recipe/category-checklist-row";
 import {
+  QuickPartDialog,
+  type InlinePart,
+} from "@/components/parts/quick-part-dialog";
+import {
   KitBulkAdd,
   type KitAddOutcome,
   type KitOption,
@@ -87,6 +91,8 @@ type Props = {
   } | null;
   /** Holds `templates_edit` — only Dennis changes templates. */
   mayEdit: boolean;
+  /** Holds `costs` — may create a missing part from the picker. */
+  canCreateParts: boolean;
 };
 
 /**
@@ -112,9 +118,10 @@ export function PartsRecipeSection({
   templateId,
   isCurrent,
   mayEdit,
+  canCreateParts,
   initialRows,
   categories,
-  parts,
+  parts: serverParts,
   kits,
   kitParts,
   templateRetailDkk,
@@ -122,6 +129,7 @@ export function PartsRecipeSection({
 }: Props) {
   const t = useTranslations("templateDetail");
   const tCommon = useTranslations("common");
+  const tQuick = useTranslations("quickPart");
   const locale = useLocale();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +142,53 @@ export function PartsRecipeSection({
   >({});
 
   const canEdit = isCurrent && mayEdit;
+
+  // Parts created from the picker this session. The action revalidates only
+  // /parts, so the server list does not grow under an unsaved recipe; these
+  // join it here until the next full render carries them.
+  const [createdParts, setCreatedParts] = useState<PartInCategory[]>([]);
+  const parts = useMemo(
+    () => [
+      ...serverParts,
+      ...createdParts.filter((c) => !serverParts.some((p) => p.id === c.id)),
+    ],
+    [serverParts, createdParts],
+  );
+  const [newPartCategory, setNewPartCategory] = useState<CategoryOption | null>(
+    null,
+  );
+
+  function onPartCreated(category: CategoryOption, created: InlinePart) {
+    const part: PartInCategory = {
+      id: created.id,
+      internal_sku: created.internal_sku,
+      name_en: created.name_en,
+      category_id: created.category_id,
+      retailDkk: null,
+      costDkk: null,
+    };
+    setCreatedParts((prev) => [...prev, part]);
+    // Picked straight into the recipe — creating it was the pick. If the user
+    // chose another category in the dialog, the part is filed there.
+    const filedUnder =
+      categories.find((c) => c.id === created.category_id) ?? category;
+    setRows((prev) => [
+      ...prev,
+      {
+        partId: part.id,
+        partSku: part.internal_sku,
+        partName: part.name_en,
+        categoryId: filedUnder.id,
+        categoryName: filedUnder.name_en,
+        quantity: "1",
+        isOptional: false,
+        notes: "",
+        retailDkk: null,
+        costDkk: null,
+      },
+    ]);
+    setSuccess(null);
+  }
 
   // Group catalog parts by category for the LEFT panel.
   const partsByCategory = useMemo(() => {
@@ -525,6 +580,11 @@ export function PartsRecipeSection({
                   onPickFromCategory(category, partId, qty)
                 }
                 disabled={!canEdit}
+                onRequestNewPart={
+                  canEdit && canCreateParts
+                    ? () => setNewPartCategory(category)
+                    : undefined
+                }
               />
             ))}
 
@@ -547,9 +607,23 @@ export function PartsRecipeSection({
                 {showEmpty ? (
                   <ul className="text-muted-foreground border-t px-3 py-2 text-xs">
                     {empty.map((c, i) => (
-                      <li key={c.id} className="py-0.5">
-                        {populated.length + i + 1}.{" "}
-                        {localizedName(locale, c.name_en, c.name_da)}
+                      <li
+                        key={c.id}
+                        className="flex items-center justify-between gap-2 py-0.5"
+                      >
+                        <span>
+                          {populated.length + i + 1}.{" "}
+                          {localizedName(locale, c.name_en, c.name_da)}
+                        </span>
+                        {canEdit && canCreateParts ? (
+                          <button
+                            type="button"
+                            onClick={() => setNewPartCategory(c)}
+                            className="text-brand hover:underline"
+                          >
+                            {tQuick("newPartOption")}
+                          </button>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -771,6 +845,16 @@ export function PartsRecipeSection({
           </div>
         ) : null}
       </div>
+      <QuickPartDialog
+        open={newPartCategory != null}
+        onOpenChange={(next) => {
+          if (!next) setNewPartCategory(null);
+        }}
+        defaultCategoryId={newPartCategory?.id ?? null}
+        onCreated={(part) => {
+          if (newPartCategory) onPartCreated(newPartCategory, part);
+        }}
+      />
     </Panel>
   );
 }
