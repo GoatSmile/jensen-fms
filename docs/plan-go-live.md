@@ -93,11 +93,13 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
 - [x] **Finn Nysom and Glenn** created (2026-09-26): Danish, role *Workshop*.
 - [ ] **Give Finn and Glenn passwords** (Admin → People) — nothing blocks it now; Tuesday, with
       them in the room. Glenn's surname, email, phone: Dennis.
-- [ ] **Danish user guide (PDF)** — Finn's repair flow first; the paint-order flow for Dennis.
+- [x] **Finn's repair guide** (2026-09-27): `docs/GUIDE-FINN-DA-2026-09.pdf` + an English twin.
+- [ ] Paint-order guide for Dennis (Danish PDF).
 - [ ] **Service calendar slice 0** — now unblocked: Finn's address is `service@jensenproduction.dk`.
-- [ ] `/work` gaps before real use: labour time on `/work`; start a WO from a scanned bike with
-      no ticket; confirm a provisional frame / add identifiers on site; search by recognition
-      code and customer name.
+- [x] `/work` gaps (2026-09-27): time spent on the work order; *New work order* from the bike
+      page and from search, no ticket needed; search by code (spoken forms too), frame,
+      customer, WO number. Also fixed: every tech save wiped labour, rate and summaries.
+- [ ] Confirm a provisional frame / add identifiers on site from `/work`.
 
 ### 1D · Carried over (small, overdue)
 - [ ] Click `/offers` in production and confirm it renders (one human click).
@@ -143,7 +145,7 @@ renewing unless cancelled (02:41–02:45). Coverage today is derived from the ow
 - [ ] **Delivery note** (*følgeseddel*) + a *Delivery notes* list for the day in the app; the
       customer **signs with a finger** on phone/iPad → SO *delivered* automatically (02:21–02:24).
 - [ ] Loading scan (a QR on the order/delivery note). Delivery appointment into Finn's calendar.
-- [ ] "Assigned" status label on delivered bikes reads wrong on the customer page (02:26).
+- [x] "Assigned" reads *Delivered* (2026-09-27; Danish already said *Udleveret*).
 
 ### 2C · Paint orders — bugs first, then the lifecycle
 Bugs from the 15 Sep run:
@@ -183,15 +185,18 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
 - [x] DK standard VAT as the default on offer lines (01:02:37).
 - [x] Dictation button in the offer's send dialog (00:50:34) — and the paint-order and PO ones.
 - [x] Reuse a converted offer → *Duplicate offer* (01:01:09).
-- [ ] Extra battery/charger on the SO, or attached to the customer later (01:52:54).
-- [ ] Create a missing part without leaving the picker (00:25:29).
+- [x] Extra battery/charger on the SO (2026-09-27): a part line, and delivery now takes it off
+      stock as `sold` (migration 105). A part-only SO still walks confirmed → in production →
+      ready → delivered.
+- [x] Create a missing part without leaving the picker (2026-09-27): recipe pickers, order and
+      PO lines.
 - [x] Template paintwork hint: only recipe parts can be painted; colour is chosen on the order line.
 
 ### 2F · Templates, kits, labels (mostly Dennis)
 - [ ] Dennis's kit definition, now clear: **a kit = the motor-system parts that must go
       together**, one kit per bike, ≤10 kits; many templates built "kit + click". Update the
       BACKLOG *sub-assemblies* entry with this answer.
-- [ ] Only Dennis creates templates → role capability check.
+- [x] Only Dennis creates templates → `templates_edit` (2026-09-27, migration 104).
 - [ ] Box-label scheme: kit colours + category colour + number (white basics, orange wheels,
       light-blue transmission); supplier pre-labels; label on goods receipt. Open: supplier item
       code or own scheme on the label.
