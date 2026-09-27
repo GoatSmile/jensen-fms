@@ -151,6 +151,7 @@ export async function updateSupplier(
     }
     return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
+  revalidatePath(`/admin/suppliers/${id}`);
   revalidatePath("/admin/suppliers");
   revalidatePath("/admin");
   return { ok: true };

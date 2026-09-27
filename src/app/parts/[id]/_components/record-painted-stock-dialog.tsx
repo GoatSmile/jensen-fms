@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
@@ -104,7 +103,6 @@ export function RecordPaintedStockDialog({
   const t = useTranslations("parts");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const [colourId, setColourId] = useState("");
@@ -261,7 +259,6 @@ export function RecordPaintedStockDialog({
       }
       setOpen(false);
       reset();
-      router.refresh();
     });
   }
 

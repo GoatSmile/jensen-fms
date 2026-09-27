@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus, Trash2, Wrench, X } from "lucide-react";
 
@@ -35,7 +34,6 @@ type Props = {
  */
 export function PartsSection({ woId, rows, readOnly, showMoney }: Props) {
   const t = useTranslations("wo");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   // Removing a part reverses inventory + changes the invoice line, so — as on
@@ -60,7 +58,6 @@ export function PartsSection({ woId, rows, readOnly, showMoney }: Props) {
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 
@@ -32,7 +31,6 @@ export function DispositionAction({
 }: Props) {
   const t = useTranslations("inbox");
   const tSig = useTranslations("inboundSpamSignal");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +39,6 @@ export function DispositionAction({
     start(async () => {
       const r = await setDisposition(messageId, d);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 

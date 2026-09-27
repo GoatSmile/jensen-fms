@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   ArrowRightLeft,
@@ -118,7 +117,6 @@ export function MOPartsSection({
   readOnly,
 }: Props) {
   const t = useTranslations("moDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [substitute, setSubstitute] = useState<SubstituteState | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
@@ -184,14 +182,12 @@ export function MOPartsSection({
         ...prev,
         [categoryId]: "__placeholder__",
       }));
-      router.refresh();
     });
   }
 
   async function onAddKit(kitId: string) {
     const r = await addKitPartsToMO(moId, kitId);
     if (!r.ok) return { error: r.error };
-    router.refresh();
     return { added: r.added, alreadyIn: r.skipped };
   }
 
@@ -493,7 +489,6 @@ function QuantityField({
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslations("moDetail");
-  const router = useRouter();
   const [value, setValue] = useState(String(row.quantityPerBike));
   const [pending, start] = useTransition();
 
@@ -513,7 +508,6 @@ function QuantityField({
         setValue(String(row.quantityPerBike));
         return;
       }
-      router.refresh();
     });
   }
 
@@ -592,7 +586,6 @@ function RowActions({
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslations("moDetail");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmRemove, setConfirmRemove] = useState(false);
 
@@ -605,7 +598,6 @@ function RowActions({
         setConfirmRemove(false);
         return;
       }
-      router.refresh();
     });
   }
 

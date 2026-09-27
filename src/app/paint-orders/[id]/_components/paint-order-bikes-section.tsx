@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
@@ -55,7 +54,6 @@ export function PaintOrderBikesSection({
   eligibleBikes,
 }: Props) {
   const t = useTranslations("paintOrderDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = orderStatus === "planned";
   const canAdd = orderStatus !== "received_back" && orderStatus !== "cancelled";
@@ -116,7 +114,6 @@ export function PaintOrderBikesSection({
                 showLegacy={hasLegacyColumns}
                 canEdit={canEdit}
                 onError={setError}
-                onChange={() => router.refresh()}
               />
             ))}
           </TableBody>
@@ -132,14 +129,12 @@ function BikeRow({
   showLegacy,
   canEdit,
   onError,
-  onChange,
 }: {
   serviceOrderId: string;
   row: PaintOrderBikeRow;
   showLegacy: boolean;
   canEdit: boolean;
   onError: (msg: string | null) => void;
-  onChange: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const tBikeStatus = useTranslations("bikeStatus");
@@ -150,7 +145,6 @@ function BikeRow({
     start(async () => {
       const r = await removeBikeFromPaintOrder(serviceOrderId, row.bikeId);
       if (!r.ok) onError(r.error);
-      else onChange();
     });
   }
 

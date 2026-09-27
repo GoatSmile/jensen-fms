@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   Check,
@@ -83,7 +82,6 @@ export function AddPartsWorkspace({
   showMoney,
 }: Props) {
   const t = useTranslations("woParts");
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -133,7 +131,6 @@ export function AddPartsWorkspace({
         const msg = successNotice(r as { ok: true } & Record<string, unknown>);
         if (msg) setNotice(msg);
       }
-      router.refresh();
     });
   }
 

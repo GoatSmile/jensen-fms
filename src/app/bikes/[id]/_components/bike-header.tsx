@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -87,7 +86,6 @@ export function BikeHeader({
   const t = useTranslations("bikeDetail");
   const tStatus = useTranslations("bikeStatus");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, start] = useTransition();
@@ -108,8 +106,6 @@ export function BikeHeader({
       if (!r.ok) {
         setActionError(r.error);
         setConfirmDelete(false);
-      } else {
-        router.refresh();
       }
     });
   }
@@ -119,7 +115,6 @@ export function BikeHeader({
     start(async () => {
       const r = await restoreBike(bikeId);
       if (!r.ok) setActionError(r.error);
-      else router.refresh();
     });
   }
 
@@ -140,7 +135,6 @@ export function BikeHeader({
         return;
       }
       setTransitionDialog(null);
-      router.refresh();
     });
   }
 

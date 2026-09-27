@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { MoreVertical, Star, Trash2 } from "lucide-react";
 
@@ -37,7 +36,6 @@ export function PhotoThumb({
 }) {
   const t = useTranslations("bikeDetail.photos");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -48,7 +46,6 @@ export function PhotoThumb({
     start(async () => {
       const r = await setBikeHeroImage(bikeId, photo.id);
       if (!r.ok) onError(r.error);
-      else router.refresh();
     });
   }
 
@@ -59,8 +56,6 @@ export function PhotoThumb({
       if (!r.ok) {
         onError(r.error);
         setConfirmDelete(false);
-      } else {
-        router.refresh();
       }
     });
   }

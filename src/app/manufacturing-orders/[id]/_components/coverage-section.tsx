@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   CheckCircle2,
@@ -43,7 +42,6 @@ export function CoverageSection({
   readOnly,
 }: Props) {
   const t = useTranslations("moDetail");
-  const router = useRouter();
   const [showCovered, setShowCovered] = useState(false);
   const [result, setResult] = useState<DraftPOResult | null>(null);
   const [isPending, start] = useTransition();
@@ -59,7 +57,6 @@ export function CoverageSection({
     start(async () => {
       const r = await draftPOsFromShortfall(moId);
       setResult(r);
-      if (r.ok) router.refresh();
     });
   }
 

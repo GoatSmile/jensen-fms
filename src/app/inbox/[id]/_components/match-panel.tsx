@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Play, Save, Users } from "lucide-react";
 
@@ -44,7 +43,6 @@ export function MatchPanel({
   matchedBikeId,
 }: Props) {
   const t = useTranslations("inbox");
-  const router = useRouter();
   const [text, setText] = useState(initialExtractionJson || TEMPLATE);
   // Re-sync the editor when a fresh extraction arrives from the server (e.g.
   // after Run extraction in the transcript panel), without clobbering local
@@ -65,7 +63,6 @@ export function MatchPanel({
     startSave(async () => {
       const r = await saveExtraction(messageId, text);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 
@@ -74,7 +71,6 @@ export function MatchPanel({
     startMatch(async () => {
       const r = await runMatch(messageId);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 

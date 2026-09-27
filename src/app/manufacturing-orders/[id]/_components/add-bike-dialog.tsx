@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
@@ -38,7 +37,6 @@ export function AddBikeDialog({
 }: Props) {
   const t = useTranslations("moDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [frameNumber, setFrameNumber] = useState(suggestedFrameNumber);
   const [notes, setNotes] = useState("");
@@ -71,7 +69,6 @@ export function AddBikeDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

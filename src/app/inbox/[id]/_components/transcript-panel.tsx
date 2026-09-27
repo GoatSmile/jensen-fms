@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AudioLines, Play, Save, Sparkles } from "lucide-react";
 
@@ -42,7 +41,6 @@ export function TranscriptPanel({
   extractionReady,
 }: Props) {
   const t = useTranslations("inbox");
-  const router = useRouter();
   const [text, setText] = useState(initialBody ?? "");
   // Re-sync the editor when a fresh transcript arrives from the server
   // (after Transcribe / Run pipeline), without clobbering local edits on
@@ -72,7 +70,6 @@ export function TranscriptPanel({
     start(async () => {
       const r = await action();
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 

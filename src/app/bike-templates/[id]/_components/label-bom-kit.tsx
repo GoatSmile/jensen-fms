@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { Tags } from "lucide-react";
 
 import { Section } from "@/components/section";
@@ -39,7 +38,6 @@ export function LabelBomKit({
   bomPartCount: number;
 }) {
   const t = useTranslations("templateDetail");
-  const router = useRouter();
   const [kitId, setKitId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -64,7 +62,6 @@ export function LabelBomKit({
             : "") +
           ".",
       );
-      router.refresh();
     });
   }
 

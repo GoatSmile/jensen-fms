@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Star } from "lucide-react";
 
@@ -31,7 +30,6 @@ export function MakeDefaultButton({
   serviceTypeId: string;
   supplierId: string;
 }) {
-  const router = useRouter();
   const t = useTranslations("adminServices");
   const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +53,6 @@ export function MakeDefaultButton({
               setError(result.error);
               return;
             }
-            router.refresh();
           });
         }}
       >

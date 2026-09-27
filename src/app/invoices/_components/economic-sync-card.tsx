@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ export function EconomicSyncCard({
   blockedReason,
 }: Props) {
   const t = useTranslations("invoiceDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -84,7 +82,6 @@ export function EconomicSyncCard({
                 setError(r.error);
                 return;
               }
-              router.refresh();
             });
           }}
         >

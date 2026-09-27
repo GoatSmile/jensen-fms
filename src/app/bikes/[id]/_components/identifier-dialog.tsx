@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,6 @@ export function IdentifierDialog({
   extraRevalidatePaths,
 }: Props) {
   const t = useTranslations("identifierDialog");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [typeId, setTypeId] = useState("");
   const [value, setValue] = useState("");
@@ -111,7 +109,6 @@ export function IdentifierDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

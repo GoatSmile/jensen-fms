@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -57,7 +56,6 @@ export function SubstitutePartDialog({
 }: Props) {
   const t = useTranslations("moDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [filter, setFilter] = useState("");
   const [partId, setPartId] = useState<string>("");
   const [qty, setQty] = useState(
@@ -111,7 +109,6 @@ export function SubstitutePartDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Play, Sparkles } from "lucide-react";
 
@@ -49,7 +48,6 @@ export function CommandPlanPanel({
   colors,
 }: Props) {
   const t = useTranslations("inboxCommand");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [rerunPending, startRerun] = useTransition();
   // Per-action open-slot picks: { [actionId]: { template: id, ... } }.
@@ -64,7 +62,6 @@ export function CommandPlanPanel({
     startRerun(async () => {
       const r = await rerunCommandAgent(messageId);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 
@@ -170,7 +167,6 @@ function ActionCard({
   onError: (e: string | null) => void;
 }) {
   const t = useTranslations("inboxCommand");
-  const router = useRouter();
   const [pending, start] = useTransition();
 
   const slots = openSlotsFor(action);
@@ -190,7 +186,6 @@ function ActionCard({
     start(async () => {
       const r = await applyCommandAction(messageId, action.id, picks);
       if (!r.ok) return onError(r.error);
-      router.refresh();
     });
   }
 

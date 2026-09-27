@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
@@ -70,7 +69,6 @@ export function ReceiveForm({
 }: Props) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [locationId, setLocationId] = useState(
     primaryLocationId ?? locations[0]?.id ?? "",
   );
@@ -134,7 +132,6 @@ export function ReceiveForm({
       }
       setDrafts({});
       setSuccess(t("recorded", { count: receipts.length }));
-      router.refresh();
     });
   }
 

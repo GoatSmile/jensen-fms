@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { RefreshCw, History } from "lucide-react";
 
@@ -13,7 +12,6 @@ import {
 } from "../_actions/manage-fx";
 
 export function FxActions() {
-  const router = useRouter();
   const t = useTranslations("adminFx");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -31,7 +29,6 @@ export function FxActions() {
       if (!r.ok) setError(r.error);
       else {
         setSuccess(r.message);
-        router.refresh();
       }
       setActiveAction(null);
     });
@@ -46,7 +43,6 @@ export function FxActions() {
       if (!r.ok) setError(r.error);
       else {
         setSuccess(r.message);
-        router.refresh();
       }
       setActiveAction(null);
     });

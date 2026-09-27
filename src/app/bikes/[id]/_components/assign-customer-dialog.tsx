@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { UserCheck, UserMinus } from "lucide-react";
 
@@ -85,7 +84,6 @@ export function AssignCustomerDialog({
   const t = useTranslations("bikeDetail.assign");
   const tStatus = useTranslations("bikeStatus");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState(currentOwner?.organizationId ?? "");
   const [unitId, setUnitId] = useState(currentOwner?.unitId ?? NO_UNIT);
@@ -133,7 +131,6 @@ export function AssignCustomerDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 
@@ -146,7 +143,6 @@ export function AssignCustomerDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

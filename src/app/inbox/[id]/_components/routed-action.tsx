@@ -71,7 +71,6 @@ export function RoutedAction({
     start(async () => {
       const r = await setDisposition(messageId, d);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 
@@ -80,7 +79,6 @@ export function RoutedAction({
     start(async () => {
       const r = await planFromInquiry(messageId);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 

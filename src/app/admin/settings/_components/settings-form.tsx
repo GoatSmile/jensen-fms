@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,6 @@ function decimalToPercentInput(decimal: number): string {
 export function SettingsForm({ initialDefaultTransportPct }: Props) {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [value, setValue] = useState(
     decimalToPercentInput(initialDefaultTransportPct),
   );
@@ -58,7 +56,6 @@ export function SettingsForm({ initialDefaultTransportPct }: Props) {
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

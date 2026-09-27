@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 
 import { ColorSwatch } from "@/components/color-swatch";
@@ -81,7 +80,6 @@ export function LineDialog({
   const t = useTranslations("commercialLines");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
 
   const [kind, setKind] = useState<"part" | "template">(
     initial?.kind ?? "template",
@@ -199,7 +197,6 @@ export function LineDialog({
         return;
       }
       onOpenChange(false);
-      router.refresh();
     });
   }
 

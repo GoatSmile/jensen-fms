@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Camera, ImagePlus } from "lucide-react";
 
@@ -34,11 +33,9 @@ type Status =
  */
 export function PhotosSection({ bikeId, photos }: Props) {
   const t = useTranslations("bikeDetail.photos");
-  const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [thumbError, setThumbError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [, startUiTransition] = useTransition();
 
   async function uploadFiles(files: File[]) {
     if (files.length === 0) return;
@@ -82,7 +79,6 @@ export function PhotosSection({ bikeId, photos }: Props) {
 
     setStatus({ kind: "idle" });
     if (fileInputRef.current) fileInputRef.current.value = "";
-    startUiTransition(() => router.refresh());
   }
 
   function onFilesPicked(e: React.ChangeEvent<HTMLInputElement>) {

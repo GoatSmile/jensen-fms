@@ -315,6 +315,8 @@ export async function updateWODetails(
 
   revalidatePath("/maintenance/work-orders");
   revalidatePath(`/maintenance/work-orders/${woId}`);
+  // The workshop's own screen shows the same details (/work/<wo>).
+  revalidatePath(`/work/${woId}`);
   return { ok: true, workOrderId: woId };
 }
 

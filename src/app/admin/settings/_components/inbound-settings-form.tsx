@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, ChevronRight, X } from "lucide-react";
 
@@ -50,7 +49,6 @@ type Props = {
 export function InboundSettingsForm(props: Props) {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
-  const router = useRouter();
 
   const [transcriptionProvider, setTranscriptionProvider] = useState(
     props.initialTranscriptionProvider,
@@ -124,7 +122,6 @@ export function InboundSettingsForm(props: Props) {
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

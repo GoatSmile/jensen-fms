@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Field } from "@/components/field";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +86,6 @@ export function OfferingDialog({
 }: Props) {
   const t = useTranslations("partDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   // Parent re-keys this component per Add/Edit click, so each open is a fresh
   // mount — no need to reset state on `open` changes.
   const [supplierId, setSupplierId] = useState(initialSupplierId);
@@ -133,7 +131,6 @@ export function OfferingDialog({
         return;
       }
       onOpenChange(false);
-      router.refresh();
     });
   }
 

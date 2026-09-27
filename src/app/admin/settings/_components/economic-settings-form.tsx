@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PlugZap } from "lucide-react";
 
@@ -45,7 +44,6 @@ export function EconomicSettingsForm({
 }: Props) {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [journalNumber, setJournalNumber] = useState(initialJournalNumber);
   const [revenueAccount, setRevenueAccount] = useState(initialRevenueAccount);
@@ -78,7 +76,6 @@ export function EconomicSettingsForm({
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

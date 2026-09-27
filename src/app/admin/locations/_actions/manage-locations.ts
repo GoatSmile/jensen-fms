@@ -61,7 +61,7 @@ export async function createLocation(
     }
     return { ok: false, error: t("couldNotCreate", { detail: error.message }) };
   }
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/lists");
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -89,7 +89,7 @@ export async function updateLocation(
     }
     return { ok: false, error: t("couldNotUpdate", { detail: error.message }) };
   }
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/lists");
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -112,7 +112,7 @@ export async function setLocationVisibility(
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/lists");
   revalidatePath("/admin");
   revalidatePath("/admin/settings");
   revalidatePath("/parts/[id]", "page");
@@ -155,7 +155,7 @@ export async function setPrimaryLocation(id: string): Promise<LocationResult> {
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/lists");
   revalidatePath("/admin");
   revalidatePath("/parts/[id]", "page");
   revalidatePath("/purchase-orders/[id]", "page");
@@ -198,7 +198,7 @@ export async function setLocationActive(
   if (error) {
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
-  revalidatePath("/admin/locations");
+  revalidatePath("/admin/lists");
   revalidatePath("/admin");
   return { ok: true };
 }

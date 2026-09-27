@@ -1055,8 +1055,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   second time, and a `useTransition` around it stays pending for both — the
   "screen stalls after a submit" of 15 Sep (the build workbench made two
   full renders of ~13 queries per click). Refresh only when the action does
-  NOT revalidate this route; show a pick at once with `useOptimistic`.
-  Older code still has the redundant pattern (BACKLOG).
+  NOT revalidate this route; show a pick at once with `useOptimistic`. The
+  app was swept on 2026-09-27; the handful of refreshes left follow a
+  `router.push` or a redirect fallback. **An action that changes what a page
+  shows must revalidate THAT page** — the sweep found four that revalidated a
+  list or a retired route instead of the detail page they were used on.
 - **A control that changes state is never a prefetchable `<Link>`.** Next
   prefetches links in the viewport, so a `<Link href="/logout">` in the app
   chrome fired the sign-out GET on every page render — the session died

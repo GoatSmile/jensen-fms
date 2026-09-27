@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Tag } from "lucide-react";
 
@@ -27,7 +26,6 @@ export function ProductionNoteCard({
 }) {
   const t = useTranslations("soDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [note, setNote] = useState(initialNote ?? "");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(initialNote ?? "");
@@ -55,7 +53,6 @@ export function ProductionNoteCard({
       }
       setNote(draft.trim());
       setEditing(false);
-      router.refresh();
     });
   }
 

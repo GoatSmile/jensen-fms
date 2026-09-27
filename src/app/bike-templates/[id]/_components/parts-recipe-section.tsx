@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 
 import { localizedName } from "@/i18n/vocab";
-import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
@@ -121,7 +120,6 @@ export function PartsRecipeSection({
   const t = useTranslations("templateDetail");
   const tCommon = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
   const [rows, setRows] = useState<RecipeRow[]>(initialRows);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -370,7 +368,6 @@ export function PartsRecipeSection({
         return;
       }
       setSuccess(t("recipeSaved"));
-      router.refresh();
     });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2, Play, Save } from "lucide-react";
 
@@ -58,7 +57,6 @@ export function Workspace({
   photos,
 }: Props) {
   const t = useTranslations("wo");
-  const router = useRouter();
   const [diagnosis, setDiagnosis] = useState(initialDiagnosis);
   const [workPerformed, setWorkPerformed] = useState(initialWorkPerformed);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -100,8 +98,7 @@ export function Workspace({
   function onSave() {
     setError(null);
     startSaving(async () => {
-      const ok = await persistEdits();
-      if (ok) router.refresh();
+      await persistEdits();
     });
   }
 
@@ -121,7 +118,6 @@ export function Workspace({
         setError(result.error);
         return;
       }
-      router.refresh();
     });
   }
 

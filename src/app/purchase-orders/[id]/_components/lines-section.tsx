@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
@@ -96,7 +95,6 @@ export function LinesSection({
 }: Props) {
   const t = useTranslations("poDetail");
   const tBasis = useTranslations("importTaxBasis");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -118,7 +116,6 @@ export function LinesSection({
         return;
       }
       setPendingDeleteId(null);
-      router.refresh();
     });
   }
 

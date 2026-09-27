@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CircleCheck, MoreVertical, PowerOff } from "lucide-react";
 
@@ -135,7 +134,6 @@ function IdentifierTableRow({
 }) {
   const t = useTranslations("bikeDetail.ids");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
 
@@ -146,8 +144,6 @@ function IdentifierTableRow({
       if (!r.ok) {
         onError(r.error);
         setConfirmDeactivate(false);
-      } else {
-        router.refresh();
       }
     });
   }

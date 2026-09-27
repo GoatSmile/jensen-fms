@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, ShoppingCart, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ type Props = {
  */
 export function ReorderBanner({ rows }: Props) {
   const t = useTranslations("parts");
-  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [result, setResult] = useState<ReorderDraftResult | null>(null);
   const [isPending, start] = useTransition();
@@ -40,7 +38,6 @@ export function ReorderBanner({ rows }: Props) {
     start(async () => {
       const r = await draftPOsFromReorderPoints();
       setResult(r);
-      if (r.ok) router.refresh();
     });
   }
 

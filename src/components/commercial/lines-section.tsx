@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { MoreVertical, Pencil, Plus, Trash2 } from "lucide-react";
@@ -52,7 +51,6 @@ import { resolveDefaultVatCode } from "@/lib/commercial/lines";
  *  into the panel's single error line rather than growing its own. */
 export type LineSlotHelpers = {
   onError: (message: string | null) => void;
-  onAfterAction: () => void;
   pending: boolean;
 };
 
@@ -107,7 +105,6 @@ export function CommercialLinesSection({
   renderRowActions,
 }: Props) {
   const t = useTranslations("commercialLines");
-  const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const [error, setError] = useState<string | null>(null);
 
@@ -180,7 +177,6 @@ export function CommercialLinesSection({
                   })
                 }
                 onError={setError}
-                onAfterAction={() => router.refresh()}
                 renderItemExtra={renderItemExtra}
                 renderItemBadges={renderItemBadges}
                 renderRowActions={renderRowActions}
@@ -222,7 +218,6 @@ function LineTableRow({
   onDelete,
   onEdit,
   onError,
-  onAfterAction,
   renderItemExtra,
   renderItemBadges,
   renderRowActions,
@@ -233,7 +228,6 @@ function LineTableRow({
   onDelete: (lineId: string) => Promise<CommercialLineResult>;
   onEdit: () => void;
   onError: (msg: string | null) => void;
-  onAfterAction: () => void;
   renderItemExtra?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
   renderItemBadges?: (row: CommercialLineRow) => ReactNode;
   renderRowActions?: (row: CommercialLineRow, h: LineSlotHelpers) => ReactNode;
@@ -252,11 +246,10 @@ function LineTableRow({
         setConfirmDelete(false);
         return;
       }
-      onAfterAction();
     });
   }
 
-  const slotHelpers: LineSlotHelpers = { onError, onAfterAction, pending };
+  const slotHelpers: LineSlotHelpers = { onError, pending };
 
   return (
     <TableRow>

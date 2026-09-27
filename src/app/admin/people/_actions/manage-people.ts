@@ -59,9 +59,11 @@ function parseFormData(
   };
 }
 
-function revalidate() {
+/** The lists, plus the detail page being edited when there is one. */
+function revalidate(detailPath?: string) {
   revalidatePath("/admin/people");
   revalidatePath("/admin");
+  if (detailPath) revalidatePath(detailPath);
 }
 
 /**
@@ -136,7 +138,7 @@ export async function updatePerson(
     return { ok: false, error: t("couldNotSave", { detail: syncError }) };
   }
 
-  revalidate();
+  revalidate(`/admin/people/${id}`);
   return { ok: true };
 }
 
@@ -170,7 +172,7 @@ export async function setPersonActive(
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
-  revalidate();
+  revalidate(`/admin/people/${id}`);
   return { ok: true };
 }
 
@@ -212,6 +214,6 @@ export async function setPersonPassword(
     return { ok: false, error: t("couldNotSave", { detail: error.message }) };
   }
 
-  revalidate();
+  revalidate(`/admin/people/${id}`);
   return { ok: true };
 }

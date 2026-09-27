@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +73,6 @@ export function PaintworkSection({
   backedPartTypeIds,
 }: Props) {
   const t = useTranslations("templateDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const canEdit = isCurrent;
 
@@ -101,7 +99,6 @@ export function PaintworkSection({
             templateId={templateId}
             partTypes={addablePartTypes}
             onError={setError}
-            onChange={() => router.refresh()}
           />
         ) : null
       }
@@ -142,7 +139,6 @@ export function PaintworkSection({
                     backedByRecipe={backed.has(r.partTypeId)}
                     canEdit={canEdit}
                     onError={setError}
-                    onChange={() => router.refresh()}
                   />
                 ))}
               </tbody>
@@ -237,14 +233,12 @@ function PaintworkRow({
   backedByRecipe,
   canEdit,
   onError,
-  onChange,
 }: {
   templateId: string;
   row: TemplatePaintworkRow;
   backedByRecipe: boolean;
   canEdit: boolean;
   onError: (msg: string | null) => void;
-  onChange: () => void;
 }) {
   const t = useTranslations("templateDetail");
   const [pending, start] = useTransition();
@@ -265,7 +259,7 @@ function PaintworkRow({
       if (!r.ok) {
         onError(r.error);
         setQty(String(row.quantity));
-      } else onChange();
+      }
     });
   }
 
@@ -274,7 +268,6 @@ function PaintworkRow({
     start(async () => {
       const r = await removeTemplatePaintPart(templateId, row.id);
       if (!r.ok) onError(r.error);
-      else onChange();
     });
   }
 
@@ -350,12 +343,10 @@ function AddPaintworkRow({
   templateId,
   partTypes,
   onError,
-  onChange,
 }: {
   templateId: string;
   partTypes: PaintPartTypeOption[];
   onError: (msg: string | null) => void;
-  onChange: () => void;
 }) {
   const t = useTranslations("templateDetail");
   const [partTypeId, setPartTypeId] = useState("");
@@ -384,7 +375,6 @@ function AddPaintworkRow({
       }
       setPartTypeId("");
       setQty("1");
-      onChange();
     });
   }
 

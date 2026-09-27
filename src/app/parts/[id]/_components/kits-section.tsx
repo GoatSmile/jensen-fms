@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
 import {
@@ -47,7 +46,6 @@ export function KitsSection({
   options: KitOption[];
 }) {
   const t = useTranslations("partDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [selectValue, setSelectValue] = useState(PLACEHOLDER);
@@ -65,7 +63,6 @@ export function KitsSection({
         return;
       }
       setSelectValue(PLACEHOLDER);
-      router.refresh();
     });
   }
 
@@ -77,7 +74,6 @@ export function KitsSection({
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 

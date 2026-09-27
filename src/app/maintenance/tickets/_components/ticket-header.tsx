@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Pencil } from "lucide-react";
@@ -72,7 +71,6 @@ export function TicketHeader({
   const t = useTranslations("tickets");
   const tStatus = useTranslations("ticketStatus");
   const tPriority = useTranslations("ticketPriority");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] =
@@ -99,7 +97,6 @@ export function TicketHeader({
         return;
       }
       setTransitionDialog(null);
-      router.refresh();
     });
   }
 

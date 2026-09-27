@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ export function WOPartDialog({
 }: Props) {
   const t = useTranslations("workOrders");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [filter, setFilter] = useState("");
   const [partId, setPartId] = useState<string>("");
   const [qty, setQty] = useState("1");
@@ -139,7 +137,6 @@ export function WOPartDialog({
       setAddedNote(
         added ? t("addedNote", { name: added.name_en }) : t("partAdded"),
       );
-      router.refresh();
     });
   }
 

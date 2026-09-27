@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BadgeCheck, Banknote, Trash2, Undo2 } from "lucide-react";
 
@@ -37,7 +36,6 @@ export function InvoiceActions({
 }: Props) {
   const t = useTranslations("invoiceDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [armedIssue, setArmedIssue] = useState(false);
   const [isPending, start] = useTransition();
@@ -60,7 +58,6 @@ export function InvoiceActions({
         return;
       }
       setArmedIssue(false);
-      router.refresh();
     });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Pencil } from "lucide-react";
@@ -55,7 +54,6 @@ export function SOHeader({
 }: Props) {
   const t = useTranslations("so");
   const tStatus = useTranslations("soStatus");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] = useState<PendingTransition>(null);
@@ -79,7 +77,6 @@ export function SOHeader({
         return;
       }
       setTransitionDialog(null);
-      router.refresh();
     });
   }
 

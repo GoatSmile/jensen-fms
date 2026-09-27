@@ -115,7 +115,6 @@ export function RoleForm({
         router.refresh();
       } else {
         setSavedAt(new Date().toISOString());
-        router.refresh();
       }
     });
   }

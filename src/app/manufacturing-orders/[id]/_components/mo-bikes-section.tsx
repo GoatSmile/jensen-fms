@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { CheckSquare, Layers, Printer, Wrench } from "lucide-react";
@@ -79,7 +78,6 @@ export function MOBikesSection({
 }: Props) {
   const t = useTranslations("moDetail");
   const tBikeStatus = useTranslations("bikeStatus");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<BikeStatus | "all">("all");
@@ -158,7 +156,6 @@ export function MOBikesSection({
           : "";
       setNotice(t("markedBuilt", { count: r.built }) + skippedNote);
       setBuildCount("");
-      router.refresh();
     });
   }
 

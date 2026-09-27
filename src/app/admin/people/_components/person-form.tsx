@@ -132,7 +132,6 @@ export function PersonForm({
         router.refresh();
       } else {
         setSavedAt(new Date().toISOString());
-        router.refresh();
       }
     });
   }

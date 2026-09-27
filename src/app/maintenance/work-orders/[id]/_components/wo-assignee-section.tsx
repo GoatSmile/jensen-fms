@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CircleUser } from "lucide-react";
 
@@ -34,7 +33,6 @@ export function WOAssigneeSection({
   myPersonId: string | null;
   readOnly: boolean;
 }) {
-  const router = useRouter();
   const t = useTranslations("workOrders");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -52,7 +50,6 @@ export function WOAssigneeSection({
         return;
       }
       setSaved(true);
-      router.refresh();
     });
   }
 

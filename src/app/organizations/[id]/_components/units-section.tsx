@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Building2, MoreVertical } from "lucide-react";
 
@@ -156,7 +155,6 @@ function UnitTableRow({
 }) {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmArchive, setConfirmArchive] = useState(false);
 
@@ -167,8 +165,6 @@ function UnitTableRow({
       if (!r.ok) {
         onError(r.error);
         setConfirmArchive(false);
-      } else {
-        router.refresh();
       }
     });
   }

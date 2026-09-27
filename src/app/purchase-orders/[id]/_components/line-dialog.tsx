@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -119,7 +118,6 @@ export function LineDialog({
 }: Props) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const initialPartId = mode.kind === "edit" ? mode.initial.partId : "";
   const initialQty =
     mode.kind === "edit" ? String(mode.initial.quantity) : "1";
@@ -345,7 +343,6 @@ export function LineDialog({
         return;
       }
       onOpenChange(false);
-      router.refresh();
     });
   }
 

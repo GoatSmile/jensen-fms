@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { Camera, ImagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,12 +28,10 @@ type Status =
 
 export function PhotosSection({ partId, photos }: Props) {
   const t = useTranslations("partDetail");
-  const router = useRouter();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   // Surface mid-flight errors from PhotoThumb actions in the same banner area.
   const [thumbError, setThumbError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [, startUiTransition] = useTransition();
 
   async function uploadFiles(files: File[]) {
     if (files.length === 0) return;
@@ -82,7 +79,6 @@ export function PhotosSection({ partId, photos }: Props) {
 
     setStatus({ kind: "idle" });
     if (fileInputRef.current) fileInputRef.current.value = "";
-    startUiTransition(() => router.refresh());
   }
 
   function onFilesPicked(e: React.ChangeEvent<HTMLInputElement>) {

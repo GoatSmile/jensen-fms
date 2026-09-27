@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { MoreVertical, Pencil, Plus, Star, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -67,7 +66,6 @@ type Props = {
 
 export function OfferingsSection({ partId, rows, suppliers, currencies }: Props) {
   const t = useTranslations("partDetail");
-  const router = useRouter();
   const [dialog, setDialog] = useState<DialogState>({ kind: "closed" });
   const [error, setError] = useState<string | null>(null);
 
@@ -162,7 +160,6 @@ export function OfferingsSection({ partId, rows, suppliers, currencies }: Props)
                   row={row}
                   onEdit={() => setDialog({ kind: "edit", offering: row })}
                   onError={setError}
-                  onAfterAction={() => router.refresh()}
                 />
               ))}
             </TableBody>
@@ -204,13 +201,11 @@ function OfferingTableRow({
   row,
   onEdit,
   onError,
-  onAfterAction,
 }: {
   partId: string;
   row: OfferingRow;
   onEdit: () => void;
   onError: (msg: string | null) => void;
-  onAfterAction: () => void;
 }) {
   const t = useTranslations("partDetail");
   const tCommon = useTranslations("common");
@@ -222,7 +217,6 @@ function OfferingTableRow({
     start(async () => {
       const r = await setPreferredOffering(partId, row.id);
       if (!r.ok) onError(r.error);
-      else onAfterAction();
     });
   }
 
@@ -233,8 +227,6 @@ function OfferingTableRow({
       if (!r.ok) {
         onError(r.error);
         setConfirmDelete(false);
-      } else {
-        onAfterAction();
       }
     });
   }

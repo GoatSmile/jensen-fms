@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -24,7 +23,6 @@ import { setLocationVisibility } from "@/app/admin/locations/_actions/manage-loc
  * soup the panel convention replaced.
  */
 export function LocationVisibilityToggle({ hidden }: { hidden: boolean }) {
-  const router = useRouter();
   const t = useTranslations("adminLocations");
   const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +36,6 @@ export function LocationVisibilityToggle({ hidden }: { hidden: boolean }) {
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 

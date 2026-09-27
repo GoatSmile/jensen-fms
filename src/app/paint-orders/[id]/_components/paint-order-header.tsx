@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Mail, Printer } from "lucide-react";
@@ -95,7 +94,6 @@ export function PaintOrderHeader({
   const t = useTranslations("paintOrderDetail");
   const tStatus = useTranslations("serviceOrderStatus");
   const svcStatus = (s: string) => (tStatus.has(s) ? tStatus(s) : s);
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<{ text: string; caution: boolean } | null>(
     null,
@@ -156,7 +154,6 @@ export function PaintOrderHeader({
         });
       }
       setTransitionDialog(null);
-      router.refresh();
     });
   }
 
@@ -317,7 +314,6 @@ export function PaintOrderHeader({
         dictationReady={dictationReady}
         documentLanguage={documentLanguage}
         unconvertibleLines={unconvertibleLines}
-        onSent={() => router.refresh()}
       />
     </div>
   );
@@ -343,7 +339,6 @@ function EmailPainterDialog({
   dictationReady,
   documentLanguage,
   unconvertibleLines,
-  onSent,
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -358,7 +353,6 @@ function EmailPainterDialog({
   dictationReady: boolean;
   documentLanguage: string | null;
   unconvertibleLines: number;
-  onSent: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
@@ -392,16 +386,16 @@ function EmailPainterDialog({
         message.trim() || null,
       );
       if (!r.ok) {
+        // A planned order may have moved to sent before the failure; the
+        // action revalidates this page on that path, so it shows without a
+        // refresh.
         setError(r.error);
-        // A planned order may have moved to sent before the failure — show it.
-        onSent();
         return;
       }
       setSentTo({
         to: `${r.testMode ? "test: " : ""}${r.to.join(", ")}`,
         markedSent: r.markedSent,
       });
-      onSent();
     });
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { KeyRound } from "lucide-react";
 
@@ -32,7 +31,6 @@ export function PersonPasswordCard({
   isSystem: boolean;
   hasRole: boolean;
 }) {
-  const router = useRouter();
   const t = useTranslations("adminPeople");
   const tCommon = useTranslations("common");
   const [password, setPassword] = useState("");
@@ -54,7 +52,6 @@ export function PersonPasswordCard({
       }
       setPassword("");
       setSaved(true);
-      router.refresh();
     });
   }
 

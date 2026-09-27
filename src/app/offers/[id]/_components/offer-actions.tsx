@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Copy, RotateCcw, Send, ShoppingCart, X } from "lucide-react";
 
@@ -47,7 +46,6 @@ export function OfferActions({
 }) {
   const t = useTranslations("offerDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"reopen" | "convert" | null>(null);
@@ -66,7 +64,6 @@ export function OfferActions({
         return;
       }
       setConfirm(null);
-      router.refresh();
     });
   }
 

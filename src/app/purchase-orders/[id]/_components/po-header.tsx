@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Mail, Pencil, Printer } from "lucide-react";
@@ -79,7 +78,6 @@ export function POHeader({
 }: Props) {
   const t = useTranslations("poDetail");
   const tStatus = useTranslations("poStatus");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] =
@@ -105,7 +103,6 @@ export function POHeader({
         return;
       }
       setTransitionDialog(null);
-      router.refresh();
     });
   }
 
@@ -238,7 +235,6 @@ export function POHeader({
         defaultMessage={supplierDefaultMessage}
         dictationReady={dictationReady}
         documentLanguage={documentLanguage}
-        onSent={() => router.refresh()}
       />
     </div>
   );
@@ -261,7 +257,6 @@ function EmailSupplierDialog({
   defaultMessage,
   dictationReady,
   documentLanguage,
-  onSent,
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
@@ -274,7 +269,6 @@ function EmailSupplierDialog({
   defaultMessage: string | null;
   dictationReady: boolean;
   documentLanguage: string | null;
-  onSent: () => void;
 }) {
   const t = useTranslations("poDetail");
   const tCommon = useTranslations("common");
@@ -301,7 +295,6 @@ function EmailSupplierDialog({
         return;
       }
       setSentTo(`${r.testMode ? "test: " : ""}${r.to.join(", ")}`);
-      onSent();
     });
   }
 

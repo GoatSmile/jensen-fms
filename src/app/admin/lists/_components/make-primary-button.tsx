@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { setPrimaryLocation } from "@/app/admin/locations/_actions/manage-locati
  * active, non-primary rows; the current primary shows its badge instead.
  */
 export function MakePrimaryButton({ locationId }: { locationId: string }) {
-  const router = useRouter();
   const t = useTranslations("adminLocations");
   const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +33,6 @@ export function MakePrimaryButton({ locationId }: { locationId: string }) {
               setError(r.error);
               return;
             }
-            router.refresh();
           });
         }}
       >

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,6 @@ export function ApplyCategoryButton({
   typeId: string;
   undecided: number;
 }) {
-  const router = useRouter();
   const t = useTranslations("adminLists");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
@@ -46,7 +44,6 @@ export function ApplyCategoryButton({
               return;
             }
             setDone(r.updated);
-            router.refresh();
           });
         }}
       >

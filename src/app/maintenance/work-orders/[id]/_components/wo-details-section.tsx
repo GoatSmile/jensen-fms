@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Field, ReadField } from "@/components/field";
 import { useState, useTransition } from "react";
@@ -41,7 +40,6 @@ type Props = {
 
 export function WODetailsSection({ woId, initial, readOnly }: Props) {
   const t = useTranslations("workOrders");
-  const router = useRouter();
   const [values, setValues] = useState<WODetailsValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -81,7 +79,6 @@ export function WODetailsSection({ woId, initial, readOnly }: Props) {
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

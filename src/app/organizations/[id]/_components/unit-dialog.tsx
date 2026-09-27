@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Field } from "@/components/field";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,6 @@ export function UnitDialog({
 }: Props) {
   const t = useTranslations("units");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [values, setValues] = useState<UnitDialogValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -103,7 +101,6 @@ export function UnitDialog({
         return;
       }
       onOpenChange(false);
-      router.refresh();
     });
   }
 

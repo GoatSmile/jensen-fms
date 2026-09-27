@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Camera, ImageOff, Loader2, X } from "lucide-react";
 
@@ -34,7 +33,6 @@ type Props = {
  */
 export function PhotosSection({ woId, photos, readOnly }: Props) {
   const t = useTranslations("wo");
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +55,6 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
         setError(r.error);
         return;
       }
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("photoProcessError"));
     } finally {
@@ -75,7 +72,6 @@ export function PhotosSection({ woId, photos, readOnly }: Props) {
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Field } from "@/components/field";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,6 @@ export function ContactDialog({
   const t = useTranslations("contacts");
   const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
-  const router = useRouter();
   const [values, setValues] = useState<ContactDialogValues>(initial);
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -136,7 +134,6 @@ export function ContactDialog({
         return;
       }
       onOpenChange(false);
-      router.refresh();
     });
   }
 

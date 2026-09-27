@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,6 @@ export function LanguageSettingsForm({
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
-  const router = useRouter();
   const [appLanguage, setAppLanguage] = useState<Lang>(initialAppLanguage);
   const [workerLanguage, setWorkerLanguage] = useState<Lang>(
     initialWorkerLanguage,
@@ -52,7 +50,6 @@ export function LanguageSettingsForm({
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

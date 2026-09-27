@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { MoreVertical, UserRound } from "lucide-react";
 
@@ -179,7 +178,6 @@ function ContactTableRow({
   const t = useTranslations("contacts");
   const tCommon = useTranslations("common");
   const tLang = useTranslations("lang");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirmArchive, setConfirmArchive] = useState(false);
 
@@ -190,8 +188,6 @@ function ContactTableRow({
       if (!r.ok) {
         onError(r.error);
         setConfirmArchive(false);
-      } else {
-        router.refresh();
       }
     });
   }

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { Plus, Trash2 } from "lucide-react";
@@ -170,7 +169,6 @@ function RemoveButton({
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslations("workOrders");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [confirm, setConfirm] = useState(false);
 
@@ -181,8 +179,6 @@ function RemoveButton({
       if (!r.ok) {
         onError(r.error);
         setConfirm(false);
-      } else {
-        router.refresh();
       }
     });
   }

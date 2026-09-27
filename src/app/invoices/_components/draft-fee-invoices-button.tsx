@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarClock } from "lucide-react";
 
@@ -21,7 +20,6 @@ import {
  */
 export function DraftFeeInvoicesButton() {
   const t = useTranslations("invoices");
-  const router = useRouter();
   const [result, setResult] = useState<FeeInvoicesResult | null>(null);
   const [isPending, start] = useTransition();
 
@@ -30,7 +28,6 @@ export function DraftFeeInvoicesButton() {
     start(async () => {
       const r = await createAgreementFeeInvoices();
       setResult(r);
-      if (r.ok) router.refresh();
     });
   }
 

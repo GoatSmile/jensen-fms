@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { PackagePlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -82,7 +81,6 @@ export function AdjustStockDialog({
 }: Props) {
   const t = useTranslations("partDetail");
   const [open, setOpen] = useState(false);
-  const router = useRouter();
 
   if (locations.length === 0) {
     // No active locations on file — render a disabled trigger so the affordance
@@ -124,12 +122,10 @@ export function AdjustStockDialog({
           prevailingCostDkk={prevailingCostDkk}
           onCancel={() => setOpen(false)}
           onSuccess={() => {
+            // adjustStock revalidates this page, so its own response carries
+            // the fresh stat strip and movements — no router.refresh() on top
+            // (CLAUDE.md → caveats; checked 2026-09-27).
             setOpen(false);
-            // The server action calls revalidatePath, which invalidates the
-            // RSC cache but doesn't push the new payload to this already-
-            // mounted client tree. router.refresh() pulls the fresh render so
-            // stat strip + movements list update without a hard reload.
-            router.refresh();
           }}
         />
       </DialogContent>

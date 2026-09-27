@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Mail } from "lucide-react";
 
@@ -48,7 +47,6 @@ export function EmailOfferDialog({
   const t = useTranslations("offerDetail");
   const tCommon = useTranslations("common");
   const tDictate = useTranslations("dictate");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +62,6 @@ export function EmailOfferDialog({
       }
       setOpen(false);
       setMessage("");
-      router.refresh();
     });
   }
 

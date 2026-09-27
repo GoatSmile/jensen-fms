@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { UserPlus } from "lucide-react";
 
@@ -34,7 +33,6 @@ export function SaveCallerAction({
   defaultName,
 }: Props) {
   const t = useTranslations("inbox");
-  const router = useRouter();
   const [choice, setChoice] = useState("new"); // "new" | contactId
   const [name, setName] = useState(defaultName);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +47,6 @@ export function SaveCallerAction({
           : { kind: "existing" as const, contactId: choice };
       const r = await saveCallerToContact(messageId, target);
       if (!r.ok) return setError(r.error);
-      router.refresh();
     });
   }
 

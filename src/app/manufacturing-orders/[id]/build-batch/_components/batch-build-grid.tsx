@@ -90,7 +90,6 @@ export function BatchBuildGrid({
         return;
       }
       setSummary({ built: r.built, skipped: r.skipped, errors: r.errors });
-      router.refresh();
     });
   }
 

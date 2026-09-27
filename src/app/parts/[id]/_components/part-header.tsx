@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   ArchiveRestore,
@@ -55,7 +54,8 @@ type Props = {
  * start; Edit jumps to /parts/[id]/edit; Adjust opens the stock dialog;
  * the kebab hosts retire/restore.
  *
- * "use client" because retire/restore go through useTransition + router.refresh.
+ * "use client" because retire/restore go through useTransition (their actions
+ * revalidate this page, so the result renders from the action's own response).
  * The thumbnail and link rendering would happily be server-side, but the
  * boundary cost of splitting them out for that small win isn't worth it.
  */
@@ -76,7 +76,6 @@ export function PartHeader({
 }: Props) {
   const t = useTranslations("partDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmRetire, setConfirmRetire] = useState(false);
@@ -88,8 +87,6 @@ export function PartHeader({
       if (!r.ok) {
         setActionError(r.error);
         setConfirmRetire(false);
-      } else {
-        router.refresh();
       }
     });
   }
@@ -99,7 +96,6 @@ export function PartHeader({
     startTransition(async () => {
       const r = await restorePart(partId);
       if (!r.ok) setActionError(r.error);
-      else router.refresh();
     });
   }
 

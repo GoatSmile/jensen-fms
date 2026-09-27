@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 
@@ -70,7 +69,6 @@ export function AddBikeToPaintDialog({
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
   const tBikeStatus = useTranslations("bikeStatus");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -169,7 +167,6 @@ export function AddBikeToPaintDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

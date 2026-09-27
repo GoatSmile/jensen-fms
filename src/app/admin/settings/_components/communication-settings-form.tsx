@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export function CommunicationSettingsForm({
 }: Props) {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [fromEmail, setFromEmail] = useState(initialFromEmail);
   const [replyToEmail, setReplyToEmail] = useState(initialReplyToEmail);
   const [testMode, setTestMode] = useState(initialTestMode);
@@ -61,7 +59,6 @@ export function CommunicationSettingsForm({
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 

@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ImagePlus, X } from "lucide-react";
 
@@ -31,7 +30,6 @@ export function LineImageCell({
   editable: boolean;
 }) {
   const t = useTranslations("offerDetail");
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +53,6 @@ export function LineImageCell({
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 
@@ -67,7 +64,6 @@ export function LineImageCell({
         setError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 

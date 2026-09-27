@@ -157,7 +157,6 @@ export function SupplierForm({ mode, initial, currencies }: Props) {
         router.refresh();
       } else {
         setSavedAt(new Date().toISOString());
-        router.refresh();
       }
     });
   }

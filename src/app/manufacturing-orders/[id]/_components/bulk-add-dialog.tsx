@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Layers } from "lucide-react";
 
@@ -36,7 +35,6 @@ export function BulkAddDialog({
 }: Props) {
   const t = useTranslations("moDetail");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +63,6 @@ export function BulkAddDialog({
         return;
       }
       handleOpenChange(false);
-      router.refresh();
     });
   }
 

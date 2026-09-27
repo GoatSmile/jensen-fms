@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import { ArchivePanel } from "@/components/archive-panel";
@@ -21,7 +20,6 @@ export function ArchiveKitButton({
   isActive: boolean;
   partCount: number;
 }) {
-  const router = useRouter();
   const t = useTranslations("adminKits");
 
   return (
@@ -36,7 +34,6 @@ export function ArchiveKitButton({
       onToggle={async () => {
         const r = await setKitActive(id, !isActive);
         if (!r.ok) return r.error;
-        router.refresh();
         return null;
       }}
     />

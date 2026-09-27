@@ -57,7 +57,9 @@ is Danish (person language).
 
 ## In flight — waiting on someone
 - **Nazar:** click through the 27 Sep changes in production (a paint order from
-  a real SO, a build screen, an offer line's VAT) — only local was checked, and
+  a real SO, a build screen, an offer line's VAT, and a few saves after the
+  refresh sweep — any page that no longer updates after a save is a missed
+  revalidation) — only local was checked, and
   no production session can be minted from here. Also still: Dennis-level
   logins see prices and *Adjust stock*. The Google calendar is started; it gets
   set up on Tuesday (Calendar ID + `GOOGLE_CALENDAR_SA_KEY` in Vercel +
@@ -78,8 +80,10 @@ is Danish (person language).
   production's.
 - **With the browser pane hidden, streamed sections never reveal** — a button
   inside one looks broken. `window.$RV(window.$RB)` (CLAUDE.md caveats).
-- **~119 redundant `router.refresh()` calls remain** outside the workbench and
-  paint lines (BACKLOG) — the same "stalls after save" class.
+- **The `router.refresh()` sweep is done (27 Sep, evening):** about 100 redundant
+  refreshes removed app-wide; four actions now revalidate the page they are
+  used on (work-order details → `/work/<wo>`, locations → `/admin/lists`,
+  supplier and people/role edit pages). Local browser check only.
 - **Charger "numbers" on newer bikes are model codes** (`FY2010001` on dozens of
   bikes) — never import them as unique identifiers.
 - **Version-1 sessions get `costs` if they hold `invoices`**

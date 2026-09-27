@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Copy, Plus, Trash2 } from "lucide-react";
 
@@ -40,7 +39,6 @@ const RECORD_TYPES: EmailDnsRecord["type"][] = ["TXT", "CNAME", "MX"];
 export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
   const t = useTranslations("adminSettings");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [domain, setDomain] = useState(initialDomain);
   const [records, setRecords] = useState<EmailDnsRecord[]>(initialRecords);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -89,7 +87,6 @@ export function EmailDnsCard({ initialDomain, initialRecords }: Props) {
         return;
       }
       setSuccess(t("saved"));
-      router.refresh();
     });
   }
 
