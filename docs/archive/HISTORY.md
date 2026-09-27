@@ -1046,3 +1046,40 @@ worst-placed instance of copy outliving its behaviour — the note directly unde
 those two settings said the interface was "still being translated, so some
 screens stay in English until that rolls out." That is the screen you use to go
 live, and it said the feature was not ready.
+
+## 2026-09-27 — The 15 Sep meeting's code items, none needing Dennis
+
+A Sunday sitting that took the go-live list's items with no open question and
+shipped them in slices (all verified in the browser against the local copy
+only; production untouched by hand, no migration).
+
+- **Paint orders take what the order already knows** (`a21f72c`). One loader,
+  `loadPaintSeedInputs`, now feeds the send-to-painter page, its action and
+  *Rebuild lines*: lines come from the MO's recipe (the template's paintwork
+  declaration only fills gaps), each bike keeps its own colour (a batch colour
+  used to overwrite them — the "all yellow" order), and a planned order on the
+  SO takes more bikes instead of a second one being made. The post-spawn paint
+  prompt had never been able to appear — it lived in a button that unmounted
+  with its own line — and now lives in the lines section. DECISIONS 2026-09-27.
+- **The build screen stops stalling** (`e66914e`): every action revalidated the
+  page and also called `router.refresh()`, so each click rendered ~13 queries
+  twice. The recipe now copies on first open, one rule counts required
+  identifiers everywhere (`requiredIdentifierProgress`), bikes got a notes
+  field, and "Released" became *Ready for production*.
+- **Offers** (`8d17574`): DK_STANDARD as the default VAT (all 533 customers had
+  none), *Duplicate offer*, Dictate in the offer / paint / PO send dialogs.
+- **Tuesday's Relatel kit** (`82dac0b`): Finn's one-page Danish guide and
+  `scripts/relatel-probe.mjs`, checked against the live API. Relatel's user
+  admin was read (MitID validation gates *Ny medarbejder*).
+- **Ready for the fleet** (`041cdd6`): `/bikes` pages via `fetchAllRows` past
+  PostgREST's silent 1000-row cap (tested with 1,158 bikes), the recognition
+  code on the bike and customer pages, the prefix editable, call extraction
+  taught the code's shape.
+- **The refresh sweep** (`7c4e304`): ~100 redundant `router.refresh()` calls
+  removed app-wide, each checked against the pages that actually import the
+  component; four actions that revalidated the wrong page (work-order details,
+  locations, supplier / person / role edit pages) now cover their own.
+- **Documents for decisions** (`21469d6`, `9a077a8`): the service-agreement
+  brief for the planning chat (per bike, not per customer; renewals a year
+  ahead per customer × EAN × month) and section C of Dennis's question sheet
+  rewritten as the twelve agreement questions.
