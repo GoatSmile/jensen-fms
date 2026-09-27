@@ -45,13 +45,15 @@ forwarding — and it captures every call he makes or takes on his own dialer, w
 bridge (option-2 calls only) and a "Call customer" button (app-started calls only) never could.
 - [ ] Owner: agree to test Relatel first and pause the Twilio number (DECISIONS entry — this
       revisits 2026-09-24).
-- [ ] One-page Danish instruction for Finn (PDF): switch on *Optag indgående / udgående
+- [x] One-page Danish instruction for Finn (PDF, `docs/RELATEL-FINN-2026-09.pdf`, 2026-09-27):
+      switch on *Optag indgående / udgående
       opkald* in Mobilfeatures; create a personal access token at
       `app.relatel.dk/account/authorized_applications` **logged in as himself** (only the
       number's own user may hear its recordings — an admin token will not do). The token goes
       to Nazar out of band and lives in env only (secrets doctrine). ~45 human-dev-min
-- [ ] Probe script: list `/calls` and `/voice_mails` with the token — recording present? audio
-      format? mono or two channels? how long after hang-up? ~45 human-dev-min
+- [x] Probe script: list `/calls` and `/voice_mails` with the token — recording present? audio
+      format? mono or two channels? how long after hang-up? (`scripts/relatel-probe.mjs`:
+      `--watch=20` during the calls, then `--download`; audio lands in the OS temp dir.)
 - [ ] On the day: a call via option 2, a call straight to his mobile, an outbound call from his
       dialer, one voicemail → run the probe.
 - [ ] Consent: recording notice on the main number's welcome greeting; decide what Finn says on
