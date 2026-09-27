@@ -1,14 +1,14 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-27 (session end, the 26 Sep sitting).** Two migrations
-and three slices shipped, and every open to-do now lives in one ordered list:
-**`docs/plan-go-live.md`**. Shipped: **migration 102** (import provenance +
-the recognition code; *Imported bikes* in the nav), **`scripts/import_fleet.py
-review`** (the fleet register as review lists, no database written), and
-**migration 103** (technicians see no money; Workshop trimmed). Decided (DECISIONS
-2026-09-26): **Relatel is tested before a Twilio number is bought**; imported
-bikes carry a provenance column; the recognition code is Jensen's own;
-technicians cannot add stock. **Next: the Tuesday 29 Sep visit** — plan §1.
+**Last updated: 2026-09-27 (session end, the Sunday-afternoon sitting).** Five
+slices from the go-live list shipped, all without Dennis's input and none with a
+migration: **paint orders** now take the recipe, each bike's colour and one job
+per sales order; the **build screen** stops stalling and opens with its parts;
+**offers** get DK VAT, *Duplicate* and dictation; **Tuesday's Relatel kit**
+(Finn's one-page PDF + a probe script); and the **bikes list pages** past the
+1000-row cap, with the **recognition code** on the bike and customer pages.
+Decided: DECISIONS 2026-09-27 (paint seeding). **Next: the Tuesday 29 Sep
+visit** — plan §1.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -25,92 +25,89 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 103 is the latest, and BOTH databases are verified at it**
-  (`npm run check:prod` / `check:local`). Ask the command, do not reason about it.
+- **Migration 103 is the latest; production verified at it** (`npm run
+  check:prod`, 27 Sep, 15:11). Nothing this sitting needed a migration.
 - **Production with `supabase db query --linked`** (writes pre-approved, owner
   2026-09-04; `-f` takes a whole file). **The local copy: `docker exec -i
-  supabase_db_jensen-fms psql …`** — `--local` takes one statement per call
-  (CLAUDE.md → Migrations).
-- **The 15 Sep meeting** is extracted item by item (timestamp + quote) beside
-  the transcript in `~/Documents/1-Projects/Jensen/Misc - Transcripts/`; its
-  to-dos are folded into the plan.
-- **Relatel, read 2026-09-26 (nothing changed there):** plan *Omstilling
-  Professional* (includes the API; no webhooks); **Finn, 42 47 15 51, already has
-  Mobilfeatures** (network-side recording in and out); main number 70 21 05 46,
-  menu 1 → Oprettelse, **2 → Finn**, 3 → Dennis, 4 → a message. Notes in plan §1A.
-  Finn's Relatel edit page shows his SIM PIN/PUK — never copy them.
+  supabase_db_jensen-fms psql …`** — `--local` takes one statement per call.
+- **Shipped 27 Sep (all verified locally in the browser, smoke 89/20/9/0):**
+  - *Paint:* lines from the MO's recipe (declaration fills gaps), each bike in
+    its own colour, a planned order takes more bikes, the spawn prompt waits for
+    the last line (and could never show before), "no bikes" says why, receiving
+    warns on part-less lines, preview link in the email dialog.
+  - *Build:* one POST per workbench action (was two full renders), recipe copies
+    on first open, one identifier rule everywhere (`requiredIdentifierProgress`),
+    bike notes, empty-recipe MO notice + copy, *Ready for production /
+    Klar til produktion* (was "Released").
+  - *Offers:* DK_STANDARD default VAT (all 533 customers had none), *Duplicate
+    offer*, Dictate in the offer / paint / PO send dialogs, template paintwork
+    hints.
+  - *Fleet-ready:* `/bikes` paged via `fetchAllRows`; recognition code on bike
+    header + customer bikes panel; prefix editable on the customer form; call
+    extraction knows the code's shape.
+- **Relatel (read 27 Sep):** *Ny medarbejder* is locked until the company is
+  MitID-validated (Dennis, MitID Erhverv); an existing employee can be made
+  admin directly (pencil → *Indstillinger → Rettigheder*). Two-factor login is
+  off. Details in OPERATIONS. Nothing was changed there.
 - **Fleet register review files** (no database written):
-  `~/Documents/1-Projects/Jensen/Fleet/import-review-2026-09-26/` — summary,
-  bikes, customers/departments, frames listed twice, number conflicts, the
-  renewal schedule. ~926 distinct frames on 26 customer sheets; 11 personal-data
-  sheets skipped; the monthly sheets are the per-bike renewal schedule (1 704 kr
-  = 142 × 12; + 480 kr GPS). Re-run: `python3 scripts/import_fleet.py review`.
+  `~/Documents/1-Projects/Jensen/Fleet/import-review-2026-09-26/`. Re-run:
+  `python3 scripts/import_fleet.py review`.
 - **Finn Nysom and Glenn exist in production** — Danish, role *Workshop*, no
-  password yet. Finn's email is `service@jensenproduction.dk` (his Relatel
-  login). Workshop now holds `work`, `scan`, `bikes`, `parts` and sees no money.
+  password yet. Finn's email is `service@jensenproduction.dk` (his Relatel login).
 
 ## In flight — waiting on someone
-- **Nazar:** check in production that Dennis-level logins still see prices and
-  *Adjust stock* (the new pages were only checked locally — no production
-  session can be minted from here). Create the Google calendar from the 26 Sep
-  steps; the build needs its Calendar ID and `GOOGLE_CALENDAR_SA_KEY` in Vercel
-  + `.env.local` (secret — never in chat). Review fleet files 2–4 (or pass the
-  doubtful rows to Dennis).
-- **Two documents ready for Dennis, not yet sent:** `FLEET-IMPORT-DENNIS-2026-09.pdf`
-  and `QUESTIONS-DENNIS-2026-09-24.pdf` (phone section rewritten 27 Sep for the
-  Relatel test: Finn switches recording on and makes his token on Tuesday; a
-  recording notice on the main greeting). Its section C still says "the
-  spreadsheet and guide I sent" — that guide was never sent.
-- **Owner decision, escalate:** service agreements are per bike in reality; the
-  app models them per customer (plan §2A). Fleet-import scope/status questions:
-  plan §7.
+- **Nazar:** click through the 27 Sep changes in production (a paint order from
+  a real SO, a build screen, an offer line's VAT) — only local was checked, and
+  no production session can be minted from here. Also still: Dennis-level
+  logins see prices and *Adjust stock*. The Google calendar is started; it gets
+  set up on Tuesday (Calendar ID + `GOOGLE_CALENDAR_SA_KEY` in Vercel +
+  `.env.local` — secret, never in chat).
+- **Dennis:** answers to `FLEET-IMPORT-DENNIS-2026-09.pdf` (asked; waiting — the
+  missing-customer questions). `QUESTIONS-DENNIS-2026-09-24.pdf` is updated for
+  Relatel but not sent; its section C mentions a guide that was never sent.
+  MitID validation in Relatel if a second admin *user* is wanted.
+- **Owner decisions, escalate:** service agreements per bike (plan §2A); paint
+  lifecycle rework vs "emailing IS the send" (plan §2C); identifier overwrite
+  and quantity-driven identifier counts (plan §2D).
 
 ## Landmines
 - **Docker Desktop is running; the local stack and dev server are stopped.**
-  `supabase start` brings the copy back with its data. `scripts/use-db.sh` says
-  LOCAL whether or not the containers are up.
-- **The bikes list is unpaginated and the API caps a response at 1000 rows** —
-  the imported fleet will bring it close (CLAUDE.md caveat). Paginate first.
+  `supabase start` brings the copy back with its data (TEST rows from 27 Sep:
+  *TEST Lakflow ApS*, `SO-2026-0001`, `SO-2026-9901`, `PNT-2026-0009`,
+  `OFF-2026-9901`/`0001` — all marked TEST). The local document counters lag
+  production's.
+- **With the browser pane hidden, streamed sections never reveal** — a button
+  inside one looks broken. `window.$RV(window.$RB)` (CLAUDE.md caveats).
+- **~119 redundant `router.refresh()` calls remain** outside the workbench and
+  paint lines (BACKLOG) — the same "stalls after save" class.
 - **Charger "numbers" on newer bikes are model codes** (`FY2010001` on dozens of
-  bikes) — never import them as unique identifiers; the script keeps them in
-  the source row only.
-- **Version-1 sessions get `costs` if they hold `invoices`** (the deploy-safety
-  upgrade in `src/lib/auth/session.ts`). Delete it after 2026-10-27 (BACKLOG).
+  bikes) — never import them as unique identifiers.
+- **Version-1 sessions get `costs` if they hold `invoices`**
+  (`src/lib/auth/session.ts`). Delete after 2026-10-27 (BACKLOG).
 - **Vercel ships HTML whose `next/font` class its own stylesheet does not
-  define** — worked around by declaring the font variables on `:root`
-  (DECISIONS 2026-09-13). If fonts look wrong, check `--font-geist-sans` first.
-- **The DA/EN dictation chip is a hint, not a constraint** (one sample, 13 Sep).
+  define** — worked around on `:root` (DECISIONS 2026-09-13).
 - **The local Supabase can never transcribe** (the provider fetches the signed
-  URL; `127.0.0.1` is unreachable) — end-to-end dictation means `use-db.sh prod`.
+  URL) — end-to-end dictation means `use-db.sh prod`.
 - **No production session can be minted from this machine** (`SITE_PASSWORD`
   lives only in Vercel) — authenticated production pages need a human.
-- The e-conomic trial-vs-production grant remains as previously recorded.
 
 ## Next actions — `docs/plan-go-live.md` §1 (before Tuesday 29 Sep, 13:00)
-1. **Relatel test kit**: Finn's one-page Danish instruction (recording on + a
-   personal access token, as himself) + a probe script for `/calls` and
-   `/voice_mails`; run it on Tuesday. Consent notice on the main number.
-2. **Tuesday**: passwords for Finn and Glenn; Finn logs in on his phone and
-   walks one repair; the Relatel test calls; Dennis's paint order
-   (`PNT-2026-0012`); collect the agreement papers and the Trello-export answer.
-3. **Fleet import: Dennis sorts out the open points** — `docs/FLEET-IMPORT-DENNIS-2026-09.pdf`
-   (written 27 Sep, **not yet sent**): nine sheets whose customer is unclear
-   (146 bikes), five default rules to confirm, four data questions (latest list?
-   *SLUT22*? price 0? each customer's code letters), frames listed twice and
-   number clashes in the appendix. Load after his answers — the ~780 clear bikes
-   need nothing from him but the rules. *SLUT22* in column A on the Høje-Taastrup
-   sheet is a marker, not a code (the codes sit in another column): the load step
-   must not import it as a recognition code.
-4. Finn's Danish user guide (PDF); calendar slice 0 once the ID + key exist.
-5. Carried over: click `/offers` in production; send Dennis the production
-   checklist + colour lists.
+1. **Tuesday:** Finn's Relatel steps (`docs/RELATEL-FINN-2026-09.pdf` — print
+   it); run `RELATEL_TOKEN=… node scripts/relatel-probe.mjs --watch=20` during
+   the four test calls, then `--download`; delete the downloaded audio after.
+   Passwords for Finn and Glenn; Finn walks one repair on his phone; set up the
+   calendar; walk `PNT-2026-0012` with Dennis (the receive warning now exists).
+2. **Fleet import** once Dennis answers: build `import_fleet.py sql` → a data
+   migration (bikes on the customer, identifiers incl. recognition codes,
+   delivered date → `assigned_at`); the list and search are ready for it.
+3. Finn's Danish user guide (PDF); calendar slice 0 once the ID + key exist.
+4. Next from the meeting (plan §2): delivery process (Dennis's "number one",
+   §2B) — SO delivery contact, delivery note, finger signature.
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-09-26): 87 pass · 19 redirect · 12 skip · 0 fail** — the
-  same before and after this session's code. The drop from 92 is data: the
-  local copy (refreshed 15 Sep, after the purges) has no ticket, work order,
-  invoice, agreement or offer to render, so those detail routes SKIP. A SKIP is
-  not a pass.
+- **Smoke, local (2026-09-27): 89 pass · 20 redirect · 9 skip · 0 fail.** Up from
+  87/19/12 because the local copy now holds an offer and TEST orders; the skips
+  are invoices, tickets, work orders, agreements and `/work/[woId]` (no rows).
 - **Invariant audit** (not re-run this session): two standing hits — check 17
   (`JP-BasJen`, 500 units with no known cost) and check 18 (legacy
   `unit_cost_basis = 'none'`, 9 rows; can only shrink).
@@ -118,7 +115,7 @@ is Danish (person language).
 ## Data-entry debts (owner/admin work, not code)
 - **Seven unclassified bikes** `JP-2026-E_BIKE-030…037` (planning, no owner,
   no TEST marker) — real or test? One answer from Dennis.
-- **Recognition prefixes per customer** (BK, GK, …) — the register implies
-  most; Dennis confirms. The column exists (`organizations.recognition_prefix`).
+- **Recognition prefixes per customer** (BK, GK, …) — now editable on the
+  customer form; the register implies most; Dennis confirms.
 - Glenn's surname, email, phone; whether Dennis's Trello export replaces the
   register; the service-agreement papers.

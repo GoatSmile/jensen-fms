@@ -97,10 +97,10 @@ treat the early totals as floors, not truth.
 | Tue 2026-09-15 | ~1.5 | **The local copy catches up, then a test chain leaves production** — stack restarted and re-dumped from prod; then 20 documents, 9 bikes and 108 movements from the morning's offer→paint run purged after a dry-run. Stock +97. |
 | Thu 2026-09-24 | ~4 | **Dennis prep and the 24 Sep call → Finn's service line and calendar designed**: fleet/phone/question PDFs, Relatel researched (no recording API), option-2 → Twilio route and a Google service calendar decided; Tuesday 29 Sep visit planned. |
 | Sat 2026-09-26 | ~1.5 | **One ordered to-do list to go-live, and imported bikes get a home** (migration 102): Relatel tested before Twilio, the 15 Sep meeting extracted, the fleet register turned into review lists, Finn and Glenn created. |
-| Sun 2026-09-27 | ~0.5 | **Technicians see no money** (migration 103): Workshop trimmed to the floor's screens, stock adjusting made office work; then the fleet-import letter for Dennis. Same sitting as Saturday, past midnight. |
+| Sun 2026-09-27 | ~2 | **Five slices from the 15 Sep meeting, none needing Dennis**: paint orders take the recipe and each bike's colour, the build screen stops stalling, offers get DK VAT and Duplicate, Finn's Relatel kit, bikes list paged. Past midnight: migration 103. |
 
-**September so far: ~49 h** (8 working days)
+**September so far: ~50.5 h** (8 working days)
 
 ---
 
-**Project total: ~303 h across 49 working days (2026-05-07 → 2026-09-27)**
+**Project total: ~304.5 h across 49 working days (2026-05-07 → 2026-09-27)**
