@@ -43,7 +43,7 @@ in `GET /calls` for the user's own token. **That costs nothing to test: everythi
 If it passes, Relatel replaces Twilio for Finn: no Danish number, no regulatory bundle, no
 forwarding — and it captures every call he makes or takes on his own dialer, which the Twilio
 bridge (option-2 calls only) and a "Call customer" button (app-started calls only) never could.
-- [ ] Owner: agree to test Relatel first and pause the Twilio number (DECISIONS entry — this
+- [x] Owner: agree to test Relatel first and pause the Twilio number (DECISIONS entry — this
       revisits 2026-09-24).
 - [x] One-page Danish instruction for Finn (PDF, `docs/RELATEL-FINN-2026-09.pdf`, 2026-09-27):
       switch on *Optag indgående / udgående
@@ -103,7 +103,7 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
 - [ ] Click `/offers` in production and confirm it renders (one human click).
 - [ ] Send Dennis `PRODUCTION-CHECKLIST-DENNIS-2026-09` + `COLOUR-LISTS-DENNIS-2026-09`.
 - [ ] Calendar invite for Tuesday 13:00. Proposal to Renee (not app work).
-- [ ] `npm run smoke` on the refreshed local copy (outstanding since 15 Sep).
+- [x] `npm run smoke` on the refreshed local copy (27 Sep: 89 pass · 20 redirect · 9 skip · 0 fail).
 - [ ] Walk `PNT-2026-0012` with Dennis (received with no parts on its lines). The warning
       at `received_back` shipped 2026-09-27.
 - [ ] The seven unclassified bikes (`JP-2026-E_BIKE-030…037`) — Dennis: real or test? (He said
