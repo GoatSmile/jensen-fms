@@ -48,6 +48,8 @@ type Props = {
    * into margin but invisible to the MO's coverage and the build floor.
    */
   backedPartTypeIds: string[];
+  /** Holds `templates_edit` — only Dennis changes templates. */
+  mayEdit: boolean;
 };
 
 /**
@@ -63,6 +65,7 @@ type Props = {
 export function PaintworkSection({
   templateId,
   isCurrent,
+  mayEdit,
   rows,
   partTypes,
   totalLabel,
@@ -74,7 +77,7 @@ export function PaintworkSection({
 }: Props) {
   const t = useTranslations("templateDetail");
   const [error, setError] = useState<string | null>(null);
-  const canEdit = isCurrent;
+  const canEdit = isCurrent && mayEdit;
 
   const backed = new Set(backedPartTypeIds);
   const unbacked = rows.filter((r) => !backed.has(r.partTypeId));

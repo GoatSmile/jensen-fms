@@ -843,7 +843,8 @@
     "youAreHere": "du er her",
     "noDefaultSupplier": "Der er ikke valgt en standardlakerer, så prisen kan ikke beregnes. Vælg en under Administration → Serviceprislister.",
     "defaultHasNoList": "{supplier} er standardlakerer, men har ingen aktuel prisliste, så prisen kan ikke beregnes. Tilføj deres prisliste, eller vælg en anden leverandør som standard.",
-    "thatSupplier": "standardlakereren"
+    "thatSupplier": "standardlakereren",
+    "readOnlyNoEditCap": "Du kan se skabelonen, men ikke ændre den — skabeloner ændres af ejeren."
   },
   "parts": {
     "title": "Dele",
@@ -3601,7 +3602,8 @@
     "passwordSavedNote": "Adgangskoden er opdateret.",
     "passwordAdminNote": "Admin er den fælles konto: den logger ind med site-adgangskoden fra miljøet og har derfor ingen egen adgangskode her.",
     "passwordNeedsRole": "Personen har ingen rolle og kan derfor ikke logge ind endnu — et login uden rettigheder ville blive afvist på alle sider. Giv personen en rolle nedenfor.",
-    "passwordWriteOnlyHint": "Kan kun skrives: adgangskoden gemmes som en hash og kan aldrig vises igen."
+    "passwordWriteOnlyHint": "Kan kun skrives: adgangskoden gemmes som en hash og kan aldrig vises igen.",
+    "capTemplatesEdit": "Oprette og ændre cykelskabeloner"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -4413,7 +4415,8 @@
     "partOutboundKindRequired": "Fjernelse af lager kræver en årsagstype: en rettelse af antallet eller en kassation.",
     "noCostsCapability": "Kun personer, der må se priser, kan ændre timeprisen eller om arbejdet faktureres.",
     "woStartNeedsWork": "Kun personer med adgang til værkstedet kan oprette et arbejdskort her.",
-    "woBikeCannotTakeWork": "Cyklen er udgået, bortkommet eller slettet og kan ikke få et nyt arbejdskort."
+    "woBikeCannotTakeWork": "Cyklen er udgået, bortkommet eller slettet og kan ikke få et nyt arbejdskort.",
+    "templatesEditOnly": "Kun personer, der må ændre cykelskabeloner, kan gøre dette."
   },
   "inbox": {
     "title": "Indbakke",

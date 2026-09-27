@@ -23,6 +23,7 @@ import {
 import { HashScroll } from "@/components/hash-scroll";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
@@ -41,10 +42,12 @@ export default async function BikeTemplatesPage({
 }) {
   const sp = await searchParams;
   const showAllVersions = sp.current === "all";
-  const [t, tCommon, locale] = await Promise.all([
+  const [t, tCommon, locale, mayEdit] = await Promise.all([
     getTranslations("templates"),
     getTranslations("common"),
     getLocale(),
+    // Only Dennis creates templates (migration 104); others read them.
+    readHasCapability("templates_edit"),
   ]);
 
   const supabase = await createClient();
@@ -154,11 +157,13 @@ export default async function BikeTemplatesPage({
               </Link>
             </p>
           </div>
-          <Button asChild>
-            <Link href="/bike-templates/new">
-              <Plus aria-hidden /> {t("newTemplate")}
-            </Link>
-          </Button>
+          {mayEdit ? (
+            <Button asChild>
+              <Link href="/bike-templates/new">
+                <Plus aria-hidden /> {t("newTemplate")}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -167,7 +172,11 @@ export default async function BikeTemplatesPage({
           icon={BookOpen}
           title={t("emptyTitle")}
           description={t("emptyDescription")}
-          action={{ label: t("newTemplate"), href: "/bike-templates/new" }}
+          action={
+            mayEdit
+              ? { label: t("newTemplate"), href: "/bike-templates/new" }
+              : undefined
+          }
         />
       ) : (
         <div className="flex flex-col gap-6">

@@ -6,10 +6,12 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
-- **Delete the v1-session `costs` upgrade after 2026-10-27** — the block at the
-  end of `verifySessionToken` in `src/lib/auth/session.ts`. Sessions last 30
-  days, so every version-1 cookie (minted before migration 103) is expired by
-  then; the upgrade only existed so Dennis kept his figures across the deploy.
+- **Delete the pre-v3 session upgrades after 2026-10-27** — both blocks at the
+  end of `verifySessionToken` in `src/lib/auth/session.ts` (`costs` for v1,
+  `templates_edit` for v1/v2) and the `v !== 1 && v !== 2` acceptance. Sessions
+  last 30 days, so every cookie minted before migration 104 is expired by then;
+  the upgrades only existed so Dennis kept his figures and his templates across
+  the deploys.
 - **A TEST marker should travel down the generators.** On 2026-09-15 a full
   offer → SO → MO → build → paint chain was exercised in production and **14 of
   the 20 documents carried no marker**: only the six a human typed had one, while

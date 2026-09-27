@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
 import { familyTint } from "@/lib/bike-templates/family-colors";
@@ -42,11 +43,14 @@ export default async function BikeTemplateDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tTpl, tCommon, locale] = await Promise.all([
+  const [t, tTpl, tCommon, locale, mayEdit] = await Promise.all([
     getTranslations("templateDetail"),
     getTranslations("templates"),
     getTranslations("common"),
     getLocale(),
+    // Only Dennis creates and changes templates (migration 104). Without it
+    // the page is a read-only view; every writer refuses on the server too.
+    readHasCapability("templates_edit"),
   ]);
   const supabase = await createClient();
 
@@ -310,15 +314,17 @@ export default async function BikeTemplateDetailPage({
             )}
           </p>
         </div>
-        <div className="flex gap-2">
-          <DeleteTemplateButton templateId={tpl.id} />
-          <DuplicateTemplateButton templateId={tpl.id} />
-          <Button variant="outline" asChild>
-            <Link href={`/bike-templates/${tpl.id}/edit`}>
-              <Pencil aria-hidden /> {t("edit")}
-            </Link>
-          </Button>
-        </div>
+        {mayEdit ? (
+          <div className="flex gap-2">
+            <DeleteTemplateButton templateId={tpl.id} />
+            <DuplicateTemplateButton templateId={tpl.id} />
+            <Button variant="outline" asChild>
+              <Link href={`/bike-templates/${tpl.id}/edit`}>
+                <Pencil aria-hidden /> {t("edit")}
+              </Link>
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {tpl.notes ? (
@@ -330,6 +336,7 @@ export default async function BikeTemplateDetailPage({
       <PartsRecipeSection
         templateId={tpl.id}
         isCurrent={tpl.is_current}
+        mayEdit={mayEdit}
         initialRows={initialRows}
         categories={categories}
         parts={parts}
@@ -355,6 +362,7 @@ export default async function BikeTemplateDetailPage({
       <PaintworkSection
         templateId={tpl.id}
         isCurrent={tpl.is_current}
+        mayEdit={mayEdit}
         rows={paintEstimate.rows.map((r) => ({
           ...r,
           partTypeName: localizedName(locale, r.partTypeName, r.partTypeNameDa),

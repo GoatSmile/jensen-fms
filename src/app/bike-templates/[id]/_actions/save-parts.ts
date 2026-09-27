@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveTemplatePartsInput = {
@@ -33,6 +34,9 @@ export async function saveTemplateParts(
   input: SaveTemplatePartsInput,
 ): Promise<SaveTemplatePartsResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!input.templateId) return { ok: false, error: t("missingTemplateId") };
 
   for (const p of input.parts) {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type ManagePaintworkResult = { ok: true } | { ok: false; error: string };
@@ -68,6 +69,9 @@ export async function addTemplatePaintPart(
   input: { servicePartTypeId: string; quantity: number },
 ): Promise<ManagePaintworkResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!templateId) return { ok: false, error: t("missingTemplateId") };
   if (!input.servicePartTypeId)
     return { ok: false, error: t("tplPickPartType") };
@@ -103,6 +107,9 @@ export async function updateTemplatePaintPart(
   input: { quantity: number },
 ): Promise<ManagePaintworkResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!templateId || !rowId) {
     return { ok: false, error: t("tplMissingTemplateOrRow") };
   }
@@ -131,6 +138,9 @@ export async function removeTemplatePaintPart(
   rowId: string,
 ): Promise<ManagePaintworkResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!templateId || !rowId) {
     return { ok: false, error: t("tplMissingTemplateOrRow") };
   }

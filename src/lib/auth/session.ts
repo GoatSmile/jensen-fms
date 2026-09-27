@@ -25,10 +25,11 @@
 
 export type AppSession = {
   /**
-   * 2 since 2026-09-26, when `costs` joined the registry. A v1 session was
-   * minted before it existed: see the upgrade in `verifySessionToken`.
+   * 2 since 2026-09-26, when `costs` joined the registry; 3 since 2026-09-27,
+   * when `templates_edit` did. An older session was minted before its
+   * capability existed: see the upgrades in `verifySessionToken`.
    */
-  v: 1 | 2;
+  v: 1 | 2 | 3;
   /** Primary role key ('owner', 'workshop', 'admin') — display + home. */
   role: string;
   /** Capability keys frozen at login (validated against the registry). */
@@ -115,7 +116,7 @@ export async function verifySessionToken(
   if (typeof parsed !== "object" || parsed === null) return null;
   const s = parsed as Partial<AppSession>;
   if (
-    (s.v !== 1 && s.v !== 2) ||
+    (s.v !== 1 && s.v !== 2 && s.v !== 3) ||
     typeof s.role !== "string" ||
     !Array.isArray(s.caps) ||
     !s.caps.every((c) => typeof c === "string") ||
@@ -135,13 +136,24 @@ export async function verifySessionToken(
   // Without this, deploying the gate would hide Dennis's costs until his next
   // login (sessions last 30 days). Every v1 cookie has expired by 2026-10-27;
   // delete this block then.
-  const session = s as AppSession;
+  let session = s as AppSession;
   if (
     session.v === 1 &&
     session.caps.includes("invoices") &&
     !session.caps.includes("costs")
   ) {
-    return { ...session, caps: [...session.caps, "costs"] };
+    session = { ...session, caps: [...session.caps, "costs"] };
+  }
+  // Same shape for `templates_edit` (2026-09-27): the two roles granted it,
+  // Owner and IT admin, are exactly the ones holding `admin`, so a pre-v3
+  // session holding `admin` gets it. Every v2 cookie has expired by
+  // 2026-10-27 too; delete both blocks then.
+  if (
+    session.v < 3 &&
+    session.caps.includes("admin") &&
+    !session.caps.includes("templates_edit")
+  ) {
+    session = { ...session, caps: [...session.caps, "templates_edit"] };
   }
   return session;
 }

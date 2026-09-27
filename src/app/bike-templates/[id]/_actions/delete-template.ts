@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type DeleteTemplateResult = { ok: false; error: string };
@@ -23,6 +24,9 @@ export async function deleteTemplate(
   templateId: string,
 ): Promise<DeleteTemplateResult | void> {
   const te = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: te("templatesEditOnly") };
+  }
   if (!templateId) return { ok: false, error: te("missingTemplateId") };
 
   const supabase = await createClient();

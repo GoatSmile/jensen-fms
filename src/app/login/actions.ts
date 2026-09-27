@@ -60,7 +60,7 @@ export async function login(
   if (admin && personId === admin.id) {
     if (password !== expected) return { error: t("wrongPassword") };
     session = {
-      v: 2,
+      v: 3,
       role: "admin",
       caps: [...ALL_CAPABILITIES],
       home: "/",
@@ -90,7 +90,7 @@ export async function login(
     const access = await loadPersonAccess(supabase, personId);
     if (!access) return { error: t("wrongPassword") };
     session = {
-      v: 2,
+      v: 3,
       role: access.role,
       caps: access.caps,
       home: access.home,

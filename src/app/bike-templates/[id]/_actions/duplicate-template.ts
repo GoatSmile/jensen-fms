@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type DuplicateResult = { ok: false; error: string };
@@ -26,6 +27,9 @@ export type DuplicateResult = { ok: false; error: string };
  */
 export async function duplicateTemplate(templateId: string): Promise<DuplicateResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!templateId) return { ok: false, error: t("missingTemplateId") };
 
   const supabase = await createClient();

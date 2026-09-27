@@ -85,6 +85,8 @@ type Props = {
     totalLabel: string | null;
     listLabel: string | null;
   } | null;
+  /** Holds `templates_edit` — only Dennis changes templates. */
+  mayEdit: boolean;
 };
 
 /**
@@ -109,6 +111,7 @@ type Props = {
 export function PartsRecipeSection({
   templateId,
   isCurrent,
+  mayEdit,
   initialRows,
   categories,
   parts,
@@ -130,7 +133,7 @@ export function PartsRecipeSection({
     Record<string, string>
   >({});
 
-  const canEdit = isCurrent;
+  const canEdit = isCurrent && mayEdit;
 
   // Group catalog parts by category for the LEFT panel.
   const partsByCategory = useMemo(() => {
@@ -461,7 +464,7 @@ export function PartsRecipeSection({
       <div>
         {!canEdit ? (
           <p className="bg-ground text-ink-2 mb-3 rounded-md px-3 py-2 text-xs">
-            {t("pastVersionNote")}
+            {mayEdit ? t("pastVersionNote") : t("readOnlyNoEditCap")}
           </p>
         ) : null}
 

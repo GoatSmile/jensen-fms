@@ -642,8 +642,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   Design: `docs/plan-people-roles.md`; build state: `docs/STATUS.md`.
   - **Technicians see no money: the `costs` capability** (migration 103,
     DECISIONS 2026-09-26; supersedes the July "workshop sees costs" rule). It is
-    the one capability that is not an app area. Every role but *Workshop* holds
-    it. A screen a technician can open — parts, a bike, the floor, the build
+    not an app area (nor is `templates_edit`, below). Every role but *Workshop*
+    holds it. A screen a technician can open — parts, a bike, the floor, the build
     workbench — **withholds** money without it (`readCanSeeCosts()`): the server
     neither renders nor sends the figures, because a hidden column that still
     ships its numbers is not hidden. The Stock value page and the part
@@ -651,6 +651,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     **technicians cannot add stock** (owner). Screens whose job IS money
     (invoices, orders, dashboard, office ticket/WO pages) show it to whoever may
     open them, so granting such an area implies money.
+  - **Only Dennis changes templates: `templates_edit`** (migration 104,
+    DECISIONS 2026-09-27). `templates` opens the pages; this one lets its holder
+    create, edit, version, duplicate or delete — Owner and IT admin only. Same
+    three gates as `costs`: the `/new` and `/edit` routes, a
+    `readHasCapability` check in EVERY writer action, and a read-only detail
+    page. **An action a route does not gate checks its capability itself** —
+    middleware only sees the page URL, and a server action is callable from any
+    page that imports it.
   - **Workshop = `work`, `scan`, `bikes`, `parts`** (re-evaluated 2026-09-26):
     no dashboard, inbox or office maintenance pages. The build workbench, batch
     build and pick list live under an MO's URL but open with `work` OR `mo`, and

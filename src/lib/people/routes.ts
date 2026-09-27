@@ -57,6 +57,16 @@ const COSTS_ROUTES: ReadonlyArray<RegExp> = [
 ];
 
 /**
+ * Pages that exist only to CHANGE a template (migration 104). The detail page
+ * stays on `templates` and hides its editors instead; every writer action
+ * checks `templates_edit` itself, because middleware only sees page URLs.
+ */
+const TEMPLATE_EDIT_ROUTES: ReadonlyArray<RegExp> = [
+  /^\/bike-templates\/new(\/|$)/,
+  /^\/bike-templates\/[^/]+\/edit(\/|$)/,
+];
+
+/**
  * The capabilities that open a pathname — any one suffices — or null for
  * unmapped routes (public prefixes never reach this — middleware filters them
  * first).
@@ -67,6 +77,9 @@ export function routeCapabilities(
   if (pathname === "/") return ["dashboard"];
   if (FLOOR_ROUTES.some((re) => re.test(pathname))) return ["work", "mo"];
   if (COSTS_ROUTES.some((re) => re.test(pathname))) return ["costs"];
+  if (TEMPLATE_EDIT_ROUTES.some((re) => re.test(pathname))) {
+    return ["templates_edit"];
+  }
   for (const [prefix, cap] of ROUTE_CAPABILITIES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return [cap];
   }

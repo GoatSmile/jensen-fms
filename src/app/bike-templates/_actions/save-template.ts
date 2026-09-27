@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveTemplateResult =
@@ -76,6 +77,9 @@ export async function createTemplate(
   formData: FormData,
 ): Promise<SaveTemplateResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   const parsed = parseShell(formData, t);
   if ("error" in parsed)
     return { ok: false, error: parsed.error, field: parsed.field };
@@ -114,6 +118,9 @@ export async function updateTemplate(
   formData: FormData,
 ): Promise<SaveTemplateResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("templates_edit"))) {
+    return { ok: false, error: t("templatesEditOnly") };
+  }
   if (!templateId) return { ok: false, error: t("missingTemplateId") };
   // Edit-shell mutates everything except bike_type_id (kept stable to preserve
   // history). Frame size CAN change on edit — if you really need a different

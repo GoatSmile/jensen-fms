@@ -843,7 +843,8 @@
     "youAreHere": "you are here",
     "noDefaultSupplier": "No default painter is set, so this cannot be priced. Set one in Admin → Service price lists.",
     "defaultHasNoList": "{supplier} is the default painter but has no current price list, so this cannot be priced. Add their price list, or make another supplier the default.",
-    "thatSupplier": "the default painter"
+    "thatSupplier": "the default painter",
+    "readOnlyNoEditCap": "You can look at this template but not change it — templates are changed by the owner."
   },
   "parts": {
     "title": "Parts",
@@ -3601,7 +3602,8 @@
     "passwordSavedNote": "Password updated.",
     "passwordAdminNote": "Admin is the shared account: it signs in with the site password from the environment, so it has no password of its own here.",
     "passwordNeedsRole": "This person holds no role, so they can't log in yet — a login with no capabilities would be bounced off every page. Give them a role below.",
-    "passwordWriteOnlyHint": "Write-only: the password is stored as a hash and can never be shown again."
+    "passwordWriteOnlyHint": "Write-only: the password is stored as a hash and can never be shown again.",
+    "capTemplatesEdit": "Create and change bike templates"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -4413,7 +4415,8 @@
     "partOutboundKindRequired": "Removing stock needs a reason type: a correction to the count, or a disposal.",
     "noCostsCapability": "Only people who may see costs can change the labour rate or whether the work is billed.",
     "woStartNeedsWork": "Only people with access to the workshop floor can start a work order here.",
-    "woBikeCannotTakeWork": "This bike is retired, lost or deleted, so it cannot get a new work order."
+    "woBikeCannotTakeWork": "This bike is retired, lost or deleted, so it cannot get a new work order.",
+    "templatesEditOnly": "Only people allowed to change bike templates can do this."
   },
   "inbox": {
     "title": "Inbox",

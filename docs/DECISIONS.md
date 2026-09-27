@@ -3116,3 +3116,25 @@ Dev calls implementing what Dennis described on 15 Sep (the three-hour meeting:
   The spawn action revalidates the page, the line now has its MO, and the button
   that held the dialog unmounted with it. The prompt now lives in the lines
   section.
+
+## 2026-09-27 — Changing a template is its own capability, `templates_edit`
+
+Owner, choosing between options in session (implements Dennis, 15 Sep 00:34:19:
+"I'm the only one creating"). `templates` used to both open the template pages
+and let its holder change them, and Sales and Accountant hold it.
+
+- **`templates` is the right to look; `templates_edit` is the right to change**
+  — create, edit, version, duplicate, delete, recipe and paintwork (migration
+  104). Owner and IT admin hold it; the Admin login holds every capability.
+  Sales still reads templates, because an offer is priced off one.
+- **Gated three ways, like `costs`:** `/bike-templates/new` and `/[id]/edit` by
+  route; every writer action by `readHasCapability` on the server; the detail
+  page renders read-only with a note. *Label this BOM* is kit work on parts, not
+  a template edit, and stays under `parts`.
+- **Sessions minted before it** get it when they hold `admin` — exactly the two
+  roles granted it. Dies with the last v2 cookie on 2026-10-27, beside the
+  `costs` upgrade.
+- **Rejected:** leaving it (today only Dennis and Nazar can open templates at
+  all, but the first person given *Sales* could create them); a per-person grant
+  (capabilities attach to roles — the model has no per-person override, and
+  "only Dennis" is what the Owner role means).

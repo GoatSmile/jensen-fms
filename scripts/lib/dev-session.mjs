@@ -114,12 +114,19 @@ export async function capsFor(env, personId) {
   };
 }
 
-/** Mirrors src/lib/people/capabilities.ts. */
+/**
+ * Every registered capability, READ from src/lib/people/capabilities.ts rather
+ * than copied: the hand copy that stood here missed `templates_edit` the day
+ * it was added, and an Admin cookie minted from it was bounced off the pages
+ * that capability gates — a test failing for a reason the app does not have.
+ */
+const REGISTRY = new URL("../../src/lib/people/capabilities.ts", import.meta.url);
 export const ALL_CAPS = [
-  "dashboard", "bikes", "templates", "parts", "maintenance", "inbox", "work",
-  "scan", "mo", "po", "so", "paint", "invoices", "agreements", "customers", "admin",
-  "costs",
-];
+  ...(await readFile(REGISTRY, "utf8")).matchAll(/\{\s*key:\s*"([a-z_]+)"/g),
+].map((m) => m[1]);
+if (ALL_CAPS.length === 0) {
+  throw new Error(`No capabilities found in ${REGISTRY.pathname}`);
+}
 
 /** The whole job: person → cookie value. */
 export async function mintCookie(env, who, { allCaps = false } = {}) {
@@ -129,7 +136,7 @@ export async function mintCookie(env, who, { allCaps = false } = {}) {
   const access = await capsFor(env, person.id);
   const token = signSession(
     {
-      v: 2,
+      v: 3,
       role: access.role,
       caps: allCaps ? ALL_CAPS : access.caps,
       home: access.home,

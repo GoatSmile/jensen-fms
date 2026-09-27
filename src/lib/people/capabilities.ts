@@ -12,6 +12,11 @@
  * the floor, the build workbench); areas whose job IS money (invoices, orders,
  * the dashboard, the office ticket/WO pages) show it to whoever may open them.
  *
+ * A second exception, `templates_edit` (migration 104): `templates` opens the
+ * template pages, and this one lets its holder CHANGE them — create, edit,
+ * version, duplicate, delete. Owner, 2026-09-15: only Dennis creates
+ * templates; Sales still reads them to price an offer.
+ *
  * Keys line up with the shared nav (src/components/nav-items.ts);
  * `navLabelKey` points into the `nav` message namespace so the admin
  * checkboxes reuse the exact nav wording. A capability without a nav item
@@ -21,6 +26,7 @@ export const CAPABILITIES = [
   { key: "dashboard", navLabelKey: "dashboard" },
   { key: "bikes", navLabelKey: "bikes" },
   { key: "templates", navLabelKey: "bikeTemplates" },
+  { key: "templates_edit", navLabelKey: null, adminLabelKey: "capTemplatesEdit" },
   { key: "parts", navLabelKey: "parts" },
   { key: "maintenance", navLabelKey: "maintenance" },
   { key: "inbox", navLabelKey: "inbox" },
