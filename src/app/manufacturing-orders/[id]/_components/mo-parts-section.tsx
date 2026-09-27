@@ -28,6 +28,7 @@ import { formatQuantity } from "@/lib/parts/stock";
 import {
   addKitPartsToMO,
   addMOPart,
+  copyTemplateRecipeToMO,
   removeMOPart,
   updateMOPartQuantity,
 } from "../_actions/manage-mo-parts";
@@ -125,6 +126,7 @@ export function MOPartsSection({
     Record<string, string>
   >({});
   const [, startAdd] = useTransition();
+  const [copying, startCopy] = useTransition();
 
   // Group catalog parts by category for the picker.
   const partsByCategory = useMemo(() => {
@@ -299,7 +301,28 @@ export function MOPartsSection({
               {t("xOutstanding", { count: outstandingBikes })}
             </span>
           </div>
-          {rows.length === 0 ? (
+          {rows.length === 0 && hasTemplate && !readOnly ? (
+            // A template MO with no recipe means the copy at creation failed —
+            // every bike on it would open with no parts. Say so, and fix it.
+            <div className="bg-money-wash text-money flex flex-col items-center gap-2 rounded-lg px-4 py-6 text-center text-sm">
+              <p>{t("recipeMissing")}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={copying}
+                onClick={() => {
+                  setError(null);
+                  startCopy(async () => {
+                    const r = await copyTemplateRecipeToMO(moId);
+                    if (!r.ok) setError(r.error);
+                  });
+                }}
+              >
+                {copying ? t("recipeCopying") : t("recipeCopyFromTemplate")}
+              </Button>
+            </div>
+          ) : rows.length === 0 ? (
             <div className="text-ink-3 bg-ground flex h-32 items-center justify-center rounded-lg text-sm italic">
               {t("noPartsYet")}
             </div>

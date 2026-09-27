@@ -305,3 +305,44 @@ export async function removeMOPart(
   revalidatePath(`/manufacturing-orders/${moId}`);
   return { ok: true };
 }
+
+export type MORecipeCopyResult =
+  | { ok: true; copied: number }
+  | { ok: false; error: string };
+
+/**
+ * Copy the MO's template recipe onto the MO — the same `mo_copy_template_parts`
+ * RPC every MO-creating path calls. Those paths soft-fail it (the MO is still
+ * worth having) and used to say so only in a server log, so an MO could sit
+ * with an empty recipe and every bike on it would open with no parts. The MO
+ * page now shows that state and offers this. The RPC skips parts already on
+ * the MO, so pressing it twice is harmless.
+ */
+export async function copyTemplateRecipeToMO(
+  moId: string,
+): Promise<MORecipeCopyResult> {
+  const t = await getTranslations("errors");
+  if (!moId) return { ok: false, error: t("moNotFound") };
+
+  const supabase = await createClient();
+  const { data: mo } = await supabase
+    .from("manufacturing_orders")
+    .select("id, status, bike_template_id")
+    .eq("id", moId)
+    .maybeSingle();
+  if (!mo) return { ok: false, error: t("moNotFound") };
+  if (mo.status === "completed" || mo.status === "cancelled") {
+    return { ok: false, error: t("moCannotEditRecipe", { status: mo.status }) };
+  }
+  if (!mo.bike_template_id) return { ok: false, error: t("moNoTemplateToCopy") };
+
+  const { data: copied, error } = await supabase.rpc("mo_copy_template_parts", {
+    p_mo_id: moId,
+  });
+  if (error) {
+    return { ok: false, error: t("moCouldNotCopyRecipe", { detail: error.message }) };
+  }
+
+  revalidatePath(`/manufacturing-orders/${moId}`);
+  return { ok: true, copied: copied ?? 0 };
+}

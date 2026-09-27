@@ -126,7 +126,16 @@ export function RecordPaintedStockDialog({
   const [newName, setNewName] = useState("");
   const [newRal, setNewRal] = useState("");
   const [newCoating, setNewCoating] = useState("");
-  const [colourList, setColourList] = useState(colours);
+  // Colours created in THIS dialog, merged over the server's list — not a copy
+  // of it: `useState(colours)` froze the list at first render, so a colour
+  // added anywhere else never appeared until a full reload.
+  const [createdHere, setCreatedHere] = useState<ColourChoice[]>([]);
+  const colourList = useMemo(() => {
+    if (createdHere.length === 0) return colours;
+    const byId = new Map(colours.map((c) => [c.id, c]));
+    for (const c of createdHere) if (!byId.has(c.id)) byId.set(c.id, c);
+    return [...byId.values()].sort((a, b) => a.name_en.localeCompare(b.name_en));
+  }, [colours, createdHere]);
 
   const existing = useMemo(
     () => new Set(existingVariantColourIds),
@@ -204,7 +213,7 @@ export function RecordPaintedStockDialog({
         setError(r.error);
         return;
       }
-      setColourList((prev) =>
+      setCreatedHere((prev) =>
         [
           ...prev,
           {
@@ -215,7 +224,7 @@ export function RecordPaintedStockDialog({
             ral_code: newRal || null,
             coating: newCoating || null,
           },
-        ].sort((a, b) => a.name_en.localeCompare(b.name_en)),
+        ],
       );
       setColourId(r.id);
       setCreating(false);

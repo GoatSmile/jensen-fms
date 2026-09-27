@@ -20,7 +20,10 @@ import {
 } from "@/lib/parts/painted-variants";
 import type { BikeStatus } from "@/lib/bikes/status";
 import { compareKits } from "@/lib/kits/colors";
-import { loadBikeIdentifierContext } from "@/lib/bikes/identifier-context";
+import {
+  isFrameProvisional,
+  loadBikeIdentifierContext,
+} from "@/lib/bikes/identifier-context";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 
 import {
@@ -77,7 +80,7 @@ export default async function BikeBuildWorkbenchPage({
     supabase
       .from("bikes")
       .select(
-        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id, color_id",
+        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id, color_id, notes",
       )
       .eq("id", bikeId)
       .maybeSingle(),
@@ -94,10 +97,16 @@ export default async function BikeBuildWorkbenchPage({
       .eq("bike_id", bikeId)
       .is("removed_at", null)
       .order("installed_at", { ascending: true }),
+    // Live parts only — the copy skips soft-deleted ones, so counting them
+    // made the button promise parts it then did not copy.
     supabase
       .from("manufacturing_order_parts")
-      .select("id", { count: "exact", head: true })
-      .eq("manufacturing_order_id", moId),
+      .select("id, part:parts!part_id!inner(deleted_at)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("manufacturing_order_id", moId)
+      .is("part.deleted_at", null),
     supabase
       .from("part_categories")
       .select("id, name_en, name_da, sort_order")
@@ -328,26 +337,19 @@ export default async function BikeBuildWorkbenchPage({
     }
   }
 
-  // Identifier context for the in-build "Frame & identifiers" panel. The frame
-  // has its own dedicated confirm control, so the panel's "X / Y required"
-  // hint counts only the OTHER required identifiers (excluding frame_number),
-  // keeping it consistent with the filtered "Other identifiers" list.
+  // Identifier context for the in-build "Frame & identifiers" panel. The
+  // "N / M required" figure is the shared rule (frame included, counted once
+  // confirmed), so it reads the same here as on the bike page and the MO.
   const identifierContext = await loadBikeIdentifierContext(
     supabase,
     bikeId,
     bike.bike_type_id,
+    isFrameProvisional(bike.status, bike.frame_number_confirmed),
   );
 
   // Paint gate (Tier 2 Phase C): block Finish while the frame is at the painter.
   const atPainterIds = await loadAtSupplierBikeIds(supabase, [bikeId]);
   const atPainterReason = atPainterIds.has(bikeId) ? t("atPainter") : null;
-  const otherRequiredTypes = identifierContext.types.filter(
-    (t) => t.is_required && t.slug !== "frame_number",
-  );
-  const otherRequiredCount = otherRequiredTypes.length;
-  const otherRequiredRegisteredCount = otherRequiredTypes.filter(
-    (t) => t.alreadyRegistered,
-  ).length;
 
   const templateLabel = mo.bike_template
     ? [
@@ -438,8 +440,9 @@ export default async function BikeBuildWorkbenchPage({
         moRecipeRowCount={recipeRowCount}
         identifierTypes={identifierContext.types}
         identifiers={identifierContext.rows}
-        requiredIdentifierCount={otherRequiredCount}
-        requiredRegisteredCount={otherRequiredRegisteredCount}
+        requiredIdentifierCount={identifierContext.requiredCount}
+        requiredRegisteredCount={identifierContext.requiredRegisteredCount}
+        bikeNotes={bike.notes}
         readOnly={isReadOnly}
         showMoney={canSeeCosts}
         pickListSlot={

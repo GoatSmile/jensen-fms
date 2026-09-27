@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useOptimistic, useState, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Plus, Trash2, Wand2 } from "lucide-react";
 
@@ -111,7 +110,6 @@ export function ServiceOrderItemsSection({
   priceListName,
 }: Props) {
   const t = useTranslations("paintOrderDetail");
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [seedNote, setSeedNote] = useState<string | null>(null);
   const canEdit = orderStatus === "planned";
@@ -134,7 +132,6 @@ export function ServiceOrderItemsSection({
               onSeeded={(note) => {
                 setError(null);
                 setSeedNote(note);
-                router.refresh();
               }}
             />
             <AddItemDialog
@@ -144,7 +141,6 @@ export function ServiceOrderItemsSection({
               colors={colors}
               defaultColorId={defaultColorId}
               onError={setError}
-              onChange={() => router.refresh()}
             />
           </div>
         ) : undefined
@@ -197,7 +193,6 @@ export function ServiceOrderItemsSection({
                   colors={colors}
                   canEdit={canEdit}
                   onError={setError}
-                  onChange={() => router.refresh()}
                 />
               ))}
             </tbody>
@@ -240,7 +235,6 @@ function ItemRow({
   colors,
   canEdit,
   onError,
-  onChange,
 }: {
   serviceOrderId: string;
   row: ServiceOrderItemRow;
@@ -248,11 +242,16 @@ function ItemRow({
   colors: ColorOption[];
   canEdit: boolean;
   onError: (msg: string | null) => void;
-  onChange: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const locale = useLocale();
   const [pending, start] = useTransition();
+  // Every item action revalidates this page, so its POST already carries the
+  // fresh rows — no router.refresh() on top (that second full fetch is what
+  // kept a select greyed out after a pick, 15 Sep). The optimistic values show
+  // the pick at once and fall back to the server's if the write fails.
+  const [shownColorId, setShownColorId] = useOptimistic(row.colorId);
+  const [shownPartId, setShownPartId] = useOptimistic(row.partId);
   const [qty, setQty] = useState(String(row.quantity));
 
   function commitQty() {
@@ -270,29 +269,29 @@ function ItemRow({
       if (!r.ok) {
         onError(r.error);
         setQty(String(row.quantity));
-      } else onChange();
+      }
     });
   }
 
   function patchColor(colorId: string) {
     onError(null);
     start(async () => {
+      setShownColorId(colorId);
       const r = await updateServiceOrderItem(serviceOrderId, row.id, {
         colorId,
       });
       if (!r.ok) onError(r.error);
-      else onChange();
     });
   }
 
   function patchPart(value: string) {
     onError(null);
     start(async () => {
+      setShownPartId(value === ANY_PART ? null : value);
       const r = await updateServiceOrderItem(serviceOrderId, row.id, {
         partId: value === ANY_PART ? null : value,
       });
       if (!r.ok) onError(r.error);
-      else onChange();
     });
   }
   const partOptions = paintableParts.filter(
@@ -304,7 +303,6 @@ function ItemRow({
     start(async () => {
       const r = await removeServiceOrderItem(serviceOrderId, row.id);
       if (!r.ok) onError(r.error);
-      else onChange();
     });
   }
 
@@ -315,7 +313,7 @@ function ItemRow({
           <span>{row.partTypeName}</span>
           {canEdit && partOptions.length > 0 ? (
             <Select
-              value={row.partId ?? ANY_PART}
+              value={shownPartId ?? ANY_PART}
               onValueChange={patchPart}
               disabled={pending}
             >
@@ -379,7 +377,7 @@ function ItemRow({
       <td className="px-4 py-2.5">
         {canEdit ? (
           <Select
-            value={row.colorId ?? ""}
+            value={shownColorId ?? ""}
             onValueChange={patchColor}
             disabled={pending}
           >
@@ -468,7 +466,6 @@ function AddItemDialog({
   colors,
   defaultColorId,
   onError,
-  onChange,
 }: {
   serviceOrderId: string;
   partTypes: PartTypeOption[];
@@ -476,7 +473,6 @@ function AddItemDialog({
   colors: ColorOption[];
   defaultColorId: string | null;
   onError: (msg: string | null) => void;
-  onChange: () => void;
 }) {
   const t = useTranslations("paintOrderDetail");
   const tCommon = useTranslations("common");
@@ -530,7 +526,6 @@ function AddItemDialog({
       }
       onError(null);
       handleOpenChange(false);
-      onChange();
     });
   }
 

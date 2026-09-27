@@ -8,6 +8,10 @@
  *   on_hold     → in_progress | cancelled
  *   completed   → (terminal)
  *   cancelled   → (terminal)
+ *
+ * `released` is labelled "Ready for production / Klar til produktion" (owner,
+ * 2026-09-27): the word "released" meant nothing to anyone on 15 Sep, and what
+ * it marks is that the MO may be picked up by the floor. The enum value stays.
  */
 
 export type MOStatus =

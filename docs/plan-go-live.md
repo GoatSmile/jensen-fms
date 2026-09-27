@@ -161,16 +161,18 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
 
 ### 2D · Build screen for the iPad + identifiers
 - [ ] Builder's view: short tick-off pick list, no editable parts list (office keeps it),
-      bike-level **notes** field, frame pre-filled from the box-QR scan, 2–3 **photos** at build.
+      frame pre-filled from the box-QR scan, 2–3 **photos** at build. *(Bike-level notes
+      field shipped 2026-09-27.)*
 - [ ] Identifier rules (02:04): frame, battery, charger unique **with an "already exists —
       overwrite?" warning** instead of a hard block; lock and battery-lock never unique; a bike
       with no lock or battery can still finish; identifier count follows quantity (2 batteries →
       2 numbers).
 - [ ] **Recognition code at build**: pre-filled with the customer's prefix, continuing their
       sequence (show existing codes), optional, only for bikes with an agreement (02:25–02:32).
-- [ ] Bugs: second bike on the MO had no parts; required-identifier count 4/4 vs 4/5;
-      **screens stall after a submit** until refresh (Finish build greyed; colour picking) —
-      investigate app-wide. MO status *confirmed* means nothing to anyone — rename.
+- [x] Bugs: second bike on the MO had no parts; required-identifier count 4/4 vs 4/5;
+      **screens stall after a submit** until refresh (Finish build greyed; colour picking);
+      MO status renamed *Ready for production / Klar til produktion* (2026-09-27 — the
+      app-wide refresh sweep is in BACKLOG).
 
 ### 2E · Offers, sales orders, parts — small items
 - [ ] DK standard VAT as the default on offer lines (01:02:37).

@@ -23,6 +23,10 @@ import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
 import { readCanSeeCosts } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
+import {
+  isFrameProvisional,
+  requiredIdentifierProgress,
+} from "@/lib/bikes/identifier-context";
 import { type BikeStatus } from "@/lib/bikes/status";
 import { localizedName } from "@/i18n/vocab";
 
@@ -87,7 +91,7 @@ export default async function BikeDetailPage({
       .from("bikes")
       .select(
         `
-            id, frame_number, status, notes, deleted_at, bike_type_id,
+            id, frame_number, frame_number_confirmed, status, notes, deleted_at, bike_type_id,
             manufacturing_order_id, build_cost_dkk, built_at,
             built_by_person:people!bikes_built_by_fkey(id, full_name),
             recorded_by_person:people!bikes_built_recorded_by_fkey(id, full_name),
@@ -250,10 +254,16 @@ export default async function BikeDetailPage({
     alreadyRegistered: activeIdentifierTypeIds.has(t.id),
   }));
 
-  const requiredCount = requiredTypes.size;
-  const requiredRegisteredCount = Array.from(requiredTypes.keys()).filter(
-    (id) => activeIdentifierTypeIds.has(id),
-  ).length;
+  // The shared rule (frame included, counted once confirmed; archived types
+  // not counted), so this reads the same as the MO and the build workbench.
+  const { required: requiredCount, registered: requiredRegisteredCount } =
+    requiredIdentifierProgress({
+      requiredTypes: (identifierTypesRes.data ?? []).filter((t) =>
+        requiredTypes.has(t.id),
+      ),
+      activeTypeIds: activeIdentifierTypeIds,
+      frameProvisional: isFrameProvisional(b.status, b.frame_number_confirmed),
+    });
 
   const partRows: InstalledPartRow[] = (partsRes.data ?? []).map((r) => ({
     id: r.id,

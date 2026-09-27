@@ -32,6 +32,7 @@ export type MOBikeRow = {
   frameConfirmed: boolean;
   /** Whether the frame is physically at the painter (Tier 2 Phase C). */
   atPainter: boolean;
+  /** Required identifier types registered — `requiredIdentifierProgress`. */
   identifierCount: number;
   requiredIdentifierCount: number;
   /** Customer this bike is slated/assigned to. Null until someone earmarks it. */

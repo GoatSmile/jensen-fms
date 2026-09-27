@@ -10,6 +10,15 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   end of `verifySessionToken` in `src/lib/auth/session.ts`. Sessions last 30
   days, so every version-1 cookie (minted before migration 103) is expired by
   then; the upgrade only existed so Dennis kept his figures across the deploy.
+- **Redundant `router.refresh()` after actions that already revalidate** —
+  ~119 calls in ~85 files (2026-09-27 count). Each one makes a second full page
+  fetch per click and keeps any surrounding transition pending for both; the
+  build workbench and the paint-order lines were fixed on 2026-09-27 (CLAUDE.md
+  → caveats has the rule). Sweep the rest file by file: drop the refresh only
+  where the called action revalidates THAT route, keep it where it does not.
+  Mechanical but not blind — do it as its own session, and time a heavy page
+  before and after. Symptom that it matters: a button that stays grey after a
+  save until the page reloads.
 - **A TEST marker should travel down the generators.** On 2026-09-15 a full
   offer → SO → MO → build → paint chain was exercised in production and **14 of
   the 20 documents carried no marker**: only the six a human typed had one, while

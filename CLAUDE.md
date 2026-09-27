@@ -375,6 +375,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   customer's `organizations.recognition_prefix` + department + a running
   number (BKTM01) — **not the customer's numbering** (Dennis 2026-09-15;
   migration 102). The slug stays because search and call extraction key on it.
+  **"N / M required identifiers" is ONE rule, `requiredIdentifierProgress`**
+  (`src/lib/bikes/identifier-context.ts`): the bike type's required, active
+  types, the frame included; a PROVISIONAL frame (`isFrameProvisional`) does
+  not count as registered. The bike page, the MO's bike list and the workbench
+  all use it — they read 4/4, 4/5 and "any identifier" before 2026-09-27.
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a
   number can move without a visible event — part prices and duty fields, painter
   tier prices, `app_settings`, `people`, corrections to who built a bike — with
@@ -481,7 +486,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (one row per bike per part, with `inventory_movement_id`) records what was
   actually consumed for a specific bike. The MO recipe
   (`manufacturing_order_parts`) is just the default copied to `bike_parts`
-  when the build starts.
+  when the build starts — **the first time the workbench opens on an empty
+  bike**, from a client effect on mount, never during the server render (a
+  render can be a prefetch, and the copy is a snapshot). An MO with a template
+  but no recipe (the creation-time copy soft-fails) says so on its page and
+  offers the copy.
   - The **build workbench** at
     `/manufacturing-orders/<mo>/bikes/<bike>/build` lets a tech edit the
     bike's parts before *Finish build* — it writes to `bike_parts`, never
@@ -1026,6 +1035,19 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     confirm the form went dirty before submitting.
   - **`input[type=text]` matches the ATTRIBUTE**, so it misses every input that
     relies on the default type. Filter on `el.type`, or select by placeholder.
+  - **With the pane HIDDEN, streamed sections never appear.** React reveals a
+    resolved Suspense boundary on an animation frame, and a hidden pane draws
+    none — so the content sits in a `body > div[hidden]`, un-hydrated, and a
+    click on it does nothing. `window.$RV(window.$RB)` in the console reveals
+    it (found 2026-09-27; it looked exactly like a broken button).
+- **No `router.refresh()` after an action that already revalidates the page.**
+  An action calling `revalidatePath` on the current route returns the fresh
+  tree in its own POST response; a refresh on top fetches the whole page a
+  second time, and a `useTransition` around it stays pending for both — the
+  "screen stalls after a submit" of 15 Sep (the build workbench made two
+  full renders of ~13 queries per click). Refresh only when the action does
+  NOT revalidate this route; show a pick at once with `useOptimistic`.
+  Older code still has the redundant pattern (BACKLOG).
 - **A control that changes state is never a prefetchable `<Link>`.** Next
   prefetches links in the viewport, so a `<Link href="/logout">` in the app
   chrome fired the sign-out GET on every page render — the session died

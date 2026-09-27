@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
+import { one } from "@/lib/supabase/embed";
+import {
+  isFrameProvisional,
+  requiredIdentifierProgress,
+} from "@/lib/bikes/identifier-context";
 import { formatDate } from "@/lib/parts/format";
 import { formatDeliveryTarget } from "@/lib/iso-week";
 import type { BikeStatus } from "@/lib/bikes/status";
@@ -120,7 +125,7 @@ export default async function ManufacturingOrderDetailPage({
             id, legal_name, display_name_en, display_name_da
           ),
           owner_unit:organization_units!owner_unit_id(id, name),
-          bike_identifiers(id, is_active)
+          bike_identifiers(id, is_active, identifier_type_id)
         `,
       )
       .eq("manufacturing_order_id", id)
@@ -136,9 +141,12 @@ export default async function ManufacturingOrderDetailPage({
       .order("internal_sku", { ascending: true }),
     supabase
       .from("bike_type_required_identifiers")
-      .select("bike_type_id, bike_identifier_type_id, is_required")
+      .select(
+        "bike_type_id, bike_identifier_type_id, is_required, type:bike_identifier_types!inner(slug, is_active)",
+      )
       .eq("bike_type_id", mo.bike_type_id)
-      .eq("is_required", true),
+      .eq("is_required", true)
+      .eq("type.is_active", true),
     // 57 active categories — drives the LEFT-column picker.
     supabase
       .from("part_categories")
@@ -244,7 +252,12 @@ export default async function ManufacturingOrderDetailPage({
   // Total projected build cost is multiplied by outstandingBikes below
   // (it depends on moBikeRows which we compute next).
 
-  const requiredIdCount = bikeTypeRequiredRes.data?.length ?? 0;
+  // The shared "N / M required" rule — the same figure the bike page and the
+  // build workbench show (it used to count every identifier of any type here).
+  const requiredIdTypes = (bikeTypeRequiredRes.data ?? []).map((r) => ({
+    id: r.bike_identifier_type_id,
+    slug: one(r.type)?.slug ?? "",
+  }));
   // Paint gate (Tier 2 Phase C): which of this MO's bikes are at the painter.
   const atPainterIds = await loadAtSupplierBikeIds(
     supabase,
@@ -256,15 +269,23 @@ export default async function ManufacturingOrderDetailPage({
       b.owner_organization?.display_name_en ??
       b.owner_organization?.legal_name ??
       null;
+    const progress = requiredIdentifierProgress({
+      requiredTypes: requiredIdTypes,
+      activeTypeIds: new Set(
+        (b.bike_identifiers ?? [])
+          .filter((bi) => bi.is_active)
+          .map((bi) => bi.identifier_type_id),
+      ),
+      frameProvisional: isFrameProvisional(b.status, b.frame_number_confirmed),
+    });
     return {
       id: b.id,
       frameNumber: b.frame_number,
       status: b.status as BikeStatus,
       frameConfirmed: b.frame_number_confirmed,
       atPainter: atPainterIds.has(b.id),
-      identifierCount:
-        b.bike_identifiers?.filter((bi) => bi.is_active).length ?? 0,
-      requiredIdentifierCount: requiredIdCount,
+      identifierCount: progress.registered,
+      requiredIdentifierCount: progress.required,
       ownerName,
       ownerUnitName: b.owner_unit?.name ?? null,
     };

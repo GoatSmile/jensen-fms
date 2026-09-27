@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
   CheckCircle2,
@@ -55,6 +54,7 @@ import {
   updateBikePartQuantity,
 } from "../_actions/manage-bike-parts";
 import { finishBikeBuild } from "../_actions/finish-build";
+import { BikeNotesPanel } from "./bike-notes-panel";
 import { confirmBikeFrame } from "../_actions/confirm-frame";
 
 export type WorkbenchIdentifierRow = {
@@ -139,6 +139,8 @@ type Props = {
   identifiers: WorkbenchIdentifierRow[];
   requiredIdentifierCount: number;
   requiredRegisteredCount: number;
+  /** `bikes.notes` — the builder's free-text note on this bike. */
+  bikeNotes: string | null;
   /** True when status is in_stock+ / MO closed — read-only display. */
   readOnly: boolean;
   /** Server-rendered "pick list by kit" card, shown above the workbench. */
@@ -175,6 +177,7 @@ export function BuildWorkbench({
   identifiers,
   requiredIdentifierCount,
   requiredRegisteredCount,
+  bikeNotes,
   readOnly,
   pickListSlot,
   showMoney,
@@ -187,7 +190,6 @@ export function BuildWorkbench({
   const [builtBy, setBuiltBy] = useState<string | null>(defaultBuiltById);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const locale = useLocale();
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
@@ -201,7 +203,14 @@ export function BuildWorkbench({
   const [isSeeding, startSeed] = useTransition();
 
   // Frame confirmation (the "Identify" step). Local state so the panel reflects
-  // the confirm immediately; router.refresh re-syncs the rest of the page.
+  // the confirm immediately; the action's revalidatePath re-renders the rest.
+  //
+  // NO router.refresh() after a workbench action, anywhere in this file. Every
+  // action here revalidates this page, so its POST response already carries the
+  // fresh tree; a refresh on top fetched the whole page — ~13 queries, the full
+  // catalogue and stock — a second time, and the transition (which gates Finish
+  // build) stayed pending for both. That was the "screen stalls after a submit"
+  // Dennis and Glenn hit on 15 Sep.
   const [frameValue, setFrameValue] = useState(bikeFrameNumber);
   const [confirmed, setConfirmed] = useState(frameConfirmed);
   const [isConfirming, startConfirm] = useTransition();
@@ -305,9 +314,25 @@ export function BuildWorkbench({
         return;
       }
       setSuccess(t("recipeCopied"));
-      router.refresh();
     });
   }
+
+  // The recipe copies itself the first time the workbench opens on an empty
+  // bike. It used to wait for someone to press "Copy MO recipe", so the second
+  // bike on an MO opened with no parts and read as broken (15 Sep). On MOUNT
+  // and on the client, never during the server render: a render can be a
+  // prefetch, and a copy is a snapshot — it must happen because a person
+  // opened this bike, not because a link to it scrolled into view. Once per
+  // visit: after "Clear build" the empty list stays empty until they choose.
+  const autoCopied = useRef(false);
+  useEffect(() => {
+    if (autoCopied.current || readOnly || !isEmpty || moRecipeRowCount === 0) return;
+    autoCopied.current = true;
+    startSeed(async () => {
+      const r = await copyMoRecipeToBike(moId, bikeId);
+      if (!r.ok) setError(r.error);
+    });
+  }, [readOnly, isEmpty, moRecipeRowCount, moId, bikeId]);
 
   function onPickFromCategory(
     categoryId: string,
@@ -328,7 +353,6 @@ export function BuildWorkbench({
         ...prev,
         [categoryId]: "__placeholder__",
       }));
-      router.refresh();
     });
   }
 
@@ -338,7 +362,6 @@ export function BuildWorkbench({
     setClearArmed(false);
     const r = await bulkAddPartsByKit(moId, bikeId, kitId);
     if (!r.ok) return { error: r.error };
-    router.refresh();
     return { added: r.added, alreadyIn: r.skipped };
   }
 
@@ -350,7 +373,6 @@ export function BuildWorkbench({
     setClearArmed(false);
     const r = await removeBikePartsByKit(moId, bikeId, kitId);
     if (!r.ok) return { error: r.error };
-    router.refresh();
     return { removed: r.removed, kept: r.kept };
   }
 
@@ -373,7 +395,6 @@ export function BuildWorkbench({
         t("clearedParts", { count: r.removed }) +
           (r.kept > 0 ? t("clearedKept", { count: r.kept }) : ""),
       );
-      router.refresh();
     });
   }
 
@@ -390,7 +411,6 @@ export function BuildWorkbench({
       setFrameValue(r.frameNumber);
       setConfirmed(true);
       setSuccess(t("frameConfirmedMsg", { frame: r.frameNumber }));
-      router.refresh();
     });
   }
 
@@ -406,7 +426,6 @@ export function BuildWorkbench({
       }
       setConfirmOpen(false);
       setSuccess(t("buildFinished", { count: r.partsConsumed }));
-      router.refresh();
     });
   }
 
@@ -481,6 +500,15 @@ export function BuildWorkbench({
               {buildNote}
             </p>
           </div>
+        </Panel>
+      ) : null}
+
+      {/* The bike's own note — editable while the screen is, shown otherwise. */}
+      {!readOnly ? (
+        <BikeNotesPanel moId={moId} bikeId={bikeId} initialNotes={bikeNotes} />
+      ) : bikeNotes ? (
+        <Panel title={t("bikeNotesTitle")}>
+          <p className="text-sm whitespace-pre-wrap">{bikeNotes}</p>
         </Panel>
       ) : null}
 
@@ -1033,7 +1061,6 @@ function RecipeLine({
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslations("build");
-  const router = useRouter();
   const [pending, start] = useTransition();
   const [qty, setQty] = useState(String(row.quantity));
 
@@ -1057,7 +1084,6 @@ function RecipeLine({
         setQty(String(row.quantity));
         return;
       }
-      router.refresh();
     });
   }
 
@@ -1069,7 +1095,6 @@ function RecipeLine({
         onError(r.error);
         return;
       }
-      router.refresh();
     });
   }
 
