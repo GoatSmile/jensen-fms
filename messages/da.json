@@ -2707,19 +2707,19 @@
     "archiveConfirm": "Arkivér kunde"
   },
   "assignedBikes": {
-    "title": "Tildelte cykler",
+    "title": "Kundens cykler",
     "count": "{count, plural, one {# cykel} other {# cykler}}",
     "countWithPrefix": "{count, plural, one {# cykel} other {# cykler}} · koderne starter med {prefix}",
     "seeAll": "{count, plural, one {Se cyklen} other {Se alle # cykler}}",
     "loadError": "Kunne ikke indlæse cykler: {msg}",
-    "emptyTitle": "Ingen cykler tildelt endnu",
-    "emptyDesc": "Når cykler tildeles denne kunde, vises de her.",
+    "emptyTitle": "Ingen cykler endnu",
+    "emptyDesc": "Cykler, der er tiltænkt eller udleveret til denne kunde, vises her.",
     "thFrame": "Stelnummer",
     "thCode": "Kode",
     "thTemplate": "Skabelon",
     "thUnit": "Afdeling",
     "thStatus": "Status",
-    "thAssigned": "Tildelt"
+    "thAssigned": "Udleveret"
   },
   "contacts": {
     "title": "Kontakter",

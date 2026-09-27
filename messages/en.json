@@ -126,7 +126,7 @@
     "planning": "Planning",
     "building": "Building",
     "in_stock": "In stock",
-    "assigned": "Assigned",
+    "assigned": "Delivered",
     "in_service": "In service",
     "in_maintenance": "In maintenance",
     "retired": "Retired",
@@ -2707,19 +2707,19 @@
     "archiveConfirm": "Archive customer"
   },
   "assignedBikes": {
-    "title": "Assigned bikes",
+    "title": "Customer's bikes",
     "count": "{count, plural, one {# bike} other {# bikes}}",
     "countWithPrefix": "{count, plural, one {# bike} other {# bikes}} · codes start with {prefix}",
     "seeAll": "{count, plural, one {See the bike} other {See all # bikes}}",
     "loadError": "Could not load bikes: {msg}",
-    "emptyTitle": "No bikes assigned yet",
-    "emptyDesc": "Once bikes are assigned to this customer, they appear here.",
+    "emptyTitle": "No bikes yet",
+    "emptyDesc": "Bikes slated for or delivered to this customer appear here.",
     "thFrame": "Frame number",
     "thCode": "Code",
     "thTemplate": "Template",
     "thUnit": "Department",
     "thStatus": "Status",
-    "thAssigned": "Assigned"
+    "thAssigned": "Delivered"
   },
   "contacts": {
     "title": "Contacts",
