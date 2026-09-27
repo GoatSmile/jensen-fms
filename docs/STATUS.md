@@ -39,7 +39,9 @@ is Danish (person language).
 - **Service agreements:** the app models them per customer; reality is per bike.
   Production holds one test agreement and no agreement invoices. There is **no
   way to scan or upload agreement papers** — no attachments on agreements, no
-  document extraction. Brief: `docs/BRIEF-SERVICE-AGREEMENTS-2026-09.md` (+ PDF).
+  document extraction. Brief: `docs/BRIEF-SERVICE-AGREEMENTS-2026-09.md` (+ PDF); how
+  to import and handle them (spreadsheet = billing, documents = terms, e-conomic
+  = proof; Dennis's templates found and read): `docs/SERVICE-AGREEMENTS-HANDLING-2026-09.pdf`.
 - **Relatel (read 27 Sep, nothing changed):** plan *Omstilling Professional*;
   Finn's mobile has *Mobilfeatures*; *Ny medarbejder* is locked until the
   company is MitID-validated; two-factor login is off. OPERATIONS has the API.
