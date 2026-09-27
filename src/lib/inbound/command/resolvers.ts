@@ -16,6 +16,7 @@
  * its voicemail-shaped logic.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ilikeEscape } from "@/lib/supabase/ilike";
 
 const LIMIT = 8;
 
@@ -104,19 +105,6 @@ function pick(nameEn: string | null, nameDa: string | null): string {
   return nameDa || nameEn || "—";
 }
 
-function ilikeEscape(q: string): string {
-  // These needles are interpolated into a PostgREST `.or()` filter STRING, so
-  // two hazards, both handled here:
-  //  1. LIKE wildcards (% _) and backslash — escaped so a stray char can't
-  //     match everything.
-  //  2. The or()-grammar chars (comma = OR-separator, parens = grouping) —
-  //     replaced with a % wildcard so a customer name like "Jensen, Inc." or
-  //     "Hotel (København)" neither breaks nor injects the filter, and still
-  //     matches (the wildcard spans the removed punctuation).
-  return q
-    .replace(/[%_\\]/g, (m) => `\\${m}`)
-    .replace(/[(),]/g, "%");
-}
 
 type ResolverInput = Record<string, unknown>;
 

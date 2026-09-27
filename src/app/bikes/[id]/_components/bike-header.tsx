@@ -66,6 +66,16 @@ type Props = {
    * the header keeps its existing layout responsibility.
    */
   assignAction?: React.ReactNode;
+  /**
+   * The floor's repair action — "New work order" or "Open WO-…" — built on the
+   * page, which knows the viewer's capabilities and the bike's open order.
+   */
+  workAction?: React.ReactNode;
+  /**
+   * Holds `maintenance`: the office ticket / work-order forms. Without it
+   * those menu items would bounce, so they are left out.
+   */
+  canUseOffice?: boolean;
 };
 
 type PendingTransition = { to: BikeStatus } | null;
@@ -82,6 +92,8 @@ export function BikeHeader({
   isDeleted,
   hasManufacturingOrder,
   assignAction,
+  workAction,
+  canUseOffice = true,
 }: Props) {
   const t = useTranslations("bikeDetail");
   const tStatus = useTranslations("bikeStatus");
@@ -186,6 +198,7 @@ export function BikeHeader({
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
+          {!isDeleted && workAction ? workAction : null}
           {!isDeleted && assignAction ? assignAction : null}
           {!isDeleted && nextStatuses.length > 0 ? (
             <DropdownMenu>
@@ -235,7 +248,7 @@ export function BikeHeader({
                 match loadWOPickables / the ticket form's own bike list, so the
                 menu never links to a form that would refuse this bike.
               */}
-              {canTakeNewWork ? (
+              {canTakeNewWork && canUseOffice ? (
                 <>
                   <DropdownMenuItem asChild>
                     <Link href={`/maintenance/work-orders/new?bike=${bikeId}`}>

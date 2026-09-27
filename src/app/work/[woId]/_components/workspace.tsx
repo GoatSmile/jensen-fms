@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, CheckCircle2, Play, Save } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Play, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +34,10 @@ type Props = {
   language: "da" | "en";
   initialDiagnosis: string;
   initialWorkPerformed: string;
+  /** Time spent so far, in minutes (null = not recorded). Not money. */
+  initialLaborMinutes: number | null;
+  /** When the work started — seeds the "use elapsed" suggestion. */
+  startedAt: string | null;
   /** Whether a transcription provider is configured — see lib/dictation/ready. */
   dictationReady: boolean;
   bikeId: string | null;
@@ -50,6 +55,8 @@ export function Workspace({
   language,
   initialDiagnosis,
   initialWorkPerformed,
+  initialLaborMinutes,
+  startedAt,
   dictationReady,
   resolvesTicketNumber,
   partRows,
@@ -59,6 +66,9 @@ export function Workspace({
   const t = useTranslations("wo");
   const [diagnosis, setDiagnosis] = useState(initialDiagnosis);
   const [workPerformed, setWorkPerformed] = useState(initialWorkPerformed);
+  const [laborMinutes, setLaborMinutes] = useState<number | null>(
+    initialLaborMinutes,
+  );
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // "Mark done" is terminal + auto-resolves the linked ticket, so it arms a
@@ -72,7 +82,9 @@ export function Workspace({
     language === "en" ? "en-US" : "da-DK";
 
   const dirty =
-    diagnosis !== initialDiagnosis || workPerformed !== initialWorkPerformed;
+    diagnosis !== initialDiagnosis ||
+    workPerformed !== initialWorkPerformed ||
+    laborMinutes !== initialLaborMinutes;
   const readOnly = status === "completed" || status === "cancelled";
 
   function buildSaveFormData(): FormData {
@@ -80,7 +92,9 @@ export function Workspace({
     fd.set("diagnosis", diagnosis);
     fd.set("work_performed", workPerformed);
     fd.set("language", language);
-    fd.set("is_billable", "true");
+    // Minutes only — never the rate or the billable flag: those are money,
+    // and the action writes only the keys it is sent.
+    fd.set("labor_minutes", laborMinutes == null ? "" : String(laborMinutes));
     return fd;
   }
 
@@ -153,6 +167,14 @@ export function Workspace({
           dictateLang={defaultDictateLang}
           dictateLabel={t("workPerformedDictate")}
           dictateReady={dictationReady}
+          readOnly={readOnly}
+        />
+
+        <TimeSpentField
+          id={`time-${woId}`}
+          minutes={laborMinutes}
+          onChange={setLaborMinutes}
+          startedAt={status === "in_progress" ? startedAt : null}
           readOnly={readOnly}
         />
 
@@ -239,6 +261,19 @@ export function Workspace({
                           ticket: resolvesTicketNumber,
                         })
                       : t("confirmFinishIrreversible")}
+                  </p>
+                  {/* A nudge, not a gate: an order can be finished with no
+                      time, but the office bills from this number. */}
+                  <p className="text-center text-sm">
+                    {laborMinutes == null || laborMinutes === 0 ? (
+                      <span className="text-money font-medium">
+                        {t("confirmFinishNoTime")}
+                      </span>
+                    ) : (
+                      t("confirmFinishTime", {
+                        time: formatMinutes(laborMinutes, t),
+                      })
+                    )}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -363,6 +398,152 @@ function NotesField({
           <p className="text-muted-foreground text-xs">{t("micTip")}</p>
         </>
       ) : null}
+    </Panel>
+  );
+}
+
+/** "1 t 20 min" / "45 min" — hours and minutes, via the message catalogue. */
+function formatMinutes(
+  total: number,
+  t: ReturnType<typeof useTranslations<"wo">>,
+): string {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return t("timeMinutes", { m });
+  if (m === 0) return t("timeHours", { h });
+  return t("timeHoursMinutes", { h, m });
+}
+
+/** Whole minutes since `iso`, never negative. */
+function minutesSince(iso: string): number {
+  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+}
+
+/**
+ * Time spent on the repair, as hours + minutes. Stored as whole minutes on
+ * `work_orders.labor_minutes` — the office adds the rate; the floor never sees
+ * it. Quick-add chips because a gloved thumb on a phone should not have to
+ * type, and "use elapsed" because the Start button already stamped the clock.
+ */
+function TimeSpentField({
+  id,
+  minutes,
+  onChange,
+  startedAt,
+  readOnly,
+}: {
+  id: string;
+  minutes: number | null;
+  onChange: (v: number | null) => void;
+  /** Only while in progress — the suggestion is meaningless otherwise. */
+  startedAt: string | null;
+  readOnly: boolean;
+}) {
+  const t = useTranslations("wo");
+  const hours = minutes == null ? "" : String(Math.floor(minutes / 60));
+  const mins = minutes == null ? "" : String(minutes % 60);
+
+  function setParts(hRaw: string, mRaw: string) {
+    const h = hRaw.trim() === "" ? 0 : Math.floor(Number(hRaw));
+    const m = mRaw.trim() === "" ? 0 : Math.floor(Number(mRaw));
+    if (!Number.isFinite(h) || !Number.isFinite(m) || h < 0 || m < 0) return;
+    if (hRaw.trim() === "" && mRaw.trim() === "") {
+      onChange(null);
+      return;
+    }
+    onChange(h * 60 + m);
+  }
+
+  const elapsed = startedAt ? minutesSince(startedAt) : null;
+
+  return (
+    <Panel
+      className="border-l-[3px] border-l-brand"
+      contentClassName="flex flex-col gap-2.5"
+    >
+      <div className="flex items-center gap-2">
+        <Clock className="text-brand size-3.5" aria-hidden />
+        <Label
+          htmlFor={`${id}-h`}
+          className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase"
+        >
+          {t("timeSpentLabel")}
+        </Label>
+      </div>
+      {readOnly ? (
+        <p className="text-sm">
+          {minutes == null ? t("timeNotRecorded") : formatMinutes(minutes, t)}
+        </p>
+      ) : (
+        <>
+          <p className="text-muted-foreground text-xs">
+            {t("timeSpentDescription")}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Input
+                id={`${id}-h`}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="h-11 w-16 text-center text-base tabular-nums"
+                value={hours}
+                onChange={(e) => setParts(e.target.value, mins)}
+                aria-label={t("timeHoursAria")}
+              />
+              <span className="text-muted-foreground text-sm">
+                {t("timeHoursUnit")}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Input
+                id={`${id}-m`}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="h-11 w-16 text-center text-base tabular-nums"
+                value={mins}
+                onChange={(e) => setParts(hours, e.target.value)}
+                aria-label={t("timeMinutesAria")}
+              />
+              <span className="text-muted-foreground text-sm">
+                {t("timeMinutesUnit")}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[15, 30, 60].map((add) => (
+              <Button
+                key={add}
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onChange((minutes ?? 0) + add)}
+              >
+                {add === 60 ? t("timeAddHour") : t("timeAddMinutes", { m: add })}
+              </Button>
+            ))}
+            {elapsed != null && elapsed > 0 ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onChange(elapsed)}
+              >
+                {t("timeUseElapsed", { time: formatMinutes(elapsed, t) })}
+              </Button>
+            ) : null}
+            {minutes != null ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => onChange(null)}
+              >
+                {t("timeClear")}
+              </Button>
+            ) : null}
+          </div>
+        </>
+      )}
     </Panel>
   );
 }

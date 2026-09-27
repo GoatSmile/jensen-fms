@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import { ChevronRight, CircleUser, ScanLine, Tag } from "lucide-react";
+import { ChevronRight, CircleUser, ScanLine, Search, Tag, X } from "lucide-react";
 import { localizedName } from "@/i18n/vocab";
 import { readGate } from "@/lib/auth/read-session";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Panel } from "@/components/ui/panel";
 import { SegmentedId } from "@/components/segmented-id";
 import { createClient } from "@/lib/supabase/server";
 import { elapsedShort } from "@/lib/work/elapsed";
+import {
+  loadWorkSearchBikes,
+  searchWorkBikeIds,
+  WORK_SEARCH_BIKE_LIMIT,
+  type WorkSearchBike,
+} from "@/lib/work/search";
+import { StartWorkOrderButton } from "./_components/start-wo-button";
 import type { WorkOrderStatus } from "@/lib/maintenance/work-order-status";
 import {
   loadBuildQueue,
@@ -28,13 +36,19 @@ export const dynamic = "force-dynamic";
  * shareable link, same convention as the list pages). Both card styles share
  * the stripe + colour-dot + frame-number language so a tech reads state at a
  * glance.
+ *
+ * `?q=` searches the repairs by what a phone call starts with — the code on
+ * the bike's label, a frame number, the customer's name, or the WO number —
+ * and lists the matching bikes that have no open order, each with a "New work
+ * order". Searching always shows the repair tab.
  */
 export default async function WorkQueuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; mine?: string }>;
+  searchParams: Promise<{ tab?: string; mine?: string; q?: string }>;
 }) {
-  const { tab, mine } = await searchParams;
+  const { tab, mine, q: qRaw } = await searchParams;
+  const q = qRaw?.trim() ?? "";
   const [t, locale, gate] = await Promise.all([
     getTranslations("work"),
     getLocale(),
@@ -45,7 +59,7 @@ export default async function WorkQueuePage({
   const mineActive = mine === "1" && myPersonId !== null;
   const supabase = await createClient();
 
-  const [woRes, buildQueue] = await Promise.all([
+  const [woRes, buildQueue, search] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -66,6 +80,7 @@ export default async function WorkQueuePage({
       .in("status", ["open", "in_progress"])
       .order("created_at", { ascending: true }),
     loadBuildQueue(supabase),
+    q ? searchWorkBikeIds(supabase, q) : Promise.resolve(null),
   ]);
 
   if (woRes.error) {
@@ -89,8 +104,15 @@ export default async function WorkQueuePage({
 
   // in_progress first, then open by created_at asc. "Mine" narrows to the
   // session person's assignments (URL-driven, like every list filter).
+  const qUpper = q.toLocaleUpperCase("da-DK");
   const repairRows = (woRes.data ?? [])
     .filter((r) => !mineActive || r.assigned_to === myPersonId)
+    .filter(
+      (r) =>
+        !search ||
+        (r.bike?.id != null && search.ids.has(r.bike.id)) ||
+        r.wo_number.toLocaleUpperCase("da-DK").includes(qUpper),
+    )
     .slice()
     .sort((a, b) => {
     if (a.status !== b.status) {
@@ -98,6 +120,19 @@ export default async function WorkQueuePage({
     }
     return a.created_at.localeCompare(b.created_at);
   });
+
+  // Search hits that have no open order yet — where the floor starts one.
+  let otherBikes: WorkSearchBike[] = [];
+  let otherBikesTotal = 0;
+  if (search) {
+    const withOpenWO = new Set(
+      (woRes.data ?? []).map((r) => r.bike?.id).filter(Boolean) as string[],
+    );
+    const others = [...search.ids].filter((id) => !withOpenWO.has(id));
+    otherBikes = await loadWorkSearchBikes(supabase, others, others.length);
+    otherBikesTotal = otherBikes.length;
+    otherBikes = otherBikes.slice(0, WORK_SEARCH_BIKE_LIMIT);
+  }
 
   const inProgressCount = repairRows.filter(
     (r) => r.status === "in_progress",
@@ -108,7 +143,7 @@ export default async function WorkQueuePage({
   // empty while repairs are waiting — then land on repair so nobody stares at
   // an empty tab. Explicit ?tab= always wins.
   const activeTab =
-    tab === "repair"
+    q || tab === "repair"
       ? "repair"
       : tab === "build"
         ? "build"
@@ -126,6 +161,35 @@ export default async function WorkQueuePage({
           </Link>
         </Button>
       </header>
+
+      <form action="/work" method="get" role="search" className="flex gap-2">
+        <input type="hidden" name="tab" value="repair" />
+        <div className="relative flex-1">
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
+            autoComplete="off"
+            className="h-11 pl-9 text-base"
+          />
+        </div>
+        <Button type="submit" className="h-11">
+          {t("searchSubmit")}
+        </Button>
+        {q ? (
+          <Button asChild variant="ghost" className="h-11" aria-label={t("searchClear")}>
+            <Link href="/work?tab=repair">
+              <X className="size-4" aria-hidden />
+            </Link>
+          </Button>
+        ) : null}
+      </form>
 
       <div
         role="tablist"
@@ -162,9 +226,20 @@ export default async function WorkQueuePage({
         </div>
       ) : null}
 
+      {search?.error ? (
+        <p className="bg-alert-wash text-alert rounded-lg p-3 text-sm" role="alert">
+          {t("searchError", { detail: search.error })}
+        </p>
+      ) : null}
+
       {activeTab === "build" ? (
         <BuildStream bikes={buildQueue} t={t} />
-      ) : repairRows.length === 0 ? (
+      ) : q && repairRows.length === 0 && otherBikes.length === 0 ? (
+        <EmptyState
+          title={t("searchEmptyTitle", { q })}
+          body={t("searchEmptyBody")}
+        />
+      ) : q && repairRows.length === 0 ? null : repairRows.length === 0 ? (
         <EmptyState
           title={t("emptyRepairTitle")}
           body={t("emptyRepairBody")}
@@ -276,7 +351,76 @@ export default async function WorkQueuePage({
           })}
         </ul>
       )}
+
+      {activeTab === "repair" && otherBikes.length > 0 ? (
+        <SearchBikes
+          bikes={otherBikes}
+          total={otherBikesTotal}
+          t={t}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Bikes the search found with no open work order — each one a "New work
+ * order" away. Not links to the bike page: the floor's next step is the
+ * repair, and the bike page is one tap further for anyone who needs it.
+ */
+function SearchBikes({
+  bikes,
+  total,
+  t,
+}: {
+  bikes: WorkSearchBike[];
+  total: number;
+  t: Awaited<ReturnType<typeof getTranslations<"work">>>;
+}) {
+  return (
+    <section className="flex flex-col gap-2.5">
+      <h2 className="text-ink-2 text-xs font-bold tracking-[0.075em] uppercase">
+        {t("searchBikesTitle")}
+      </h2>
+      <ul className="flex flex-col gap-2.5">
+        {bikes.map((b) => (
+          <li
+            key={b.id}
+            className="bg-card flex items-center justify-between gap-3 rounded-lg border p-4 shadow-sm"
+          >
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {b.recognitionCode ? (
+                  <span className="bg-muted rounded-md px-1.5 py-0.5 font-mono text-sm font-semibold">
+                    {b.recognitionCode}
+                  </span>
+                ) : null}
+                <Link
+                  href={`/bikes/${b.id}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  <SegmentedId
+                    value={b.frameNumber}
+                    className="text-sm font-medium"
+                  />
+                </Link>
+              </div>
+              {b.templateLabel || b.ownerName ? (
+                <div className="text-muted-foreground text-xs">
+                  {[b.templateLabel, b.ownerName].filter(Boolean).join(" · ")}
+                </div>
+              ) : null}
+            </div>
+            <StartWorkOrderButton bikeId={b.id} variant="outline" />
+          </li>
+        ))}
+      </ul>
+      {total > bikes.length ? (
+        <p className="text-muted-foreground text-xs">
+          {t("searchBikesMore", { count: total - bikes.length })}
+        </p>
+      ) : null}
+    </section>
   );
 }
 

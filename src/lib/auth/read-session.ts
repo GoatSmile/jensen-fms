@@ -44,8 +44,18 @@ export async function readAllowedCaps(): Promise<string[] | null> {
  * numbers to the browser is not hidden. Gate off → everything shows.
  */
 export async function readCanSeeCosts(): Promise<boolean> {
+  return readHasCapability("costs");
+}
+
+/**
+ * Does this viewer hold `cap`? Gate off → yes. The one check for an ACTION
+ * that its route alone does not gate — a picker that creates a part, a
+ * template writer — because middleware only ever sees the page's URL, and a
+ * server action is callable from any page that imports it.
+ */
+export async function readHasCapability(cap: string): Promise<boolean> {
   const caps = await readAllowedCaps();
-  return caps === null || caps.includes("costs");
+  return caps === null || caps.includes(cap);
 }
 
 /** Who is working — people.id, or null when the gate is off entirely. */

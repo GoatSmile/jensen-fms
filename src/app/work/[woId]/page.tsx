@@ -16,7 +16,10 @@ import { atTimeLabel, elapsedShort } from "@/lib/work/elapsed";
 
 import { Workspace } from "./_components/workspace";
 import { dictationReady } from "@/lib/dictation/ready";
-import { readCanSeeCosts } from "@/lib/auth/read-session";
+import {
+  readCanSeeCosts,
+  readHasCapability,
+} from "@/lib/auth/read-session";
 import type { WOPartRow } from "./_components/parts-section";
 import type { WOPhoto } from "./_components/photos-section";
 
@@ -44,12 +47,17 @@ export default async function WorkspacePage({
   params: Promise<{ woId: string }>;
 }) {
   const { woId } = await params;
-  const [t, locale, canDictate, canSeeCosts] = await Promise.all([
-    getTranslations("wo"),
-    getLocale(),
-    dictationReady(),
-    readCanSeeCosts(),
-  ]);
+  const [t, locale, canDictate, canSeeCosts, canOpenTickets, canOpenCustomers] =
+    await Promise.all([
+      getTranslations("wo"),
+      getLocale(),
+      dictationReady(),
+      readCanSeeCosts(),
+      // A technician holds neither: the ticket and customer pages would
+      // bounce them, so those names render as plain text rather than links.
+      readHasCapability("maintenance"),
+      readHasCapability("customers"),
+    ]);
   const supabase = await createClient();
 
   const { data: wo, error } = await supabase
@@ -227,27 +235,33 @@ export default async function WorkspacePage({
           {ownerName ? (
             <div className="flex items-center gap-1.5">
               <Bike className="text-muted-foreground size-3.5" aria-hidden />
-              <Link
-                href={
-                  wo.bike?.owner_organization?.id
-                    ? `/organizations/${wo.bike.owner_organization.id}`
-                    : "#"
-                }
-                className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
-              >
-                {ownerName}
-              </Link>
+              {canOpenCustomers && wo.bike?.owner_organization?.id ? (
+                <Link
+                  href={`/organizations/${wo.bike.owner_organization.id}`}
+                  className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+                >
+                  {ownerName}
+                </Link>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  {ownerName}
+                </span>
+              )}
             </div>
           ) : null}
           {wo.ticket ? (
             <p className="bg-muted/40 text-muted-foreground mt-2 rounded-md px-3 py-2 text-xs">
               {t("fromTicket")}{" "}
-              <Link
-                href={`/maintenance/tickets/${wo.ticket.id}`}
-                className="hover:text-foreground underline-offset-4 hover:underline"
-              >
+              {canOpenTickets ? (
+                <Link
+                  href={`/maintenance/tickets/${wo.ticket.id}`}
+                  className="hover:text-foreground underline-offset-4 hover:underline"
+                >
+                  <SegmentedId value={wo.ticket.ticket_number} />
+                </Link>
+              ) : (
                 <SegmentedId value={wo.ticket.ticket_number} />
-              </Link>
+              )}
               {wo.ticket.description
                 ? `: "${wo.ticket.description.slice(0, 140)}${wo.ticket.description.length > 140 ? "…" : ""}"`
                 : ""}
@@ -263,6 +277,8 @@ export default async function WorkspacePage({
         language={language}
         initialDiagnosis={wo.diagnosis ?? ""}
         initialWorkPerformed={wo.work_performed ?? ""}
+        initialLaborMinutes={wo.labor_minutes ?? null}
+        startedAt={wo.started_at ?? null}
         dictationReady={canDictate}
         bikeId={wo.bike?.id ?? null}
         resolvesTicketNumber={resolvesTicketNumber}

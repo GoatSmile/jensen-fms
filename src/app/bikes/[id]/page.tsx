@@ -19,9 +19,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Wrench } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
-import { readCanSeeCosts } from "@/lib/auth/read-session";
+import {
+  readCanSeeCosts,
+  readHasCapability,
+} from "@/lib/auth/read-session";
+import { StartWorkOrderButton } from "@/app/work/_components/start-wo-button";
 import { createClient } from "@/lib/supabase/server";
 import {
   isFrameProvisional,
@@ -68,12 +75,26 @@ export default async function BikeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tc, tStatus, locale, canSeeCosts] = await Promise.all([
+  const [
+    t,
+    tc,
+    tStatus,
+    tWork,
+    locale,
+    canSeeCosts,
+    canUseFloor,
+    canUseOffice,
+  ] = await Promise.all([
     getTranslations("bikeDetail"),
     getTranslations("common"),
     getTranslations("bikeStatus"),
+    getTranslations("work"),
     getLocale(),
     readCanSeeCosts(),
+    // A scan lands here, so this is where the floor starts a repair.
+    readHasCapability("work"),
+    // The office's ticket / work-order forms live under /maintenance.
+    readHasCapability("maintenance"),
   ]);
   const supabase = await createClient();
 
@@ -86,6 +107,7 @@ export default async function BikeDetailPage({
     orgsRes,
     unitsRes,
     attachmentsRes,
+    openWoRes,
   ] = await Promise.all([
     supabase
       .from("bikes")
@@ -169,6 +191,15 @@ export default async function BikeDetailPage({
       .eq("entity_id", id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
+    // The bike's open repair, if any — the floor's button opens it instead of
+    // starting a second one.
+    supabase
+      .from("work_orders")
+      .select("id, wo_number")
+      .eq("bike_id", id)
+      .in("status", ["open", "in_progress"])
+      .order("created_at", { ascending: true })
+      .limit(1),
   ]);
 
   if (bikeRes.error) {
@@ -386,6 +417,22 @@ export default async function BikeDetailPage({
         colorHex={b.color?.hex ?? null}
         isDeleted={b.deleted_at != null}
         hasManufacturingOrder={b.manufacturing_order_id != null}
+        canUseOffice={canUseOffice}
+        workAction={
+          !canUseFloor ||
+          b.deleted_at != null ||
+          b.status === "retired" ||
+          b.status === "lost_or_stolen" ? null : openWoRes.data?.[0] ? (
+            <Button asChild>
+              <Link href={`/work/${openWoRes.data[0].id}`}>
+                <Wrench aria-hidden />
+                {tWork("openWorkOrder", { number: openWoRes.data[0].wo_number })}
+              </Link>
+            </Button>
+          ) : (
+            <StartWorkOrderButton bikeId={b.id} size="default" />
+          )
+        }
         assignAction={
           <AssignCustomerDialog
             bikeId={b.id}
