@@ -96,7 +96,8 @@
     "timeHours": "{h} h",
     "timeHoursMinutes": "{h} h {m} min",
     "confirmFinishNoTime": "No time spent is recorded yet.",
-    "confirmFinishTime": "Time spent: {time}"
+    "confirmFinishTime": "Time spent: {time}",
+    "bikeNumbersLink": "Bike's numbers (lock, battery, charger) →"
   },
   "woParts": {
     "headerSuffix": "add parts",
@@ -4419,7 +4420,10 @@
     "woBikeCannotTakeWork": "This bike is retired, lost or deleted, so it cannot get a new work order.",
     "templatesEditOnly": "Only people allowed to change bike templates can do this.",
     "partCreateNeedsCosts": "Only people who may see costs can create parts.",
-    "soCouldNotIssueParts": "Could not take the order's parts out of stock, so nothing was delivered: {detail}"
+    "soCouldNotIssueParts": "Could not take the order's parts out of stock, so nothing was delivered: {detail}",
+    "bikeAssignNeedsCustomers": "Only the office can change which customer a bike belongs to.",
+    "commandNeedsInbox": "Only people with access to the inbox can run or apply commands.",
+    "commandNeedsCapability": "You don't have access to the area this draft writes to."
   },
   "inbox": {
     "title": "Inbox",

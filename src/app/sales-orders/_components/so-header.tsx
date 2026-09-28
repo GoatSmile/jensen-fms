@@ -42,6 +42,8 @@ type Props = {
   customerName: string;
   customerId: string;
   unitName: string | null;
+  /** A parts-only order skips "in production" (see validNextSOStatuses). */
+  hasBikeLines: boolean;
 };
 
 export function SOHeader({
@@ -51,6 +53,7 @@ export function SOHeader({
   customerName,
   customerId,
   unitName,
+  hasBikeLines,
 }: Props) {
   const t = useTranslations("so");
   const tStatus = useTranslations("soStatus");
@@ -58,7 +61,7 @@ export function SOHeader({
   const [pending, start] = useTransition();
   const [transitionDialog, setTransitionDialog] = useState<PendingTransition>(null);
 
-  const nextStatuses = validNextSOStatuses(status);
+  const nextStatuses = validNextSOStatuses(status, { hasBikeLines });
 
   function beginTransition(to: SOStatus) {
     if (soTransitionRequiresReason(to)) {

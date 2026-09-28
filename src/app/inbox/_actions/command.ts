@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/lib/types/database";
-import { readPersonId } from "@/lib/auth/read-session";
+import { readHasCapability, readPersonId } from "@/lib/auth/read-session";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import { runCommandAgent } from "@/lib/inbound/command/agent";
 import { buildInquiryTask } from "@/lib/inbound/command/inquiry";
@@ -30,6 +30,27 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * The inbox is where commands are made and applied, so every action here needs
+ * `inbox` — middleware only gates the PAGE, and a server action is callable
+ * from anywhere that imports it. Applying a draft also needs the capability of
+ * what it writes (DRAFT_CAPABILITY), since a draft customer, SO or PO is a real
+ * row in that area.
+ */
+async function refuseWithoutInbox(
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): Promise<{ ok: false; error: string } | null> {
+  return (await readHasCapability("inbox"))
+    ? null
+    : { ok: false, error: t("commandNeedsInbox") };
+}
+
+const DRAFT_CAPABILITY: Record<string, string> = {
+  draft_customer: "customers",
+  draft_sales_order: "so",
+  draft_purchase_order: "po",
+};
+
 /** The logged-in person id — every session carries one (migration 80). */
 async function currentPersonId(): Promise<string | null> {
   return readPersonId();
@@ -43,6 +64,8 @@ async function currentPersonId(): Promise<string | null> {
  */
 export async function createCommandFromText(text: string): Promise<CommandResult> {
   const t = await getTranslations("errors");
+  const refused = await refuseWithoutInbox(t);
+  if (refused) return refused;
   const body = text.trim();
   if (!body) return { ok: false, error: t("commandNoBody") };
 
@@ -77,6 +100,8 @@ export async function createCommandFromText(text: string): Promise<CommandResult
 /** Re-run the agent on an existing command row's body_text (e.g. after edit). */
 export async function rerunCommandAgent(messageId: string): Promise<CommandResult> {
   const t = await getTranslations("errors");
+  const refused = await refuseWithoutInbox(t);
+  if (refused) return refused;
   const supabase = createServiceClient();
   const { data: msg } = await supabase
     .from("inbound_messages")
@@ -119,6 +144,8 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
  */
 export async function planFromInquiry(messageId: string): Promise<CommandResult> {
   const t = await getTranslations("errors");
+  const refused = await refuseWithoutInbox(t);
+  if (refused) return refused;
   const supabase = createServiceClient();
 
   const { data: msg } = await supabase
@@ -222,6 +249,8 @@ export async function applyCommandAction(
   filled: Record<string, string>,
 ): Promise<ApplyResult> {
   const t = await getTranslations("errors");
+  const refused = await refuseWithoutInbox(t);
+  if (refused) return refused;
   const supabase = createServiceClient();
 
   const { data: msg } = await supabase
@@ -234,6 +263,10 @@ export async function applyCommandAction(
   const plan = parseCommandPlan(msg.command_plan);
   const action = plan.actions.find((a) => a.id === actionId);
   if (!action) return { ok: false, error: t("commandActionNotFound") };
+  const needed = DRAFT_CAPABILITY[action.type];
+  if (needed && !(await readHasCapability(needed))) {
+    return { ok: false, error: t("commandNeedsCapability") };
+  }
 
   // Already applied? Idempotent for the ordinary sequential retry (a resent
   // request, a double-click after completion). A true CONCURRENT double-apply

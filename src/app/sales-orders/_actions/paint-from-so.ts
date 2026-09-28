@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { inheritTestMarker } from "@/lib/test-marker";
 import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import { OPEN_SERVICE_ORDER_STATUSES } from "@/lib/services/status";
@@ -115,7 +116,7 @@ export async function createPaintOrderFromSO(
       sales_order_id: soId,
       status: "planned",
       planned_send_date: input.plannedSendDate,
-      notes: input.notes,
+      notes: inheritTestMarker(eligible.soNotes, input.notes),
     })
     .select("id")
     .single();
@@ -313,10 +314,13 @@ async function checkSOBikes(
   t: ErrorsT,
   soId: string,
   bikeIds: string[],
-): Promise<{ ok: true; bikeIds: string[] } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; bikeIds: string[]; soNotes: string | null }
+  | { ok: false; error: string }
+> {
   const { data: so, error: soErr } = await supabase
     .from("sales_orders")
-    .select("id, status")
+    .select("id, status, notes")
     .eq("id", soId)
     .maybeSingle();
   if (soErr || !so) {
@@ -379,7 +383,7 @@ async function checkSOBikes(
   if (blockedCount > 0) {
     return { ok: false, error: t("soBikesInOpenPaint", { count: blockedCount }) };
   }
-  return { ok: true, bikeIds: requested };
+  return { ok: true, bikeIds: requested, soNotes: so.notes ?? null };
 }
 
 /**

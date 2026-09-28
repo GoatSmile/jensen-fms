@@ -96,7 +96,8 @@
     "timeHours": "{h} t",
     "timeHoursMinutes": "{h} t {m} min",
     "confirmFinishNoTime": "Der er endnu ikke registreret tidsforbrug.",
-    "confirmFinishTime": "Tidsforbrug: {time}"
+    "confirmFinishTime": "Tidsforbrug: {time}",
+    "bikeNumbersLink": "Cyklens numre (lås, batteri, lader) →"
   },
   "woParts": {
     "headerSuffix": "tilføj dele",
@@ -4419,7 +4420,10 @@
     "woBikeCannotTakeWork": "Cyklen er udgået, bortkommet eller slettet og kan ikke få et nyt arbejdskort.",
     "templatesEditOnly": "Kun personer, der må ændre cykelskabeloner, kan gøre dette.",
     "partCreateNeedsCosts": "Kun personer, der må se priser, kan oprette dele.",
-    "soCouldNotIssueParts": "Ordrens dele kunne ikke trækkes fra lageret, så intet blev leveret: {detail}"
+    "soCouldNotIssueParts": "Ordrens dele kunne ikke trækkes fra lageret, så intet blev leveret: {detail}",
+    "bikeAssignNeedsCustomers": "Kun kontoret kan ændre, hvilken kunde en cykel tilhører.",
+    "commandNeedsInbox": "Kun personer med adgang til indbakken kan køre eller anvende kommandoer.",
+    "commandNeedsCapability": "Du har ikke adgang til det område, dette udkast skriver til."
   },
   "inbox": {
     "title": "Indbakke",

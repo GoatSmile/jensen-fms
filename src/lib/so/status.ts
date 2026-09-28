@@ -7,6 +7,10 @@
  *   in_production  → ready | cancelled
  *   ready          → delivered | cancelled
  *   delivered      → (terminal — generates invoice, but the SO itself is closed)
+ *
+ * An order with NO bike lines — an extra battery, a charger — has nothing to
+ * produce, so `confirmed → ready` directly (owner, 2026-09-28): walking it
+ * through "in production" was a click that meant nothing.
  *   cancelled      → (terminal)
  *
  * Side-effects on transition:
@@ -48,7 +52,18 @@ const TRANSITIONS: Record<SOStatus, SOStatus[]> = {
   cancelled: [],
 };
 
-export function validNextSOStatuses(current: SOStatus): SOStatus[] {
+export type SOTransitionContext = {
+  /** Does the order have any bike-template line? Omitted = assume yes. */
+  hasBikeLines?: boolean;
+};
+
+export function validNextSOStatuses(
+  current: SOStatus,
+  ctx: SOTransitionContext = {},
+): SOStatus[] {
+  if (current === "confirmed" && ctx.hasBikeLines === false) {
+    return ["ready", "cancelled"];
+  }
   return TRANSITIONS[current] ?? [];
 }
 

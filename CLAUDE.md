@@ -662,7 +662,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   - **Workshop = `work`, `scan`, `bikes`, `parts`** (re-evaluated 2026-09-26):
     no dashboard, inbox or office maintenance pages. The build workbench, batch
     build and pick list live under an MO's URL but open with `work` OR `mo`, and
-    Kits (`/admin/kits`) open with `parts` — each was a bounce before.
+    Kits (`/admin/kits`) open with `parts` — each was a bounce before. A
+    technician may change a bike's STATUS but not its CUSTOMER (owner,
+    2026-09-28): *Skift kunde* and both assign actions need `customers`.
   - **The credential is on the PERSON, not the role** (migration 80,
     supersedes the 2026-07-17 role-password design). Login = pick a NAME +
     that person's own scrypt `people.password_hash`; the session cookie is
@@ -890,7 +892,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   had to be hunted for by hand. The point is that the next cleanup is a query
   (`… like 'TEST%'`), not an argument about which rows were real — the 26 Aug
   production cleanup had exactly that argument. Applies wherever the row lives:
-  the local copy by default, production whenever someone tests there.
+  the local copy by default, production whenever someone tests there. **What
+  the app generates from a TEST parent inherits the marker** —
+  `inheritTestMarker` (`src/lib/test-marker.ts`) stamps the notes of bikes
+  added to an MO, MOs spawned from an SO and paint orders made from an SO; a
+  new generator must call it too.
 - **Navigation / IA — seven collapsible groups** (reset with the owner
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike

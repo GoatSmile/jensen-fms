@@ -68,7 +68,16 @@ export async function transitionSO(
   }
 
   const from = so.status as SOStatus;
-  if (!validNextSOStatuses(from).includes(to)) {
+  const { count: bikeLineCount } = await supabase
+    .from("sales_order_lines")
+    .select("id", { count: "exact", head: true })
+    .eq("sales_order_id", soId)
+    .not("bike_template_id", "is", null);
+  if (
+    !validNextSOStatuses(from, { hasBikeLines: (bikeLineCount ?? 0) > 0 }).includes(
+      to,
+    )
+  ) {
     return {
       ok: false,
       error: t("soCannotMove", { from, to }),

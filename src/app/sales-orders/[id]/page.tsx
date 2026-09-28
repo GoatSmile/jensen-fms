@@ -295,6 +295,9 @@ export default async function SODetailPage({
         customerName={customerName}
         customerId={customerId}
         unitName={unitName}
+        hasBikeLines={(linesRes.data ?? []).some(
+          (l) => l.bike_template_id != null,
+        )}
       />
 
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">

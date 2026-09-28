@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { readPersonId } from "@/lib/auth/read-session";
+import { inheritTestMarker } from "@/lib/test-marker";
 import { createClient } from "@/lib/supabase/server";
 import {
   framePrefix,
@@ -52,6 +53,7 @@ export async function bulkAddBikesToMO(
     .from("manufacturing_orders")
     .select(
       `id, bike_type_id, bike_template_id, color_id, target_quantity, status,
+       notes,
        sales_order:sales_orders!sales_order_id(
          id, status, organization_id, organization_unit_id
        )`,
@@ -147,6 +149,7 @@ export async function bulkAddBikesToMO(
         manufacturing_order_id: moId,
         frame_number: frameNumber,
         status: "planning",
+        notes: inheritTestMarker(mo.notes, null),
         ...slate,
       })
       .select("id")

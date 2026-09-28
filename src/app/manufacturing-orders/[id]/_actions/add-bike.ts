@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 
 import { nullableString as nullable } from "@/lib/forms";
 import { readPersonId } from "@/lib/auth/read-session";
+import { inheritTestMarker } from "@/lib/test-marker";
 import { createClient } from "@/lib/supabase/server";
 
 export type AddBikeResult =
@@ -41,7 +42,7 @@ export async function addBikeToMO(
     .from("manufacturing_orders")
     .select(
       `id, bike_type_id, bike_template_id, color_id, target_quantity,
-       completed_quantity, status, sales_order_id,
+       completed_quantity, status, sales_order_id, notes,
        sales_order:sales_orders!sales_order_id(
          id, status, organization_id, organization_unit_id
        )`,
@@ -100,7 +101,7 @@ export async function addBikeToMO(
       manufacturing_order_id: moId,
       frame_number,
       status: "planning",
-      notes,
+      notes: inheritTestMarker(mo.notes, notes),
       ...slate,
     })
     .select("id")

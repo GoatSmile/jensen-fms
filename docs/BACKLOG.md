@@ -12,16 +12,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   last 30 days, so every cookie minted before migration 104 is expired by then;
   the upgrades only existed so Dennis kept his figures and his templates across
   the deploys.
-- **A TEST marker should travel down the generators.** On 2026-09-15 a full
-  offer → SO → MO → build → paint chain was exercised in production and **14 of
-  the 20 documents carried no marker**: only the six a human typed had one, while
-  the 9 bikes, 4 MOs and one paint order the app generated inherited nothing.
-  The unmarked paint order was invisible to a marker-based search and surfaced
-  only when a dry-run hit its foreign key. `addBikeToMO`, spawn-MO and the
-  paint-order writers already copy type, template and colour from the parent —
-  a parent whose notes start `TEST` should stamp its children the same way.
-  Until then, finding test data needs a `created_at` sweep and someone who
-  remembers the date. See DECISIONS 2026-09-15.
 - **`ScriptProcessorNode` → `AudioWorklet` in the dictation recorder**
   (`src/lib/dictation/use-recorder.ts`). The capture node is formally
   deprecated; no browser has removed it or announced a date, and Munin has run
@@ -78,18 +68,13 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   and echoes raw Postgres error text on 500. Bounded — UUIDs are
   unguessable, output is only a QR image, no writes/key. Fix: stop echoing
   DB errors; consider a generic 400. Low priority.
-- **VC-1 command actions have no capability gate or rate limit** (review
-  2026-07-23, low). `createCommandFromText` / `rerunCommandAgent` /
-  `applyCommandAction` (src/app/inbox/_actions/command.ts) only read the
-  session to STAMP a person id — no `can()` check (consistent with the whole
-  app: server actions are POST endpoints behind Vercel SSO, roles are a UX
-  wall). A low-cap SSO'd user could POST directly and spin the agent loop
-  (Anthropic cost) or write drafts. Fix with the auth/M1 pass (cap-gate
-  server actions + a per-user rate limit on agent runs). Also:
-  `applyCommandAction` trusts client-supplied open-slot ids without checking
-  membership in the server-rendered vocab (only the DB FK guards them) — a
-  crafted request could pick a superseded (is_current=false) template. Same
-  UX-wall caveat; validate slot ids against the fetched lists when auth lands.
+- **VC-1 command actions have no rate limit** (review 2026-07-23, low). The
+  capability gate shipped 2026-09-28 (`inbox`, plus `customers` / `so` / `po`
+  for what a draft writes). Still open: a per-user rate limit on agent runs
+  (Anthropic cost), and `applyCommandAction` trusts client-supplied open-slot
+  ids without checking them against the server-rendered vocab (only the DB FK
+  guards them) — a crafted request could pick a superseded template. Fix with
+  the auth/M1 pass.
 - **Command-plan `quantity` is not an editable open slot** (found 2026-07-26
   building the sales-lead path). `DraftSalesOrderAction.quantity` is a filled
   number, so when a caller states a total but no per-type counts ("ca. 25

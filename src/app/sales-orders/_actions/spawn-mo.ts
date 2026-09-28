@@ -6,6 +6,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { bulkAddBikesToMO } from "@/app/manufacturing-orders/[id]/_actions/bulk-add-bikes";
 import { loadMOCoverage } from "@/lib/manufacturing/coverage";
 import { localizedName } from "@/i18n/vocab";
+import { inheritTestMarker } from "@/lib/test-marker";
 import { createClient } from "@/lib/supabase/server";
 
 export type SpawnMOResult =
@@ -105,7 +106,9 @@ export async function spawnMOFromSOLine(
 
   const { data: so, error: soErr } = await supabase
     .from("sales_orders")
-    .select("id, status, requested_delivery_date, requested_delivery_precision")
+    .select(
+      "id, status, notes, requested_delivery_date, requested_delivery_precision",
+    )
     .eq("id", soId)
     .maybeSingle();
   if (soErr || !so) {
@@ -162,6 +165,7 @@ export async function spawnMOFromSOLine(
       sales_order_line_id: lineId,
       planned_completion_date: so.requested_delivery_date ?? null,
       planned_completion_precision: so.requested_delivery_precision ?? null,
+      notes: inheritTestMarker(so.notes, null),
     })
     .select("id")
     .single();

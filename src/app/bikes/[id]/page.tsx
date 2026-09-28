@@ -24,10 +24,7 @@ import { Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ColorChip } from "@/components/color-swatch";
 import { SegmentedId } from "@/components/segmented-id";
-import {
-  readCanSeeCosts,
-  readHasCapability,
-} from "@/lib/auth/read-session";
+import { readCanSeeCosts, readHasCapability } from "@/lib/auth/read-session";
 import { StartWorkOrderButton } from "@/app/work/_components/start-wo-button";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -84,6 +81,7 @@ export default async function BikeDetailPage({
     canSeeCosts,
     canUseFloor,
     canUseOffice,
+    canChangeCustomer,
   ] = await Promise.all([
     getTranslations("bikeDetail"),
     getTranslations("common"),
@@ -95,6 +93,8 @@ export default async function BikeDetailPage({
     readHasCapability("work"),
     // The office's ticket / work-order forms live under /maintenance.
     readHasCapability("maintenance"),
+    // Who owns a bike is office business; a technician may not change it.
+    readHasCapability("customers"),
   ]);
   const supabase = await createClient();
 
@@ -426,7 +426,9 @@ export default async function BikeDetailPage({
             <Button asChild>
               <Link href={`/work/${openWoRes.data[0].id}`}>
                 <Wrench aria-hidden />
-                {tWork("openWorkOrder", { number: openWoRes.data[0].wo_number })}
+                {tWork("openWorkOrder", {
+                  number: openWoRes.data[0].wo_number,
+                })}
               </Link>
             </Button>
           ) : (
@@ -434,24 +436,27 @@ export default async function BikeDetailPage({
           )
         }
         assignAction={
-          <AssignCustomerDialog
-            bikeId={b.id}
-            disabled={assignBlocked}
-            disabledReason={assignBlockedReason}
-            bikeStatus={b.status}
-            currentOwner={
-              b.owner_organization
-                ? {
-                    organizationId: b.owner_organization.id,
-                    organizationName: ownerOrgDisplay ?? t("customerFallback"),
-                    unitId: b.owner_unit?.id ?? null,
-                    unitName: b.owner_unit?.name ?? null,
-                  }
-                : null
-            }
-            organizations={organizations}
-            organizationUnits={organizationUnits}
-          />
+          !canChangeCustomer ? null : (
+            <AssignCustomerDialog
+              bikeId={b.id}
+              disabled={assignBlocked}
+              disabledReason={assignBlockedReason}
+              bikeStatus={b.status}
+              currentOwner={
+                b.owner_organization
+                  ? {
+                      organizationId: b.owner_organization.id,
+                      organizationName:
+                        ownerOrgDisplay ?? t("customerFallback"),
+                      unitId: b.owner_unit?.id ?? null,
+                      unitName: b.owner_unit?.name ?? null,
+                    }
+                  : null
+              }
+              organizations={organizations}
+              organizationUnits={organizationUnits}
+            />
+          )
         }
       />
 
@@ -590,19 +595,19 @@ export default async function BikeDetailPage({
             )}
           </Field>
           {canSeeCosts ? (
-          <Field label={t("buildCost")}>
-            {b.build_cost_dkk != null ? (
-              <span className="tabular-nums">
-                {new Intl.NumberFormat("da-DK", {
-                  style: "currency",
-                  currency: "DKK",
-                  maximumFractionDigits: 2,
-                }).format(Number(b.build_cost_dkk))}
-              </span>
-            ) : (
-              <Muted>—</Muted>
-            )}
-          </Field>
+            <Field label={t("buildCost")}>
+              {b.build_cost_dkk != null ? (
+                <span className="tabular-nums">
+                  {new Intl.NumberFormat("da-DK", {
+                    style: "currency",
+                    currency: "DKK",
+                    maximumFractionDigits: 2,
+                  }).format(Number(b.build_cost_dkk))}
+                </span>
+              ) : (
+                <Muted>—</Muted>
+              )}
+            </Field>
           ) : null}
           <Field label={t("notes")}>
             {b.notes ? b.notes : <Muted>—</Muted>}
@@ -612,13 +617,16 @@ export default async function BikeDetailPage({
 
       <PhotosSection bikeId={b.id} photos={photoRows} />
 
-      <IdentifiersSection
-        bikeId={b.id}
-        rows={identifierRows}
-        identifierTypes={identifierTypeOptions}
-        requiredCount={requiredCount}
-        requiredRegisteredCount={requiredRegisteredCount}
-      />
+      {/* Anchor: the floor's work order links here to register numbers. */}
+      <div id="identifiers" className="scroll-mt-4">
+        <IdentifiersSection
+          bikeId={b.id}
+          rows={identifierRows}
+          identifierTypes={identifierTypeOptions}
+          requiredCount={requiredCount}
+          requiredRegisteredCount={requiredRegisteredCount}
+        />
+      </div>
 
       <PartsInstalledSection rows={partRows} />
 

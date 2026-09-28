@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
-import { readPersonId } from "@/lib/auth/read-session";
+import { readHasCapability, readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type AssignResult = { ok: true } | { ok: false; error: string };
@@ -27,6 +27,10 @@ export type AssignResult = { ok: true } | { ok: false; error: string };
  * Terminal statuses (retired, lost_or_stolen) and archived bikes block.
  *
  * Use unassignBike() for the reverse (handed back, returned to stock).
+ *
+ * **Needs `customers`** — who owns a bike is office business; a technician
+ * may change a bike's status but not its customer (owner, 2026-09-28). The
+ * bike page hides the button; this is the check that holds.
  */
 export async function assignBikeToCustomer(
   bikeId: string,
@@ -34,6 +38,9 @@ export async function assignBikeToCustomer(
   unitId: string | null,
 ): Promise<AssignResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("customers"))) {
+    return { ok: false, error: t("bikeAssignNeedsCustomers") };
+  }
   if (!bikeId) return { ok: false, error: t("missingBikeId") };
   if (!organizationId) return { ok: false, error: t("bikePickCustomer") };
 
@@ -142,6 +149,9 @@ export async function assignBikeToCustomer(
  */
 export async function unassignBike(bikeId: string): Promise<AssignResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("customers"))) {
+    return { ok: false, error: t("bikeAssignNeedsCustomers") };
+  }
   if (!bikeId) return { ok: false, error: t("missingBikeId") };
 
   const supabase = await createClient();

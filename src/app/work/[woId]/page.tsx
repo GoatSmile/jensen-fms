@@ -232,6 +232,16 @@ export default async function WorkspacePage({
               {templateLabel}
             </span>
           ) : null}
+          {wo.bike?.id ? (
+            // Lock, battery and charger numbers are registered on the bike,
+            // not the work order — one tap from the job.
+            <Link
+              href={`/bikes/${wo.bike.id}#identifiers`}
+              className="text-brand w-fit text-sm underline-offset-4 hover:underline"
+            >
+              {t("bikeNumbersLink")}
+            </Link>
+          ) : null}
           {ownerName ? (
             <div className="flex items-center gap-1.5">
               <Bike className="text-muted-foreground size-3.5" aria-hidden />
