@@ -1,8 +1,8 @@
 # Reparationer i Jensen FMS — din vejledning
 
-**Til Finn, september 2026.** Sådan registrerer du en reparation fra telefonen:
-find cyklen, opret et arbejdskort, skriv eller indtal hvad du gør, og meld
-færdig. Kontoret sætter priserne på bagefter — du ser ingen priser, og det er
+**Til Finn, september 2026.** Sådan registrerer du en reparation fra
+telefonen: find cyklen, opret et arbejdskort, skriv eller indtal hvad du gør,
+og meld færdig. Afsnit 8 viser lakturene — kasser til og fra lakereren. Kontoret sætter priserne på bagefter — du ser ingen priser, og det er
 meningen. Vi går det igennem sammen på tirsdag.
 
 ## 1 · Log ind
@@ -85,6 +85,30 @@ Et afsluttet arbejdskort kan **ikke åbnes igen**. Skal der laves mere på
 cyklen, opretter du et nyt.
 
 ![Knappen Meld færdig nederst på arbejdskortet.](images/guide-finn/da-wo-done.png)
+
+## 8 · Lakture: til og fra lakereren
+
+Når du kører kasser ud til lakereren eller henter dem, bruger du **Lakture**
+øverst på *Værkstedet*. Tallet viser, hvor mange ordrer der venter. Du ser,
+hvad der er i kasserne, og hvor de skal hen, men ingen priser.
+
+**Skal afleveres**: ordrer, kontoret har sendt til lakereren.
+
+- På **afleveringsdatoen** tæller ordren af sig selv som *hos lakereren*. Du
+  skal ikke gøre noget.
+- **Kører du en anden dag?** Flyt **Afleveringsdato**.
+- **Kører du tidligere?** Tryk **Afleveret nu**, når kasserne er afleveret.
+
+**Hos lakereren**: ordrer, der er derude.
+
+- Siger lakereren til dig, at den er færdig, så tryk **Lakereren siger, den er
+  klar**.
+- Sæt **Afhentningsdato** til den dag, du henter. Så kan alle se den.
+- Når kasserne er hjemme, tryk **Hentet** og derefter **Ja — hentet**. De
+  lakerede dele kommer på lakhylden. Mangler der noget på ordren, får Dennis
+  besked. Du skal ikke rette noget.
+
+![Lakture: en ordre, der skal afleveres, og en, der er klar til afhentning.](images/guide-finn/da-paint-runs.png)
 
 ## Godt at vide
 

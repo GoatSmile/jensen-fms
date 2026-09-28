@@ -1,7 +1,8 @@
 # Repairs in Jensen FMS — your guide
 
 **For Finn, September 2026.** How to record a repair from your phone: find the
-bike, start a work order, write or dictate what you do, and mark it done. The
+bike, start a work order, write or dictate what you do, and mark it done.
+Section 8 covers the paint runs — boxes to and from the painter. The
 office adds the prices afterwards. You see no prices, and that is intended.
 We will go through it together on Tuesday.
 
@@ -90,6 +91,29 @@ A finished work order **cannot be reopened**. If the bike needs more work,
 start a new one.
 
 ![The Mark done button at the bottom of the work order.](images/guide-finn/en-wo-done.png)
+
+## 8 · Paint runs: to and from the painter
+
+When you drive boxes to the painter or collect them, use **Paint runs** at the
+top of the *Workshop floor*. The number shows how many orders are waiting. You
+see what is in the boxes and where they go, but no prices.
+
+**To drop off**: orders the office has sent to the painter.
+
+- On the **drop-off date** the order counts as *at the painter* by itself.
+  You don't have to do anything.
+- **Driving on another day?** Move the **Drop-off date**.
+- **Driving earlier?** Tap **Dropped off now** once the boxes are delivered.
+
+**At the painter**: orders that are out there.
+
+- If the painter tells you it's done, tap **The painter says it's ready**.
+- Set the **Pickup date** to the day you collect, so everyone can see it.
+- When the boxes are back, tap **Collected**, then **Yes — collected**. The
+  painted parts go onto the paint shelf. If something is missing on the order,
+  Dennis is told. You don't have to fix anything.
+
+![Paint runs: one order to drop off, one ready for pickup.](images/guide-finn/en-paint-runs.png)
 
 ## Good to know
 
