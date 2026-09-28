@@ -12,9 +12,9 @@ den dag, Finn kører dem.
 |---|---|---|
 | **Planlagt** | Ordren bygges op. Linjer og priser kan stadig ændres. | Dig |
 | **Bekræftet** | Du trykker *E-mail til lakerer*. Priserne fryses, og lakereren får ordren. **Varerne er stadig her.** | Dig |
-| **Hos lakerer** | Skifter **af sig selv om morgenen på afleveringsdatoen**, den dag Finn kører. Cyklerne kan ikke bygges, mens delene er væk. | Automatisk |
-| **Klar til afhentning** | Lakereren har sagt, at det er færdigt. Sæt *Afhentning planlagt*, så alle kan se dagen. | Dig |
-| **Modtaget retur** | Kasserne er hjemme. De lakerede dele kommer på lakhylden som lager. | Dig |
+| **Hos lakerer** | Skifter **af sig selv om morgenen på afleveringsdatoen**, den dag Finn kører. Cyklerne kan ikke bygges, mens delene er væk. | Automatisk / Finn |
+| **Klar til afhentning** | Lakereren har sagt, at det er færdigt. Sæt *Afhentning planlagt*, så alle kan se dagen. | Dig / Finn |
+| **Modtaget retur** | Kasserne er hjemme. De lakerede dele kommer på lakhylden som lager. | Dig / Finn |
 
 ## 1 · Opret lakordren fra salgsordren
 
@@ -68,8 +68,11 @@ lige nu.
 
 ## Godt at vide
 
-- **Finn ser ikke lakordrerne.** Datoerne er dine, indtil kalenderen er sat op
-  (tirsdag): så kommer afleveringen i Finns kalender.
+- **Finn kører turene fra sin telefon** under *Værkstedet → Lakture*: han ser,
+  hvad der er i kasserne (uden priser), trykker *Afleveret nu*, *Lakereren siger,
+  den er klar* og *Hentet*, og kan flytte afleverings- og afhentningsdatoen.
+  Mangler en linje del eller farve, når han henter, får du en e-mail om, hvilken
+  ordre der skal rettes.
 - **Kasse-etiketter med QR** kommer, når vi kender din etiketprinter. Så kan
   pakning og modtagelse ske med en scanning.
 - **Noget virker ikke?** Ring til Nazar.

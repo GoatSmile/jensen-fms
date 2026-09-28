@@ -24,18 +24,20 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 108 is the latest; production verified at it** (`npm run
+- **Migration 109 is the latest; production verified at it** (`npm run
   check:prod`, 28 Sep). 106 = paint lifecycle, 107 = delivery fields + private
   `signatures` bucket + `so.ready` for Owner, 108 = identifier uniqueness and
-  counting (and JP-BH CWF1 refiled Batteries → Rear Carrier, owner).
+  counting (and JP-BH CWF1 refiled Batteries → Rear Carrier, owner),
+  109 = `cron_runs` + `jobs` + `paint.received_incomplete` for Owner.
 - **Production with `supabase db query --linked`** (writes pre-approved, owner
   2026-09-04; `-f` takes a whole file). **The local copy: `docker exec -i
   supabase_db_jensen-fms psql …`** — `--local` takes one statement per call.
 - **Everything shipped on 27 and 28 Sep was verified in the browser against
   the LOCAL copy only** — nobody has clicked it in production yet.
-- **A new daily cron**, `/api/cron/paint-drop-offs` (04:00 UTC, `vercel.json`),
-  moves confirmed paint orders to *at painter* on their drop-off date. It uses
-  the same `CRON_SECRET` as the other crons — check it runs once in Vercel.
+- **Scheduled jobs are watched at `/admin/jobs`** (capability `jobs`, Owner +
+  IT admin; migration 109): list from `vercel.json`, last runs from
+  `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check
+  its first run on the page (a run appears only after this deploy).
 - **Guides (PDF):** `GUIDE-FINN-DA-2026-09.pdf` (+ EN) for Finn's repairs,
   `GUIDE-DENNIS-PAINT-DA-2026-09.pdf` for paint orders. Screens are shot from a
   production build on port 3100 (headless Chrome: 500 px minimum width, and it
@@ -68,8 +70,8 @@ is Danish (person language).
 - **Owner decision:** the service-agreement model (plan §2A).
 
 ## Landmines
-- **Finn cannot see paint orders** (Workshop has no `paint`): drop-off and
-  pickup dates are the office's until a floor surface or the calendar exists.
+- **Finn drives paint runs from `/work/paint-runs`**, not the paint-order pages
+  (those show prices; Workshop has no `paint`).
 - **Counting identifiers by category needs clean categories**: Batteries and
   Charger must hold only batteries and chargers, or bikes get asked for extra
   numbers (CLAUDE.md, identifier rule).
@@ -106,7 +108,7 @@ is Danish (person language).
    labels once the printer is known, the builder's iPad view (§2D).
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-09-28): 94 pass · 20 redirect · 6 skip · 0 fail.** The
+- **Smoke, local (2026-09-28): 96 pass · 20 redirect · 6 skip · 0 fail.** The
   skips are invoices, tickets and agreements (no rows locally).
 - **Lint: 0 errors, 14 warnings** (all pre-existing).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`,
