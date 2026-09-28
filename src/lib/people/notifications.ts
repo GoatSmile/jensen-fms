@@ -16,6 +16,7 @@ export const NOTIFICATION_EVENTS = [
   "inbound.order_inquiry",
   "invoice.overdue",
   "agreement.expiring",
+  "so.ready",
 ] as const;
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
@@ -32,4 +33,5 @@ export const NOTIFICATION_EVENT_LABEL_KEYS: Record<NotificationEvent, string> =
     "inbound.order_inquiry": "eventInboundOrderInquiry",
     "invoice.overdue": "eventInvoiceOverdue",
     "agreement.expiring": "eventAgreementExpiring",
+    "so.ready": "eventSoReady",
   };

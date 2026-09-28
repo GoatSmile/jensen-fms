@@ -744,7 +744,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `assigned` in one bulk write, **and takes every PART line off the shelf as a
   `sold` movement** (migration 105) — the extra battery or charger; template
   lines never do, their bikes consumed their parts at build. Stock may go
-  negative rather than refuse a delivery that physically happened. Cancelling unslates still-unbuilt bikes;
+  negative rather than refuse a delivery that physically happened. **An SO
+  reaches `ready` by itself** when its last MO closes and every bike line has
+  one (`markSOReadyWhenBuilt`, `src/lib/so/ready.ts`), telling Dennis
+  (`so.ready`); a parts-only SO goes `confirmed → ready` by hand. **Delivery is
+  a SIGNATURE** (migration 107): the delivery note lives under
+  `/work/deliveries` (the Workshop role has no `so`), shows NO prices, renders
+  in the order's language, and signing is the only door the floor has to
+  `delivered` — `signDelivery` stores the image in the PRIVATE `signatures`
+  bucket, then calls `transitionSO`. The delivery contact (name, phone,
+  address) is free text on the SO, because it is often nobody in `contacts`.
+  Cancelling unslates still-unbuilt bikes;
   built ones stay slated (workshop unpacks by hand). New bikes added to an
   MO whose SO is past-draft inherit the slate at create time. Spawn-MO
   lives at `src/app/sales-orders/_actions/spawn-mo.ts`; v1 is one MO per

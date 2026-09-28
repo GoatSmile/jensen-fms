@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
-import { ChevronRight, CircleUser, ScanLine, Search, Tag, X } from "lucide-react";
+import {
+  ChevronRight,
+  CircleUser,
+  ScanLine,
+  Search,
+  Tag,
+  Truck,
+  X,
+} from "lucide-react";
 import { localizedName } from "@/i18n/vocab";
 import { readGate } from "@/lib/auth/read-session";
 
@@ -59,7 +67,7 @@ export default async function WorkQueuePage({
   const mineActive = mine === "1" && myPersonId !== null;
   const supabase = await createClient();
 
-  const [woRes, buildQueue, search] = await Promise.all([
+  const [woRes, buildQueue, search, readyRes] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -81,7 +89,13 @@ export default async function WorkQueuePage({
       .order("created_at", { ascending: true }),
     loadBuildQueue(supabase),
     q ? searchWorkBikeIds(supabase, q) : Promise.resolve(null),
+    // Orders ready to hand over — the delivery notes (migration 107).
+    supabase
+      .from("sales_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ready"),
   ]);
+  const readyCount = readyRes.count ?? 0;
 
   if (woRes.error) {
     throw new Error(`Failed to load work queue: ${woRes.error.message}`);
@@ -155,11 +169,19 @@ export default async function WorkQueuePage({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 p-4 sm:p-6">
       <header className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <Button asChild size="sm" variant="outline">
-          <Link href="/scan">
-            <ScanLine className="mr-1 size-4" aria-hidden /> {t("scan")}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/work/deliveries">
+              <Truck className="mr-1 size-4" aria-hidden />{" "}
+              {t("deliveries", { count: readyCount })}
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/scan">
+              <ScanLine className="mr-1 size-4" aria-hidden /> {t("scan")}
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <form action="/work" method="get" role="search" className="flex gap-2">

@@ -29,7 +29,8 @@
     "searchEmptyTitle": "Nothing matches “{q}”",
     "searchEmptyBody": "Try the code on the bike's label (BKTM01), part of the frame number, or the customer's name.",
     "searchBikesTitle": "Bikes without an open work order",
-    "searchBikesMore": "{count, plural, one {# more bike matches} other {# more bikes match}} — narrow the search to see them."
+    "searchBikesMore": "{count, plural, one {# more bike matches} other {# more bikes match}} — narrow the search to see them.",
+    "deliveries": "Deliveries ({count})"
   },
   "wo": {
     "backToQueue": "Queue",
@@ -3612,7 +3613,8 @@
     "passwordAdminNote": "Admin is the shared account: it signs in with the site password from the environment, so it has no password of its own here.",
     "passwordNeedsRole": "This person holds no role, so they can't log in yet — a login with no capabilities would be bounced off every page. Give them a role below.",
     "passwordWriteOnlyHint": "Write-only: the password is stored as a hash and can never be shown again.",
-    "capTemplatesEdit": "Create and change bike templates"
+    "capTemplatesEdit": "Create and change bike templates",
+    "eventSoReady": "Sales order ready for delivery"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -4433,7 +4435,14 @@
     "commandNeedsCapability": "You don't have access to the area this draft writes to.",
     "invalidDate": "That is not a valid date.",
     "paintDropOffLocked": "The goods have already left, so the drop-off date can no longer change.",
-    "paintPickupLocked": "This order is closed, so the pickup date can no longer change."
+    "paintPickupLocked": "This order is closed, so the pickup date can no longer change.",
+    "deliveryNeedsWork": "Only people with access to the workshop floor can take a delivery signature.",
+    "deliveryNeedsSo": "Only people with access to sales orders can change the delivery details.",
+    "deliverySignerRequired": "Write the recipient's name.",
+    "deliverySignatureRequired": "The signature is missing — let the recipient sign.",
+    "deliveryNotReady": "This order is not ready for delivery, so it cannot be signed for.",
+    "deliverySignatureUploadFailed": "The signature could not be saved, so nothing was delivered: {detail}",
+    "deliveryLocked": "This order is closed, so its delivery details can no longer change."
   },
   "inbox": {
     "title": "Inbox",
@@ -4723,5 +4732,33 @@
     "creating": "Creating…",
     "newPartOption": "+ New part…",
     "newPartButton": "New part"
+  },
+  "deliveries": {
+    "back": "Workshop floor",
+    "backToList": "Deliveries",
+    "title": "Deliveries",
+    "subtitle": "Orders ready to hand over. Open one, let the recipient sign — that delivers it.",
+    "emptyTitle": "Nothing to deliver",
+    "emptyBody": "An order appears here when its bikes are built and it is ready.",
+    "requested": "Requested for {date}",
+    "notReady": "This order is not ready for delivery yet.",
+    "signFirst": "The recipient has to sign first.",
+    "clearSignature": "Clear",
+    "signAndDeliver": "Sign and deliver",
+    "signing": "Delivering…"
+  },
+  "soDelivery": {
+    "title": "Delivery",
+    "description": "Who receives the order, and where. Finn calls this number to book the drive; the recipient signs the delivery note.",
+    "contactName": "Recipient",
+    "contactPhone": "Phone",
+    "address": "Delivery address",
+    "addressDefault": "Otherwise: {address}",
+    "openNote": "Delivery note",
+    "signed": "Received by {name}, {time}.",
+    "unsaved": "Unsaved changes",
+    "savedAt": "Saved · {time}",
+    "save": "Save",
+    "saving": "Saving…"
   }
 }

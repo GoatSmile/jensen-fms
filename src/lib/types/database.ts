@@ -3640,6 +3640,12 @@ export type Database = {
       sales_orders: {
         Row: {
           actual_delivery_date: string | null
+          delivery_contact_name: string | null
+          delivery_contact_phone: string | null
+          delivery_address: string | null
+          delivery_signed_by: string | null
+          delivery_signed_at: string | null
+          delivery_signature_path: string | null
           contact_id: string | null
           converted_from_offer_id: string | null
           created_at: string
@@ -3663,6 +3669,12 @@ export type Database = {
         }
         Insert: {
           actual_delivery_date?: string | null
+          delivery_contact_name?: string | null
+          delivery_contact_phone?: string | null
+          delivery_address?: string | null
+          delivery_signed_by?: string | null
+          delivery_signed_at?: string | null
+          delivery_signature_path?: string | null
           contact_id?: string | null
           converted_from_offer_id?: string | null
           created_at?: string
@@ -3686,6 +3698,12 @@ export type Database = {
         }
         Update: {
           actual_delivery_date?: string | null
+          delivery_contact_name?: string | null
+          delivery_contact_phone?: string | null
+          delivery_address?: string | null
+          delivery_signed_by?: string | null
+          delivery_signed_at?: string | null
+          delivery_signature_path?: string | null
           contact_id?: string | null
           converted_from_offer_id?: string | null
           created_at?: string

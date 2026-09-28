@@ -29,7 +29,8 @@
     "searchEmptyTitle": "Intet matcher “{q}”",
     "searchEmptyBody": "Prøv koden på cyklens mærkat (BKTM01), en del af stelnummeret eller kundens navn.",
     "searchBikesTitle": "Cykler uden åbent arbejdskort",
-    "searchBikesMore": "{count, plural, one {# cykel mere matcher} other {# cykler mere matcher}} — gør søgningen smallere for at se dem."
+    "searchBikesMore": "{count, plural, one {# cykel mere matcher} other {# cykler mere matcher}} — gør søgningen smallere for at se dem.",
+    "deliveries": "Leveringer ({count})"
   },
   "wo": {
     "backToQueue": "Køen",
@@ -3612,7 +3613,8 @@
     "passwordAdminNote": "Admin er den fælles konto: den logger ind med site-adgangskoden fra miljøet og har derfor ingen egen adgangskode her.",
     "passwordNeedsRole": "Personen har ingen rolle og kan derfor ikke logge ind endnu — et login uden rettigheder ville blive afvist på alle sider. Giv personen en rolle nedenfor.",
     "passwordWriteOnlyHint": "Kan kun skrives: adgangskoden gemmes som en hash og kan aldrig vises igen.",
-    "capTemplatesEdit": "Oprette og ændre cykelskabeloner"
+    "capTemplatesEdit": "Oprette og ændre cykelskabeloner",
+    "eventSoReady": "Salgsordre klar til levering"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -4433,7 +4435,14 @@
     "commandNeedsCapability": "Du har ikke adgang til det område, dette udkast skriver til.",
     "invalidDate": "Det er ikke en gyldig dato.",
     "paintDropOffLocked": "Varerne er allerede afleveret, så afleveringsdatoen kan ikke længere ændres.",
-    "paintPickupLocked": "Ordren er lukket, så afhentningsdatoen kan ikke længere ændres."
+    "paintPickupLocked": "Ordren er lukket, så afhentningsdatoen kan ikke længere ændres.",
+    "deliveryNeedsWork": "Kun personer med adgang til værkstedet kan tage imod en underskrift.",
+    "deliveryNeedsSo": "Kun personer med adgang til salgsordrer kan ændre leveringsoplysningerne.",
+    "deliverySignerRequired": "Skriv modtagerens navn.",
+    "deliverySignatureRequired": "Underskriften mangler — lad modtageren skrive under.",
+    "deliveryNotReady": "Ordren er ikke klar til levering, så der kan ikke kvitteres for den.",
+    "deliverySignatureUploadFailed": "Underskriften kunne ikke gemmes, så intet blev leveret: {detail}",
+    "deliveryLocked": "Ordren er lukket, så leveringsoplysningerne kan ikke længere ændres."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4723,5 +4732,33 @@
     "creating": "Opretter…",
     "newPartOption": "+ Ny del…",
     "newPartButton": "Ny del"
+  },
+  "deliveries": {
+    "back": "Værkstedet",
+    "backToList": "Leveringer",
+    "title": "Leveringer",
+    "subtitle": "Ordrer, der er klar til udlevering. Åbn en, lad modtageren skrive under — så er den leveret.",
+    "emptyTitle": "Intet at levere",
+    "emptyBody": "En ordre dukker op her, når cyklerne er bygget, og den er klar.",
+    "requested": "Ønsket til {date}",
+    "notReady": "Ordren er endnu ikke klar til levering.",
+    "signFirst": "Modtageren skal skrive under først.",
+    "clearSignature": "Ryd",
+    "signAndDeliver": "Underskriv og lever",
+    "signing": "Leverer…"
+  },
+  "soDelivery": {
+    "title": "Levering",
+    "description": "Hvem der modtager ordren, og hvor. Finn ringer til nummeret for at aftale turen; modtageren skriver under på følgesedlen.",
+    "contactName": "Modtager",
+    "contactPhone": "Telefon",
+    "address": "Leveringsadresse",
+    "addressDefault": "Ellers: {address}",
+    "openNote": "Følgeseddel",
+    "signed": "Modtaget af {name}, {time}.",
+    "unsaved": "Ugemte ændringer",
+    "savedAt": "Gemt · {time}",
+    "save": "Gem",
+    "saving": "Gemmer…"
   }
 }

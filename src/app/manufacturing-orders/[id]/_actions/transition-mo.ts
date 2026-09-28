@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { markSOReadyWhenBuilt } from "@/lib/so/ready";
 import { createClient } from "@/lib/supabase/server";
 import {
   moTransitionRequiresReason,
@@ -31,7 +32,9 @@ export async function transitionMO(
   const supabase = await createClient();
   const { data: mo, error: lookupErr } = await supabase
     .from("manufacturing_orders")
-    .select("id, status, actual_start_date, actual_completion_date, notes")
+    .select(
+      "id, status, actual_start_date, actual_completion_date, notes, sales_order_id",
+    )
     .eq("id", moId)
     .maybeSingle();
   if (lookupErr || !mo) {
@@ -91,6 +94,20 @@ export async function transitionMO(
       ok: false,
       error: t("moCouldNotUpdateStatus", { detail: updErr.message }),
     };
+  }
+
+  // The last MO of a sales order closing makes the order ready to deliver,
+  // and tells Dennis (migration 107).
+  if (
+    mo.sales_order_id &&
+    (toStatus === "completed" || toStatus === "cancelled")
+  ) {
+    const ready = await markSOReadyWhenBuilt(supabase, mo.sales_order_id);
+    if (ready) {
+      revalidatePath("/sales-orders");
+      revalidatePath(`/sales-orders/${mo.sales_order_id}`);
+      revalidatePath("/work/deliveries");
+    }
   }
 
   revalidatePath("/manufacturing-orders");

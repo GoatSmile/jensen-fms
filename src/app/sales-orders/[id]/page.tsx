@@ -28,6 +28,7 @@ import {
 } from "./_components/linked-paint-orders-section";
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
+import { DeliverySection } from "./_components/delivery-section";
 import { LinesSection, type SOLineRow } from "./_components/lines-section";
 import {
   COMMERCIAL_LINE_SELECT,
@@ -66,10 +67,13 @@ export default async function SODetailPage({
        requested_delivery_date, requested_delivery_precision, actual_delivery_date,
        currency, subtotal_amount, total_vat_amount, total_amount,
        notes, production_note, created_at,
+       delivery_contact_name, delivery_contact_phone, delivery_address,
+       delivery_signed_by, delivery_signed_at,
        organization:organizations!organization_id(
-         id, legal_name, display_name_en, display_name_da, default_vat_code
+         id, legal_name, display_name_en, display_name_da, default_vat_code,
+         address_line1, zip_code, city
        ),
-       organization_unit:organization_units!organization_unit_id(id, name),
+       organization_unit:organization_units!organization_unit_id(id, name, address),
        contact:contacts!contact_id(id, first_name, last_name, role),
        offer:offers!converted_from_offer_id(id, offer_number)`,
     )
@@ -374,6 +378,25 @@ export default async function SODetailPage({
       {/* Lifecycle order with contiguous tint bands: the order itself
           (neutral) → production (sky: note + MOs + paint) → settlement
           (amber). The production note heads the band it instructs. */}
+      <DeliverySection
+        soId={so.id}
+        status={status}
+        initial={{
+          contactName: so.delivery_contact_name ?? "",
+          contactPhone: so.delivery_contact_phone ?? "",
+          address: so.delivery_address ?? "",
+        }}
+        defaultAddress={
+          so.organization_unit?.address ??
+          ([so.organization?.address_line1, [so.organization?.zip_code, so.organization?.city].filter(Boolean).join(" ")]
+            .filter(Boolean)
+            .join(", ") ||
+            null)
+        }
+        signedBy={so.delivery_signed_by}
+        signedAt={so.delivery_signed_at}
+      />
+
       <ProductionNoteCard
         soId={so.id}
         initialNote={so.production_note}

@@ -3191,3 +3191,28 @@ them.
   setup), the painter's "ready" email forwarded in, and Finn doing any of this —
   the Workshop role has no `paint` capability, so the dates are the office's
   until a floor surface exists.
+
+## 2026-09-28 — Delivery: the order readies itself, and a signature delivers it
+
+Owner go-ahead on Dennis's "number one" (15 Sep, 02:07–02:24).
+
+- **SO → `ready` by itself when its last MO closes** (and every bike line has an
+  MO, and at least one MO completed). Dennis gets `so.ready` — to him, not to
+  Finn, because some customers collect.
+- **The delivery contact is free text on the SO** (name, phone, address):
+  known only after acceptance, and usually a department person who is not a
+  `contacts` row. The address falls back to the department's, then the
+  customer's. **Rejected:** a `contact_id` picker (would force creating
+  contacts for people we will never mail).
+- **The delivery note is a floor page** (`/work/deliveries/[soId]`), because
+  Finn delivers and holds no `so`. It shows no prices (a technician sees no
+  money) and renders in the order's language (the customer reads it).
+- **Signing IS delivering.** Name + finger signature → the image goes to a
+  PRIVATE bucket (a customer's signature is not a public picture) → the SO is
+  delivered through `transitionSO`, so bikes flip and sold parts leave stock by
+  the one path; if the transition refuses, the image is removed. **Rejected:**
+  a separate *Delivered* button beside the signature (two ways to say one
+  thing, and the unsigned one would win).
+- **Not yet:** the loading scan (a QR on the note), the delivery appointment in
+  Finn's calendar (after the Google setup), linking the customer's acceptance
+  email to the order.

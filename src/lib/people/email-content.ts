@@ -62,6 +62,38 @@ export function woAssignedEmail(
   };
 }
 
+/**
+ * A sales order is built and ready (its last MO completed). To Dennis, who
+ * decides whether the customer collects or Finn delivers (15 Sep, 02:07).
+ */
+export function soReadyEmail(
+  lang: "da" | "en",
+  input: {
+    soNumber: string;
+    customer: string | null;
+    bikeCount: number;
+    url: string;
+  },
+): EmailContent {
+  const customer = input.customer ? escapeHtml(input.customer) : "—";
+  if (lang === "da") {
+    return {
+      subject: `Ordre ${input.soNumber} er klar til levering`,
+      html:
+        `<p>Salgsordren <strong>${escapeHtml(input.soNumber)}</strong> til <strong>${customer}</strong> er færdigbygget og klar.</p>` +
+        `<p>Cykler: ${input.bikeCount}. Skal kunden hente, eller skal Finn levere?</p>` +
+        link(input.url, "Åbn ordren"),
+    };
+  }
+  return {
+    subject: `Order ${input.soNumber} is ready for delivery`,
+    html:
+      `<p>Sales order <strong>${escapeHtml(input.soNumber)}</strong> for <strong>${customer}</strong> is built and ready.</p>` +
+      `<p>Bikes: ${input.bikeCount}. Will the customer collect, or does Finn deliver?</p>` +
+      link(input.url, "Open the order"),
+  };
+}
+
 export type OverdueInvoiceRow = {
   invoiceNumber: string;
   orgName: string | null;
