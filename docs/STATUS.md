@@ -76,8 +76,9 @@ is Danish (person language).
 - **Counting identifiers by category needs clean categories**: Batteries and
   Charger must hold only batteries and chargers, or bikes get asked for extra
   numbers (CLAUDE.md, identifier rule).
-- **The local stack runs WITHOUT analytics** — `supabase start -x
-  logflare,vector` (the analytics port would not bind after a Docker restart).
+- **The local stack is STOPPED** (`supabase stop`; data kept in Docker's
+  volumes). Start it with `supabase start -x logflare,vector` — the analytics
+  port would not bind after a Docker restart.
   Local TEST data: people *TEST Finn*, *TEST Tech EN*, *TEST Sælger*; bikes
   `TEST-WCK-REPAIR-001/002`, `TEST-FRAME-TAKE-1` (was PEDAL-003),
   `TEST-WCK-DELIV-001/002` (TL11/12, in stock on `MO-2026-9904`);
