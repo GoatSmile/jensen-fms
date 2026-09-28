@@ -375,6 +375,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   customer's `organizations.recognition_prefix` + department + a running
   number (BKTM01) — **not the customer's numbering** (Dennis 2026-09-15;
   migration 102). The slug stays because search and call extraction key on it.
+  **The build screen ASKS for it** (`suggestRecognitionCode`,
+  `src/lib/bikes/recognition-code.ts`): prefix + the department's
+  `organization_units.code` + the next number in that stem, and the builder
+  may decline. No prefix on the customer ⇒ no question — the prefix is what
+  says a customer uses codes.
   **"N / M required identifiers" is ONE rule, `requiredIdentifierProgress`**
   (`src/lib/bikes/identifier-context.ts`): the bike type's required, active
   types, the frame included; a PROVISIONAL frame (`isFrameProvisional`) does

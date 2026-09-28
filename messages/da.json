@@ -246,7 +246,13 @@
     "looseParts": "Løse dele",
     "noSticker": "ingen mærkat",
     "frameConflictOpen": "Åbn den anden cykel",
-    "frameConflictTake": "Tag nummeret"
+    "frameConflictTake": "Tag nummeret",
+    "recognitionAsk": "Skal cyklen have en genkendelseskode? Forslaget er kundens præfiks og deres næste nummer.",
+    "recognitionLabel": "Genkendelseskode",
+    "recognitionSave": "Gem kode",
+    "recognitionSaving": "Gemmer…",
+    "recognitionSkip": "Ingen kode",
+    "recognitionRecent": "Senest brugt: {codes}"
   },
   "batchBuild": {
     "crumbMos": "Produktionsordrer",

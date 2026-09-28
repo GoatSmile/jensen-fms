@@ -246,7 +246,13 @@
     "looseParts": "Loose parts",
     "noSticker": "no sticker",
     "frameConflictOpen": "Open the other bike",
-    "frameConflictTake": "Take the number"
+    "frameConflictTake": "Take the number",
+    "recognitionAsk": "Does this bike get a recognition code? Suggested from the customer's prefix and their next number.",
+    "recognitionLabel": "Recognition code",
+    "recognitionSave": "Save code",
+    "recognitionSaving": "Saving…",
+    "recognitionSkip": "No code",
+    "recognitionRecent": "Last used: {codes}"
   },
   "batchBuild": {
     "crumbMos": "Manufacturing orders",

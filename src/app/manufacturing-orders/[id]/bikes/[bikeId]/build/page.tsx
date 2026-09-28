@@ -37,6 +37,8 @@ import {
   type PickGroup,
   type PickRow,
 } from "./_components/pick-list";
+import { suggestRecognitionCode } from "@/lib/bikes/recognition-code";
+import { RecognitionCodePrompt } from "./_components/recognition-code-prompt";
 
 export default async function BikeBuildWorkbenchPage({
   params,
@@ -80,7 +82,7 @@ export default async function BikeBuildWorkbenchPage({
     supabase
       .from("bikes")
       .select(
-        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id, color_id, notes",
+        "id, frame_number, frame_number_confirmed, status, manufacturing_order_id, bike_type_id, color_id, notes, owner_organization_id, owner_unit_id",
       )
       .eq("id", bikeId)
       .maybeSingle(),
@@ -348,6 +350,18 @@ export default async function BikeBuildWorkbenchPage({
     moId,
   );
 
+  // The recognition code, asked at build when the customer uses them and the
+  // bike has none yet (Dennis, 15 Sep 02:25–02:32).
+  const hasRecognitionCode = identifierContext.rows.some(
+    (r) => r.typeSlug === "fleet_number",
+  );
+  const recognition = hasRecognitionCode
+    ? null
+    : await suggestRecognitionCode(supabase, {
+        organizationId: bike.owner_organization_id,
+        unitId: bike.owner_unit_id,
+      });
+
   // Paint gate (Tier 2 Phase C): block Finish while the frame is at the painter.
   const atPainterIds = await loadAtSupplierBikeIds(supabase, [bikeId]);
   const atPainterReason = atPainterIds.has(bikeId) ? t("atPainter") : null;
@@ -443,6 +457,17 @@ export default async function BikeBuildWorkbenchPage({
         identifiers={identifierContext.rows}
         requiredIdentifierCount={identifierContext.requiredCount}
         requiredRegisteredCount={identifierContext.requiredRegisteredCount}
+        recognitionSlot={
+          recognition ? (
+            <RecognitionCodePrompt
+              bikeId={bikeId}
+              revalidatePath={`/manufacturing-orders/${moId}/bikes/${bikeId}/build`}
+              typeId={recognition.typeId}
+              suggestion={recognition.suggestion}
+              recent={recognition.recent}
+            />
+          ) : null
+        }
         bikeNotes={bike.notes}
         readOnly={isReadOnly}
         showMoney={canSeeCosts}

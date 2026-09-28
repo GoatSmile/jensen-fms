@@ -139,6 +139,8 @@ type Props = {
   identifiers: WorkbenchIdentifierRow[];
   requiredIdentifierCount: number;
   requiredRegisteredCount: number;
+  /** "Does this bike get a recognition code?" — built on the page. */
+  recognitionSlot?: React.ReactNode;
   /** `bikes.notes` — the builder's free-text note on this bike. */
   bikeNotes: string | null;
   /** True when status is in_stock+ / MO closed — read-only display. */
@@ -177,6 +179,7 @@ export function BuildWorkbench({
   identifiers,
   requiredIdentifierCount,
   requiredRegisteredCount,
+  recognitionSlot,
   bikeNotes,
   readOnly,
   pickListSlot,
@@ -604,6 +607,7 @@ export function BuildWorkbench({
                 </span>
               ) : null}
             </div>
+            {recognitionSlot}
             {otherIdentifiers.length > 0 ? (
               <ul className="divide-rule divide-y text-sm">
                 {otherIdentifiers.map((id) => (
