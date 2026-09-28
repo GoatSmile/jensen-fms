@@ -81,8 +81,9 @@ What the templates say, and what it changes:
 rows, 338 charge 1 704 kr (the year-1 price) and only 3 charge 1 824 kr (the
 year-2-to-5 price), although most bikes are well past their first year. So
 either the steps are not applied in practice, or older agreements used an older
-template. **Dennis has to say which** (§7); until then the import takes the
-spreadsheet's price as this year's price and assumes no steps.
+template. **Dennis answered (28 Sep): 1 704 kr is the real price every year,
+and there is no older template.** So the lines carry ONE frozen yearly price,
+as the brief had it; the template's steps are not modelled.
 
 ## 3 · The principle: three sources, one job each
 
@@ -162,7 +163,9 @@ Not blocking billing; done agreement by agreement, as documents turn up.
 
 **Build it in proportion.** If there are a handful of signed documents, steps
 1 and 4 are enough (attach, and type the terms in by hand). Extraction (step 2)
-is worth building only if there are dozens. §7 decides which.
+is worth building only if there are dozens. **Dennis answered (28 Sep): "maybe
+3 or 4", and they list frame numbers — so extraction is NOT built.** Attach the
+PDF and type the terms in by hand.
 
 ## 6 · Handling after import
 
@@ -186,19 +189,27 @@ is worth building only if there are dozens. §7 decides which.
 - **Repairs:** coverage is "the bike has an active line". What is covered is the
   contract's list (§2); everything else, and the drive charge, is invoiced.
 
-## 7 · To find out (Nazar)
+## 7 · To find out
 
-1. **How many** agreements exist as documents, and how many are verbal only?
-2. **Which format:** filled-in Word or PDF, scanned signed paper, or paper in a
-   folder?
-3. Does each document **list frame numbers**, or only "N bikes"?
-4. **Is the stepped price applied?** The spreadsheet says mostly not. Is 1 704
-   kr the real price for all years on older agreements?
-5. **Which template version** did older agreements use (the text says
-   *Servicebetingelser juni 2013*)?
-6. Can we get **e-conomic's production grant** so the invoice history can be
-   read?
-7. Is the register or John's Trello export the source (already question C1)?
+**Answered by Dennis, 28 September:**
+
+1. Documents: **maybe 3 or 4**; the rest are verbal.
+2. They **list frame numbers**.
+3. **1 704 kr is the real price every year** — the template's steps are not
+   charged.
+4. **There is no older template.**
+5. e-conomic: Dennis has a login for the API part. **Still needed:** someone
+   with admin rights approves our app's install link, which produces the
+   production grant token (it goes into the settings, never into chat) —
+   Tuesday.
+
+**Still open (sent to Dennis):**
+
+- What a yearly price of **0 kr** means (311 rows; 121 of them were invoiced
+  in earlier years).
+- Each customer's **contract type** — or confirm the templates' rule
+  (municipalities K10, companies K3 → K5 → yearly) and name the exceptions.
+- Is the register or John's Trello export the source (question C1)?
 
 ## 8 · Sequence and decisions
 

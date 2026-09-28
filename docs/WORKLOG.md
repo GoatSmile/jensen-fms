@@ -100,10 +100,10 @@ treat the early totals as floors, not truth.
 | Sun 2026-09-27 | ~4 | **Every no-Dennis item from the 15 Sep meeting shipped**: paint seeding, build screen, offers, Relatel kit, paged bikes list, the router.refresh sweep; then the agreement brief for the planning chat and Dennis's agreement questions. |
 | Sun 2026-09-27 (cont.) | ~1.5 | **The no-Dennis build list shipped** (migrations 104–105): `/work` search, a WO from a scanned bike, time spent, a save bug that wiped labour; *Delivered*, sold parts leave stock, part-from-picker, templates Dennis-only, Finn's guide DA+EN. |
 | Sun 2026-09-27 (cont. 2) | ~0.5 | **How existing service agreements get in** — Dennis's templates found and read; spreadsheet bills, documents set terms, e-conomic proves (PDF). |
-| Mon 2026-09-28 | ~0.5 | **Dennis's answers in, today's bundle scoped** — paint orders split paperwork from where the goods are; delivery note, identifiers, recognition code at build. |
+| Mon 2026-09-28 | ~4 | **Dennis's bundle shipped** (migrations 106–108): paint orders split paperwork from where the goods are, delivery by signature, identifier rules, recognition code at build, five small ones, his paint guide. |
 
-**September so far: ~55 h** (9 working days)
+**September so far: ~58.5 h** (9 working days)
 
 ---
 
-**Project total: ~309 h across 50 working days (2026-05-07 → 2026-09-28)**
+**Project total: ~312.5 h across 50 working days (2026-05-07 → 2026-09-28)**

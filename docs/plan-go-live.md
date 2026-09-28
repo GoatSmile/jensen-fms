@@ -94,12 +94,12 @@ The register (`KOMMUNE og VIRKSOMHEDS OVERSIGT(1).xlsx`, 59 sheets) — findings
 - [ ] **Give Finn and Glenn passwords** (Admin → People) — nothing blocks it now; Tuesday, with
       them in the room. Glenn's surname, email, phone: Dennis.
 - [x] **Finn's repair guide** (2026-09-27): `docs/GUIDE-FINN-DA-2026-09.pdf` + an English twin.
-- [ ] Paint-order guide for Dennis (Danish PDF).
+- [x] Paint-order guide for Dennis (2026-09-28): `docs/GUIDE-DENNIS-PAINT-DA-2026-09.pdf`.
 - [ ] **Service calendar slice 0** — now unblocked: Finn's address is `service@jensenproduction.dk`.
 - [x] `/work` gaps (2026-09-27): time spent on the work order; *New work order* from the bike
       page and from search, no ticket needed; search by code (spoken forms too), frame,
       customer, WO number. Also fixed: every tech save wiped labour, rate and summaries.
-- [ ] Confirm a provisional frame / add identifiers on site from `/work`.
+- [x] Identifiers on site: the work order links to the bike's identifiers (2026-09-28; a provisional frame only exists during a build).
 
 ### 1D · Carried over (small, overdue)
 - [ ] Click `/offers` in production and confirm it renders (one human click).
@@ -139,11 +139,11 @@ renewing unless cancelled (02:41–02:45). Coverage today is derived from the ow
       (Dennis times them around 30 days; CLAUDE.md says net 14 — check).
 
 ### 2B · Delivery process — Dennis's "number one"
-- [ ] SO moves to *ready* when its MO completes; notice to **Dennis** (some bikes are collected);
-      Dennis hands it to Finn in the system with contact, phone, bike count, order number.
-- [ ] SO gets a **delivery contact + phone** (known only after acceptance, 02:17).
-- [ ] **Delivery note** (*følgeseddel*) + a *Delivery notes* list for the day in the app; the
-      customer **signs with a finger** on phone/iPad → SO *delivered* automatically (02:21–02:24).
+- [x] SO moves to *ready* when its MO completes; notice to **Dennis** (some bikes are collected);
+      Dennis hands it to Finn in the system with contact, phone, bike count, order number. *(2026-09-28: automatic, `so.ready` to Dennis.)*
+- [x] SO gets a **delivery contact + phone** (known only after acceptance, 02:17). *(2026-09-28, with address.)*
+- [x] **Delivery note** (*følgeseddel*) + a *Delivery notes* list for the day in the app; the
+      customer **signs with a finger** on phone/iPad → SO *delivered* automatically (02:21–02:24). *(2026-09-28: `/work/deliveries`; signing delivers.)*
 - [ ] Loading scan (a QR on the order/delivery note). Delivery appointment into Finn's calendar.
 - [x] "Assigned" reads *Delivered* (2026-09-27; Danish already said *Udleveret*).
 
@@ -156,10 +156,10 @@ Bugs from the 15 Sep run:
 - [x] "No bikes available to send" from the SO: explain that the MO comes first, or create it.
 - [x] Rename or explain *Refill from bikes*; surface the painter's preview before sending.
 Lifecycle (conflicts with "emailing IS the send" — decide before building):
-- [ ] Statuses renamed: planned → confirmed (email + labels) → packed (frames linked) → sent /
+- [x] Statuses renamed: planned → confirmed (email + labels) → packed (frames linked) → sent /
       at painter (**automatic on the planned send date**, calendar entry for the drop-off) →
       ready (painter's email forwarded in, routed to Finn + company mail) → pickup planned
-      (Finn's day, visible to all) → received back (scan) → on the shelf → planned for build.
+      (Finn's day, visible to all) → received back (scan) → on the shelf → planned for build. *(2026-09-28, migration 106: confirmed → at painter on the drop-off date → ready + pickup date → received back; "packed" waits for labels.)*
 - [ ] **Box labels** (≈A6 portrait: colour, SO no., parts + painter item numbers, dates, no
       prices; choose how many; printed on confirm) with an **order QR** (scan = received back)
       and a **QR per frame line**; capture frame numbers at packing by scan + photo (legally
@@ -170,12 +170,12 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
 - [ ] Builder's view: short tick-off pick list, no editable parts list (office keeps it),
       frame pre-filled from the box-QR scan, 2–3 **photos** at build. *(Bike-level notes
       field shipped 2026-09-27.)*
-- [ ] Identifier rules (02:04): frame, battery, charger unique **with an "already exists —
+- [x] Identifier rules (02:04): frame, battery, charger unique **with an "already exists —
       overwrite?" warning** instead of a hard block; lock and battery-lock never unique; a bike
       with no lock or battery can still finish; identifier count follows quantity (2 batteries →
-      2 numbers).
-- [ ] **Recognition code at build**: pre-filled with the customer's prefix, continuing their
-      sequence (show existing codes), optional, only for bikes with an agreement (02:25–02:32).
+      2 numbers). *(2026-09-28, migration 108.)*
+- [x] **Recognition code at build**: pre-filled with the customer's prefix, continuing their
+      sequence (show existing codes), optional, only for bikes with an agreement (02:25–02:32). *(2026-09-28: asked when the customer has a prefix; "only with an agreement" follows the agreement model.)*
 - [x] Bugs: second bike on the MO had no parts; required-identifier count 4/4 vs 4/5;
       **screens stall after a submit** until refresh (Finish build greyed; colour picking);
       MO status renamed *Ready for production / Klar til produktion* (2026-09-27 — the
