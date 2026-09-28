@@ -3,7 +3,7 @@
  * the service remodel).
  *
  * A bike is at-supplier IFF it belongs to a service order whose CURRENT
- * status is `sent` or `at_supplier` (see `AT_SUPPLIER_STATUSES`) AND whose
+ * status is `at_supplier` or `ready` (see `AT_SUPPLIER_STATUSES`) AND whose
  * service type `blocks_build` (paint does; a future non-blocking type's
  * orders never gate). There is deliberately NO bike column for this — it's
  * computed from `service_order_bikes` joined to the order's live status, so
@@ -63,7 +63,7 @@ export async function loadAtSupplierBikeIds(
 }
 
 export type PaintStates = {
-  /** Away on a build-blocking order that is `sent` / `at_supplier`. */
+  /** Away on a build-blocking order that is `at_supplier` / `ready`. */
   atPainter: Set<string>;
   /** Came back from a build-blocking order (`received_back`) and is not away again. */
   painted: Set<string>;

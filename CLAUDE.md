@@ -524,8 +524,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - **Paint is the first SERVICE TYPE in a generic external-services model.**
   Not a BOM line. One machine shared by painting / future washing / priming:
   - **Vocabulary + pricing layer**: `service_types` (w/ `blocks_build` —
-    paint TRUE: bikes on a sent order are physically away and gate the
-    build floor) · `service_part_types` (stel, forgaffel, …) ·
+    paint TRUE: bikes on an `at_supplier` / `ready` order are physically away
+    and gate the build floor) · `service_part_types` (stel, forgaffel, …) ·
     `service_price_lists` (PER SUPPLIER, one row per REVISION with its own
     CURRENCY, `is_current` flip like bike_templates — never edit-in-place) ·
     `service_price_items` (qty-tiered 1–9/10–19/20+, supplier item
@@ -537,16 +537,25 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     current lists.
   - **Order layer**: `service_orders` / `service_order_bikes` /
     `service_order_items` (part type × qty × nullable color_id). Status
-    `planned → sent → at_supplier → received_back / cancelled`. Item lines
-    editable while `planned` with LIVE estimates; **send freezes**
+    `planned → confirmed → at_supplier → ready → received_back / cancelled`
+    (migration 106, DECISIONS 2026-09-28). **The paperwork is not the goods**:
+    `confirmed` is the order sent to the painter — the goods are still at
+    Jensen and still buildable-as-raw; `at_supplier` ("at painter") is set BY
+    ITSELF on the planned drop-off date (`planned_send_date`, the daily
+    `/api/cron/paint-drop-offs`) or by hand, and stamps `dropped_off_at`;
+    `ready` is the painter's "done", with a `pickup_date` shown to everyone.
+    `AT_SUPPLIER_STATUSES` (`at_supplier`, `ready`) is the ONE list of "away"
+    — import it, never copy it (a copy in `painted-variants.ts` kept saying
+    `sent`). Item lines editable while `planned` with LIVE estimates;
+    **confirming freezes**
     supplier_item_no + unit_price + currency + fx_rate_to_dkk onto each
     line (the purchase_order_lines pattern) and is blocked while any line
     is unpriced. **Send has a document** (2026-09-02): `/paint-orders/<id>/print`
     (browser → PDF) and *Email painter* share one loader,
     `src/lib/services/service-order-document.ts`, and both render in the
     SUPPLIER's language (`suppliers.document_language`), never the UI locale.
-    **Emailing IS the send** — a `planned` order transitions to `sent` (gate +
-    price freeze) BEFORE the document renders, so mail, paper and ledger carry
+    **Emailing IS the send of the paperwork** — a `planned` order transitions
+    to `confirmed` (gate + price freeze) BEFORE the document renders, so mail, paper and ledger carry
     the same numbers. Order/line notes never reach the painter; the dialog
     message is the only free text (PO doctrine).
     **Lines are seeded from the RECIPE, each bike in its own colour** — the

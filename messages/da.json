@@ -2282,7 +2282,7 @@
     "pickColourPlaceholder": "Vælg en farve…",
     "schedule": "Tidsplan",
     "scheduleDesc": "Kun vejledende; faktiske sendt/modtaget-tidsstempler stemples ved statusskift.",
-    "plannedSendDate": "Planlagt afsendelsesdato",
+    "plannedSendDate": "Afleveringsdato hos lakereren",
     "notes": "Noter",
     "paintNotesPlaceholder": "Interne noter om denne batch.",
     "createPaintOrder": "{parts, plural, =0 {Opret lakordre} one {Opret lakordre (1 del)} other {Opret lakordre (# dele)}}",
@@ -2324,8 +2324,9 @@
   },
   "serviceOrderStatus": {
     "planned": "Planlagt",
-    "sent": "Sendt til lakerer",
+    "confirmed": "Bekræftet",
     "at_supplier": "Hos lakerer",
+    "ready": "Klar til afhentning",
     "received_back": "Modtaget retur",
     "cancelled": "Annulleret"
   },
@@ -2344,7 +2345,7 @@
     "thSupplier": "Leverandør",
     "thColour": "Farve",
     "thBikes": "Cykler",
-    "thSent": "Sendt",
+    "thSent": "Aflevering",
     "thReturned": "Retur",
     "crumbNew": "Ny",
     "newTitle": "Ny lakordre",
@@ -2357,12 +2358,13 @@
     "batchColour": "Batch-standardfarve (valgfri)",
     "batchColourPlaceholder": "Ingen standard — sæt per varelinje",
     "scheduleTitle": "Tidsplan",
-    "scheduleDesc": "Kun vejledende; faktiske sendt/modtaget-tidsstempler stemples ved statusskift. Omkostning er per varelinje, frosset fra prislisten når ordren sendes.",
-    "plannedSendDate": "Planlagt afsendelsesdato",
+    "scheduleDesc": "Dagen, hvor Finn kører kasserne til lakereren. Den morgen skifter ordren selv til \"Hos lakerer\". Prisen er per varelinje og fryses fra prislisten, når ordren bekræftes.",
+    "plannedSendDate": "Afleveringsdato hos lakereren",
     "notes": "Noter",
     "notesPlaceholder": "Interne noter om denne batch.",
     "creating": "Opretter…",
-    "createPaintOrder": "Opret lakordre"
+    "createPaintOrder": "Opret lakordre",
+    "plannedDateShort": "planlagt {date}"
   },
   "paintOrderDetail": {
     "legacyStd": "Stel + forgaffel",
@@ -2373,7 +2375,7 @@
     "fieldBatchColour": "Batch-standardfarve",
     "fieldSalesOrder": "Salgsordre",
     "fieldPlannedSend": "Planlagt afsendelsesdato",
-    "fieldSent": "Sendt",
+    "fieldSent": "Bekræftet",
     "fieldExpectedReturn": "Forventet retur",
     "fieldReceivedBack": "Modtaget retur",
     "fieldNotes": "Noter",
@@ -2389,7 +2391,7 @@
     "emailGoesToPrefix": "Sendes til",
     "emailIntendedPrefix": "Sendes normalt til",
     "emailNoRecipient": "Ingen e-mailadresse gemt for {supplier} — tilføj en på leverandøren, før du sender.",
-    "emailWillMarkSent": "Ordren er stadig planlagt: at sende e-mailen markerer den som afsendt og fryser priserne på alle linjer nu.",
+    "emailWillMarkSent": "Ordren er stadig planlagt: at sende e-mailen bekræfter den og fryser priserne på alle linjer nu. Varerne tæller først som hos lakereren fra afleveringsdatoen.",
     "emailUnconvertible": "{count, plural, one {1 linje angiver} other {# linjer angiver}} ingen af vores dele eller ingen farve, så {count, plural, one {den} other {de}} bliver ikke til lakeret lager, når ordren kommer retur. Ret det på linjerne før afsendelse, hvis du kan.",
     "emailPreviewLink": "Se, hvad lakereren modtager ↗",
     "theSupplier": "lakereren",
@@ -2401,7 +2403,7 @@
     "sendEmail": "Send e-mail",
     "emailSentTitle": "E-mail sendt",
     "emailSentDesc": "{order} blev sendt til <mono>{to}</mono>.",
-    "emailSentMarked": "Ordren er nu markeret som afsendt.",
+    "emailSentMarked": "Ordren er nu bekræftet.",
     "done": "Færdig",
     "orderFallback": "Lakordre",
     "moveTo": "Flyt til",
@@ -2489,7 +2491,12 @@
     "unconvertibleReceiveAnyway": "Modtag alligevel",
     "itemNotesPlaceholder": "Valgfrit — noget specifikt for disse stykker.",
     "errPickPartType": "Vælg en varetype.",
-    "errQtyWhole": "Antal skal være et helt tal over nul."
+    "errQtyWhole": "Antal skal være et helt tal over nul.",
+    "fieldDropOff": "Afleveringsdato",
+    "dropOffHint": "Den dag skifter ordren selv til \"Hos lakerer\". Flyt datoen, hvis turen rykker.",
+    "fieldPickup": "Afhentning planlagt",
+    "fieldDroppedOff": "Afleveret",
+    "fieldReady": "Klar"
   },
   "invoiceStatus": {
     "draft": "Kladde",
@@ -4203,7 +4210,7 @@
     "paintNoFromAddress": "Der er ikke angivet en afsenderadresse — angiv en under Admin → Indstillinger → Kommunikation.",
     "paintSupplierNoEmail": "{name} har ingen e-mailadresse registreret — tilføj en på leverandørsiden.",
     "paintAddItemBeforeEmailing": "Tilføj mindst én linje, før ordren sendes pr. e-mail.",
-    "paintMarkedSentEmailFailed": "Ordren er markeret som afsendt, men e-mailen blev ikke sendt: {detail}. Brug E-mail igen, når årsagen er rettet.",
+    "paintMarkedSentEmailFailed": "Ordren er bekræftet, men e-mailen blev ikke sendt: {detail}. Brug E-mail igen, når årsagen er rettet.",
     "paintEmailSentStampFailed": "E-mailen blev sendt, men registreringen mislykkedes: {detail}",
     "paintSeedNoBikes": "Tilknyt cyklerne først — linjerne kommer fra det, de sender til lakereren.",
     "paintSeedNothingToSeed": "Ingen af de tilknyttede cykler har en del markeret “Kan lakeres som” i sin opskrift eller lakarbejde angivet på sin skabelon, så der er intet at skrive. Eksisterende linjer er urørte.",
@@ -4423,7 +4430,10 @@
     "soCouldNotIssueParts": "Ordrens dele kunne ikke trækkes fra lageret, så intet blev leveret: {detail}",
     "bikeAssignNeedsCustomers": "Kun kontoret kan ændre, hvilken kunde en cykel tilhører.",
     "commandNeedsInbox": "Kun personer med adgang til indbakken kan køre eller anvende kommandoer.",
-    "commandNeedsCapability": "Du har ikke adgang til det område, dette udkast skriver til."
+    "commandNeedsCapability": "Du har ikke adgang til det område, dette udkast skriver til.",
+    "invalidDate": "Det er ikke en gyldig dato.",
+    "paintDropOffLocked": "Varerne er allerede afleveret, så afleveringsdatoen kan ikke længere ændres.",
+    "paintPickupLocked": "Ordren er lukket, så afhentningsdatoen kan ikke længere ændres."
   },
   "inbox": {
     "title": "Indbakke",

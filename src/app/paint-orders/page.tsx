@@ -39,8 +39,9 @@ import { PAINT_SERVICE_SLUG } from "@/lib/services/vocab";
 
 const STATUS_OPTIONS: ServiceOrderStatus[] = [
   "planned",
-  "sent",
+  "confirmed",
   "at_supplier",
+  "ready",
   "received_back",
   "cancelled",
 ];
@@ -74,7 +75,7 @@ export default async function PaintOrdersPage({
     .from("service_orders")
     .select(
       `
-        id, order_number, status, planned_send_date, sent_at, received_at,
+        id, order_number, status, planned_send_date, sent_at, dropped_off_at, received_at,
         service_type:service_types!inner(slug),
         supplier:suppliers(id, name),
         color:colors(id, name_en, name_da, hex, ral_code, coating),
@@ -309,7 +310,14 @@ export default async function PaintOrdersPage({
                       href={`/paint-orders/${r.id}`}
                       className="block px-4 py-2.5"
                     >
-                      {formatDate(r.sent_at)}
+                      {/* Drop-off: when it happened, else when it is planned. */}
+                      {r.dropped_off_at
+                        ? formatDate(r.dropped_off_at)
+                        : r.planned_send_date
+                          ? t("plannedDateShort", {
+                              date: formatDate(r.planned_send_date),
+                            })
+                          : formatDate(null)}
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden p-0 text-xs lg:table-cell">

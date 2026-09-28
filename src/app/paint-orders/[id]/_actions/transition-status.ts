@@ -41,12 +41,14 @@ export type TransitionServiceOrderResult =
     };
 
 /**
- * Move a service order to `toStatus`. Validates the transition matrix,
- * stamps `sent_at` the first time the order enters `sent` and `received_at`
- * the first time it enters `received_back`. Cancellation requires a reason,
+ * Move a service order to `toStatus`. Validates the transition matrix and
+ * stamps each milestone the first time the order reaches it: `sent_at` on
+ * `confirmed` (the paperwork), `dropped_off_at` on `at_supplier` (the goods
+ * left), `ready_at` on `ready`, `received_at` on `received_back`
+ * (migration 106). Cancellation requires a reason,
  * appended to notes (no dedicated state log for service orders).
  *
- * SEND FREEZES THE COST BASIS (the purchase_order_lines pattern): every item
+ * CONFIRMING (the send of the paperwork) FREEZES THE COST BASIS (the purchase_order_lines pattern): every item
  * line gets supplier_item_no + unit_price + currency + fx_rate_to_dkk
  * snapshotted from the supplier's CURRENT price list at this moment. A later
  * list revision never rewrites a sent order. Send is blocked while the order
@@ -65,7 +67,9 @@ export async function transitionServiceOrderStatus(
   const supabase = await createClient();
   const { data: order, error: lookupErr } = await supabase
     .from("service_orders")
-    .select("id, status, sent_at, received_at, notes, supplier_id, service_type_id")
+    .select(
+      "id, status, sent_at, dropped_off_at, ready_at, received_at, notes, supplier_id, service_type_id",
+    )
     .eq("id", serviceOrderId)
     .maybeSingle();
   if (lookupErr || !order) {
@@ -139,7 +143,7 @@ export async function transitionServiceOrderStatus(
 
   const nowIso = new Date().toISOString();
 
-  if (toStatus === "sent") {
+  if (toStatus === "confirmed") {
     const snapshot = await snapshotItemPrices(
       supabase,
       order.id,
@@ -151,8 +155,11 @@ export async function transitionServiceOrderStatus(
     if (!snapshot.ok) return snapshot;
   }
 
-  const newSentAt =
-    toStatus === "sent" && !order.sent_at ? nowIso : order.sent_at;
+  const stamp = (reached: boolean, current: string | null) =>
+    reached && !current ? nowIso : current;
+  const newSentAt = stamp(toStatus === "confirmed", order.sent_at);
+  const newDroppedOffAt = stamp(toStatus === "at_supplier", order.dropped_off_at);
+  const newReadyAt = stamp(toStatus === "ready", order.ready_at);
   const newReceivedAt =
     toStatus === "received_back" && !order.received_at
       ? nowIso
@@ -172,6 +179,8 @@ export async function transitionServiceOrderStatus(
     .update({
       status: toStatus,
       sent_at: newSentAt,
+      dropped_off_at: newDroppedOffAt,
+      ready_at: newReadyAt,
       received_at: newReceivedAt,
       notes: newNotes,
       updated_at: nowIso,

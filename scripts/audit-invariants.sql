@@ -86,13 +86,13 @@ select * from (
          and coalesce(tariff_pct, 0) <> 0)
 
   union all
-  -- Send freezes supplier_item_no + unit_price + fx onto every line, and is
-  -- blocked while any line is unpriced.
-  select 6, 'sent service-order lines that were never frozen',
+  -- Confirming (the send of the paperwork) freezes supplier_item_no +
+  -- unit_price + fx onto every line, and is blocked while any is unpriced.
+  select 6, 'confirmed service-order lines that were never frozen',
          count(*), coalesce(string_agg(distinct so.id::text, ', '), '—')
   from service_order_items soi
   join service_orders so on so.id = soi.service_order_id
-  where so.status in ('sent', 'at_supplier', 'received_back')
+  where so.status in ('confirmed', 'at_supplier', 'ready', 'received_back')
     and (soi.unit_price is null or soi.fx_rate_to_dkk is null)
 
   union all

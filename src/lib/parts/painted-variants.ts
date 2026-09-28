@@ -15,6 +15,10 @@
 
 import type { createClient } from "@/lib/supabase/server";
 import { resolveUnitCost, outboundCostFields } from "@/lib/inventory/unit-cost";
+import {
+  AT_SUPPLIER_STATUSES,
+  type ServiceOrderStatus,
+} from "@/lib/services/status";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -422,12 +426,14 @@ export async function applyPaintedVariantsToBike(
 export type PaintedDemand = {
   /** `${basePartId}:${colorId}` → units unbuilt bikes on open MOs still require. */
   promised: Map<string, number>;
-  /** `${basePartId}:${colorId}` → units on sent / at-supplier paint-order lines. */
+  /** `${basePartId}:${colorId}` → units on paint-order lines now AT the painter. */
   atPainter: Map<string, number>;
 };
 
 const OPEN_MO_STATUSES = ["planned", "released", "in_progress", "on_hold"];
-const AT_PAINTER_ORDER_STATUSES = ["sent", "at_supplier"];
+// The one list (status.ts) — a copy here once said "sent" meant at the
+// painter after migration 106 made it mean paperwork.
+const AT_PAINTER_ORDER_STATUSES = AT_SUPPLIER_STATUSES;
 
 /**
  * What the painted shelf is already spoken for, and what is on its way back.
@@ -515,7 +521,7 @@ export async function loadPaintedDemand(
     .not("color_id", "is", null);
   for (const l of lines ?? []) {
     const order = Array.isArray(l.order) ? l.order[0] : l.order;
-    if (!order || !AT_PAINTER_ORDER_STATUSES.includes(order.status as string))
+    if (!order || !AT_PAINTER_ORDER_STATUSES.includes(order.status as ServiceOrderStatus))
       continue;
     const type = Array.isArray(order.service_type)
       ? order.service_type[0]

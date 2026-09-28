@@ -169,12 +169,14 @@ export default async function DashboardPage() {
     supabase
       .from("service_orders")
       .select(
-        "id, order_number, sent_at, status, supplier:suppliers(id, name)",
+        "id, order_number, dropped_off_at, status, supplier:suppliers(id, name)",
       )
+      // Aging counts from when the goods LEFT, not when the order was
+      // confirmed (migration 106).
       .in("status", AT_SUPPLIER_STATUSES)
-      .not("sent_at", "is", null)
-      .lt("sent_at", paintCutoff)
-      .order("sent_at", { ascending: true })
+      .not("dropped_off_at", "is", null)
+      .lt("dropped_off_at", paintCutoff)
+      .order("dropped_off_at", { ascending: true })
       .limit(ATTENTION_LIMIT),
     // Catalog cost basis = SUM(stock_on_hand * last_cost_dkk). The view is
     // small enough (~hundreds of rows at scale) that app-side aggregation
@@ -622,7 +624,7 @@ export default async function DashboardPage() {
           hue="alert"
         >
           {paintAging.map((po) => {
-            const days = po.sent_at ? diffDays(po.sent_at) : 0;
+            const days = po.dropped_off_at ? diffDays(po.dropped_off_at) : 0;
             return (
               <li key={po.id} className="text-sm">
                 <Link

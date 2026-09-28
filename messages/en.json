@@ -2282,7 +2282,7 @@
     "pickColourPlaceholder": "Pick a colour…",
     "schedule": "Schedule",
     "scheduleDesc": "Advisory only; actual sent / received timestamps are stamped on status transitions.",
-    "plannedSendDate": "Planned send date",
+    "plannedSendDate": "Drop-off date at the painter",
     "notes": "Notes",
     "paintNotesPlaceholder": "Internal notes about this batch.",
     "createPaintOrder": "{parts, plural, =0 {Create paint order} one {Create paint order (1 part)} other {Create paint order (# parts)}}",
@@ -2324,8 +2324,9 @@
   },
   "serviceOrderStatus": {
     "planned": "Planned",
-    "sent": "Sent to painter",
+    "confirmed": "Confirmed",
     "at_supplier": "At painter",
+    "ready": "Ready for pickup",
     "received_back": "Received back",
     "cancelled": "Cancelled"
   },
@@ -2344,7 +2345,7 @@
     "thSupplier": "Supplier",
     "thColour": "Colour",
     "thBikes": "Bikes",
-    "thSent": "Sent",
+    "thSent": "Drop-off",
     "thReturned": "Returned",
     "crumbNew": "New",
     "newTitle": "New paint order",
@@ -2357,12 +2358,13 @@
     "batchColour": "Batch default colour (optional)",
     "batchColourPlaceholder": "No default — set per item line",
     "scheduleTitle": "Schedule",
-    "scheduleDesc": "Advisory only; actual sent / received timestamps are stamped on status transitions. Cost is per item line, frozen from the price list when the order is sent.",
-    "plannedSendDate": "Planned send date",
+    "scheduleDesc": "The day Finn takes the boxes to the painter. On that morning the order moves to \"At painter\" by itself. Cost is per item line, frozen from the price list when the order is confirmed.",
+    "plannedSendDate": "Drop-off date at the painter",
     "notes": "Notes",
     "notesPlaceholder": "Internal notes about this batch.",
     "creating": "Creating…",
-    "createPaintOrder": "Create paint order"
+    "createPaintOrder": "Create paint order",
+    "plannedDateShort": "planned {date}"
   },
   "paintOrderDetail": {
     "legacyStd": "Frame + fork",
@@ -2373,7 +2375,7 @@
     "fieldBatchColour": "Batch default colour",
     "fieldSalesOrder": "Sales order",
     "fieldPlannedSend": "Planned send date",
-    "fieldSent": "Sent",
+    "fieldSent": "Confirmed",
     "fieldExpectedReturn": "Expected return",
     "fieldReceivedBack": "Received back",
     "fieldNotes": "Notes",
@@ -2389,7 +2391,7 @@
     "emailGoesToPrefix": "Goes to",
     "emailIntendedPrefix": "Normally goes to",
     "emailNoRecipient": "No email address on file for {supplier} — add one on the supplier before sending.",
-    "emailWillMarkSent": "The order is still planned: emailing marks it as sent and freezes the prices on every line at this moment.",
+    "emailWillMarkSent": "The order is still planned: emailing confirms it and freezes the prices on every line now. The goods count as at the painter only from the drop-off date.",
     "emailUnconvertible": "{count, plural, one {1 line names} other {# lines name}} no part of ours or no colour, so {count, plural, one {it} other {they}} will not become painted stock when the order comes back. Fix that on the lines before sending if you can.",
     "emailPreviewLink": "See what the painter receives ↗",
     "theSupplier": "the painter",
@@ -2401,7 +2403,7 @@
     "sendEmail": "Send email",
     "emailSentTitle": "Email sent",
     "emailSentDesc": "{order} went to <mono>{to}</mono>.",
-    "emailSentMarked": "The order is now marked as sent.",
+    "emailSentMarked": "The order is now confirmed.",
     "done": "Done",
     "orderFallback": "Paint order",
     "moveTo": "Move to",
@@ -2489,7 +2491,12 @@
     "unconvertibleReceiveAnyway": "Receive anyway",
     "itemNotesPlaceholder": "Optional — anything specific to these pieces.",
     "errPickPartType": "Pick a part type.",
-    "errQtyWhole": "Quantity must be a whole number above zero."
+    "errQtyWhole": "Quantity must be a whole number above zero.",
+    "fieldDropOff": "Drop-off date",
+    "dropOffHint": "On this date the order moves to \"At painter\" by itself. Move it if the drive slips.",
+    "fieldPickup": "Pickup planned",
+    "fieldDroppedOff": "Dropped off",
+    "fieldReady": "Ready"
   },
   "invoiceStatus": {
     "draft": "Draft",
@@ -4203,7 +4210,7 @@
     "paintNoFromAddress": "No sender address is configured — set one under Admin → Settings → Communication.",
     "paintSupplierNoEmail": "{name} has no email address on file — add one on the supplier page.",
     "paintAddItemBeforeEmailing": "Add at least one line before emailing the order.",
-    "paintMarkedSentEmailFailed": "The order is marked as sent, but the email did not go out: {detail}. Use Email again once the cause is fixed.",
+    "paintMarkedSentEmailFailed": "The order is confirmed, but the email did not go out: {detail}. Use Email again once the cause is fixed.",
     "paintEmailSentStampFailed": "The email went out, but recording it failed: {detail}",
     "paintSeedNoBikes": "Attach the bikes first — the lines come from what they send to the painter.",
     "paintSeedNothingToSeed": "None of the attached bikes has a part marked “Paintable as” in its recipe, or paintwork declared on its template, so there is nothing to write. Existing lines were left alone.",
@@ -4423,7 +4430,10 @@
     "soCouldNotIssueParts": "Could not take the order's parts out of stock, so nothing was delivered: {detail}",
     "bikeAssignNeedsCustomers": "Only the office can change which customer a bike belongs to.",
     "commandNeedsInbox": "Only people with access to the inbox can run or apply commands.",
-    "commandNeedsCapability": "You don't have access to the area this draft writes to."
+    "commandNeedsCapability": "You don't have access to the area this draft writes to.",
+    "invalidDate": "That is not a valid date.",
+    "paintDropOffLocked": "The goods have already left, so the drop-off date can no longer change.",
+    "paintPickupLocked": "This order is closed, so the pickup date can no longer change."
   },
   "inbox": {
     "title": "Inbox",

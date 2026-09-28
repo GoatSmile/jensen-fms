@@ -35,6 +35,7 @@ import type { EligibleBikeOption } from "./_components/add-bike-to-paint-dialog"
 import { PaintOrderBikesSection } from "./_components/paint-order-bikes-section";
 import type { PaintOrderBikeRow } from "./_components/paint-order-bikes-section";
 import { dictationReady } from "@/lib/dictation/ready";
+import { ScheduleDates } from "./_components/schedule-dates";
 import { PaintOrderHeader } from "./_components/paint-order-header";
 import {
   ServiceOrderItemsSection,
@@ -72,7 +73,8 @@ export default async function PaintOrderDetailPage({
     .select(
       `
         id, order_number, status, supplier_id, service_type_id,
-        planned_send_date, sent_at, expected_return_at, received_at,
+        planned_send_date, sent_at, dropped_off_at, ready_at, pickup_date,
+        expected_return_at, received_at,
         notes, created_at, emailed_at, emailed_to,
         supplier:suppliers(id, name, email_primary, email_secondary, default_email_message, document_language),
         color:colors(id, slug, name_en, name_da, hex, ral_code, coating),
@@ -483,11 +485,24 @@ export default async function PaintOrderDetailPage({
               <Muted>—</Muted>
             )}
           </Field>
-          <Field label={t("fieldPlannedSend")}>
-            {order.planned_send_date ?? <Muted>—</Muted>}
-          </Field>
+          <ScheduleDates
+            serviceOrderId={order.id}
+            status={order.status as ServiceOrderStatus}
+            dropOff={order.planned_send_date}
+            pickup={order.pickup_date}
+          />
           <Field label={t("fieldSent")}>
             {order.sent_at ? formatDateTime(order.sent_at) : <Muted>—</Muted>}
+          </Field>
+          <Field label={t("fieldDroppedOff")}>
+            {order.dropped_off_at ? (
+              formatDateTime(order.dropped_off_at)
+            ) : (
+              <Muted>—</Muted>
+            )}
+          </Field>
+          <Field label={t("fieldReady")}>
+            {order.ready_at ? formatDateTime(order.ready_at) : <Muted>—</Muted>}
           </Field>
           <Field label={t("fieldExpectedReturn")}>
             {order.expected_return_at ? (

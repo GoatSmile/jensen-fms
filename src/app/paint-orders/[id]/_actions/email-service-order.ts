@@ -94,12 +94,14 @@ export async function emailServiceOrderToSupplier(
     };
   }
 
-  // The send itself: gate + price freeze, via the one transition everyone uses.
+  // The send of the PAPERWORK: gate + price freeze, via the one transition
+  // everyone uses. The order becomes `confirmed`; the goods leave on the
+  // drop-off date (migration 106).
   let markedSent = false;
   if (order.status === "planned") {
     const moved = await transitionServiceOrderStatus(
       serviceOrderId,
-      "sent",
+      "confirmed",
       null,
     );
     if (!moved.ok) return moved;

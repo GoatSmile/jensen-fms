@@ -3976,6 +3976,9 @@ export type Database = {
           order_number: string
           planned_send_date: string | null
           received_at: string | null
+          dropped_off_at: string | null
+          ready_at: string | null
+          pickup_date: string | null
           sales_order_id: string | null
           sent_at: string | null
           service_type_id: string
@@ -3995,6 +3998,9 @@ export type Database = {
           order_number: string
           planned_send_date?: string | null
           received_at?: string | null
+          dropped_off_at?: string | null
+          ready_at?: string | null
+          pickup_date?: string | null
           sales_order_id?: string | null
           sent_at?: string | null
           service_type_id: string
@@ -4014,6 +4020,9 @@ export type Database = {
           order_number?: string
           planned_send_date?: string | null
           received_at?: string | null
+          dropped_off_at?: string | null
+          ready_at?: string | null
+          pickup_date?: string | null
           sales_order_id?: string | null
           sent_at?: string | null
           service_type_id?: string
@@ -5130,8 +5139,9 @@ export type Database = {
       service_agreement_status: "active" | "expired" | "cancelled"
       service_order_status:
         | "planned"
-        | "sent"
+        | "confirmed"
         | "at_supplier"
+        | "ready"
         | "received_back"
         | "cancelled"
       shipment_direction: "inbound" | "outbound"
@@ -5359,8 +5369,9 @@ export const Constants = {
       service_agreement_status: ["active", "expired", "cancelled"],
       service_order_status: [
         "planned",
-        "sent",
+        "confirmed",
         "at_supplier",
+        "ready",
         "received_back",
         "cancelled",
       ],

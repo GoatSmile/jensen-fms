@@ -3161,3 +3161,33 @@ an extra battery or charger goes on the order, or is attached later).
   hand (the drift is silent and nobody would do it).
 - **Not decided here:** the battery's serial number on the customer's bike —
   that is identifier work (go-live plan §2D).
+
+## 2026-09-28 — Paint orders separate the paperwork from where the goods are
+
+Owner, from Dennis's description on 15 Sep (01:14–01:22) and the open "paint
+lifecycle vs emailing IS the send" question. `sent` meant both "the order was
+emailed" and "the goods are away", so emailing an order marked frames as at the
+painter — build blocked, *at painter* on every screen — days before Finn drove
+them.
+
+- **`planned → confirmed → at_supplier → ready → received_back`** (migration
+  106). `sent` is renamed `confirmed` and keeps its job: emailing or *Mark as
+  sent* freezes the prices and renders the document. The goods are still here.
+- **`at_supplier` happens on the drop-off date, by itself** — a daily job moves
+  every `confirmed` order whose `planned_send_date` has come (owner's choice
+  over "Finn always marks it"; a slipped drive is recorded by moving the date,
+  an early one by moving the status by hand). Only `confirmed` moves: a
+  `planned` order's date is a wish, not a booking.
+- **`ready` is new**, with `pickup_date` as a DATE on the order, not a status —
+  "pickup planned Thursday" is a fact about the order, and a sixth status would
+  only be another click. Drop-off likewise stays the existing date column.
+- **"Away" = `at_supplier` + `ready`.** The build is blocked from the day the
+  goods leave, not the day the email goes; a frame still waiting for paint is
+  held back by readiness (*needs paint*) anyway.
+- **Rejected:** keeping `sent` and adding statuses after it (the word would go
+  on meaning two things); *packed* now (it only means something once frames
+  are linked to a box by scanning its label — waits for the label printer).
+- **Not yet:** the drop-off in the service calendar (after Tuesday's Google
+  setup), the painter's "ready" email forwarded in, and Finn doing any of this —
+  the Workshop role has no `paint` capability, so the dates are the office's
+  until a floor surface exists.
