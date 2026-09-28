@@ -60,7 +60,7 @@ purposes, here is every variable the code actually reads:
 | `ANTHROPIC_API_KEY` | extraction LLM |
 | `RESEND_API_KEY` | outbound email |
 | `ECONOMIC_APP_SECRET_TOKEN`, `ECONOMIC_AGREEMENT_GRANT_TOKEN` | e-conomic |
-| `CRON_SECRET` | authenticates all three cron routes; **the FX route 503s without it** on any non-dev deploy |
+| `CRON_SECRET` | authenticates every cron route; **the FX route 503s without it** on any non-dev deploy |
 | `SITE_PASSWORD` | the opt-in shared-password gate (`middleware.ts`), which signs the `Admin` person session. Unset = the gate locks nothing, **and nothing else is standing behind it** — Vercel SSO was verified 2026-09-03 NOT to front this app. Set in Vercel only, which is why no production session can be minted from a dev machine |
 | `NEXT_PUBLIC_APP_URL` | base URL baked into bike QR codes (`src/lib/qr.ts`) |
 | `NEXT_PUBLIC_NOMINATIM_CONTACT` | geocoding User-Agent contact |
@@ -70,7 +70,7 @@ purposes, here is every variable the code actually reads:
 
 ## Scheduled jobs
 
-Three Vercel crons (`vercel.json`), all authenticating with
+Vercel crons (`vercel.json` is the list), all authenticating with
 `Authorization: Bearer ${CRON_SECRET}`:
 
 | Job | Schedule (UTC) | What breaks silently if it stops |
@@ -78,6 +78,7 @@ Three Vercel crons (`vercel.json`), all authenticating with
 | `/api/cron/refresh-fx-rates` | `0 17 * * 1-5` — weekdays, after the ECB daily fix | New PO lines freeze a **stale FX rate** onto cost basis. Money math degrades quietly, and frozen-at-purchase means it is not retroactively fixable |
 | `/api/cron/inbound-retention` | `0 3 * * *` | Call audio outlives its retention window (GDPR exposure); transcripts are unaffected |
 | `/api/cron/notify-overdue-invoices` | `0 6 * * *` | Overdue-invoice notifications stop |
+| `/api/cron/paint-drop-offs` | `0 4 * * *` — 06:00 Danish summer time | Confirmed paint orders never reach *at painter* on their drop-off date: the frames read as still in the workshop, and the dashboard's aging clock never starts (migration 106) |
 
 The FX route deliberately **fails closed**: on any non-dev deployment a missing
 `CRON_SECRET` returns 503 rather than running unauthenticated.
