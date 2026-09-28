@@ -2,7 +2,8 @@
 
 **For Finn, September 2026.** How to record a repair from your phone: find the
 bike, start a work order, write or dictate what you do, and mark it done.
-Section 8 covers the paint runs — boxes to and from the painter. The
+Section 8 covers the paint runs — boxes to and from the painter — and
+section 9 deliveries, where the customer signs. The
 office adds the prices afterwards. You see no prices, and that is intended.
 We will go through it together on Tuesday.
 
@@ -114,6 +115,28 @@ see what is in the boxes and where they go, but no prices.
   Dennis is told. You don't have to fix anything.
 
 ![Paint runs: one order to drop off, one ready for pickup.](images/guide-finn/en-paint-runs.png)
+
+## 9 · Deliveries: the customer signs
+
+When bikes or parts go out to a customer, use **Deliveries** at the top of the
+*Workshop floor*. The list shows the orders that are ready: the customer, who
+receives them, phone number and address. Call the recipient to agree a time.
+
+1. Open the order at the customer's. The **delivery note** shows what is
+   handed over: the bikes with code and frame number, and parts such as a
+   spare battery. No prices are shown.
+2. Let the recipient type their **name** (filled in if the office knows it)
+   and **sign with a finger** in the box. *Clear* starts again.
+3. Tap **Sign and deliver**. The order is then delivered: the bikes show as
+   delivered, and extra parts come off the stock count. The order drops off the
+   list.
+
+Afterwards the delivery note can be shown and printed with the signature, if
+the customer wants a copy.
+
+![The delivery note: customer, recipient, address, the bikes with code and frame number, and a spare battery — no prices.](images/guide-finn/en-delivery-note.png)
+
+![The recipient types their name and signs with a finger, and you tap Sign and deliver.](images/guide-finn/en-delivery-sign.png)
 
 ## Good to know
 

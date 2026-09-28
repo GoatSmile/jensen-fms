@@ -2,7 +2,8 @@
 
 **Til Finn, september 2026.** Sådan registrerer du en reparation fra
 telefonen: find cyklen, opret et arbejdskort, skriv eller indtal hvad du gør,
-og meld færdig. Afsnit 8 viser lakturene — kasser til og fra lakereren. Kontoret sætter priserne på bagefter — du ser ingen priser, og det er
+og meld færdig. Afsnit 8 viser lakturene — kasser til og fra lakereren — og
+afsnit 9 leveringen, hvor kunden skriver under. Kontoret sætter priserne på bagefter — du ser ingen priser, og det er
 meningen. Vi går det igennem sammen på tirsdag.
 
 ## 1 · Log ind
@@ -109,6 +110,28 @@ hvad der er i kasserne, og hvor de skal hen, men ingen priser.
   besked. Du skal ikke rette noget.
 
 ![Lakture: en ordre, der skal afleveres, og en, der er klar til afhentning.](images/guide-finn/da-paint-runs.png)
+
+## 9 · Leveringer: kunden skriver under
+
+Når cykler eller dele skal ud til kunden, bruger du **Leveringer** øverst på
+*Værkstedet*. Listen viser de ordrer, der er klar: kunden, hvem der skal have
+dem, telefonnummer og adresse. Ring til modtageren for at aftale tiden.
+
+1. Åbn ordren hos kunden. **Følgesedlen** viser, hvad der udleveres: cyklerne
+   med kode og stelnummer, og dele som et ekstra batteri. Der står ingen
+   priser.
+2. Lad modtageren skrive sit **navn** (det er udfyldt, hvis kontoret kender
+   det) og **skrive under med fingeren** i feltet. *Ryd* starter forfra.
+3. Tryk **Underskriv og lever**. Så er ordren leveret: cyklerne står som
+   udleveret, og ekstra dele trækkes fra lageret. Ordren forsvinder fra
+   listen.
+
+Følgesedlen kan bagefter vises og udskrives med underskriften, hvis kunden vil
+have en kopi.
+
+![Følgesedlen: kunde, modtager, adresse, cyklerne med kode og stelnummer, og et ekstra batteri — uden priser.](images/guide-finn/da-delivery-note.png)
+
+![Modtageren skriver sit navn og under med fingeren, og du trykker Underskriv og lever.](images/guide-finn/da-delivery-sign.png)
 
 ## Godt at vide
 
