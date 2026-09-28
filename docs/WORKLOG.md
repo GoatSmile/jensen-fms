@@ -101,10 +101,10 @@ treat the early totals as floors, not truth.
 | Sun 2026-09-27 (cont.) | ~1.5 | **The no-Dennis build list shipped** (migrations 104–105): `/work` search, a WO from a scanned bike, time spent, a save bug that wiped labour; *Delivered*, sold parts leave stock, part-from-picker, templates Dennis-only, Finn's guide DA+EN. |
 | Sun 2026-09-27 (cont. 2) | ~0.5 | **How existing service agreements get in** — Dennis's templates found and read; spreadsheet bills, documents set terms, e-conomic proves (PDF). |
 | Mon 2026-09-28 | ~4 | **Dennis's bundle shipped** (migrations 106–108): paint orders split paperwork from where the goods are, delivery by signature, identifier rules, recognition code at build, five small ones, his paint guide. |
-| Mon 2026-09-28 (cont.) | ~2 | **Finn drives the paint runs, and the daily jobs get a page** (migration 109): *Lakture* on the floor and in his guide, `/admin/jobs` with last runs and Run now. |
+| Mon 2026-09-28 (cont.) | ~2.5 | **Finn drives the paint runs, and the daily jobs get a page** (migration 109): *Lakture* on the floor, `/admin/jobs` with last runs and Run now; Finn's guide gains §8–9. |
 
-**September so far: ~60.5 h** (9 working days)
+**September so far: ~61 h** (9 working days)
 
 ---
 
-**Project total: ~314.5 h across 50 working days (2026-05-07 → 2026-09-28)**
+**Project total: ~315 h across 50 working days (2026-05-07 → 2026-09-28)**

@@ -38,7 +38,8 @@ is Danish (person language).
   IT admin; migration 109): list from `vercel.json`, last runs from
   `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check
   its first run on the page (a run appears only after this deploy).
-- **Guides (PDF):** `GUIDE-FINN-DA-2026-09.pdf` (+ EN) for Finn's repairs,
+- **Guides (PDF):** `GUIDE-FINN-DA-2026-09.pdf` (+ EN) for Finn — repairs,
+  §8 paint runs (*Lakture*), §9 deliveries (*Leveringer*);
   `GUIDE-DENNIS-PAINT-DA-2026-09.pdf` for paint orders. Screens are shot from a
   production build on port 3100 (headless Chrome: 500 px minimum width, and it
   never exits on its own — the shot loop kills it).
@@ -78,10 +79,11 @@ is Danish (person language).
 - **The local stack runs WITHOUT analytics** — `supabase start -x
   logflare,vector` (the analytics port would not bind after a Docker restart).
   Local TEST data: people *TEST Finn*, *TEST Tech EN*, *TEST Sælger*; bikes
-  `TEST-WCK-REPAIR-001/002`, `TEST-FRAME-TAKE-1` (was PEDAL-003); `SO-2026-9902`
-  and `9903` (delivered, signed), `SO-2026-0001` (ready); `PNT-2026-0008`
-  (ready, notes TEST); parts `TEST-FRAME-Q1`, `TEST-BAT-Q2`; TEST Lakflow has
-  prefix `TL`.
+  `TEST-WCK-REPAIR-001/002`, `TEST-FRAME-TAKE-1` (was PEDAL-003),
+  `TEST-WCK-DELIV-001/002` (TL11/12, in stock on `MO-2026-9904`);
+  `SO-2026-9902`/`9903` (delivered, signed), `SO-2026-0001` and `9904` (ready);
+  `PNT-2026-0008`/`9901` (received back), `9902` (confirmed), `9903` (ready);
+  parts `TEST-FRAME-Q1`, `TEST-BAT-Q2`; TEST Lakflow has prefix `TL`.
 - **With the browser pane hidden**, streamed sections never reveal and real
   clicks fail: `window.$RV(window.$RB)`, synthetic `pointerdown` for Radix
   menus, `requestSubmit()` for forms.
