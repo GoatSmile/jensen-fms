@@ -268,6 +268,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_globally_unique: boolean
+          counts_part_category_id: string | null
           name_da: string | null
           name_en: string
           slug: string
@@ -281,6 +282,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_globally_unique?: boolean
+          counts_part_category_id?: string | null
           name_da?: string | null
           name_en: string
           slug: string
@@ -294,6 +296,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_globally_unique?: boolean
+          counts_part_category_id?: string | null
           name_da?: string | null
           name_en?: string
           slug?: string

@@ -24,7 +24,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-import { createBikeIdentifier } from "../_actions/manage-identifiers";
+import Link from "next/link";
+
+import {
+  createBikeIdentifier,
+  type IdentifierConflict,
+} from "../_actions/manage-identifiers";
 
 export type IdentifierTypeOption = {
   id: string;
@@ -32,8 +37,8 @@ export type IdentifierTypeOption = {
   name_en: string;
   format_regex: string | null;
   is_required: boolean;
-  /** Already-registered active types. We disable picking these to nudge the
-   *  user to deactivate the current one first if they want to replace it. */
+  /** Registered as many as the bike needs (one, or one per battery/charger —
+   *  migration 108). Disabled to nudge deactivating the old one first. */
   alreadyRegistered: boolean;
 };
 
@@ -60,6 +65,7 @@ export function IdentifierDialog({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<IdentifierConflict | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleOpenChange(next: boolean) {
@@ -71,6 +77,7 @@ export function IdentifierDialog({
       setNotes("");
       setError(null);
       setErrorField(null);
+      setConflict(null);
     }
     setOpen(next);
   }
@@ -93,23 +100,29 @@ export function IdentifierDialog({
     }
   }, [selectedType, value]);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function submit(overwrite: boolean) {
     setError(null);
     setErrorField(null);
     const fd = new FormData();
     fd.append("identifier_type_id", typeId);
     fd.append("identifier_value", value);
     fd.append("notes", notes);
+    if (overwrite) fd.append("overwrite", "1");
     startTransition(async () => {
       const r = await createBikeIdentifier(bikeId, fd, extraRevalidatePaths);
       if (!r.ok) {
         setError(r.error);
         setErrorField(r.field ?? null);
+        setConflict(r.conflict ?? null);
         return;
       }
       handleOpenChange(false);
     });
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    submit(false);
   }
 
   return (
@@ -191,9 +204,32 @@ export function IdentifierDialog({
               </p>
             ) : null}
             {errorField === "identifier_value" && error ? (
-              <p className="text-destructive text-xs" role="alert">
-                {error}
-              </p>
+              <div
+                className="bg-money-wash flex flex-col gap-2 rounded-lg p-3 text-xs"
+                role="alert"
+              >
+                <p className="text-money">{error}</p>
+                {conflict ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/bikes/${conflict.bikeId}`}
+                      className="text-brand underline-offset-4 hover:underline"
+                    >
+                      {t("openOtherBike", { frame: conflict.frameNumber })}
+                    </Link>
+                    {conflict.movable ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => submit(true)}
+                        disabled={isPending}
+                      >
+                        {t("moveHere")}
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
 

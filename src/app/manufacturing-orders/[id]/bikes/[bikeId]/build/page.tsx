@@ -345,6 +345,7 @@ export default async function BikeBuildWorkbenchPage({
     bikeId,
     bike.bike_type_id,
     isFrameProvisional(bike.status, bike.frame_number_confirmed),
+    moId,
   );
 
   // Paint gate (Tier 2 Phase C): block Finish while the frame is at the painter.

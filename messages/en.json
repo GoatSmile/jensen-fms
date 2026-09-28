@@ -244,7 +244,9 @@
     "partialKit": "{present} of {total} — pick by list",
     "alsoLabel": "also {codes}",
     "looseParts": "Loose parts",
-    "noSticker": "no sticker"
+    "noSticker": "no sticker",
+    "frameConflictOpen": "Open the other bike",
+    "frameConflictTake": "Take the number"
   },
   "batchBuild": {
     "crumbMos": "Manufacturing orders",
@@ -304,7 +306,9 @@
     "notesPlaceholder": "Optional — internal.",
     "cancel": "Cancel",
     "registering": "Registering…",
-    "register": "Register"
+    "register": "Register",
+    "openOtherBike": "Open bike {frame}",
+    "moveHere": "Move it here"
   },
   "scan": {
     "back": "Back",
@@ -4442,7 +4446,11 @@
     "deliverySignatureRequired": "The signature is missing — let the recipient sign.",
     "deliveryNotReady": "This order is not ready for delivery, so it cannot be signed for.",
     "deliverySignatureUploadFailed": "The signature could not be saved, so nothing was delivered: {detail}",
-    "deliveryLocked": "This order is closed, so its delivery details can no longer change."
+    "deliveryLocked": "This order is closed, so its delivery details can no longer change.",
+    "bikeIdentifierOnOtherBike": "This number is registered on bike {frame}. Move it to this bike?",
+    "bikeFrameOnOtherBike": "This frame number belongs to bike {frame}. A frame is not moved from here — open that bike to sort it out.",
+    "moFrameOnUnbuiltBike": "This frame number is on another bike that hasn't been built. Take it for this bike? That bike gets a new provisional number.",
+    "moFrameOnBuiltBike": "This frame number belongs to a bike that is already built. Check the number, or open that bike."
   },
   "inbox": {
     "title": "Inbox",

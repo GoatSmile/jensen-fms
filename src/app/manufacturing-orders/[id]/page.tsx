@@ -19,6 +19,8 @@ import { createClient } from "@/lib/supabase/server";
 import { one } from "@/lib/supabase/embed";
 import {
   isFrameProvisional,
+  identifierNeeds,
+  loadPartQtyByCategory,
   requiredIdentifierProgress,
 } from "@/lib/bikes/identifier-context";
 import { formatDate } from "@/lib/parts/format";
@@ -144,7 +146,7 @@ export default async function ManufacturingOrderDetailPage({
     supabase
       .from("bike_type_required_identifiers")
       .select(
-        "bike_type_id, bike_identifier_type_id, is_required, type:bike_identifier_types!inner(slug, is_active)",
+        "bike_type_id, bike_identifier_type_id, is_required, type:bike_identifier_types!inner(slug, is_active, counts_part_category_id)",
       )
       .eq("bike_type_id", mo.bike_type_id)
       .eq("is_required", true)
@@ -259,7 +261,16 @@ export default async function ManufacturingOrderDetailPage({
   const requiredIdTypes = (bikeTypeRequiredRes.data ?? []).map((r) => ({
     id: r.bike_identifier_type_id,
     slug: one(r.type)?.slug ?? "",
+    counts_part_category_id: one(r.type)?.counts_part_category_id ?? null,
   }));
+  // Two batteries on a bike → two battery numbers (migration 108).
+  const partQtyByBike = await loadPartQtyByCategory(
+    supabase,
+    (bikesRes.data ?? []).map((b) => ({
+      id: b.id,
+      manufacturing_order_id: b.manufacturing_order_id,
+    })),
+  );
   // Paint gate (Tier 2 Phase C): which of this MO's bikes are at the painter.
   const atPainterIds = await loadAtSupplierBikeIds(
     supabase,
@@ -271,13 +282,25 @@ export default async function ManufacturingOrderDetailPage({
       b.owner_organization?.display_name_en ??
       b.owner_organization?.legal_name ??
       null;
+    const needs = identifierNeeds(
+      requiredIdTypes,
+      partQtyByBike.get(b.id) ?? new Map(),
+    );
+    const activeCounts = new Map<string, number>();
+    for (const bi of b.bike_identifiers ?? []) {
+      if (!bi.is_active) continue;
+      activeCounts.set(
+        bi.identifier_type_id,
+        (activeCounts.get(bi.identifier_type_id) ?? 0) + 1,
+      );
+    }
     const progress = requiredIdentifierProgress({
-      requiredTypes: requiredIdTypes,
-      activeTypeIds: new Set(
-        (b.bike_identifiers ?? [])
-          .filter((bi) => bi.is_active)
-          .map((bi) => bi.identifier_type_id),
-      ),
+      requiredTypes: requiredIdTypes.map((t) => ({
+        ...t,
+        needed: needs.get(t.id) ?? 1,
+      })),
+      activeTypeIds: new Set(activeCounts.keys()),
+      activeCounts,
       frameProvisional: isFrameProvisional(b.status, b.frame_number_confirmed),
     });
     return {

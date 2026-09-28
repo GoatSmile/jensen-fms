@@ -29,6 +29,8 @@ import { StartWorkOrderButton } from "@/app/work/_components/start-wo-button";
 import { createClient } from "@/lib/supabase/server";
 import {
   isFrameProvisional,
+  identifierNeeds,
+  loadPartQtyByCategory,
   requiredIdentifierProgress,
 } from "@/lib/bikes/identifier-context";
 import { type BikeStatus } from "@/lib/bikes/status";
@@ -164,7 +166,9 @@ export default async function BikeDetailPage({
       .order("occurred_at", { ascending: false }),
     supabase
       .from("bike_identifier_types")
-      .select("id, slug, name_en, name_da, format_regex, is_active")
+      .select(
+        "id, slug, name_en, name_da, format_regex, is_active, counts_part_category_id",
+      )
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     // Active customers for the assign dialog — loaded eagerly so the dialog
@@ -251,6 +255,24 @@ export default async function BikeDetailPage({
       .map((r) => r.identifier_type?.id)
       .filter((x): x is string => x != null),
   );
+  const activeIdentifierCounts = new Map<string, number>();
+  for (const r of identifiersRes.data ?? []) {
+    const typeId = r.identifier_type?.id;
+    if (r.is_active && typeId) {
+      activeIdentifierCounts.set(
+        typeId,
+        (activeIdentifierCounts.get(typeId) ?? 0) + 1,
+      );
+    }
+  }
+  // Two batteries on the bike → two battery numbers (migration 108).
+  const partQty = await loadPartQtyByCategory(supabase, [
+    { id: b.id, manufacturing_order_id: b.manufacturing_order_id },
+  ]);
+  const identifierNeed = identifierNeeds(
+    identifierTypesRes.data ?? [],
+    partQty.get(b.id) ?? new Map(),
+  );
 
   const identifierRows: IdentifierRow[] = (identifiersRes.data ?? []).map(
     (r) => ({
@@ -282,17 +304,19 @@ export default async function BikeDetailPage({
     name_en: localizedName(locale, t.name_en, t.name_da),
     format_regex: t.format_regex,
     is_required: requiredTypes.has(t.id),
-    alreadyRegistered: activeIdentifierTypeIds.has(t.id),
+    alreadyRegistered:
+      (activeIdentifierCounts.get(t.id) ?? 0) >= (identifierNeed.get(t.id) ?? 1),
   }));
 
   // The shared rule (frame included, counted once confirmed; archived types
   // not counted), so this reads the same as the MO and the build workbench.
   const { required: requiredCount, registered: requiredRegisteredCount } =
     requiredIdentifierProgress({
-      requiredTypes: (identifierTypesRes.data ?? []).filter((t) =>
-        requiredTypes.has(t.id),
-      ),
+      requiredTypes: (identifierTypesRes.data ?? [])
+        .filter((t) => requiredTypes.has(t.id))
+        .map((t) => ({ ...t, needed: identifierNeed.get(t.id) ?? 1 })),
       activeTypeIds: activeIdentifierTypeIds,
+      activeCounts: activeIdentifierCounts,
       frameProvisional: isFrameProvisional(b.status, b.frame_number_confirmed),
     });
 

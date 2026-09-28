@@ -380,6 +380,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   types, the frame included; a PROVISIONAL frame (`isFrameProvisional`) does
   not count as registered. The bike page, the MO's bike list and the workbench
   all use it — they read 4/4, 4/5 and "any identifier" before 2026-09-27.
+  **Uniqueness and count (migration 108, DECISIONS 2026-09-28):** frame, battery
+  and charger numbers are unique among ACTIVE identifiers (deactivating frees
+  the number); lock numbers never are. A battery/charger number found on
+  another bike is MOVED on request (the old row deactivated, noted); a frame is
+  taken only from an UNBUILT bike (`confirmBikeFrame` `takeFromUnbuilt`, which
+  re-provisions the other), never from a built one. How many of a type a bike
+  needs follows its parts: `bike_identifier_types.counts_part_category_id`
+  (battery → Batteries, charger → Charger) — so those categories must hold
+  ONLY batteries and chargers, the same homogeneity rule as "Paintable as".
 - `audit_log` is fed by NARROW triggers (migration 87) on the tables where a
   number can move without a visible event — part prices and duty fields, painter
   tier prices, `app_settings`, `people`, corrections to who built a bike — with

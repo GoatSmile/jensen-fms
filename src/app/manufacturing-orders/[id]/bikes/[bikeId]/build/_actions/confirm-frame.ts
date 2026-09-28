@@ -3,11 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
+import { nextFrameNumberFromDb } from "@/lib/bikes/frame-number";
 import { createClient } from "@/lib/supabase/server";
 
 export type ConfirmFrameResult =
   | { ok: true; frameNumber: string }
-  | { ok: false; error: string };
+  | {
+      ok: false;
+      error: string;
+      /**
+       * The frame number belongs to ANOTHER bike (migration 108). `takeable`
+       * when that bike is unbuilt — its number is only a placeholder or a
+       * mistake — so the caller may retry with `takeFromUnbuilt`.
+       */
+      conflict?: { bikeId: string; moId: string | null; takeable: boolean };
+    };
 
 /**
  * Confirm the *real* physical frame number for a bike during the build.
@@ -21,11 +31,19 @@ export type ConfirmFrameResult =
  *
  * Only allowed while the bike is still planning/building — a built bike's
  * frame is already locked in.
+ *
+ * **A frame number already on another bike** (Dennis, 15 Sep 02:04; owner
+ * 2026-09-28): if that bike is UNBUILT, `takeFromUnbuilt` moves the number
+ * here and gives the other bike a fresh provisional number — a placeholder
+ * or a typo on a bike nobody has built is cheap to redo. If that bike is
+ * built, it is refused with a link: two built records for one physical frame
+ * is a merge for a human, not a move.
  */
 export async function confirmBikeFrame(
   moId: string,
   bikeId: string,
   rawFrameNumber: string,
+  opts: { takeFromUnbuilt?: boolean } = {},
 ): Promise<ConfirmFrameResult> {
   const t = await getTranslations("errors");
   if (!moId || !bikeId) {
@@ -61,6 +79,50 @@ export async function confirmBikeFrame(
 
   const previousFrame = bike.frame_number;
   const frameChanged = previousFrame !== frameNumber;
+
+  if (frameChanged) {
+    const { data: holder } = await supabase
+      .from("bikes")
+      .select(
+        "id, status, manufacturing_order_id, bike_type:bike_types!bike_type_id(slug)",
+      )
+      .eq("frame_number", frameNumber)
+      .neq("id", bikeId)
+      .maybeSingle();
+    if (holder) {
+      const takeable =
+        holder.status === "planning" || holder.status === "building";
+      if (!takeable || !opts.takeFromUnbuilt) {
+        return {
+          ok: false,
+          error: takeable
+            ? t("moFrameOnUnbuiltBike")
+            : t("moFrameOnBuiltBike"),
+          conflict: {
+            bikeId: holder.id,
+            moId: holder.manufacturing_order_id,
+            takeable,
+          },
+        };
+      }
+      const released = await releaseFrameToProvisional(
+        supabase,
+        holder.id,
+        (Array.isArray(holder.bike_type) ? holder.bike_type[0] : holder.bike_type)
+          ?.slug ?? null,
+      );
+      if (!released.ok) {
+        return {
+          ok: false,
+          error: t("moCouldNotConfirmFrame", { detail: released.error }),
+        };
+      }
+      if (holder.manufacturing_order_id) {
+        revalidatePath(`/manufacturing-orders/${holder.manufacturing_order_id}`);
+      }
+      revalidatePath(`/bikes/${holder.id}`);
+    }
+  }
 
   const { error: updErr } = await supabase
     .from("bikes")
@@ -139,4 +201,43 @@ export async function confirmBikeFrame(
   revalidatePath(`/bikes/${bikeId}`);
   revalidatePath("/bikes");
   return { ok: true, frameNumber };
+}
+
+/**
+ * Give an UNBUILT bike a fresh generated frame number, unconfirmed, and keep
+ * its frame identifier row in step — so the number it held is free for the
+ * bike the tech is actually standing at.
+ */
+async function releaseFrameToProvisional(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bikeId: string,
+  typeSlug: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const fresh = await nextFrameNumberFromDb(supabase, {
+    year: new Date().getFullYear(),
+    code: typeSlug,
+  });
+  const { error } = await supabase
+    .from("bikes")
+    .update({
+      frame_number: fresh,
+      frame_number_confirmed: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", bikeId);
+  if (error) return { ok: false, error: error.message };
+  const { data: idType } = await supabase
+    .from("bike_identifier_types")
+    .select("id")
+    .eq("slug", "frame_number")
+    .maybeSingle();
+  if (idType) {
+    await supabase
+      .from("bike_identifiers")
+      .update({ identifier_value: fresh })
+      .eq("bike_id", bikeId)
+      .eq("identifier_type_id", idType.id)
+      .eq("is_active", true);
+  }
+  return { ok: true };
 }

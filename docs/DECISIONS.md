@@ -3216,3 +3216,25 @@ Owner go-ahead on Dennis's "number one" (15 Sep, 02:07–02:24).
 - **Not yet:** the loading scan (a QR on the note), the delivery appointment in
   Finn's calendar (after the Google setup), linking the customer's acceptance
   email to the order.
+
+## 2026-09-28 — Identifier rules: unique where it matters, movable, counted by parts
+
+Owner, confirming the 15 Sep conclusions (02:01–02:05).
+
+- **Unique: frame, battery, charger. Never unique: lock, battery lock** (and the
+  recognition code, already). `is_globally_unique` now says so, and the unique
+  index is built from it and covers ACTIVE rows only — a deactivated identifier
+  used to block its number forever (migration 108).
+- **"Already exists — overwrite?" means MOVE, not duplicate.** A battery or
+  charger number on another bike is offered to move here: the other bike's row
+  is deactivated with a note, this bike gets it (a swapped battery is the
+  everyday case). **A frame is different:** taken only from an UNBUILT bike,
+  which gets a fresh provisional number; a built bike's frame is refused with a
+  link, because two built records for one frame is a merge for a human.
+- **Count follows parts:** an identifier type may count a part category, so two
+  batteries mean two battery numbers. **Rejected:** a per-part "carries a
+  serial" flag (every new battery part would need ticking) — instead the
+  categories are kept clean; JP-BH CWF1, a battery box, was refiled from
+  Batteries to Rear Carrier (owner).
+- **A bike with no lock or battery can already be finished** — the count is
+  advisory; nothing changed there.

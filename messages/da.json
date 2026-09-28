@@ -244,7 +244,9 @@
     "partialKit": "{present} af {total} — pluk efter listen",
     "alsoLabel": "også {codes}",
     "looseParts": "Løse dele",
-    "noSticker": "ingen mærkat"
+    "noSticker": "ingen mærkat",
+    "frameConflictOpen": "Åbn den anden cykel",
+    "frameConflictTake": "Tag nummeret"
   },
   "batchBuild": {
     "crumbMos": "Produktionsordrer",
@@ -304,7 +306,9 @@
     "notesPlaceholder": "Valgfrit — internt.",
     "cancel": "Annullér",
     "registering": "Registrerer…",
-    "register": "Registrér"
+    "register": "Registrér",
+    "openOtherBike": "Åbn cykel {frame}",
+    "moveHere": "Flyt det hertil"
   },
   "scan": {
     "back": "Tilbage",
@@ -4442,7 +4446,11 @@
     "deliverySignatureRequired": "Underskriften mangler — lad modtageren skrive under.",
     "deliveryNotReady": "Ordren er ikke klar til levering, så der kan ikke kvitteres for den.",
     "deliverySignatureUploadFailed": "Underskriften kunne ikke gemmes, så intet blev leveret: {detail}",
-    "deliveryLocked": "Ordren er lukket, så leveringsoplysningerne kan ikke længere ændres."
+    "deliveryLocked": "Ordren er lukket, så leveringsoplysningerne kan ikke længere ændres.",
+    "bikeIdentifierOnOtherBike": "Nummeret er registreret på cykel {frame}. Flyt det til denne cykel?",
+    "bikeFrameOnOtherBike": "Stelnummeret tilhører cykel {frame}. Et stel flyttes ikke herfra — åbn den cykel for at rydde op.",
+    "moFrameOnUnbuiltBike": "Stelnummeret står på en anden cykel, der ikke er bygget. Skal denne cykel have det? Den anden får et nyt midlertidigt nummer.",
+    "moFrameOnBuiltBike": "Stelnummeret tilhører en cykel, der allerede er bygget. Tjek nummeret, eller åbn den cykel."
   },
   "inbox": {
     "title": "Indbakke",

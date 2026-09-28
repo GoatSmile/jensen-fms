@@ -192,6 +192,12 @@ export function BuildWorkbench({
   const locale = useLocale();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // The frame number is on another bike (migration 108) — offered to take it
+  // when that bike is unbuilt, linked either way.
+  const [frameConflict, setFrameConflict] = useState<{
+    bikeId: string;
+    takeable: boolean;
+  } | null>(null);
   const [showEmpty, setShowEmpty] = useState(false);
   // Two-step arm for the destructive "Clear build" (no modal — label flips to
   // "Confirm…" on first click, matching the app's inline-friction convention).
@@ -398,14 +404,18 @@ export function BuildWorkbench({
     });
   }
 
-  function onConfirmFrame() {
+  function onConfirmFrame(takeFromUnbuilt = false) {
     setError(null);
     setSuccess(null);
     setClearArmed(false);
+    setFrameConflict(null);
     startConfirm(async () => {
-      const r = await confirmBikeFrame(moId, bikeId, frameValue);
+      const r = await confirmBikeFrame(moId, bikeId, frameValue, {
+        takeFromUnbuilt,
+      });
       if (!r.ok) {
         setError(r.error);
+        setFrameConflict(r.conflict ?? null);
         return;
       }
       setFrameValue(r.frameNumber);
@@ -563,7 +573,7 @@ export function BuildWorkbench({
             <Button
               type="button"
               variant={confirmed ? "outline" : "default"}
-              onClick={onConfirmFrame}
+              onClick={() => onConfirmFrame()}
               disabled={isConfirming || frameValue.trim() === ""}
             >
               {isConfirming
@@ -632,6 +642,26 @@ export function BuildWorkbench({
         <p className="text-destructive text-sm" role="alert">
           {error}
         </p>
+      ) : null}
+      {frameConflict ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Link
+            href={`/bikes/${frameConflict.bikeId}`}
+            className="text-brand underline-offset-4 hover:underline"
+          >
+            {t("frameConflictOpen")}
+          </Link>
+          {frameConflict.takeable ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => onConfirmFrame(true)}
+              disabled={isConfirming}
+            >
+              {t("frameConflictTake")}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       {success ? (
         <p className="text-sm text-good" role="status">
