@@ -3,6 +3,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import {
   ChevronRight,
   CircleUser,
+  PaintBucket,
   ScanLine,
   Search,
   Tag,
@@ -67,7 +68,7 @@ export default async function WorkQueuePage({
   const mineActive = mine === "1" && myPersonId !== null;
   const supabase = await createClient();
 
-  const [woRes, buildQueue, search, readyRes] = await Promise.all([
+  const [woRes, buildQueue, search, readyRes, paintRunRes] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -94,8 +95,14 @@ export default async function WorkQueuePage({
       .from("sales_orders")
       .select("id", { count: "exact", head: true })
       .eq("status", "ready"),
+    // Paint runs for the floor: to drop off, or at the painter (migration 106).
+    supabase
+      .from("service_orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["confirmed", "at_supplier", "ready"]),
   ]);
   const readyCount = readyRes.count ?? 0;
+  const paintRunCount = paintRunRes.count ?? 0;
 
   if (woRes.error) {
     throw new Error(`Failed to load work queue: ${woRes.error.message}`);
@@ -169,7 +176,13 @@ export default async function WorkQueuePage({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 p-4 sm:p-6">
       <header className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/work/paint-runs">
+              <PaintBucket className="mr-1 size-4" aria-hidden />{" "}
+              {t("paintRuns", { count: paintRunCount })}
+            </Link>
+          </Button>
           <Button asChild size="sm" variant="outline">
             <Link href="/work/deliveries">
               <Truck className="mr-1 size-4" aria-hidden />{" "}

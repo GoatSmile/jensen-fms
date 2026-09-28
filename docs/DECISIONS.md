@@ -3238,3 +3238,24 @@ Owner, confirming the 15 Sep conclusions (02:01–02:05).
   Batteries to Rear Carrier (owner).
 - **A bike with no lock or battery can already be finished** — the count is
   advisory; nothing changed there.
+
+## 2026-09-28 — Finn drives the paint runs; the daily jobs get a page
+
+Owner, in session.
+
+- **Lakture (`/work/paint-runs`)** instead of giving Workshop `paint`: the
+  paint-order pages show prices, and technicians see no money. The floor page
+  shows what is in the boxes and where it goes, and does only the drive's
+  moves — dropped off now, move the drop-off date, ready, pickup date,
+  collected — through the office's own transitions, each checking `work`.
+- **Collecting receives even with unconvertible lines** (owner): the goods are
+  physically back; lines naming no part or colour stay listed on the order and
+  Dennis gets `paint.received_incomplete`. **Rejected:** blocking Finn until
+  the lines are fixed (he cannot fix them).
+- **Scheduled jobs page (`/admin/jobs`)**, its own capability `jobs` (Owner +
+  IT admin), not plain `admin`: system internals an IT person watches. The list
+  is READ FROM `vercel.json` — the platform's schedule is the truth — and each
+  run is recorded in `cron_runs` by one runner shared by the schedule and *Run
+  now* (owner chose a Run-now button, with a confirm). **Rejected:** a
+  hand-kept list (it drifted within a day: OPERATIONS said "three crons" while
+  four ran).

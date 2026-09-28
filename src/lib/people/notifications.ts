@@ -17,6 +17,7 @@ export const NOTIFICATION_EVENTS = [
   "invoice.overdue",
   "agreement.expiring",
   "so.ready",
+  "paint.received_incomplete",
 ] as const;
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
@@ -34,4 +35,5 @@ export const NOTIFICATION_EVENT_LABEL_KEYS: Record<NotificationEvent, string> =
     "invoice.overdue": "eventInvoiceOverdue",
     "agreement.expiring": "eventAgreementExpiring",
     "so.ready": "eventSoReady",
+    "paint.received_incomplete": "eventPaintReceivedIncomplete",
   };

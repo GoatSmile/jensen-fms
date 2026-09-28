@@ -29,7 +29,7 @@ export type AppSession = {
    * when `templates_edit` did. An older session was minted before its
    * capability existed: see the upgrades in `verifySessionToken`.
    */
-  v: 1 | 2 | 3;
+  v: 1 | 2 | 3 | 4;
   /** Primary role key ('owner', 'workshop', 'admin') — display + home. */
   role: string;
   /** Capability keys frozen at login (validated against the registry). */
@@ -116,7 +116,7 @@ export async function verifySessionToken(
   if (typeof parsed !== "object" || parsed === null) return null;
   const s = parsed as Partial<AppSession>;
   if (
-    (s.v !== 1 && s.v !== 2 && s.v !== 3) ||
+    (s.v !== 1 && s.v !== 2 && s.v !== 3 && s.v !== 4) ||
     typeof s.role !== "string" ||
     !Array.isArray(s.caps) ||
     !s.caps.every((c) => typeof c === "string") ||
@@ -154,6 +154,14 @@ export async function verifySessionToken(
     !session.caps.includes("templates_edit")
   ) {
     session = { ...session, caps: [...session.caps, "templates_edit"] };
+  }
+  // And `jobs` (2026-09-28, v4): granted to the same two admin-holding roles.
+  if (
+    session.v < 4 &&
+    session.caps.includes("admin") &&
+    !session.caps.includes("jobs")
+  ) {
+    session = { ...session, caps: [...session.caps, "jobs"] };
   }
   return session;
 }

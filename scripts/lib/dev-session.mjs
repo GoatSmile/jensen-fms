@@ -136,7 +136,7 @@ export async function mintCookie(env, who, { allCaps = false } = {}) {
   const access = await capsFor(env, person.id);
   const token = signSession(
     {
-      v: 3,
+      v: 4,
       role: access.role,
       caps: allCaps ? ALL_CAPS : access.caps,
       home: access.home,

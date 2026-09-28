@@ -6,12 +6,12 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
-- **Delete the pre-v3 session upgrades after 2026-10-27** — both blocks at the
+- **Delete the pre-v4 session upgrades after 2026-10-28** — the blocks at the
   end of `verifySessionToken` in `src/lib/auth/session.ts` (`costs` for v1,
-  `templates_edit` for v1/v2) and the `v !== 1 && v !== 2` acceptance. Sessions
-  last 30 days, so every cookie minted before migration 104 is expired by then;
-  the upgrades only existed so Dennis kept his figures and his templates across
-  the deploys.
+  `templates_edit` for pre-v3, `jobs` for pre-v4) and the old-version
+  acceptance. Sessions last 30 days, so every cookie minted before migration
+  109 is expired by then; the upgrades only exist so Dennis and Nazar keep
+  their capabilities across the deploys.
 - **`ScriptProcessorNode` → `AudioWorklet` in the dictation recorder**
   (`src/lib/dictation/use-recorder.ts`). The capture node is formally
   deprecated; no browser has removed it or announced a date, and Munin has run

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Clock,
   Coins,
   List,
   Mail,
@@ -21,6 +22,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { VOCABULARIES } from "@/lib/admin/vocabularies";
+import { readHasCapability } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import { formatPct } from "@/lib/parts/format";
 import { cn } from "@/lib/utils";
@@ -95,6 +97,20 @@ export default async function AdminLandingPage() {
       .select("id", { count: "exact", head: true })
       .eq("status", "failed"),
   ]);
+  // The scheduled-jobs tile shows only to holders of `jobs` (migration 109),
+  // with the number of jobs whose last run failed.
+  const canSeeJobs = await readHasCapability("jobs");
+  let failedJobCount = 0;
+  if (canSeeJobs) {
+    const { data: runs } = await supabase
+      .from("cron_runs")
+      .select("job, ok, started_at")
+      .order("started_at", { ascending: false })
+      .limit(200);
+    const lastByJob = new Map<string, boolean | null>();
+    for (const r of runs ?? []) if (!lastByJob.has(r.job)) lastByJob.set(r.job, r.ok);
+    failedJobCount = [...lastByJob.values()].filter((ok) => ok === false).length;
+  }
 
   const defaultTransportPct = Number(
     settingsRes.data?.default_transport_pct ?? 0.10,
@@ -230,6 +246,19 @@ export default async function AdminLandingPage() {
             description={t("settingsDesc")}
             stat={t("settingsStat", { pct: formatPct(defaultTransportPct) })}
           />
+          {canSeeJobs ? (
+            <Tile
+              href="/admin/jobs"
+              icon={Clock}
+              title={t("jobsTitle")}
+              description={t("jobsDesc")}
+              stat={
+                failedJobCount > 0
+                  ? t("jobsStatFailed", { count: failedJobCount })
+                  : t("jobsStatClean")
+              }
+            />
+          ) : null}
         </AdminGroup>
       </div>
     </div>

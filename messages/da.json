@@ -30,7 +30,8 @@
     "searchEmptyBody": "Prøv koden på cyklens mærkat (BKTM01), en del af stelnummeret eller kundens navn.",
     "searchBikesTitle": "Cykler uden åbent arbejdskort",
     "searchBikesMore": "{count, plural, one {# cykel mere matcher} other {# cykler mere matcher}} — gør søgningen smallere for at se dem.",
-    "deliveries": "Leveringer ({count})"
+    "deliveries": "Leveringer ({count})",
+    "paintRuns": "Lakture ({count})"
   },
   "wo": {
     "backToQueue": "Køen",
@@ -2966,7 +2967,11 @@
     "peopleStat": "{people} personer · {roles} roller",
     "listsTitle": "Lister",
     "listsDesc": "Varekategorier, farver, overflader, kundesegmenter, cykelfamilier, HS-koder og lagerlokationer.",
-    "listsStat": "{count} lister"
+    "listsStat": "{count} lister",
+    "jobsTitle": "Planlagte job",
+    "jobsDesc": "Hvad der kører af sig selv hver dag, og hvordan de sidste kørsler gik.",
+    "jobsStatClean": "Alle sidste kørsler OK",
+    "jobsStatFailed": "{count, plural, one {1 job fejlede} other {# job fejlede}}"
   },
   "adminFx": {
     "crumb": "Valutakurser",
@@ -3624,7 +3629,9 @@
     "passwordNeedsRole": "Personen har ingen rolle og kan derfor ikke logge ind endnu — et login uden rettigheder ville blive afvist på alle sider. Giv personen en rolle nedenfor.",
     "passwordWriteOnlyHint": "Kan kun skrives: adgangskoden gemmes som en hash og kan aldrig vises igen.",
     "capTemplatesEdit": "Oprette og ændre cykelskabeloner",
-    "eventSoReady": "Salgsordre klar til levering"
+    "eventSoReady": "Salgsordre klar til levering",
+    "eventPaintReceivedIncomplete": "Lakordre hentet med linjer, der skal rettes",
+    "capJobs": "Se planlagte job"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -4456,7 +4463,10 @@
     "bikeIdentifierOnOtherBike": "Nummeret er registreret på cykel {frame}. Flyt det til denne cykel?",
     "bikeFrameOnOtherBike": "Stelnummeret tilhører cykel {frame}. Et stel flyttes ikke herfra — åbn den cykel for at rydde op.",
     "moFrameOnUnbuiltBike": "Stelnummeret står på en anden cykel, der ikke er bygget. Skal denne cykel have det? Den anden får et nyt midlertidigt nummer.",
-    "moFrameOnBuiltBike": "Stelnummeret tilhører en cykel, der allerede er bygget. Tjek nummeret, eller åbn den cykel."
+    "moFrameOnBuiltBike": "Stelnummeret tilhører en cykel, der allerede er bygget. Tjek nummeret, eller åbn den cykel.",
+    "paintRunNeedsWork": "Kun personer med adgang til værkstedet kan registrere en laktur.",
+    "jobsNeedsCapability": "Kun personer, der må se planlagte job, kan køre et.",
+    "jobsUnknown": "Appen har intet job med det navn."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4774,5 +4784,68 @@
     "savedAt": "Gemt · {time}",
     "save": "Gem",
     "saving": "Gemmer…"
+  },
+  "paintRuns": {
+    "back": "Værkstedet",
+    "title": "Lakture",
+    "subtitle": "Kasser, der skal ud til lakereren, og ordrer, der venter på at blive hentet.",
+    "emptyTitle": "Ingen lakture",
+    "emptyBody": "En lakordre dukker op her, når kontoret har sendt den til lakereren.",
+    "toDropOff": "Skal afleveres",
+    "atPainter": "Hos lakereren",
+    "bikes": "{count, plural, one {Til 1 cykel} other {Til # cykler}}",
+    "dropOffDate": "Afleveringsdato",
+    "dropOffAuto": "Den dag tæller den selv som hos lakereren. Flyt datoen, hvis turen rykker.",
+    "droppedOffNow": "Afleveret nu",
+    "markReady": "Lakereren siger, den er klar",
+    "pickupDate": "Afhentningsdato",
+    "pickedUp": "Hentet",
+    "pickedUpConfirm": "Hentet og hjemme? De lakerede dele kommer på lakhylden.",
+    "pickedUpYes": "Ja — hentet",
+    "cancel": "Annullér"
+  },
+  "adminJobs": {
+    "crumbAdmin": "Administration",
+    "title": "Planlagte job",
+    "intro": "Job, som platformen kører af sig selv (fra vercel.json). Tider er dansk tid. Alle job kan trygt køres igen i hånden.",
+    "noDescription": "Ingen beskrivelse i appen endnu — jobbet er planlagt, men ikke beskrevet her.",
+    "notScheduled": "ikke planlagt",
+    "lastRun": "Sidste kørsel",
+    "nextRun": "Næste kørsel",
+    "ifStops": "Hvis det stopper",
+    "ok": "OK",
+    "failed": "fejlede",
+    "unfinished": "blev aldrig færdig",
+    "neverRun": "Ingen kørsel registreret endnu",
+    "bySchedule": "planlagt",
+    "byPerson": "af {name}",
+    "unknownToCode": "vercel.json planlægger dette job, men appen har ingen kode til at køre eller registrere det i hånden. Tjek ruten.",
+    "notScheduledWarn": "Appen kan køre jobbet, men vercel.json planlægger det ikke — det kører aldrig af sig selv.",
+    "runNow": "Kør nu",
+    "confirmRun": "Ja, kør det",
+    "running": "Kører…",
+    "cancel": "Annullér",
+    "jobs": {
+      "refreshFxRates": {
+        "title": "Valutakurser",
+        "what": "Henter ECB's daglige kurser for alle valutaer, vi følger. Hverdage, efter ECB har offentliggjort dem.",
+        "breaks": "Nye indkøbsordrelinjer fryser en gammel kurs ind i kostprisen, og det kan ikke rettes bagefter."
+      },
+      "inboundRetention": {
+        "title": "Oprydning i optagelser",
+        "what": "Sletter lyd fra opkald, der er ældre end opbevaringsperioden (transskriptionen bliver), og efterladt dikteringslyd ældre end et døgn.",
+        "breaks": "Kunders optagelser gemmes længere end tilladt — et GDPR-problem."
+      },
+      "notifyOverdueInvoices": {
+        "title": "Forfaldne fakturaer",
+        "what": "Sender én samlet e-mail om nyligt forfaldne fakturaer til de roller, der abonnerer. Hver faktura én gang; en e-mail, der fejlede, sendes igen næste dag.",
+        "breaks": "Ingen får besked, når en faktura forfalder."
+      },
+      "paintDropOffs": {
+        "title": "Aflevering til lakerer",
+        "what": "Flytter hver bekræftet lakordre til \"Hos lakerer\" om morgenen på afleveringsdatoen.",
+        "breaks": "Ordrer vises aldrig som hos lakereren; stel ser ud, som om de stadig er på værkstedet."
+      }
+    }
   }
 }

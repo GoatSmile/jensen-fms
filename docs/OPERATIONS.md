@@ -80,8 +80,13 @@ Vercel crons (`vercel.json` is the list), all authenticating with
 | `/api/cron/notify-overdue-invoices` | `0 6 * * *` | Overdue-invoice notifications stop |
 | `/api/cron/paint-drop-offs` | `0 4 * * *` — 06:00 Danish summer time | Confirmed paint orders never reach *at painter* on their drop-off date: the frames read as still in the workshop, and the dashboard's aging clock never starts (migration 106) |
 
-The FX route deliberately **fails closed**: on any non-dev deployment a missing
-`CRON_SECRET` returns 503 rather than running unauthenticated.
+Every route **fails closed** (`refuseUnlessCron`): on any non-dev deployment a
+missing `CRON_SECRET` returns 503 rather than running unauthenticated.
+
+**Watching them:** `/admin/jobs` in the app (capability `jobs`) shows each
+job's next run, its last runs from `cron_runs` (who pressed *Run now*, or the
+schedule), and a *Run now* button. Vercel's own *Settings → Cron Jobs* has the
+platform-side logs.
 
 ## Dev-environment tooling (not app dependencies)
 

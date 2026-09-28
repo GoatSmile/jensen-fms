@@ -80,6 +80,10 @@ export function routeCapabilities(
   if (TEMPLATE_EDIT_ROUTES.some((re) => re.test(pathname))) {
     return ["templates_edit"];
   }
+  // The scheduled jobs are their own capability, not `admin` (migration 109).
+  if (pathname === "/admin/jobs" || pathname.startsWith("/admin/jobs/")) {
+    return ["jobs"];
+  }
   for (const [prefix, cap] of ROUTE_CAPABILITIES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return [cap];
   }

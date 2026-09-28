@@ -558,6 +558,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     ITSELF on the planned drop-off date (`planned_send_date`, the daily
     `/api/cron/paint-drop-offs`) or by hand, and stamps `dropped_off_at`;
     `ready` is the painter's "done", with a `pickup_date` shown to everyone.
+    **Finn drives the runs from `/work/paint-runs`** (*Lakture*): drop off,
+    move the date, ready, collected — no prices, because Workshop has no
+    `paint` and the paint-order pages show money. Collecting receives the
+    order even when lines cannot convert (the boxes ARE back) and tells Dennis
+    (`paint.received_incomplete`); the office screen still asks first.
     `AT_SUPPLIER_STATUSES` (`at_supplier`, `ready`) is the ONE list of "away"
     — import it, never copy it (a copy in `painted-variants.ts` kept saying
     `sent`). Item lines editable while `planned` with LIVE estimates;
@@ -682,6 +687,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     page. **An action a route does not gate checks its capability itself** —
     middleware only sees the page URL, and a server action is callable from any
     page that imports it.
+  - **Scheduled jobs are visible: `jobs`** (migration 109, Owner + IT admin).
+    `/admin/jobs` lists what `vercel.json` schedules, with next run, last runs
+    and *Run now*. **Every job's work lives in `src/lib/cron/jobs.ts` and runs
+    through `runJob`** (`src/lib/cron/run.ts`), which records a `cron_runs`
+    row — the route only authenticates (`refuseUnlessCron`). A new job is a
+    `JOBS` entry + a thin route + a `vercel.json` line + its `adminJobs.jobs.*`
+    text; the page flags a job missing either half. Every job must be safe to
+    run twice, because *Run now* exists.
   - **Workshop = `work`, `scan`, `bikes`, `parts`** (re-evaluated 2026-09-26):
     no dashboard, inbox or office maintenance pages. The build workbench, batch
     build and pick list live under an MO's URL but open with `work` OR `mo`, and

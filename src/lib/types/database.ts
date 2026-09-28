@@ -1049,6 +1049,42 @@ export type Database = {
           },
         ]
       }
+      cron_runs: {
+        Row: {
+          detail: Json | null
+          finished_at: string | null
+          id: string
+          job: string
+          ok: boolean | null
+          started_at: string
+          summary: string | null
+          trigger: string
+          triggered_by: string | null
+        }
+        Insert: {
+          detail?: Json | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          ok?: boolean | null
+          started_at?: string
+          summary?: string | null
+          trigger: string
+          triggered_by?: string | null
+        }
+        Update: {
+          detail?: Json | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          ok?: boolean | null
+          started_at?: string
+          summary?: string | null
+          trigger?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       currencies: {
         Row: {
           code: string

@@ -30,7 +30,8 @@
     "searchEmptyBody": "Try the code on the bike's label (BKTM01), part of the frame number, or the customer's name.",
     "searchBikesTitle": "Bikes without an open work order",
     "searchBikesMore": "{count, plural, one {# more bike matches} other {# more bikes match}} — narrow the search to see them.",
-    "deliveries": "Deliveries ({count})"
+    "deliveries": "Deliveries ({count})",
+    "paintRuns": "Paint runs ({count})"
   },
   "wo": {
     "backToQueue": "Queue",
@@ -2966,7 +2967,11 @@
     "peopleStat": "{people} people · {roles} roles",
     "listsTitle": "Lists",
     "listsDesc": "Part categories, colours, coatings, customer segments, bike families, HS codes and stock locations.",
-    "listsStat": "{count} lists"
+    "listsStat": "{count} lists",
+    "jobsTitle": "Scheduled jobs",
+    "jobsDesc": "What runs by itself every day, and how the last runs went.",
+    "jobsStatClean": "All last runs OK",
+    "jobsStatFailed": "{count, plural, one {1 job failed} other {# jobs failed}}"
   },
   "adminFx": {
     "crumb": "FX rates",
@@ -3624,7 +3629,9 @@
     "passwordNeedsRole": "This person holds no role, so they can't log in yet — a login with no capabilities would be bounced off every page. Give them a role below.",
     "passwordWriteOnlyHint": "Write-only: the password is stored as a hash and can never be shown again.",
     "capTemplatesEdit": "Create and change bike templates",
-    "eventSoReady": "Sales order ready for delivery"
+    "eventSoReady": "Sales order ready for delivery",
+    "eventPaintReceivedIncomplete": "Paint order collected with lines to fix",
+    "capJobs": "See scheduled jobs"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -4456,7 +4463,10 @@
     "bikeIdentifierOnOtherBike": "This number is registered on bike {frame}. Move it to this bike?",
     "bikeFrameOnOtherBike": "This frame number belongs to bike {frame}. A frame is not moved from here — open that bike to sort it out.",
     "moFrameOnUnbuiltBike": "This frame number is on another bike that hasn't been built. Take it for this bike? That bike gets a new provisional number.",
-    "moFrameOnBuiltBike": "This frame number belongs to a bike that is already built. Check the number, or open that bike."
+    "moFrameOnBuiltBike": "This frame number belongs to a bike that is already built. Check the number, or open that bike.",
+    "paintRunNeedsWork": "Only people with access to the workshop floor can record a paint run.",
+    "jobsNeedsCapability": "Only people who may see scheduled jobs can run one.",
+    "jobsUnknown": "The app has no job by that name."
   },
   "inbox": {
     "title": "Inbox",
@@ -4774,5 +4784,68 @@
     "savedAt": "Saved · {time}",
     "save": "Save",
     "saving": "Saving…"
+  },
+  "paintRuns": {
+    "back": "Workshop floor",
+    "title": "Paint runs",
+    "subtitle": "Boxes to take to the painter, and orders waiting to be collected.",
+    "emptyTitle": "No paint runs",
+    "emptyBody": "A paint order appears here once the office has sent it to the painter.",
+    "toDropOff": "To drop off",
+    "atPainter": "At the painter",
+    "bikes": "{count, plural, one {For 1 bike} other {For # bikes}}",
+    "dropOffDate": "Drop-off date",
+    "dropOffAuto": "On this date it counts as at the painter by itself. Move it if the drive slips.",
+    "droppedOffNow": "Dropped off now",
+    "markReady": "The painter says it's ready",
+    "pickupDate": "Pickup date",
+    "pickedUp": "Collected",
+    "pickedUpConfirm": "Collected and back here? The painted parts go onto the paint shelf.",
+    "pickedUpYes": "Yes — collected",
+    "cancel": "Cancel"
+  },
+  "adminJobs": {
+    "crumbAdmin": "Admin",
+    "title": "Scheduled jobs",
+    "intro": "Jobs the platform runs by itself (from vercel.json). Times are Danish time. Every job is safe to run again by hand.",
+    "noDescription": "No description in the app yet — this job is scheduled but not documented here.",
+    "notScheduled": "not scheduled",
+    "lastRun": "Last run",
+    "nextRun": "Next run",
+    "ifStops": "If it stops",
+    "ok": "OK",
+    "failed": "failed",
+    "unfinished": "never finished",
+    "neverRun": "No run recorded yet",
+    "bySchedule": "scheduled",
+    "byPerson": "by {name}",
+    "unknownToCode": "vercel.json schedules this job, but the app has no code to run it by hand or record it. Check the route.",
+    "notScheduledWarn": "The app can run this job, but vercel.json does not schedule it — it never runs by itself.",
+    "runNow": "Run now",
+    "confirmRun": "Yes, run it",
+    "running": "Running…",
+    "cancel": "Cancel",
+    "jobs": {
+      "refreshFxRates": {
+        "title": "Exchange rates",
+        "what": "Fetches the ECB's daily exchange rates for every tracked currency. Weekdays, after the ECB publishes.",
+        "breaks": "New purchase-order lines freeze an old rate into their cost, and that cannot be fixed afterwards."
+      },
+      "inboundRetention": {
+        "title": "Recording clean-up",
+        "what": "Deletes call audio older than the retention period (the transcript stays), and leftover dictation audio older than a day.",
+        "breaks": "Customer recordings are kept longer than allowed — a GDPR problem."
+      },
+      "notifyOverdueInvoices": {
+        "title": "Overdue invoices",
+        "what": "Emails one digest of newly overdue invoices to the roles subscribed to it. Each invoice once; a digest that failed goes out the next day.",
+        "breaks": "Nobody is told when an invoice goes overdue."
+      },
+      "paintDropOffs": {
+        "title": "Paint drop-offs",
+        "what": "Moves every confirmed paint order to \"At painter\" on the morning of its drop-off date.",
+        "breaks": "Orders never show as at the painter; frames look as if they are still in the workshop."
+      }
+    }
   }
 }

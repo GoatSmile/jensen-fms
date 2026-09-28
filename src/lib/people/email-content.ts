@@ -94,6 +94,34 @@ export function soReadyEmail(
   };
 }
 
+/**
+ * A paint order came back (Finn collected it on the floor) with lines that
+ * could not become painted stock — they name no part or colour. To Dennis,
+ * who can fix the lines and record the stock.
+ */
+export function paintReceivedIncompleteEmail(
+  lang: "da" | "en",
+  input: { orderNumber: string; skipped: number; failed: number; url: string },
+): EmailContent {
+  const n = input.skipped + input.failed;
+  if (lang === "da") {
+    return {
+      subject: `Lakordre ${input.orderNumber} er hentet — ${n} linje(r) mangler`,
+      html:
+        `<p>Lakordren <strong>${escapeHtml(input.orderNumber)}</strong> er hentet og modtaget retur.</p>` +
+        `<p>${n} linje(r) kunne ikke blive til lakeret lager, fordi de ikke nævner en del og en farve. Ret linjerne, og registrér lageret.</p>` +
+        link(input.url, "Åbn lakordren"),
+    };
+  }
+  return {
+    subject: `Paint order ${input.orderNumber} collected — ${n} line(s) need attention`,
+    html:
+      `<p>Paint order <strong>${escapeHtml(input.orderNumber)}</strong> was collected and received back.</p>` +
+      `<p>${n} line(s) could not become painted stock because they name no part and colour. Fix the lines and record the stock.</p>` +
+      link(input.url, "Open the paint order"),
+  };
+}
+
 export type OverdueInvoiceRow = {
   invoiceNumber: string;
   orgName: string | null;

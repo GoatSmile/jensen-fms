@@ -41,6 +41,9 @@ export const CAPABILITIES = [
   { key: "customers", navLabelKey: "customers" },
   { key: "admin", navLabelKey: "admin" },
   { key: "costs", navLabelKey: null, adminLabelKey: "capCosts" },
+  // The scheduled jobs page (/admin/jobs, migration 109) — system internals an
+  // IT person watches; hidden from everyone without it.
+  { key: "jobs", navLabelKey: null, adminLabelKey: "capJobs" },
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["key"];
