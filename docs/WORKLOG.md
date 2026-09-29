@@ -102,9 +102,10 @@ treat the early totals as floors, not truth.
 | Sun 2026-09-27 (cont. 2) | ~0.5 | **How existing service agreements get in** — Dennis's templates found and read; spreadsheet bills, documents set terms, e-conomic proves (PDF). |
 | Mon 2026-09-28 | ~4 | **Dennis's bundle shipped** (migrations 106–108): paint orders split paperwork from where the goods are, delivery by signature, identifier rules, recognition code at build, five small ones, his paint guide. |
 | Mon 2026-09-28 (cont.) | ~2.5 | **Finn drives the paint runs, and the daily jobs get a page** (migration 109): *Lakture* on the floor, `/admin/jobs` with last runs and Run now; Finn's guide gains §8–9. |
+| Tue 2026-09-29 | ~0.5 | **Production click-through as a checklist** — the 27–28 Sep features, step by step with what to expect, for the day's test in production. |
 
-**September so far: ~61 h** (9 working days)
+**September so far: ~61.5 h** (10 working days)
 
 ---
 
-**Project total: ~315 h across 50 working days (2026-05-07 → 2026-09-28)**
+**Project total: ~315.5 h across 51 working days (2026-05-07 → 2026-09-29)**
