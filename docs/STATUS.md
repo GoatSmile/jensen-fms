@@ -47,7 +47,10 @@ is Danish (person language).
   Brief `BRIEF-SERVICE-AGREEMENTS-2026-09` + `SERVICE-AGREEMENTS-HANDLING-2026-09`
   (PDFs). **Dennis answered on 28 Sep:** 3–4 signed documents, they list frame
   numbers, 1 704 kr is the real price every year, no older template — so no
-  document extraction and no price steps.
+  document extraction and no price steps. **29 Sep:** 0 kr = the agreement
+  has ENDED (import as ended lines, not covered); K1/K3/K5/K10 = committed
+  years, for NEW agreements only — the existing ones carry no type. The
+  handling document §7 lists what is still open.
 - **Finn Nysom and Glenn exist in production** — Danish, role *Workshop*, no
   password yet. Finn's email is `service@jensenproduction.dk`.
 
@@ -65,8 +68,8 @@ is Danish (person language).
     the production grant token (settings only, never chat).
   - The Google calendar (Calendar ID + `GOOGLE_CALENDAR_SA_KEY` in Vercel +
     `.env.local`).
-- **Dennis:** what 0 kr means (311 rows) and each customer's contract type
-  (sent 28 Sep); the fleet answers; the recording notice; the seven
+- **Dennis:** the agreement questions left in the handling document §7; the
+  fleet answers; the recording notice; the seven
   unclassified bikes; the label printer model.
 - **Owner decision:** the service-agreement model (plan §2A).
 

@@ -1,6 +1,7 @@
 # Service agreements — getting the existing ones in, and handling them after
 
-**27 September 2026, from the FMS build.** How Jensen's existing service
+**27 September 2026, from the FMS build; updated 29 September with Dennis's
+answers on 0 kr and contract types.** How Jensen's existing service
 agreements get into the system alongside the bikes, whatever form they are in
 today (a spreadsheet row, a signed scan, a filled-in Word file, a verbal
 promise), and how the system handles them from then on. It builds on the
@@ -121,10 +122,24 @@ Order: **bikes first**, then the agreement model, then this import.
     - GPS when the price or the flag says so;
     - the years already invoiced (the X marks) kept as history.
 4. **Every imported agreement is `active` and `verbal`** until a document is
-   attached, with its contract type *unknown*. The contract type is not
-   guessed from the price.
-5. **0-kr rows (311) are imported but never invoiced** until Dennis answers what
-   0 means (question C2).
+   attached, and **carries no contract type**. Dennis (29 Sep): K1 / K3 / K5 /
+   K10 are for agreements *from now on*; the existing ones were never typed, so
+   none is recorded and none is guessed from the price or the customer kind.
+   They renew one year at a time (to be confirmed, §7).
+5. **A 0-kr row is an agreement that has ended** (Dennis, 29 Sep). It becomes
+   an **ended** line, reason *ended*, end date *unknown*: never invoiced, and
+   **the bike is not covered**, so Finn's repairs on it are invoiced. It is kept
+   rather than dropped, because "we had an agreement until some year" is what a
+   customer will say on the phone. The X marks do not date the end: the sheets
+   only track years 2–4, so a bike marked X through 2018 may have been billed
+   after it. Listed for Dennis instead of guessed:
+    - **28 bikes at 0 kr whose customer sheet says *aftale: ja*** — the schedule
+      wins for billing (§3), but a *ja* there may mean the bike should still be
+      covered;
+    - **11 frames with both a 0-kr row and a priced row** — most likely a bike
+      that was replaced or moved, the old line ended and a new one started;
+    - **13 rows with no price at all** — neither 0 nor a price, so neither
+      invoiced nor ended until he says.
 6. **Provenance:** agreements and lines carry `import_batch_id` and
    `import_row`, the same columns as imported bikes. "Imported" is a column
    rather than a note, and a bad batch can be found and undone.
@@ -170,7 +185,11 @@ PDF and type the terms in by hand.
 ## 6 · Handling after import
 
 - **New agreements** are born from the offer or the sales order (*wants service
-  agreement*). They are pre-filled with what is known, sent after the build once
+  agreement*), and carry a **contract type: K1 / K3 / K5 / K10 = the number of
+  years the customer commits to**. The commitment is what the leave rule
+  settles against (§2: remaining years invoiced up front); a GPS bike commits
+  to at least 3. After the committed years, the line renews yearly until
+  cancelled. They are pre-filled with what is known, sent after the build once
   frame numbers exist, and the document is generated from Dennis's text rather
   than a Word template. Signing stays print-and-scan until digital signing is
   chosen; the signed scan is attached as in §5.
@@ -200,21 +219,48 @@ PDF and type the terms in by hand.
 4. **There is no older template.**
 5. e-conomic: Dennis has a login for the API part. **Still needed:** someone
    with admin rights approves our app's install link, which produces the
-   production grant token (it goes into the settings, never into chat) —
-   Tuesday.
+   production grant token (it goes into the settings, never into chat).
 
-**Still open (sent to Dennis):**
+**Answered by Dennis, 29 September:**
 
-- What a yearly price of **0 kr** means (311 rows; 121 of them were invoiced
-  in earlier years).
-- Each customer's **contract type** — or confirm the templates' rule
-  (municipalities K10, companies K3 → K5 → yearly) and name the exceptions.
+6. **A yearly price of 0 kr means the agreement has ended**; the bike is no
+   longer invoiced (and so no longer covered). See §4, step 5.
+7. **Contract types are for the future**: K1 / K3 / K5 / K10 say how many
+   years the customer has committed. Existing agreements have no type.
+
+**Settled by the documents themselves** (no need to ask): payment is 30 days
+(invoice 7114); invoices go per department EAN (the same invoice); what is and
+is not covered, cancelling, and a bike leaving (both templates, §2).
+
+**Still open — to Dennis:**
+
+- **Existing, untyped agreements:** they renew one year at a time and can be
+  cancelled at any anniversary with a month's notice — so a bike leaving one
+  settles nothing? (In effect K1.)
+- **Where the commitment counts from:** when a K10 municipality adds a bike in
+  year 4, is *that bike* bound for 10 years from its own delivery, or only
+  until the agreement's 10 years are up?
+- **Does the K-type change the price** of a new agreement? 1 704 kr (2 184 kr
+  with GPS) for all four, or cheaper for a longer commitment? The register's
+  other prices (2 284, 2 160, 1 200, 480 …) are imported as they stand.
+- **The three review lists** from §4 step 5 (28 *ja* at 0 kr, 11 frames twice,
+  13 without a price).
+- **The drive charge** (*xxx kr* per visit in the template): the real figure,
+  and is it per customer?
+- **GPS without an agreement:** the register has a sheet for GPS subscriptions
+  with no service agreement. Is that still invoiced, and should the system
+  invoice it too?
+- **The switch-over month:** from which month does the system draft the
+  renewals instead of the spreadsheet? Both running for the same month is a
+  double invoice to a municipality.
 - Is the register or John's Trello export the source (question C1)?
 
 ## 8 · Sequence and decisions
 
-1. **Decide the model** (the brief), amended here with price steps per bike age,
-   the bike-leaves settlement rule, and the GPS binding. DECISIONS entry;
+1. **Decide the model** (the brief), amended here with the contract type as
+   committed years on new agreements (none on imported ones), ended lines for
+   0-kr rows, the bike-leaves settlement rule, and the GPS binding. One frozen
+   yearly price per line, as the brief had it — no price steps. DECISIONS entry;
    CLAUDE.md rule edited in the same commit.
 2. **Import the bikes** (after Dennis's fleet answers).
 3. **Import the agreements from the spreadsheet** (§4). Billing truth in place.
