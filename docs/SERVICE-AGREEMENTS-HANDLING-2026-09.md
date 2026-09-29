@@ -184,6 +184,9 @@ Not blocking billing; done agreement by agreement, as documents turn up.
     - **Blocker:** the system still holds only e-conomic's *trial* grant, so the
       production grant has to be in place first.
 
+**Dennis's step-by-step guide:** `GUIDE-DENNIS-AGREEMENTS-DA-2026-09` (PDF,
+Danish, with phone screenshots).
+
 Dennis said there are "maybe 3 or 4" signed papers, so reading them was first
 left out. The owner then asked for it "smart", and because the model reads PDFs
 and photos directly it cost little, so it was built.
@@ -199,12 +202,16 @@ and photos directly it cost little, so it was built.
   frame numbers exist, and the document is generated from Dennis's text rather
   than a Word template. Signing stays print-and-scan until digital signing is
   chosen; the signed scan is attached as in §5.
-- **Renewal**:
-    - a month before each line's anniversary, the system drafts the invoice:
-      one per customer × EAN × month, one line per bike, the period on the line;
-    - the price is this year's step, frozen on the invoice line;
+- **Renewal** (planned in detail in `plan-renewal-invoicing`):
+    - on the 1st of each month the system drafts the renewals for the next
+      month's anniversaries, matching Dennis's month sheets: one draft per
+      customer × department EAN, one line per bike, the period on the line;
+    - the price is the line's frozen yearly price (no steps);
     - 30 days to pay, as the real invoices say, **not** the app's net 14;
-    - Dennis approves, and it goes to e-conomic.
+    - lines with no price or no EAN are listed for Dennis, never guessed;
+    - Dennis reviews and issues. **How it then reaches a municipality by EAN is
+      open**: the FMS sends issued invoices to e-conomic as journal vouchers,
+      which e-conomic cannot send electronically (see §7).
 - **A bike leaves** (stolen, retired, cancelled): the line ends with a reason
   and date. The contract's rule applies: move it to a replacement bike, or
   settle the remaining term (municipal: remaining years up front). Nothing is
@@ -260,6 +267,18 @@ is not covered, cancelling, and a bike leaving (both templates, §2).
   renewals instead of the spreadsheet? Both running for the same month is a
   double invoice to a municipality.
 - Is the register or John's Trello export the source (question C1)?
+- **Bikes with no EAN** (141 register rows): invoice them to the customer's own
+  EAN?
+- **The renewal invoice text:** copy invoice 7114 word for word?
+
+**Still open — to the owner (planning chat):**
+
+- **How a renewal reaches a public customer by EAN.** Today e-conomic sends
+  it, because Dennis makes the invoice there. FMS invoices go to e-conomic as
+  journal vouchers (DECISIONS 2026-07-09), and a voucher cannot be sent. The
+  options are e-conomic draft invoices for renewals, OIOUBL sent by the FMS,
+  or a list Dennis re-keys; they are compared in `plan-renewal-invoicing`,
+  decision 1. The same gap applies to every FMS invoice to a municipality.
 
 ## 8 · Sequence and decisions
 
@@ -271,6 +290,8 @@ is not covered, cancelling, and a bike leaving (both templates, §2).
 2. **Import the bikes** (after Dennis's fleet answers).
 3. **Import the agreements from the spreadsheet** (§4). Billing truth in place.
 4. **Renewal invoicing**, checked against e-conomic's history on its first run.
+   Planned: `plan-renewal-invoicing` (drafting can be built now; delivery by
+   EAN waits on the owner's decision).
 5. **Documents** (§5). Built 29 Sep, together with step 1.
 6. **New agreements from the sales order**, then digital signing.
 

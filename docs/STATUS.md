@@ -54,7 +54,11 @@ is Danish (person language).
   production**. **Not built:** the register import (after the fleet answers
   and the switch-over month), renewal invoicing (the fee engine still bills
   `monthly_fee` in arrears), the SA- number, sales-order link. Open questions
-  to Dennis: handling doc §7.
+  to Dennis: handling doc §7. **Dennis's guide:**
+  `GUIDE-DENNIS-AGREEMENTS-DA-2026-09.pdf`. **Renewal invoicing is planned**
+  (`docs/plan-renewal-invoicing.md` + PDF), waiting for go-ahead and five
+  decisions — the big one: how a renewal reaches a municipality by EAN when
+  FMS invoices go to e-conomic as vouchers.
 - **Finn Nysom and Glenn exist in production** — Danish, role *Workshop*, no
   password yet. Finn's email is `service@jensenproduction.dk`.
 
@@ -92,7 +96,8 @@ is Danish (person language).
   `SO-2026-9902`/`9903` (delivered, signed), `SO-2026-0001` and `9904` (ready);
   `PNT-2026-0008`/`9901` (received back), `9902` (confirmed), `9903` (ready);
   agreements *TEST Lakflow ApS – Hjemmeplejen Nord* (K3, 5 lines, 2 confirmed
-  papers) and *TEST Lakflow – anden aftale* (its line moved away);
+  papers), *TEST Lakflow ApS – Plejecenter Syd* (K10, 4 lines — the guide's
+  screenshots) and *TEST Lakflow – anden aftale* (its line moved away);
   `WO-2026-0009` (covered);
   parts `TEST-FRAME-Q1`, `TEST-BAT-Q2`; TEST Lakflow has prefix `TL`.
 - **With the browser pane hidden**, streamed sections never reveal and real
@@ -114,8 +119,8 @@ is Danish (person language).
    --watch=20`, then `--download`; delete the audio after); passwords for Finn
    and Glenn; Finn walks one repair with his guide; the calendar; the e-conomic
    grant; `PNT-2026-0012`.
-2. **Agreements next (§2A):** renewal invoicing per line (a month before each
-   anniversary, per customer × EAN × month, 30 days) can be built now; the
+2. **Agreements next (§2A):** renewal invoicing per line — plan in
+   `docs/plan-renewal-invoicing.md` (phase A buildable on go-ahead); the
    register import waits on the fleet answers. **After Dennis's fleet
    answers:** `import_fleet.py sql` → the bike data migration, then the
    agreement lines (0 kr → ended).
