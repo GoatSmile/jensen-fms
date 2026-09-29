@@ -630,7 +630,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `/admin/settings → Phone & inbox`; only `RELATEL_TOKEN` is env, and it must
   be the technician's OWN token — only a number's own user may hear its
   recordings. Relatel's `?endpoint=` filter does not filter, so selection is
-  in code, on the endpoint and every path node. Matching is deterministic code, not the model — attach a bike
+  in code, on the endpoint and every path node. **Relatel's OUTGOING-call recordings are
+  mixed-format MP3** (a mono block the length of the call, then a stereo
+  tail) — browsers play them, Gladia refuses them as "Failed to fetch audio".
+  `ensureTranscribableAudio` (`src/lib/inbound/audio/`) runs inside the
+  transcribe stage, so every source and every retry is covered: it keeps the
+  longest one-format run as `media_path` and the original at
+  `channel_meta.original_media_path`, which the retention job deletes too. Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
   the tech. Review queue at `/inbox` (in the *Work* nav group — it is a review
   queue, not admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);

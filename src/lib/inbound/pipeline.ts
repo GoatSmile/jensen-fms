@@ -19,6 +19,7 @@ import { parseExtraction } from "./extraction";
 import { extractInbound } from "./extract";
 import { matchInbound } from "./match";
 import { transcribeVoicemail } from "./channels/voicemail";
+import { ensureTranscribableAudio } from "./audio/normalize";
 import { applyTriage } from "./triage";
 import { loadInboundSettings, type InboundSettings } from "./settings";
 
@@ -52,15 +53,21 @@ export async function transcribeStage(
 ): Promise<StageResult> {
   const { data: msg, error } = await supabase
     .from("inbound_messages")
-    .select("id, media_path, channel, channel_meta")
+    .select("id, media_path, media_mime_type, channel, channel_meta")
     .eq("id", messageId)
     .maybeSingle();
   if (error) return { ok: false, code: "save", detail: error.message };
   if (!msg) return { ok: false, code: "not_found" };
   if (!msg.media_path) return { ok: false, code: "no_audio" };
 
+  // A file the provider would refuse (mixed-format MP3) is repaired first; the
+  // row's media_path and channel_meta may change, so both are re-read below.
+  const mediaPath = await ensureTranscribableAudio(supabase, {
+    ...msg,
+    media_path: msg.media_path,
+  });
   const twoWay = isTwoWayCall(msg);
-  const result = await transcribeVoicemail(supabase, msg.media_path, settings, {
+  const result = await transcribeVoicemail(supabase, mediaPath, settings, {
     twoWay,
   });
   if (!result.ok) {
@@ -70,7 +77,12 @@ export async function transcribeStage(
   // Record whether the speaker labels are a diarization GUESS, so the
   // extraction prompt (and a human reading the transcript) knows.
   if (twoWay) {
-    const meta = (msg.channel_meta ?? {}) as Record<string, unknown>;
+    const { data: fresh } = await supabase
+      .from("inbound_messages")
+      .select("channel_meta")
+      .eq("id", messageId)
+      .maybeSingle();
+    const meta = (fresh?.channel_meta ?? msg.channel_meta ?? {}) as Record<string, unknown>;
     await supabase
       .from("inbound_messages")
       .update({

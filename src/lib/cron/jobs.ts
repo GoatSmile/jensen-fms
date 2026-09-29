@@ -45,16 +45,28 @@ export const JOBS: Record<string, (supabase: Service) => Promise<JobOutcome>> = 
     const cutoff = new Date(Date.now() - mediaRetentionDays * 86_400_000).toISOString();
     const { data: stale, error } = await supabase
       .from("inbound_messages")
-      .select("id, media_path")
+      .select("id, media_path, channel_meta")
       .not("media_path", "is", null)
       .lt("received_at", cutoff);
     if (error) return { ok: false, summary: error.message };
     let removed = 0;
     for (const row of stale ?? []) {
-      if (row.media_path) await supabase.storage.from(BUCKET).remove([row.media_path]);
+      // A repaired recording keeps its original beside it (audio/normalize.ts);
+      // it goes with the copy, and the row stops pointing at either.
+      const meta = (row.channel_meta ?? {}) as Record<string, unknown>;
+      const original =
+        typeof meta.original_media_path === "string" ? meta.original_media_path : null;
+      const paths = [row.media_path, original].filter((p): p is string => !!p);
+      if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
+      const { original_media_path: _gone, ...keptMeta } = meta;
+      void _gone;
       await supabase
         .from("inbound_messages")
-        .update({ media_path: null, media_mime_type: null })
+        .update({
+          media_path: null,
+          media_mime_type: null,
+          channel_meta: keptMeta as Json,
+        })
         .eq("id", row.id);
       removed += 1;
     }
