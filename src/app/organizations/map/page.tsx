@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { createClient } from "@/lib/supabase/server";
 import { localizedName } from "@/i18n/vocab";
+import { loadBikeCoverage } from "@/lib/agreements/coverage";
 
 import CustomerMap, {
   type CustomerPin,
@@ -32,10 +33,9 @@ const WORKSHOP = { lat: 55.7203944, lng: 12.4268145 };
  * been geocoded — the Nominatim hook in save-organization populates
  * latitude/longitude in the background whenever an address is saved.
  *
- * v1 simplification on "SA bikes": if an organisation has ANY active
- * service agreement, all of its in-service bikes count as covered. If
- * we ever ship per-bike opt-in coverage, the query here changes; the
- * UI just renders whatever count comes back.
+ * "SA bikes" counts the owner's in-service bikes that have their own
+ * covering agreement line (per-bike coverage, migration 110 —
+ * src/lib/agreements/coverage.ts).
  */
 export default async function CustomerMapPage() {
   const [t, tCommon, locale] = await Promise.all([
@@ -54,7 +54,7 @@ export default async function CustomerMapPage() {
     .toISOString()
     .slice(0, 10);
 
-  const [orgsRes, unitsRes, bikesRes, saRes] = await Promise.all([
+  const [orgsRes, unitsRes, bikesRes, saRes, coverage] = await Promise.all([
     supabase
       .from("organizations")
       .select(
@@ -91,6 +91,7 @@ export default async function CustomerMapPage() {
       .select("organization_id, start_date, end_date, status")
       .eq("status", "active")
       .lte("start_date", today),
+    loadBikeCoverage(supabase),
   ]);
 
   if (orgsRes.error) {
@@ -100,7 +101,21 @@ export default async function CustomerMapPage() {
   // Tally in-service bikes per org and per unit so pin radius scales.
   const bikesByOrg = new Map<string, number>();
   const bikesByUnit = new Map<string, number>();
+  const saBikesByOrg = new Map<string, number>();
+  const saBikesByUnit = new Map<string, number>();
   for (const b of bikesRes.data ?? []) {
+    if (coverage.has(b.id)) {
+      if (b.owner_organization_id)
+        saBikesByOrg.set(
+          b.owner_organization_id,
+          (saBikesByOrg.get(b.owner_organization_id) ?? 0) + 1,
+        );
+      if (b.owner_unit_id)
+        saBikesByUnit.set(
+          b.owner_unit_id,
+          (saBikesByUnit.get(b.owner_unit_id) ?? 0) + 1,
+        );
+    }
     if (b.owner_organization_id)
       bikesByOrg.set(
         b.owner_organization_id,
@@ -113,14 +128,11 @@ export default async function CustomerMapPage() {
       );
   }
 
-  // Orgs with an active SA (for coverage colour) and a subset whose SA
-  // expires within the window (for the renewal layer).
-  const orgsWithActiveSA = new Set<string>();
+  // Orgs whose SA expires within the window (for the renewal layer).
   const orgsExpiringSoon = new Set<string>();
   for (const sa of saRes.data ?? []) {
     if (!sa.organization_id) continue;
     if (sa.end_date && sa.end_date < today) continue;
-    orgsWithActiveSA.add(sa.organization_id);
     if (sa.end_date && sa.end_date >= today && sa.end_date <= soonCutoff)
       orgsExpiringSoon.add(sa.organization_id);
   }
@@ -149,7 +161,7 @@ export default async function CustomerMapPage() {
           ? localizedName(locale, o.segment.name_en, o.segment.name_da)
           : null,
         bikes,
-        saBikes: orgsWithActiveSA.has(o.id) ? bikes : 0,
+        saBikes: saBikesByOrg.get(o.id) ?? 0,
         expiringSoon: orgsExpiringSoon.has(o.id),
         latitude: lat,
         longitude: lng,
@@ -184,7 +196,7 @@ export default async function CustomerMapPage() {
           ? localizedName(locale, seg.name_en, seg.name_da)
           : null,
         bikes: bikesByUnit.get(u.id) ?? 0,
-        saBikes: 0,
+        saBikes: saBikesByUnit.get(u.id) ?? 0,
         expiringSoon: false,
         latitude: lat,
         longitude: lng,

@@ -3259,3 +3259,37 @@ Owner, in session.
   now* (owner chose a Run-now button, with a confirm). **Rejected:** a
   hand-kept list (it drifted within a day: OPERATIONS said "three crons" while
   four ran).
+
+## 2026-09-29 — Service agreements are per BIKE; a signed paper is uploaded, read and confirmed
+
+Owner, in session (Dennis's answers of 28–29 Sep; brief
+`BRIEF-SERVICE-AGREEMENTS-2026-09`, handling `SERVICE-AGREEMENTS-HANDLING-2026-09`).
+
+- **An agreement is the document with a customer; each covered bike is a LINE**
+  (`service_agreement_bikes`, migration 110): its own start date (the
+  anniversary), one frozen yearly price, GPS, and active → ended with a reason.
+  A bike is on at most one active line. **Coverage = an active, started line on
+  an active agreement** — it no longer follows ownership, and a work order stamps
+  the line as well as the agreement. **Rejected:** keeping per-customer coverage
+  with an exclusion list (cannot hold per-bike anniversaries or prices); a flag
+  on the bike (loses history). Existing agreements were backfilled from
+  ownership so nothing jumped at the switch.
+- **One frozen yearly price per line, no price steps** (Dennis: 1 704 kr is the
+  real price every year; the template's 142/152/162 steps are not charged).
+- **K1/K3/K5/K10 = the years the customer commits to, for agreements from now
+  on**; the existing ones carry no type, and none is guessed (Dennis, 29 Sep).
+- **A 0-kr register row is an agreement that has ENDED** (Dennis, 29 Sep): it
+  imports as an ended line, never invoiced, not covering.
+- **Signed papers are uploaded from the customer's page and READ** — phone
+  photos or a PDF into a private bucket; the extraction model reads department,
+  K-type, signed date, signatories, price and the frame numbers; code matches
+  frames to bikes (exact after normalising; near misses only as suggestions);
+  Dennis confirms, and only his confirm writes. This **reverses** the 28 Sep
+  "no extraction for 3–4 papers" call — the owner asked for it smart, and
+  reading PDFs and photos natively made it cheap. **Rejected:** attaching the
+  paper to the customer alone (a customer has several agreements, one per EAN);
+  the model writing lines itself (a misread price is an invoice to a
+  municipality).
+- **Not changed yet:** the fee engine still bills `monthly_fee` monthly in
+  arrears (DECISIONS 2026-06); renewal invoicing per line replaces it as its own
+  piece.

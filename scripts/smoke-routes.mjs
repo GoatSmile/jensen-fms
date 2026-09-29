@@ -95,6 +95,7 @@ const PREFIX_TABLE = [
   ["/paint-orders", "service_orders"],
   ["/purchase-orders", "purchase_orders"],
   ["/sales-orders", "sales_orders"],
+  ["/service-agreements/documents", "service_agreement_documents"],
   ["/service-agreements", "service_agreements"],
   ["/invoices", "invoices"],
   ["/bikes", "bikes"],

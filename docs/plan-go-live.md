@@ -124,7 +124,9 @@ exist). Contract types **K1 / K3 / K5 / K10** (years; K3 because GPS bikes sign 
 years). Invoiced 12 months ahead, a month before the anniversary, for bikes still in service,
 renewing unless cancelled (02:41–02:45). Coverage today is derived from the owner org/unit
 (`src/lib/agreements/coverage.ts`), which cannot say "this bike, not that one".
-- [ ] **Decide the model** — brief for the planning chat: `docs/BRIEF-SERVICE-AGREEMENTS-2026-09.md`
+- [x] **Model decided and built 29 Sep** (migration 110, DECISIONS 2026-09-29): agreement +
+      per-bike lines, coverage = an active line; signed papers uploaded, read and confirmed from
+      the customer's page. Was: brief for the planning chat: `docs/BRIEF-SERVICE-AGREEMENTS-2026-09.md`
       (27 Sep; also PDF). (Proposed: an agreement ↔ bikes link; coverage = the bike is linked
       to an active agreement; per-bike price; contract type + term with its year-by-year
       schedule; a number series; statuses draft → confirmed → active → cancelled; signer; the

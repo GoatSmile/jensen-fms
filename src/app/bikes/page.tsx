@@ -26,9 +26,8 @@ import { ColorSwatch } from "@/components/color-swatch";
 import {
   daysUntilEnd,
   EXPIRY_WARNING_DAYS,
-  loadActiveAgreements,
-  resolveCoverage,
-  type ActiveAgreement,
+  loadBikeCoverage,
+  type BikeCoverage,
 } from "@/lib/agreements/coverage";
 import { colorFinishLabel } from "@/lib/colors/coating";
 import { localizedName } from "@/i18n/vocab";
@@ -159,22 +158,13 @@ export default async function BikesPage({
     builtLt = d.toISOString();
   }
 
-  // Active agreements (status + date-bounded, unit-aware) power both the
-  // per-row coverage line and the maintenance-fleet filter. PostgREST can't
-  // join the agreement onto the bike's owner, so for the filter we pre-cut
-  // by org id in SQL and refine unit scoping in memory after the fetch.
-  const [activeAgreements, paintStates] = await Promise.all([
-    loadActiveAgreements(supabase),
+  // Per-bike coverage (migration 110): the fleet filter needs every covered
+  // bike's id, applied in memory on the id pass; the per-row line needs only
+  // the page's bikes, loaded after paging.
+  const [fleetCoverage, paintStates] = await Promise.all([
+    fleetFilter ? loadBikeCoverage(supabase) : Promise.resolve(null),
     loadPaintStates(supabase),
   ]);
-  let fleetOrgIds: string[] | null = null;
-  if (fleetFilter) {
-    fleetOrgIds = Array.from(
-      new Set(activeAgreements.map((a) => a.organization_id)),
-    );
-    if (fleetOrgIds.length === 0)
-      fleetOrgIds = ["00000000-0000-0000-0000-000000000000"];
-  }
 
   // If filtering by a part, pre-collect bike_ids that have that part installed
   // and not removed. PostgREST can't filter outer rows by an embedded column,
@@ -273,7 +263,6 @@ export default async function BikesPage({
     if (typeFilter) query = query.eq("bike_type_id", typeFilter);
     if (ownerFilter) query = query.eq("owner_organization_id", ownerFilter);
     if (templateFilter) query = query.eq("template_id", templateFilter);
-    if (fleetOrgIds) query = query.in("owner_organization_id", fleetOrgIds);
     if (builtGte) query = query.gte("built_at", builtGte);
     if (builtLt) query = query.lt("built_at", builtLt);
     // Sort: newest/oldest built (nulls last), else by frame number. Frame
@@ -357,13 +346,10 @@ export default async function BikesPage({
     throw new Error(`Failed to load bikes: ${idRes.error}`);
   }
 
-  // The id-set filters, in memory over the id pass. Per-bike coverage too
-  // (unit-scoped agreements beat org-wide; a different unit's agreement does
-  // not cover) — the refinement of the fleet filter, whose SQL pre-cut is
-  // org-level only, and the per-row coverage line below.
+  // The id-set filters, in memory over the id pass — agreement coverage (the
+  // fleet filter) among them.
   const partSet = bikeIdsForPart ? new Set(bikeIdsForPart) : null;
   const unbuiltSet = new Set<string>(UNBUILT_STATUSES);
-  const coverageByBikeId = new Map<string, ActiveAgreement | null>();
   const matchingIds: string[] = [];
   for (const r of idRes.data) {
     if (bikeIdsForQuery && !bikeIdsForQuery.has(r.id)) continue;
@@ -379,13 +365,7 @@ export default async function BikesPage({
       (paintStates.atPainter.has(r.id) || paintStates.painted.has(r.id))
     )
       continue;
-    const coverage = resolveCoverage(
-      activeAgreements,
-      r.owner_organization_id,
-      r.owner_unit_id,
-    );
-    if (fleetFilter && !coverage) continue;
-    coverageByBikeId.set(r.id, coverage);
+    if (fleetCoverage && !fleetCoverage.has(r.id)) continue;
     matchingIds.push(r.id);
   }
 
@@ -435,6 +415,9 @@ export default async function BikesPage({
   if (pageRes.error) {
     throw new Error(`Failed to load bikes: ${pageRes.error.message}`);
   }
+  const coverageByBikeId: Map<string, BikeCoverage> = fleetCoverage
+    ? fleetCoverage
+    : await loadBikeCoverage(supabase, pageIds);
   const position = new Map(pageIds.map((id, i) => [id, i]));
   const rows = [...(pageRes.data ?? [])].sort(
     (a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0),

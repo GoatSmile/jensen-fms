@@ -15,8 +15,17 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { UploadAgreementButton } from "@/components/agreements/upload-agreement-button";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
+import { formatDate } from "@/lib/parts/format";
+import { readHasCapability } from "@/lib/auth/read-session";
+
+import {
+  AgreementBikesPanel,
+  type CandidateBike,
+  type LineView,
+} from "./_components/agreement-bikes-panel";
 import {
   SA_STATUS_VARIANT,
   type ServiceAgreementStatus,
@@ -32,12 +41,13 @@ export default async function ServiceAgreementDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [t, tSaList, tCommon, tSaStatus, tWoStatus] = await Promise.all([
+  const [t, tSaList, tCommon, tSaStatus, tWoStatus, tDocs] = await Promise.all([
     getTranslations("serviceAgreementDetail"),
     getTranslations("serviceAgreements"),
     getTranslations("common"),
     getTranslations("saStatus"),
     getTranslations("woStatus"),
+    getTranslations("agreementDocs"),
   ]);
   const today = new Date().toISOString().slice(0, 10);
   const supabase = await createClient();
@@ -47,6 +57,7 @@ export default async function ServiceAgreementDetailPage({
     .select(
       `id, name_en, name_da, status, start_date, end_date, covers_parts,
        covers_labor, has_gps, monthly_fee, fee_currency, notes,
+       contract_type, signed_on, signatories,
        organization_id, organization_unit_id,
        organization:organizations!organization_id(legal_name, display_name_en, display_name_da),
        unit:organization_units!organization_unit_id(name)`,
@@ -61,17 +72,73 @@ export default async function ServiceAgreementDetailPage({
   const orgName =
     org?.display_name_da ?? org?.display_name_en ?? org?.legal_name ?? "—";
 
-  // Effective coverage scope: bikes owned by the org (narrowed to the unit if
-  // the agreement is unit-scoped), excluding terminal-state bikes.
-  let bikesQuery = supabase
-    .from("bikes")
-    .select("id, frame_number, status")
-    .is("deleted_at", null)
-    .eq("owner_organization_id", sa.organization_id)
-    .not("status", "in", "(retired,lost_or_stolen)");
-  if (sa.organization_unit_id)
-    bikesQuery = bikesQuery.eq("owner_unit_id", sa.organization_unit_id);
-  const { data: bikes } = await bikesQuery.order("frame_number");
+  // The lines ARE the coverage (migration 110): active and ended, each with
+  // its bike. Candidates for *Add bikes* are the customer's live bikes that
+  // are not already on this agreement.
+  const [linesRes, orgBikesRes, docsRes, canEdit] = await Promise.all([
+    supabase
+      .from("service_agreement_bikes")
+      .select(
+        "id, bike_id, start_date, yearly_price, currency, has_gps, status, end_reason, ended_on, source, bike:bikes!bike_id(frame_number)",
+      )
+      .eq("agreement_id", id)
+      .order("status")
+      .order("start_date"),
+    supabase
+      .from("bikes")
+      .select("id, frame_number, unit:organization_units!owner_unit_id(name)")
+      .is("deleted_at", null)
+      .eq("owner_organization_id", sa.organization_id)
+      .not("status", "in", "(retired,lost_or_stolen)")
+      .order("frame_number"),
+    supabase
+      .from("service_agreement_documents")
+      .select("id, status, created_at, confirmed_at")
+      .eq("agreement_id", id)
+      .order("created_at", { ascending: false }),
+    readHasCapability("agreements"),
+  ]);
+  const lines: LineView[] = (linesRes.data ?? []).map((l) => {
+    const b = Array.isArray(l.bike) ? l.bike[0] : l.bike;
+    return {
+      id: l.id,
+      bikeId: l.bike_id,
+      frameNumber: b?.frame_number ?? "—",
+      startDate: l.start_date,
+      yearlyPrice: l.yearly_price == null ? null : Number(l.yearly_price),
+      currency: l.currency,
+      hasGps: l.has_gps,
+      status: l.status as "active" | "ended",
+      endReason: l.end_reason,
+      endedOn: l.ended_on,
+      source: l.source,
+    };
+  });
+  const onThis = new Set(lines.filter((l) => l.status === "active").map((l) => l.bikeId));
+  const orgBikes = (orgBikesRes.data ?? []).filter((b) => !onThis.has(b.id));
+  const { data: elsewhere } = orgBikes.length
+    ? await supabase
+        .from("service_agreement_bikes")
+        .select("bike_id, agreement:service_agreements!agreement_id(name_en, name_da)")
+        .eq("status", "active")
+        .in("bike_id", orgBikes.map((b) => b.id))
+    : { data: [] };
+  const elsewhereByBike = new Map(
+    (elsewhere ?? []).map((e) => {
+      const a = Array.isArray(e.agreement) ? e.agreement[0] : e.agreement;
+      return [e.bike_id, a ? (a.name_da ?? a.name_en) : "—"];
+    }),
+  );
+  const candidates: CandidateBike[] = orgBikes.map((b) => {
+    const unitRow = Array.isArray(b.unit) ? b.unit[0] : b.unit;
+    return {
+      id: b.id,
+      frameNumber: b.frame_number,
+      unitName: unitRow?.name ?? null,
+      onAgreement: elsewhereByBike.get(b.id) ?? null,
+    };
+  });
+  const docs = docsRes.data ?? [];
 
   const { data: workOrders } = await supabase
     .from("work_orders")
@@ -169,6 +236,12 @@ export default async function ServiceAgreementDetailPage({
             label={t("fldGpsAddon")}
             value={sa.has_gps ? t("yes") : t("no")}
           />
+          <ReadField label={tDocs("fldContractType")} value={sa.contract_type ?? tDocs("noContractType")} />
+          <ReadField
+            label={tDocs("fldSignedOn")}
+            value={sa.signed_on ? formatDate(sa.signed_on) : tDocs("verbal")}
+          />
+          <ReadField label={tDocs("fldSignatories")} value={sa.signatories} />
         </dl>
         {sa.notes ? (
           <div className="mt-4">
@@ -177,33 +250,42 @@ export default async function ServiceAgreementDetailPage({
         ) : null}
       </Section>
 
+      <AgreementBikesPanel
+        agreementId={id}
+        lines={lines}
+        candidates={candidates}
+        defaultStartDate={sa.start_date}
+        canEdit={canEdit}
+      />
+
       <Section
-        title={t("bikesInScope", { count: bikes?.length ?? 0 })}
-        description={
-          sa.organization_unit_id
-            ? t("bikesDescUnit")
-            : t("bikesDescOrg")
+        title={tDocs("agreementDocsTitle", { count: docs.length })}
+        description={tDocs("agreementDocsDesc")}
+        action={
+          canEdit ? (
+            <UploadAgreementButton organizationId={sa.organization_id} agreementId={id} />
+          ) : null
         }
-        hue="good"
       >
-        {!bikes || bikes.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            {sa.organization_unit_id
-              ? t("bikesEmptyUnit")
-              : t("bikesEmptyOrg")}
-          </p>
+        {docs.length === 0 ? (
+          <p className="bg-ground text-muted-foreground rounded-lg p-4 text-sm">{tDocs("agreementDocsEmpty")}</p>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {bikes.map((b) => (
-              <Link
-                key={b.id}
-                href={`/bikes/${b.id}`}
-                className="bg-background hover:bg-muted rounded-md border px-2 py-1 font-mono text-xs"
-              >
-                {b.frame_number}
-              </Link>
+          <ul className="flex flex-col gap-1 text-sm">
+            {docs.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center gap-2">
+                <Link href={`/service-agreements/documents/${d.id}`} className="hover:underline">
+                  {tDocs("docUploaded", { date: formatDate(d.created_at.slice(0, 10)) })}
+                </Link>
+                <Badge
+                  variant={
+                    d.status === "confirmed" ? "success" : d.status === "failed" ? "destructive" : "warning"
+                  }
+                >
+                  {tDocs(`docStatus.${d.status}`)}
+                </Badge>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </Section>
 

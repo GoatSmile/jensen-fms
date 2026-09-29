@@ -1,21 +1,22 @@
 /**
- * Derived service-agreement coverage for bikes.
+ * Service-agreement coverage for bikes — PER BIKE (migration 110).
  *
- * Coverage is NOT stored on the bike — a bike is covered IFF its owner
- * organization (narrowed to the owner unit when the agreement is
- * unit-scoped) has an agreement with status='active' whose date range
- * contains today. A unit-scoped agreement for a *different* unit does not
- * cover the bike; an org-wide agreement (organization_unit_id IS NULL)
- * covers all of the org's bikes. Because coverage follows ownership,
- * reassigning a bike changes its coverage implicitly — historical work
- * orders keep the agreement stamped on them at creation time.
+ * A bike is covered IFF it has an ACTIVE line in `service_agreement_bikes`
+ * that has started, on an agreement with status='active' whose date range
+ * contains today. Coverage no longer follows ownership: in one department
+ * some bikes are covered and some are not, and each line carries its own
+ * start date and price. Reassigning a bike therefore does NOT move its
+ * coverage — the line does, deliberately (moved/ended on the agreement page).
+ * Historical work orders keep the agreement and line stamped at creation.
  *
  * This is the single source for the rule; work-order creation (billability
- * stamp), the bike detail page, and the bikes list all resolve through it.
+ * stamp), the bike detail page, the bikes list and the customer map all
+ * resolve through it.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import type { Database } from "@/lib/types/database";
 
 export type ActiveAgreement = {
@@ -30,64 +31,94 @@ export type ActiveAgreement = {
   organization_unit_id: string | null;
 };
 
+/** The agreement covering a bike, plus the line that does it. */
+export type BikeCoverage = ActiveAgreement & {
+  line_id: string;
+  line_start_date: string;
+};
+
+const AGREEMENT_COLUMNS =
+  "id, name_en, name_da, covers_parts, covers_labor, start_date, end_date, organization_id, organization_unit_id, status";
+
+type LineRow = {
+  id: string;
+  bike_id: string;
+  start_date: string;
+  agreement: (ActiveAgreement & { status: string }) | null;
+};
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function toCoverage(row: LineRow, on: string): BikeCoverage | null {
+  const a = Array.isArray(row.agreement) ? row.agreement[0] : row.agreement;
+  if (!a || a.status !== "active") return null;
+  if (a.start_date > on || (a.end_date != null && a.end_date < on)) return null;
+  if (row.start_date > on) return null;
+  const { status: _status, ...agreement } = a;
+  void _status;
+  return { ...agreement, line_id: row.id, line_start_date: row.start_date };
+}
+
 /**
- * All agreements active today (status + date bounds), optionally narrowed
- * to one organization. Ordered newest-start-first so `resolveCoverage`
- * prefers the most recent agreement when several overlap.
+ * Coverage for the given bikes (or for EVERY covered bike when `bikeIds` is
+ * omitted — the bikes list's fleet filter), keyed by bike id. Bikes with no
+ * covering line are simply absent.
  */
-export async function loadActiveAgreements(
+export async function loadBikeCoverage(
   supabase: SupabaseClient<Database>,
-  organizationId?: string,
-): Promise<ActiveAgreement[]> {
-  const today = new Date().toISOString().slice(0, 10);
-  let query = supabase
-    .from("service_agreements")
-    .select(
-      "id, name_en, name_da, covers_parts, covers_labor, start_date, end_date, organization_id, organization_unit_id",
-    )
-    .eq("status", "active")
-    .lte("start_date", today)
-    .or(`end_date.is.null,end_date.gte.${today}`)
-    .order("start_date", { ascending: false });
-  if (organizationId) query = query.eq("organization_id", organizationId);
-  const { data } = await query;
-  return (data ?? []) as ActiveAgreement[];
+  bikeIds?: string[],
+): Promise<Map<string, BikeCoverage>> {
+  const on = today();
+  const out = new Map<string, BikeCoverage>();
+  const select = `id, bike_id, start_date, agreement:service_agreements!agreement_id(${AGREEMENT_COLUMNS})`;
+  const collect = (rows: LineRow[]) => {
+    for (const r of rows) {
+      const c = toCoverage(r, on);
+      if (c) out.set(r.bike_id, c);
+    }
+  };
+
+  if (bikeIds === undefined) {
+    const { data, error } = await fetchAllRows<LineRow>((from, to) =>
+      supabase
+        .from("service_agreement_bikes")
+        .select(select)
+        .eq("status", "active")
+        .order("id")
+        .range(from, to) as unknown as PromiseLike<{
+        data: LineRow[] | null;
+        error: { message: string } | null;
+      }>,
+    );
+    if (error) throw new Error(`Failed to load agreement coverage: ${error}`);
+    collect(data);
+    return out;
+  }
+
+  // By id, in chunks: a long `id.in.(…)` list overruns the URL.
+  for (let i = 0; i < bikeIds.length; i += 200) {
+    const chunk = bikeIds.slice(i, i + 200);
+    if (chunk.length === 0) continue;
+    const { data, error } = await supabase
+      .from("service_agreement_bikes")
+      .select(select)
+      .eq("status", "active")
+      .in("bike_id", chunk);
+    if (error) throw new Error(`Failed to load agreement coverage: ${error.message}`);
+    collect((data ?? []) as unknown as LineRow[]);
+  }
+  return out;
 }
 
-/**
- * Pick the agreement covering a bike owned by `organizationId` / `unitId`
- * from a pre-loaded active list. Unit-scoped agreements beat org-wide ones.
- */
-export function resolveCoverage(
-  agreements: ActiveAgreement[],
-  organizationId: string | null,
-  unitId: string | null,
-): ActiveAgreement | null {
-  if (!organizationId) return null;
-  const forOrg = agreements.filter(
-    (a) => a.organization_id === organizationId,
-  );
-  return (
-    (unitId && forOrg.find((a) => a.organization_unit_id === unitId)) ||
-    forOrg.find((a) => a.organization_unit_id == null) ||
-    null
-  );
-}
-
-/** Resolve coverage for one bike by id (loads the bike's owner first). */
+/** Coverage for one bike, or null. */
 export async function findActiveAgreementForBike(
   supabase: SupabaseClient<Database>,
   bikeId: string,
-): Promise<ActiveAgreement | null> {
-  const { data: bike } = await supabase
-    .from("bikes")
-    .select("owner_organization_id, owner_unit_id")
-    .eq("id", bikeId)
-    .maybeSingle();
-  const orgId = bike?.owner_organization_id ?? null;
-  if (!orgId) return null;
-  const agreements = await loadActiveAgreements(supabase, orgId);
-  return resolveCoverage(agreements, orgId, bike?.owner_unit_id ?? null);
+): Promise<BikeCoverage | null> {
+  const map = await loadBikeCoverage(supabase, [bikeId]);
+  return map.get(bikeId) ?? null;
 }
 
 /** "Covers parts and labour" / "… parts only" / "… labour only" / fee-only. */
@@ -102,8 +133,8 @@ export function coverageScopeLabel(a: ActiveAgreement): string {
 export function daysUntilEnd(a: ActiveAgreement): number | null {
   if (!a.end_date) return null;
   const end = new Date(`${a.end_date}T00:00:00`);
-  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
-  return Math.round((end.getTime() - today.getTime()) / 86_400_000);
+  const todayDate = new Date(today() + "T00:00:00");
+  return Math.round((end.getTime() - todayDate.getTime()) / 86_400_000);
 }
 
 /** Matches the dashboard's "expiring soon" window. */

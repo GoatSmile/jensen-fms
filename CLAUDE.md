@@ -658,6 +658,25 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `status = 'sent'`, so a refused digest retries tomorrow. Read it at
   `/admin/outbox` and in the *Sent messages* panel on each PO and paint order;
   bodies render in a `sandbox=""` iframe, never inline.
+- **Service agreements are PER BIKE** (migration 110, DECISIONS 2026-09-29). An
+  agreement is the document with a customer (optionally a department); each
+  covered bike is a line in `service_agreement_bikes` — own start date (the
+  anniversary), one frozen yearly price, GPS, active → ended with a reason; at
+  most ONE active line per bike (partial unique index). **Coverage is "an
+  active, started line on an active agreement", resolved only in
+  `src/lib/agreements/coverage.ts`** — never from ownership, which is what it
+  was until 2026-09-29; a work order stamps both the agreement and the line.
+  Lines are written only through `addAgreementLines`
+  (`src/lib/service-agreements/lines.ts`), which moves a bike from another
+  agreement only when asked. `contract_type` K1/K3/K5/K10 = years committed,
+  NULL on the untyped existing ones; a 0-kr register row imports as an ENDED
+  line. **A signed paper** is uploaded from the customer's page (photos or PDF,
+  private `agreement-documents` bucket, signed upload URLs), read into a
+  proposal by the extraction provider (`/api/agreement-documents/[id]/read`),
+  frames matched by code (`documents/match.ts`), and written ONLY by the
+  person's confirm (`confirmAgreementDocument`) — the model never writes. The
+  fee engine (`monthly_fee`, in arrears) is not yet replaced by renewal
+  invoicing.
 - **People & roles (auth v0.5).** Four separated concepts — person / role /
   credential / assignment — across `people`, `roles`, `person_roles`,
   `role_capabilities`, `role_notifications` (capability/event keys
@@ -1147,8 +1166,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
 - `jpNumber` — supplier's SKU (Eastek HK uses JP-prefix codes)
 - `internal_sku` — our internal item code, also JP-prefix
 - **Frame number** — unique per bike, primary physical identifier
-- **Service agreement** — customer contract; if active, covered repairs are
-  not invoiced
+- **Service agreement** — customer contract listing the covered bikes; a
+  repair on a bike with an active line is not invoiced
 - **Customer segments** — a controlled vocab (`customer_segments`,
   `/admin/lists?vocab=segments`): Hospital, Municipality, Facility Management
   (FM), Hotel, B2B, B2C and more. The table is the list; this file is not.

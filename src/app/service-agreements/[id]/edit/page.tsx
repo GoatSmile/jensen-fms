@@ -41,6 +41,7 @@ export default async function EditServiceAgreementPage({
       .select(
         `id, name_en, name_da, status, start_date, end_date, covers_parts,
          covers_labor, has_gps, monthly_fee, fee_currency, notes,
+         contract_type, signed_on, signatories,
          organization_id, organization_unit_id`,
       )
       .eq("id", id)
@@ -65,6 +66,9 @@ export default async function EditServiceAgreementPage({
     monthly_fee: sa.monthly_fee == null ? "" : String(sa.monthly_fee),
     fee_currency: sa.fee_currency ?? "DKK",
     notes: sa.notes ?? "",
+    contract_type: sa.contract_type ?? "",
+    signed_on: sa.signed_on ?? "",
+    signatories: sa.signatories ?? "",
   };
 
   return (

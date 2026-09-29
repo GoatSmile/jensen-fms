@@ -3802,8 +3802,188 @@ export type Database = {
           },
         ]
       }
+      service_agreement_bikes: {
+        Row: {
+          agreement_id: string
+          bike_id: string
+          created_at: string
+          currency: string | null
+          document_id: string | null
+          end_reason: string | null
+          ended_on: string | null
+          has_gps: boolean
+          id: string
+          import_batch_id: string | null
+          import_row: Json | null
+          last_actor_id: string | null
+          notes: string | null
+          source: string
+          start_date: string
+          status: string
+          updated_at: string
+          yearly_price: number | null
+        }
+        Insert: {
+          agreement_id: string
+          bike_id: string
+          created_at?: string
+          currency?: string | null
+          document_id?: string | null
+          end_reason?: string | null
+          ended_on?: string | null
+          has_gps?: boolean
+          id?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
+          last_actor_id?: string | null
+          notes?: string | null
+          source?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          yearly_price?: number | null
+        }
+        Update: {
+          agreement_id?: string
+          bike_id?: string
+          created_at?: string
+          currency?: string | null
+          document_id?: string | null
+          end_reason?: string | null
+          ended_on?: string | null
+          has_gps?: boolean
+          id?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
+          last_actor_id?: string | null
+          notes?: string | null
+          source?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          yearly_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_agreement_bikes_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_bikes_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_bikes_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreement_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_bikes_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_bikes_last_actor_id_fkey"
+            columns: ["last_actor_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_agreement_documents: {
+        Row: {
+          agreement_id: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          read_at: string | null
+          read_error: string | null
+          read_model: string | null
+          reading: Json | null
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          agreement_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          read_at?: string | null
+          read_error?: string | null
+          read_model?: string | null
+          reading?: Json | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          agreement_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          read_at?: string | null
+          read_error?: string | null
+          read_model?: string | null
+          reading?: Json | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_agreement_documents_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_documents_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_agreements: {
         Row: {
+          contract_type: string | null
           coverage_details: Json
           covers_labor: boolean
           covers_parts: boolean
@@ -3820,11 +4000,14 @@ export type Database = {
           notes: string | null
           organization_id: string
           organization_unit_id: string | null
+          signatories: string | null
+          signed_on: string | null
           start_date: string
           status: Database["public"]["Enums"]["service_agreement_status"]
           updated_at: string
         }
         Insert: {
+          contract_type?: string | null
           coverage_details?: Json
           covers_labor?: boolean
           covers_parts?: boolean
@@ -3841,11 +4024,14 @@ export type Database = {
           notes?: string | null
           organization_id: string
           organization_unit_id?: string | null
+          signatories?: string | null
+          signed_on?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
         }
         Update: {
+          contract_type?: string | null
           coverage_details?: Json
           covers_labor?: boolean
           covers_parts?: boolean
@@ -3862,6 +4048,8 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           organization_unit_id?: string | null
+          signatories?: string | null
+          signed_on?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
@@ -4664,6 +4852,7 @@ export type Database = {
           completed_at: string | null
           completed_by: string | null
           completion_recorded_by: string | null
+          covered_by_service_agreement_bike_id: string | null
           covered_by_service_agreement_id: string | null
           created_at: string
           customer_summary_da: string | null
@@ -4688,6 +4877,7 @@ export type Database = {
           completed_at?: string | null
           completed_by?: string | null
           completion_recorded_by?: string | null
+          covered_by_service_agreement_bike_id?: string | null
           covered_by_service_agreement_id?: string | null
           created_at?: string
           customer_summary_da?: string | null
@@ -4712,6 +4902,7 @@ export type Database = {
           completed_at?: string | null
           completed_by?: string | null
           completion_recorded_by?: string | null
+          covered_by_service_agreement_bike_id?: string | null
           covered_by_service_agreement_id?: string | null
           created_at?: string
           customer_summary_da?: string | null

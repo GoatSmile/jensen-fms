@@ -24,11 +24,16 @@ import { createClient } from "@/lib/supabase/server";
 async function findActiveCoverageForBike(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bikeId: string,
-): Promise<{ agreementId: string | null; isBillable: boolean }> {
+): Promise<{
+  agreementId: string | null;
+  lineId: string | null;
+  isBillable: boolean;
+}> {
   const agreement = await findActiveAgreementForBike(supabase, bikeId);
-  if (!agreement) return { agreementId: null, isBillable: true };
+  if (!agreement) return { agreementId: null, lineId: null, isBillable: true };
   return {
     agreementId: agreement.id,
+    lineId: agreement.line_id,
     isBillable: !(agreement.covers_parts && agreement.covers_labor),
   };
 }
@@ -77,6 +82,7 @@ export async function createWorkOrderInternal(
       diagnosis: payload.diagnosis,
       work_performed: payload.work_performed,
       covered_by_service_agreement_id: coverage.agreementId,
+      covered_by_service_agreement_bike_id: coverage.lineId,
       is_billable: coverage.isBillable,
       status: "open",
     })

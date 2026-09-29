@@ -15,7 +15,10 @@ import { countryName } from "@/lib/countries";
 import { localizedName } from "@/i18n/vocab";
 import { createClient } from "@/lib/supabase/server";
 
+import { readHasCapability } from "@/lib/auth/read-session";
+
 import { AssignedBikesSection } from "../_components/assigned-bikes-section";
+import { CustomerAgreementsSection } from "../_components/customer-agreements-section";
 import { CustomerOffersSection } from "../_components/customer-offers-section";
 import { OrganizationHeader } from "../_components/organization-header";
 import {
@@ -49,6 +52,7 @@ export default async function OrganizationDetailPage({
   const langLabel = (code: string | null) =>
     code ? (tLang.has(code) ? tLang(code) : code) : null;
   const supabase = await createClient();
+  const canSeeAgreements = await readHasCapability("agreements");
 
   // Parallel fetch: org, contacts, sub-units, and the per-unit bike counts.
   // Bike counts feed the Units section so the user can see at a glance how
@@ -319,6 +323,7 @@ export default async function OrganizationDetailPage({
         organizationId={o.id}
         recognitionPrefix={o.recognition_prefix ?? null}
       />
+      {canSeeAgreements ? <CustomerAgreementsSection organizationId={o.id} /> : null}
       <CustomerOffersSection organizationId={o.id} />
     </div>
   );

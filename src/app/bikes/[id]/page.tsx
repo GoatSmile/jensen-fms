@@ -7,8 +7,7 @@ import {
   coverageScopeLabel,
   daysUntilEnd,
   EXPIRY_WARNING_DAYS,
-  loadActiveAgreements,
-  resolveCoverage,
+  findActiveAgreementForBike,
 } from "@/lib/agreements/coverage";
 
 import {
@@ -225,15 +224,9 @@ export default async function BikeDetailPage({
       : b.recorded_by_person
     )?.full_name ?? null;
 
-  // Derived agreement coverage — follows the bike's current owner (see
-  // src/lib/agreements/coverage.ts). null = no owner or no active agreement.
-  const coverage = b.owner_organization_id
-    ? resolveCoverage(
-        await loadActiveAgreements(supabase, b.owner_organization_id),
-        b.owner_organization_id,
-        b.owner_unit_id,
-      )
-    : null;
+  // Agreement coverage — the bike's own active line (migration 110; see
+  // src/lib/agreements/coverage.ts). null = no covering line.
+  const coverage = await findActiveAgreementForBike(supabase, b.id);
   const coverageDaysLeft = coverage ? daysUntilEnd(coverage) : null;
 
   // Required identifiers for this bike type — used to compute "X of Y registered".

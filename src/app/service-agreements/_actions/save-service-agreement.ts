@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { readHasCapability } from "@/lib/auth/read-session";
 import { nullableString as nullable } from "@/lib/forms";
+import { isContractType } from "@/lib/service-agreements/documents/reading";
 import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 
@@ -25,6 +27,9 @@ type Parsed = {
   monthly_fee: number | null;
   fee_currency: string;
   notes: string | null;
+  contract_type: string | null;
+  signed_on: string | null;
+  signatories: string | null;
 };
 
 const bool = (fd: FormData, k: string) => fd.get(k) === "true";
@@ -70,6 +75,10 @@ function parse(
     monthly_fee = n;
   }
 
+  const contract_type = nullable(fd.get("contract_type"));
+  if (contract_type && !isContractType(contract_type))
+    return { ok: false, error: t("saDocInvalidContractType"), field: "contract_type" };
+
   return {
     ok: true,
     values: {
@@ -86,6 +95,9 @@ function parse(
       monthly_fee,
       fee_currency: nullable(fd.get("fee_currency")) ?? "DKK",
       notes: nullable(fd.get("notes")),
+      contract_type,
+      signed_on: nullable(fd.get("signed_on")),
+      signatories: nullable(fd.get("signatories")),
     },
   };
 }
@@ -94,6 +106,8 @@ export async function createServiceAgreement(
   fd: FormData,
 ): Promise<SaveServiceAgreementResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("agreements")))
+    return { ok: false, error: t("saDocNeedsAgreements") };
   const parsed = parse(fd, t);
   if (!parsed.ok) return parsed;
 
@@ -119,6 +133,8 @@ export async function updateServiceAgreement(
   fd: FormData,
 ): Promise<SaveServiceAgreementResult> {
   const t = await getTranslations("errors");
+  if (!(await readHasCapability("agreements")))
+    return { ok: false, error: t("saDocNeedsAgreements") };
   if (!id) return { ok: false, error: t("saMissingAgreementId") };
   const parsed = parse(fd, t);
   if (!parsed.ok) return parsed;

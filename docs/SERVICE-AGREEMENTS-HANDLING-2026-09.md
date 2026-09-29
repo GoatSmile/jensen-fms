@@ -7,8 +7,9 @@ today (a spreadsheet row, a signed scan, a filled-in Word file, a verbal
 promise), and how the system handles them from then on. It builds on the
 modelling brief `BRIEF-SERVICE-AGREEMENTS-2026-09` (agreements are per bike, not
 per customer). Read that one for the data model. This one is about the **sources
-and the import**, and it corrects the brief on price and terms. Nothing here is
-built yet.
+and the import**, and it corrects the brief on price and terms. **Built on
+29 September:** the per-bike model (§8, step 1) and the document upload (§5).
+The register import and renewal invoicing are not built yet.
 
 ## 1 · What has been said and decided so far
 
@@ -147,28 +148,35 @@ Order: **bikes first**, then the agreement model, then this import.
    to production and the local copy and then queried. The same route as the
    bikes.
 
-## 5 · Documents: attach, extract, reconcile
+## 5 · Documents: upload, read, confirm (built 29 Sep)
 
 Not blocking billing; done agreement by agreement, as documents turn up.
 
-1. **Attach.** On an agreement's page, *Add document*: upload a PDF, a Word
-   file, or phone photos of the pages. Stored as an attachment, never discarded.
-   The signed paper is the legal record.
-2. **Extract.** The system reads the document into a **proposal**: parties,
-   contract type and term, price steps, first payment date, drive charge,
-   signed date, signatories, contact person, and **the frame numbers listed**.
-    - A Word file is plain text.
-    - A scan or photo needs a model that reads images. It uses the
-      extraction-provider setting the inbound pipeline already has, so there is
-      no second place to configure it.
-3. **Reconcile.** Code, not the model, compares the proposal with the
-   agreement:
-    - frames on the paper but not billed;
-    - frames billed but not on the paper;
-    - a price or term that differs.
-4. **Confirm.** Dennis accepts or corrects field by field, and the agreement
-   becomes `signed` with the date and signatories. **The model never writes a
-   line or a price on its own**, the same rule as calls in the inbox.
+1. **Upload.** On the customer's page, *Upload agreement*. On the phone,
+   *Take photo* opens the camera, one photo per page and as many pages as the
+   paper has; *Choose file* takes a PDF or photos. The files go to a private
+   store and are never discarded: the signed paper is the legal record. A Word
+   file is refused with "save it as PDF". Uploading from an agreement's own
+   page attaches the paper to that agreement.
+2. **Read.** The system reads the pages into a **proposal**:
+    - the department and the contract type;
+    - the signed date and the signatories;
+    - the price, with ×12 if it is per month;
+    - GPS;
+    - **every frame number listed**;
+    - anything to check (handwriting, unreadable parts).
+
+   It uses the extraction setting the inbox already has, so there is nowhere
+   else to configure it.
+3. **Match.** Code, not the model, matches each frame number to a bike:
+   *this customer's bike*, *another customer's bike*, *a bike with no
+   customer*, *not in the system*, or *already on an agreement*. A near miss
+   (a letter O read for a zero) is offered as *Did you mean …*, never ticked.
+4. **Confirm.** Dennis chooses which of the customer's agreements the paper
+   belongs to, or *new agreement*, corrects the fields, and ticks the bikes.
+   Only the customer's own bikes that no other agreement holds start ticked. A
+   bike on another agreement moves only when ticked. **Nothing is written
+   before Confirm**, the same rule as calls in the inbox.
 5. **e-conomic cross-check.** Read the past `JP-SERVFL` invoices:
     - they name the frames and the period, so they show which bikes were really
       renewed, and at what price;
@@ -176,11 +184,9 @@ Not blocking billing; done agreement by agreement, as documents turn up.
     - **Blocker:** the system still holds only e-conomic's *trial* grant, so the
       production grant has to be in place first.
 
-**Build it in proportion.** If there are a handful of signed documents, steps
-1 and 4 are enough (attach, and type the terms in by hand). Extraction (step 2)
-is worth building only if there are dozens. **Dennis answered (28 Sep): "maybe
-3 or 4", and they list frame numbers — so extraction is NOT built.** Attach the
-PDF and type the terms in by hand.
+Dennis said there are "maybe 3 or 4" signed papers, so reading them was first
+left out. The owner then asked for it "smart", and because the model reads PDFs
+and photos directly it cost little, so it was built.
 
 ## 6 · Handling after import
 
@@ -260,20 +266,23 @@ is not covered, cancelling, and a bike leaving (both templates, §2).
 1. **Decide the model** (the brief), amended here with the contract type as
    committed years on new agreements (none on imported ones), ended lines for
    0-kr rows, the bike-leaves settlement rule, and the GPS binding. One frozen
-   yearly price per line, as the brief had it — no price steps. DECISIONS entry;
-   CLAUDE.md rule edited in the same commit.
+   yearly price per line, as the brief had it — no price steps. **Built 29 Sep**
+   (migration 110; DECISIONS 2026-09-29).
 2. **Import the bikes** (after Dennis's fleet answers).
 3. **Import the agreements from the spreadsheet** (§4). Billing truth in place.
 4. **Renewal invoicing**, checked against e-conomic's history on its first run.
-5. **Documents** (§5), sized by the answers in §7.
+5. **Documents** (§5). Built 29 Sep, together with step 1.
 6. **New agreements from the sales order**, then digital signing.
 
 **Rejected:**
 
 - *Documents as the source of the lines.* Most agreements have none, and
   billing would wait on paperwork that does not exist.
-- *Extraction writing directly.* A misread price is an invoice to a
+- *Reading writing directly.* A misread price is an invoice to a
   municipality.
+- *The paper attached to the customer alone.* A customer has several
+  agreements (one per EAN), so the paper is uploaded on the customer and
+  confirmed onto one of them.
 - *Guessing the contract type from the price.* The prices do not follow the
   template.
 - *Waiting to import until the documents are gathered.* The money runs from the

@@ -39,6 +39,9 @@ export type ServiceAgreementFormValues = {
   monthly_fee: string;
   fee_currency: string;
   notes: string;
+  contract_type: string;
+  signed_on: string;
+  signatories: string;
 };
 
 const EMPTY_AGREEMENT: ServiceAgreementFormValues = {
@@ -54,9 +57,14 @@ const EMPTY_AGREEMENT: ServiceAgreementFormValues = {
   monthly_fee: "",
   fee_currency: "DKK",
   notes: "",
+  contract_type: "",
+  signed_on: "",
+  signatories: "",
 };
 
 const NO_UNIT = "__org_wide__";
+const NO_TYPE = "__none__";
+const CONTRACT_TYPES = ["K1", "K3", "K5", "K10"] as const;
 
 type Props = {
   mode: "create" | "edit";
@@ -77,6 +85,7 @@ export function ServiceAgreementForm({
   const t = useTranslations("serviceAgreementForm");
   const tCommon = useTranslations("common");
   const tSaStatus = useTranslations("saStatus");
+  const tDocs = useTranslations("agreementDocs");
   const router = useRouter();
   // Defaults are merged HERE, not in the server page: this module is
   // `"use client"`, so its exports are client references on the server and
@@ -125,6 +134,9 @@ export function ServiceAgreementForm({
     appendField(fd, "monthly_fee", values.monthly_fee);
     appendField(fd, "fee_currency", values.fee_currency);
     appendField(fd, "notes", values.notes);
+    appendField(fd, "contract_type", values.contract_type);
+    appendField(fd, "signed_on", values.signed_on);
+    appendField(fd, "signatories", values.signatories);
     return fd;
   }
 
@@ -254,6 +266,46 @@ export function ServiceAgreementForm({
               type="date"
               value={values.end_date}
               onChange={(e) => update("end_date", e.target.value)}
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Field
+            label={tDocs("fldContractType")}
+            htmlFor="sa-k"
+            hint={tDocs("contractTypeHint")}
+            error={errorField === "contract_type" ? error : null}
+          >
+            <Select
+              value={values.contract_type || NO_TYPE}
+              onValueChange={(v) => update("contract_type", v === NO_TYPE ? "" : v)}
+            >
+              <SelectTrigger id="sa-k">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_TYPE}>{tDocs("noContractType")}</SelectItem>
+                {CONTRACT_TYPES.map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {tDocs(`contractType.${k}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={tDocs("fldSignedOn")} htmlFor="sa-signed">
+            <Input
+              id="sa-signed"
+              type="date"
+              value={values.signed_on}
+              onChange={(e) => update("signed_on", e.target.value)}
+            />
+          </Field>
+          <Field label={tDocs("fldSignatories")} htmlFor="sa-signatories">
+            <Input
+              id="sa-signatories"
+              value={values.signatories}
+              onChange={(e) => update("signatories", e.target.value)}
             />
           </Field>
         </div>
