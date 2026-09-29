@@ -1,5 +1,7 @@
 import { AlertTriangle, Database } from "lucide-react";
 
+import { isPubliclyReachableUrl } from "@/lib/net/public-url";
+
 /**
  * Which database is this dev server talking to?
  *
@@ -19,7 +21,10 @@ export function DbTargetBanner() {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   if (!url) return null;
-  const isLocal = url.includes("127.0.0.1") || url.includes("localhost");
+  // Same judgement the transcription step makes about a storage link
+  // (src/lib/net/public-url.ts). An unparseable URL is NOT local: when in
+  // doubt, this banner shouts.
+  const isLocal = URL.canParse(url) && !isPubliclyReachableUrl(url);
 
   return (
     <div

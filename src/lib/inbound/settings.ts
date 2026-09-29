@@ -31,6 +31,13 @@ export type ProviderEntry = {
    * 2026-07-23: Azure `channels:[0,1]` yes, Gladia no (diarization only).
    */
   supportsChannels?: boolean;
+  /**
+   * Call import only: each phone line names the env var holding ITS token
+   * (the provider lets only a number's own user hear its recordings). The
+   * name must match `pattern` — checked in the app, in the DB (migration 112)
+   * and before every read — so a line can never be pointed at another secret.
+   */
+  lineToken?: { defaultEnv: string; pattern: RegExp };
 };
 
 /** Registered transcription adapters (audio → text). */
@@ -73,7 +80,11 @@ export const TELEPHONY_PROVIDERS: ProviderEntry[] = [
  * to our webhooks. Adapters live in ./call-import/.
  */
 export const CALL_IMPORT_PROVIDERS: ProviderEntry[] = [
-  { key: "relatel", envSecrets: ["RELATEL_TOKEN"] },
+  {
+    key: "relatel",
+    envSecrets: ["RELATEL_TOKEN"],
+    lineToken: { defaultEnv: "RELATEL_TOKEN", pattern: /^RELATEL_TOKEN(_[A-Z0-9]{1,32})?$/ },
+  },
 ];
 
 /** How an incoming call is handled (docs/plan-live-call-recording.md). */
@@ -111,14 +122,12 @@ export type InboundSettings = {
   shadowMode: boolean;
   /** Call-import adapter key; null = importing is off. */
   callImportProvider: string | null;
-  /** Whose calls: the provider's endpoint ids. Empty = none imported. */
-  callImportEndpoints: string[];
   callImportVoicemails: boolean;
   callImportLookbackHours: number;
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_call_import_endpoints, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -151,7 +160,6 @@ export async function loadInboundSettings(
     mediaRetentionDays: Number(data?.inbound_media_retention_days ?? 90),
     shadowMode: Boolean(data?.inbound_shadow_mode ?? true),
     callImportProvider: data?.inbound_call_import_provider ?? null,
-    callImportEndpoints: data?.inbound_call_import_endpoints ?? [],
     callImportVoicemails: data?.inbound_call_import_voicemails ?? true,
     callImportLookbackHours: Number(data?.inbound_call_import_lookback_hours ?? 48),
   };
@@ -177,7 +185,6 @@ export function inboundSecretStatus(settings: InboundSettings): {
   transcription: SecretStatus[];
   extraction: SecretStatus[];
   telephony: SecretStatus[];
-  callImport: SecretStatus[];
 } {
   const check = (registry: ProviderEntry[], key: string): SecretStatus[] => {
     const entry = findProvider(registry, key);
@@ -194,11 +201,7 @@ export function inboundSecretStatus(settings: InboundSettings): {
     ),
     extraction: check(EXTRACTION_PROVIDERS, settings.extractionProvider),
     telephony: check(TELEPHONY_PROVIDERS, settings.telephonyProvider),
-    // Off still reports the first adapter's secrets, so the admin can see what
-    // switching it on will need.
-    callImport: check(
-      CALL_IMPORT_PROVIDERS,
-      settings.callImportProvider ?? CALL_IMPORT_PROVIDERS[0].key,
-    ),
+    // Call import reports per phone line instead (src/lib/calls/lines.ts),
+    // because each line has its own token.
   };
 }

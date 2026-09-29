@@ -5,7 +5,14 @@
  * date helpers used across the part-detail sections.
  */
 
+// Danish time, always: the server runs in UTC (Vercel), so without a zone
+// every time on every page read 1–2 hours early — a 15:01 call showed as
+// 13.01. Date-only values ("2026-10-12") parse as UTC midnight, which is the
+// same calendar day in Copenhagen, so dates cannot shift a day.
+const TIME_ZONE = "Europe/Copenhagen";
+
 const dateTimeFormatter = new Intl.DateTimeFormat("da-DK", {
+  timeZone: TIME_ZONE,
   year: "numeric",
   month: "short",
   day: "2-digit",
@@ -14,6 +21,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat("da-DK", {
 });
 
 const dateFormatter = new Intl.DateTimeFormat("da-DK", {
+  timeZone: TIME_ZONE,
   year: "numeric",
   month: "short",
   day: "2-digit",

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
@@ -20,6 +19,7 @@ import {
   insertDraftSalesOrder,
 } from "@/lib/commercial/draft-writers";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
+import { revalidateInbound } from "@/lib/calls/revalidate";
 
 export type CommandResult = { ok: true; id: string } | { ok: false; error: string };
 export type ApplyResult =
@@ -92,8 +92,7 @@ export async function createCommandFromText(text: string): Promise<CommandResult
   }
 
   await runAndStorePlan(supabase, inserted.id, body);
-  revalidatePath("/inbox");
-  revalidatePath(`/inbox/${inserted.id}`);
+  revalidateInbound(inserted.id);
   return { ok: true, id: inserted.id };
 }
 
@@ -125,7 +124,7 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
   }
 
   await runAndStorePlan(supabase, messageId, msg.body_text ?? "");
-  revalidatePath(`/inbox/${messageId}`);
+  revalidateInbound(messageId);
   return { ok: true, id: messageId };
 }
 
@@ -198,8 +197,7 @@ export async function planFromInquiry(messageId: string): Promise<CommandResult>
     return { ok: false, error: t("couldNotSave", { detail: updErr.message }) };
   }
 
-  revalidatePath(`/inbox/${messageId}`);
-  revalidatePath("/inbox");
+  revalidateInbound(messageId);
   return { ok: true, id: messageId };
 }
 
@@ -321,8 +319,7 @@ export async function applyCommandAction(
       .eq("id", messageId);
   }
 
-  revalidatePath(`/inbox/${messageId}`);
-  revalidatePath("/inbox");
+  revalidateInbound(messageId);
   return { ok: true, entityTable: write.entityTable, entityId: write.entityId };
 }
 

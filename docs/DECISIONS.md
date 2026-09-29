@@ -3330,3 +3330,46 @@ into the app the same day. Migration 111; `src/lib/inbound/call-import/`.
   main-number call that day showed no recording; the import already matches an
   employee anywhere on a call's path, so if Relatel records them they come in
   without a change.
+
+## 2026-09-30 — The inbox becomes Calls: lines belong to people, and the rules say what needs doing
+
+Owner, 29–30 Sep, after the first real Relatel calls reached the inbox:
+*"There will be a lot of calls service people make … it should be by date, by
+day … by person … and we need to intelligently decide which calls need action."*
+Migration 112; `src/lib/calls/`; the page is `/calls`.
+
+- **Calls is its own page, and only calls live there.** *Dictate a command* is a
+  tool, so it left the queue for a sheet in the app chrome (under the logo; the
+  phone header's right side), history at `/commands`. *Upload a voicemail* is
+  **deleted**, not moved: a July test harness that production never used (every
+  row came from Twilio, Relatel or a command), and the local copy now
+  transcribes real calls. `/inbox` redirects. **Rejected:** keeping one mixed
+  inbox; moving the upload to admin.
+- **A call belongs to a phone line, and a line to a person** (`phone_lines`).
+  Stamped on the call at import, never re-derived — re-mapping a line must not
+  move a colleague's history. Every line the provider lists is stored, import
+  on or off, because its number is how an internal call is recognised.
+- **One token per line, in Vercel** (owner's pick of three): Relatel lets only a
+  number's own user hear its recordings. The line names its env var;
+  `RELATEL_TOKEN` or `RELATEL_TOKEN_<NAME>` only, checked in the app, the DB and
+  before every read, so a line can never be pointed at another secret.
+  **Rejected:** each person connecting through Relatel's OAuth app with the
+  token stored in the database (breaks config doctrine tier 1); Finn only.
+- **Own line; the office sees all** (owner). `calls_own` for Workshop, `inbox`
+  keeps meaning every line. One access rule (`src/lib/calls/access.ts`) for the
+  list, the detail page and every action. **Rejected:** everyone sees every
+  line.
+- **Four groups, derived, with a reason on every row**: a person's decision wins;
+  the system's own trouble is *check*; colleagues talking is quiet; **a promise
+  the workshop made is never quiet**; a voicemail is someone waiting; a request
+  is *to do*, or *check* when the customer or the audio is uncertain; the rest
+  is quiet. **A day with open work never folds**, and open calls older than the
+  page's two weeks come along. **Rejected:** storing the group (it would go
+  stale the moment extraction reruns); letting the model decide (it reads, the
+  rules decide).
+- **Only Twilio's channel order is trusted.** Relatel's incoming calls are
+  stereo with no stated order, so their speakers are "Speaker N", flagged as
+  inferred — the extraction prompt otherwise treats Customer/Workshop labels as
+  fact and could credit the customer with the workshop's promises.
+- **Every date-time is Danish time.** The shared formatter had no zone and the
+  server runs in UTC, so the whole app read one to two hours early.

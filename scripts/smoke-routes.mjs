@@ -101,6 +101,9 @@ const PREFIX_TABLE = [
   ["/bikes", "bikes"],
   ["/parts", "parts"],
   ["/inbox", "inbound_messages"],
+  // Calls and commands share inbound_messages; the detail page renders both.
+  ["/calls", "inbound_messages"],
+  ["/commands", "inbound_messages"],
   ["/work", "work_orders"],
   ["/qr", "bikes"],
   ["/b", "bikes"],

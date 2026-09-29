@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
@@ -8,6 +7,8 @@ import { parseExtraction, type InboundUrgency } from "@/lib/inbound/extraction";
 import { ticketCreatedEmail } from "@/lib/people/email-content";
 import { notifyEvent } from "@/lib/people/notify";
 import { appOrigin } from "@/lib/qr";
+import { revalidateInbound } from "@/lib/calls/revalidate";
+import { canActOnInbound } from "@/lib/calls/access";
 
 export type CreateTicketResult =
   | { ok: true; ticketId: string; ticketNumber: string }
@@ -41,6 +42,9 @@ export async function createTicketFromInbound(
   messageId: string,
 ): Promise<CreateTicketResult> {
   const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
 
   const { data: msg, error: loadErr } = await supabase
@@ -149,7 +153,6 @@ export async function createTicketFromInbound(
     };
   }
 
-  revalidatePath(`/inbox/${messageId}`);
-  revalidatePath("/inbox");
+  revalidateInbound(messageId);
   return { ok: true, ticketId: ticket.id, ticketNumber };
 }

@@ -32,6 +32,8 @@
  * Server-only (reads process.env). Import from server actions.
  */
 
+import { isPubliclyReachableUrl } from "@/lib/net/public-url";
+
 export type TranscribeResult =
   | {
       ok: true;
@@ -71,6 +73,17 @@ export type TranscribeOptions = {
    */
   channels?: number;
   /**
+   * Is the channel ORDER a fact? `caller_first` = Twilio's contract (channel
+   * 0 is the caller, i.e. the customer on an inbound call), so channel labels
+   * render as Customer / Workshop and are trusted. `unknown` = any other source
+   * (Relatel records incoming mobile calls in stereo with no stated order):
+   * the channels still separate the voices, but the labels are the neutral
+   * "Speaker N" and flagged `speakersInferred`, so the extraction prompt works
+   * out the sides from context instead of trusting a guess. Default
+   * `caller_first` keeps the Twilio path unchanged.
+   */
+  channelRoles?: "caller_first" | "unknown";
+  /**
    * ISO 639-1 codes to transcribe as, narrowing the shipped default of "the
    * workshop's two languages, detected per file". Pinning ONE measurably helps
    * where detection is weakest — a short dictated phrase — so the dictation
@@ -93,11 +106,12 @@ export async function transcribeAudio(
   opts: TranscribeOptions,
 ): Promise<TranscribeResult> {
   const twoWay = (opts.channels ?? 1) >= 2;
+  const trustChannels = (opts.channelRoles ?? "caller_first") === "caller_first";
   if (opts.provider === "gladia") {
-    return transcribeViaGladia(audioUrl, twoWay, opts.languages, opts.timeoutMs);
+    return transcribeViaGladia(audioUrl, twoWay, opts.languages, opts.timeoutMs, trustChannels);
   }
   if (opts.provider === "azure") {
-    return transcribeViaAzure(audioUrl, opts.region, twoWay, opts.languages);
+    return transcribeViaAzure(audioUrl, opts.region, twoWay, opts.languages, trustChannels);
   }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
 }
@@ -187,6 +201,53 @@ function aggregateConfidence(
 // Voicemails are short (< 2 min), so a ~90 s poll window is generous.
 // ---------------------------------------------------------------------------
 const GLADIA_INIT_URL = "https://api.gladia.io/v2/pre-recorded";
+const GLADIA_UPLOAD_URL = "https://api.gladia.io/v2/upload";
+/** Far above any call; a runaway guard for bytes we hold in memory. */
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+/**
+ * Hand Gladia the audio as BYTES instead of a link: download it ourselves
+ * (our server can reach a local Supabase; Gladia's cannot) and POST it to
+ * /v2/upload, which returns a URL Gladia can read. Used when the link is not
+ * publicly reachable, and as the one retry when Gladia says it could not
+ * fetch a link we believed was public.
+ */
+async function uploadToGladia(
+  audioUrl: string,
+  apiKey: string,
+): Promise<{ ok: true; url: string } | { ok: false; detail: string }> {
+  let res: Response;
+  try {
+    res = await fetch(audioUrl, { cache: "no-store" });
+  } catch (e) {
+    return { ok: false, detail: `could not read our own audio: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  if (!res.ok) return { ok: false, detail: `could not read our own audio: HTTP ${res.status}` };
+  const bytes = await res.arrayBuffer();
+  if (bytes.byteLength === 0) return { ok: false, detail: "our audio is empty" };
+  if (bytes.byteLength > MAX_UPLOAD_BYTES) return { ok: false, detail: "audio too large to upload" };
+  const form = new FormData();
+  form.append(
+    "audio",
+    new Blob([bytes], { type: res.headers.get("content-type") || "application/octet-stream" }),
+    "audio",
+  );
+  let up: Response;
+  try {
+    up = await fetch(GLADIA_UPLOAD_URL, {
+      method: "POST",
+      headers: { "x-gladia-key": apiKey },
+      body: form,
+    });
+  } catch (e) {
+    return { ok: false, detail: `upload failed: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  const json = (await up.json().catch(() => null)) as { audio_url?: string; message?: string } | null;
+  if (!up.ok || !json?.audio_url) {
+    return { ok: false, detail: `upload refused: ${up.status} ${json?.message ?? ""}`.trim() };
+  }
+  return { ok: true, url: json.audio_url };
+}
 const GLADIA_POLL_INTERVAL_MS = 1_000;
 const GLADIA_POLL_TIMEOUT_MS = 90_000;
 
@@ -198,17 +259,29 @@ async function transcribeViaGladia(
   twoWay = false,
   languages?: string[],
   timeoutMs?: number,
+  trustChannels = true,
 ): Promise<TranscribeResult> {
   const apiKey = process.env.GLADIA_API_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
 
-  let initRes: Response;
-  try {
-    initRes = await fetch(GLADIA_INIT_URL, {
+  // A link Gladia's servers cannot open (the LOCAL Supabase is 127.0.0.1)
+  // goes up as bytes first — see src/lib/net/public-url.ts.
+  let uploaded = false;
+  let sourceUrl = audioUrl;
+  if (!isPubliclyReachableUrl(audioUrl)) {
+    const up = await uploadToGladia(audioUrl, apiKey);
+    if (!up.ok) return { ok: false, reason: "api_error", detail: up.detail };
+    sourceUrl = up.url;
+    uploaded = true;
+  }
+
+  const initGladia = async (url: string): Promise<Response | TranscribeResult> => {
+    try {
+      return await fetch(GLADIA_INIT_URL, {
       method: "POST",
       headers: { "content-type": "application/json", "x-gladia-key": apiKey },
       body: JSON.stringify({
-        audio_url: audioUrl,
+        audio_url: url,
         // The caller's languages, else the workshop's two with detection
         // picking per file. One code means "transcribe as this", which is what
         // a dictating tech has already told us with the DA/EN chip.
@@ -227,9 +300,23 @@ async function transcribeViaGladia(
         // — pennies at this volume, and worth it for real attribution.
       }),
     });
-  } catch (e) {
-    return caught(e);
+    } catch (e) {
+      return caught(e);
+    }
+  };
+
+  let initRes = await initGladia(sourceUrl);
+  // Belt and braces: a link judged public that Gladia still cannot fetch
+  // (a public name on a private address, a storage hiccup) gets ONE retry as
+  // bytes — only on that specific complaint; a bad file stays a failure.
+  if (!uploaded && initRes instanceof Response && initRes.status === 400) {
+    const body = await initRes.clone().text().catch(() => "");
+    if (/failed to fetch audio/i.test(body)) {
+      const up = await uploadToGladia(audioUrl, apiKey);
+      if (up.ok) initRes = await initGladia(up.url);
+    }
   }
+  if (!(initRes instanceof Response)) return initRes;
   if (!initRes.ok) return httpDetail(initRes);
 
   const init = (await initRes.json().catch(() => null)) as {
@@ -310,10 +397,13 @@ async function transcribeViaGladia(
           .filter((u) => u.speaker >= 0 && u.text.trim() !== "");
         const distinctChannels = new Set(channelTurns.map((t) => t.speaker));
         if (channelTurns.length > 0 && distinctChannels.size >= 2) {
-          const dialogue = renderDialogue(channelTurns, true);
+          const dialogue = renderDialogue(channelTurns, trustChannels);
           if (dialogue) {
-            // Deterministic — no `speakersInferred` flag.
-            return { ok: true, text: dialogue, language, confidence };
+            // Deterministic only when the channel order is a contract;
+            // otherwise the voices are separated but WHO is who is a guess.
+            return trustChannels
+              ? { ok: true, text: dialogue, language, confidence }
+              : { ok: true, text: dialogue, language, confidence, speakersInferred: true };
           }
         }
 
@@ -365,6 +455,7 @@ async function transcribeViaAzure(
   region: string | null,
   twoWay = false,
   languages?: string[],
+  trustChannels = true,
 ): Promise<TranscribeResult> {
   const apiKey = process.env.AZURE_SPEECH_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
@@ -453,9 +544,11 @@ async function transcribeViaAzure(
           typeof p.offsetMilliseconds === "number" ? p.offsetMilliseconds : 0,
       }))
       .sort((a, b) => a.at - b.at);
-    const dialogue = renderDialogue(turns, true);
+    const dialogue = renderDialogue(turns, trustChannels);
     if (dialogue) {
-      return { ok: true, text: dialogue, language, confidence };
+      return trustChannels
+        ? { ok: true, text: dialogue, language, confidence }
+        : { ok: true, text: dialogue, language, confidence, speakersInferred: true };
     }
   }
 

@@ -24,9 +24,13 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 111 is the latest; production verified at it** (queried the new
-  columns, index and ledger row, 29 Sep). 111 = call import settings on
-  `app_settings` + the unique `channel_meta.external_id` index. 110 = agreement lines,
+- **Migration 112 is the latest; production verified at it** (queried the
+  table, the stamped calls, the grant and the constraint, 30 Sep). 112 =
+  `phone_lines` (Finn's line mapped to Finn; `Employee#74332` "Mathilde /
+  Nazar" came across as an unnamed shared line — map it or switch it off),
+  `inbound_messages.phone_line_id` + `handled_by_person_id`, disposition
+  `needs_action`, `calls_own` for Workshop. 111 = call import settings + the
+  unique `channel_meta.external_id` index. 110 = agreement lines,
   agreement documents, private `agreement-documents` bucket, the WO line stamp,
   `dashboard_monthly_stats()` counting lines (prod had one test agreement with
   no bikes, so the backfill wrote nothing). 106 = paint lifecycle, 107 = delivery fields + private
@@ -38,7 +42,18 @@ is Danish (person language).
   supabase_db_jensen-fms psql …`** — `--local` takes one statement per call.
 - **Everything shipped on 27 and 28 Sep was verified in the browser against
   the LOCAL copy only** — nobody has clicked it in production yet.
-- **Finn's calls → `/inbox` from Relatel, built 29 Sep** (DECISIONS
+- **Calls page, built 30 Sep** (DECISIONS 2026-09-30): `/calls` replaces the
+  inbox (redirects), by Danish day, tabs per person, four derived groups;
+  Finn sees his own line. Dictate a command moved to the app chrome
+  (`/commands`); the voicemail upload is gone. Verified locally end to end
+  WITH transcription (the local copy now uploads audio to Gladia): import,
+  MP3 repair, stamping, internal-call detection, tabs, fold rule, Finn's
+  access (own call 200, another's 404), the token-name guard (app and DB),
+  phone width. **In production after this deploy:** open *Settings → Phone &
+  inbox → Call import* once and press Save — that stores every Relatel line
+  (numbers for internal-call detection) — then check `/calls` as Dennis and
+  as Finn.
+- **Finn's calls → the inbox from Relatel, built 29 Sep** (DECISIONS
   2026-09-29): job `import-calls` every 5 min + *Fetch calls now* on `/inbox`;
   set up at `/admin/settings → Phone & inbox → Call import`. Verified locally
   end to end except transcription (the local copy cannot transcribe): four real
@@ -139,8 +154,9 @@ is Danish (person language).
    labels once the printer is known, the builder's iPad view (§2D).
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-09-29): 99 pass · 20 redirect · 4 skip · 0 fail.** The
-  skips are invoices and tickets (no rows locally).
+- **Smoke, local (2026-09-30): 101 pass · 22 redirect · 4 skip · 0 fail.** The
+  skips are invoices and tickets (no rows locally); the two new redirects are
+  `/inbox` and `/inbox/<id>`.
 - **Lint: 0 errors, 14 warnings** (all pre-existing).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`,
   500 units with no known cost) and check 18 (legacy `unit_cost_basis =

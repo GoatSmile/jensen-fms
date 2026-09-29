@@ -1,0 +1,148 @@
+/**
+ * Which calls need something from a person — the Calls page's four groups.
+ *
+ * DERIVED, never stored (the "at painter" rule): re-running extraction or
+ * matching moves a call to the right group without a migration of state, and
+ * the only stored input a person controls is `disposition`, which wins.
+ * Pure and deterministic — the model reads the call, but these rules, not the
+ * model, decide what a human must do, and every result carries the REASON the
+ * page prints, so a grey row can always answer "why is this grey?".
+ *
+ * Order matters and is the whole design:
+ *   1. a person's decision (ticket, handled, spam, "needs action") wins;
+ *   2. the system's own trouble (failed, still processing) is a CHECK;
+ *   3. a call between our own people is quiet;
+ *   4. a PROMISE the workshop made is never quiet — forgotten promises cost most;
+ *   5. a voicemail is someone waiting for a call back;
+ *   6. a request is TO DO — or CHECK when we are not sure who or what it was;
+ *   7. everything else (short, no speech, spam-looking, chit-chat) is quiet.
+ */
+import type { InboundExtraction } from "@/lib/inbound/extraction";
+import { isSuspectedSpam } from "@/lib/inbound/triage";
+
+export type CallLane = "todo" | "check" | "quiet" | "done";
+
+export type CallReason =
+  // done
+  | "ticketed"
+  | "handled"
+  // todo
+  | "marked_needs_action"
+  | "promise"
+  | "callback"
+  | "request"
+  // check
+  | "failed"
+  | "processing"
+  | "which_customer"
+  | "unclear"
+  // quiet
+  | "spam"
+  | "internal"
+  | "no_speech"
+  | "no_request";
+
+export type CallTriage = {
+  lane: CallLane;
+  reason: CallReason;
+  /** Only ever set in `todo`: the customer said it was urgent. Drives `alert`. */
+  urgent: boolean;
+};
+
+export type TriageInput = {
+  channel: string;
+  status: string;
+  disposition: string | null;
+  ticket_id: string | null;
+  body_text: string | null;
+  duration_seconds: number | null;
+  transcript_confidence: number | null;
+  spam_signals: unknown;
+  matched_organization_id: string | null;
+  match_candidates: unknown;
+  extraction: InboundExtraction | null;
+  /** The other party is one of our own lines or people (resolved by the caller). */
+  internal: boolean;
+  /** Minutes since the call arrived — tells "still reading" from "got stuck". */
+  ageMinutes: number;
+};
+
+/** Below this many seconds with little said, a call carries nothing to act on. */
+const SHORT_SECONDS = 10;
+/** A transcript this short is a greeting, a hang-up or silence. */
+const MIN_SPEECH_CHARS = 25;
+/** Clarity under this and the reading cannot be trusted without a listen. */
+const UNCLEAR_CLARITY = 0.45;
+/** A pipeline still running after this long has stopped — offer the retry. */
+const STUCK_MINUTES = 30;
+
+function orgCandidateCount(candidates: unknown): number {
+  const c = candidates as { organizations?: unknown[] } | null;
+  return Array.isArray(c?.organizations) ? c.organizations.length : 0;
+}
+
+export function triageCall(row: TriageInput): CallTriage {
+  const x = row.extraction;
+  const quiet = (reason: CallReason): CallTriage => ({ lane: "quiet", reason, urgent: false });
+  const check = (reason: CallReason): CallTriage => ({ lane: "check", reason, urgent: false });
+  const todo = (reason: CallReason): CallTriage => ({
+    lane: "todo",
+    reason,
+    urgent: x?.urgency === "high",
+  });
+
+  // 1 · A person has decided.
+  if (row.ticket_id) return { lane: "done", reason: "ticketed", urgent: false };
+  if (row.disposition === "handled") return { lane: "done", reason: "handled", urgent: false };
+  if (row.disposition === "spam") return quiet("spam");
+  if (row.disposition === "needs_action") return todo("marked_needs_action");
+
+  // 2 · The system could not finish reading it.
+  if (row.status === "failed") return check("failed");
+  if (row.status === "received" || row.status === "understood") {
+    return check(row.ageMinutes > STUCK_MINUTES ? "failed" : "processing");
+  }
+
+  // 3 · Colleagues talking.
+  if (row.internal) return quiet("internal");
+
+  // 4 · Something was promised to a customer.
+  if ((x?.commitments ?? []).length > 0) return todo("promise");
+
+  const said = (row.body_text ?? "").trim();
+  const barelySpoken =
+    said.length < MIN_SPEECH_CHARS ||
+    (row.duration_seconds != null && row.duration_seconds < SHORT_SECONDS && said.length < 80);
+
+  // 5 · Someone left a message and is waiting.
+  if (row.channel === "voicemail" && !barelySpoken) return todo("callback");
+
+  // 6 · A request — do we know enough to act on it?
+  const isRequest = x?.intent === "repair_request" || x?.intent === "order_inquiry";
+  if (isRequest) {
+    if (!row.matched_organization_id && orgCandidateCount(row.match_candidates) >= 2) {
+      return check("which_customer");
+    }
+    if (
+      x?.confidence === "low" &&
+      row.transcript_confidence != null &&
+      row.transcript_confidence < UNCLEAR_CLARITY
+    ) {
+      return check("unclear");
+    }
+    return todo("request");
+  }
+
+  // 7 · Nothing to act on.
+  if (row.disposition !== "not_spam" && isSuspectedSpam(row.spam_signals)) return quiet("spam");
+  if (barelySpoken) return quiet("no_speech");
+  return quiet("no_request");
+}
+
+/** Lane order on the page and in counts. */
+export const LANE_ORDER: CallLane[] = ["todo", "check", "done", "quiet"];
+
+/** Does this lane leave work for a person? A day holding any stays open. */
+export function isOpenLane(lane: CallLane): boolean {
+  return lane === "todo" || lane === "check";
+}

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations, getLocale } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
@@ -13,6 +12,8 @@ import {
   runInboundPipeline,
   type StageResult,
 } from "@/lib/inbound/pipeline";
+import { revalidateInbound } from "@/lib/calls/revalidate";
+import { canActOnInbound } from "@/lib/calls/access";
 
 export type ProcessResult = { ok: true } | { ok: false; error: string };
 
@@ -65,7 +66,7 @@ async function mapStageError(
 }
 
 function done(messageId: string): ProcessResult {
-  revalidatePath(`/inbox/${messageId}`);
+  revalidateInbound(messageId);
   return { ok: true };
 }
 
@@ -76,9 +77,12 @@ function done(messageId: string): ProcessResult {
  */
 export async function setDisposition(
   messageId: string,
-  disposition: "pending" | "spam" | "not_spam" | "handled",
+  disposition: "pending" | "spam" | "not_spam" | "handled" | "needs_action",
 ): Promise<ProcessResult> {
   const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("inbound_messages")
@@ -87,7 +91,7 @@ export async function setDisposition(
   if (error) {
     return { ok: false, error: t("inboundCouldNotSave", { detail: error.message }) };
   }
-  revalidatePath("/inbox");
+  revalidateInbound();
   return done(messageId);
 }
 
@@ -102,6 +106,9 @@ export async function saveExtraction(
   jsonText: string,
 ): Promise<ProcessResult> {
   const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonText);
@@ -139,6 +146,9 @@ export async function saveBodyText(
   text: string,
 ): Promise<ProcessResult> {
   const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const body = text.trim();
 
   const supabase = createServiceClient();
@@ -159,6 +169,10 @@ export async function saveBodyText(
 export async function runTranscription(
   messageId: string,
 ): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
   const settings = await loadInboundSettings(supabase);
   const r = await transcribeStage(supabase, messageId, settings);
@@ -168,6 +182,10 @@ export async function runTranscription(
 
 /** Extraction stage (Slice C) — body_text → structured extraction. */
 export async function runExtraction(messageId: string): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
   const settings = await loadInboundSettings(supabase);
   const r = await extractStage(supabase, messageId, settings);
@@ -177,6 +195,10 @@ export async function runExtraction(messageId: string): Promise<ProcessResult> {
 
 /** Match stage (Slice D) — deterministic; no model, no external keys. */
 export async function runMatch(messageId: string): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
   const locale = await getLocale();
   const r = await matchStage(supabase, messageId, locale);
@@ -190,6 +212,10 @@ export async function runMatch(messageId: string): Promise<ProcessResult> {
  * reason (via the shared core, same path the Twilio webhook runs).
  */
 export async function runPipeline(messageId: string): Promise<ProcessResult> {
+  const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
   const locale = await getLocale();
   const r = await runInboundPipeline(supabase, messageId, locale);

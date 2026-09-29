@@ -17,7 +17,9 @@ const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, Capability]> = [
   ["/bike-templates", "templates"],
   ["/parts", "parts"],
   ["/maintenance", "maintenance"],
+  // /inbox redirects to /calls (DECISIONS 2026-09-29); gated like it.
   ["/inbox", "inbox"],
+  ["/commands", "inbox"],
   ["/work", "work"],
   ["/scan", "scan"],
   // QR sticker pages are bike surfaces (print sheets, single stickers).
@@ -80,6 +82,9 @@ export function routeCapabilities(
   if (TEMPLATE_EDIT_ROUTES.some((re) => re.test(pathname))) {
     return ["templates_edit"];
   }
+  // Calls: every line with `inbox`, a technician's own with `calls_own`; the
+  // page and every action narrow further by row (src/lib/calls/access.ts).
+  if (pathname === "/calls" || pathname.startsWith("/calls/")) return ["inbox", "calls_own"];
   // The scheduled jobs are their own capability, not `admin` (migration 109).
   if (pathname === "/admin/jobs" || pathname.startsWith("/admin/jobs/")) {
     return ["jobs"];

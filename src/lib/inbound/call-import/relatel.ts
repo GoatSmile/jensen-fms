@@ -56,13 +56,8 @@ type RelatelVoicemail = {
   endpoint_name?: string | null;
 };
 
-function token(): string | null {
-  return process.env.RELATEL_TOKEN?.trim() || null;
-}
-
-async function api<T>(path: string): Promise<AdapterResult<T>> {
-  const bearer = token();
-  if (!bearer) return { ok: false, error: "RELATEL_TOKEN is not set" };
+async function api<T>(bearer: string, path: string): Promise<AdapterResult<T>> {
+  if (!bearer) return { ok: false, error: "no token for this line" };
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -96,7 +91,7 @@ function selectedEndpoint(
   return (call.nodes ?? []).find((n) => n.endpoint && wanted.has(n.endpoint)) ?? null;
 }
 
-async function listCalls(since: Date): Promise<AdapterResult<RelatelCall[]>> {
+async function listCalls(token: string, since: Date): Promise<AdapterResult<RelatelCall[]>> {
   const seen = new Map<string, RelatelCall>();
   let upper: string | null = null;
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -105,7 +100,7 @@ async function listCalls(since: Date): Promise<AdapterResult<RelatelCall[]>> {
       limit: String(PAGE),
     });
     if (upper) q.set("started_at_lt_or_eq", upper);
-    const r = await api<{ calls?: RelatelCall[] }>(`/calls?${q}`);
+    const r = await api<{ calls?: RelatelCall[] }>(token, `/calls?${q}`);
     if (!r.ok) return r;
     const calls = r.value.calls ?? [];
     const before = seen.size;
@@ -118,13 +113,16 @@ async function listCalls(since: Date): Promise<AdapterResult<RelatelCall[]>> {
   return { ok: true, value: [...seen.values()] };
 }
 
-async function listVoicemails(since: Date): Promise<AdapterResult<RelatelVoicemail[]>> {
+async function listVoicemails(
+  token: string,
+  since: Date,
+): Promise<AdapterResult<RelatelVoicemail[]>> {
   const seen = new Map<number, RelatelVoicemail>();
   let upper: string | null = null;
   for (let page = 0; page < MAX_PAGES; page++) {
     const q = new URLSearchParams({ limit: String(PAGE) });
     if (upper) q.set("created_at_lt_or_eq", upper);
-    const r = await api<{ voice_mails?: RelatelVoicemail[] }>(`/voice_mails?${q}`);
+    const r = await api<{ voice_mails?: RelatelVoicemail[] }>(token, `/voice_mails?${q}`);
     if (!r.ok) return r;
     const vms = r.value.voice_mails ?? [];
     const before = seen.size;
@@ -147,27 +145,33 @@ async function listVoicemails(since: Date): Promise<AdapterResult<RelatelVoicema
 }
 
 export const relatelAdapter: CallImportAdapter = {
-  async listEndpoints() {
+  async listEndpoints(token) {
     const r = await api<{
-      employees?: { endpoint?: string; name?: string; number_formatted?: string }[];
-    }>("/employees");
+      employees?: {
+        endpoint?: string;
+        name?: string;
+        number?: string;
+        number_formatted?: string;
+      }[];
+    }>(token, "/employees");
     if (!r.ok) return r;
     const endpoints: CallEndpoint[] = (r.value.employees ?? [])
       .filter((e) => e.endpoint)
       .map((e) => ({
         id: e.endpoint as string,
         name: e.name?.trim() || e.number_formatted || (e.endpoint as string),
+        number: relatelToE164(e.number),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "da"));
     return { ok: true, value: endpoints };
   },
 
-  async listRecorded({ since, endpoints, voicemails }) {
+  async listRecorded(token, { since, endpoints, voicemails }) {
     const wanted = new Set(endpoints);
     if (wanted.size === 0) return { ok: true, value: [] };
     const items: RecordedItem[] = [];
 
-    const calls = await listCalls(since);
+    const calls = await listCalls(token, since);
     if (!calls.ok) return calls;
     for (const c of calls.value) {
       const rec = c.recording;
@@ -188,7 +192,7 @@ export const relatelAdapter: CallImportAdapter = {
     }
 
     if (voicemails) {
-      const vms = await listVoicemails(since);
+      const vms = await listVoicemails(token, since);
       if (!vms.ok) return vms;
       for (const v of vms.value) {
         if (!v.endpoint || !wanted.has(v.endpoint)) continue;
@@ -210,9 +214,8 @@ export const relatelAdapter: CallImportAdapter = {
     return { ok: true, value: items };
   },
 
-  async fetchAudio(item) {
-    const bearer = token();
-    if (!bearer) return { ok: false, error: "RELATEL_TOKEN is not set" };
+  async fetchAudio(bearer, item) {
+    if (!bearer) return { ok: false, error: "no token for this line" };
     // Only ever our own API host: the ref came from Relatel's response, and a
     // bearer token must not follow a URL anywhere else.
     if (!item.audioRef.startsWith(`${BASE}/`)) {

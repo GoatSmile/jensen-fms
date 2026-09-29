@@ -17,6 +17,12 @@ export type NavItem = {
   labelKey: string;
   /** Which role capability shows this item (people & roles P2). */
   capability: Capability;
+  /**
+   * Further capabilities that ALSO show it — any one suffices, the same rule
+   * routes.ts applies. Calls opens with `inbox` (every line) or `calls_own`
+   * (a technician's own line).
+   */
+  orCapabilities?: readonly Capability[];
   /** Match this route exactly (no prefix matching) — used for the root link. */
   exact?: boolean;
 };
@@ -118,7 +124,12 @@ export const NAV_GROUPS: NavGroup[] = [
         capability: "maintenance",
       },
       { href: "/work", labelKey: "workshopFloor", capability: "work" },
-      { href: "/inbox", labelKey: "inbox", capability: "inbox" },
+      {
+        href: "/calls",
+        labelKey: "calls",
+        capability: "inbox",
+        orCapabilities: ["calls_own"],
+      },
     ],
   },
   {
@@ -200,7 +211,11 @@ export function filterNavGroups(allowed: string[] | null): NavGroup[] {
   if (allowed === null) return NAV_GROUPS;
   return NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => allowed.includes(item.capability)),
+    items: group.items.filter(
+      (item) =>
+        allowed.includes(item.capability) ||
+        (item.orCapabilities ?? []).some((c) => allowed.includes(c)),
+    ),
   })).filter((group) => group.items.length > 0);
 }
 

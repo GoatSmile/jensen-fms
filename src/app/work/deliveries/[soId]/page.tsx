@@ -143,7 +143,8 @@ export default async function DeliveryNotePage({
               {L.signedAt}:{" "}
               {new Date(note.signedAt).toLocaleString(
                 note.language === "da" ? "da-DK" : "en-GB",
-                { dateStyle: "medium", timeStyle: "short" },
+                // Server-rendered: without a zone this printed UTC on the note.
+                { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Copenhagen" },
               )}
             </p>
           </section>

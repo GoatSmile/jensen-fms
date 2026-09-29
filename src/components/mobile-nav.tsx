@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
+import { CommandSheet } from "@/components/command-sheet";
 
 /**
  * Mobile top bar with a hamburger drawer — shown only below md. Desktop uses
@@ -226,8 +227,13 @@ export function MobileNav({
       <Link href="/" aria-label={t("logoAria")} className="flex items-center">
         <LogoMark heightClass="h-7" />
       </Link>
-      {/* Right side spacer matches the hamburger size so the logo sits centred-ish. */}
-      <div className="size-8" aria-hidden />
+      {/* Right side: Dictate a command for those who may run one; otherwise a
+          spacer the hamburger's size so the logo still sits centred. */}
+      {allowedCaps === null || allowedCaps.includes("inbox") ? (
+        <CommandSheet variant="mobile" />
+      ) : (
+        <div className="size-8" aria-hidden />
+      )}
     </header>
   );
 }

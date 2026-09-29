@@ -27,6 +27,7 @@ import {
 import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
+import { CommandSheet } from "@/components/command-sheet";
 
 export function AppSidebar({
   allowedCaps,
@@ -101,6 +102,13 @@ export function AppSidebar({
         </Link>
       </div>
       <TooltipProvider>
+        {/* Dictate a command — a tool, reachable from every page (it left the
+            inbox, which is a work queue). Command actions need `inbox`. */}
+        {allowedCaps === null || allowedCaps.includes("inbox") ? (
+          <div className="px-2 pb-1">
+            <CommandSheet variant={collapsed ? "rail" : "sidebar"} />
+          </div>
+        ) : null}
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
           {groups.map((group) => {
             const Icon = group.icon;

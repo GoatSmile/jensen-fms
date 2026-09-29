@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { revalidateInbound } from "@/lib/calls/revalidate";
+import { canActOnInbound } from "@/lib/calls/access";
 
 export type SaveCallerResult = { ok: true } | { ok: false; error: string };
 
@@ -23,6 +24,9 @@ export async function saveCallerToContact(
   target: { kind: "existing"; contactId: string } | { kind: "new"; name: string },
 ): Promise<SaveCallerResult> {
   const t = await getTranslations("errors");
+  if (!(await canActOnInbound(messageId))) {
+    return { ok: false, error: t("callNoAccess") };
+  }
   const supabase = createServiceClient();
 
   const { data: msg, error: loadErr } = await supabase
@@ -83,7 +87,6 @@ export async function saveCallerToContact(
     return { ok: false, error: t("couldNotSave", { detail: linkErr.message }) };
   }
 
-  revalidatePath(`/inbox/${messageId}`);
-  revalidatePath("/inbox");
+  revalidateInbound(messageId);
   return { ok: true };
 }

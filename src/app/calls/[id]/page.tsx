@@ -1,0 +1,527 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+
+import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Panel } from "@/components/ui/panel";
+import { createServiceClient } from "@/lib/supabase/service";
+import { formatDateTime } from "@/lib/parts/format";
+import { INBOUND_STATUS_VARIANT, commandStatusKey } from "@/lib/inbound/types";
+import type { MatchCandidates } from "@/lib/inbound/match";
+import {
+  inboundSecretStatus,
+  loadInboundSettings,
+} from "@/lib/inbound/settings";
+
+import { isSpamFolded } from "@/lib/inbound/triage";
+import { parseCommandPlan } from "@/lib/inbound/command/plan";
+
+import { readCallsScope, scopeAllowsRow } from "@/lib/calls/access";
+import { CommandPlanPanel } from "./_components/command-plan-panel";
+import { MatchPanel } from "./_components/match-panel";
+import { TranscriptPanel } from "./_components/transcript-panel";
+import { RoutedAction } from "./_components/routed-action";
+import { DispositionAction } from "./_components/disposition-action";
+import { SaveCallerAction } from "./_components/save-caller-action";
+
+/**
+ * Inbound message detail — the review surface. Slice A renders the raw
+ * message + audio player + empty stage panels (transcript / extraction /
+ * match), each showing "pending" until the corresponding slice (B/C/D)
+ * fills it. The media lives in a private bucket, so playback uses a
+ * short-lived signed URL minted server-side by the service client.
+ */
+export default async function InboundDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const [t, tCommon, tStatus, tChannel, tOutcome] = await Promise.all([
+    getTranslations("inbox"),
+    getTranslations("common"),
+    getTranslations("inboundStatus"),
+    getTranslations("inboundChannel"),
+    getTranslations("inboundOutcome"),
+  ]);
+
+  const supabase = createServiceClient();
+  const { data: msg, error } = await supabase
+    .from("inbound_messages")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load inbound message: ${error.message}`);
+  }
+  if (!msg) notFound();
+  // The service client bypasses RLS, so the Calls access rule is applied
+  // here: someone else's call (or a command, without `inbox`) is not found.
+  if (!scopeAllowsRow(await readCallsScope(), msg)) notFound();
+  const tCalls = await getTranslations("calls");
+
+  // Command messages (VC-1) take a different review surface: the agent's plan
+  // of proposed draft actions, applied one by one. No audio / extraction /
+  // match panels — the command agent is the whole pipeline.
+  if (msg.kind === "command") {
+    const tc = await getTranslations("inboxCommand");
+    const plan = parseCommandPlan(msg.command_plan);
+    const ctx = await loadPlanContext(supabase, id);
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">{tCommon("crumbDashboard")}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/commands">{tCalls("commandsTitle")}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{t("commandCrumb")}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+        <header className="flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-semibold">{t("commandCrumb")}</h1>
+          <Badge variant="outline" className="font-normal">
+            {tChannel.has(msg.channel) ? tChannel(msg.channel) : msg.channel}
+          </Badge>
+          <Badge variant={INBOUND_STATUS_VARIANT[msg.status]}>
+            {tc(commandStatusKey(msg.status))}
+          </Badge>
+        </header>
+
+        {msg.body_text ? (
+          <Panel title={t("commandTranscript")}>
+            <p className="text-sm whitespace-pre-wrap">{msg.body_text}</p>
+          </Panel>
+        ) : null}
+
+        {msg.status === "failed" ? (
+          <p className="text-destructive text-sm" role="alert">
+            {msg.error}
+          </p>
+        ) : (
+          <CommandPlanPanel
+            messageId={msg.id}
+            plan={plan}
+            applied={ctx.applied}
+            templates={ctx.templates}
+            segments={ctx.segments}
+            colors={ctx.colors}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Signed URL for playback (private bucket) — 1 h is ample for a review pass.
+  let mediaUrl: string | null = null;
+  if (msg.media_path) {
+    const { data: signed } = await supabase.storage
+      .from("inbound")
+      .createSignedUrl(msg.media_path, 3600);
+    mediaUrl = signed?.signedUrl ?? null;
+  }
+
+  const meta = (msg.channel_meta ?? {}) as {
+    original_filename?: string;
+    source?: string;
+    call_direction?: string;
+    call_endpoint_name?: string;
+  };
+  // Imported from the shop's own phone system (migration 111): say which way
+  // the call went and whose phone it was on — "From" alone reads as the
+  // caller even when the workshop rang out.
+  const importedCall =
+    meta.source === "relatel"
+      ? [
+          meta.call_direction === "outgoing" ? t("callOutgoing") : t("callIncoming"),
+          meta.call_endpoint_name,
+          t("callViaRelatel"),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
+
+  // A captured call with no message + no transcript is a contact event, not a
+  // voicemail — show its metadata, skip the pipeline panels.
+  const hasContent = Boolean(msg.media_path || msg.body_text);
+  const isCallEvent =
+    msg.call_outcome != null && msg.call_outcome !== "message_left" && !hasContent;
+  const outcomeKey = msg.call_outcome ? OUTCOME_KEY[msg.call_outcome] : null;
+  const outcomeLabel = msg.call_outcome
+    ? outcomeKey && tOutcome.has(outcomeKey)
+      ? tOutcome(outcomeKey)
+      : msg.call_outcome
+    : null;
+
+  // Trust signals: transcript clarity (acoustic, 0..1) and the model's own
+  // parse confidence (ordinal). Kept separate — never blended.
+  const clarity = msg.transcript_confidence;
+  const parseConfidence =
+    (msg.extraction as { confidence?: string } | null)?.confidence ?? null;
+  const intent =
+    (msg.extraction as { intent?: string } | null)?.intent ?? null;
+
+  // Triage (layer 5): spam signals + fold state, plus a "suspected but not
+  // yet decided" flag driving the review banner.
+  const spamSignals = Array.isArray(msg.spam_signals)
+    ? (msg.spam_signals as string[])
+    : [];
+  const spamFolded = isSpamFolded({
+    disposition: msg.disposition,
+    spam_signals: msg.spam_signals,
+    ticket_id: msg.ticket_id,
+  });
+
+  // P2: a sales enquiry can carry a plan of proposed DRAFT actions, reviewed
+  // in the same panel the VC-1 command surface uses. Only fetch the open-slot
+  // vocabulary when there is actually a plan to render.
+  const leadPlan = msg.command_plan ? parseCommandPlan(msg.command_plan) : null;
+  const leadCtx = leadPlan ? await loadPlanContext(supabase, id) : null;
+
+  // Shadow-mode flag + the linked ticket's number (if one was created).
+  const settings = await loadInboundSettings(supabase);
+  const { shadowMode } = settings;
+  const secrets = inboundSecretStatus(settings);
+  const extractionReady = secrets.extraction.every((s) => s.present);
+  const transcriptionReady = secrets.transcription.every((s) => s.present);
+  let ticketNumber: string | null = null;
+  if (msg.ticket_id) {
+    const { data: ticket } = await supabase
+      .from("maintenance_tickets")
+      .select("ticket_number")
+      .eq("id", msg.ticket_id)
+      .maybeSingle();
+    ticketNumber = ticket?.ticket_number ?? null;
+  }
+
+  // Learning loop: when the org is known but the caller's number isn't on any
+  // contact, offer to link it — future calls then match automatically.
+  let saveCaller:
+    | { orgName: string; contacts: { id: string; name: string; phone: string | null }[] }
+    | null = null;
+  if (
+    !isCallEvent &&
+    msg.from_identity &&
+    !msg.matched_contact_id &&
+    msg.matched_organization_id
+  ) {
+    const [{ data: org }, { data: cs }] = await Promise.all([
+      supabase
+        .from("organizations")
+        .select("display_name_en, display_name_da, legal_name")
+        .eq("id", msg.matched_organization_id)
+        .maybeSingle(),
+      supabase
+        .from("contacts")
+        .select("id, first_name, last_name, phone")
+        .eq("organization_id", msg.matched_organization_id)
+        .is("deleted_at", null)
+        .limit(50),
+    ]);
+    saveCaller = {
+      orgName:
+        org?.display_name_da || org?.display_name_en || org?.legal_name || "—",
+      contacts: (cs ?? []).map((c) => ({
+        id: c.id,
+        name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+        phone: c.phone,
+      })),
+    };
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/">{tCommon("crumbDashboard")}</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/calls">{tCalls("title")}</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{t("detailCrumb")}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <header className="flex flex-wrap items-center gap-3">
+        <h1 className="text-2xl font-semibold">
+          {meta.original_filename || t("detailCrumb")}
+        </h1>
+        <Badge variant="outline" className="font-normal">
+          {tChannel(msg.channel)}
+        </Badge>
+        <Badge variant={INBOUND_STATUS_VARIANT[msg.status]}>
+          {tStatus(msg.status)}
+        </Badge>
+      </header>
+
+      {/* Facts */}
+      <Panel contentClassName="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+        <dl className="contents">
+        <Fact label={t("fromLabel")}>
+          <span className="font-mono">
+            {msg.from_identity ?? (
+              <span className="text-muted-foreground">
+                {t("unknownSender")}
+              </span>
+            )}
+          </span>
+        </Fact>
+        {importedCall ? <Fact label={t("callLabel")}>{importedCall}</Fact> : null}
+        <Fact label={t("receivedLabel")}>
+          {formatDateTime(msg.received_at)}
+        </Fact>
+        <Fact label={t("languageLabel")}>
+          {msg.language ?? <span className="text-muted-foreground">—</span>}
+        </Fact>
+        {msg.duration_seconds != null ? (
+          <Fact label={t("durationLabel")}>
+            {formatDuration(msg.duration_seconds)}
+          </Fact>
+        ) : null}
+        {outcomeLabel ? (
+          <Fact label={t("outcomeLabel")}>{outcomeLabel}</Fact>
+        ) : null}
+        {clarity != null ? (
+          <Fact label={t("clarityLabel")}>
+            <span className={clarity < 0.6 ? "text-money" : undefined}>
+              {Math.round(clarity * 100)}% · {t(clarityKey(clarity))}
+            </span>
+          </Fact>
+        ) : null}
+        {parseConfidence && t.has(CONF_KEY[parseConfidence] ?? "") ? (
+          <Fact label={t("parseLabel")}>
+            <span className={parseConfidence === "low" ? "text-money" : undefined}>
+              {t(CONF_KEY[parseConfidence])}
+            </span>
+          </Fact>
+        ) : null}
+        </dl>
+      </Panel>
+
+      <DispositionAction
+        messageId={msg.id}
+        disposition={msg.disposition}
+        isSpam={spamFolded}
+        signals={spamSignals}
+      />
+
+      {isCallEvent ? (
+        <Panel>
+          <p className="text-ink-2 text-sm">{t("callEventNote")}</p>
+        </Panel>
+      ) : (
+        <>
+          {/* Audio */}
+          <Panel title={t("audioTitle")}>
+            {mediaUrl ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <audio controls preload="metadata" className="w-full">
+                <source src={mediaUrl} type={msg.media_mime_type ?? undefined} />
+              </audio>
+            ) : (
+              <p className="text-ink-3 text-sm italic">{t("noAudio")}</p>
+            )}
+          </Panel>
+
+          {/* Pipeline stages. Transcript is editable (Slice-C harness ingress);
+              extraction + match live in MatchPanel. */}
+          <TranscriptPanel
+            messageId={msg.id}
+            initialBody={msg.body_text}
+            hasAudio={Boolean(msg.media_path)}
+            transcriptionReady={transcriptionReady}
+            extractionReady={extractionReady}
+          />
+          <MatchPanel
+            messageId={msg.id}
+            initialExtractionJson={
+              msg.extraction ? JSON.stringify(msg.extraction, null, 2) : ""
+            }
+            hasExtraction={msg.extraction != null}
+            matchCandidates={
+              (msg.match_candidates as MatchCandidates | null) ?? null
+            }
+            matchedOrganizationId={msg.matched_organization_id}
+            matchedContactId={msg.matched_contact_id}
+            matchedBikeId={msg.matched_bike_id}
+          />
+
+          {saveCaller ? (
+            <SaveCallerAction
+              messageId={msg.id}
+              fromIdentity={msg.from_identity ?? ""}
+              orgName={saveCaller.orgName}
+              orgContacts={saveCaller.contacts}
+              defaultName={
+                (msg.extraction as { callerName?: string } | null)?.callerName ??
+                ""
+              }
+            />
+          ) : null}
+
+          {!spamFolded ? (
+            <RoutedAction
+              messageId={msg.id}
+              intent={intent}
+              ticketId={msg.ticket_id}
+              ticketNumber={ticketNumber}
+              disposition={msg.disposition}
+              canAct={msg.status === "matched"}
+              shadowMode={shadowMode}
+              hasPlan={Boolean(leadPlan)}
+            />
+          ) : null}
+
+          {leadPlan && leadCtx && !spamFolded ? (
+            <CommandPlanPanel
+              messageId={msg.id}
+              plan={leadPlan}
+              applied={leadCtx.applied}
+              templates={leadCtx.templates}
+              segments={leadCtx.segments}
+              colors={leadCtx.colors}
+            />
+          ) : null}
+        </>
+      )}
+
+      {msg.error ? (
+        <p className="text-destructive text-sm" role="alert">
+          {msg.error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+type PlanContext = {
+  applied: Record<string, { entityTable: string | null; entityId: string | null }>;
+  templates: { id: string; label: string }[];
+  segments: { id: string; label: string }[];
+  colors: { id: string; label: string }[];
+};
+
+/**
+ * Open-slot vocabulary + applied-state for the CommandPlanPanel. Shared by
+ * both surfaces that render a plan: the VC-1 command page, and a sales
+ * enquiry's plan on an ordinary inbound message (P2).
+ */
+async function loadPlanContext(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+): Promise<PlanContext> {
+  const [{ data: actions }, { data: templates }, { data: segments }, { data: colors }] =
+    await Promise.all([
+      supabase
+        .from("command_actions")
+        .select("plan_action_id, entity_table, entity_id")
+        .eq("message_id", messageId),
+      supabase
+        .from("bike_templates")
+        .select("id, name_en, name_da, frame_size")
+        .eq("is_current", true)
+        .order("name_en"),
+      supabase
+        .from("customer_segments")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order"),
+      supabase
+        .from("colors")
+        .select("id, name_en, name_da")
+        .eq("is_active", true)
+        .order("sort_order"),
+    ]);
+  const pick = (en: string | null, da: string | null) => da || en || "—";
+  const applied: PlanContext["applied"] = {};
+  for (const a of actions ?? []) {
+    applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id };
+  }
+  return {
+    applied,
+    templates: (templates ?? []).map((tpl) => ({
+      id: tpl.id,
+      label: [pick(tpl.name_en, tpl.name_da), tpl.frame_size].filter(Boolean).join(" · "),
+    })),
+    segments: (segments ?? []).map((s) => ({ id: s.id, label: pick(s.name_en, s.name_da) })),
+    colors: (colors ?? []).map((c) => ({ id: c.id, label: pick(c.name_en, c.name_da) })),
+  };
+}
+
+/** Maps a stored call_outcome to its `inboundOutcome` message key. */
+const OUTCOME_KEY: Record<string, string> = {
+  answered: "answered",
+  message_left: "messageLeft",
+  no_message: "noMessage",
+  busy: "busy",
+  "no-answer": "noAnswer",
+  failed: "failed",
+  canceled: "canceled",
+};
+
+/** Transcript clarity bucket → `inbox` message key. */
+function clarityKey(confidence: number): string {
+  if (confidence >= 0.85) return "clarityClear";
+  if (confidence >= 0.6) return "clarityFair";
+  return "clarityGarbled";
+}
+
+/** Extraction parse-confidence ordinal → `inbox` message key. */
+const CONF_KEY: Record<string, string> = {
+  low: "confLow",
+  medium: "confMedium",
+  high: "confHigh",
+};
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m ${s}s`;
+}
+
+function Fact({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+        {label}
+      </dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}

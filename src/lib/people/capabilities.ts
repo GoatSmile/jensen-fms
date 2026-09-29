@@ -29,7 +29,11 @@ export const CAPABILITIES = [
   { key: "templates_edit", navLabelKey: null, adminLabelKey: "capTemplatesEdit" },
   { key: "parts", navLabelKey: "parts" },
   { key: "maintenance", navLabelKey: "maintenance" },
-  { key: "inbox", navLabelKey: "inbox" },
+  // `inbox` = every phone line's calls, the main number and dictated
+  // commands (office). `calls_own` = the Calls page for one's OWN line only
+  // (a technician, migration 112) — no nav label of its own.
+  { key: "inbox", navLabelKey: "calls" },
+  { key: "calls_own", navLabelKey: null, adminLabelKey: "capCallsOwn" },
   { key: "work", navLabelKey: "workshopFloor" },
   { key: "scan", navLabelKey: null, adminLabelKey: "capScan" },
   { key: "mo", navLabelKey: "manufacturingOrders" },

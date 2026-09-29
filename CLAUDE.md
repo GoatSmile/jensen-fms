@@ -625,12 +625,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (Relatel) has no webhooks, so the `import-calls` job (every 5 min) imports
   each recorded call and voicemail into the same row shape
   (`src/lib/inbound/call-import/`, migration 111), idempotent on the unique
-  `channel_meta.external_id`. Provider, whose calls (picked from the
-  provider's LIVE employee list, never typed), voicemails and lookback are
-  `/admin/settings → Phone & inbox`; only `RELATEL_TOKEN` is env, and it must
-  be the technician's OWN token — only a number's own user may hear its
-  recordings. Relatel's `?endpoint=` filter does not filter, so selection is
-  in code, on the endpoint and every path node. **Relatel's OUTGOING-call recordings are
+  `channel_meta.external_id`. **A call belongs to a PHONE LINE and its
+  PERSON** (`phone_lines`, migration 112): every line the provider lists is
+  stored (its number is how a call between colleagues is known to be
+  internal), each mapped to a person or labelled as shared, import on/off, and
+  each naming the env var holding ITS token — only a number's own user may hear
+  its recordings, so tokens are per line (`RELATEL_TOKEN`,
+  `RELATEL_TOKEN_<NAME>`; the name is pattern-checked in the app, in the DB and
+  before every read, and `readLineToken` in `src/lib/calls/lines.ts` is the
+  only reader). Calls are STAMPED with `phone_line_id` + `handled_by_person_id`
+  at import and never re-derived. Set up at `/admin/settings → Phone & inbox`.
+  Relatel's `?endpoint=` filter does not filter, so selection is in code, on
+  the endpoint and every path node, and **its stereo channel order is not a
+  contract** — only Twilio's is, so only Twilio rows get Customer/Workshop
+  labels (`channelRoles`); everything else is "Speaker N", flagged inferred. **Relatel's OUTGOING-call recordings are
   mixed-format MP3** (a mono block the length of the call, then a stereo
   tail) — browsers play them, Gladia refuses them as "Failed to fetch audio".
   `ensureTranscribableAudio` (`src/lib/inbound/audio/`) runs inside the
@@ -638,8 +646,18 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   longest one-format run as `media_path` and the original at
   `channel_meta.original_media_path`, which the retention job deletes too. Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
-  the tech. Review queue at `/inbox` (in the *Work* nav group — it is a review
-  queue, not admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
+  the tech. **The review queue is `/calls`** (*Calls*, in the *Work* group;
+  `/inbox` redirects), by Danish day, tabs per person for the office. Each
+  call's group — to do / check / no action / done — is DERIVED by
+  `triageCall` (`src/lib/calls/triage.ts`) and never stored; the only stored
+  input a person controls is `disposition` (`needs_action` added). **A day
+  with open work is never folded**, and open calls older than the page's
+  window are loaded too. Who sees which rows is ONE rule, `readCallsScope` /
+  `canActOnInbound` (`src/lib/calls/access.ts`): `inbox` = every line,
+  `calls_own` = your own; the list, the detail page and EVERY action apply it,
+  because the pages read with the service client. Dictated commands left the
+  queue: a *Dictate a command* sheet in the app chrome, history at
+  `/commands`. Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
   residency.
@@ -653,10 +671,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   second place to configure it. **The Web Speech API it replaced is not an
   option to revisit**: on desktop Chrome it streams to Google's servers, so it
   fails with a bare `network` error on any Chromium without Google's key
-  (DECISIONS 2026-09-13). Two consequences: a failed transcription must KEEP the
-  recording for a retry, and **the local Supabase cannot transcribe at all** —
-  the provider fetches the signed URL, so `127.0.0.1` is unreachable to it and
-  end-to-end verification means pointing at production.
+  (DECISIONS 2026-09-13). A failed transcription must KEEP the recording for a
+  retry. **The local copy transcribes too, since 2026-09-30**: the provider
+  fetches a signed URL, and one pointing at `127.0.0.1` reaches the
+  provider's own machine — so when `isPubliclyReachableUrl`
+  (`src/lib/net/public-url.ts`, parsed hostname, never a substring) says the
+  link is not public, the bytes are uploaded to Gladia first; and a "failed to
+  fetch audio" on a link judged public gets one retry as an upload. The dev
+  DB banner uses the same helper.
 - **Outbound is kept, whole, and only `sendAndRecord` may send** (migration 94,
   `src/lib/email/outbox.ts`). One `outbound_messages` row per ATTEMPT — written
   `pending` before the provider is called, stamped `sent` with its id or
@@ -729,8 +751,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     `JOBS` entry + a thin route + a `vercel.json` line + its `adminJobs.jobs.*`
     text; the page flags a job missing either half. Every job must be safe to
     run twice, because *Run now* exists.
-  - **Workshop = `work`, `scan`, `bikes`, `parts`** (re-evaluated 2026-09-26):
-    no dashboard, inbox or office maintenance pages. The build workbench, batch
+  - **Workshop = `work`, `scan`, `bikes`, `parts`, `calls_own`** (re-evaluated
+    2026-09-26; `calls_own` 2026-09-30): no dashboard, office maintenance pages
+    or other people's calls. The build workbench, batch
     build and pick list live under an MO's URL but open with `work` OR `mo`, and
     Kits (`/admin/kits`) open with `parts` — each was a bounce before. A
     technician may change a bike's STATUS but not its CUSTOMER (owner,
@@ -981,7 +1004,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike
   templates · Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
-  orders · Workshop floor · Inbox) · *Orders* (Offers · Sales · Paint orders ·
+  orders · Workshop floor · Calls) · *Orders* (Offers · Sales · Paint orders ·
   Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
   - ***Orders* is ordered by the LIFE OF A JOB, not alphabetically or by

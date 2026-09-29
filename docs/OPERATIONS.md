@@ -55,7 +55,7 @@ purposes, here is every variable the code actually reads:
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` | Supabase |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | Twilio trunk + webhook signature validation |
-| `RELATEL_TOKEN` | call import (migration 111) — **Finn's own** Relatel personal access token, so his recordings can be heard; an admin's will not do. `.env.local` + Vercel Production. Rotate = he makes a new one at `app.relatel.dk/account/authorized_applications`, deletes the old |
+| `RELATEL_TOKEN`, `RELATEL_TOKEN_<NAME>` | call import — **one per phone line** (migration 112): each line at *Settings → Phone & inbox* names its variable, because Relatel lets only a number's own user hear its recordings. `RELATEL_TOKEN` is Finn's; a second person's goes in e.g. `RELATEL_TOKEN_MATHILDE`, created logged in as HER. Only names matching that pattern are ever read. `.env.local` + Vercel Production, then redeploy. Rotate = the person makes a new one at `app.relatel.dk/account/authorized_applications` and deletes the old |
 | `GLADIA_API_KEY` | transcription (selected provider) — also what the Dictate button uses; **confirmed present in Vercel production** (owner, 2026-09-13) |
 | `AZURE_SPEECH_KEY` | fallback transcription adapter |
 | `ANTHROPIC_API_KEY` | extraction LLM |

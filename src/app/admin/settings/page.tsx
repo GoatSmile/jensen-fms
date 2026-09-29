@@ -32,6 +32,7 @@ import {
   TELEPHONY_PROVIDERS,
   CALL_IMPORT_PROVIDERS,
 } from "@/lib/inbound/settings";
+import { defaultTokenEnv, loadPhoneLines, tokenStatus } from "@/lib/calls/lines";
 
 export default async function AdminSettingsPage({
   searchParams,
@@ -66,6 +67,25 @@ export default async function AdminSettingsPage({
           .limit(1)
           .maybeSingle()
       : { data: null };
+  // Phone lines + the people a line can belong to (migration 112).
+  const callProvider = inboundSettings.callImportProvider ?? CALL_IMPORT_PROVIDERS[0].key;
+  const [phoneLines, peopleRes] =
+    section === "phone"
+      ? await Promise.all([
+          loadPhoneLines(supabase, { provider: callProvider }),
+          supabase
+            .from("people")
+            .select("id, full_name")
+            .eq("is_active", true)
+            .eq("is_system", false)
+            .order("full_name"),
+        ])
+      : [[], { data: [] }];
+  const lineDefaultEnv = defaultTokenEnv(callProvider) ?? "RELATEL_TOKEN";
+  const lineTokenStatus = tokenStatus(callProvider, [
+    lineDefaultEnv,
+    ...phoneLines.map((l) => l.token_env),
+  ]);
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
   const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
   const workerLanguage = (
@@ -274,13 +294,15 @@ export default async function AdminSettingsPage({
             >
               <CallImportSettingsForm
                 initialProvider={inboundSettings.callImportProvider ?? ""}
-                initialEndpoints={inboundSettings.callImportEndpoints}
                 initialVoicemails={inboundSettings.callImportVoicemails}
                 initialLookbackHours={String(
                   inboundSettings.callImportLookbackHours,
                 )}
                 providers={CALL_IMPORT_PROVIDERS.map((p) => p.key)}
-                secrets={inboundSecrets.callImport}
+                savedLines={phoneLines}
+                people={(peopleRes.data ?? []).map((p) => ({ id: p.id, name: p.full_name }))}
+                tokenStatus={lineTokenStatus}
+                defaultTokenEnv={lineDefaultEnv}
                 lastRun={
                   lastImportRun
                     ? {

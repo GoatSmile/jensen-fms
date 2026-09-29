@@ -318,6 +318,7 @@ export default async function MOPartsPrintPage({
       <footer className="text-muted-foreground mt-4 text-xs print:fixed print:bottom-4 print:right-6">
         {t("printGenerated", {
           date: new Intl.DateTimeFormat("da-DK", {
+            timeZone: "Europe/Copenhagen",
             day: "2-digit",
             month: "short",
             year: "numeric",

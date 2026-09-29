@@ -2,12 +2,10 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { loadPhoneLines, readLineToken, type PhoneLine } from "@/lib/calls/lines";
+
 import { runInboundPipeline } from "../pipeline";
-import {
-  CALL_IMPORT_PROVIDERS,
-  findProvider,
-  loadInboundSettings,
-} from "../settings";
+import { CALL_IMPORT_PROVIDERS, findProvider, loadInboundSettings } from "../settings";
 import type { VoicemailChannelMeta } from "../types";
 import { relatelAdapter } from "./relatel";
 import type { CallImportAdapter, RecordedItem } from "./types";
@@ -31,21 +29,10 @@ export function callImportAdapter(key: string | null): CallImportAdapter | null 
   return ADAPTERS[key] ?? null;
 }
 
-/** Env secrets the adapter needs that are not set — names only. */
-export function missingCallImportSecrets(key: string): string[] {
-  const entry = findProvider(CALL_IMPORT_PROVIDERS, key);
-  return (entry?.envSecrets ?? []).filter((v) => !process.env[v]);
-}
-
 export type CallImportOutcome = {
   ok: boolean;
   /** Stable, for the caller to localize. */
-  code:
-    | "off"
-    | "missing_secret"
-    | "no_endpoints"
-    | "provider_error"
-    | "done";
+  code: "off" | "no_lines" | "provider_error" | "done";
   summary: string;
   found: number;
   imported: number;
@@ -54,59 +41,80 @@ export type CallImportOutcome = {
   errors: string[];
 };
 
+type Work = { item: RecordedItem; line: PhoneLine; token: string };
+
 /**
- * One import run: list what the provider recorded inside the lookback window,
- * skip what is already here (channel_meta.external_id, unique — migration
- * 111), import the rest and run the pipeline on each. Safe to run twice at
- * once: a second insert of the same call loses on the unique index and
- * removes the audio it uploaded.
+ * One import run (migration 112): for every phone line switched on, ask the
+ * provider — with THAT line's token — what was recorded inside the lookback,
+ * skip what is already here (channel_meta.external_id, unique), import the
+ * rest stamped with the line and its person, and run the pipeline on each.
+ *
+ * Lines are grouped by token and each group is isolated: a missing or refused
+ * token is reported against its own lines and the others still import. Safe
+ * to run twice at once — a second insert of the same call loses on the unique
+ * index and removes the audio it uploaded.
  */
-export async function runCallImport(
-  supabase: SupabaseClient,
-): Promise<CallImportOutcome> {
+export async function runCallImport(supabase: SupabaseClient): Promise<CallImportOutcome> {
   const base = { found: 0, imported: 0, failed: 0, deferred: 0, errors: [] as string[] };
   const settings = await loadInboundSettings(supabase);
-  const adapter = callImportAdapter(settings.callImportProvider);
-  if (!adapter || !settings.callImportProvider) {
+  const provider = settings.callImportProvider;
+  const adapter = callImportAdapter(provider);
+  if (!adapter || !provider) {
     return { ...base, ok: true, code: "off", summary: "Call import is off." };
   }
-  const missing = missingCallImportSecrets(settings.callImportProvider);
-  if (missing.length > 0) {
-    return {
-      ...base,
-      ok: false,
-      code: "missing_secret",
-      summary: `Call import is on, but ${missing.join(", ")} is not set.`,
-    };
-  }
-  if (settings.callImportEndpoints.length === 0) {
-    return {
-      ...base,
-      ok: true,
-      code: "no_endpoints",
-      summary: "Call import is on, but nobody is selected.",
-    };
+  const lines = await loadPhoneLines(supabase, { provider, importingOnly: true });
+  if (lines.length === 0) {
+    return { ...base, ok: true, code: "no_lines", summary: "Call import is on, but no phone line is switched on." };
   }
 
   const since = new Date(Date.now() - settings.callImportLookbackHours * 3_600_000);
-  const listed = await adapter.listRecorded({
-    since,
-    endpoints: settings.callImportEndpoints,
-    voicemails: settings.callImportVoicemails,
-  });
-  if (!listed.ok) {
-    return { ...base, ok: false, code: "provider_error", summary: listed.error, errors: [listed.error] };
+  const errors: string[] = [];
+  const work: Work[] = [];
+  const seen = new Set<string>();
+
+  const groups = new Map<string, PhoneLine[]>();
+  for (const l of lines) {
+    const g = groups.get(l.token_env);
+    if (g) g.push(l);
+    else groups.set(l.token_env, [l]);
+  }
+  for (const [env, group] of groups) {
+    const names = group.map((l) => l.endpoint_name ?? l.endpoint).join(", ");
+    const token = readLineToken(group[0]);
+    if (!token) {
+      errors.push(`${env} is not set — ${names} not imported`);
+      continue;
+    }
+    const byEndpoint = new Map(group.map((l) => [l.endpoint, l]));
+    const listed = await adapter.listRecorded(token, {
+      since,
+      endpoints: [...byEndpoint.keys()],
+      voicemails: settings.callImportVoicemails,
+    });
+    if (!listed.ok) {
+      errors.push(`${names}: ${listed.error}`);
+      continue;
+    }
+    for (const item of listed.value) {
+      const line = byEndpoint.get(item.endpoint);
+      if (!line || seen.has(item.externalId)) continue;
+      seen.add(item.externalId);
+      work.push({ item, line, token });
+    }
   }
 
-  const items = listed.value;
+  if (work.length === 0 && errors.length > 0 && errors.length === groups.size) {
+    return { ...base, ok: false, code: "provider_error", summary: errors.join("; "), errors };
+  }
+
   const known = new Set<string>();
-  if (items.length > 0) {
+  if (work.length > 0) {
     const { data, error } = await supabase
       .from("inbound_messages")
       .select("channel_meta->>external_id")
       .in(
         "channel_meta->>external_id",
-        items.map((i) => i.externalId),
+        work.map((w) => w.item.externalId),
       );
     if (error) {
       return { ...base, ok: false, code: "provider_error", summary: error.message, errors: [error.message] };
@@ -115,50 +123,50 @@ export async function runCallImport(
       if (row.external_id) known.add(row.external_id);
     }
   }
-  const fresh = items.filter((i) => !known.has(i.externalId));
+  // Oldest first, so the list fills in the order the calls happened.
+  const fresh = work
+    .filter((w) => !known.has(w.item.externalId))
+    .sort((a, b) => a.item.startedAt.localeCompare(b.item.startedAt));
   const batch = fresh.slice(0, MAX_NEW_PER_RUN);
 
-  const errors: string[] = [];
   const importedIds: string[] = [];
-  for (const item of batch) {
-    const r = await importOne(supabase, adapter, item);
+  for (const w of batch) {
+    const r = await importOne(supabase, adapter, w);
     if (r.ok) {
       if (r.id) importedIds.push(r.id);
     } else {
-      errors.push(`${item.externalId}: ${r.error}`);
+      errors.push(`${w.item.externalId}: ${r.error}`);
     }
   }
 
   // Side by side: transcription is the slow part and it is the provider's
   // wait, not ours. Each pipeline stamps its own failure on its row, where
-  // the inbox shows it and "Run whole pipeline" retries it.
-  await Promise.allSettled(
-    importedIds.map((id) => runInboundPipeline(supabase, id, "da")),
-  );
+  // the Calls page shows it and "Run whole pipeline" retries it.
+  await Promise.allSettled(importedIds.map((id) => runInboundPipeline(supabase, id, "da")));
 
   const deferred = fresh.length - batch.length;
   return {
     ok: errors.length === 0,
     code: "done",
-    found: items.length,
+    found: work.length,
     imported: importedIds.length,
     failed: errors.length,
     deferred,
     errors,
     summary:
-      `${items.length} recorded in the last ${settings.callImportLookbackHours} h; ` +
+      `${work.length} recorded on ${lines.length} line(s) in the last ${settings.callImportLookbackHours} h; ` +
       `${importedIds.length} imported, ${known.size} already here` +
-      `${errors.length ? `, ${errors.length} failed` : ""}` +
-      `${deferred ? `, ${deferred} left for the next run` : ""}.`,
+      `${errors.length ? `; ${errors.length} problem(s): ${errors.join("; ")}` : ""}` +
+      `${deferred ? `; ${deferred} left for the next run` : ""}.`,
   };
 }
 
 async function importOne(
   supabase: SupabaseClient,
   adapter: CallImportAdapter,
-  item: RecordedItem,
+  { item, line, token }: Work,
 ): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
-  const audio = await adapter.fetchAudio(item);
+  const audio = await adapter.fetchAudio(token, item);
   if (!audio.ok) return audio;
 
   const folder = item.kind === "call" ? "call" : "voicemail";
@@ -192,6 +200,10 @@ async function importOne(
       media_path: objectPath,
       media_mime_type: audio.value.mime,
       channel_meta: meta,
+      // Stamped once, never re-derived: re-mapping the line later must not
+      // move this call to someone else (migration 112).
+      phone_line_id: line.id,
+      handled_by_person_id: line.person_id,
     })
     .select("id")
     .maybeSingle();

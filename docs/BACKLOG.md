@@ -141,6 +141,13 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
     (Dennis, 24 Sep) — phone matching will miss them; see the notice line below.
   - Main-number calls forwarded to Finn (option 2) arrived UNRECORDED on
     29 Sep; unproven either way until a deliberate test call.
+- **Call summaries are written in English** even for a Danish call and a
+  Danish UI (Finn's page reads "The transcript is too fragmented…"). The
+  extraction prompt could write `callSummary`/`problem` in the call's language,
+  or in the reader's. Decide which before touching the prompt.
+- **The Accountant role holds `inbox`, so it can listen to every call.** It came
+  with the old office inbox; now that `inbox` means every phone line's
+  recordings, ask Dennis whether the accountant should keep it.
 - **`cron_runs` grows by ~288 rows a day** once `import-calls` runs every five
   minutes — harmless for months. When `/admin/jobs` slows or the table passes
   ~100k rows, prune runs older than 30 days that were `ok` and changed nothing

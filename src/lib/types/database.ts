@@ -31,11 +31,11 @@ export type Database = {
           id: number
           inbound_bridge_number: string | null
           inbound_bridge_timeout_seconds: number
-          inbound_call_mode: string
           inbound_call_import_endpoints: string[]
           inbound_call_import_lookback_hours: number
           inbound_call_import_provider: string | null
           inbound_call_import_voicemails: boolean
+          inbound_call_mode: string
           inbound_call_transcription_provider: string | null
           inbound_extraction_model: string
           inbound_extraction_provider: string
@@ -72,11 +72,11 @@ export type Database = {
           id?: number
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
-          inbound_call_mode?: string
           inbound_call_import_endpoints?: string[]
           inbound_call_import_lookback_hours?: number
           inbound_call_import_provider?: string | null
           inbound_call_import_voicemails?: boolean
+          inbound_call_mode?: string
           inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
@@ -113,11 +113,11 @@ export type Database = {
           id?: number
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
-          inbound_call_mode?: string
           inbound_call_import_endpoints?: string[]
           inbound_call_import_lookback_hours?: number
           inbound_call_import_provider?: string | null
           inbound_call_import_voicemails?: boolean
+          inbound_call_mode?: string
           inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
@@ -273,6 +273,7 @@ export type Database = {
       }
       bike_identifier_types: {
         Row: {
+          counts_part_category_id: string | null
           created_at: string
           description_da: string | null
           description_en: string | null
@@ -280,13 +281,13 @@ export type Database = {
           id: string
           is_active: boolean
           is_globally_unique: boolean
-          counts_part_category_id: string | null
           name_da: string | null
           name_en: string
           slug: string
           sort_order: number
         }
         Insert: {
+          counts_part_category_id?: string | null
           created_at?: string
           description_da?: string | null
           description_en?: string | null
@@ -294,13 +295,13 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_globally_unique?: boolean
-          counts_part_category_id?: string | null
           name_da?: string | null
           name_en: string
           slug: string
           sort_order?: number
         }
         Update: {
+          counts_part_category_id?: string | null
           created_at?: string
           description_da?: string | null
           description_en?: string | null
@@ -308,13 +309,20 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_globally_unique?: boolean
-          counts_part_category_id?: string | null
           name_da?: string | null
           name_en?: string
           slug?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bike_identifier_types_counts_part_category_id_fkey"
+            columns: ["counts_part_category_id"]
+            isOneToOne: false
+            referencedRelation: "part_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bike_identifiers: {
         Row: {
@@ -1095,7 +1103,15 @@ export type Database = {
           trigger?: string
           triggered_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cron_runs_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       currencies: {
         Row: {
@@ -1371,6 +1387,7 @@ export type Database = {
           error: string | null
           extraction: Json | null
           from_identity: string | null
+          handled_by_person_id: string | null
           id: string
           kind: string
           language: string | null
@@ -1380,6 +1397,7 @@ export type Database = {
           matched_organization_id: string | null
           media_mime_type: string | null
           media_path: string | null
+          phone_line_id: string | null
           processed_at: string | null
           raw_payload: Json | null
           received_at: string
@@ -1403,6 +1421,7 @@ export type Database = {
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
+          handled_by_person_id?: string | null
           id?: string
           kind?: string
           language?: string | null
@@ -1412,6 +1431,7 @@ export type Database = {
           matched_organization_id?: string | null
           media_mime_type?: string | null
           media_path?: string | null
+          phone_line_id?: string | null
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string
@@ -1435,6 +1455,7 @@ export type Database = {
           error?: string | null
           extraction?: Json | null
           from_identity?: string | null
+          handled_by_person_id?: string | null
           id?: string
           kind?: string
           language?: string | null
@@ -1444,6 +1465,7 @@ export type Database = {
           matched_organization_id?: string | null
           media_mime_type?: string | null
           media_path?: string | null
+          phone_line_id?: string | null
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string
@@ -1458,6 +1480,13 @@ export type Database = {
           {
             foreignKeyName: "inbound_messages_commanded_by_fkey"
             columns: ["commanded_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_handled_by_person_id_fkey"
+            columns: ["handled_by_person_id"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
@@ -1481,6 +1510,13 @@ export type Database = {
             columns: ["matched_organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_phone_line_id_fkey"
+            columns: ["phone_line_id"]
+            isOneToOne: false
+            referencedRelation: "phone_lines"
             referencedColumns: ["id"]
           },
           {
@@ -2215,120 +2251,6 @@ export type Database = {
           },
         ]
       }
-      outbound_messages: {
-        Row: {
-          actor_person_id: string | null
-          body_html: string
-          channel: string
-          completed_at: string | null
-          created_at: string
-          entity_ids: string[]
-          error_detail: string | null
-          event_key: string | null
-          from_email: string
-          id: string
-          intended_to: string[]
-          kind: string
-          offer_id: string | null
-          person_id: string | null
-          provider: string
-          provider_id: string | null
-          purchase_order_id: string | null
-          reply_to: string | null
-          service_order_id: string | null
-          status: string
-          subject: string
-          test_mode: boolean
-          to_emails: string[]
-        }
-        Insert: {
-          actor_person_id?: string | null
-          body_html: string
-          channel?: string
-          completed_at?: string | null
-          created_at?: string
-          entity_ids?: string[]
-          error_detail?: string | null
-          event_key?: string | null
-          from_email: string
-          id?: string
-          intended_to?: string[]
-          kind: string
-          offer_id?: string | null
-          person_id?: string | null
-          provider?: string
-          provider_id?: string | null
-          purchase_order_id?: string | null
-          reply_to?: string | null
-          service_order_id?: string | null
-          status?: string
-          subject: string
-          test_mode?: boolean
-          to_emails: string[]
-        }
-        Update: {
-          actor_person_id?: string | null
-          body_html?: string
-          channel?: string
-          completed_at?: string | null
-          created_at?: string
-          entity_ids?: string[]
-          error_detail?: string | null
-          event_key?: string | null
-          from_email?: string
-          id?: string
-          intended_to?: string[]
-          kind?: string
-          offer_id?: string | null
-          person_id?: string | null
-          provider?: string
-          provider_id?: string | null
-          purchase_order_id?: string | null
-          reply_to?: string | null
-          service_order_id?: string | null
-          status?: string
-          subject?: string
-          test_mode?: boolean
-          to_emails?: string[]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "outbound_messages_actor_person_id_fkey"
-            columns: ["actor_person_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outbound_messages_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outbound_messages_offer_id_fkey"
-            columns: ["offer_id"]
-            isOneToOne: false
-            referencedRelation: "offers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outbound_messages_purchase_order_id_fkey"
-            columns: ["purchase_order_id"]
-            isOneToOne: false
-            referencedRelation: "purchase_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outbound_messages_service_order_id_fkey"
-            columns: ["service_order_id"]
-            isOneToOne: false
-            referencedRelation: "service_orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       offer_lines: {
         Row: {
           bike_template_id: string | null
@@ -2834,6 +2756,120 @@ export type Database = {
           },
         ]
       }
+      outbound_messages: {
+        Row: {
+          actor_person_id: string | null
+          body_html: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          entity_ids: string[]
+          error_detail: string | null
+          event_key: string | null
+          from_email: string
+          id: string
+          intended_to: string[]
+          kind: string
+          offer_id: string | null
+          person_id: string | null
+          provider: string
+          provider_id: string | null
+          purchase_order_id: string | null
+          reply_to: string | null
+          service_order_id: string | null
+          status: string
+          subject: string
+          test_mode: boolean
+          to_emails: string[]
+        }
+        Insert: {
+          actor_person_id?: string | null
+          body_html: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          entity_ids?: string[]
+          error_detail?: string | null
+          event_key?: string | null
+          from_email: string
+          id?: string
+          intended_to?: string[]
+          kind: string
+          offer_id?: string | null
+          person_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          purchase_order_id?: string | null
+          reply_to?: string | null
+          service_order_id?: string | null
+          status?: string
+          subject: string
+          test_mode?: boolean
+          to_emails: string[]
+        }
+        Update: {
+          actor_person_id?: string | null
+          body_html?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          entity_ids?: string[]
+          error_detail?: string | null
+          event_key?: string | null
+          from_email?: string
+          id?: string
+          intended_to?: string[]
+          kind?: string
+          offer_id?: string | null
+          person_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          purchase_order_id?: string | null
+          reply_to?: string | null
+          service_order_id?: string | null
+          status?: string
+          subject?: string
+          test_mode?: boolean
+          to_emails?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_messages_actor_person_id_fkey"
+            columns: ["actor_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_messages_service_order_id_fkey"
+            columns: ["service_order_id"]
+            isOneToOne: false
+            referencedRelation: "service_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_categories: {
         Row: {
           created_at: string
@@ -3064,11 +3100,11 @@ export type Database = {
           attributes: Json
           base_part_id: string | null
           category_id: string
+          color_id: string | null
           created_at: string
           default_retail_currency: string | null
           default_retail_price: number | null
           deleted_at: string | null
-          color_id: string | null
           description_da: string | null
           description_en: string | null
           hs_code_id: string | null
@@ -3092,11 +3128,11 @@ export type Database = {
           attributes?: Json
           base_part_id?: string | null
           category_id: string
+          color_id?: string | null
           created_at?: string
           default_retail_currency?: string | null
           default_retail_price?: number | null
           deleted_at?: string | null
-          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           hs_code_id?: string | null
@@ -3120,11 +3156,11 @@ export type Database = {
           attributes?: Json
           base_part_id?: string | null
           category_id?: string
+          color_id?: string | null
           created_at?: string
           default_retail_currency?: string | null
           default_retail_price?: number | null
           deleted_at?: string | null
-          color_id?: string | null
           description_da?: string | null
           description_en?: string | null
           hs_code_id?: string | null
@@ -3146,10 +3182,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "parts_base_part_id_fkey"
+            columns: ["base_part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_base_part_id_fkey"
+            columns: ["base_part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "parts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "part_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_color_id_fkey"
+            columns: ["color_id"]
+            isOneToOne: false
+            referencedRelation: "colors"
             referencedColumns: ["id"]
           },
           {
@@ -3167,31 +3224,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "parts_service_part_type_id_fkey"
-            columns: ["service_part_type_id"]
-            isOneToOne: false
-            referencedRelation: "service_part_types"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parts_base_part_id_fkey"
-            columns: ["base_part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "parts_color_id_fkey"
-            columns: ["color_id"]
-            isOneToOne: false
-            referencedRelation: "colors"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "parts_last_actor_id_fkey"
             columns: ["last_actor_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_service_part_type_id_fkey"
+            columns: ["service_part_type_id"]
+            isOneToOne: false
+            referencedRelation: "service_part_types"
             referencedColumns: ["id"]
           },
         ]
@@ -3293,6 +3336,66 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_lines: {
+        Row: {
+          created_at: string
+          endpoint: string
+          endpoint_name: string | null
+          id: string
+          import_enabled: boolean
+          label: string | null
+          last_actor_id: string | null
+          line_number: string | null
+          person_id: string | null
+          provider: string
+          token_env: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          endpoint_name?: string | null
+          id?: string
+          import_enabled?: boolean
+          label?: string | null
+          last_actor_id?: string | null
+          line_number?: string | null
+          person_id?: string | null
+          provider: string
+          token_env?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          endpoint_name?: string | null
+          id?: string
+          import_enabled?: boolean
+          label?: string | null
+          last_actor_id?: string | null
+          line_number?: string | null
+          person_id?: string | null
+          provider?: string
+          token_env?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_lines_last_actor_id_fkey"
+            columns: ["last_actor_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_lines_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -3691,17 +3794,17 @@ export type Database = {
       sales_orders: {
         Row: {
           actual_delivery_date: string | null
-          delivery_contact_name: string | null
-          delivery_contact_phone: string | null
-          delivery_address: string | null
-          delivery_signed_by: string | null
-          delivery_signed_at: string | null
-          delivery_signature_path: string | null
           contact_id: string | null
           converted_from_offer_id: string | null
           created_at: string
           created_by: string | null
           currency: string
+          delivery_address: string | null
+          delivery_contact_name: string | null
+          delivery_contact_phone: string | null
+          delivery_signature_path: string | null
+          delivery_signed_at: string | null
+          delivery_signed_by: string | null
           id: string
           language: string
           notes: string | null
@@ -3720,17 +3823,17 @@ export type Database = {
         }
         Insert: {
           actual_delivery_date?: string | null
-          delivery_contact_name?: string | null
-          delivery_contact_phone?: string | null
-          delivery_address?: string | null
-          delivery_signed_by?: string | null
-          delivery_signed_at?: string | null
-          delivery_signature_path?: string | null
           contact_id?: string | null
           converted_from_offer_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          delivery_address?: string | null
+          delivery_contact_name?: string | null
+          delivery_contact_phone?: string | null
+          delivery_signature_path?: string | null
+          delivery_signed_at?: string | null
+          delivery_signed_by?: string | null
           id?: string
           language?: string
           notes?: string | null
@@ -3749,17 +3852,17 @@ export type Database = {
         }
         Update: {
           actual_delivery_date?: string | null
-          delivery_contact_name?: string | null
-          delivery_contact_phone?: string | null
-          delivery_address?: string | null
-          delivery_signed_by?: string | null
-          delivery_signed_at?: string | null
-          delivery_signature_path?: string | null
           contact_id?: string | null
           converted_from_offer_id?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
+          delivery_address?: string | null
+          delivery_contact_name?: string | null
+          delivery_contact_phone?: string | null
+          delivery_signature_path?: string | null
+          delivery_signed_at?: string | null
+          delivery_signed_by?: string | null
           id?: string
           language?: string
           notes?: string | null
@@ -3813,6 +3916,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      schema_migrations: {
+        Row: {
+          applied_at: string
+          name: string
+          version: number
+        }
+        Insert: {
+          applied_at?: string
+          name: string
+          version: number
+        }
+        Update: {
+          applied_at?: string
+          name?: string
+          version?: number
+        }
+        Relationships: []
       }
       service_agreement_bikes: {
         Row: {
@@ -3889,6 +4010,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bikes"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_bikes_currency_fkey"
+            columns: ["currency"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "service_agreement_bikes_document_id_fkey"
@@ -3971,17 +4099,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "service_agreement_documents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "service_agreement_documents_confirmed_by_fkey"
             columns: ["confirmed_by"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_agreement_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -4198,6 +4326,20 @@ export type Database = {
             referencedColumns: ["code"]
           },
           {
+            foreignKeyName: "service_order_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_order_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "v_parts_dashboard"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_order_items_service_order_id_fkey"
             columns: ["service_order_id"]
             isOneToOne: false
@@ -4211,13 +4353,6 @@ export type Database = {
             referencedRelation: "service_part_types"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "service_order_items_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
         ]
       }
       service_orders: {
@@ -4225,17 +4360,17 @@ export type Database = {
           color_id: string | null
           created_at: string
           created_by: string | null
+          dropped_off_at: string | null
           emailed_at: string | null
           emailed_to: string | null
           expected_return_at: string | null
           id: string
           notes: string | null
           order_number: string
-          planned_send_date: string | null
-          received_at: string | null
-          dropped_off_at: string | null
-          ready_at: string | null
           pickup_date: string | null
+          planned_send_date: string | null
+          ready_at: string | null
+          received_at: string | null
           sales_order_id: string | null
           sent_at: string | null
           service_type_id: string
@@ -4247,17 +4382,17 @@ export type Database = {
           color_id?: string | null
           created_at?: string
           created_by?: string | null
+          dropped_off_at?: string | null
           emailed_at?: string | null
           emailed_to?: string | null
           expected_return_at?: string | null
           id?: string
           notes?: string | null
           order_number: string
-          planned_send_date?: string | null
-          received_at?: string | null
-          dropped_off_at?: string | null
-          ready_at?: string | null
           pickup_date?: string | null
+          planned_send_date?: string | null
+          ready_at?: string | null
+          received_at?: string | null
           sales_order_id?: string | null
           sent_at?: string | null
           service_type_id: string
@@ -4269,17 +4404,17 @@ export type Database = {
           color_id?: string | null
           created_at?: string
           created_by?: string | null
+          dropped_off_at?: string | null
           emailed_at?: string | null
           emailed_to?: string | null
           expected_return_at?: string | null
           id?: string
           notes?: string | null
           order_number?: string
-          planned_send_date?: string | null
-          received_at?: string | null
-          dropped_off_at?: string | null
-          ready_at?: string | null
           pickup_date?: string | null
+          planned_send_date?: string | null
+          ready_at?: string | null
+          received_at?: string | null
           sales_order_id?: string | null
           sent_at?: string | null
           service_type_id?: string
@@ -4349,7 +4484,15 @@ export type Database = {
           slug?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_part_types_default_category_id_fkey"
+            columns: ["default_category_id"]
+            isOneToOne: false
+            referencedRelation: "part_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_price_items: {
         Row: {
@@ -4513,24 +4656,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      schema_migrations: {
-        Row: {
-          applied_at: string
-          name: string
-          version: number
-        }
-        Insert: {
-          applied_at?: string
-          name: string
-          version: number
-        }
-        Update: {
-          applied_at?: string
-          name?: string
-          version?: number
-        }
-        Relationships: []
       }
       shipments: {
         Row: {
@@ -4963,6 +5088,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_orders_covered_by_service_agreement_bike_id_fkey"
+            columns: ["covered_by_service_agreement_bike_id"]
+            isOneToOne: false
+            referencedRelation: "service_agreement_bikes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_orders_covered_by_service_agreement_id_fkey"
             columns: ["covered_by_service_agreement_id"]
             isOneToOne: false
@@ -5157,22 +5289,7 @@ export type Database = {
           last_purchase_quantity: number | null
           part_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_order_lines_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "parts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_order_lines_part_id_fkey"
-            columns: ["part_id"]
-            isOneToOne: false
-            referencedRelation: "v_parts_dashboard"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v_parts_dashboard: {
         Row: {
@@ -5443,12 +5560,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5472,11 +5589,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5497,11 +5614,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5522,11 +5639,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5539,11 +5656,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

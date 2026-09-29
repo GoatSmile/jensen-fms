@@ -67,8 +67,12 @@ export async function transcribeStage(
     media_path: msg.media_path,
   });
   const twoWay = isTwoWayCall(msg);
+  // Only Twilio promises which channel is the caller; for any other source
+  // the speaker labels are a guess and are marked as one.
+  const source = ((msg.channel_meta ?? {}) as { source?: unknown }).source;
   const result = await transcribeVoicemail(supabase, mediaPath, settings, {
     twoWay,
+    channelRoles: source === "twilio" ? "caller_first" : "unknown",
   });
   if (!result.ok) {
     return { ok: false, code: `transcribe.${result.reason}`, detail: result.detail };

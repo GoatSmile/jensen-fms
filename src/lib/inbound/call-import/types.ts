@@ -10,7 +10,12 @@
  */
 
 /** Someone whose calls can be imported (Relatel: an employee). */
-export type CallEndpoint = { id: string; name: string };
+export type CallEndpoint = {
+  id: string;
+  name: string;
+  /** The line's own number, E.164 — how a call between two of our lines is known. */
+  number: string | null;
+};
 
 export type RecordedItem = {
   /** Provider-scoped, stable: the idempotency key (channel_meta.external_id). */
@@ -32,14 +37,20 @@ export type AdapterResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: string };
 
+/**
+ * Every call takes the TOKEN it should use: the provider lets only a number's
+ * own user hear its recordings, so one run may use several (one per line).
+ * Adapters never read env themselves — src/lib/calls/lines.ts does, behind the
+ * allowed-name check.
+ */
 export type CallImportAdapter = {
-  listEndpoints(): Promise<AdapterResult<CallEndpoint[]>>;
-  listRecorded(opts: {
-    since: Date;
-    endpoints: string[];
-    voicemails: boolean;
-  }): Promise<AdapterResult<RecordedItem[]>>;
+  listEndpoints(token: string): Promise<AdapterResult<CallEndpoint[]>>;
+  listRecorded(
+    token: string,
+    opts: { since: Date; endpoints: string[]; voicemails: boolean },
+  ): Promise<AdapterResult<RecordedItem[]>>;
   fetchAudio(
+    token: string,
     item: RecordedItem,
   ): Promise<AdapterResult<{ bytes: ArrayBuffer; mime: string }>>;
 };

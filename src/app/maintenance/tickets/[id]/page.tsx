@@ -209,7 +209,7 @@ export default async function TicketDetailPage({
               {t("fromInboundBanner")}
             </span>
             <Link
-              href={`/inbox/${inboundMsg.id}`}
+              href={`/calls/${inboundMsg.id}`}
               className="text-money underline"
             >
               {t("reviewInbound")}

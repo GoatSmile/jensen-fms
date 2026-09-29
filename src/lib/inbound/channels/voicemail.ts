@@ -25,7 +25,7 @@ export async function transcribeVoicemail(
    * dual channel, so it wants per-channel (or diarized) speaker attribution
    * and the call-path provider — see docs/plan-live-call-recording.md.
    */
-  opts: { twoWay?: boolean } = {},
+  opts: { twoWay?: boolean; channelRoles?: "caller_first" | "unknown" } = {},
 ): Promise<TranscribeResult> {
   const { data: signed, error } = await supabase.storage
     .from("inbound")
@@ -43,5 +43,6 @@ export async function transcribeVoicemail(
       : settings.transcriptionProvider,
     region: settings.transcriptionRegion,
     channels: opts.twoWay ? 2 : 1,
+    channelRoles: opts.channelRoles,
   });
 }
