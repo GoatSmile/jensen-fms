@@ -136,7 +136,25 @@ export default async function InboundDetailPage({
     mediaUrl = signed?.signedUrl ?? null;
   }
 
-  const meta = (msg.channel_meta ?? {}) as { original_filename?: string };
+  const meta = (msg.channel_meta ?? {}) as {
+    original_filename?: string;
+    source?: string;
+    call_direction?: string;
+    call_endpoint_name?: string;
+  };
+  // Imported from the shop's own phone system (migration 111): say which way
+  // the call went and whose phone it was on — "From" alone reads as the
+  // caller even when the workshop rang out.
+  const importedCall =
+    meta.source === "relatel"
+      ? [
+          meta.call_direction === "outgoing" ? t("callOutgoing") : t("callIncoming"),
+          meta.call_endpoint_name,
+          t("callViaRelatel"),
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : null;
 
   // A captured call with no message + no transcript is a contact event, not a
   // voicemail — show its metadata, skip the pipeline panels.
@@ -272,6 +290,7 @@ export default async function InboundDetailPage({
             )}
           </span>
         </Fact>
+        {importedCall ? <Fact label={t("callLabel")}>{importedCall}</Fact> : null}
         <Fact label={t("receivedLabel")}>
           {formatDateTime(msg.received_at)}
         </Fact>

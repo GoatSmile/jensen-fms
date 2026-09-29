@@ -66,6 +66,16 @@ export const TELEPHONY_PROVIDERS: ProviderEntry[] = [
   { key: "twilio", envSecrets: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"] },
 ];
 
+/**
+ * Registered call-IMPORT adapters: the shop's own phone system, whose recorded
+ * calls a scheduled job pulls into the inbox (migration 111). The opposite
+ * shape to telephony above, where calls reach a number we rent and it pushes
+ * to our webhooks. Adapters live in ./call-import/.
+ */
+export const CALL_IMPORT_PROVIDERS: ProviderEntry[] = [
+  { key: "relatel", envSecrets: ["RELATEL_TOKEN"] },
+];
+
 /** How an incoming call is handled (docs/plan-live-call-recording.md). */
 export type InboundCallMode = "voicemail" | "bridge";
 
@@ -99,10 +109,16 @@ export type InboundSettings = {
   phoneNumberTest: string | null;
   mediaRetentionDays: number;
   shadowMode: boolean;
+  /** Call-import adapter key; null = importing is off. */
+  callImportProvider: string | null;
+  /** Whose calls: the provider's endpoint ids. Empty = none imported. */
+  callImportEndpoints: string[];
+  callImportVoicemails: boolean;
+  callImportLookbackHours: number;
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_call_import_endpoints, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -134,6 +150,10 @@ export async function loadInboundSettings(
     phoneNumberTest: data?.inbound_phone_number_test ?? null,
     mediaRetentionDays: Number(data?.inbound_media_retention_days ?? 90),
     shadowMode: Boolean(data?.inbound_shadow_mode ?? true),
+    callImportProvider: data?.inbound_call_import_provider ?? null,
+    callImportEndpoints: data?.inbound_call_import_endpoints ?? [],
+    callImportVoicemails: data?.inbound_call_import_voicemails ?? true,
+    callImportLookbackHours: Number(data?.inbound_call_import_lookback_hours ?? 48),
   };
 }
 
@@ -157,6 +177,7 @@ export function inboundSecretStatus(settings: InboundSettings): {
   transcription: SecretStatus[];
   extraction: SecretStatus[];
   telephony: SecretStatus[];
+  callImport: SecretStatus[];
 } {
   const check = (registry: ProviderEntry[], key: string): SecretStatus[] => {
     const entry = findProvider(registry, key);
@@ -173,5 +194,11 @@ export function inboundSecretStatus(settings: InboundSettings): {
     ),
     extraction: check(EXTRACTION_PROVIDERS, settings.extractionProvider),
     telephony: check(TELEPHONY_PROVIDERS, settings.telephonyProvider),
+    // Off still reports the first adapter's secrets, so the admin can see what
+    // switching it on will need.
+    callImport: check(
+      CALL_IMPORT_PROVIDERS,
+      settings.callImportProvider ?? CALL_IMPORT_PROVIDERS[0].key,
+    ),
   };
 }

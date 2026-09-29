@@ -3293,3 +3293,40 @@ Owner, in session (Dennis's answers of 28–29 Sep; brief
 - **Not changed yet:** the fee engine still bills `monthly_fee` monthly in
   arrears (DECISIONS 2026-06); renewal invoicing per line replaces it as its own
   piece.
+
+## 2026-09-29 — Finn's calls come in from Relatel, pulled every five minutes and configured in admin
+
+The Relatel test (DECISIONS 2026-09-26) passed on its first question: calls on
+Finn's mobile, incoming AND outgoing, come back through `GET /calls` with their
+recording once *Mobilfeatures* recording is on (three of three that afternoon);
+voicemails come back as MP3. The owner took it as a pass and asked for it wired
+into the app the same day. Migration 111; `src/lib/inbound/call-import/`.
+
+- **Relatel replaces the Twilio route for Finn.** The Danish Twilio number and
+  the "Call customer" button stay unbought and unbuilt; the Twilio adapter stays
+  in the code for the rented number it already serves.
+- **PULL, not push.** *Omstilling Professional* has no webhooks, so a scheduled
+  job (`import-calls`, every 5 minutes) lists the calls the token can see and
+  imports each recorded one into the same `inbound_messages` row a Twilio
+  recording makes. The pipeline and `/inbox` review are unchanged — calls get
+  the dialogue prompt, now told when the WORKSHOP placed the call.
+  **Rejected:** Relatel webhooks (need Contact Center/Unlimited, a plan
+  upgrade for a five-minute delay); polling faster than 5 minutes (the
+  recording itself is what gates it).
+- **All of Finn's recorded calls come in, not only known numbers** (owner). His
+  mobile is the work phone and an unknown number is often a new customer.
+  Anyone with `inbox` can listen.
+- **Review first — shadow mode stays on** (owner). The inbox proposes; a person
+  presses *Create ticket*.
+- **Everything but the token is set in admin** (owner: "nothing hardcoded"):
+  provider (off / Relatel, a registry like transcription), whose calls
+  (checkboxes drawn from the provider's live employee list — never an id in
+  code), voicemails yes/no, lookback hours. The token stays an env secret
+  (config doctrine tier 1), shown as set/missing. The schedule lives in
+  `vercel.json` because Vercel reads it at deploy.
+- **Idempotent on `channel_meta.external_id`** (unique): overlapping runs and
+  *Fetch calls now* on `/inbox` never import a call twice.
+- **Main-number calls forwarded to Finn (option 2) are still unproven.** Every
+  main-number call that day showed no recording; the import already matches an
+  employee anywhere on a call's path, so if Relatel records them they come in
+  without a change.

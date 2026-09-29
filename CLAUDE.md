@@ -621,7 +621,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   column (no polymorphic action framework until a second action type is
   real). Libs in `src/lib/inbound/` are channel-blind;
   `channels/voicemail.ts` owns transcription (providers via the registry
-  pattern). Matching is deterministic code, not the model — attach a bike
+  pattern). **Calls also arrive by PULL**: the shop's own phone system
+  (Relatel) has no webhooks, so the `import-calls` job (every 5 min) imports
+  each recorded call and voicemail into the same row shape
+  (`src/lib/inbound/call-import/`, migration 111), idempotent on the unique
+  `channel_meta.external_id`. Provider, whose calls (picked from the
+  provider's LIVE employee list, never typed), voicemails and lookback are
+  `/admin/settings → Phone & inbox`; only `RELATEL_TOKEN` is env, and it must
+  be the technician's OWN token — only a number's own user may hear its
+  recordings. Relatel's `?endpoint=` filter does not filter, so selection is
+  in code, on the endpoint and every path node. Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
   the tech. Review queue at `/inbox` (in the *Work* nav group — it is a review
   queue, not admin config). Runs in prod in SHADOW MODE (`inbound_shadow_mode`);

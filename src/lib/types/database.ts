@@ -32,6 +32,10 @@ export type Database = {
           inbound_bridge_number: string | null
           inbound_bridge_timeout_seconds: number
           inbound_call_mode: string
+          inbound_call_import_endpoints: string[]
+          inbound_call_import_lookback_hours: number
+          inbound_call_import_provider: string | null
+          inbound_call_import_voicemails: boolean
           inbound_call_transcription_provider: string | null
           inbound_extraction_model: string
           inbound_extraction_provider: string
@@ -69,6 +73,10 @@ export type Database = {
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
           inbound_call_mode?: string
+          inbound_call_import_endpoints?: string[]
+          inbound_call_import_lookback_hours?: number
+          inbound_call_import_provider?: string | null
+          inbound_call_import_voicemails?: boolean
           inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
@@ -106,6 +114,10 @@ export type Database = {
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
           inbound_call_mode?: string
+          inbound_call_import_endpoints?: string[]
+          inbound_call_import_lookback_hours?: number
+          inbound_call_import_provider?: string | null
+          inbound_call_import_voicemails?: boolean
           inbound_call_transcription_provider?: string | null
           inbound_extraction_model?: string
           inbound_extraction_provider?: string

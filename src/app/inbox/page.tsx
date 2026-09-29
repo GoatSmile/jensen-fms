@@ -33,6 +33,12 @@ import { isSpamFolded } from "@/lib/inbound/triage";
 import { NewCommand } from "./_components/new-command";
 import { dictationReady } from "@/lib/dictation/ready";
 import { UploadVoicemail } from "./_components/upload-voicemail";
+import { FetchCallsButton } from "./_components/fetch-calls-button";
+import { loadInboundSettings } from "@/lib/inbound/settings";
+
+// *Fetch calls now* runs the import inline, and each new call waits on its
+// transcription — the action inherits this page's limit.
+export const maxDuration = 300;
 
 /**
  * Generic inbound trunk — review harness (Slice A). Lists every inbound
@@ -54,7 +60,7 @@ export default async function InboundPage() {
   const { data, error } = await supabase
     .from("inbound_messages")
     .select(
-      "id, channel, kind, status, from_identity, received_at, ticket_id, disposition, spam_signals",
+      "id, channel, kind, status, from_identity, received_at, ticket_id, disposition, spam_signals, channel_meta",
     )
     .order("received_at", { ascending: false })
     .limit(200);
@@ -73,7 +79,10 @@ export default async function InboundPage() {
     | "ticket_id"
     | "disposition"
     | "spam_signals"
+    | "channel_meta"
   >[];
+  const callImportOn =
+    (await loadInboundSettings(supabase)).callImportProvider !== null;
 
   // Triage: park suspected/confirmed spam in a collapsed fold, active first.
   const active = rows.filter((r) => !isSpamFolded(r));
@@ -95,9 +104,12 @@ export default async function InboundPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+        </div>
+        {callImportOn ? <FetchCallsButton /> : null}
       </header>
 
       {/* In-app command ingress (VC-1) — dictate/type a task, agent drafts it. */}
@@ -177,6 +189,7 @@ export default async function InboundPage() {
                     {r.from_identity ?? (
                       <span className="text-ink-3">{t("unknownSender")}</span>
                     )}
+                    <CallLine meta={r.channel_meta} t={t} />
                   </Link>
                 </TableCell>
                 <TableCell className="hidden p-0 text-sm sm:table-cell">
@@ -211,4 +224,32 @@ export default async function InboundPage() {
       </Table>
     );
   }
+}
+
+/**
+ * "Outgoing · Finn Nysom" under the number, for calls imported from the
+ * shop's own phone system — the number alone does not say that the workshop
+ * rang the customer, or whose phone it was.
+ */
+function CallLine({
+  meta,
+  t,
+}: {
+  meta: unknown;
+  t: Awaited<ReturnType<typeof getTranslations<"inbox">>>;
+}) {
+  const m = (meta ?? {}) as {
+    source?: unknown;
+    call_direction?: unknown;
+    call_endpoint_name?: unknown;
+  };
+  if (m.source !== "relatel") return null;
+  const dir =
+    m.call_direction === "outgoing" ? t("callOutgoing") : t("callIncoming");
+  const who = typeof m.call_endpoint_name === "string" ? m.call_endpoint_name : null;
+  return (
+    <span className="text-ink-2 block font-sans text-xs">
+      {who ? `${dir} · ${who}` : dir}
+    </span>
+  );
 }

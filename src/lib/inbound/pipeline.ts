@@ -120,12 +120,16 @@ export async function extractStage(
 
   // A two-way conversation needs the dialogue prompt: it must separate what the
   // CUSTOMER asked from what WE promised, and capture the agreed outcome.
-  const meta = (msg.channel_meta ?? {}) as { speakers_inferred?: unknown };
+  const meta = (msg.channel_meta ?? {}) as {
+    speakers_inferred?: unknown;
+    call_direction?: unknown;
+  };
   const result = await extractInbound(msg.body_text, {
     provider: settings.extractionProvider,
     model: settings.extractionModel,
     dialogue: isTwoWayCall(msg),
     speakersInferred: meta.speakers_inferred === true,
+    outgoing: meta.call_direction === "outgoing",
   });
   if (!result.ok) {
     return { ok: false, code: `extract.${result.reason}`, detail: result.detail };

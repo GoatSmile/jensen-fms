@@ -49,6 +49,12 @@ export async function extractInbound(
     dialogue?: boolean;
     /** True when the transcript's speaker labels are a diarization guess. */
     speakersInferred?: boolean;
+    /**
+     * True when the WORKSHOP placed the call (an outgoing call imported from
+     * the shop's own phone system). The dialogue prompt otherwise tells the
+     * model the workshop is the side that answers the phone.
+     */
+    outgoing?: boolean;
   },
 ): Promise<ExtractResult> {
   const body = (bodyText ?? "").trim();
@@ -57,6 +63,7 @@ export async function extractInbound(
     return extractViaAnthropic(body, opts.model, {
       dialogue: opts.dialogue === true,
       speakersInferred: opts.speakersInferred === true,
+      outgoing: opts.outgoing === true,
     });
   }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
@@ -75,12 +82,19 @@ Leave callSummary null and commitments empty — this is a one-way message, not 
  * work out the sides from context (the workshop answers the phone) and to fall
  * back to null rather than pick wrong.
  */
-function dialogueSystemPrompt(speakersInferred: boolean): string {
-  return `You are reading a TRANSCRIPT OF A RECORDED PHONE CONVERSATION between a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler) and a customer. The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations.
+function dialogueSystemPrompt(speakersInferred: boolean, outgoing: boolean): string {
+  const whoAnswers = outgoing
+    ? "the workshop PLACED this call — it rings the customer, often to call back about a job; it quotes prices and promises dates; the customer answers and describes a problem or places an order"
+    : "the workshop answers the phone, greets with the company name, quotes prices and promises dates; the customer describes a problem or places an order";
+  return `You are reading a TRANSCRIPT OF A RECORDED PHONE CONVERSATION between a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler) and a customer. The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations.${
+    outgoing
+      ? " This call was made BY THE WORKSHOP to the customer."
+      : ""
+  }
 
 ${
     speakersInferred
-      ? 'The two sides are labelled "Speaker 1" and "Speaker 2". These labels were GUESSED by speaker-separation software and MAY BE SWAPPED. Work out which side is the workshop from context — the workshop answers the phone, greets with the company name, quotes prices and promises dates; the customer describes a problem or places an order. If you genuinely cannot tell which side is which, leave the person/organization fields null rather than guessing wrong.'
+      ? `The two sides are labelled "Speaker 1" and "Speaker 2". These labels were GUESSED by speaker-separation software and MAY BE SWAPPED. Work out which side is the workshop from context — ${whoAnswers}. If you genuinely cannot tell which side is which, leave the person/organization fields null rather than guessing wrong.`
       : 'Turns are labelled "Customer" and "Workshop". These labels are RELIABLE — they come from separate audio channels (the telephony system records each party on its own channel), not from guesswork. Trust them. Note that background noise on one side (a radio, another person in the room) is attributed to that side\'s label, so ignore anything that clearly is not part of the conversation.'
   }
 
@@ -201,12 +215,12 @@ const EXTRACTION_TOOL = {
 async function extractViaAnthropic(
   body: string,
   model: string,
-  shape: { dialogue: boolean; speakersInferred: boolean },
+  shape: { dialogue: boolean; speakersInferred: boolean; outgoing: boolean },
 ): Promise<ExtractResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
   const system = shape.dialogue
-    ? dialogueSystemPrompt(shape.speakersInferred)
+    ? dialogueSystemPrompt(shape.speakersInferred, shape.outgoing)
     : SYSTEM_PROMPT;
 
   let res: Response;

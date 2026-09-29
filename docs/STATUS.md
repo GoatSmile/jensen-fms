@@ -24,8 +24,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 110 is the latest; production verified at it** (`npm run
-  check:prod` + a query of the new objects, 29 Sep). 110 = agreement lines,
+- **Migration 111 is the latest; production verified at it** (queried the new
+  columns, index and ledger row, 29 Sep). 111 = call import settings on
+  `app_settings` + the unique `channel_meta.external_id` index. 110 = agreement lines,
   agreement documents, private `agreement-documents` bucket, the WO line stamp,
   `dashboard_monthly_stats()` counting lines (prod had one test agreement with
   no bikes, so the backfill wrote nothing). 106 = paint lifecycle, 107 = delivery fields + private
@@ -37,6 +38,14 @@ is Danish (person language).
   supabase_db_jensen-fms psql …`** — `--local` takes one statement per call.
 - **Everything shipped on 27 and 28 Sep was verified in the browser against
   the LOCAL copy only** — nobody has clicked it in production yet.
+- **Finn's calls → `/inbox` from Relatel, built 29 Sep** (DECISIONS
+  2026-09-29): job `import-calls` every 5 min + *Fetch calls now* on `/inbox`;
+  set up at `/admin/settings → Phone & inbox → Call import`. Verified locally
+  end to end except transcription (the local copy cannot transcribe): four real
+  items imported, idempotent on a second press, audio plays; the local test rows
+  and audio were deleted after. **Production needs two things before it runs:**
+  `RELATEL_TOKEN` in Vercel Production (then redeploy), and Call import set to
+  Relatel + Finn in production admin. Until then the job reports "off".
 - **Scheduled jobs are watched at `/admin/jobs`** (capability `jobs`, Owner +
   IT admin; migration 109): list from `vercel.json`, last runs from
   `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check
@@ -115,8 +124,10 @@ is Danish (person language).
   lives only in Vercel) — authenticated production pages need a human.
 
 ## Next actions — `docs/plan-go-live.md`
-1. **Tuesday 29 Sep, 13:00 (§1):** the Relatel test (`scripts/relatel-probe.mjs
-   --watch=20`, then `--download`; delete the audio after); passwords for Finn
+1. **Relatel in production:** `RELATEL_TOKEN` in Vercel, redeploy, switch it on
+   in admin, *Fetch calls now*, read the first transcripts; then a main-number
+   call pressing 2 to prove forwarded calls arrive recorded. **Also from Tuesday
+   (§1):** passwords for Finn
    and Glenn; Finn walks one repair with his guide; the calendar; the e-conomic
    grant; `PNT-2026-0012`.
 2. **Agreements next (§2A):** renewal invoicing per line — plan in

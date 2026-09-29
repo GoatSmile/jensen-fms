@@ -3536,7 +3536,24 @@
     "sectionPhone": "Phone & inbox",
     "sectionPublic": "Public pages",
     "inboundBlockReady": "Ready",
-    "inboundBlockMissing": "{count, plural, one {1 secret missing} other {# secrets missing}}"
+    "inboundBlockMissing": "{count, plural, one {1 secret missing} other {# secrets missing}}",
+    "callImportHeading": "Call import",
+    "callImportDescription": "Brings recorded calls and voicemails from the shop's own phone system into the inbox, where they are transcribed and matched to a customer like any other call.",
+    "callImportOff": "Off",
+    "provider_relatel": "Relatel",
+    "callImportWhoLabel": "Import calls for",
+    "callImportWhoHint": "Loaded live from the phone system. Only calls that were recorded come in — recording is switched on per number in the phone system itself.",
+    "callImportNeedsSecret": "Add the token in Vercel first — the list of people is read with it.",
+    "callImportLoading": "Loading people from the phone system…",
+    "callImportNotListed": "no longer in the phone system",
+    "callImportVoicemailsLabel": "Also import voicemails",
+    "callImportVoicemailsHint": "Messages left on the same people's phones.",
+    "callImportLookbackLabel": "Look back (hours)",
+    "callImportLookbackHint": "How far back each run looks. Calls already in the inbox are skipped.",
+    "callImportSchedule": "Checked every 5 minutes; Fetch calls now in the inbox runs it at once.",
+    "callImportLastRun": "Last run {at}: {summary}",
+    "callImportNeverRun": "No run recorded yet.",
+    "callImportSave": "Save call import"
   },
   "adminPeople": {
     "crumb": "People & roles",
@@ -4478,7 +4495,15 @@
     "saDocInvalidPrice": "The yearly price must be zero or more.",
     "saLineConflicts": "{count, plural, one {1 bike is} other {# bikes are}} on another agreement — tick it to move it here.",
     "saLineInvalidReason": "Pick a reason.",
-    "saLineNotFound": "That line is not active any more."
+    "saLineNotFound": "That line is not active any more.",
+    "callImportNeedsAdmin": "Only admins can change call import.",
+    "callImportMissingSecret": "{names} is not set in the environment.",
+    "callImportProviderError": "The phone system did not answer: {detail}",
+    "callImportUnknownEndpoint": "The phone system does not know {ids}. Reload the page and pick again.",
+    "callImportNeedsEndpoint": "Pick at least one person whose calls to import, or switch call import off.",
+    "callImportLookbackRange": "Look back must be a whole number of hours from 1 to 336.",
+    "callImportNeedsInbox": "Only people with access to the inbox can fetch calls.",
+    "callImportRunFailed": "Fetching calls failed: {detail}"
   },
   "inbox": {
     "title": "Inbox",
@@ -4590,7 +4615,15 @@
     "saveCallerHint": "{phone} isn't on any contact yet. Save it to {org} so the next call from this number matches automatically.",
     "saveCallerNew": "New contact",
     "saveCallerNamePlaceholder": "Contact name",
-    "saveCallerButton": "Save number"
+    "saveCallerButton": "Save number",
+    "fetchCallsNow": "Fetch calls now",
+    "fetchCallsRunning": "Fetching and transcribing…",
+    "fetchCallsImported": "{count, plural, one {1 new call} other {# new calls}} fetched.",
+    "fetchCallsNothingNew": "No new calls.",
+    "callLabel": "Call",
+    "callIncoming": "Incoming",
+    "callOutgoing": "Outgoing",
+    "callViaRelatel": "Relatel"
   },
   "inboundStatus": {
     "received": "Received",
@@ -4857,6 +4890,11 @@
         "title": "Paint drop-offs",
         "what": "Moves every confirmed paint order to \"At painter\" on the morning of its drop-off date.",
         "breaks": "Orders never show as at the painter; frames look as if they are still in the workshop."
+      },
+      "importCalls": {
+        "title": "Call import",
+        "what": "Fetches recorded calls and voicemails from the shop's phone system into the inbox and transcribes them. Every 5 minutes; set up under Settings → Phone.",
+        "breaks": "New calls stop reaching the inbox — nobody gets a transcript or a draft ticket, and recordings are only in the phone system."
       }
     }
   },

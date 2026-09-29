@@ -23,12 +23,14 @@ import { LanguageSettingsForm } from "./_components/language-settings-form";
 import { EconomicSettingsForm } from "./_components/economic-settings-form";
 import { economicEnvReady } from "@/lib/economic/client";
 import { InboundSettingsForm } from "./_components/inbound-settings-form";
+import { CallImportSettingsForm } from "./_components/call-import-settings-form";
 import {
   loadInboundSettings,
   inboundSecretStatus,
   TRANSCRIPTION_PROVIDERS,
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
+  CALL_IMPORT_PROVIDERS,
 } from "@/lib/inbound/settings";
 
 export default async function AdminSettingsPage({
@@ -52,6 +54,18 @@ export default async function AdminSettingsPage({
   const data = settingsRes.data;
   const inboundSettings = await loadInboundSettings(supabase);
   const inboundSecrets = inboundSecretStatus(inboundSettings);
+  // The call-import panel says when the job last ran and how it went, so the
+  // setup and its proof sit together (the full history is /admin/jobs).
+  const { data: lastImportRun } =
+    section === "phone"
+      ? await supabase
+          .from("cron_runs")
+          .select("started_at, ok, summary")
+          .eq("job", "import-calls")
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
   const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
   const workerLanguage = (
@@ -247,6 +261,35 @@ export default async function AdminSettingsPage({
                 extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
                 telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
                 secrets={inboundSecrets}
+              />
+            </Panel>
+          ) : null}
+
+          {section === "phone" ? (
+            <Panel
+              title={t("callImportHeading")}
+              description={t("callImportDescription")}
+              hue="brand"
+              contentClassName="pt-1"
+            >
+              <CallImportSettingsForm
+                initialProvider={inboundSettings.callImportProvider ?? ""}
+                initialEndpoints={inboundSettings.callImportEndpoints}
+                initialVoicemails={inboundSettings.callImportVoicemails}
+                initialLookbackHours={String(
+                  inboundSettings.callImportLookbackHours,
+                )}
+                providers={CALL_IMPORT_PROVIDERS.map((p) => p.key)}
+                secrets={inboundSecrets.callImport}
+                lastRun={
+                  lastImportRun
+                    ? {
+                        at: lastImportRun.started_at,
+                        ok: lastImportRun.ok,
+                        summary: lastImportRun.summary,
+                      }
+                    : null
+                }
               />
             </Panel>
           ) : null}

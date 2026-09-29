@@ -3536,7 +3536,24 @@
     "sectionPhone": "Telefon & indbakke",
     "sectionPublic": "Offentlige sider",
     "inboundBlockReady": "Klar",
-    "inboundBlockMissing": "{count, plural, one {1 nøgle mangler} other {# nøgler mangler}}"
+    "inboundBlockMissing": "{count, plural, one {1 nøgle mangler} other {# nøgler mangler}}",
+    "callImportHeading": "Hent opkald",
+    "callImportDescription": "Henter optagede opkald og telefonsvarerbeskeder fra værkstedets eget telefonsystem ind i indbakken, hvor de bliver skrevet ud og matchet med en kunde som alle andre opkald.",
+    "callImportOff": "Fra",
+    "provider_relatel": "Relatel",
+    "callImportWhoLabel": "Hent opkald for",
+    "callImportWhoHint": "Hentes direkte fra telefonsystemet. Kun optagede opkald kommer med — optagelse slås til pr. nummer i selve telefonsystemet.",
+    "callImportNeedsSecret": "Læg nøglen ind i Vercel først — listen over personer læses med den.",
+    "callImportLoading": "Henter personer fra telefonsystemet…",
+    "callImportNotListed": "findes ikke længere i telefonsystemet",
+    "callImportVoicemailsLabel": "Hent også telefonsvarerbeskeder",
+    "callImportVoicemailsHint": "Beskeder lagt på de samme personers telefoner.",
+    "callImportLookbackLabel": "Se tilbage (timer)",
+    "callImportLookbackHint": "Hvor langt tilbage hver kørsel kigger. Opkald, der allerede er i indbakken, springes over.",
+    "callImportSchedule": "Tjekkes hvert 5. minut; Hent opkald nu i indbakken kører det med det samme.",
+    "callImportLastRun": "Sidste kørsel {at}: {summary}",
+    "callImportNeverRun": "Ingen kørsel registreret endnu.",
+    "callImportSave": "Gem hent opkald"
   },
   "adminPeople": {
     "crumb": "Personer og roller",
@@ -4478,7 +4495,15 @@
     "saDocInvalidPrice": "Årsprisen skal være nul eller mere.",
     "saLineConflicts": "{count, plural, one {1 cykel er} other {# cykler er}} på en anden aftale — kryds den af for at flytte den hertil.",
     "saLineInvalidReason": "Vælg en årsag.",
-    "saLineNotFound": "Den linje er ikke længere aktiv."
+    "saLineNotFound": "Den linje er ikke længere aktiv.",
+    "callImportNeedsAdmin": "Kun administratorer kan ændre hentning af opkald.",
+    "callImportMissingSecret": "{names} er ikke sat i miljøet.",
+    "callImportProviderError": "Telefonsystemet svarede ikke: {detail}",
+    "callImportUnknownEndpoint": "Telefonsystemet kender ikke {ids}. Genindlæs siden, og vælg igen.",
+    "callImportNeedsEndpoint": "Vælg mindst én person, hvis opkald skal hentes, eller slå hentning af opkald fra.",
+    "callImportLookbackRange": "Se tilbage skal være et helt antal timer fra 1 til 336.",
+    "callImportNeedsInbox": "Kun personer med adgang til indbakken kan hente opkald.",
+    "callImportRunFailed": "Hentning af opkald mislykkedes: {detail}"
   },
   "inbox": {
     "title": "Indbakke",
@@ -4590,7 +4615,15 @@
     "saveCallerHint": "{phone} er ikke på nogen kontakt endnu. Gem det på {org}, så næste opkald fra dette nummer matcher automatisk.",
     "saveCallerNew": "Ny kontakt",
     "saveCallerNamePlaceholder": "Kontaktnavn",
-    "saveCallerButton": "Gem nummer"
+    "saveCallerButton": "Gem nummer",
+    "fetchCallsNow": "Hent opkald nu",
+    "fetchCallsRunning": "Henter og skriver ud…",
+    "fetchCallsImported": "{count, plural, one {1 nyt opkald} other {# nye opkald}} hentet.",
+    "fetchCallsNothingNew": "Ingen nye opkald.",
+    "callLabel": "Opkald",
+    "callIncoming": "Indgående",
+    "callOutgoing": "Udgående",
+    "callViaRelatel": "Relatel"
   },
   "inboundStatus": {
     "received": "Modtaget",
@@ -4857,6 +4890,11 @@
         "title": "Aflevering til lakerer",
         "what": "Flytter hver bekræftet lakordre til \"Hos lakerer\" om morgenen på afleveringsdatoen.",
         "breaks": "Ordrer vises aldrig som hos lakereren; stel ser ud, som om de stadig er på værkstedet."
+      },
+      "importCalls": {
+        "title": "Hent opkald",
+        "what": "Henter optagede opkald og telefonsvarerbeskeder fra værkstedets telefonsystem ind i indbakken og skriver dem ud. Hvert 5. minut; sættes op under Indstillinger → Telefon.",
+        "breaks": "Nye opkald når ikke indbakken — ingen får en udskrift eller et udkast til en sag, og optagelserne ligger kun i telefonsystemet."
       }
     }
   },

@@ -69,7 +69,7 @@ export function commandStatusKey(status: InboundStatus): string {
 export type VoicemailChannelMeta = {
   original_filename?: string;
   size_bytes?: number;
-  source?: "harness_upload" | "twilio";
+  source?: "harness_upload" | "twilio" | "relatel";
   // Twilio voicemail (Slice F). The recording is pulled into Supabase EU and
   // deleted from Twilio at webhook time; these are the identifiers + audit.
   twilio_call_sid?: string;
@@ -86,4 +86,12 @@ export type VoicemailChannelMeta = {
   recording_channels?: number;
   /** True when speaker labels came from diarization (a guess), not channels. */
   speakers_inferred?: boolean;
+  // Imported from the shop's own phone system (migration 111,
+  // src/lib/inbound/call-import/). `external_id` is the unique idempotency
+  // key ("relatel:call:<uuid>"); the endpoint is whose phone it was.
+  external_id?: string;
+  /** 'outgoing' = the workshop placed the call — the extraction prompt needs it. */
+  call_direction?: "incoming" | "outgoing";
+  call_endpoint?: string;
+  call_endpoint_name?: string;
 };

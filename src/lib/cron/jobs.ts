@@ -2,6 +2,7 @@ import "server-only";
 
 import { refreshLatestRates } from "@/app/admin/fx-rates/_actions/manage-fx";
 import { DICTATION_PREFIX } from "@/lib/dictation/storage";
+import { runCallImport } from "@/lib/inbound/call-import/import";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import {
   overdueInvoicesEmail,
@@ -171,6 +172,28 @@ export const JOBS: Record<string, (supabase: Service) => Promise<JobOutcome>> = 
       ok: true,
       summary: moved.length ? `Moved to at painter: ${moved.join(", ")}.` : "Nothing due today.",
       detail: { today, moved },
+    };
+  },
+
+  /**
+   * Recorded calls and voicemails from the shop's own phone system (migration
+   * 111) → the inbox, transcribed and matched. Provider, whose calls and the
+   * lookback are /admin/settings → Phone; "off" is a successful no-op.
+   * Idempotent on channel_meta.external_id.
+   */
+  "import-calls": async (supabase) => {
+    const r = await runCallImport(supabase);
+    return {
+      ok: r.ok,
+      summary: r.summary,
+      detail: {
+        code: r.code,
+        found: r.found,
+        imported: r.imported,
+        failed: r.failed,
+        deferred: r.deferred,
+        errors: r.errors,
+      },
     };
   },
 };

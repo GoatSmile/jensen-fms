@@ -207,10 +207,9 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
 ---
 
 ## 3 · November — Finn by voice, calls and calendar
-- [ ] **Relatel adapter** (if 1A passes): poll `/calls` + `/voice_mails` with Finn's token →
-      storage → transcription → the inbound trunk → draft ticket. Mono audio means diarization,
-      not channel attribution. Copy audio out before Relatel's retention ends. *(Else: Twilio
-      bridge + "Call customer" button, BACKLOG.)*
+- [x] **Relatel adapter** — built 29 Sep (migration 111, job `import-calls`, set up in
+      `/admin/settings → Phone & inbox`). Open: prove a main-number call forwarded with option 2
+      arrives recorded; watch the first production transcripts for diarization quality.
 - [ ] Calls that quote a **recognition code** ("LGKUL11") match the bike (02:32:57); the label on
       the bike carries the code + the service number.
 - [ ] **Repair flow on the phone**: common-jobs list (tyre, tube, chain, service, big service,
