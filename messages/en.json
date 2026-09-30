@@ -378,7 +378,8 @@
     "workOrders": "Work orders",
     "allCustomers": "All customers",
     "customerMap": "Map",
-    "calls": "Calls"
+    "calls": "Calls",
+    "visits": "Visits"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3565,7 +3566,23 @@
     "inboundElevenlabsRegionHint": "Where ElevenLabs processes the audio. EU keeps it in the EU but needs an EU (enterprise) key; Global works with any key and is not EU residency.",
     "inboundElevenlabsRegion_eu": "EU — EU residency (enterprise key)",
     "inboundElevenlabsRegion_global": "Global — not EU residency",
-    "inboundElevenlabsRegion_us": "US"
+    "inboundElevenlabsRegion_us": "US",
+    "sectionCalendar": "Calendar",
+    "calendarHeading": "Service visits calendar",
+    "calendarDescription": "Where requested visits go. The system writes to one shared calendar through its own service account; the team sees and moves visits there.",
+    "calendarOff": "Off",
+    "calendarProvider_google": "Google Calendar",
+    "calendarIdLabel": "Calendar ID",
+    "calendarIdHint": "In Google Calendar: the calendar's Settings and sharing → Integrate calendar → Calendar ID.",
+    "calendarShareWith": "Share the calendar with:",
+    "calendarTest": "Test",
+    "calendarTesting": "Testing…",
+    "calendarTestOk": "Reached “{name}” ({tz}) — the system may add visits.",
+    "calendarTestReadOnly": "Reached “{name}”, but only to read. Give the service account “Make changes to events”.",
+    "calendarOpenGoogle": "Open Google Calendar",
+    "calendarOpenGoogleHint": "— opens only for people the calendar is shared with.",
+    "calendarSave": "Save calendar",
+    "calendarSaved": "Saved."
   },
   "adminPeople": {
     "crumb": "People & roles",
@@ -4518,7 +4535,19 @@
     "callImportUnknownPerson": "One of the chosen people is not an active person in the app.",
     "callImportBadTokenEnv": "\"{name}\" is not an allowed token name. Use RELATEL_TOKEN or RELATEL_TOKEN_ plus capitals, e.g. RELATEL_TOKEN_MATHILDE.",
     "callImportSharedNeedsLabel": "Give the shared line {line} a name, or pick the person it belongs to.",
-    "inboundModelFailsTest": "{model} was not saved — it cannot run the app's requests: {detail}"
+    "inboundModelFailsTest": "{model} was not saved — it cannot run the app's requests: {detail}",
+    "calendarNeedsAdmin": "Only an admin can change the calendar settings.",
+    "calendarUnknownProvider": "Unknown calendar provider: {provider}",
+    "calendarNeedsId": "Enter the calendar ID.",
+    "calendarUnreachable": "The calendar could not be reached: {detail}",
+    "calendarReadOnly": "“{name}” is shared with the service account for reading only. Give it “Make changes to events”, then save.",
+    "calendarNotConfigured": "No service calendar is set up. An admin sets it under Settings → Calendar.",
+    "visitNeedsDate": "Pick the date of the visit.",
+    "visitBadTime": "Enter the time as HH:MM.",
+    "visitBadDuration": "The visit must last between 15 minutes and 10 hours.",
+    "calendarCouldNotCreate": "The visit could not be added to the calendar: {detail}",
+    "calendarLinkFailed": "The visit is in the calendar, but the link back to this call could not be saved: {detail}",
+    "visitEventLink": "The call in Jensen FMS"
   },
   "inbox": {
     "title": "Inbox",
@@ -4684,7 +4713,14 @@
     "newPlaceholder": "e.g. Order for 15 Norma S from Hotel D'Angleterre, red, delivery March 15, front basket, white logo",
     "drafting": "Drafting…",
     "draftActions": "Draft actions",
-    "dictate": "Dictate"
+    "dictate": "Dictate",
+    "type_draft_visit": "Visit",
+    "visitDate": "Date",
+    "visitTime": "Time",
+    "visitDuration": "Length",
+    "visitMinutes": "{m, plural, =30 {30 min} =60 {1 hour} =90 {1½ hours} =120 {2 hours} =180 {3 hours} =240 {4 hours} other {# min}}",
+    "visitPickDate": "Pick a date first — the caller did not name one.",
+    "chip_place": "place"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",
@@ -5133,5 +5169,25 @@
     "commandsSubtitle": "Tasks you dictated or typed for the assistant to draft. Start a new one with Dictate a command in the menu.",
     "commandsEmptyTitle": "No commands yet",
     "commandsEmptyDesc": "Use Dictate a command in the menu to draft an order, a customer or a purchase."
+  },
+  "visits": {
+    "title": "Visits",
+    "subtitle": "The service calendar, read from Google. Move or change a visit in Google; this list follows.",
+    "openGoogle": "Open Google Calendar",
+    "notSetUpTitle": "No service calendar yet",
+    "notSetUpDesc": "Once an admin connects the calendar, visits appear here.",
+    "notSetUpAction": "Set up the calendar",
+    "tabsAria": "Upcoming or past visits",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "readFailed": "The calendar could not be read: {detail}",
+    "emptyUpcoming": "No visits coming up",
+    "emptyPast": "No past visits",
+    "emptyDesc": "Nothing in the calendar within {days} days.",
+    "allDay": "All day",
+    "untitled": "(no title)",
+    "openInGoogle": "Open in Google",
+    "fromCall": "From call",
+    "ticket": "Ticket"
   }
 }

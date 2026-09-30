@@ -85,6 +85,9 @@ export function routeCapabilities(
   // Calls: every line with `inbox`, a technician's own with `calls_own`; the
   // page and every action narrow further by row (src/lib/calls/access.ts).
   if (pathname === "/calls" || pathname.startsWith("/calls/")) return ["inbox", "calls_own"];
+  // Visits (the service calendar, read-only): the office AND the floor —
+  // the technician is the one driving to them (migration 117).
+  if (pathname === "/visits" || pathname.startsWith("/visits/")) return ["maintenance", "work"];
   // The scheduled jobs are their own capability, not `admin` (migration 109).
   if (pathname === "/admin/jobs" || pathname.startsWith("/admin/jobs/")) {
     return ["jobs"];

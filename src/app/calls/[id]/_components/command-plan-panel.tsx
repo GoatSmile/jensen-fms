@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
-import { openSlotsFor } from "@/lib/inbound/command/plan";
+import {
+  openSlotsFor,
+  VISIT_DEFAULT_MINUTES,
+  VISIT_DEFAULT_TIME,
+} from "@/lib/inbound/command/plan";
 
 import { applyCommandAction, rerunCommandAgent } from "../../_actions/command";
 
@@ -31,6 +35,8 @@ const ENTITY_PATH: Record<string, string> = {
   offers: "/offers",
   sales_orders: "/sales-orders",
   maintenance_tickets: "/maintenance/tickets",
+  // A visit lives in Google; the app's own view of it is the visits list.
+  calendar_events: "/visits",
   purchase_orders: "/purchase-orders",
 };
 
@@ -181,7 +187,10 @@ function ActionCard({
     !customerApplied;
 
   const isApplied = Boolean(applied?.entityId) || Boolean(applied);
-  const canApply = !isApplied && !requiredUnfilled && !waitsForCustomer;
+  // A visit needs a date — the caller's, or one the person picks on the card.
+  const visitDate = action.type === "draft_visit" ? (picks.date ?? action.date ?? "") : "";
+  const visitMissingDate = action.type === "draft_visit" && !visitDate;
+  const canApply = !isApplied && !requiredUnfilled && !waitsForCustomer && !visitMissingDate;
 
   function apply() {
     onError(null);
@@ -195,9 +204,11 @@ function ActionCard({
     kind === "template" ? templates : kind === "segment" ? segments : colors;
 
   const appliedPath =
-    applied?.entityTable && applied.entityId
-      ? `${ENTITY_PATH[applied.entityTable] ?? ""}/${applied.entityId}`
-      : null;
+    applied?.entityTable === "calendar_events"
+      ? ENTITY_PATH.calendar_events
+      : applied?.entityTable && applied.entityId
+        ? `${ENTITY_PATH[applied.entityTable] ?? ""}/${applied.entityId}`
+        : null;
 
   return (
     <li
@@ -265,6 +276,44 @@ function ActionCard({
         </div>
       ) : null}
 
+      {/* A visit's when: the model's reading, the person's to correct. */}
+      {!isApplied && action.type === "draft_visit" ? (
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-3">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground text-xs">{t("visitDate")}</span>
+            <input
+              type="date"
+              value={visitDate}
+              onChange={(e) => onPick("date", e.target.value)}
+              className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground text-xs">{t("visitTime")}</span>
+            <input
+              type="time"
+              value={picks.time ?? action.time ?? VISIT_DEFAULT_TIME}
+              onChange={(e) => onPick("time", e.target.value)}
+              className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-muted-foreground text-xs">{t("visitDuration")}</span>
+            <select
+              value={picks.duration ?? String(action.durationMinutes ?? VISIT_DEFAULT_MINUTES)}
+              onChange={(e) => onPick("duration", e.target.value)}
+              className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
+            >
+              {[30, 60, 90, 120, 180, 240].map((m) => (
+                <option key={m} value={String(m)}>
+                  {t("visitMinutes", { m })}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
+
       {!isApplied ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" size="sm" onClick={apply} disabled={!canApply || pending}>
@@ -274,6 +323,9 @@ function ActionCard({
             <span className="text-muted-foreground text-xs">
               {t("applyCustomerFirst")}
             </span>
+          ) : null}
+          {visitMissingDate ? (
+            <span className="text-muted-foreground text-xs">{t("visitPickDate")}</span>
           ) : null}
         </div>
       ) : null}
@@ -299,6 +351,9 @@ function ActionSummary({ action }: { action: CommandAction }) {
   }
   if (action.type === "draft_ticket") {
     return <p className="text-sm">{action.description}</p>;
+  }
+  if (action.type === "draft_visit") {
+    return <p className="text-sm font-medium">{action.title}</p>;
   }
   if (action.type === "draft_sales_order") {
     return (
@@ -341,6 +396,10 @@ function chipsFor(
     if (action.templateLabel) chips.push({ label: t("chip_model"), value: action.templateLabel });
     if (action.colorLabel) chips.push({ label: t("chip_colour"), value: action.colorLabel });
     if (action.note) chips.push({ label: t("chip_note"), value: action.note });
+  }
+  if (action.type === "draft_visit") {
+    if (action.organizationLabel) chips.push({ label: t("chip_customer"), value: action.organizationLabel });
+    if (action.location) chips.push({ label: t("chip_place"), value: action.location });
   }
   if (action.type === "draft_ticket" && action.urgency === "high") {
     chips.push({ label: t("chip_urgency"), value: t("urgencyHigh") });

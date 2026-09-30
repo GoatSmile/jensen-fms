@@ -1,6 +1,6 @@
 # Service calendar — the service technician's appointments in Google Calendar
 
-**Date:** 2026-09-24 · **Status:** DESIGNED, not built. Decisions in
+**Date:** 2026-09-24 · **Status:** slices 0–1 BUILT 2026-10-01 (setup, settings, visit from a call suggestion, read-only `/visits`); slices 2–4 open. Decisions in
 `docs/DECISIONS.md` (2026-09-24). Agreed with Dennis on the 24 Sep call: *a free
 Google Calendar for Finn, on his service email address.*
 

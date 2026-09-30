@@ -65,3 +65,9 @@ supabase/schema.sql
 supabase/data.sql
 supabase/.temp/
 supabase/.branches/
+
+# Google service-account keys (the calendar key lives in GOOGLE_SERVICE_ACCOUNT_KEY,
+# never in the repo). A downloaded key file in the project folder must never be
+# committed — 2026-10-01 one was one `git add -A` away.
+/jensen-fms-*.json
+*service-account*.json

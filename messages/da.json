@@ -378,7 +378,8 @@
     "workOrders": "Arbejdsordrer",
     "allCustomers": "Alle kunder",
     "customerMap": "Kort",
-    "calls": "Opkald"
+    "calls": "Opkald",
+    "visits": "Servicebesøg"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3565,7 +3566,23 @@
     "inboundElevenlabsRegionHint": "Hvor ElevenLabs behandler lyden. EU holder den i EU, men kræver en EU-nøgle (enterprise); Global virker med enhver nøgle og er ikke EU-hosting.",
     "inboundElevenlabsRegion_eu": "EU — i EU (enterprise-nøgle)",
     "inboundElevenlabsRegion_global": "Global — ikke i EU",
-    "inboundElevenlabsRegion_us": "USA"
+    "inboundElevenlabsRegion_us": "USA",
+    "sectionCalendar": "Kalender",
+    "calendarHeading": "Kalender til servicebesøg",
+    "calendarDescription": "Hvor ønskede besøg havner. Systemet skriver i én delt kalender via sin egen servicekonto; teamet ser og flytter besøgene der.",
+    "calendarOff": "Slået fra",
+    "calendarProvider_google": "Google Kalender",
+    "calendarIdLabel": "Kalender-id",
+    "calendarIdHint": "I Google Kalender: kalenderens Indstillinger og deling → Integrer kalender → Kalender-id.",
+    "calendarShareWith": "Del kalenderen med:",
+    "calendarTest": "Test",
+    "calendarTesting": "Tester…",
+    "calendarTestOk": "Forbundet til “{name}” ({tz}) — systemet kan tilføje besøg.",
+    "calendarTestReadOnly": "Forbundet til “{name}”, men kun til læsning. Giv servicekontoen “Foretag ændringer i begivenheder”.",
+    "calendarOpenGoogle": "Åbn Google Kalender",
+    "calendarOpenGoogleHint": "— åbner kun for dem, kalenderen er delt med.",
+    "calendarSave": "Gem kalender",
+    "calendarSaved": "Gemt."
   },
   "adminPeople": {
     "crumb": "Personer og roller",
@@ -4518,7 +4535,19 @@
     "callImportUnknownPerson": "En af de valgte personer er ikke en aktiv person i systemet.",
     "callImportBadTokenEnv": "\"{name}\" er ikke et tilladt navn på en nøgle. Brug RELATEL_TOKEN eller RELATEL_TOKEN_ plus store bogstaver, fx RELATEL_TOKEN_MATHILDE.",
     "callImportSharedNeedsLabel": "Giv den fælles linje {line} et navn, eller vælg den person, den tilhører.",
-    "inboundModelFailsTest": "{model} blev ikke gemt — modellen kan ikke køre systemets forespørgsler: {detail}"
+    "inboundModelFailsTest": "{model} blev ikke gemt — modellen kan ikke køre systemets forespørgsler: {detail}",
+    "calendarNeedsAdmin": "Kun en administrator kan ændre kalenderindstillingerne.",
+    "calendarUnknownProvider": "Ukendt kalenderudbyder: {provider}",
+    "calendarNeedsId": "Angiv kalender-id.",
+    "calendarUnreachable": "Kalenderen kunne ikke nås: {detail}",
+    "calendarReadOnly": "“{name}” er kun delt med servicekontoen til læsning. Giv den “Foretag ændringer i begivenheder”, og gem igen.",
+    "calendarNotConfigured": "Der er ikke sat en kalender til servicebesøg op. En administrator gør det under Indstillinger → Kalender.",
+    "visitNeedsDate": "Vælg datoen for besøget.",
+    "visitBadTime": "Angiv tidspunktet som TT:MM.",
+    "visitBadDuration": "Besøget skal vare mellem 15 minutter og 10 timer.",
+    "calendarCouldNotCreate": "Besøget kunne ikke lægges i kalenderen: {detail}",
+    "calendarLinkFailed": "Besøget ligger i kalenderen, men linket tilbage til opkaldet kunne ikke gemmes: {detail}",
+    "visitEventLink": "Opkaldet i Jensen FMS"
   },
   "inbox": {
     "title": "Indbakke",
@@ -4684,7 +4713,14 @@
     "newPlaceholder": "f.eks. Ordre på 15 Norma S til Hotel D'Angleterre, rød, levering 15. marts, forkurv, hvidt logo",
     "drafting": "Laver kladde…",
     "draftActions": "Lav kladde",
-    "dictate": "Diktér"
+    "dictate": "Diktér",
+    "type_draft_visit": "Besøg",
+    "visitDate": "Dato",
+    "visitTime": "Tidspunkt",
+    "visitDuration": "Varighed",
+    "visitMinutes": "{m, plural, =30 {30 min} =60 {1 time} =90 {1½ time} =120 {2 timer} =180 {3 timer} =240 {4 timer} other {# min}}",
+    "visitPickDate": "Vælg en dato først — den, der ringede, nævnte ingen.",
+    "chip_place": "sted"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",
@@ -5133,5 +5169,25 @@
     "commandsSubtitle": "Opgaver, du har dikteret eller skrevet, som assistenten laver udkast til. Start en ny med Dikter en kommando i menuen.",
     "commandsEmptyTitle": "Ingen kommandoer endnu",
     "commandsEmptyDesc": "Brug Dikter en kommando i menuen til at lave udkast til en ordre, en kunde eller et indkøb."
+  },
+  "visits": {
+    "title": "Servicebesøg",
+    "subtitle": "Servicekalenderen, læst fra Google. Flyt eller ret et besøg i Google; listen følger med.",
+    "openGoogle": "Åbn Google Kalender",
+    "notSetUpTitle": "Ingen servicekalender endnu",
+    "notSetUpDesc": "Når en administrator har forbundet kalenderen, vises besøgene her.",
+    "notSetUpAction": "Sæt kalenderen op",
+    "tabsAria": "Kommende eller tidligere besøg",
+    "upcoming": "Kommende",
+    "past": "Tidligere",
+    "readFailed": "Kalenderen kunne ikke læses: {detail}",
+    "emptyUpcoming": "Ingen kommende besøg",
+    "emptyPast": "Ingen tidligere besøg",
+    "emptyDesc": "Intet i kalenderen inden for {days} dage.",
+    "allDay": "Hele dagen",
+    "untitled": "(ingen titel)",
+    "openInGoogle": "Åbn i Google",
+    "fromCall": "Fra opkald",
+    "ticket": "Sag"
   }
 }

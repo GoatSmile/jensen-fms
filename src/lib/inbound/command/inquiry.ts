@@ -65,8 +65,12 @@ export function buildInquiryTask(opts: {
       "electric, cargo, baskets, logo) in `note`.",
     "- A bike they already have that needs REPAIR → a draft_ticket with a " +
       "short description of the fault.",
-    "- A call back, a visit or a meeting they asked for → say so in `notes`, " +
-      "with the date and number if given. It is not an action.",
+    "- A VISIT they asked for (come by, look at the bike, a meeting at their " +
+      "place) → a draft_visit: title = customer + errand, the date resolved " +
+      "against today, a time only if one was said. Never put a phone number " +
+      "or a person's name in the title.",
+    "- A call back they asked for → say so in `notes`, with the number if " +
+      "given. It is not an action.",
     "- If they mentioned a service agreement, a recurring price, or anything " +
       "we cannot draft, say so in `notes` — do not invent an action for it.",
     "- Do NOT propose a sales order or a purchase order.",

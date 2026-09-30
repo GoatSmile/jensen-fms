@@ -33,6 +33,12 @@ import {
   CALL_IMPORT_PROVIDERS,
 } from "@/lib/inbound/settings";
 import { defaultTokenEnv, loadPhoneLines, tokenStatus } from "@/lib/calls/lines";
+import { CalendarSettingsForm } from "./_components/calendar-settings-form";
+import {
+  CALENDAR_PROVIDERS,
+  calendarSecretStatus,
+  loadCalendarSettings,
+} from "@/lib/calendar/settings";
 
 export default async function AdminSettingsPage({
   searchParams,
@@ -86,6 +92,7 @@ export default async function AdminSettingsPage({
     lineDefaultEnv,
     ...phoneLines.map((l) => l.token_env),
   ]);
+  const calendarSettings = section === "calendar" ? await loadCalendarSettings(supabase) : null;
   const defaultTransportPct = Number(data?.default_transport_pct ?? 0.10);
   const appLanguage = (data?.app_language === "da" ? "da" : "en") as "en" | "da";
   const workerLanguage = (
@@ -313,6 +320,24 @@ export default async function AdminSettingsPage({
                       }
                     : null
                 }
+              />
+            </Panel>
+          ) : null}
+
+          {section === "calendar" ? (
+            <Panel
+              title={t("calendarHeading")}
+              description={t("calendarDescription")}
+              hue="brand"
+              contentClassName="pt-1"
+            >
+              <CalendarSettingsForm
+                initialProvider={calendarSettings?.provider ?? ""}
+                initialCalendarId={calendarSettings?.calendarId ?? ""}
+                providers={CALENDAR_PROVIDERS.map((p) => p.key)}
+                secrets={Object.fromEntries(
+                  CALENDAR_PROVIDERS.map((p) => [p.key, calendarSecretStatus(p.key)]),
+                )}
               />
             </Panel>
           ) : null}

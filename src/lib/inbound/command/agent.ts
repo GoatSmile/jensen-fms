@@ -61,6 +61,7 @@ const PROPOSE_PLAN_TOOL = {
                 "draft_offer",
                 "draft_sales_order",
                 "draft_ticket",
+                "draft_visit",
                 "draft_purchase_order",
               ],
             },
@@ -99,6 +100,15 @@ const PROPOSE_PLAN_TOOL = {
               description: "draft_ticket: what is wrong with the customer's EXISTING bike, short, in the caller's language.",
             },
             urgency: { type: ["string", "null"], enum: ["low", "normal", "high", null] },
+            // draft_visit (also uses organizationId / organizationLabel)
+            title: {
+              type: ["string", "null"],
+              description: "draft_visit: customer + errand, e.g. 'Frederiksberg Kommune — look at red bike'. NEVER a phone number or a person's name.",
+            },
+            visitDate: { type: ["string", "null"], description: "draft_visit: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
+            visitTime: { type: ["string", "null"], description: "draft_visit: 'HH:MM' 24h, only if a time was said; else null." },
+            durationMinutes: { type: ["number", "null"], description: "draft_visit: only if said; else null." },
+            location: { type: ["string", "null"], description: "draft_visit: the address or place, only if said." },
             // draft_purchase_order
             items: {
               type: ["array", "null"],
@@ -133,6 +143,7 @@ You can propose five kinds of draft action:
 - draft_offer — a QUOTE for bikes a customer asked about: a customer, a quantity, one bike model (template), optional colour, and a note with the specification and timing they mentioned. Use this, not a sales order, when someone is asking to buy.
 - draft_sales_order — a confirmed order for bikes: a customer, a quantity, one bike model (template), optional colour, delivery date, and a production note for build instructions. Only when the staff member says the order is placed.
 - draft_ticket — a repair of a bike the customer ALREADY HAS: a short description of the fault and an urgency. Do not look up the bike; it is attached from the call.
+- draft_visit — a visit the customer asked for, put in the service calendar: a title (customer + errand, NEVER a phone number or a person's name), the date resolved against today, and a time or length only if one was said.
 - draft_purchase_order — parts to buy. The supplier is chosen automatically from the parts' offerings, so you only resolve the PARTS.
 
 Rules you must follow:
@@ -163,7 +174,7 @@ export async function runCommandAgent(
   const messages: { role: "user" | "assistant"; content: unknown }[] = [
     {
       role: "user",
-      content: `Today is ${opts.today}.\n\nStaff task:\n${body}`,
+      content: `Today is ${opts.today} (${weekday(opts.today)}).\n\nStaff task:\n${body}`,
     },
   ];
 
@@ -228,4 +239,13 @@ export async function runCommandAgent(
   }
 
   return { ok: false, reason: "no_plan" };
+}
+
+
+/** "2026-09-30" → "Wednesday" — so "this Friday" resolves to the right date. */
+function weekday(isoDate: string): string {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
 }

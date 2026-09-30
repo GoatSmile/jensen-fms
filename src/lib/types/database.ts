@@ -17,6 +17,8 @@ export type Database = {
       app_settings: {
         Row: {
           app_language: string
+          calendar_id: string | null
+          calendar_provider: string | null
           default_transport_pct: number
           economic_customer_group: number | null
           economic_enabled: boolean
@@ -59,6 +61,8 @@ export type Database = {
         }
         Insert: {
           app_language?: string
+          calendar_id?: string | null
+          calendar_provider?: string | null
           default_transport_pct?: number
           economic_customer_group?: number | null
           economic_enabled?: boolean
@@ -101,6 +105,8 @@ export type Database = {
         }
         Update: {
           app_language?: string
+          calendar_id?: string | null
+          calendar_provider?: string | null
           default_transport_pct?: number
           economic_customer_group?: number | null
           economic_enabled?: boolean
@@ -883,6 +889,80 @@ export type Database = {
             columns: ["manufacturing_order_id"]
             isOneToOne: false
             referencedRelation: "manufacturing_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          external_event_id: string
+          id: string
+          message_id: string | null
+          organization_id: string | null
+          provider: string
+          starts_at: string | null
+          ticket_id: string | null
+          title: string | null
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          external_event_id: string
+          id?: string
+          message_id?: string | null
+          organization_id?: string | null
+          provider: string
+          starts_at?: string | null
+          ticket_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          external_event_id?: string
+          id?: string
+          message_id?: string | null
+          organization_id?: string | null
+          provider?: string
+          starts_at?: string | null
+          ticket_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tickets"
             referencedColumns: ["id"]
           },
         ]

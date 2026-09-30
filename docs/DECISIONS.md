@@ -3502,3 +3502,28 @@ a buying enquiry drafts an **offer**, not a sales order.
   check refused the new kinds AFTER the offer was written, and a second press
   would have made a second offer). The unique (message, action) index now
   guards the draft, not just the ledger row.
+
+## 2026-10-01 — Visits go to Google from a suggestion; the app reads them back as a list
+
+Owner: a requested visit becomes a calendar entry in the service calendar,
+configurable in the app; *"09:00 for 1 hour"* when the caller gives a day but
+no time; and a way to *"see all upcoming (and potentially past) appointments …
+maybe even just to read."*
+
+- **A visit is a fourth suggestion kind** (`draft_visit`): date resolved
+  against the Danish today (weekday included, so "this Friday" lands right),
+  time only if said, else 09:00 / 60 min, all correctable on the card. It
+  writes Google only when a person applies it — the 24 Sep rule that nothing
+  from a call changes the calendar on its own.
+- **Calendar id + provider are settings; the service account's address is not**
+  — it is read from the key, and shown, because a second copy could only
+  disagree. Saving refuses a calendar the key cannot WRITE (same guard as the
+  model setting). **Rejected:** OAuth as Finn (7-day token expiry in testing).
+- **`/visits` reads Google live, read-only** — so Finn's own edits in Google
+  show, and people without a Google account can still read the schedule.
+  Changes are made in Google. A link to Google opens only for people the
+  calendar is shared with; the app's list does not depend on that. **Rejected
+  for now:** syncing events into our DB (plan slice 2 — push notifications)
+  until something needs to query visits.
+- **Links respect call access:** a visit's "From call" link shows only to
+  someone who may open that call (a technician: their own line).

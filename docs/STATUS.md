@@ -62,8 +62,15 @@ is Danish (person language).
   the import job drafts an offer / repair ticket per read call with a request;
   verified locally end to end (plan → offer OFF- with priced line + ticket).
   **Not yet seen in production** — the first planner run takes calls from the
-  last 7 days, including the 15:48 test voicemail. Next: Google Calendar for
-  requested visits (needs a Google OAuth client for the Jensen account first).
+  last 7 days, including the 15:48 test voicemail.
+- **Visits → Google Calendar, and a read-only `/visits` list** (migration 117,
+  DECISIONS 2026-10-01). Verified locally end to end against the REAL
+  *Servicebesøg* calendar: suggestion → apply → event 30 Sep 10:00–11:00 →
+  shown on `/visits` (a TEST event dated 30 Sep is left there — delete in
+  Google). **Production needs:** `GOOGLE_SERVICE_ACCOUNT_KEY` in Vercel
+  (unverified — no Vercel CLI here), then Admin → Settings → Calendar → Test →
+  Save with the calendar id. Local copy was REBUILT 2026-10-01 after Docker lost
+  its disk image (disk full); `data.sql` now carries buckets as core columns only.
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and

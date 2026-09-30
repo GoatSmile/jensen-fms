@@ -24,6 +24,7 @@ export type SettingsSectionId =
   | "communication"
   | "accounting"
   | "phone"
+  | "calendar"
   | "public";
 
 export type SettingsSection = {
@@ -41,6 +42,9 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: "communication", labelKey: "sectionCommunication", hue: "brand" },
   { id: "accounting", labelKey: "sectionAccounting", hue: "money" },
   { id: "phone", labelKey: "sectionPhone", hue: "brand" },
+  // Service visits in Google (migration 117) — which calendar, and the proof
+  // that the key reaches it.
+  { id: "calendar", labelKey: "sectionCalendar", hue: "brand" },
   { id: "public", labelKey: "sectionPublic", hue: "good" },
 ];
 

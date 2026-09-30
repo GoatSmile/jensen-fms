@@ -685,6 +685,19 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   mono two-way → diarized, inferred); every transcription gets the names
   list from `loadTranscriptionKeyterms` (people, customers, bike models).
   Gladia stays registered as the fallback.
+- **Service visits live in GOOGLE, not in our database** (migration 117,
+  `docs/plan-service-calendar.md`). The app reaches the *Servicebesøg*
+  calendar through a SERVICE ACCOUNT the calendar is shared with — never OAuth
+  as a person (an unpublished consent screen expires tokens every 7 days); its
+  key is `GOOGLE_SERVICE_ACCOUNT_KEY` (env only), and provider + calendar id are
+  `app_settings`, set at `/admin/settings → Calendar`, whose save runs the Test
+  and refuses a calendar the account cannot write. Provider-blind code goes
+  through `CalendarAdapter` (`src/lib/calendar/`). A visit reaches Google only
+  when a person applies a *visit* suggestion (09:00 for an hour when no time was
+  said); `calendar_events` is only a link from what the SYSTEM created to its
+  call / ticket / customer. `/visits` is a READ-ONLY list read live from Google,
+  for `maintenance` or `work`. **Minimal personal data in events**: customer +
+  errand + a link back — never a phone number or a contact's name.
 - **Every Anthropic call goes through ONE door, and sends only what every
   current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
   2026-09-30). The model is an admin setting that changes without a deploy,
@@ -1044,7 +1057,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike
   templates · Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
-  orders · Workshop floor · Calls) · *Orders* (Offers · Sales · Paint orders ·
+  orders · Visits · Workshop floor · Calls) · *Orders* (Offers · Sales · Paint orders ·
   Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
   - ***Orders* is ordered by the LIFE OF A JOB, not alphabetically or by

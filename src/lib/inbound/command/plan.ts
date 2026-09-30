@@ -24,6 +24,7 @@ export type CommandActionType =
   | "draft_offer"
   | "draft_sales_order"
   | "draft_ticket"
+  | "draft_visit"
   | "draft_purchase_order";
 
 export type DraftCustomerAction = {
@@ -98,6 +99,32 @@ export type DraftTicketAction = {
   urgency: "low" | "normal" | "high";
 };
 
+/**
+ * A visit the caller asked for — an event in the service calendar (migration
+ * 117). Date and time are the model's reading and the person's to correct
+ * before applying; no time said → 09:00 for an hour (owner, 2026-09-30). The
+ * title carries the customer and the errand ONLY: phone numbers and contact
+ * names stay in the system, never in Google (docs/plan-service-calendar.md).
+ */
+export type DraftVisitAction = {
+  id: string;
+  type: "draft_visit";
+  title: string;
+  /** ISO date, or null when the caller named none — the person picks one. */
+  date: string | null;
+  /** "HH:MM"; null → 09:00. */
+  time: string | null;
+  /** Null → 60. */
+  durationMinutes: number | null;
+  organizationId: string | null;
+  organizationLabel: string | null;
+  /** Where the visit is, when the caller said. */
+  location: string | null;
+};
+
+export const VISIT_DEFAULT_TIME = "09:00";
+export const VISIT_DEFAULT_MINUTES = 60;
+
 export type DraftPurchaseOrderItem = {
   partId: string;
   partLabel: string;
@@ -116,6 +143,7 @@ export type CommandAction =
   | DraftOfferAction
   | DraftSalesOrderAction
   | DraftTicketAction
+  | DraftVisitAction
   | DraftPurchaseOrderAction;
 
 export type CommandPlan = {
@@ -223,6 +251,24 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
         type: "draft_ticket",
         description,
         urgency: u === "high" ? "high" : u === "low" ? "low" : "normal",
+      };
+    }
+    case "draft_visit": {
+      const title = str(o.title) ?? str(o.description);
+      if (!title) return null;
+      const date = str(o.visitDate) ?? str(o.date);
+      const time = str(o.visitTime) ?? str(o.time);
+      const minutes = num(o.durationMinutes);
+      return {
+        id,
+        type: "draft_visit",
+        title,
+        date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
+        time: time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : null,
+        durationMinutes: minutes && minutes >= 15 && minutes <= 600 ? Math.round(minutes) : null,
+        organizationId: str(o.organizationId),
+        organizationLabel: str(o.organizationLabel),
+        location: str(o.location),
       };
     }
     case "draft_purchase_order": {

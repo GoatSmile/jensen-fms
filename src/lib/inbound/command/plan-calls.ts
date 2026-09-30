@@ -34,8 +34,9 @@ const MAX_PER_RUN = 3;
 /** Below this a voicemail is a greeting or a hang-up, not a request. */
 const MIN_SPEECH_CHARS = 25;
 
+/** Today on the DANISH calendar — "this Friday" is relative to Copenhagen, not UTC. */
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Copenhagen" }).format(new Date());
 }
 
 /** Run the agent on one call and store the plan. No access check — callers do that. */
