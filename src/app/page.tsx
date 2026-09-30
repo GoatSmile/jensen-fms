@@ -295,7 +295,7 @@ export default async function DashboardPage() {
           </p>
         </section>
       ) : (
-        <section className="grid gap-3 md:grid-cols-2">
+        <section className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
           {hasUninvoiced ? (
             <AttentionCard
               title={
@@ -458,7 +458,7 @@ export default async function DashboardPage() {
 
       {/* Pipelines — how work is flowing. Zeros stay visible here:
           "nothing in build" is daily signal, unlike an empty attention list. */}
-      <section className="grid gap-3 lg:grid-cols-3">
+      <section className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-3">
         <PipelineCard
           hue="brand"
           title={t("pipeline.build")}
@@ -539,7 +539,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* Attention strip */}
-      <section className="grid gap-3 lg:grid-cols-3">
+      <section className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-3">
         <AttentionCard
           title={t("lowStock")}
           emptyMessage={t("lowStockEmpty")}

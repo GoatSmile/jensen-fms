@@ -141,6 +141,13 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
     (Dennis, 24 Sep) — phone matching will miss them; see the notice line below.
   - Main-number calls forwarded to Finn (option 2) arrived UNRECORDED on
     29 Sep; unproven either way until a deliberate test call.
+- **Dictation drops a slow Gladia job, and Try again starts a new one.** On
+  30 Sep 09:17 UTC Gladia took 98 s on a 28 s dictation (2 s at every other
+  hour); `/api/dictate` gives up at 45 s and the retry re-submits into the same
+  queue, discarding a transcript that finished 53 s later. Fix: return the job's
+  result URL on `timeout` and let Try again poll THAT job ("still transcribing —
+  check again"). ~45 human-dev-min. Munin sees Gladia slow at 00:00 UTC too
+  (its DECISIONS 2026-08-24). A provider fallback is the larger option.
 - **Call summaries are written in English** even for a Danish call and a
   Danish UI (Finn's page reads "The transcript is too fragmented…"). The
   extraction prompt could write `callSummary`/`problem` in the call's language,

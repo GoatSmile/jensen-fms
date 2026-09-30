@@ -1189,6 +1189,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (`src/app/_actions/logout.ts`); the `/logout` route survives as the
   typed-URL escape hatch and ignores speculative requests. Any future
   destructive GET route inherits the same trap.
+- **A page wider than the phone pushes every fixed overlay off-screen** —
+  Android widens the layout viewport to fit the content, so a right-pinned
+  sheet or dialog lands partly outside the screen (iOS hid it; found
+  2026-09-30 on the dashboard at 360 px). The usual cause is a single-column
+  `grid` with no explicit columns: its implicit track is sized by content and
+  grid items default to `min-width: auto`, so one long row stretches the page.
+  Give mobile grids `grid-cols-[minmax(0,1fr)]` (Tailwind's `grid-cols-N` is
+  already `minmax(0,1fr)`), and check `document.documentElement.scrollWidth`
+  at 360 px, not just at the 375 px mobile preset.
 - **A hand-rolled surface does not always have a rounded corner.** When sweeping
   for card soup, grep `bg-muted` and bare `border-t` / `border-b` as well as
   `rounded-*` — the build workbench's footer was `border-t bg-muted/20 px-4 py-3`

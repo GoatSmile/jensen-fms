@@ -1,13 +1,11 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-29 (Tuesday, midday).** **Service agreements are now per
-BIKE** (migration 110): an agreement holds one line per covered bike, coverage is
-"an active line", and a signed paper is uploaded from the customer's page
-(phone photos or PDF), read by the model, matched to bikes by code and written
-only on Dennis's confirm. Before that: Dennis's answers on 0 kr (= ended) and
-contract types (= committed years, new agreements only) into the handling doc,
-and the production click-through checklist. Monday's bundle (106–109) is still
-unclicked in production.
+**Last updated: 2026-09-30 (Wednesday, midday).** **Finn's calls reach the app
+from Relatel, and the inbox became Calls** (migrations 111–112): every recorded
+call on a mapped phone line is imported every 5 minutes, transcribed, sorted into
+to do / check / no action / done, and shown by day — Finn sees his own, the
+office everyone's. Live in production and running. Also: the whole app now shows
+Danish time (it read 1–2 h early), and phones at 360 px no longer overflow.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -42,25 +40,18 @@ is Danish (person language).
   supabase_db_jensen-fms psql …`** — `--local` takes one statement per call.
 - **Everything shipped on 27 and 28 Sep was verified in the browser against
   the LOCAL copy only** — nobody has clicked it in production yet.
-- **Calls page, built 30 Sep** (DECISIONS 2026-09-30): `/calls` replaces the
-  inbox (redirects), by Danish day, tabs per person, four derived groups;
-  Finn sees his own line. Dictate a command moved to the app chrome
-  (`/commands`); the voicemail upload is gone. Verified locally end to end
-  WITH transcription (the local copy now uploads audio to Gladia): import,
-  MP3 repair, stamping, internal-call detection, tabs, fold rule, Finn's
-  access (own call 200, another's 404), the token-name guard (app and DB),
-  phone width. **In production after this deploy:** open *Settings → Phone &
-  inbox → Call import* once and press Save — that stores every Relatel line
-  (numbers for internal-call detection) — then check `/calls` as Dennis and
-  as Finn.
-- **Finn's calls → the inbox from Relatel, built 29 Sep** (DECISIONS
-  2026-09-29): job `import-calls` every 5 min + *Fetch calls now* on `/inbox`;
-  set up at `/admin/settings → Phone & inbox → Call import`. Verified locally
-  end to end except transcription (the local copy cannot transcribe): four real
-  items imported, idempotent on a second press, audio plays; the local test rows
-  and audio were deleted after. **Production needs two things before it runs:**
-  `RELATEL_TOKEN` in Vercel Production (then redeploy), and Call import set to
-  Relatel + Finn in production admin. Until then the job reports "off".
+- **Calls — live in production** (DECISIONS 2026-09-29 + 09-30; CLAUDE.md
+  inbound rule). `/calls` (`/inbox` redirects), `/commands`, Dictate a command in
+  the app chrome. Production state: lines *Finn Nysom* → `RELATEL_TOKEN_FINN` and
+  *Mathilde / Nazar* → Nazar Taras, `RELATEL_TOKEN_NAZAR`, both on and both
+  tokens accepted (the 00:25 run on 30 Sep); the other six stored with import off
+  (their numbers mark internal calls). Four real calls are in, both outgoing ones
+  repaired (mixed-format MP3) and transcribed. **Not yet seen by a human in
+  production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
+  (none recorded yet — check Mobilfeatures recording is on for that number).
+  Unproven: a main-number call forwarded with option 2 arrives recorded.
+- **Dictation hit a slow Gladia** (30 Sep 09:17 UTC, 98 s for 28 s of audio;
+  2 s otherwise) and showed "took too long" — BACKLOG has the resume-the-job fix.
 - **Scheduled jobs are watched at `/admin/jobs`** (capability `jobs`, Owner +
   IT admin; migration 109): list from `vercel.json`, last runs from
   `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check
@@ -111,9 +102,10 @@ is Danish (person language).
 - **Counting identifiers by category needs clean categories**: Batteries and
   Charger must hold only batteries and chargers, or bikes get asked for extra
   numbers (CLAUDE.md, identifier rule).
-- **The local stack is RUNNING** (Docker was restarted 29 Sep). Start it after
-  a Docker restart with `supabase start -x logflare,vector` — the analytics
-  port would not bind otherwise.
+- **The local stack is STOPPED** (30 Sep). Start Docker, then
+  `supabase start -x logflare,vector` — the analytics port will not bind
+  otherwise. Local phone lines: Finn's (→ *TEST Finn*, `RELATEL_TOKEN`) plus the
+  other seven off; `.env.local` holds only `RELATEL_TOKEN`.
   Local TEST data: people *TEST Finn*, *TEST Tech EN*, *TEST Sælger*; bikes
   `TEST-WCK-REPAIR-001/002`, `TEST-FRAME-TAKE-1` (was PEDAL-003),
   `TEST-WCK-DELIV-001/002` (TL11/12, in stock on `MO-2026-9904`);
@@ -133,16 +125,17 @@ is Danish (person language).
   2026-10-27 (BACKLOG).
 - **Vercel ships HTML whose `next/font` class its own stylesheet does not
   define** — worked around on `:root` (DECISIONS 2026-09-13).
-- **The local Supabase can never transcribe** — end-to-end dictation means
-  `use-db.sh prod`.
+- **Test sizes at 360 px, not only the 375 px preset** — Android at 360 is
+  where the dashboard overflowed and pushed the command sheet off-screen.
 - **No production session can be minted from this machine** (`SITE_PASSWORD`
   lives only in Vercel) — authenticated production pages need a human.
 
 ## Next actions — `docs/plan-go-live.md`
-1. **Relatel in production:** `RELATEL_TOKEN` in Vercel, redeploy, switch it on
-   in admin, *Fetch calls now*, read the first transcripts; then a main-number
-   call pressing 2 to prove forwarded calls arrive recorded. **Also from Tuesday
-   (§1):** passwords for Finn
+1. **Calls, first human pass:** open `/calls` as Dennis and as Finn; a test call
+   on Nazar's line; a main-number call pressing 2. Decide the transcription
+   question (Gladia's slow spells — see the options discussed 30 Sep; BACKLOG).
+   Add a *Calls* section to Finn's guide (PDF). **Still from Tuesday (§1):**
+   passwords for Finn
    and Glenn; Finn walks one repair with his guide; the calendar; the e-conomic
    grant; `PNT-2026-0012`.
 2. **Agreements next (§2A):** renewal invoicing per line — plan in

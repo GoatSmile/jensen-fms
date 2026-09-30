@@ -103,9 +103,11 @@ treat the early totals as floors, not truth.
 | Mon 2026-09-28 | ~4 | **Dennis's bundle shipped** (migrations 106–108): paint orders split paperwork from where the goods are, delivery by signature, identifier rules, recognition code at build, five small ones, his paint guide. |
 | Mon 2026-09-28 (cont.) | ~2.5 | **Finn drives the paint runs, and the daily jobs get a page** (migration 109): *Lakture* on the floor, `/admin/jobs` with last runs and Run now; Finn's guide gains §8–9. |
 | Tue 2026-09-29 | ~2 | **Service agreements per bike, and signed papers read from the phone** (migration 110): lines + coverage switch, upload → read → confirm; Dennis's 0-kr/K answers in the handling doc; the production click-through checklist. |
+| Tue 2026-09-29 (cont.) | ~5 | **Finn's calls in from Relatel, and the inbox became Calls** (migrations 111–112): the Relatel test passed, import + MP3 repair, phone lines per person, triage by day; all times now Danish. |
+| Wed 2026-09-30 | ~1 | **Phones at 360 px fixed** (dashboard overflow pushed the command sheet off-screen), and a slow-Gladia dictation traced to Gladia's side. |
 
-**September so far: ~63 h** (10 working days)
+**September so far: ~69 h** (11 working days)
 
 ---
 
-**Project total: ~317 h across 51 working days (2026-05-07 → 2026-09-29)**
+**Project total: ~323 h across 52 working days (2026-05-07 → 2026-09-30)**

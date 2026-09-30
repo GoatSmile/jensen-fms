@@ -93,7 +93,12 @@ export function CommandSheet({ variant }: { variant: "sidebar" | "rail" | "mobil
       ) : (
         <SheetTrigger asChild>{trigger}</SheetTrigger>
       )}
-      <SheetContent side="right" className="w-full gap-0 sm:max-w-lg">
+      {/* Scoped like the Sheet's own width rule (data-[side=right]:w-3/4), or
+          that rule wins: full width on a phone, a readable column above. */}
+      <SheetContent
+        side="right"
+        className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
+      >
         <SheetHeader>
           <SheetTitle className="inline-flex items-center gap-1.5">
             <Sparkles className="size-4" aria-hidden />
