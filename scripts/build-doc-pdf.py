@@ -137,6 +137,15 @@ code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 9pt; background: var(--ground); padding: 1pt 3pt; border-radius: 3pt;
 }
+
+/* A command someone must type: wrap it rather than run off the page — a
+   printed line that is cut off cannot be copied back. */
+pre {
+  background: var(--ground); border: 1px solid var(--rule);
+  border-radius: 6pt; padding: 7pt 9pt; margin: 8pt 0;
+  white-space: pre-wrap; overflow-wrap: anywhere; break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.5pt; }
 """
 
 
@@ -184,7 +193,7 @@ def build(md_path: Path) -> Path:
 
     src = re.sub(r"!\[([^\]]*)\]\(([^)]+\.(?:png|jpg|jpeg))\)", inline_img, src)
 
-    body = mark_cost_tables(markdown.markdown(src, extensions=["tables", "smarty", "attr_list"]))
+    body = mark_cost_tables(markdown.markdown(src, extensions=["tables", "smarty", "attr_list", "fenced_code"]))
     html = (
         "<!doctype html><html><head><meta charset='utf-8'>"
         f"<style>{CSS}</style></head><body>{body}</body></html>"
