@@ -5,7 +5,7 @@
  * channel-blind pipeline runs exactly as it does for a Twilio recording.
  *
  * An adapter only answers three questions — who can be imported, what was
- * recorded since X, and give me that audio. Storage, rows and the pipeline
+ * recorded (or rang unrecorded) since X, and give me that audio. Storage, rows and the pipeline
  * are ./import.ts, shared by every adapter.
  */
 
@@ -29,8 +29,16 @@ export type RecordedItem = {
   endpointName: string | null;
   startedAt: string;
   durationSeconds: number | null;
-  /** Adapter-owned handle for fetchAudio; never shown or stored. */
-  audioRef: string;
+  /**
+   * `recorded` carries audio; the other two are call EVENTS with nothing to
+   * hear — an incoming call answered on a line that does not record (a
+   * main-number call: Relatel records those only on its Contact Center
+   * plans), or one that rang the line and was not answered. Imported so a
+   * call never vanishes just because nobody recorded it.
+   */
+  outcome: "recorded" | "answered_unrecorded" | "missed";
+  /** Adapter-owned handle for fetchAudio; never shown or stored. Null for an event. */
+  audioRef: string | null;
 };
 
 export type AdapterResult<T> =

@@ -54,8 +54,10 @@ is Danish (person language).
   production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
   (voicemails arrive; triage now reads content first — DECISIONS 2026-09-30).
   **A main-number call forwarded with option 2 is NOT recorded** by Relatel
-  (`recording: null`, verified 30 Sep), so it is not imported — recording for
-  Hovednummer #1/#2 needs a Relatel administrator login (Finn's cannot).
+  (`recording: null`, verified 30 Sep): main-number recording exists only on
+  Relatel's Contact Center / Unlimited plans (the Optagelse section is absent
+  on our plan) — a purchase for the owner. Meanwhile such calls import as
+  *Answered · not recorded* events, and missed calls as *to do*.
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and

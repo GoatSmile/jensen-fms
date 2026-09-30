@@ -34,6 +34,8 @@ export type CallListRow = {
   promises: string[];
   /** The other party is one of our own lines or people — tagged in every group. */
   internal: boolean;
+  /** A recording is stored — no player on a call nobody recorded. */
+  hasAudio: boolean;
   triage: CallTriage;
   lane: CallLane;
 };
@@ -56,6 +58,8 @@ type RawRow = {
   channel: string;
   status: string;
   error: string | null;
+  call_outcome: string | null;
+  media_path: string | null;
   disposition: string | null;
   ticket_id: string | null;
   body_text: string | null;
@@ -73,7 +77,7 @@ type RawRow = {
 };
 
 const ROW_COLUMNS =
-  "id, channel, status, error, disposition, ticket_id, body_text, duration_seconds, transcript_confidence, spam_signals, matched_organization_id, match_candidates, extraction, from_identity, received_at, channel_meta, phone_line_id, handled_by_person_id";
+  "id, channel, status, error, call_outcome, media_path, disposition, ticket_id, body_text, duration_seconds, transcript_confidence, spam_signals, matched_organization_id, match_candidates, extraction, from_identity, received_at, channel_meta, phone_line_id, handled_by_person_id";
 
 /**
  * Everything the Calls page shows, for one viewer, one tab and one window of
@@ -162,6 +166,8 @@ export async function loadCallsPage(
       channel: r.channel,
       status: r.status,
       error: r.error,
+      call_outcome: r.call_outcome,
+      has_media: Boolean(r.media_path),
       disposition: r.disposition,
       ticket_id: r.ticket_id,
       body_text: r.body_text,
@@ -199,6 +205,7 @@ export async function loadCallsPage(
       summary: x?.callSummary ?? x?.problem ?? null,
       promises: x?.commitments ?? [],
       internal,
+      hasAudio: Boolean(r.media_path),
       triage,
       lane: triage.lane,
       tabKeys,

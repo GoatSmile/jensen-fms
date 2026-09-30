@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChevronRight,
   PhoneIncoming,
+  PhoneMissed,
   PhoneOff,
   PhoneOutgoing,
   Users,
@@ -50,13 +51,15 @@ export async function CallRow({
       ? CheckCircle2
       : reason === "internal"
         ? Users
-        : reason === "no_speech"
-          ? PhoneOff
-          : row.channel === "voicemail"
-            ? Voicemail
-            : row.direction === "outgoing"
-              ? PhoneOutgoing
-              : PhoneIncoming;
+        : reason === "missed"
+          ? PhoneMissed
+          : reason === "no_speech"
+            ? PhoneOff
+            : row.channel === "voicemail"
+              ? Voicemail
+              : row.direction === "outgoing"
+                ? PhoneOutgoing
+                : PhoneIncoming;
 
   const number = formatPhone(row.from_identity);
   const who = row.orgName ?? row.callerName ?? number ?? t("unknownCaller");
@@ -144,7 +147,7 @@ export async function CallRow({
           {row.status === "failed" && row.error ? (
             <p className="text-ink-2 font-mono text-xs break-all">{row.error}</p>
           ) : null}
-          <CallAudio messageId={row.id} />
+          {row.hasAudio ? <CallAudio messageId={row.id} /> : null}
           <Link href={`/calls/${row.id}`} className="text-brand-ink text-sm underline underline-offset-2">
             {t("openCall")}
           </Link>

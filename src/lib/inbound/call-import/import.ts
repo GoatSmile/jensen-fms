@@ -4,7 +4,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { loadPhoneLines, readLineToken, type PhoneLine } from "@/lib/calls/lines";
 
+import { parseExtraction } from "../extraction";
+import { matchInbound } from "../match";
 import { runInboundPipeline } from "../pipeline";
+import { applyTriage } from "../triage";
 import { CALL_IMPORT_PROVIDERS, findProvider, loadInboundSettings } from "../settings";
 import type { VoicemailChannelMeta } from "../types";
 import { relatelAdapter } from "./relatel";
@@ -12,9 +15,10 @@ import type { CallImportAdapter, RecordedItem } from "./types";
 
 const BUCKET = "inbound";
 /**
- * New items handled per run. Each one's pipeline waits on transcription (up
- * to ~90 s), and they run side by side, so this bounds one run's wall-clock;
- * anything beyond it is picked up by the next run, five minutes later.
+ * New RECORDINGS handled per run. Each one's pipeline waits on transcription
+ * (up to ~90 s), and they run side by side, so this bounds one run's
+ * wall-clock; anything beyond it is picked up by the next run, five minutes
+ * later. Unrecorded call events are cheap (no audio, no model) and all go in.
  */
 const MAX_NEW_PER_RUN = 6;
 
@@ -127,13 +131,20 @@ export async function runCallImport(supabase: SupabaseClient): Promise<CallImpor
   const fresh = work
     .filter((w) => !known.has(w.item.externalId))
     .sort((a, b) => a.item.startedAt.localeCompare(b.item.startedAt));
-  const batch = fresh.slice(0, MAX_NEW_PER_RUN);
+  const recordings = fresh.filter((w) => w.item.audioRef);
+  const batch = [
+    ...recordings.slice(0, MAX_NEW_PER_RUN),
+    ...fresh.filter((w) => !w.item.audioRef),
+  ];
 
   const importedIds: string[] = [];
+  let eventsImported = 0;
   for (const w of batch) {
     const r = await importOne(supabase, adapter, w);
     if (r.ok) {
-      if (r.id) importedIds.push(r.id);
+      // An unrecorded call is finished at import; only recordings get a pipeline.
+      if (r.id && w.item.audioRef) importedIds.push(r.id);
+      else if (r.id) eventsImported += 1;
     } else {
       errors.push(`${w.item.externalId}: ${r.error}`);
     }
@@ -145,17 +156,19 @@ export async function runCallImport(supabase: SupabaseClient): Promise<CallImpor
   await Promise.allSettled(importedIds.map((id) => runInboundPipeline(supabase, id, "da")));
 
   const deferred = fresh.length - batch.length;
+  const unrecorded = work.filter((w) => !w.item.audioRef).length;
   return {
     ok: errors.length === 0,
     code: "done",
     found: work.length,
-    imported: importedIds.length,
+    imported: importedIds.length + eventsImported,
     failed: errors.length,
     deferred,
     errors,
     summary:
-      `${work.length} recorded on ${lines.length} line(s) in the last ${settings.callImportLookbackHours} h; ` +
-      `${importedIds.length} imported, ${known.size} already here` +
+      `${work.length} call(s) on ${lines.length} line(s) in the last ${settings.callImportLookbackHours} h` +
+      `${unrecorded ? ` (${unrecorded} not recorded)` : ""}; ` +
+      `${importedIds.length + eventsImported} imported, ${known.size} already here` +
       `${errors.length ? `; ${errors.length} problem(s): ${errors.join("; ")}` : ""}` +
       `${deferred ? `; ${deferred} left for the next run` : ""}.`,
   };
@@ -166,6 +179,7 @@ async function importOne(
   adapter: CallImportAdapter,
   { item, line, token }: Work,
 ): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
+  if (!item.audioRef) return importEvent(supabase, item, line);
   const audio = await adapter.fetchAudio(token, item);
   if (!audio.ok) return audio;
 
@@ -214,5 +228,65 @@ async function importOne(
     if (error?.code === "23505") return { ok: true, id: null };
     return { ok: false, error: error?.message ?? "insert returned no row" };
   }
+  return { ok: true, id: data.id };
+}
+
+/**
+ * A call with nothing to hear — answered on a line that does not record, or
+ * missed. It gets a row like any call (stamped with the line and its person,
+ * so it lands in the right tab) but no pipeline: there is no audio to
+ * transcribe and nothing for a model to read. The caller's NUMBER is still
+ * matched, so a missed call from a customer says who, and the spam signals
+ * are scored the way the Twilio status callback scores a hang-up.
+ */
+async function importEvent(
+  supabase: SupabaseClient,
+  item: RecordedItem,
+  line: PhoneLine,
+): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
+  const meta: VoicemailChannelMeta = {
+    source: "relatel",
+    external_id: item.externalId,
+    call_direction: item.direction,
+    call_endpoint: item.endpoint,
+    call_endpoint_name: item.endpointName ?? undefined,
+    call_mode: "bridged",
+  };
+  const { data, error } = await supabase
+    .from("inbound_messages")
+    .insert({
+      channel: "phone_call",
+      status: "received",
+      from_identity: item.remoteNumber,
+      received_at: item.startedAt,
+      duration_seconds: item.durationSeconds,
+      call_outcome: item.outcome === "missed" ? "no-answer" : "answered_unrecorded",
+      channel_meta: meta,
+      phone_line_id: line.id,
+      handled_by_person_id: line.person_id,
+    })
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
+    if (error?.code === "23505") return { ok: true, id: null };
+    return { ok: false, error: error?.message ?? "insert returned no row" };
+  }
+
+  const match = await matchInbound(
+    supabase,
+    { fromIdentity: item.remoteNumber, extraction: parseExtraction(null) },
+    "da",
+  );
+  await supabase
+    .from("inbound_messages")
+    .update({
+      match_candidates: match.candidates,
+      matched_organization_id: match.matchedOrganizationId,
+      matched_contact_id: match.matchedContactId,
+      status: "matched",
+      processed_at: new Date().toISOString(),
+    })
+    .eq("id", data.id);
+  await applyTriage(supabase, data.id);
   return { ok: true, id: data.id };
 }

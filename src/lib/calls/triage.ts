@@ -11,6 +11,8 @@
  * Order matters and is the whole design:
  *   1. a person's decision (ticket, handled, spam, "needs action") wins;
  *   2. the system's own trouble (failed, still processing) is a CHECK;
+ *      a call nobody recorded is judged by what happened — a MISSED call
+ *      is someone to ring back, an answered one was dealt with live;
  *   3. a PROMISE the workshop made is never quiet — forgotten promises cost most;
  *   4. a voicemail is someone waiting for a call back;
  *   5. a request is TO DO — or CHECK when we are not sure who or what it was;
@@ -36,6 +38,7 @@ export type CallReason =
   | "marked_needs_action"
   | "promise"
   | "callback"
+  | "missed"
   | "request"
   // check
   | "failed"
@@ -45,6 +48,7 @@ export type CallReason =
   // quiet
   | "spam"
   | "internal"
+  | "not_recorded"
   | "no_speech"
   | "no_request";
 
@@ -60,6 +64,10 @@ export type TriageInput = {
   status: string;
   /** The pipeline's failure code, e.g. "transcribe.empty". */
   error: string | null;
+  /** `answered_unrecorded`, `no-answer`, `message_left`, … — null on typed rows. */
+  call_outcome: string | null;
+  /** A recording is stored for this row. */
+  has_media: boolean;
   disposition: string | null;
   ticket_id: string | null;
   body_text: string | null;
@@ -74,6 +82,9 @@ export type TriageInput = {
   /** Minutes since the call arrived — tells "still reading" from "got stuck". */
   ageMinutes: number;
 };
+
+/** Outcomes that mean the call rang and nobody picked up. */
+const MISSED_OUTCOMES = new Set(["no-answer", "busy"]);
 
 /** Below this many seconds with little said, a call carries nothing to act on. */
 const SHORT_SECONDS = 10;
@@ -116,10 +127,20 @@ export function triageCall(row: TriageInput): CallTriage {
     return check(row.ageMinutes > STUCK_MINUTES ? "failed" : "processing");
   }
 
+  // 2b · Nothing was recorded, so what HAPPENED is all there is to go on.
+  // A missed call from a new number is not spam here: new customers ring from
+  // unknown numbers, and a person can still say "no action needed".
+  const said = (row.body_text ?? "").trim();
+  if (!row.has_media && !said && row.call_outcome) {
+    if (row.call_outcome === "answered_unrecorded") return quiet("not_recorded");
+    if (MISSED_OUTCOMES.has(row.call_outcome)) {
+      return row.internal ? quiet("internal") : todo("missed");
+    }
+  }
+
   // 3 · Something was promised to a customer.
   if ((x?.commitments ?? []).length > 0) return todo("promise");
 
-  const said = (row.body_text ?? "").trim();
   const barelySpoken =
     said.length < MIN_SPEECH_CHARS ||
     (row.duration_seconds != null && row.duration_seconds < SHORT_SECONDS && said.length < 80);

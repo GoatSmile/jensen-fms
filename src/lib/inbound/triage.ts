@@ -120,7 +120,7 @@ export async function applyTriage(
   // Without this, an answered conversation from a first-time caller could be
   // folded as spam whenever the status callback lands before the recording and
   // the pipeline never re-scores it (a failed transcription, say).
-  if (row.call_outcome === "answered") {
+  if (row.call_outcome === "answered" || row.call_outcome === "answered_unrecorded") {
     await supabase
       .from("inbound_messages")
       .update({ spam_signals: [] })

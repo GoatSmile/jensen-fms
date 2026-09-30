@@ -39,6 +39,11 @@ type RelatelCall = {
   remote_number?: string | null;
   started_at: string;
   talk_duration?: number | null;
+  answered_at?: string | null;
+  ended_at?: string | null;
+  answered_by?: { id?: number | null } | null;
+  /** Set when the caller left a message — the voicemail import covers it. */
+  voice_mail?: unknown;
   nodes?: RelatelNode[] | null;
   recording?: {
     id: number;
@@ -82,14 +87,27 @@ export function relatelToE164(raw: string | null | undefined): string | null {
   return digits.length >= 6 ? `+${digits}` : null;
 }
 
-/** The selected endpoint a call belongs to, if any — endpoint first, then path. */
+/**
+ * The selected endpoint a call belongs to, if any — endpoint first, then the
+ * person who ANSWERED (a main-number call can ring several of us), then the
+ * first selected line on its path.
+ */
 function selectedEndpoint(
   call: RelatelCall,
   wanted: Set<string>,
 ): RelatelNode | null {
   if (call.endpoint && wanted.has(call.endpoint)) return call;
-  return (call.nodes ?? []).find((n) => n.endpoint && wanted.has(n.endpoint)) ?? null;
+  const nodes = (call.nodes ?? []).filter((n) => n.endpoint && wanted.has(n.endpoint));
+  const answerer = call.answered_by?.id ? `Employee#${call.answered_by.id}` : null;
+  return nodes.find((n) => n.endpoint === answerer) ?? nodes[0] ?? null;
 }
+
+/**
+ * An unrecorded call is imported only once it has been over this long: a
+ * recording can attach after the call is first listed, and the external id
+ * is unique, so an event imported too early could never become the call.
+ */
+const UNRECORDED_GRACE_MS = 20 * 60_000;
 
 async function listCalls(token: string, since: Date): Promise<AdapterResult<RelatelCall[]>> {
   const seen = new Map<string, RelatelCall>();
@@ -173,21 +191,40 @@ export const relatelAdapter: CallImportAdapter = {
 
     const calls = await listCalls(token, since);
     if (!calls.ok) return calls;
+    const settledBefore = Date.now() - UNRECORDED_GRACE_MS;
     for (const c of calls.value) {
-      const rec = c.recording;
-      if (!rec || rec.expired || !rec.sound?.url) continue;
       const who = selectedEndpoint(c, wanted);
       if (!who?.endpoint) continue;
-      items.push({
+      const base = {
         externalId: `relatel:call:${c.call_uuid}`,
-        kind: "call",
-        direction: c.direction === "outgoing" ? "outgoing" : "incoming",
+        kind: "call" as const,
+        direction: c.direction === "outgoing" ? ("outgoing" as const) : ("incoming" as const),
         remoteNumber: relatelToE164(c.remote_number),
         endpoint: who.endpoint,
         endpointName: who.endpoint_name ?? null,
         startedAt: c.started_at,
-        durationSeconds: rec.duration ?? c.talk_duration ?? null,
-        audioRef: rec.sound.url,
+      };
+      const rec = c.recording;
+      if (rec?.sound?.url && !rec.expired) {
+        items.push({
+          ...base,
+          outcome: "recorded",
+          durationSeconds: rec.duration ?? c.talk_duration ?? null,
+          audioRef: rec.sound.url,
+        });
+        continue;
+      }
+      // Nothing to hear. An incoming call still counts — answered on a line
+      // that does not record, or missed — unless the caller left a message
+      // (the voicemail list brings that) or the recording may still attach.
+      // An expired recording was a recorded call; it is not an event.
+      if (rec?.expired || c.direction === "outgoing" || c.voice_mail) continue;
+      if (new Date(c.ended_at ?? c.started_at).getTime() > settledBefore) continue;
+      items.push({
+        ...base,
+        outcome: c.answered_at ? "answered_unrecorded" : "missed",
+        durationSeconds: c.answered_at ? (c.talk_duration ?? null) : null,
+        audioRef: null,
       });
     }
 
@@ -205,6 +242,7 @@ export const relatelAdapter: CallImportAdapter = {
           endpointName: v.endpoint_name ?? null,
           startedAt: v.created_at,
           durationSeconds: v.duration ?? null,
+          outcome: "recorded",
           audioRef: `${BASE}/voice_mails/${v.id}/sound`,
         });
       }
@@ -218,7 +256,7 @@ export const relatelAdapter: CallImportAdapter = {
     if (!bearer) return { ok: false, error: "no token for this line" };
     // Only ever our own API host: the ref came from Relatel's response, and a
     // bearer token must not follow a URL anywhere else.
-    if (!item.audioRef.startsWith(`${BASE}/`)) {
+    if (!item.audioRef?.startsWith(`${BASE}/`)) {
       return { ok: false, error: "recording URL is not on the Relatel API" };
     }
     try {

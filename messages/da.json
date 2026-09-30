@@ -4593,6 +4593,7 @@
     "durationLabel": "Varighed",
     "outcomeLabel": "Resultat",
     "callEventNote": "Den, der ringede, lagde på uden at efterlade en besked. Registreret for en god ordens skyld — intet at behandle.",
+    "callEventNoteUnrecorded": "Besvaret på en linje, der ikke optager (et opkald via hovednummeret), så der er intet at høre eller læse. Registreret, så opkaldet ikke forsvinder.",
     "clarityLabel": "Klarhed",
     "parseLabel": "Tolkningssikkerhed",
     "clarityClear": "klar",
@@ -4686,6 +4687,7 @@
   },
   "inboundOutcome": {
     "answered": "Besvaret — samtale optaget",
+    "answeredUnrecorded": "Besvaret — ikke optaget",
     "messageLeft": "Besked lagt",
     "noMessage": "Ingen besked",
     "busy": "Optaget",
@@ -5107,6 +5109,7 @@
       "marked_needs_action": "Markeret som kræver handling",
       "promise": "Der blev lovet noget",
       "callback": "Venter på at blive ringet op",
+      "missed": "Ubesvaret opkald — ring tilbage",
       "request": "En opgave at tage sig af",
       "failed": "Udskrift mislykkedes",
       "processing": "Bliver stadig læst",
@@ -5114,6 +5117,7 @@
       "unclear": "Svær at høre — lyt, før du handler",
       "spam": "Ligner spam",
       "internal": "Internt opkald",
+      "not_recorded": "Besvaret · ikke optaget",
       "no_speech": "Intet sagt",
       "no_request": "Ingen opgave"
     },

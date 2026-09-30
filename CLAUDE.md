@@ -623,7 +623,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `channels/voicemail.ts` owns transcription (providers via the registry
   pattern). **Calls also arrive by PULL**: the shop's own phone system
   (Relatel) has no webhooks, so the `import-calls` job (every 5 min) imports
-  each recorded call and voicemail into the same row shape
+  each recorded call and voicemail into the same row shape — **and every
+  incoming call with NOTHING recorded as a call event** (`call_outcome`
+  `answered_unrecorded` or `no-answer`, no audio, no pipeline, the caller's
+  number still matched; a missed call is *to do*), because Relatel records
+  main-number calls only on its Contact Center plans and a skipped call is a
+  lost one
   (`src/lib/inbound/call-import/`, migration 111), idempotent on the unique
   `channel_meta.external_id`. **A call belongs to a PHONE LINE and its
   PERSON** (`phone_lines`, migration 112): every line the provider lists is

@@ -3453,3 +3453,23 @@ not the user."*
   `recording: null` for 20 47 33 83 → Hovednummer #1 → 2 → Finn), so it cannot
   be imported. The fix is a Relatel setting, reachable only from a Relatel
   administrator login — Finn's login cannot open employee settings.
+
+## 2026-09-30 — A call nobody recorded is still imported
+
+Owner, on the 11:06 main-number call that never reached the app: yes to
+showing unrecorded calls. The first run found five such calls on Finn's line
+in two days, all answered through the main number.
+
+- **Every incoming call on a mapped line becomes a row**, recorded or not.
+  Unrecorded ones are EVENTS (`answered_unrecorded` / `no-answer`): no audio,
+  no pipeline, the caller's number matched so a customer is named.
+- **A missed call is *to do*, even from an unknown number** — new customers
+  ring from unknown numbers, so the old robocall rule (unknown + no message =
+  spam) does not apply to a call that rang a person. An answered one is quiet:
+  it was dealt with live.
+- **Twenty minutes' grace** before an unrecorded call is imported, because the
+  external id is unique and a recording that attached late could otherwise
+  never replace the event. A missed call with a voicemail is left to the
+  voicemail import. Outgoing unrecorded calls are not imported — we made them.
+- **Rejected:** upgrading an event in place when a late recording appears
+  (more moving parts than a grace period, for a case not yet seen).

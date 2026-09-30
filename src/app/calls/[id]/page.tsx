@@ -336,7 +336,9 @@ export default async function InboundDetailPage({
 
       {isCallEvent ? (
         <Panel>
-          <p className="text-ink-2 text-sm">{t("callEventNote")}</p>
+          <p className="text-ink-2 text-sm">
+            {t(msg.call_outcome === "answered_unrecorded" ? "callEventNoteUnrecorded" : "callEventNote")}
+          </p>
         </Panel>
       ) : (
         <>
@@ -480,6 +482,7 @@ async function loadPlanContext(
 /** Maps a stored call_outcome to its `inboundOutcome` message key. */
 const OUTCOME_KEY: Record<string, string> = {
   answered: "answered",
+  answered_unrecorded: "answeredUnrecorded",
   message_left: "messageLeft",
   no_message: "noMessage",
   busy: "busy",

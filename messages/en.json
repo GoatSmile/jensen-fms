@@ -4593,6 +4593,7 @@
     "durationLabel": "Duration",
     "outcomeLabel": "Outcome",
     "callEventNote": "The caller hung up without leaving a message. Logged for the record — nothing to process.",
+    "callEventNoteUnrecorded": "Answered on a line that does not record (a main-number call), so there is nothing to hear or read. Logged so the call is not lost.",
     "clarityLabel": "Clarity",
     "parseLabel": "Parse confidence",
     "clarityClear": "clear",
@@ -4686,6 +4687,7 @@
   },
   "inboundOutcome": {
     "answered": "Answered — conversation recorded",
+    "answeredUnrecorded": "Answered — not recorded",
     "messageLeft": "Message left",
     "noMessage": "No message",
     "busy": "Busy",
@@ -5107,6 +5109,7 @@
       "marked_needs_action": "Marked as needing action",
       "promise": "Something was promised",
       "callback": "Waiting for a call back",
+      "missed": "Missed call — ring back",
       "request": "A request to act on",
       "failed": "Transcription failed",
       "processing": "Still being read",
@@ -5114,6 +5117,7 @@
       "unclear": "Hard to hear — listen before acting",
       "spam": "Looks like spam",
       "internal": "Internal call",
+      "not_recorded": "Answered · not recorded",
       "no_speech": "Nothing said",
       "no_request": "No request"
     },
