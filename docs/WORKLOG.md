@@ -104,10 +104,13 @@ treat the early totals as floors, not truth.
 | Mon 2026-09-28 (cont.) | ~2.5 | **Finn drives the paint runs, and the daily jobs get a page** (migration 109): *Lakture* on the floor, `/admin/jobs` with last runs and Run now; Finn's guide gains §8–9. |
 | Tue 2026-09-29 | ~2 | **Service agreements per bike, and signed papers read from the phone** (migration 110): lines + coverage switch, upload → read → confirm; Dennis's 0-kr/K answers in the handling doc; the production click-through checklist. |
 | Tue 2026-09-29 (cont.) | ~5 | **Finn's calls in from Relatel, and the inbox became Calls** (migrations 111–112): the Relatel test passed, import + MP3 repair, phone lines per person, triage by day; all times now Danish. |
-| Wed 2026-09-30 | ~1 | **Phones at 360 px fixed** (dashboard overflow pushed the command sheet off-screen), and a slow-Gladia dictation traced to Gladia's side. |
+| Wed 2026-09-30 | ~9 | **Calls decide by what was said, and every call leaves a trace**: 360 px fix, ElevenLabs, one Anthropic door; unrecorded + missed calls imported, suggested offers/tickets per call (migrations 113–116), Google Calendar guide. |
+| Thu 2026-10-01 | ~1 | **Visits into Google Calendar, and a read-only Visits list** (migration 117); Docker lost its disk image to a full disk, local copy rebuilt from production. |
 
-**September so far: ~69 h** (11 working days)
+**September: ~77 h** (11 working days)
+
+**October so far: ~1 h** (1 working day)
 
 ---
 
-**Project total: ~323 h across 52 working days (2026-05-07 → 2026-09-30)**
+**Project total: ~332 h across 53 working days (2026-05-07 → 2026-10-01)**

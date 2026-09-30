@@ -232,6 +232,21 @@ real on purpose:** the `Nazar Taras` customer organisation and person — the
 owner's own test account. Refresh the copy by re-running the two dumps and
 `supabase db reset`.
 
+**Trap — the data dump's `storage.*` rows no longer load** (2026-10-01). The
+local Supabase images are older than production's storage schema: production's
+`storage.buckets` has `lifecycle_configuration`, the local one does not, so the
+seed stops with *column "lifecycle_configuration" … does not exist*. After
+every `--data-only` re-dump, replace the `INSERT INTO "storage".…` statements
+in `data.sql` with one insert of the buckets' core columns (`id, name, public,
+file_size_limit, allowed_mime_types`, read from production). Object rows are
+dropped on purpose — the files are not in the local copy anyway.
+
+**Keep the disk free, and stop the stack before updating Docker.** On
+2026-09-30 the Mac ran down to 473 MB free (`.next` alone had grown to 18 GB);
+Docker hung writing its disk image, and after the forced restart and an update
+it came back with an empty one — every local container and volume gone. The
+copy is rebuildable (above), but its hand-made TEST data is not.
+
 **Outbound secrets are absent from `env/local.env`** (Resend, Twilio,
 e-conomic). Those features read as "not configured" locally, which is the
 correct local state. `SITE_PASSWORD=local-dev` IS set, so the login gate

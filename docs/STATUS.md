@@ -1,13 +1,12 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-09-30 (Wednesday, midday).** **Finn's calls reach the app
-from Relatel, and the inbox became Calls** (migrations 111–112): every recorded
-call on a mapped phone line is imported every 5 minutes, transcribed, sorted into
-to do / check / no action / done, and shown by day — Finn sees his own, the
-office everyone's. Live in production and running. **Transcription moved to
-ElevenLabs Scribe v2 on its GLOBAL host while in test** (migrations 113–114;
-not EU residency — an EU enterprise key is a go-live gate). Also: Danish time
-everywhere, and phones at 360 px no longer overflow.
+**Last updated: 2026-10-01 (Thursday, 00:45).** **Calls now come with
+suggested actions, and visits reach Google Calendar** (migrations 115–117):
+triage decides by what was said (never by whose number), every incoming call
+leaves a row even when Relatel did not record it, each read call with a request
+gets a drafted offer / repair ticket / visit for a person to apply, and
+`/visits` lists the *Servicebesøg* calendar read-only. All live in production;
+the calendar is connected and saved there (verified 1 Oct).
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -24,8 +23,11 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 114 is the latest; production verified at it** (113 =
-  `inbound_elevenlabs_region`, 114 = its default `global`, both queried 30 Sep).
+- **Migration 117 is the latest; production AND local verified at it**
+  (`check:prod` / `check:local`, 1 Oct). 117 = calendar settings +
+  `calendar_events` + `draft_visit`; 116 = `plan_attempted_at` + the new
+  suggestion kinds in the ledger check; 115 = `inbox` for Sales, not the
+  Accountant. 113 = `inbound_elevenlabs_region`, 114 = its default `global`.
   **Migration 112 before that** (queried the
   table, the stamped calls, the grant and the constraint, 30 Sep). 112 =
   `phone_lines` (Finn's line mapped to Finn; `Employee#74332` "Mathilde /
@@ -57,20 +59,23 @@ is Danish (person language).
   (`recording: null`, verified 30 Sep): main-number recording exists only on
   Relatel's Contact Center / Unlimited plans (the Optagelse section is absent
   on our plan) — a purchase for the owner. Meanwhile such calls import as
-  *Answered · not recorded* events, and missed calls as *to do*.
+  *Answered · not recorded* events (8 found in the first run), and missed calls
+  as *to do*.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
-  the import job drafts an offer / repair ticket per read call with a request;
-  verified locally end to end (plan → offer OFF- with priced line + ticket).
-  **Not yet seen in production** — the first planner run takes calls from the
-  last 7 days, including the 15:48 test voicemail.
+  the import job drafts an offer / repair ticket / visit per read call with a
+  request. In production since 30 Sep: the first run planned the 28 Sep Finn
+  voicemail (ticket) and the 15:48 test voicemail. **Do NOT apply that call's
+  *New customer "Fredericksburg Community"* suggestion** — a garbled
+  "Frederiksberg Kommune"; owner: create no customers from it, fix later
+  (BACKLOG, *A garbled customer name…*). Checked 1 Oct: none was created.
 - **Visits → Google Calendar, and a read-only `/visits` list** (migration 117,
-  DECISIONS 2026-10-01). Verified locally end to end against the REAL
-  *Servicebesøg* calendar: suggestion → apply → event 30 Sep 10:00–11:00 →
-  shown on `/visits` (a TEST event dated 30 Sep is left there — delete in
-  Google). **Production needs:** `GOOGLE_SERVICE_ACCOUNT_KEY` in Vercel
-  (unverified — no Vercel CLI here), then Admin → Settings → Calendar → Test →
-  Save with the calendar id. Local copy was REBUILT 2026-10-01 after Docker lost
-  its disk image (disk full); `data.sql` now carries buckets as core columns only.
+  DECISIONS 2026-10-01). **Live:** the owner saved Admin → Settings → Calendar
+  in production (provider google + the *Servicebesøg* id, verified 1 Oct — the
+  save only succeeds after its Test writes-checks the calendar, so the Vercel key
+  works). Verified locally end to end against the real calendar; **a TEST event
+  on Wed 30 Sep 10:00 is still in *Servicebesøg*** — owner deletes it in Google.
+  Not built: plan slices 2–4 (sync-back webhook, approval queue, reschedule
+  intent) — `docs/plan-service-calendar.md`.
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and
@@ -120,8 +125,9 @@ is Danish (person language).
     photo of a page (the local copy reads, but only production has real bikes).
   - e-conomic: someone with admin rights approves our app's install link →
     the production grant token (settings only, never chat).
-  - The Google calendar (Calendar ID + `GOOGLE_CALENDAR_SA_KEY` in Vercel +
-    `.env.local`).
+  - **Move the Google key file out of the project folder**
+    (`jensen-fms-38357d206d22.json` — gitignored now, never committed; the
+    key already lives in `.env.local` and Vercel) → password manager or delete.
 - **Dennis:** the agreement questions left in the handling document §7; the
   fleet answers; the recording notice; the seven
   unclassified bikes; the label printer model.
@@ -132,20 +138,16 @@ is Danish (person language).
 - **Counting identifiers by category needs clean categories**: Batteries and
   Charger must hold only batteries and chargers, or bikes get asked for extra
   numbers (CLAUDE.md, identifier rule).
-- **The local stack is STOPPED** (30 Sep). Start Docker, then
-  `supabase start -x logflare,vector` — the analytics port will not bind
-  otherwise. Local phone lines: Finn's (→ *TEST Finn*, `RELATEL_TOKEN`) plus the
-  other seven off; `.env.local` holds only `RELATEL_TOKEN`.
-  Local TEST data: people *TEST Finn*, *TEST Tech EN*, *TEST Sælger*; bikes
-  `TEST-WCK-REPAIR-001/002`, `TEST-FRAME-TAKE-1` (was PEDAL-003),
-  `TEST-WCK-DELIV-001/002` (TL11/12, in stock on `MO-2026-9904`);
-  `SO-2026-9902`/`9903` (delivered, signed), `SO-2026-0001` and `9904` (ready);
-  `PNT-2026-0008`/`9901` (received back), `9902` (confirmed), `9903` (ready);
-  agreements *TEST Lakflow ApS – Hjemmeplejen Nord* (K3, 5 lines, 2 confirmed
-  papers), *TEST Lakflow ApS – Plejecenter Syd* (K10, 4 lines — the guide's
-  screenshots) and *TEST Lakflow – anden aftale* (its line moved away);
-  `WO-2026-0009` (covered);
-  parts `TEST-FRAME-Q1`, `TEST-BAT-Q2`; TEST Lakflow has prefix `TL`.
+- **The local copy was REBUILT on 1 Oct** from fresh production dumps, after
+  a full disk (473 MB free) wrecked Docker's disk image and the Docker update
+  started empty. **All earlier local TEST data is gone** (TEST Finn, the TL
+  agreements, TEST bikes/SOs/paint orders) — recreate what a test needs.
+  Local now: production's data (anonymised), migration 117, the calendar
+  settings, one TEST voicemail `7eda1122…` with an applied visit. `data.sql`
+  had its `storage.*` rows swapped for core-column bucket inserts: the local
+  Supabase is older than production's storage schema (`lifecycle_configuration`)
+  — **redo that swap after every re-dump**, or the seed fails. Keep disk free:
+  `.next` had grown to 18 GB; `supabase stop` before updating Docker.
 - **With the browser pane hidden**, streamed sections never reveal and real
   clicks fail: `window.$RV(window.$RB)`, synthetic `pointerdown` for Radix
   menus, `requestSubmit()` for forms.
@@ -166,8 +168,10 @@ is Danish (person language).
    question (Gladia's slow spells — see the options discussed 30 Sep; BACKLOG).
    Add a *Calls* section to Finn's guide (PDF). **Still from Tuesday (§1):**
    passwords for Finn
-   and Glenn; Finn walks one repair with his guide; the calendar; the e-conomic
-   grant; `PNT-2026-0012`.
+   and Glenn; Finn walks one repair with his guide; the e-conomic
+   grant; `PNT-2026-0012`. **Calls follow-ups:** the customer picker on
+   suggestions (BACKLOG, garbled names); whether to buy Relatel main-number
+   recording.
 2. **Agreements next (§2A):** renewal invoicing per line — plan in
    `docs/plan-renewal-invoicing.md` (phase A buildable on go-ahead); the
    register import waits on the fleet answers. **After Dennis's fleet
@@ -177,10 +181,11 @@ is Danish (person language).
    labels once the printer is known, the builder's iPad view (§2D).
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-09-30): 101 pass · 22 redirect · 4 skip · 0 fail.** The
-  skips are invoices and tickets (no rows locally); the two new redirects are
-  `/inbox` and `/inbox/<id>`.
-- **Lint: 0 errors, 14 warnings** (all pre-existing).
+- **Smoke, local (2026-10-01, fresh copy): 95 pass · 21 redirect · 12 skip ·
+  0 fail.** The skips are detail pages with no matching rows in the rebuilt
+  copy (invoices, tickets, offers, WOs, deliveries, agreement documents).
+- **Lint: 0 errors, 2 warnings** (both pre-existing: `inbound-settings-form`
+  setState-in-effect, an unused disable in `calls/[id]/page.tsx`).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`,
   500 units with no known cost) and check 18 (legacy `unit_cost_basis =
   'none'`, 9 rows; can only shrink).
