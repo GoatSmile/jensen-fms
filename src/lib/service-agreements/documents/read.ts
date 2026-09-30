@@ -7,7 +7,9 @@
  * Provider-dispatched through the inbound extraction registry
  * (`src/lib/inbound/settings.ts` → EXTRACTION_PROVIDERS): the same provider,
  * model setting and key as the inbox, so there is no second place to configure
- * it. Thin fetch wrapper with a forced tool, the house pattern of
+ * it. Structured outputs through the one Anthropic door
+ * (src/lib/anthropic/messages.ts) — never a forced tool, which the newest
+ * models reject — otherwise the house pattern of
  * `src/lib/inbound/extract.ts`.
  *
  * Server-only (reads process.env).
@@ -16,9 +18,8 @@ import "server-only";
 
 import { parseAgreementReading, type AgreementReading } from "./reading";
 import type { DocumentMime } from "./storage";
+import { requestStructured } from "@/lib/anthropic/messages";
 
-const ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 /** A fleet of 60 bikes is ~60 frame rows; leave room for them. */
 const MAX_TOKENS = 8192;
 /** Under the read route's maxDuration, so a slow reply fails cleanly. */
@@ -49,9 +50,9 @@ Rules:
 - remarks: anything a person must check — crossed-out or handwritten changes, unreadable parts, pages that seem missing. Keep it short, and write it in {{REMARKS_LANGUAGE}}.
 - confidence: how legible and complete the pages were overall.
 
-Call the record_agreement tool exactly once.`;
+Return the result as JSON matching the schema.`;
 
-const TOOL = {
+export const AGREEMENT_READING_TOOL = {
   name: "record_agreement",
   description: "Record what the agreement pages show.",
   input_schema: {
@@ -93,8 +94,6 @@ export async function readAgreementDocument(
   if (opts.provider !== "anthropic") {
     return { ok: false, reason: "unknown_provider", detail: opts.provider };
   }
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { ok: false, reason: "no_key" };
 
   const content: unknown[] = pages.map((p) =>
     p.mime === "application/pdf"
@@ -109,52 +108,21 @@ export async function readAgreementDocument(
         : `Here are the ${pages.length} pages of the agreement, in order. Read them and record it.`,
   });
 
-  let res: Response;
-  try {
-    res = await fetch(ANTHROPIC_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify({
-        model: opts.model,
-        max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT.replace(
-          "{{REMARKS_LANGUAGE}}",
-          opts.remarksLanguage === "da" ? "Danish" : "English",
-        ),
-        tools: [TOOL],
-        tool_choice: { type: "tool", name: TOOL.name },
-        messages: [{ role: "user", content }],
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-  } catch (e) {
-    return { ok: false, reason: "api_error", detail: e instanceof Error ? e.message : String(e) };
+  const r = await requestStructured({
+    model: opts.model,
+    system: SYSTEM_PROMPT.replace(
+      "{{REMARKS_LANGUAGE}}",
+      opts.remarksLanguage === "da" ? "Danish" : "English",
+    ),
+    content,
+    schema: AGREEMENT_READING_TOOL.input_schema,
+    maxTokens: MAX_TOKENS,
+    timeoutMs: TIMEOUT_MS,
+  });
+  if (!r.ok) {
+    if (r.reason === "no_key") return { ok: false, reason: "no_key" };
+    return { ok: false, reason: "api_error", detail: r.detail ?? r.reason };
   }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { ok: false, reason: "api_error", detail: `${res.status} ${text}`.trim().slice(0, 500) };
-  }
-  let json: unknown;
-  try {
-    json = await res.json();
-  } catch {
-    return { ok: false, reason: "api_error", detail: "invalid JSON response" };
-  }
-  const content_ = (json as { content?: unknown }).content;
-  const block = Array.isArray(content_)
-    ? content_.find(
-        (b) =>
-          b &&
-          typeof b === "object" &&
-          (b as { type?: unknown }).type === "tool_use" &&
-          (b as { name?: unknown }).name === TOOL.name,
-      )
-    : null;
-  if (!block) return { ok: false, reason: "api_error", detail: "no tool_use in response" };
-  const input = (block as { input?: unknown }).input ?? {};
+  const input = r.value ?? {};
   return { ok: true, reading: parseAgreementReading(input), raw: input };
 }

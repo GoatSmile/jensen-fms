@@ -158,6 +158,7 @@ export async function loadCallsPage(
     const triage = triageCall({
       channel: r.channel,
       status: r.status,
+      error: r.error,
       disposition: r.disposition,
       ticket_id: r.ticket_id,
       body_text: r.body_text,

@@ -5,23 +5,25 @@
  * ONLY `body_text`, never the channel payload.
  *
  * Provider-dispatched per the inbound registry (settings.ts →
- * EXTRACTION_PROVIDERS). The `anthropic` adapter is a thin fetch wrapper to
- * the Messages API with forced tool-use shaped to the extraction schema — no
- * SDK dependency, same house pattern as src/lib/email/send.ts and
- * src/lib/economic/client.ts. The API key is a SECRET (env `ANTHROPIC_API_KEY`,
+ * EXTRACTION_PROVIDERS). The `anthropic` adapter asks for JSON shaped to the
+ * extraction schema through structured outputs (`requestStructured`,
+ * src/lib/anthropic/messages.ts — the one door to the API, and where the rule
+ * lives about what may be sent to a model chosen in admin). The API key is a SECRET (env `ANTHROPIC_API_KEY`,
  * config doctrine tier 1); the provider selection + model live in app_settings.
  *
- * The model's tool input is always run through parseExtraction(), so a
+ * The model's JSON is always run through parseExtraction(), so a
  * malformed or partial response degrades to nulls rather than throwing — the
  * matcher then simply finds fewer candidates.
  *
  * Server-only (reads process.env). Import from server actions.
  */
 import { parseExtraction, type InboundExtraction } from "./extraction";
+import { requestStructured } from "@/lib/anthropic/messages";
 
-const ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
-const MAX_TOKENS = 1024;
+// Room for adaptive thinking: on the newest models thinking is ON when the
+// request says nothing about it, and it counts against max_tokens — at 1024 a
+// thoughtful model could stop before writing the JSON.
+const MAX_TOKENS = 8000;
 
 /**
  * Typed failure reasons so the caller (a server action) can map each to a
@@ -71,7 +73,7 @@ export async function extractInbound(
 
 const SYSTEM_PROMPT = `You extract structured facts from a message left for a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations; they get in touch about repairs, orders, and questions.
 
-Extract only what the message actually states — never invent or guess. Leave a field null when the message does not clearly state it. Record the message's own language as "da" or "en". Classify intent as repair_request, order_inquiry, or other. Set urgency to low, normal, or high based on how the message frames it. Set confidence to how well you could make sense of the message overall — low when the text is garbled, fragmentary, or ambiguous, high when it is clear and complete. Call the record_understanding tool exactly once with your result.
+Extract only what the message actually states — never invent or guess. Leave a field null when the message does not clearly state it. Record the message's own language as "da" or "en". Classify intent as repair_request, order_inquiry, or other. Set urgency to low, normal, or high based on how the message frames it. Set confidence to how well you could make sense of the message overall — low when the text is garbled, fragmentary, or ambiguous, high when it is clear and complete. Return your result as JSON matching the schema.
 
 Leave callSummary null and commitments empty — this is a one-way message, not a conversation.`;
 
@@ -108,7 +110,7 @@ Extract facts about the CUSTOMER and their request — never attribute the works
 - callSummary: 2-3 sentences — what the call was about and how it ended.
 - commitments: the things THE WORKSHOP promised (e.g. "delivery Tuesday", "will send a quote", "2500 kr"). Only real, stated promises; an empty list if none. This is the part that hurts if it is forgotten, so be precise and do not pad it.
 
-Extract only what was actually said. Call the record_understanding tool exactly once.`;
+Extract only what was actually said. Return your result as JSON matching the schema.`;
 }
 
 // Non-strict tool schema: nullable everywhere, every field required so the
@@ -217,70 +219,22 @@ async function extractViaAnthropic(
   model: string,
   shape: { dialogue: boolean; speakersInferred: boolean; outgoing: boolean },
 ): Promise<ExtractResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { ok: false, reason: "no_key" };
   const system = shape.dialogue
     ? dialogueSystemPrompt(shape.speakersInferred, shape.outgoing)
     : SYSTEM_PROMPT;
 
-  let res: Response;
-  try {
-    res = await fetch(ANTHROPIC_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: MAX_TOKENS,
-        system,
-        tools: [EXTRACTION_TOOL],
-        tool_choice: { type: "tool", name: EXTRACTION_TOOL.name },
-        messages: [{ role: "user", content: body }],
-      }),
-    });
-  } catch (e) {
-    return {
-      ok: false,
-      reason: "api_error",
-      detail: e instanceof Error ? e.message : String(e),
-    };
+  // Structured outputs, not a forced tool: forced `tool_choice` is a 400 on
+  // Sonnet 5.5 / Opus 5.5 / Fable 5.1 (src/lib/anthropic/messages.ts).
+  const r = await requestStructured({
+    model,
+    system,
+    content: body,
+    schema: EXTRACTION_TOOL.input_schema,
+    maxTokens: MAX_TOKENS,
+  });
+  if (!r.ok) {
+    if (r.reason === "no_key") return { ok: false, reason: "no_key" };
+    return { ok: false, reason: "api_error", detail: r.detail ?? r.reason };
   }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { ok: false, reason: "api_error", detail: `${res.status} ${text}`.trim() };
-  }
-
-  let json: unknown;
-  try {
-    json = await res.json();
-  } catch {
-    return { ok: false, reason: "api_error", detail: "invalid JSON response" };
-  }
-
-  const toolInput = findToolInput(json, EXTRACTION_TOOL.name);
-  if (toolInput === null) {
-    return { ok: false, reason: "api_error", detail: "no tool_use in response" };
-  }
-  return { ok: true, extraction: parseExtraction(toolInput) };
-}
-
-/** Pull the forced-tool `input` object out of the Messages API content array. */
-function findToolInput(json: unknown, name: string): unknown {
-  const content = (json as { content?: unknown }).content;
-  if (!Array.isArray(content)) return null;
-  for (const block of content) {
-    if (
-      block &&
-      typeof block === "object" &&
-      (block as { type?: unknown }).type === "tool_use" &&
-      (block as { name?: unknown }).name === name
-    ) {
-      return (block as { input?: unknown }).input ?? {};
-    }
-  }
-  return null;
+  return { ok: true, extraction: parseExtraction(r.value) };
 }

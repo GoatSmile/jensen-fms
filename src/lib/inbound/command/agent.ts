@@ -20,10 +20,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { parseCommandPlan, type CommandPlan } from "./plan";
 import { RESOLVER_TOOLS, RESOLVER_NAMES, executeResolver } from "./resolvers";
+import { postMessages } from "@/lib/anthropic/messages";
 
-const ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
-const MAX_TOKENS = 2048;
+// Room for adaptive thinking, which the newest models run when the request
+// says nothing about it and which counts against max_tokens.
+const MAX_TOKENS = 8000;
 const MAX_ITERATIONS = 8;
 
 export type CommandAgentResult =
@@ -139,9 +140,6 @@ export async function runCommandAgent(
   const body = (bodyText ?? "").trim();
   if (!body) return { ok: false, reason: "no_body" };
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { ok: false, reason: "no_key" };
-
   const tools = [...RESOLVER_TOOLS, PROPOSE_PLAN_TOOL];
   const messages: { role: "user" | "assistant"; content: unknown }[] = [
     {
@@ -151,37 +149,21 @@ export async function runCommandAgent(
   ];
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    let res: Response;
-    try {
-      res = await fetch(ANTHROPIC_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": ANTHROPIC_VERSION,
-        },
-        body: JSON.stringify({
-          model: opts.model,
-          max_tokens: MAX_TOKENS,
-          system: SYSTEM_PROMPT,
-          tools,
-          messages,
-        }),
-      });
-    } catch (e) {
-      return { ok: false, reason: "api_error", detail: e instanceof Error ? e.message : String(e) };
+    // `auto` tool choice (the default) — portable to every current model.
+    // The whole assistant turn is appended back unchanged below, which is
+    // what the newest models' thinking blocks require.
+    const posted = await postMessages({
+      model: opts.model,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      tools,
+      messages,
+    });
+    if (!posted.ok) {
+      if (posted.reason === "no_key") return { ok: false, reason: "no_key" };
+      return { ok: false, reason: "api_error", detail: posted.detail ?? posted.reason };
     }
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      return { ok: false, reason: "api_error", detail: `${res.status} ${text}`.trim() };
-    }
-
-    let json: { content?: AnthropicBlock[]; stop_reason?: string };
-    try {
-      json = (await res.json()) as typeof json;
-    } catch {
-      return { ok: false, reason: "api_error", detail: "invalid JSON response" };
-    }
+    const json = posted.json as { content?: AnthropicBlock[]; stop_reason?: string };
 
     const content = Array.isArray(json.content) ? json.content : [];
     const toolUses = content.filter(

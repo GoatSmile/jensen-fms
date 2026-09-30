@@ -93,11 +93,12 @@ export function parseAgreementReading(input: unknown): AgreementReading {
   if (!input || typeof input !== "object") return { ...EMPTY_READING };
   const o = input as Record<string, unknown>;
   const ct = typeof o.contract_type === "string" ? o.contract_type.toUpperCase().replace(/\s/g, "") : null;
-  const period = o.price_period === "month" || o.price_period === "year" ? o.price_period : null;
-  const conf =
-    o.confidence === "low" || o.confidence === "medium" || o.confidence === "high"
-      ? o.confidence
-      : null;
+  // Structured outputs do not guarantee an enum's capitalisation.
+  const lower = (v: unknown) => (typeof v === "string" ? v.trim().toLowerCase() : null);
+  const periodRaw = lower(o.price_period);
+  const period = periodRaw === "month" || periodRaw === "year" ? periodRaw : null;
+  const confRaw = lower(o.confidence);
+  const conf = confRaw === "low" || confRaw === "medium" || confRaw === "high" ? confRaw : null;
   const seen = new Set<string>();
   const frames: ReadFrame[] = [];
   for (const f of Array.isArray(o.frames) ? o.frames : []) {

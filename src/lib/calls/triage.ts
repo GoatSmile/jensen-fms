@@ -52,6 +52,8 @@ export type CallTriage = {
 export type TriageInput = {
   channel: string;
   status: string;
+  /** The pipeline's failure code, e.g. "transcribe.empty". */
+  error: string | null;
   disposition: string | null;
   ticket_id: string | null;
   body_text: string | null;
@@ -98,6 +100,11 @@ export function triageCall(row: TriageInput): CallTriage {
   if (row.disposition === "needs_action") return todo("marked_needs_action");
 
   // 2 · The system could not finish reading it.
+  // A recording with no speech in it (a hang-up after the beep) is not a
+  // failure to retry — the engine heard nothing because nothing was said.
+  if (row.status === "failed" && (row.error ?? "").startsWith("transcribe.empty")) {
+    return quiet("no_speech");
+  }
   if (row.status === "failed") return check("failed");
   if (row.status === "received" || row.status === "understood") {
     return check(row.ageMinutes > STUCK_MINUTES ? "failed" : "processing");

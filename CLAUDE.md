@@ -669,6 +669,22 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   mono two-way → diarized, inferred); every transcription gets the names
   list from `loadTranscriptionKeyterms` (people, customers, bike models).
   Gladia stays registered as the fallback.
+- **Every Anthropic call goes through ONE door, and sends only what every
+  current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
+  2026-09-30). The model is an admin setting that changes without a deploy,
+  so no forced `tool_choice` (400 on Sonnet 5.5 / Opus 5.5 / Fable 5.1 — the
+  2026-09-30 outage), no `temperature`/`top_p`/`top_k`, no `thinking` config,
+  no assistant prefill. JSON comes from `requestStructured`
+  (`output_config.format`; `strictSchema` adds `additionalProperties: false`
+  and rewrites nullable enums as `anyOf`, which the compiler requires); tools
+  stay `auto`; `postMessages` retries like the SDKs. Leave room in
+  `max_tokens`: omitting `thinking` means adaptive thinking ON on the newest
+  models, and it counts against the cap. **The model Test runs the app's real
+  request shapes** (extraction, the agreement reader, the command agent —
+  `testModel` in `src/lib/inbound/models.ts`), **and saving a changed model
+  is refused until it passes** — so a model that cannot run the pipeline is
+  stopped when it is picked, not discovered in production. A new Anthropic
+  call site must use the door and, if it has its own shape, join the Test.
 - **Dictation records audio and uses that same transcription provider — never
   the browser's speech API.** The Dictate button (`src/lib/dictation/`,
   `src/components/dictate-button.tsx`) captures 16 kHz mono WAV via the Web

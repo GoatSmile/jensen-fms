@@ -22,9 +22,11 @@
  *
  * Server-only (reads process.env). Import from server actions.
  */
+import { ANTHROPIC_VERSION, postMessages, requestStructured } from "@/lib/anthropic/messages";
+import { AGREEMENT_READING_TOOL } from "@/lib/service-agreements/documents/read";
+import { extractInbound } from "./extract";
+
 const ANTHROPIC_MODELS_ENDPOINT = "https://api.anthropic.com/v1/models";
-const ANTHROPIC_MESSAGES_ENDPOINT = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 const PAGE_LIMIT = 100;
 /** Model catalogues change on the order of weeks; an hour is plenty. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -140,64 +142,58 @@ export type TestModelResult =
   | { ok: false; reason: "no_key" | "unsupported_provider" | "api_error"; detail?: string };
 
 /**
- * Prove a model id works for the job we actually give it.
+ * Prove a model id can run EVERY job this setting drives — by running them.
  *
- * Deliberately not a "hello" completion: both callers (extraction and the
- * command agent) depend on FORCED TOOL USE, so the probe forces a tool call.
- * A model that exists but can't be driven that way fails here — at the moment
- * the admin picks it — instead of silently degrading in the pipeline.
- *
- * Only the request shape common to every current model is sent (no thinking,
- * no sampling params), so the probe stays valid as models come and go.
+ * Not a "hello" completion and not a stand-in shape: the three probes below
+ * send the exact request shapes the app sends, through the same code
+ *   1. extraction      — `extractInbound` on a short sample message,
+ *                        structured outputs with the real schema;
+ *   2. agreement paper — `requestStructured` with the reader's real schema;
+ *   3. command agent   — one turn with tools on `auto`, as the agent sends.
+ * A model that exists but rejects any of them (forced tool choice, a schema
+ * it cannot compile, a parameter it no longer takes) fails HERE, when the
+ * admin picks it — and saving is refused until it passes
+ * (saveInboundSettings). The 2026-09-30 incident was a stand-in probe that
+ * forced a tool the new model no longer allowed.
  */
 export async function testModel(provider: string, model: string): Promise<TestModelResult> {
   if (provider !== "anthropic") return { ok: false, reason: "unsupported_provider" };
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { ok: false, reason: "no_key" };
+  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, reason: "no_key" };
   const id = model.trim();
   if (!id) return { ok: false, reason: "api_error", detail: "empty model id" };
 
-  const probe = {
-    name: "ok",
-    description: "Acknowledge. Call this tool with ok=true.",
-    input_schema: {
-      type: "object",
-      properties: { ok: { type: "boolean" } },
-      required: ["ok"],
-    },
-  };
-
-  let res: Response;
-  try {
-    res = await fetch(ANTHROPIC_MESSAGES_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify({
-        model: id,
-        max_tokens: 64,
-        tools: [probe],
-        tool_choice: { type: "tool", name: "ok" },
-        messages: [{ role: "user", content: "Call the ok tool." }],
-      }),
-    });
-  } catch (e) {
-    return { ok: false, reason: "api_error", detail: (e as Error).message };
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return { ok: false, reason: "api_error", detail: `${res.status} ${text}`.trim() };
-  }
-
-  const body = (await res.json().catch(() => null)) as {
-    content?: { type?: string }[];
-  } | null;
-  const calledTool = (body?.content ?? []).some((b) => b?.type === "tool_use");
-  if (!calledTool) {
-    return { ok: false, reason: "api_error", detail: "model did not return a tool call" };
-  }
+  const [extraction, paper, agent] = await Promise.all([
+    extractInbound(
+      "Hej, det er Anna fra Hotel Skt. Petri. Den røde ladcykel har fladt dæk bagpå. Ring tilbage på 20 12 34 56.",
+      { provider: "anthropic", model: id },
+    ),
+    requestStructured({
+      model: id,
+      content: "No agreement text was provided. Record nothing: nulls, an empty frames list and low confidence.",
+      schema: AGREEMENT_READING_TOOL.input_schema,
+      maxTokens: 4000,
+    }),
+    postMessages({
+      model: id,
+      max_tokens: 4000,
+      tools: [
+        {
+          name: "ok",
+          description: "Acknowledge the request.",
+          input_schema: {
+            type: "object",
+            properties: { ok: { type: "boolean" } },
+            required: ["ok"],
+          },
+        },
+      ],
+      messages: [{ role: "user", content: "Call the ok tool with ok=true." }],
+    }),
+  ]);
+  const failed: string[] = [];
+  if (!extraction.ok) failed.push(`call extraction: ${extraction.detail ?? extraction.reason}`);
+  if (!paper.ok) failed.push(`agreement reading: ${paper.detail ?? paper.reason}`);
+  if (!agent.ok) failed.push(`command agent: ${agent.detail ?? agent.reason}`);
+  if (failed.length > 0) return { ok: false, reason: "api_error", detail: failed.join(" · ") };
   return { ok: true, model: id };
 }

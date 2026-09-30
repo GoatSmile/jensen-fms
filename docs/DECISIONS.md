@@ -3403,3 +3403,26 @@ are in test … There are no real customer calls yet."* Migrations 113–114.
   not a label.
 - **Every transcription gets the names list** (people, customers, bike
   models) — Munr's largest measured single win.
+
+## 2026-09-30 — One door to Anthropic, portable requests, and a model cannot be saved unless it runs the app
+
+Owner, on switching extraction to Claude Sonnet 5.5 and getting a 400:
+*"I don't want this to happen again in the future."*
+
+- **The cause was a class, not a model.** Four hand-written Anthropic clients
+  each built their own request, three of them forcing a tool — which the
+  newest models (Sonnet 5.5, Opus 5.5, Fable 5.1) reject. The Test did catch
+  it, but it probed a toy shape and nothing stopped the model being saved.
+- **One door** (`src/lib/anthropic/messages.ts`) with a written portability
+  rule: send only what every current model accepts. Structured JSON through
+  `output_config.format`, not a forced tool; the converter handles the
+  compiler's schema rules; SDK-style retries. **Rejected:** a per-model
+  capability table (it goes stale the day a model ships, which is the failure
+  we are removing); adding the Anthropic SDK now (a dependency change for its
+  own sake — the portability rule is what matters, and it applies either way).
+- **The Test runs the real jobs**, and **saving a changed model runs it first
+  and refuses on failure.** The first run of the new Test caught a second
+  real fault on its own — the extraction schema's nullable enums, which the
+  structured-outputs compiler rejects — before anything was saved.
+- **An empty transcript is "nothing said", not a failure** — a 1-second
+  voicemail was sitting in *Check* with a retry that could never succeed.

@@ -13,7 +13,9 @@ import {
   ELEVENLABS_REGIONS,
   DEFAULT_EXTRACTION_MODEL,
   findProvider,
+  loadInboundSettings,
 } from "@/lib/inbound/settings";
+import { testModel } from "@/lib/inbound/models";
 
 export type SettingsResult = { ok: true } | { ok: false; error: string };
 
@@ -432,6 +434,30 @@ export async function saveInboundSettings(
     };
   }
 
+  // A CHANGED model must pass the Test before it is stored — it drives call
+  // extraction, the agreement reader and the command agent, and the Test runs
+  // their real request shapes (src/lib/inbound/models.ts). This is what stops
+  // a model that rejects the app's requests from ever going live (the
+  // 2026-09-30 forced-tool 400 on claude-sonnet-5-5).
+  const newModel =
+    nullable(formData.get("inbound_extraction_model")) ?? DEFAULT_EXTRACTION_MODEL;
+  const current = await loadInboundSettings(await createClient());
+  if (
+    newModel !== current.extractionModel ||
+    extraction.value !== current.extractionProvider
+  ) {
+    const probe = await testModel(extraction.value, newModel);
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: t("inboundModelFailsTest", {
+          model: newModel,
+          detail: probe.detail ?? probe.reason,
+        }),
+      };
+    }
+  }
+
   // The ElevenLabs host is the residency choice; only the three it runs.
   const elevenlabsRegion = (nullable(formData.get("inbound_elevenlabs_region")) ?? "global").trim();
   if (!(ELEVENLABS_REGIONS as readonly string[]).includes(elevenlabsRegion)) {
@@ -449,9 +475,7 @@ export async function saveInboundSettings(
         formData.get("inbound_transcription_region"),
       ),
       inbound_extraction_provider: extraction.value,
-      inbound_extraction_model:
-        nullable(formData.get("inbound_extraction_model")) ??
-        DEFAULT_EXTRACTION_MODEL,
+      inbound_extraction_model: newModel,
       inbound_telephony_provider: telephony.value,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
       inbound_phone_number_test: nullable(

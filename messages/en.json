@@ -3502,7 +3502,7 @@
     "inboundModelUseList": "Choose from the list",
     "inboundModelTest": "Test",
     "inboundModelTesting": "Testing…",
-    "inboundModelOk": "Works — the model returned a tool call.",
+    "inboundModelOk": "Works — call extraction, agreement reading and the command agent all ran on this model.",
     "inboundModelContext": "{input}K context · {output}K max output",
     "inboundPhoneLabel": "Production number",
     "inboundRetentionLabel": "Audio retention (days)",
@@ -4517,7 +4517,8 @@
     "callImportBadLines": "The phone lines could not be read. Reload the page and try again.",
     "callImportUnknownPerson": "One of the chosen people is not an active person in the app.",
     "callImportBadTokenEnv": "\"{name}\" is not an allowed token name. Use RELATEL_TOKEN or RELATEL_TOKEN_ plus capitals, e.g. RELATEL_TOKEN_MATHILDE.",
-    "callImportSharedNeedsLabel": "Give the shared line {line} a name, or pick the person it belongs to."
+    "callImportSharedNeedsLabel": "Give the shared line {line} a name, or pick the person it belongs to.",
+    "inboundModelFailsTest": "{model} was not saved — it cannot run the app's requests: {detail}"
   },
   "inbox": {
     "title": "Inbox",

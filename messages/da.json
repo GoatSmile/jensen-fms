@@ -3502,7 +3502,7 @@
     "inboundModelUseList": "Vælg fra listen",
     "inboundModelTest": "Test",
     "inboundModelTesting": "Tester…",
-    "inboundModelOk": "Virker — modellen returnerede et værktøjskald.",
+    "inboundModelOk": "Virker — udtræk af opkald, læsning af aftaler og kommando-assistenten kørte alle på denne model.",
     "inboundModelContext": "{input}K kontekst · {output}K maks. output",
     "inboundPhoneLabel": "Produktionsnummer",
     "inboundRetentionLabel": "Lydopbevaring (dage)",
@@ -4517,7 +4517,8 @@
     "callImportBadLines": "Telefonlinjerne kunne ikke læses. Genindlæs siden, og prøv igen.",
     "callImportUnknownPerson": "En af de valgte personer er ikke en aktiv person i systemet.",
     "callImportBadTokenEnv": "\"{name}\" er ikke et tilladt navn på en nøgle. Brug RELATEL_TOKEN eller RELATEL_TOKEN_ plus store bogstaver, fx RELATEL_TOKEN_MATHILDE.",
-    "callImportSharedNeedsLabel": "Giv den fælles linje {line} et navn, eller vælg den person, den tilhører."
+    "callImportSharedNeedsLabel": "Giv den fælles linje {line} et navn, eller vælg den person, den tilhører.",
+    "inboundModelFailsTest": "{model} blev ikke gemt — modellen kan ikke køre systemets forespørgsler: {detail}"
   },
   "inbox": {
     "title": "Indbakke",

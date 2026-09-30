@@ -54,12 +54,17 @@ is Danish (person language).
   production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
   (none recorded yet — check Mobilfeatures recording is on for that number).
   Unproven: a main-number call forwarded with option 2 arrives recorded.
+- **Extraction model: pick any current Claude model safely** (DECISIONS
+  2026-09-30): the Test runs the real jobs and saving refuses a model that
+  fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and
+  extracted a real test call — switch in admin when wanted.
 - **Transcription: ElevenLabs Scribe v2, global host** (DECISIONS 2026-09-30).
   Verified locally: dictation 4 s; the two test calls re-heard at clarity
   0.98/0.97 against Gladia's 0.50/0.22, names right from the names list.
-  Production needs `ELEVENLABS_API_KEY` in Vercel and the two providers set to
-  ElevenLabs (*Settings → Phone & inbox*: Transcription + Transcription for
-  calls) — see the session's last message for whether that is done.
+  Production: `ELEVENLABS_API_KEY` in Vercel and both providers switched to
+  ElevenLabs (30 Sep); the first production call through it was a 1-second
+  voicemail on Nazar's line (nothing said — which also proves that line
+  imports).
 - **Scheduled jobs are watched at `/admin/jobs`** (capability `jobs`, Owner +
   IT admin; migration 109): list from `vercel.json`, last runs from
   `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check

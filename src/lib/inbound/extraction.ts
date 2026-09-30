@@ -90,9 +90,11 @@ export function parseExtraction(raw: unknown): InboundExtraction {
     string,
     unknown
   >;
-  const intent = str(o.intent);
-  const urgency = str(o.urgency);
-  const confidence = str(o.confidence);
+  // Structured outputs do not guarantee an enum's capitalisation, so the
+  // enums are compared lower-cased.
+  const intent = str(o.intent)?.toLowerCase() ?? null;
+  const urgency = str(o.urgency)?.toLowerCase() ?? null;
+  const confidence = str(o.confidence)?.toLowerCase() ?? null;
   return {
     callerName: str(o.callerName),
     organizationName: str(o.organizationName),
