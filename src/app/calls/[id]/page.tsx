@@ -342,6 +342,32 @@ export default async function InboundDetailPage({
         </Panel>
       ) : (
         <>
+          {/* What to DO comes first — the suggested actions are the reason
+              most people open a call; the pipeline's workings follow. */}
+          {!spamFolded ? (
+            <RoutedAction
+              messageId={msg.id}
+              intent={intent}
+              ticketId={msg.ticket_id}
+              ticketNumber={ticketNumber}
+              disposition={msg.disposition}
+              canAct={msg.status === "matched"}
+              shadowMode={shadowMode}
+              hasPlan={Boolean(leadPlan)}
+            />
+          ) : null}
+
+          {leadPlan && leadCtx && !spamFolded ? (
+            <CommandPlanPanel
+              messageId={msg.id}
+              plan={leadPlan}
+              applied={leadCtx.applied}
+              templates={leadCtx.templates}
+              segments={leadCtx.segments}
+              colors={leadCtx.colors}
+            />
+          ) : null}
+
           {/* Audio */}
           <Panel title={t("audioTitle")}>
             {mediaUrl ? (
@@ -390,29 +416,6 @@ export default async function InboundDetailPage({
             />
           ) : null}
 
-          {!spamFolded ? (
-            <RoutedAction
-              messageId={msg.id}
-              intent={intent}
-              ticketId={msg.ticket_id}
-              ticketNumber={ticketNumber}
-              disposition={msg.disposition}
-              canAct={msg.status === "matched"}
-              shadowMode={shadowMode}
-              hasPlan={Boolean(leadPlan)}
-            />
-          ) : null}
-
-          {leadPlan && leadCtx && !spamFolded ? (
-            <CommandPlanPanel
-              messageId={msg.id}
-              plan={leadPlan}
-              applied={leadCtx.applied}
-              templates={leadCtx.templates}
-              segments={leadCtx.segments}
-              colors={leadCtx.colors}
-            />
-          ) : null}
         </>
       )}
 

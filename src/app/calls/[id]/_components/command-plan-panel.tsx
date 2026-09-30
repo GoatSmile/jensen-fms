@@ -28,7 +28,9 @@ type Props = {
 
 const ENTITY_PATH: Record<string, string> = {
   organizations: "/organizations",
+  offers: "/offers",
   sales_orders: "/sales-orders",
+  maintenance_tickets: "/maintenance/tickets",
   purchase_orders: "/purchase-orders",
 };
 
@@ -171,9 +173,9 @@ function ActionCard({
 
   const slots = openSlotsFor(action);
   const requiredUnfilled = slots.some((s) => !s.optional && !picks[s.key]);
-  // A sales order that references a not-yet-created customer must wait.
+  // An order or offer that references a not-yet-created customer must wait.
   const waitsForCustomer =
-    action.type === "draft_sales_order" &&
+    (action.type === "draft_sales_order" || action.type === "draft_offer") &&
     !action.organizationId &&
     action.organizationFromNewCustomer &&
     !customerApplied;
@@ -285,6 +287,19 @@ function ActionSummary({ action }: { action: CommandAction }) {
   if (action.type === "draft_customer") {
     return <p className="text-sm font-medium">{action.legalName}</p>;
   }
+  if (action.type === "draft_offer") {
+    return (
+      <p className="text-sm">
+        {t("offerSummary", {
+          qty: action.quantity,
+          model: action.templateLabel ?? t("modelPending"),
+        })}
+      </p>
+    );
+  }
+  if (action.type === "draft_ticket") {
+    return <p className="text-sm">{action.description}</p>;
+  }
   if (action.type === "draft_sales_order") {
     return (
       <p className="text-sm">
@@ -316,6 +331,19 @@ function chipsFor(
   const chips: { label: string; value: string }[] = [];
   if (action.type === "draft_customer") {
     if (action.segmentLabel) chips.push({ label: t("chip_segment"), value: action.segmentLabel });
+  }
+  if (action.type === "draft_offer") {
+    if (action.organizationLabel) {
+      chips.push({ label: t("chip_customer"), value: action.organizationLabel });
+    } else if (action.organizationFromNewCustomer) {
+      chips.push({ label: t("chip_customer"), value: t("newCustomerMarker") });
+    }
+    if (action.templateLabel) chips.push({ label: t("chip_model"), value: action.templateLabel });
+    if (action.colorLabel) chips.push({ label: t("chip_colour"), value: action.colorLabel });
+    if (action.note) chips.push({ label: t("chip_note"), value: action.note });
+  }
+  if (action.type === "draft_ticket" && action.urgency === "high") {
+    chips.push({ label: t("chip_urgency"), value: t("urgencyHigh") });
   }
   if (action.type === "draft_sales_order") {
     if (action.organizationLabel) {

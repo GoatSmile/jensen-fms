@@ -9,8 +9,10 @@
  * trusted from the model). Nothing is ever invented: a missing template is an
  * open slot, not a guessed bike.
  *
- * VC-1 scope: three action types, and a sales order carries a SINGLE template
- * line (the founding utterance). Multi-line voice orders are a VC-2 note.
+ * Five action types. A sales order or an offer carries a SINGLE template line
+ * (the founding utterance); multi-line voice orders are a VC-2 note. A CALL
+ * from a customer drafts an OFFER, never a sales order — they asked, nothing
+ * has been sold — and a repair drafts a TICKET (DECISIONS 2026-09-30).
  *
  * parseCommandPlan is the contract enforcer (à la parseExtraction): arbitrary
  * JSON — the model's tool input or a re-read row — normalizes to a well-formed
@@ -19,7 +21,9 @@
 
 export type CommandActionType =
   | "draft_customer"
+  | "draft_offer"
   | "draft_sales_order"
+  | "draft_ticket"
   | "draft_purchase_order";
 
 export type DraftCustomerAction = {
@@ -58,6 +62,42 @@ export type DraftSalesOrderAction = {
   unitPrice: number | null;
 };
 
+/**
+ * A quote for bikes the caller asked about — the customer-facing OFFER
+ * (`offers`, OFF- series), in draft. Same single-template-line shape as the
+ * sales order; what was said about specification and timing goes in `note`,
+ * which lands in the offer's INTERNAL notes (they never reach the customer).
+ */
+export type DraftOfferAction = {
+  id: string;
+  type: "draft_offer";
+  organizationId: string | null;
+  organizationLabel: string | null;
+  organizationFromNewCustomer: boolean;
+  language: "da" | "en";
+  currency: string;
+  quantity: number;
+  templateId: string | null;
+  templateLabel: string | null;
+  colorId: string | null;
+  colorLabel: string | null;
+  unitPrice: number | null;
+  note: string | null;
+};
+
+/**
+ * A repair ticket for a bike the caller already has. The bike is not the
+ * model's to pick: at apply it is the call's own matched bike (exactly one
+ * candidate, or none), the same rule as "Create ticket".
+ */
+export type DraftTicketAction = {
+  id: string;
+  type: "draft_ticket";
+  /** What is wrong, in the caller's words, short. */
+  description: string;
+  urgency: "low" | "normal" | "high";
+};
+
 export type DraftPurchaseOrderItem = {
   partId: string;
   partLabel: string;
@@ -73,7 +113,9 @@ export type DraftPurchaseOrderAction = {
 
 export type CommandAction =
   | DraftCustomerAction
+  | DraftOfferAction
   | DraftSalesOrderAction
+  | DraftTicketAction
   | DraftPurchaseOrderAction;
 
 export type CommandPlan = {
@@ -153,6 +195,36 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
         unitPrice: num(o.unitPrice),
       };
     }
+    case "draft_offer": {
+      const currency = (str(o.currency) ?? "DKK").toUpperCase().slice(0, 3);
+      return {
+        id,
+        type: "draft_offer",
+        organizationId: str(o.organizationId),
+        organizationLabel: str(o.organizationLabel),
+        organizationFromNewCustomer: o.organizationFromNewCustomer === true,
+        language: lang(o.language, "da"),
+        currency: currency.length === 3 ? currency : "DKK",
+        quantity: Math.max(1, Math.round(num(o.quantity) ?? 1)),
+        templateId: str(o.templateId),
+        templateLabel: str(o.templateLabel),
+        colorId: str(o.colorId),
+        colorLabel: str(o.colorLabel),
+        unitPrice: num(o.unitPrice),
+        note: str(o.note) ?? str(o.productionNote),
+      };
+    }
+    case "draft_ticket": {
+      const description = str(o.description) ?? str(o.note);
+      if (!description) return null; // nothing to repair → nothing to draft
+      const u = str(o.urgency)?.toLowerCase();
+      return {
+        id,
+        type: "draft_ticket",
+        description,
+        urgency: u === "high" ? "high" : u === "low" ? "low" : "normal",
+      };
+    }
     case "draft_purchase_order": {
       const rawItems = Array.isArray(o.items) ? o.items : [];
       const items: DraftPurchaseOrderItem[] = [];
@@ -204,7 +276,7 @@ export function openSlotsFor(action: CommandAction): OpenSlot[] {
   if (action.type === "draft_customer" && !action.segmentId) {
     slots.push({ key: "segment", kind: "segment", optional: false });
   }
-  if (action.type === "draft_sales_order") {
+  if (action.type === "draft_sales_order" || action.type === "draft_offer") {
     if (!action.templateId) {
       slots.push({ key: "template", kind: "template", optional: false });
     }

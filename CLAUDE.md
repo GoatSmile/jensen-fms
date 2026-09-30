@@ -662,7 +662,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   window are loaded too. Who sees which rows is ONE rule, `readCallsScope` /
   `canActOnInbound` (`src/lib/calls/access.ts`): `inbox` = every line,
   `calls_own` = your own; the list, the detail page and EVERY action apply it,
-  because the pages read with the service client. Dictated commands left the
+  because the pages read with the service client. **A call arrives with SUGGESTED actions
+  already drafted** (DECISIONS 2026-09-30): after each import the job's
+  planner pass (`draftSuggestions`, `src/lib/inbound/command/plan-calls.ts`)
+  runs the command agent ONCE per read call carrying a request
+  (`plan_attempted_at`, migration 116) — bikes they want become a *draft
+  OFFER*, never a sales order; a repair becomes a *draft ticket*; call-backs
+  and visits go in the plan's notes. A person applies each one; unapplied
+  suggestions keep the call in *to do*. **Applying claims its
+  `command_actions` row BEFORE writing the draft**, so a second press can
+  never make a second draft. Dictated commands left the
   queue: a *Dictate a command* sheet in the app chrome, history at
   `/commands`. Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:

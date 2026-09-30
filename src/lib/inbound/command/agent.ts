@@ -56,7 +56,13 @@ const PROPOSE_PLAN_TOOL = {
           properties: {
             type: {
               type: "string",
-              enum: ["draft_customer", "draft_sales_order", "draft_purchase_order"],
+              enum: [
+                "draft_customer",
+                "draft_offer",
+                "draft_sales_order",
+                "draft_ticket",
+                "draft_purchase_order",
+              ],
             },
             // draft_customer
             legalName: { type: ["string", "null"], description: "Customer legal/display name." },
@@ -85,6 +91,14 @@ const PROPOSE_PLAN_TOOL = {
             colorId: { type: ["string", "null"], description: "Resolved colors id, else null." },
             colorLabel: { type: ["string", "null"] },
             unitPrice: { type: ["number", "null"], description: "Per-bike price, else null (template default)." },
+            // draft_offer uses the sales-order fields above (no dates, no
+            // productionNote) plus `note` for specification + timing.
+            // draft_ticket
+            description: {
+              type: ["string", "null"],
+              description: "draft_ticket: what is wrong with the customer's EXISTING bike, short, in the caller's language.",
+            },
+            urgency: { type: ["string", "null"], enum: ["low", "normal", "high", null] },
             // draft_purchase_order
             items: {
               type: ["array", "null"],
@@ -99,7 +113,10 @@ const PROPOSE_PLAN_TOOL = {
                 required: ["partId", "partLabel", "quantity"],
               },
             },
-            note: { type: ["string", "null"] },
+            note: {
+              type: ["string", "null"],
+              description: "draft_offer: what they said about specification (electric, basket, logo) and timing. draft_purchase_order: a note.",
+            },
           },
           required: ["type"],
         },
@@ -111,16 +128,18 @@ const PROPOSE_PLAN_TOOL = {
 
 const SYSTEM_PROMPT = `You are the command agent for a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). A staff member has dictated or typed a business task. Your job is to turn it into a PLAN of proposed DRAFT actions for a human to review and apply — you never execute anything yourself.
 
-You can propose three kinds of draft action:
+You can propose five kinds of draft action:
 - draft_customer — a new customer organization (+ segment: Hotel, Municipality, Hospital, Facility Management, B2B, B2C).
-- draft_sales_order — an order for bikes: a customer, a quantity, one bike model (template), optional colour, delivery date, and a production note for build instructions.
+- draft_offer — a QUOTE for bikes a customer asked about: a customer, a quantity, one bike model (template), optional colour, and a note with the specification and timing they mentioned. Use this, not a sales order, when someone is asking to buy.
+- draft_sales_order — a confirmed order for bikes: a customer, a quantity, one bike model (template), optional colour, delivery date, and a production note for build instructions. Only when the staff member says the order is placed.
+- draft_ticket — a repair of a bike the customer ALREADY HAS: a short description of the fault and an urgency. Do not look up the bike; it is attached from the call.
 - draft_purchase_order — parts to buy. The supplier is chosen automatically from the parts' offerings, so you only resolve the PARTS.
 
 Rules you must follow:
 1. RESOLVE BEFORE PROPOSING. Use the resolver tools (search_customer, resolve_customer_segment, resolve_template, resolve_color, search_part, resolve_part_via_recipe) to ground every reference. Only fill an id field when a resolver returned exactly ONE clear match.
 2. NEVER INVENT. If a template, part, colour, or segment can't be resolved to one match, leave that id null — the reviewer fills it in. Only for a CUSTOMER that doesn't exist may you propose creating one (draft_customer).
 3. A part described by role + model ("motors for Norma XL") → use resolve_part_via_recipe.
-4. If the order names a customer that search_customer doesn't find, add a draft_customer action AND set organizationFromNewCustomer=true on the sales order.
+4. If the order or offer names a customer that search_customer doesn't find, add a draft_customer action AND set organizationFromNewCustomer=true on it.
 5. Everything is a draft — safe to propose. Put build details (basket, logo colour/text, finish) into the sales order's productionNote.
 6. Today's date is provided implicitly by the reviewer; if a delivery date has no year, choose the next future occurrence.
 

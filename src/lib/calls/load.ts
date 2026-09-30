@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import { parseExtraction } from "@/lib/inbound/extraction";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
@@ -36,6 +37,8 @@ export type CallListRow = {
   internal: boolean;
   /** A recording is stored — no player on a call nobody recorded. */
   hasAudio: boolean;
+  /** Suggested actions nobody has applied yet. */
+  openSuggestions: number;
   triage: CallTriage;
   lane: CallLane;
 };
@@ -60,6 +63,7 @@ type RawRow = {
   error: string | null;
   call_outcome: string | null;
   media_path: string | null;
+  command_plan: unknown;
   disposition: string | null;
   ticket_id: string | null;
   body_text: string | null;
@@ -77,7 +81,7 @@ type RawRow = {
 };
 
 const ROW_COLUMNS =
-  "id, channel, status, error, call_outcome, media_path, disposition, ticket_id, body_text, duration_seconds, transcript_confidence, spam_signals, matched_organization_id, match_candidates, extraction, from_identity, received_at, channel_meta, phone_line_id, handled_by_person_id";
+  "id, channel, status, error, call_outcome, media_path, command_plan, disposition, ticket_id, body_text, duration_seconds, transcript_confidence, spam_signals, matched_organization_id, match_candidates, extraction, from_identity, received_at, channel_meta, phone_line_id, handled_by_person_id";
 
 /**
  * Everything the Calls page shows, for one viewer, one tab and one window of
@@ -157,6 +161,25 @@ export async function loadCallsPage(
     }
   }
 
+  // Suggested actions still to apply: the plan's actions minus the ones in
+  // the command_actions ledger.
+  const planned = rawRows
+    .map((r) => ({ id: r.id, n: parseCommandPlan(r.command_plan).actions.length }))
+    .filter((p) => p.n > 0);
+  const appliedCount = new Map<string, number>();
+  for (let i = 0; i < planned.length; i += 200) {
+    const { data } = await supabase
+      .from("command_actions")
+      .select("message_id")
+      .in("message_id", planned.slice(i, i + 200).map((p) => p.id));
+    for (const a of data ?? []) {
+      appliedCount.set(a.message_id, (appliedCount.get(a.message_id) ?? 0) + 1);
+    }
+  }
+  const openSuggestions = new Map(
+    planned.map((p) => [p.id, Math.max(0, p.n - (appliedCount.get(p.id) ?? 0))]),
+  );
+
   const mapped: (CallListRow & { tabKeys: string[] })[] = rawRows.map((r) => {
     const x = r.extraction ? parseExtraction(r.extraction) : null;
     const meta = (r.channel_meta ?? {}) as { call_direction?: unknown };
@@ -168,6 +191,7 @@ export async function loadCallsPage(
       error: r.error,
       call_outcome: r.call_outcome,
       has_media: Boolean(r.media_path),
+      open_suggestions: openSuggestions.get(r.id) ?? 0,
       disposition: r.disposition,
       ticket_id: r.ticket_id,
       body_text: r.body_text,
@@ -206,6 +230,7 @@ export async function loadCallsPage(
       promises: x?.commitments ?? [],
       internal,
       hasAudio: Boolean(r.media_path),
+      openSuggestions: openSuggestions.get(r.id) ?? 0,
       triage,
       lane: triage.lane,
       tabKeys,

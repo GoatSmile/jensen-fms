@@ -9,7 +9,9 @@
  * page prints, so a grey row can always answer "why is this grey?".
  *
  * Order matters and is the whole design:
- *   1. a person's decision (ticket, handled, spam, "needs action") wins;
+ *   1. a person's decision (ticket, handled, spam, "needs action") wins —
+ *      except that SUGGESTED actions nobody has applied keep a call in to do
+ *      even once one of them (a ticket) has been applied;
  *   2. the system's own trouble (failed, still processing) is a CHECK;
  *      a call nobody recorded is judged by what happened — a MISSED call
  *      is someone to ring back, an answered one was dealt with live;
@@ -35,6 +37,7 @@ export type CallReason =
   | "ticketed"
   | "handled"
   // todo
+  | "suggested"
   | "marked_needs_action"
   | "promise"
   | "callback"
@@ -68,6 +71,8 @@ export type TriageInput = {
   call_outcome: string | null;
   /** A recording is stored for this row. */
   has_media: boolean;
+  /** Suggested actions on the call that nobody has applied yet. */
+  open_suggestions: number;
   disposition: string | null;
   ticket_id: string | null;
   body_text: string | null;
@@ -111,9 +116,10 @@ export function triageCall(row: TriageInput): CallTriage {
   });
 
   // 1 · A person has decided.
-  if (row.ticket_id) return { lane: "done", reason: "ticketed", urgent: false };
   if (row.disposition === "handled") return { lane: "done", reason: "handled", urgent: false };
   if (row.disposition === "spam") return quiet("spam");
+  if (row.open_suggestions > 0) return todo("suggested");
+  if (row.ticket_id) return { lane: "done", reason: "ticketed", urgent: false };
   if (row.disposition === "needs_action") return todo("marked_needs_action");
 
   // 2 · The system could not finish reading it.

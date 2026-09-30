@@ -58,6 +58,12 @@ is Danish (person language).
   Relatel's Contact Center / Unlimited plans (the Optagelse section is absent
   on our plan) — a purchase for the owner. Meanwhile such calls import as
   *Answered · not recorded* events, and missed calls as *to do*.
+- **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
+  the import job drafts an offer / repair ticket per read call with a request;
+  verified locally end to end (plan → offer OFF- with priced line + ticket).
+  **Not yet seen in production** — the first planner run takes calls from the
+  last 7 days, including the 15:48 test voicemail. Next: Google Calendar for
+  requested visits (needs a Google OAuth client for the Jensen account first).
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and

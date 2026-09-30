@@ -3,6 +3,7 @@ import "server-only";
 import { refreshLatestRates } from "@/app/admin/fx-rates/_actions/manage-fx";
 import { DICTATION_PREFIX } from "@/lib/dictation/storage";
 import { runCallImport } from "@/lib/inbound/call-import/import";
+import { draftSuggestions } from "@/lib/inbound/command/plan-calls";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import {
   overdueInvoicesEmail,
@@ -189,16 +190,28 @@ export const JOBS: Record<string, (supabase: Service) => Promise<JobOutcome>> = 
 
   /**
    * Recorded calls and voicemails from the shop's own phone system (migration
-   * 111) → the inbox, transcribed and matched. Provider, whose calls and the
-   * lookback are /admin/settings → Phone; "off" is a successful no-op.
+   * 111) → the inbox, transcribed and matched, then suggested actions drafted.
+   * Provider, whose calls and the lookback are /admin/settings → Phone; "off"
+   * is a successful no-op.
    * Idempotent on channel_meta.external_id.
    */
   "import-calls": async (supabase) => {
     const r = await runCallImport(supabase);
+    // Then suggested actions for calls that have been read — new ones from
+    // this run and any an earlier run left (DECISIONS 2026-09-30). A planner
+    // failure is reported, never fails the import.
+    const s = await draftSuggestions(supabase);
+    const planned =
+      s.planned || s.failed.length
+        ? ` Suggestions drafted for ${s.planned} call(s)` +
+          `${s.failed.length ? `; ${s.failed.length} could not be planned: ${s.failed.join("; ")}` : ""}.`
+        : "";
     return {
       ok: r.ok,
-      summary: r.summary,
+      summary: r.summary + planned,
       detail: {
+        planned: s.planned,
+        planFailed: s.failed,
         code: r.code,
         found: r.found,
         imported: r.imported,

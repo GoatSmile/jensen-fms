@@ -1401,6 +1401,7 @@ export type Database = {
           media_mime_type: string | null
           media_path: string | null
           phone_line_id: string | null
+          plan_attempted_at: string | null
           processed_at: string | null
           raw_payload: Json | null
           received_at: string
@@ -1435,6 +1436,7 @@ export type Database = {
           media_mime_type?: string | null
           media_path?: string | null
           phone_line_id?: string | null
+          plan_attempted_at?: string | null
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string
@@ -1469,6 +1471,7 @@ export type Database = {
           media_mime_type?: string | null
           media_path?: string | null
           phone_line_id?: string | null
+          plan_attempted_at?: string | null
           processed_at?: string | null
           raw_payload?: Json | null
           received_at?: string

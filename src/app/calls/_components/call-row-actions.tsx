@@ -21,6 +21,7 @@ export function CallRowActions({
   reason,
   ticketId,
   ticketHref,
+  suggestions,
 }: {
   id: string;
   lane: CallLane;
@@ -28,6 +29,8 @@ export function CallRowActions({
   ticketId: string | null;
   /** Null when the viewer cannot open tickets (a technician). */
   ticketHref: string | null;
+  /** Suggested actions still to apply. */
+  suggestions: number;
 }) {
   const t = useTranslations("calls");
   const [pending, start] = useTransition();
@@ -42,7 +45,25 @@ export function CallRowActions({
   }
 
   let buttons: React.ReactNode = null;
-  if (lane === "todo") {
+  if (lane === "todo" && reason === "suggested") {
+    // The suggestions are the next step, and they live on the call's page.
+    buttons = (
+      <>
+        <Button asChild size="sm">
+          <Link href={`/calls/${id}`}>{t("reviewSuggestions", { n: suggestions })}</Link>
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={pending}
+          onClick={() => run(() => setDisposition(id, "handled"))}
+        >
+          {t("noActionNeeded")}
+        </Button>
+      </>
+    );
+  } else if (lane === "todo") {
     buttons = (
       <>
         <Button type="button" size="sm" disabled={pending} onClick={() => run(() => createTicketFromInbound(id))}>

@@ -7,6 +7,7 @@ import {
   PhoneMissed,
   PhoneOff,
   PhoneOutgoing,
+  Sparkles,
   Users,
   Voicemail,
 } from "lucide-react";
@@ -51,15 +52,17 @@ export async function CallRow({
       ? CheckCircle2
       : reason === "internal"
         ? Users
-        : reason === "missed"
-          ? PhoneMissed
-          : reason === "no_speech"
-            ? PhoneOff
-            : row.channel === "voicemail"
-              ? Voicemail
-              : row.direction === "outgoing"
-                ? PhoneOutgoing
-                : PhoneIncoming;
+        : reason === "suggested"
+          ? Sparkles
+          : reason === "missed"
+            ? PhoneMissed
+            : reason === "no_speech"
+              ? PhoneOff
+              : row.channel === "voicemail"
+                ? Voicemail
+                : row.direction === "outgoing"
+                  ? PhoneOutgoing
+                  : PhoneIncoming;
 
   const number = formatPhone(row.from_identity);
   const who = row.orgName ?? row.callerName ?? number ?? t("unknownCaller");
@@ -104,7 +107,10 @@ export async function CallRow({
           />
           <span className="min-w-0">
             <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 sm:flex-nowrap">
-              <span className={cn("max-w-full truncate", quiet ? "text-ink-2" : "font-medium")}>{who}</span>
+              {/* The name keeps its room; the grey details truncate first. */}
+              <span className={cn("max-w-full shrink-0 truncate sm:max-w-[45%]", quiet ? "text-ink-2" : "font-medium")}>
+                {who}
+              </span>
               {row.internal ? (
                 <span className="bg-system-wash text-system inline-flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-0.5 text-xs font-medium">
                   <Users aria-hidden className="size-3" />
@@ -113,7 +119,7 @@ export async function CallRow({
               ) : null}
               {/* On a phone the details take their own line, so the name is not squeezed. */}
               {sub.length ? (
-                <span className="text-ink-3 order-last basis-full truncate text-xs sm:order-none sm:basis-auto">
+                <span className="text-ink-3 order-last min-w-0 basis-full truncate text-xs sm:order-none sm:basis-auto">
                   {sub.join(" · ")}
                 </span>
               ) : null}
@@ -160,6 +166,7 @@ export async function CallRow({
         reason={reason}
         ticketId={row.ticket_id}
         ticketHref={canOpenTickets && row.ticket_id ? `/maintenance/tickets/${row.ticket_id}` : null}
+        suggestions={row.openSuggestions}
       />
     </li>
   );

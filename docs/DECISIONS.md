@@ -3473,3 +3473,32 @@ in two days, all answered through the main number.
   voicemail import. Outgoing unrecorded calls are not imported — we made them.
 - **Rejected:** upgrading an event in place when a late recording appears
   (more moving parts than a grace period, for a case not yet seen).
+
+## 2026-09-30 — A call comes with suggested actions: an offer, a ticket
+
+Owner: *"the system determines to-dos and actions to take … creates
+pre-filled action items. Then the user … acts on those suggestions."* And:
+a buying enquiry drafts an **offer**, not a sales order.
+
+- **Drafted by themselves, applied by a person.** The import job's planner
+  pass runs the command agent once per call that was read and carries a
+  request (an order or a repair, or a voicemail with something said), within
+  a week. Proposing is not acting, so this does not breach "no auto-actions
+  until measured" in the triage plan — nothing is written until a person
+  presses apply. **Rejected:** planning inside the transcription pipeline (it
+  would lengthen every import and couple a model loop to transcription
+  retries).
+- **Two new suggestion kinds.** `draft_offer` (single template line, the
+  caller's wishes in the offer's INTERNAL notes) and `draft_ticket` (the
+  call's own matched bike, the same rule as "Create ticket", through one
+  shared `createTicketForCall`). Call-backs and visits stay as notes until
+  the calendar integration lands.
+- **Who may act:** suggestions on a CALL follow the call's access
+  (`canActOnInbound`), so a technician can draft and apply a ticket on their
+  own line; an offer still needs `so`. Dictated commands stay `inbox`.
+- **Unapplied suggestions keep a call in *to do*** ("Review N
+  suggestions"), even once one of them — a ticket — is applied.
+- **Apply claims its ledger row first** (found testing: the ledger's type
+  check refused the new kinds AFTER the offer was written, and a second press
+  would have made a second offer). The unique (message, action) index now
+  guards the draft, not just the ledger row.

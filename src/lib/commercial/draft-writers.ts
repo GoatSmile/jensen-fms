@@ -1,5 +1,5 @@
 /**
- * Pure draft writers — create draft customers / sales orders from TYPED args,
+ * Pure draft writers — create draft customers / offers / sales orders from TYPED args,
  * with no FormData parsing and no redirect(), so they compose from any caller
  * (the voice-command apply path today; a future importer tomorrow). They mirror
  * the field rules + money math of the interactive verbs
@@ -19,7 +19,7 @@ import { getTranslations } from "next-intl/server";
 
 import type { Database } from "@/lib/types/database";
 import { resolveDefaultVatCode, retailPriceIn } from "@/lib/commercial/lines";
-import { SALES_ORDER_DOC, insertLine } from "@/lib/commercial/write-lines";
+import { OFFER_DOC, SALES_ORDER_DOC, insertLine } from "@/lib/commercial/write-lines";
 
 export type DraftWriteResult<T> =
   | ({ ok: true } & T)
@@ -78,42 +78,12 @@ export async function insertDraftSalesOrder(
     };
   },
 ): Promise<DraftWriteResult<{ id: string; number: string }>> {
-  // Customer default VAT (optional) → resolve its rate.
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("default_vat_code")
-    .eq("id", input.organizationId)
-    .maybeSingle();
-  // The rate is NOT resolved here — insertLine does it, from this code. Same
-  // fallback as the interactive dialog: the customer's code, else DK standard.
-  const { data: activeVat } = await supabase
-    .from("vat_codes")
-    .select("code")
-    .eq("is_active", true);
-  const vatCode = resolveDefaultVatCode(
-    org?.default_vat_code as string | null,
-    activeVat ?? [],
-  );
-
-  // unitPrice fallback: the template's list price, through the same
-  // currency-guarded helper the interactive dialog uses. A DKK-priced template
-  // on a EUR order yields null there, and 0 here, for the reviewer to set.
-  let unitPrice = input.line.unitPrice;
-  if (unitPrice == null) {
-    const { data: tpl } = await supabase
-      .from("bike_templates")
-      .select("default_retail_price, default_retail_currency")
-      .eq("id", input.line.templateId)
-      .maybeSingle();
-    unitPrice =
-      retailPriceIn(
-        tpl as {
-          default_retail_price: number | null;
-          default_retail_currency: string | null;
-        } | null,
-        input.currency,
-      ) ?? 0;
-  }
+  const { vatCode, unitPrice } = await resolveLineDefaults(supabase, {
+    organizationId: input.organizationId,
+    templateId: input.line.templateId,
+    currency: input.currency,
+    unitPrice: input.line.unitPrice,
+  });
 
   const { data: number, error: numErr } = await supabase.rpc(
     "next_document_number",
@@ -174,4 +144,132 @@ export async function insertDraftSalesOrder(
   }
 
   return { ok: true, id: so.id, number };
+}
+
+/**
+ * The VAT code and unit price a drafted template line opens with — the same
+ * fallbacks as the interactive dialog. VAT: the customer's default code, else
+ * DK standard (`resolveDefaultVatCode`; `insertLine` resolves its rate). Price:
+ * the template's list price through the currency-guarded `retailPriceIn` — a
+ * DKK template on a EUR document yields nothing rather than wrong money — else
+ * 0, for the reviewer to set.
+ */
+async function resolveLineDefaults(
+  supabase: SupabaseClient,
+  input: {
+    organizationId: string;
+    templateId: string;
+    currency: string;
+    unitPrice: number | null;
+  },
+): Promise<{ vatCode: string | null; unitPrice: number }> {
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("default_vat_code")
+    .eq("id", input.organizationId)
+    .maybeSingle();
+  const { data: activeVat } = await supabase
+    .from("vat_codes")
+    .select("code")
+    .eq("is_active", true);
+  const vatCode = resolveDefaultVatCode(
+    org?.default_vat_code as string | null,
+    activeVat ?? [],
+  );
+
+  if (input.unitPrice != null) return { vatCode, unitPrice: input.unitPrice };
+  const { data: tpl } = await supabase
+    .from("bike_templates")
+    .select("default_retail_price, default_retail_currency")
+    .eq("id", input.templateId)
+    .maybeSingle();
+  const unitPrice =
+    retailPriceIn(
+      tpl as {
+        default_retail_price: number | null;
+        default_retail_currency: string | null;
+      } | null,
+      input.currency,
+    ) ?? 0;
+  return { vatCode, unitPrice };
+}
+
+/**
+ * Create a draft OFFER with a single bike-template line — what a customer's
+ * call about buying bikes turns into (DECISIONS 2026-09-30). Mirrors
+ * `createOffer` for the header: draft status, OFF- number, no issued or expiry
+ * date (an offer is issued when it is sent). The caller's wishes go in
+ * `notes`, which are INTERNAL and never reach the customer's document.
+ */
+export async function insertDraftOffer(
+  supabase: SupabaseClient,
+  input: {
+    organizationId: string;
+    language: "da" | "en";
+    currency: string;
+    notes: string | null;
+    line: {
+      quantity: number;
+      templateId: string;
+      colorId: string | null;
+      unitPrice: number | null;
+    };
+  },
+): Promise<DraftWriteResult<{ id: string; number: string }>> {
+  const { vatCode, unitPrice } = await resolveLineDefaults(supabase, {
+    organizationId: input.organizationId,
+    templateId: input.line.templateId,
+    currency: input.currency,
+    unitPrice: input.line.unitPrice,
+  });
+
+  const { data: number, error: numErr } = await supabase.rpc(
+    "next_document_number",
+    { p_doc_type: "offer" },
+  );
+  if (numErr || typeof number !== "string") {
+    return { ok: false, error: numErr?.message ?? "could not allocate offer number" };
+  }
+
+  const { data: offer, error: offerErr } = await supabase
+    .from("offers")
+    .insert({
+      offer_number: number,
+      status: "draft",
+      organization_id: input.organizationId,
+      language: input.language,
+      currency: input.currency,
+      notes: input.notes,
+    })
+    .select("id")
+    .single();
+  if (offerErr || !offer) {
+    return { ok: false, error: offerErr?.message ?? "could not create offer" };
+  }
+
+  const t = await getTranslations("errors");
+  const lineResult = await insertLine(
+    supabase as unknown as SupabaseClient<Database>,
+    OFFER_DOC,
+    offer.id,
+    {
+      kind: "template",
+      part_id: null,
+      bike_template_id: input.line.templateId,
+      quantity: input.line.quantity,
+      unit_price: unitPrice,
+      vat_code: vatCode,
+      color_id: input.line.colorId,
+      description_en: null,
+      description_da: null,
+    },
+    t,
+  );
+  if (!lineResult.ok) {
+    // Same rollback as the sales order: no orphan zero-total header.
+    await supabase.from("offers").delete().eq("id", offer.id);
+    return { ok: false, error: `offer line failed: ${lineResult.error}` };
+  }
+
+  return { ok: true, id: offer.id, number };
 }

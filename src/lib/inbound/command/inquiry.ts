@@ -1,8 +1,8 @@
 /**
- * Sales enquiry → command-agent task text.
+ * A customer's call → command-agent task text.
  *
- * An inbound `order_inquiry` call IS an implicit staff command — "a customer
- * rang wanting 25 bikes, set them up" — so instead of building a second
+ * A call with a request in it IS an implicit staff command — "a customer
+ * rang wanting 25 bikes and a repair, set it up" — so instead of building a second
  * bespoke action system for leads, we phrase the call as a task and hand it
  * to the command agent that VC-1 already built. The reviewer then gets the
  * same CommandPlanPanel: proposed DRAFT actions, open slots for anything the
@@ -53,17 +53,25 @@ export function buildInquiryTask(opts: {
   }
 
   const parts: string[] = [
-    "A customer phoned with a SALES ENQUIRY. Set up what we can as drafts so " +
-      "the workshop can follow it up.",
+    "A customer phoned (or left a voicemail). Set up what they asked for as " +
+      "drafts so the workshop can follow it up. One call can ask for several " +
+      "things — propose one action for each.",
     "",
     "Rules for this task, on top of your normal ones:",
     "- Propose a draft_customer ONLY if search_customer finds no existing match.",
-    "- Propose a draft_sales_order for the bikes they asked about. Put the " +
-      "quantity, the delivery timing and anything about specification " +
-      "(step-through, electric, cargo, baskets, logo) in the production note.",
+    "- Bikes they want to BUY → a draft_offer (a quote), never a sales order: " +
+      "nothing has been sold yet. Put the quantity in `quantity`, and the " +
+      "delivery timing and anything about specification (step-through, " +
+      "electric, cargo, baskets, logo) in `note`.",
+    "- A bike they already have that needs REPAIR → a draft_ticket with a " +
+      "short description of the fault.",
+    "- A call back, a visit or a meeting they asked for → say so in `notes`, " +
+      "with the date and number if given. It is not an action.",
     "- If they mentioned a service agreement, a recurring price, or anything " +
       "we cannot draft, say so in `notes` — do not invent an action for it.",
-    "- Do NOT propose a purchase order. Nothing has been sold yet.",
+    "- Do NOT propose a sales order or a purchase order.",
+    "- Nothing to draft (a greeting, a wrong number, only a call-back " +
+      "request)? Propose no actions and say why in the summary.",
   ];
 
   if (clarity !== null && clarity < LOW_CLARITY) {

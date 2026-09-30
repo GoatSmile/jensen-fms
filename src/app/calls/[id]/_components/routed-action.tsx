@@ -30,16 +30,15 @@ type Props = {
 /**
  * Intent-routed review action (layer 4).
  *
- * A `repair_request` drafts a maintenance ticket. An `order_inquiry` is a
- * sales lead, and its primary action is to DRAFT from the call (P2): it hands
- * the call to the VC-1 command agent, whose plan of proposed draft actions is
- * reviewed in the CommandPlanPanel below. Before P2 this branch could only
- * "log as handled", which silently lost the most valuable calls the shop
- * receives. Anything else keeps the plain handled/not-handled disposition.
+ * New calls arrive with SUGGESTED actions already drafted (the import job's
+ * planner pass): an offer for bikes they want, a ticket for a repair. When a
+ * plan exists this box only points at it and offers "handled". Without one —
+ * an older call, or one the planner could not read — it offers to draft the
+ * suggestions now, and a `repair_request` keeps its direct "Create ticket".
  *
  * "Create a ticket instead" stays available on every non-repair intent,
- * because the model's intent can be wrong and the reviewer decides. Nothing
- * auto-creates, and nothing is written until an action is applied.
+ * because the model's intent can be wrong and the reviewer decides. Nothing is
+ * written until an action is applied.
  */
 export function RoutedAction({
   messageId,
@@ -132,55 +131,62 @@ export function RoutedAction({
         </div>
       ) : !canAct ? (
         <p className="text-muted-foreground text-xs">{t("createNeedsMatch")}</p>
-      ) : isRepair ? (
+      ) : hasPlan ? (
         <>
-          <p className="text-muted-foreground text-xs">
-            {shadowMode ? t("shadowCreateHint") : t("createHint")}
-          </p>
-          <div>
-            <Button type="button" size="sm" onClick={createTicket} disabled={pending}>
-              <TicketPlus aria-hidden />
-              {pending ? t("creatingTicket") : t("createTicket")}
+          {/* The suggestions panel below owns the next step now. */}
+          <p className="text-muted-foreground text-xs">{t("planBelowHint")}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" size="sm" variant="outline" onClick={() => dispose("handled")} disabled={pending}>
+              <CheckCheck aria-hidden />
+              {t("markHandled")}
             </Button>
           </div>
         </>
       ) : (
         <>
           <p className="text-muted-foreground text-xs">
-            {isLead && !hasPlan
-              ? t("leadDraftHint")
-              : intent === "order_inquiry"
-                ? t("leadHint")
+            {isRepair
+              ? shadowMode
+                ? t("shadowCreateHint")
+                : t("createHint")
+              : isLead
+                ? t("leadDraftHint")
                 : t("otherHint")}
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            {/* A sales enquiry's primary action is to DRAFT, not to dismiss —
-                the plan lands in the panel below for review before anything
-                is written. Marking handled stays available but demoted. */}
-            {isLead && !hasPlan ? (
-              <Button type="button" size="sm" onClick={draftFromCall} disabled={pending}>
-                <Wand2 aria-hidden />
-                {pending ? t("leadDrafting") : t("leadDraft")}
+            {/* New calls get suggestions by themselves; this is for older ones
+                and for a call the planner could not read. Nothing is written
+                until a suggestion is applied. */}
+            {isRepair ? (
+              <Button type="button" size="sm" onClick={createTicket} disabled={pending}>
+                <TicketPlus aria-hidden />
+                {pending ? t("creatingTicket") : t("createTicket")}
               </Button>
             ) : null}
             <Button
               type="button"
               size="sm"
-              variant={isLead && !hasPlan ? "outline" : "default"}
-              onClick={() => dispose("handled")}
+              variant={isRepair ? "outline" : "default"}
+              onClick={draftFromCall}
               disabled={pending}
             >
+              <Wand2 aria-hidden />
+              {pending ? t("leadDrafting") : t("leadDraft")}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => dispose("handled")} disabled={pending}>
               <CheckCheck aria-hidden />
               {t("markHandled")}
             </Button>
-            <button
-              type="button"
-              onClick={createTicket}
-              disabled={pending}
-              className="text-muted-foreground text-xs underline"
-            >
-              {t("createTicketInstead")}
-            </button>
+            {!isRepair ? (
+              <button
+                type="button"
+                onClick={createTicket}
+                disabled={pending}
+                className="text-muted-foreground text-xs underline"
+              >
+                {t("createTicketInstead")}
+              </button>
+            ) : null}
           </div>
         </>
       )}
