@@ -28,7 +28,9 @@ import { CallRowActions } from "./call-row-actions";
  * Colour by group, from the six-hue vocabulary: `brand` edge = to do,
  * `money` edge = check (caution), `alert` only for an URGENT to-do, done in
  * `good`, quiet rows in the muted inks. Never colour alone: every row also
- * says its reason in words.
+ * says its reason in words. A call from one of our own numbers wears an
+ * "Internal" tag in `system` (our own side) in EVERY group — the number no
+ * longer decides the group, so the tag is how it stays visible.
  */
 export async function CallRow({
   row,
@@ -100,6 +102,12 @@ export async function CallRow({
           <span className="min-w-0">
             <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 sm:flex-nowrap">
               <span className={cn("max-w-full truncate", quiet ? "text-ink-2" : "font-medium")}>{who}</span>
+              {row.internal ? (
+                <span className="bg-system-wash text-system inline-flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-0.5 text-xs font-medium">
+                  <Users aria-hidden className="size-3" />
+                  {t("internalTag")}
+                </span>
+              ) : null}
               {/* On a phone the details take their own line, so the name is not squeezed. */}
               {sub.length ? (
                 <span className="text-ink-3 order-last basis-full truncate text-xs sm:order-none sm:basis-auto">
@@ -113,8 +121,8 @@ export async function CallRow({
             </span>
             <span className={cn("block truncate text-sm", quiet ? "text-ink-3" : "text-ink-2")}>
               {lane === "todo" && urgent ? <strong className="text-alert">{t("urgent")} · </strong> : null}
-              {lane === "check" || quiet ? <span>{t(`reason.${reason}`)}{row.summary ? " · " : ""}</span> : null}
-              {row.summary ?? (lane === "todo" ? t(`reason.${reason}`) : "")}
+              {lane === "check" || (quiet && reason !== "internal") ? <span>{t(`reason.${reason}`)}{row.summary ? " · " : ""}</span> : null}
+              {row.summary ?? (lane === "todo" || reason === "internal" ? t(`reason.${reason}`) : "")}
             </span>
             {row.promises.length > 0 && !quiet ? (
               <span className="text-ink block truncate text-sm">

@@ -3426,3 +3426,30 @@ Owner, on switching extraction to Claude Sonnet 5.5 and getting a 400:
   structured-outputs compiler rejects — before anything was saved.
 - **An empty transcript is "nothing said", not a failure** — a 1-second
   voicemail was sitting in *Check* with a retry that could never succeed.
+
+## 2026-09-30 — Calls: what was said decides, never whose number; Sales handles calls, the accountant does not
+
+Owner, on a voicemail from their own mobile ordering three bikes that landed
+under *no action*: *"the system determines whether the call is actionable,
+not the user."*
+
+- **Content decides the group; the number only explains a quiet one.**
+  `triageCall` used to file any call from a colleague's number as quiet
+  BEFORE reading it, so a colleague relaying a customer's order — or the
+  owner testing — vanished. "Internal" is now the last rule, reached only
+  when nothing in the call needs doing, and the list tags internal calls in
+  `system` in EVERY group so the provenance stays visible. **Rejected:**
+  keeping the number rule first and adding a per-call override (that is the
+  human deciding, which is what the owner ruled out).
+- **`inbox` (all calls) = Owner, IT admin, Sales** (migration 115). Sales,
+  because an order enquiry is the most valuable call the shop takes;
+  not the accountant, who does not answer customers. Workshop keeps
+  `calls_own`.
+- **Decided, not yet built:** a buying enquiry drafts an OFFER, not a sales
+  order; drafts are made automatically when a call has been read, applied only
+  by a person; a call back stays on the call in *to do*, and a requested visit
+  becomes a calendar entry (Finn's Google calendar, configured in the app).
+- **A main-number call is not recorded** (verified 30 Sep: Relatel returns
+  `recording: null` for 20 47 33 83 → Hovednummer #1 → 2 → Finn), so it cannot
+  be imported. The fix is a Relatel setting, reachable only from a Relatel
+  administrator login — Finn's login cannot open employee settings.

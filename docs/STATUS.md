@@ -52,8 +52,10 @@ is Danish (person language).
   (their numbers mark internal calls). Four real calls are in, both outgoing ones
   repaired (mixed-format MP3) and transcribed. **Not yet seen by a human in
   production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
-  (none recorded yet — check Mobilfeatures recording is on for that number).
-  Unproven: a main-number call forwarded with option 2 arrives recorded.
+  (voicemails arrive; triage now reads content first — DECISIONS 2026-09-30).
+  **A main-number call forwarded with option 2 is NOT recorded** by Relatel
+  (`recording: null`, verified 30 Sep), so it is not imported — recording for
+  Hovednummer #1/#2 needs a Relatel administrator login (Finn's cannot).
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and

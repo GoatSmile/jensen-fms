@@ -649,7 +649,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   the tech. **The review queue is `/calls`** (*Calls*, in the *Work* group;
   `/inbox` redirects), by Danish day, tabs per person for the office. Each
   call's group — to do / check / no action / done — is DERIVED by
-  `triageCall` (`src/lib/calls/triage.ts`) and never stored; the only stored
+  `triageCall` (`src/lib/calls/triage.ts`) and never stored, **from what was
+  said, never from whose number it came** (a colleague's number only explains
+  why an empty call is quiet; internal calls are tagged in every group); the only stored
   input a person controls is `disposition` (`needs_action` added). **A day
   with open work is never folded**, and open calls older than the page's
   window are loaded too. Who sees which rows is ONE rule, `readCallsScope` /

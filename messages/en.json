@@ -5086,6 +5086,7 @@
     "outgoing": "outgoing",
     "seconds": "{s} s",
     "urgent": "Urgent",
+    "internalTag": "Internal",
     "promised": "Promised: {what}",
     "openCall": "Open the whole call",
     "audioPlay": "Play recording",

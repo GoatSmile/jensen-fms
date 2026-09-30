@@ -11,11 +11,17 @@
  * Order matters and is the whole design:
  *   1. a person's decision (ticket, handled, spam, "needs action") wins;
  *   2. the system's own trouble (failed, still processing) is a CHECK;
- *   3. a call between our own people is quiet;
- *   4. a PROMISE the workshop made is never quiet — forgotten promises cost most;
- *   5. a voicemail is someone waiting for a call back;
- *   6. a request is TO DO — or CHECK when we are not sure who or what it was;
- *   7. everything else (short, no speech, spam-looking, chit-chat) is quiet.
+ *   3. a PROMISE the workshop made is never quiet — forgotten promises cost most;
+ *   4. a voicemail is someone waiting for a call back;
+ *   5. a request is TO DO — or CHECK when we are not sure who or what it was;
+ *   6. everything else (between our own people, short, no speech, spam-looking,
+ *      chit-chat) is quiet.
+ *
+ * WHAT WAS SAID decides, never whose number it came from: a colleague relaying
+ * a customer's order, or the owner testing from their own mobile, is as much
+ * work as the customer ringing directly. "Internal" only explains why a call
+ * with nothing in it is quiet; the page tags internal calls separately, in
+ * every group (owner, 2026-09-30).
  */
 import type { InboundExtraction } from "@/lib/inbound/extraction";
 import { isSuspectedSpam } from "@/lib/inbound/triage";
@@ -110,10 +116,7 @@ export function triageCall(row: TriageInput): CallTriage {
     return check(row.ageMinutes > STUCK_MINUTES ? "failed" : "processing");
   }
 
-  // 3 · Colleagues talking.
-  if (row.internal) return quiet("internal");
-
-  // 4 · Something was promised to a customer.
+  // 3 · Something was promised to a customer.
   if ((x?.commitments ?? []).length > 0) return todo("promise");
 
   const said = (row.body_text ?? "").trim();
@@ -121,10 +124,10 @@ export function triageCall(row: TriageInput): CallTriage {
     said.length < MIN_SPEECH_CHARS ||
     (row.duration_seconds != null && row.duration_seconds < SHORT_SECONDS && said.length < 80);
 
-  // 5 · Someone left a message and is waiting.
+  // 4 · Someone left a message and is waiting.
   if (row.channel === "voicemail" && !barelySpoken) return todo("callback");
 
-  // 6 · A request — do we know enough to act on it?
+  // 5 · A request — do we know enough to act on it?
   const isRequest = x?.intent === "repair_request" || x?.intent === "order_inquiry";
   if (isRequest) {
     if (!row.matched_organization_id && orgCandidateCount(row.match_candidates) >= 2) {
@@ -140,7 +143,8 @@ export function triageCall(row: TriageInput): CallTriage {
     return todo("request");
   }
 
-  // 7 · Nothing to act on.
+  // 6 · Nothing to act on.
+  if (row.internal) return quiet("internal");
   if (row.disposition !== "not_spam" && isSuspectedSpam(row.spam_signals)) return quiet("spam");
   if (barelySpoken) return quiet("no_speech");
   return quiet("no_request");

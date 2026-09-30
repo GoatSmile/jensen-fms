@@ -32,6 +32,8 @@ export type CallListRow = {
   summary: string | null;
   /** What the workshop promised — shown on the row, never folded away. */
   promises: string[];
+  /** The other party is one of our own lines or people — tagged in every group. */
+  internal: boolean;
   triage: CallTriage;
   lane: CallLane;
 };
@@ -155,6 +157,7 @@ export async function loadCallsPage(
     const x = r.extraction ? parseExtraction(r.extraction) : null;
     const meta = (r.channel_meta ?? {}) as { call_direction?: unknown };
     const tail = numberTail(r.from_identity);
+    const internal = !!tail && ownTails.has(tail);
     const triage = triageCall({
       channel: r.channel,
       status: r.status,
@@ -168,7 +171,7 @@ export async function loadCallsPage(
       matched_organization_id: r.matched_organization_id,
       match_candidates: r.match_candidates,
       extraction: x,
-      internal: !!tail && ownTails.has(tail),
+      internal,
       ageMinutes: (Date.now() - new Date(r.received_at).getTime()) / 60_000,
     });
     const line = r.phone_line_id ? lineById.get(r.phone_line_id) : undefined;
@@ -195,6 +198,7 @@ export async function loadCallsPage(
       callerName: x?.callerName ?? null,
       summary: x?.callSummary ?? x?.problem ?? null,
       promises: x?.commitments ?? [],
+      internal,
       triage,
       lane: triage.lane,
       tabKeys,

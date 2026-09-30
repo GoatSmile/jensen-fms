@@ -5086,6 +5086,7 @@
     "outgoing": "udgående",
     "seconds": "{s} sek.",
     "urgent": "Haster",
+    "internalTag": "Intern",
     "promised": "Lovet: {what}",
     "openCall": "Åbn hele opkaldet",
     "audioPlay": "Afspil optagelse",
