@@ -148,6 +148,9 @@ is Danish (person language).
   Supabase is older than production's storage schema (`lifecycle_configuration`)
   — **redo that swap after every re-dump**, or the seed fails. Keep disk free:
   `.next` had grown to 18 GB; `supabase stop` before updating Docker.
+  **Everything is STOPPED as of 1 Oct 00:50** (stack via `supabase stop`, data
+  kept; Docker Desktop via `docker desktop stop`; `.next` deleted). To resume:
+  `open -a Docker`, then `supabase start`, then the dev server.
 - **With the browser pane hidden**, streamed sections never reveal and real
   clicks fail: `window.$RV(window.$RB)`, synthetic `pointerdown` for Radix
   menus, `requestSubmit()` for forms.
