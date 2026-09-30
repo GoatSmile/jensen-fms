@@ -30,6 +30,7 @@ type Props = {
   initialBridgeNumber: string;
   initialBridgeTimeout: string;
   initialCallTranscriptionProvider: string;
+  initialElevenlabsRegion: string;
   transcriptionProviders: string[];
   extractionProviders: string[];
   telephonyProviders: string[];
@@ -79,6 +80,11 @@ export function InboundSettingsForm(props: Props) {
   const [callProvider, setCallProvider] = useState(
     props.initialCallTranscriptionProvider,
   );
+  // WHERE ElevenLabs processes audio (migration 113/114) — the residency
+  // choice, shown whenever ElevenLabs hears voicemails, dictation or calls.
+  const [elevenlabsRegion, setElevenlabsRegion] = useState(props.initialElevenlabsRegion);
+  const usesElevenLabs =
+    transcriptionProvider === "elevenlabs" || callProvider === "elevenlabs";
   // Absolute webhook URLs to paste into the Twilio number's config — they
   // depend on where this is deployed, so read the origin from the browser.
   // Voice: the "A call comes in" webhook. Status: the "Call status changes"
@@ -115,6 +121,7 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_bridge_number", bridgeNumber.trim());
     appendField(fd, "inbound_bridge_timeout_seconds", bridgeTimeout.trim());
     appendField(fd, "inbound_call_transcription_provider", callProvider.trim());
+    fd.set("inbound_elevenlabs_region", elevenlabsRegion);
     start(async () => {
       const r = await saveInboundSettings(fd);
       if (!r.ok) {
@@ -154,6 +161,26 @@ export function InboundSettingsForm(props: Props) {
           providerLabel={providerLabel}
           secrets={props.secrets.transcription}
         >
+          {usesElevenLabs ? (
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor="inbound_elevenlabs_region" className="flex-col items-start gap-0.5">
+                {t("inboundElevenlabsRegionLabel")}
+                <span className="text-ink-2 text-xs font-normal">
+                  {t("inboundElevenlabsRegionHint")}
+                </span>
+              </Label>
+              <select
+                id="inbound_elevenlabs_region"
+                value={elevenlabsRegion}
+                onChange={(e) => setElevenlabsRegion(e.target.value)}
+                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm sm:max-w-sm"
+              >
+                <option value="eu">{t("inboundElevenlabsRegion_eu")}</option>
+                <option value="global">{t("inboundElevenlabsRegion_global")}</option>
+                <option value="us">{t("inboundElevenlabsRegion_us")}</option>
+              </select>
+            </div>
+          ) : null}
           {/* Region is an Azure-shaped param; Gladia needs none. */}
           {transcriptionProvider === "azure" ? (
             <div className="flex flex-col gap-1.5">

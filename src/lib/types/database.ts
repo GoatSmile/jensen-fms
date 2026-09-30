@@ -37,6 +37,7 @@ export type Database = {
           inbound_call_import_voicemails: boolean
           inbound_call_mode: string
           inbound_call_transcription_provider: string | null
+          inbound_elevenlabs_region: string
           inbound_extraction_model: string
           inbound_extraction_provider: string
           inbound_media_retention_days: number
@@ -78,6 +79,7 @@ export type Database = {
           inbound_call_import_voicemails?: boolean
           inbound_call_mode?: string
           inbound_call_transcription_provider?: string | null
+          inbound_elevenlabs_region?: string
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number
@@ -119,6 +121,7 @@ export type Database = {
           inbound_call_import_voicemails?: boolean
           inbound_call_mode?: string
           inbound_call_transcription_provider?: string | null
+          inbound_elevenlabs_region?: string
           inbound_extraction_model?: string
           inbound_extraction_provider?: string
           inbound_media_retention_days?: number

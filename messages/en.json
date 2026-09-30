@@ -3559,7 +3559,13 @@
     "callImportLabelPlaceholder": "Main number",
     "callImportLabelLabel": "Name of the shared line",
     "callImportTokenLabel": "Token variable in Vercel",
-    "callImportTokenAfterSave": "status shows after saving and redeploying"
+    "callImportTokenAfterSave": "status shows after saving and redeploying",
+    "provider_elevenlabs": "ElevenLabs Scribe v2",
+    "inboundElevenlabsRegionLabel": "ElevenLabs host",
+    "inboundElevenlabsRegionHint": "Where ElevenLabs processes the audio. EU keeps it in the EU but needs an EU (enterprise) key; Global works with any key and is not EU residency.",
+    "inboundElevenlabsRegion_eu": "EU — EU residency (enterprise key)",
+    "inboundElevenlabsRegion_global": "Global — not EU residency",
+    "inboundElevenlabsRegion_us": "US"
   },
   "adminPeople": {
     "crumb": "People & roles",

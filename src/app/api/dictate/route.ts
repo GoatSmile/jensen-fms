@@ -8,6 +8,7 @@ import {
 import { transcriptionSecretsPresent } from "@/lib/dictation/ready";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import { transcribeAudio } from "@/lib/inbound/transcribe";
+import { loadTranscriptionKeyterms } from "@/lib/inbound/keyterms";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -75,6 +76,8 @@ export async function POST(request: Request) {
       region: settings.transcriptionRegion,
       languages: language ? [language] : undefined,
       timeoutMs: POLL_BUDGET_MS,
+      elevenlabsRegion: settings.elevenlabsRegion,
+      keyterms: await loadTranscriptionKeyterms(supabase),
     });
 
     if (!result.ok) {

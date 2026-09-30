@@ -3373,3 +3373,33 @@ Migration 112; `src/lib/calls/`; the page is `/calls`.
   fact and could credit the customer with the workshop's promises.
 - **Every date-time is Danish time.** The shared formatter had no zone and the
   server runs in UTC, so the whole app read one to two hours early.
+
+## 2026-09-30 — Transcription moves to ElevenLabs Scribe v2, on the global host while in test
+
+Owner, 30 Sep, after a dictation waited 98 s in Gladia's queue and gave up:
+*"Let's move dictation and calls to ElevenLabs … default to global for now. We
+are in test … There are no real customer calls yet."* Migrations 113–114.
+
+- **ElevenLabs Scribe v2 for voicemails, dictation and calls; Gladia stays
+  registered as the fallback.** Munr (the sister project) had already measured
+  it: Scribe answers inside the request (~0.7 s for a 4.5 s utterance), detects
+  the language where a constrained Gladia list heard Swedish as Finnish, and
+  takes a names list. Measured here on the same two test calls: Gladia
+  clarity 0.50 and 0.22 ("Nesha", "det er ondt"); Scribe 0.98 and 0.97
+  ("Finn … Nazar", "det er i orden"). Dictation 4 s end to end.
+- **The global host, while in test — accepted knowingly.** It is not EU
+  residency, and ElevenLabs keeps audio under its standard retention; the EU
+  host (and zero retention) needs an EU enterprise key, and the standard key is
+  refused there. The host is a setting (`inbound_elevenlabs_region`) so the
+  switch back is one admin change. **Go-live gate:** an EU key for Jensen's
+  own account, then `eu`. **Rejected:** keeping calls on EU-hosted Gladia
+  (owner: nothing real is on the line yet); waiting for the enterprise key
+  before moving anything.
+- **Jensen's own key, not Munr's.** A key would work anywhere; the reasons
+  are whose account customer audio is processed under, blast radius on
+  rotation, and billing.
+- **The adapter always sends bytes and counts channels itself** — no "can the
+  provider open this link" question, and stereo vs mono decided from the file,
+  not a label.
+- **Every transcription gets the names list** (people, customers, bike
+  models) — Munr's largest measured single win.

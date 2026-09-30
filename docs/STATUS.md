@@ -4,8 +4,10 @@
 from Relatel, and the inbox became Calls** (migrations 111–112): every recorded
 call on a mapped phone line is imported every 5 minutes, transcribed, sorted into
 to do / check / no action / done, and shown by day — Finn sees his own, the
-office everyone's. Live in production and running. Also: the whole app now shows
-Danish time (it read 1–2 h early), and phones at 360 px no longer overflow.
+office everyone's. Live in production and running. **Transcription moved to
+ElevenLabs Scribe v2 on its GLOBAL host while in test** (migrations 113–114;
+not EU residency — an EU enterprise key is a go-live gate). Also: Danish time
+everywhere, and phones at 360 px no longer overflow.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -22,7 +24,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 112 is the latest; production verified at it** (queried the
+- **Migration 114 is the latest; production verified at it** (113 =
+  `inbound_elevenlabs_region`, 114 = its default `global`, both queried 30 Sep).
+  **Migration 112 before that** (queried the
   table, the stamped calls, the grant and the constraint, 30 Sep). 112 =
   `phone_lines` (Finn's line mapped to Finn; `Employee#74332` "Mathilde /
   Nazar" came across as an unnamed shared line — map it or switch it off),
@@ -50,8 +54,12 @@ is Danish (person language).
   production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
   (none recorded yet — check Mobilfeatures recording is on for that number).
   Unproven: a main-number call forwarded with option 2 arrives recorded.
-- **Dictation hit a slow Gladia** (30 Sep 09:17 UTC, 98 s for 28 s of audio;
-  2 s otherwise) and showed "took too long" — BACKLOG has the resume-the-job fix.
+- **Transcription: ElevenLabs Scribe v2, global host** (DECISIONS 2026-09-30).
+  Verified locally: dictation 4 s; the two test calls re-heard at clarity
+  0.98/0.97 against Gladia's 0.50/0.22, names right from the names list.
+  Production needs `ELEVENLABS_API_KEY` in Vercel and the two providers set to
+  ElevenLabs (*Settings → Phone & inbox*: Transcription + Transcription for
+  calls) — see the session's last message for whether that is done.
 - **Scheduled jobs are watched at `/admin/jobs`** (capability `jobs`, Owner +
   IT admin; migration 109): list from `vercel.json`, last runs from
   `cron_runs`, *Run now*. The new `paint-drop-offs` job runs 04:00 UTC — check

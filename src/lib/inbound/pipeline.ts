@@ -20,6 +20,7 @@ import { extractInbound } from "./extract";
 import { matchInbound } from "./match";
 import { transcribeVoicemail } from "./channels/voicemail";
 import { ensureTranscribableAudio } from "./audio/normalize";
+import { loadTranscriptionKeyterms } from "./keyterms";
 import { applyTriage } from "./triage";
 import { loadInboundSettings, type InboundSettings } from "./settings";
 
@@ -73,6 +74,7 @@ export async function transcribeStage(
   const result = await transcribeVoicemail(supabase, mediaPath, settings, {
     twoWay,
     channelRoles: source === "twilio" ? "caller_first" : "unknown",
+    keyterms: await loadTranscriptionKeyterms(supabase),
   });
   if (!result.ok) {
     return { ok: false, code: `transcribe.${result.reason}`, detail: result.detail };

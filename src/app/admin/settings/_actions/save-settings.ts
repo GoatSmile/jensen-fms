@@ -10,6 +10,7 @@ import {
   TRANSCRIPTION_PROVIDERS,
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
+  ELEVENLABS_REGIONS,
   DEFAULT_EXTRACTION_MODEL,
   findProvider,
 } from "@/lib/inbound/settings";
@@ -431,11 +432,18 @@ export async function saveInboundSettings(
     };
   }
 
+  // The ElevenLabs host is the residency choice; only the three it runs.
+  const elevenlabsRegion = (nullable(formData.get("inbound_elevenlabs_region")) ?? "global").trim();
+  if (!(ELEVENLABS_REGIONS as readonly string[]).includes(elevenlabsRegion)) {
+    return { ok: false, error: t("inboundUnknownProvider", { provider: elevenlabsRegion }) };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("app_settings")
     .update({
       last_actor_id: await readPersonId(),
+      inbound_elevenlabs_region: elevenlabsRegion,
       inbound_transcription_provider: transcription.value,
       inbound_transcription_region: nullable(
         formData.get("inbound_transcription_region"),

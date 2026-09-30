@@ -275,6 +275,7 @@ export default async function AdminSettingsPage({
                 initialCallTranscriptionProvider={
                   inboundSettings.callTranscriptionProviderRaw ?? ""
                 }
+                initialElevenlabsRegion={inboundSettings.elevenlabsRegion}
                 transcriptionProviders={TRANSCRIPTION_PROVIDERS.map(
                   (p) => p.key,
                 )}

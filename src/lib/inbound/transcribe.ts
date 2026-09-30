@@ -32,6 +32,7 @@
  * Server-only (reads process.env). Import from server actions.
  */
 
+import { audioChannelCount } from "./audio/mp3-repair";
 import { isPubliclyReachableUrl } from "@/lib/net/public-url";
 
 export type TranscribeResult =
@@ -83,6 +84,15 @@ export type TranscribeOptions = {
    * `caller_first` keeps the Twilio path unchanged.
    */
   channelRoles?: "caller_first" | "unknown";
+  /** ElevenLabs only: which host processes the audio (migration 113/114). */
+  elevenlabsRegion?: "eu" | "global" | "us";
+  /**
+   * ElevenLabs only: names the engine should expect — customers, colleagues,
+   * bike models. Munr measured this as the largest single accuracy win (four
+   * engines misspelt one name until it was on the list). Vendor limits: 1,000
+   * terms, 50 characters, five words each; longer ones are dropped.
+   */
+  keyterms?: string[];
   /**
    * ISO 639-1 codes to transcribe as, narrowing the shipped default of "the
    * workshop's two languages, detected per file". Pinning ONE measurably helps
@@ -112,6 +122,16 @@ export async function transcribeAudio(
   }
   if (opts.provider === "azure") {
     return transcribeViaAzure(audioUrl, opts.region, twoWay, opts.languages, trustChannels);
+  }
+  if (opts.provider === "elevenlabs") {
+    return transcribeViaElevenLabs(audioUrl, {
+      twoWay,
+      trustChannels,
+      languages: opts.languages,
+      region: opts.elevenlabsRegion ?? "global",
+      keyterms: opts.keyterms ?? [],
+      timeoutMs: opts.timeoutMs,
+    });
   }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
 }
@@ -448,6 +468,199 @@ const AZURE_LOCALES: Record<string, string> = { da: "da-DK", en: "en-US" };
 function azureLocales(languages?: string[]): string[] {
   if (!languages?.length) return ["da-DK", "en-US"];
   return languages.map((l) => AZURE_LOCALES[l] ?? l);
+}
+
+// ---------------------------------------------------------------------------
+// ElevenLabs Scribe v2 — SYNCHRONOUS: one request, the transcript in the
+// response, no job to poll (so dictation cannot be left in a queue). Copied
+// and trimmed from Munr's live-verified adapter (munr src/lib/inbound/
+// transcribe.ts, 2026-09-09), fitted to this module's single-text result.
+//
+// The adapter always sends the BYTES, never a link: it reads them itself
+// (our server can reach any storage, local or not — no "can the provider
+// open this URL?" question) and it needs them anyway to count channels:
+// stereo → each channel transcribed separately (the channel is the voice);
+// mono two-way call → speaker separation, flagged as inferred.
+// ---------------------------------------------------------------------------
+const ELEVENLABS_HOSTS: Record<string, string> = {
+  eu: "https://api.eu.residency.elevenlabs.io",
+  global: "https://api.elevenlabs.io",
+  us: "https://api.us.elevenlabs.io",
+};
+const ELEVENLABS_MODEL = "scribe_v2";
+const ELEVENLABS_TIMEOUT_MS = 120_000;
+/** One voice stays one turn until it pauses longer than this. */
+const ELEVENLABS_TURN_GAP_SECONDS = 2;
+
+/** Scribe reports ISO 639-3 ("dan"); the app stores ISO 639-1 ("da"). */
+const ISO3_TO_1: Record<string, string> = {
+  dan: "da", eng: "en", deu: "de", ger: "de", swe: "sv", nor: "no", nob: "no", nno: "no",
+  fin: "fi", pol: "pl", nld: "nl", dut: "nl", fra: "fr", fre: "fr", spa: "es", ita: "it",
+  ukr: "uk", rus: "ru", ara: "ar", tur: "tr", ron: "ro", rum: "ro", lit: "lt", lav: "lv", est: "et",
+};
+function iso1(code: unknown): string | null {
+  if (typeof code !== "string" || !code.trim()) return null;
+  const c = code.trim().toLowerCase();
+  return c.length === 2 ? c : (ISO3_TO_1[c] ?? c);
+}
+
+type ScribeWord = {
+  text?: unknown;
+  type?: unknown;
+  start?: unknown;
+  end?: unknown;
+  logprob?: unknown;
+  speaker_id?: unknown;
+  channel_index?: unknown;
+};
+type ScribeTranscript = {
+  language_code?: unknown;
+  text?: unknown;
+  words?: ScribeWord[];
+  channel_index?: unknown;
+};
+
+async function transcribeViaElevenLabs(
+  audioUrl: string,
+  opts: {
+    twoWay: boolean;
+    trustChannels: boolean;
+    languages?: string[];
+    region: string;
+    keyterms: string[];
+    timeoutMs?: number;
+  },
+): Promise<TranscribeResult> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) return { ok: false, reason: "no_key" };
+  const host = ELEVENLABS_HOSTS[opts.region] ?? ELEVENLABS_HOSTS.global;
+
+  let audio: Response;
+  try {
+    audio = await fetch(audioUrl, { cache: "no-store" });
+  } catch (e) {
+    return { ok: false, reason: "api_error", detail: `could not read our own audio: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  if (!audio.ok) return { ok: false, reason: "api_error", detail: `could not read our own audio: HTTP ${audio.status}` };
+  const bytes = new Uint8Array(await audio.arrayBuffer());
+  if (bytes.byteLength === 0) return { ok: false, reason: "empty" };
+  const channels = audioChannelCount(bytes) ?? 1;
+  const splitChannels = opts.twoWay && channels >= 2;
+
+  const form = new FormData();
+  form.set("model_id", ELEVENLABS_MODEL);
+  form.set(
+    "file",
+    new Blob([bytes], { type: audio.headers.get("content-type") || "application/octet-stream" }),
+    "audio",
+  );
+  // One language pins it (the dictation chip); otherwise Scribe DETECTS —
+  // Munr measured a constrained list making Gladia hear the wrong language.
+  const langs = (opts.languages ?? []).filter(Boolean);
+  if (langs.length === 1) form.set("language_code", langs[0]);
+  form.set("timestamps_granularity", "word");
+  form.set("tag_audio_events", "false");
+  if (splitChannels) {
+    form.set("use_multi_channel", "true");
+    form.set("multichannel_output_style", "separate");
+  } else if (opts.twoWay) {
+    form.set("diarize", "true");
+    form.set("num_speakers", "2");
+  }
+  for (const k of opts.keyterms
+    .map((w) => w.trim())
+    .filter((w) => w.length > 0 && w.length <= 50 && w.split(/\s+/).length <= 5)
+    .slice(0, 1000)) {
+    form.append("keyterms", k);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${host}/v1/speech-to-text`, {
+      method: "POST",
+      headers: { "xi-api-key": apiKey },
+      body: form,
+      signal: AbortSignal.timeout(opts.timeoutMs ?? ELEVENLABS_TIMEOUT_MS),
+    });
+  } catch (e) {
+    if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
+      return { ok: false, reason: "timeout" };
+    }
+    return caught(e);
+  }
+  if (!res.ok) return httpDetail(res);
+  const json = (await res.json().catch(() => null)) as (ScribeTranscript & { transcripts?: ScribeTranscript[] }) | null;
+  if (!json) return { ok: false, reason: "api_error", detail: "invalid JSON response" };
+
+  // One transcript per channel when split, else one for the file. Turns are
+  // cut WITHIN a channel (voice change or a long pause) and then merged by
+  // time — sorting words across channels first interleaves two voices word
+  // by word where they overlap (Munr's live press, 2026-09-09).
+  const transcripts: ScribeTranscript[] =
+    Array.isArray(json.transcripts) && json.transcripts.length > 0 ? json.transcripts : [json];
+  const speakerIds = new Map<string, number>();
+  type Turn = { speaker: number; text: string[]; start: number; end: number; conf: number[] };
+  const turns: Turn[] = [];
+  const allConf: { confidence: number; weight: number }[] = [];
+  const langCount = new Map<string, number>();
+  transcripts.forEach((t, i) => {
+    const lang = iso1(t.language_code);
+    let current: Turn | null = null;
+    for (const w of Array.isArray(t.words) ? t.words : []) {
+      if ((typeof w?.type === "string" ? w.type : "word") !== "word") continue;
+      const text = typeof w?.text === "string" ? w.text.trim() : "";
+      if (!text) continue;
+      const start = typeof w?.start === "number" ? w.start : 0;
+      const end = typeof w?.end === "number" ? w.end : start;
+      const conf = typeof w?.logprob === "number" ? Math.exp(Math.min(0, w.logprob)) : null;
+      let speaker: number;
+      if (splitChannels) {
+        speaker = typeof w?.channel_index === "number" ? w.channel_index : typeof t.channel_index === "number" ? t.channel_index : i;
+      } else {
+        const id = typeof w?.speaker_id === "string" ? w.speaker_id : "0";
+        if (!speakerIds.has(id)) speakerIds.set(id, speakerIds.size);
+        speaker = speakerIds.get(id)!;
+      }
+      if (!current || current.speaker !== speaker || start - current.end > ELEVENLABS_TURN_GAP_SECONDS) {
+        if (current) turns.push(current);
+        current = { speaker, text: [], start, end, conf: [] };
+      }
+      current.text.push(text);
+      current.end = end;
+      if (conf !== null) {
+        current.conf.push(conf);
+        allConf.push({ confidence: conf, weight: 1 });
+      }
+      if (lang) langCount.set(lang, (langCount.get(lang) ?? 0) + 1);
+    }
+    if (current) turns.push(current);
+  });
+  turns.sort((a, b) => a.start - b.start);
+
+  const language =
+    [...langCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? iso1(json.language_code);
+  const confidence = aggregateConfidence(allConf);
+  const joined = (t: Turn) => t.text.join(" ").replace(/\s+([,.!?;:])/g, "$1");
+
+  if (opts.twoWay) {
+    const dialogueTurns = turns.map((t) => ({ speaker: t.speaker, text: joined(t) }));
+    if (new Set(dialogueTurns.map((t) => t.speaker)).size >= 2) {
+      // Channel labels are facts only when the channel ORDER is a contract
+      // (Twilio); a diarized split is always a guess.
+      const trusted = splitChannels && opts.trustChannels;
+      const dialogue = renderDialogue(dialogueTurns, trusted);
+      if (dialogue) {
+        return trusted
+          ? { ok: true, text: dialogue, language, confidence }
+          : { ok: true, text: dialogue, language, confidence, speakersInferred: true };
+      }
+    }
+  }
+  const flat =
+    (typeof json.text === "string" && json.text.trim()) ||
+    transcripts.map((t) => (typeof t.text === "string" ? t.text.trim() : "")).filter(Boolean).join("\n");
+  if (!flat) return { ok: false, reason: "empty" };
+  return { ok: true, text: flat, language, confidence };
 }
 
 async function transcribeViaAzure(

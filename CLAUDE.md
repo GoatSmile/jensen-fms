@@ -660,7 +660,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `/commands`. Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
-  residency.
+  residency — **except that transcription runs on ElevenLabs Scribe v2's
+  GLOBAL host while the system is in test** (owner, DECISIONS 2026-09-30;
+  migration 114): the EU host (`inbound_elevenlabs_region = eu`) takes only
+  an EU enterprise key. Getting that key and switching back is a go-live
+  gate, not a nice-to-have. The ElevenLabs adapter is SYNCHRONOUS and always
+  sends the audio BYTES (it counts channels itself: stereo → per channel,
+  mono two-way → diarized, inferred); every transcription gets the names
+  list from `loadTranscriptionKeyterms` (people, customers, bike models).
+  Gladia stays registered as the fallback.
 - **Dictation records audio and uses that same transcription provider — never
   the browser's speech API.** The Dictate button (`src/lib/dictation/`,
   `src/components/dictate-button.tsx`) captures 16 kHz mono WAV via the Web

@@ -3559,7 +3559,13 @@
     "callImportLabelPlaceholder": "Hovednummer",
     "callImportLabelLabel": "Navn på den fælles linje",
     "callImportTokenLabel": "Nøglevariabel i Vercel",
-    "callImportTokenAfterSave": "status vises efter gem og ny udrulning"
+    "callImportTokenAfterSave": "status vises efter gem og ny udrulning",
+    "provider_elevenlabs": "ElevenLabs Scribe v2",
+    "inboundElevenlabsRegionLabel": "ElevenLabs-server",
+    "inboundElevenlabsRegionHint": "Hvor ElevenLabs behandler lyden. EU holder den i EU, men kræver en EU-nøgle (enterprise); Global virker med enhver nøgle og er ikke EU-hosting.",
+    "inboundElevenlabsRegion_eu": "EU — i EU (enterprise-nøgle)",
+    "inboundElevenlabsRegion_global": "Global — ikke i EU",
+    "inboundElevenlabsRegion_us": "USA"
   },
   "adminPeople": {
     "crumb": "Personer og roller",

@@ -98,3 +98,31 @@ export function repairMixedMp3(input: ArrayBuffer | Uint8Array): Mp3Repair | nul
     runs: runs.map((r) => ({ format: r.key, frames: r.frames, seconds: round(r.seconds) })),
   };
 }
+
+/**
+ * How many channels a recording carries — 1, 2, or null when unknown. Read
+ * from the bytes, not a label: a WAV's `fmt ` chunk, else the first MP3 frame
+ * header (after any ID3 tag). Decides whether a two-way call can be split by
+ * channel (stereo) or needs speaker separation (mono).
+ */
+export function audioChannelCount(input: ArrayBuffer | Uint8Array): number | null {
+  const b = input instanceof Uint8Array ? input : new Uint8Array(input);
+  const ascii = (i: number, n: number) => String.fromCharCode(...b.slice(i, i + n));
+  if (b.length > 12 && ascii(0, 4) === "RIFF" && ascii(8, 4) === "WAVE") {
+    for (let i = 12; i + 8 <= b.length; ) {
+      const size = b[i + 4] | (b[i + 5] << 8) | (b[i + 6] << 16) | (b[i + 7] << 24);
+      if (ascii(i, 4) === "fmt " && i + 12 <= b.length) return b[i + 10] | (b[i + 11] << 8);
+      i += 8 + size + (size % 2);
+    }
+    return null;
+  }
+  let i = 0;
+  if (b.length > 10 && b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33) {
+    i = 10 + (((b[6] & 0x7f) << 21) | ((b[7] & 0x7f) << 14) | ((b[8] & 0x7f) << 7) | (b[9] & 0x7f));
+  }
+  for (const limit = Math.min(b.length - 4, i + 64 * 1024); i < limit; i++) {
+    const f = readFrame(b, i);
+    if (f) return f.key.endsWith("/mono") ? 1 : 2;
+  }
+  return null;
+}

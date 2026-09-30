@@ -47,7 +47,17 @@ export const TRANSCRIPTION_PROVIDERS: ProviderEntry[] = [
   { key: "gladia", envSecrets: ["GLADIA_API_KEY"], supportsChannels: false },
   // US-parented but explicit EU regions; needs inbound_transcription_region.
   { key: "azure", envSecrets: ["AZURE_SPEECH_KEY"], supportsChannels: true },
+  // ElevenLabs Scribe v2 (DECISIONS 2026-09-30): synchronous — answers inside
+  // the request, so dictation never waits in a queue — detects the language,
+  // transcribes channels separately, takes a names list. WHERE it runs is
+  // `inbound_elevenlabs_region` (migration 113): `eu` accepts only EU
+  // enterprise keys; `global` accepts any key and is not EU residency.
+  { key: "elevenlabs", envSecrets: ["ELEVENLABS_API_KEY"], supportsChannels: true },
 ];
+
+/** ElevenLabs hosts — the residency choice. Endpoints stay in code (doctrine). */
+export const ELEVENLABS_REGIONS = ["eu", "global", "us"] as const;
+export type ElevenLabsRegion = (typeof ELEVENLABS_REGIONS)[number];
 
 /** Whether bridging is actually armed (mode chosen AND a number to ring). */
 export function bridgingReady(settings: InboundSettings): boolean {
@@ -120,6 +130,9 @@ export type InboundSettings = {
   phoneNumberTest: string | null;
   mediaRetentionDays: number;
   shadowMode: boolean;
+  /** Where ElevenLabs processes audio. `global` while in test (migration 114) —
+   *  NOT EU residency; `eu` needs an EU enterprise key. */
+  elevenlabsRegion: ElevenLabsRegion;
   /** Call-import adapter key; null = importing is off. */
   callImportProvider: string | null;
   callImportVoicemails: boolean;
@@ -127,7 +140,7 @@ export type InboundSettings = {
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -159,6 +172,11 @@ export async function loadInboundSettings(
     phoneNumberTest: data?.inbound_phone_number_test ?? null,
     mediaRetentionDays: Number(data?.inbound_media_retention_days ?? 90),
     shadowMode: Boolean(data?.inbound_shadow_mode ?? true),
+    elevenlabsRegion: (ELEVENLABS_REGIONS as readonly string[]).includes(
+      data?.inbound_elevenlabs_region ?? "",
+    )
+      ? (data?.inbound_elevenlabs_region as ElevenLabsRegion)
+      : "global", // the DB default while in test (migration 114)
     callImportProvider: data?.inbound_call_import_provider ?? null,
     callImportVoicemails: data?.inbound_call_import_voicemails ?? true,
     callImportLookbackHours: Number(data?.inbound_call_import_lookback_hours ?? 48),
