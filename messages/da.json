@@ -5172,9 +5172,9 @@
       "no_request": "Ingen opgave"
     },
     "commandsTitle": "Kommandoer",
-    "commandsSubtitle": "Opgaver, du har dikteret eller skrevet, som assistenten laver udkast til. Start en ny med Dikter en kommando i menuen.",
+    "commandsSubtitle": "Det, du har spurgt assistenten om, og hvad den svarede eller lavede udkast til. Spørg om noget nyt med knappen i hjørnet (⌘K).",
     "commandsEmptyTitle": "Ingen kommandoer endnu",
-    "commandsEmptyDesc": "Brug Dikter en kommando i menuen til at lave udkast til en ordre, en kunde eller et indkøb."
+    "commandsEmptyDesc": "Spørg med knappen i hjørnet — et spørgsmål, noget der skal åbnes, eller noget der skal oprettes."
   },
   "calendar": {
     "title": "Kalender",
@@ -5201,5 +5201,23 @@
     "kind_reminder": "Påmindelse",
     "kind_other": "Andet",
     "fromCommand": "Fra kommando"
+  },
+  "assistant": {
+    "title": "Spørg eller diktér",
+    "buttonLabel": "Spørg",
+    "hint": "Stil et spørgsmål, åbn noget, eller sig hvad der skal oprettes — \"hvornår er min næste aftale?\", \"vis cykel 55\", \"mind mig om at hente rammerne torsdag\". Intet oprettes, før du bekræfter det.",
+    "placeholder": "Hvornår er min næste aftale?",
+    "followUpPlaceholder": "Stil et opfølgende spørgsmål…",
+    "send": "Send",
+    "sending": "Arbejder…",
+    "working": "Arbejder… {s} sek.",
+    "dictate": "Diktér",
+    "youAsked": "Du spurgte: {text}",
+    "open": "Åbn {label}",
+    "newQuestion": "Nyt spørgsmål",
+    "scan": "Scan",
+    "history": "Historik",
+    "close": "Luk",
+    "failed": "Det lykkedes ikke. Prøv igen, eller formulér det anderledes."
   }
 }

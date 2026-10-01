@@ -27,7 +27,6 @@ import {
 import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
-import { CommandSheet } from "@/components/command-sheet";
 
 export function AppSidebar({
   allowedCaps,
@@ -102,12 +101,8 @@ export function AppSidebar({
         </Link>
       </div>
       <TooltipProvider>
-        {/* Ask the assistant — a tool, reachable from every page, for everyone
-            signed in: what it may read and draft follows the person's role
-            (src/lib/assistant/, 2026-10-01). */}
-        <div className="px-2 pb-1">
-          <CommandSheet variant={collapsed ? "rail" : "sidebar"} />
-        </div>
+        {/* The assistant is the floating button (AssistantButton), not a rail
+            entry — one way in (DECISIONS 2026-10-01). */}
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
           {groups.map((group) => {
             const Icon = group.icon;

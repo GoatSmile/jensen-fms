@@ -672,7 +672,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   suggestions keep the call in *to do*. **Applying claims its
   `command_actions` row BEFORE writing the draft**, so a second press can
   never make a second draft. Staff requests left the
-  queue: *Ask or dictate* in the app chrome, history at `/commands`.
+  queue: the assistant's floating button, history at `/commands`.
   Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
@@ -719,6 +719,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (answer in `assistant_answer`, migration 119), seen by its ASKER and by
   `inbox` (`mayReadCommand`); anyone signed in may ask. A new read tool joins
   `tools.ts` with its capabilities; a new target kind joins `answer.ts`.
+  **ONE way in: the floating button** (`AssistantButton`, bottom right on
+  phone and desktop, ⌘K / Ctrl+K) opening `AssistantPanel`, which also holds
+  **Scan** — there is no separate Scan button, sidebar entry or header icon
+  (owner: "all one button"). It hides where the bottom edge or the screen is
+  taken (`/scan`, the map, a work-order workspace, login, public pages).
+  Dictation FILLS the box; the person presses Send.
 - **Every Anthropic call goes through ONE door, and sends only what every
   current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
   2026-09-30). The model is an admin setting that changes without a deploy,

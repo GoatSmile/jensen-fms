@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { logout } from "@/app/_actions/logout";
 import { savePreferences } from "@/app/_actions/preferences";
 import { cn } from "@/lib/utils";
-import { CommandSheet } from "@/components/command-sheet";
 
 /**
  * Mobile top bar with a hamburger drawer — shown only below md. Desktop uses
@@ -227,9 +226,9 @@ export function MobileNav({
       <Link href="/" aria-label={t("logoAria")} className="flex items-center">
         <LogoMark heightClass="h-7" />
       </Link>
-      {/* Right side: ask the assistant — everyone signed in; what it may do
-          follows the person's role. */}
-      <CommandSheet variant="mobile" />
+      {/* Right side: a spacer the hamburger's size, so the logo sits centred.
+          The assistant is the floating button in the corner (one way in). */}
+      <div className="size-8" aria-hidden />
     </header>
   );
 }

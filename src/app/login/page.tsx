@@ -15,7 +15,7 @@ import { LoginForm, type LoginOption } from "./login-form";
  * The name preselected is whoever logged in last ON THIS DEVICE
  * (`fms_last_person`), so the shop tablet opens on the person who uses it.
  *
- * Rendered chrome-free (AppSidebar / MobileNav / ScanFab all hide on
+ * Rendered chrome-free (AppSidebar / MobileNav / AssistantButton all hide on
  * /login). The gate that redirects here lives in src/middleware.ts and only
  * engages when SITE_PASSWORD is set.
  */

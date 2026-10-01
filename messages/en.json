@@ -5172,9 +5172,9 @@
       "no_request": "No request"
     },
     "commandsTitle": "Commands",
-    "commandsSubtitle": "Tasks you dictated or typed for the assistant to draft. Start a new one with Dictate a command in the menu.",
+    "commandsSubtitle": "What you asked the assistant, and what it answered or drafted. Ask something new with the button in the corner (⌘K).",
     "commandsEmptyTitle": "No commands yet",
-    "commandsEmptyDesc": "Use Dictate a command in the menu to draft an order, a customer or a purchase."
+    "commandsEmptyDesc": "Ask with the button in the corner — a question, something to open, or something to create."
   },
   "calendar": {
     "title": "Calendar",
@@ -5201,5 +5201,23 @@
     "kind_reminder": "Reminder",
     "kind_other": "Other",
     "fromCommand": "From command"
+  },
+  "assistant": {
+    "title": "Ask or dictate",
+    "buttonLabel": "Ask",
+    "hint": "Ask a question, open something, or say what to create — \"what is my next appointment?\", \"show me bike 55\", \"remind me to collect the frames on Thursday\". Nothing is created until you confirm it.",
+    "placeholder": "What is my next appointment?",
+    "followUpPlaceholder": "Ask a follow-up…",
+    "send": "Send",
+    "sending": "Working…",
+    "working": "Working… {s} s",
+    "dictate": "Dictate",
+    "youAsked": "You asked: {text}",
+    "open": "Open {label}",
+    "newQuestion": "New question",
+    "scan": "Scan",
+    "history": "History",
+    "close": "Close",
+    "failed": "That didn't work. Try again, or rephrase it."
   }
 }

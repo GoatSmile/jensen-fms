@@ -69,13 +69,14 @@ is Danish (person language).
   *New customer "Fredericksburg Community"* suggestion** — a garbled
   "Frederiksberg Kommune"; owner: create no customers from it, fix later
   (BACKLOG, *A garbled customer name…*). Checked 1 Oct: none was created.
-- **The assistant — Part A live** (migration 119, DECISIONS 2026-10-01): *Ask
-  or dictate* answers ("what's in the calendar on 30 Sep?"), opens ("show me
-  bike 36" → straight to it; "bike 3" → a list) and drafts (reminders, visits,
-  tickets, offers), scoped by role. Verified locally as Nazar and as Finn (no
-  prices, no customer pages, reminders allowed, Danish). **Next: Part B** — the
-  one floating button (Scan inside its panel, ⌘K), replacing the sheet, the
-  header sparkle and the Scan button.
+- **The assistant — live, behind ONE floating button** (migration 119,
+  DECISIONS 2026-10-01): bottom right on phone and desktop (⌘K), its panel
+  answers ("what's in the calendar on 30 Sep?" + follow-ups), opens ("show me
+  bike 36" → straight there; "bike 3" → a list), drafts (reminders, visits,
+  tickets, offers) with one-tap cards, and holds Scan. Scoped by role. Verified
+  locally as Nazar and as Finn at 360 px and desktop (no prices, no customer
+  pages, reminders allowed, Danish). **Not yet seen in production.** Answers
+  take ~10–18 s; if that bites, a fast path for simple questions.
 - **Calendar (was Visits), with kinds** (migrations 117–118, DECISIONS
   2026-10-01): `/calendar` lists visits and reminders read live from Google,
   filter by kind; calls and dictated commands suggest entries, applied with one

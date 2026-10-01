@@ -12,7 +12,7 @@ import {
   isGroupActive,
 } from "@/components/nav-items";
 import { RegisterSW } from "@/components/register-sw";
-import { ScanFab } from "@/components/scan-fab";
+import { AssistantButton } from "@/components/assistant-button";
 import { DbTargetBanner } from "@/components/db-target-banner";
 import { readGate } from "@/lib/auth/read-session";
 import {
@@ -151,7 +151,7 @@ export default async function RootLayout({
               </main>
             </div>
           </div>
-          <ScanFab allowedCaps={allowedCaps} />
+          <AssistantButton allowedCaps={allowedCaps} />
           <DbTargetBanner />
           <RegisterSW />
         </NextIntlClientProvider>

@@ -25,6 +25,10 @@ type Props = {
   templates: VocabItem[];
   segments: VocabItem[];
   colors: VocabItem[];
+  /** Called after an apply or a re-run succeeds — for a surface that holds
+   *  the plan in its own state (the floating panel) rather than re-rendering
+   *  from the server. */
+  onChanged?: () => void;
 };
 
 const ENTITY_PATH: Record<string, string> = {
@@ -51,6 +55,7 @@ export function CommandPlanPanel({
   templates,
   segments,
   colors,
+  onChanged,
 }: Props) {
   const t = useTranslations("inboxCommand");
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +72,7 @@ export function CommandPlanPanel({
     startRerun(async () => {
       const r = await rerunCommandAgent(messageId);
       if (!r.ok) return setError(r.error);
+      onChanged?.();
     });
   }
 
@@ -127,6 +133,7 @@ export function CommandPlanPanel({
               colors={colors}
               messageId={messageId}
               onError={setError}
+              onApplied={onChanged}
             />
           ))}
         </ul>
@@ -159,6 +166,7 @@ function ActionCard({
   colors,
   messageId,
   onError,
+  onApplied,
 }: {
   action: CommandAction;
   applied: AppliedRow | undefined;
@@ -170,6 +178,7 @@ function ActionCard({
   colors: VocabItem[];
   messageId: string;
   onError: (e: string | null) => void;
+  onApplied?: () => void;
 }) {
   const t = useTranslations("inboxCommand");
   const [pending, start] = useTransition();
@@ -198,6 +207,7 @@ function ActionCard({
     start(async () => {
       const r = await applyCommandAction(messageId, action.id, picks);
       if (!r.ok) return onError(r.error);
+      onApplied?.();
     });
   }
 
@@ -277,9 +287,11 @@ function ActionCard({
         </div>
       ) : null}
 
-      {/* When: the model's reading, the person's to correct. */}
+      {/* When: the model's reading, the person's to correct. Columns follow
+          the space the CARD has, not the window — it also lives in the
+          assistant's narrow floating panel. */}
       {!isApplied && isEvent ? (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground text-xs">{t("visitDate")}</span>
             <input
