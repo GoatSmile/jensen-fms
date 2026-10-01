@@ -4,7 +4,6 @@ import {
   ChevronRight,
   CircleUser,
   PaintBucket,
-  ScanLine,
   Search,
   Tag,
   Truck,
@@ -189,11 +188,8 @@ export default async function WorkQueuePage({
               {t("deliveries", { count: readyCount })}
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/scan">
-              <ScanLine className="mr-1 size-4" aria-hidden /> {t("scan")}
-            </Link>
-          </Button>
+          {/* No Scan here: it lives in the assistant's panel, behind the one
+              floating button (owner, 2026-10-01). */}
         </div>
       </header>
 

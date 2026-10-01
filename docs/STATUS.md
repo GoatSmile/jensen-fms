@@ -75,8 +75,11 @@ is Danish (person language).
   bike 36" → straight there; "bike 3" → a list), drafts (reminders, visits,
   tickets, offers) with one-tap cards, and holds Scan. Scoped by role. Verified
   locally as Nazar and as Finn at 360 px and desktop (no prices, no customer
-  pages, reminders allowed, Danish). **Not yet seen in production.** Answers
-  take ~10–18 s; if that bites, a fast path for simple questions.
+  pages, reminders allowed, Danish). **Not yet seen in production.** Speed,
+  MEASURED 1 Oct (local dev server): 3.5 s Send → answer for "next
+  appointment"; server-side 3–6 s typical, ~10–12 s when it needs several
+  lookups (an ambiguous bike, stock + price). Scan is only in the panel now —
+  the Workshop floor header lost its own button too.
 - **Calendar (was Visits), with kinds** (migrations 117–118, DECISIONS
   2026-10-01): `/calendar` lists visits and reminders read live from Google,
   filter by kind; calls and dictated commands suggest entries, applied with one
