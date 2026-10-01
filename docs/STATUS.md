@@ -68,8 +68,15 @@ is Danish (person language).
   *New customer "Fredericksburg Community"* suggestion** — a garbled
   "Frederiksberg Kommune"; owner: create no customers from it, fix later
   (BACKLOG, *A garbled customer name…*). Checked 1 Oct: none was created.
-- **Visits → Google Calendar, and a read-only `/visits` list** (migration 117,
-  DECISIONS 2026-10-01). **Live:** the owner saved Admin → Settings → Calendar
+- **Calendar (was Visits), with kinds** (migrations 117–118, DECISIONS
+  2026-10-01): `/calendar` lists visits and reminders read live from Google,
+  filter by kind; calls and dictated commands suggest entries, applied with one
+  press. Verified locally end to end: a typed "remind me…" → an ALL-DAY reminder
+  in Google with its kind and colour, linked back to the command; prod at 118.
+  **A TEST reminder on Wed 30 Sep (all day) joins the TEST visit in
+  *Servicebesøg*** — owner deletes both in Google. **Next: step 2** (one
+  floating button, Scan inside its panel, ⌘K on desktop) **and step 3**
+  (everyone speaks, rights per action) — DECISIONS 2026-10-01. **Live:** the owner saved Admin → Settings → Calendar
   in production (provider google + the *Servicebesøg* id, verified 1 Oct — the
   save only succeeds after its Test writes-checks the calendar, so the Vercel key
   works). Verified locally end to end against the real calendar; **a TEST event
@@ -187,8 +194,8 @@ is Danish (person language).
 - **Smoke, local (2026-10-01, fresh copy): 95 pass · 21 redirect · 12 skip ·
   0 fail.** The skips are detail pages with no matching rows in the rebuilt
   copy (invoices, tickets, offers, WOs, deliveries, agreement documents).
-- **Lint: 0 errors, 2 warnings** (both pre-existing: `inbound-settings-form`
-  setState-in-effect, an unused disable in `calls/[id]/page.tsx`).
+- **Lint: 0 errors, 14 warnings** (all pre-existing; re-counted 1 Oct — the
+  "2" recorded the day before was the *fixable* line, not the total).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`,
   500 units with no known cost) and check 18 (legacy `unit_cost_basis =
   'none'`, 9 rows; can only shrink).

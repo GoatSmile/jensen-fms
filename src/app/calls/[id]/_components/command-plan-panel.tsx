@@ -9,11 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
-import {
-  openSlotsFor,
-  VISIT_DEFAULT_MINUTES,
-  VISIT_DEFAULT_TIME,
-} from "@/lib/inbound/command/plan";
+import { openSlotsFor } from "@/lib/inbound/command/plan";
+import { CALENDAR_KIND_SPECS } from "@/lib/calendar/kinds";
 
 import { applyCommandAction, rerunCommandAgent } from "../../_actions/command";
 
@@ -35,8 +32,8 @@ const ENTITY_PATH: Record<string, string> = {
   offers: "/offers",
   sales_orders: "/sales-orders",
   maintenance_tickets: "/maintenance/tickets",
-  // A visit lives in Google; the app's own view of it is the visits list.
-  calendar_events: "/visits",
+  // An entry lives in Google; the app's own view of it is the calendar list.
+  calendar_events: "/calendar",
   purchase_orders: "/purchase-orders",
 };
 
@@ -187,10 +184,14 @@ function ActionCard({
     !customerApplied;
 
   const isApplied = Boolean(applied?.entityId) || Boolean(applied);
-  // A visit needs a date — the caller's, or one the person picks on the card.
-  const visitDate = action.type === "draft_visit" ? (picks.date ?? action.date ?? "") : "";
-  const visitMissingDate = action.type === "draft_visit" && !visitDate;
-  const canApply = !isApplied && !requiredUnfilled && !waitsForCustomer && !visitMissingDate;
+  // A calendar entry needs a date — the one said, or one picked on the card.
+  const isEvent = action.type === "draft_event";
+  const eventDate = isEvent ? (picks.date ?? action.date ?? "") : "";
+  const eventMissingDate = isEvent && !eventDate;
+  const spec = isEvent ? CALENDAR_KIND_SPECS[action.kind] : null;
+  // An emptied time field is "all day"; untouched, the said time or the kind's default.
+  const eventTime = isEvent ? (picks.time !== undefined ? picks.time : (action.time ?? spec?.defaultTime ?? "")) : "";
+  const canApply = !isApplied && !requiredUnfilled && !waitsForCustomer && !eventMissingDate;
 
   function apply() {
     onError(null);
@@ -219,7 +220,7 @@ function ActionCard({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
-          {t(`type_${action.type}`)}
+          {isEvent ? t(`type_draft_event_${action.kind}`) : t(`type_${action.type}`)}
         </span>
         {isApplied ? (
           <span className="inline-flex items-center gap-1 text-xs text-good">
@@ -276,41 +277,46 @@ function ActionCard({
         </div>
       ) : null}
 
-      {/* A visit's when: the model's reading, the person's to correct. */}
-      {!isApplied && action.type === "draft_visit" ? (
+      {/* When: the model's reading, the person's to correct. */}
+      {!isApplied && isEvent ? (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-muted-foreground text-xs">{t("visitDate")}</span>
             <input
               type="date"
-              value={visitDate}
+              value={eventDate}
               onChange={(e) => onPick("date", e.target.value)}
               className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground text-xs">{t("visitTime")}</span>
+            <span className="text-muted-foreground text-xs">
+              {t("visitTime")}
+              {eventTime ? "" : ` · ${t("allDay")}`}
+            </span>
             <input
               type="time"
-              value={picks.time ?? action.time ?? VISIT_DEFAULT_TIME}
+              value={eventTime}
               onChange={(e) => onPick("time", e.target.value)}
               className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground text-xs">{t("visitDuration")}</span>
-            <select
-              value={picks.duration ?? String(action.durationMinutes ?? VISIT_DEFAULT_MINUTES)}
-              onChange={(e) => onPick("duration", e.target.value)}
-              className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
-            >
-              {[30, 60, 90, 120, 180, 240].map((m) => (
-                <option key={m} value={String(m)}>
-                  {t("visitMinutes", { m })}
-                </option>
-              ))}
-            </select>
-          </label>
+          {eventTime ? (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted-foreground text-xs">{t("visitDuration")}</span>
+              <select
+                value={picks.duration ?? String(action.type === "draft_event" ? (action.durationMinutes ?? spec?.defaultMinutes) : "")}
+                onChange={(e) => onPick("duration", e.target.value)}
+                className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
+              >
+                {[15, 30, 60, 90, 120, 180, 240].map((m) => (
+                  <option key={m} value={String(m)}>
+                    {t("visitMinutes", { m })}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
       ) : null}
 
@@ -324,7 +330,7 @@ function ActionCard({
               {t("applyCustomerFirst")}
             </span>
           ) : null}
-          {visitMissingDate ? (
+          {eventMissingDate ? (
             <span className="text-muted-foreground text-xs">{t("visitPickDate")}</span>
           ) : null}
         </div>
@@ -352,7 +358,7 @@ function ActionSummary({ action }: { action: CommandAction }) {
   if (action.type === "draft_ticket") {
     return <p className="text-sm">{action.description}</p>;
   }
-  if (action.type === "draft_visit") {
+  if (action.type === "draft_event") {
     return <p className="text-sm font-medium">{action.title}</p>;
   }
   if (action.type === "draft_sales_order") {
@@ -397,7 +403,7 @@ function chipsFor(
     if (action.colorLabel) chips.push({ label: t("chip_colour"), value: action.colorLabel });
     if (action.note) chips.push({ label: t("chip_note"), value: action.note });
   }
-  if (action.type === "draft_visit") {
+  if (action.type === "draft_event") {
     if (action.organizationLabel) chips.push({ label: t("chip_customer"), value: action.organizationLabel });
     if (action.location) chips.push({ label: t("chip_place"), value: action.location });
   }

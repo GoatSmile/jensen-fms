@@ -20,9 +20,7 @@ import {
 } from "@/lib/commercial/draft-writers";
 import { canActOnInbound } from "@/lib/calls/access";
 import { createTicketForCall } from "@/lib/calls/ticket";
-import { calendarAdapter } from "@/lib/calendar/client";
-import { CALENDAR_TIME_ZONE, calendarReady, loadCalendarSettings } from "@/lib/calendar/settings";
-import { VISIT_DEFAULT_MINUTES, VISIT_DEFAULT_TIME } from "@/lib/inbound/command/plan";
+import { createCalendarEntry } from "@/lib/calendar/entries";
 import { appOrigin } from "@/lib/qr";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
 import { revalidateInbound } from "@/lib/calls/revalidate";
@@ -56,9 +54,9 @@ const DRAFT_CAPABILITY: Record<string, string> = {
   draft_offer: "so",
   draft_sales_order: "so",
   draft_purchase_order: "po",
-  // draft_ticket / draft_visit: none beyond acting on the call — the same
+  // draft_ticket / draft_event: none beyond acting on the call — the same
   // rule as the call page's "Create ticket", which a technician may press on
-  // their own calls; a visit is the technician's own diary.
+  // their own calls; the calendar is the technician's own diary.
 };
 
 /**
@@ -436,66 +434,50 @@ async function performAction(
       };
     }
 
-    case "draft_visit": {
-      const settings = await loadCalendarSettings(supabase);
-      const adapter = calendarAdapter(settings.provider);
-      if (!calendarReady(settings) || !adapter) return { ok: false, error: t("calendarNotConfigured") };
-
+    case "draft_event": {
       // The person's corrections on the card win over the model's reading.
       const date = (filled.date ?? action.date ?? "").trim();
-      const time = (filled.time ?? action.time ?? VISIT_DEFAULT_TIME).trim();
-      const minutes = Number(filled.duration ?? action.durationMinutes ?? VISIT_DEFAULT_MINUTES);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, error: t("visitNeedsDate") };
-      if (!/^\d{2}:\d{2}$/.test(time)) return { ok: false, error: t("visitBadTime") };
-      if (!Number.isFinite(minutes) || minutes < 15 || minutes > 600) {
-        return { ok: false, error: t("visitBadDuration") };
-      }
+      if (!date) return { ok: false, error: t("visitNeedsDate") };
+      // An emptied time field means "all day"; an absent one, the kind's default.
+      const time = filled.time !== undefined ? filled.time.trim() || null : action.time;
+      const minutes = filled.duration ? Number(filled.duration) : action.durationMinutes;
 
-      const { data: call } = await supabase
+      const { data: msg } = await supabase
         .from("inbound_messages")
-        .select("ticket_id, matched_organization_id")
+        .select("kind, ticket_id, matched_organization_id")
         .eq("id", messageId)
         .maybeSingle();
-      // Minimal personal data in Google: the title and a link back. What the
-      // caller said, and how to reach them, stays in the system.
-      const description = `${t("visitEventLink")}: ${appOrigin()}/calls/${messageId}`;
-      const created = await adapter.createEvent(settings.calendarId, {
+      const isCommand = msg?.kind === "command";
+      const r = await createCalendarEntry(supabase, {
+        kind: action.kind,
         title: action.title,
-        description,
+        // Minimal personal data in the provider: the title and a way back.
+        description: `${t(isCommand ? "calendarEventLinkCommand" : "visitEventLink")}: ${appOrigin()}/${isCommand ? "commands" : "calls"}/${messageId}`,
         location: action.location,
         date,
         time,
-        durationMinutes: Math.round(minutes),
-        timeZone: CALENDAR_TIME_ZONE,
+        durationMinutes: minutes,
+        messageId,
+        ticketId: msg?.ticket_id ?? null,
+        organizationId: action.organizationId ?? msg?.matched_organization_id ?? null,
+        createdBy: await currentPersonId(),
       });
-      if (!created.ok) return { ok: false, error: t("calendarCouldNotCreate", { detail: created.error }) };
-
-      const { data: link, error: linkErr } = await supabase
-        .from("calendar_events")
-        .insert({
-          provider: settings.provider,
-          calendar_id: settings.calendarId,
-          external_event_id: created.value.id,
-          message_id: messageId,
-          ticket_id: call?.ticket_id ?? null,
-          organization_id: action.organizationId ?? call?.matched_organization_id ?? null,
-          title: action.title,
-          starts_at: created.value.start || null,
-          ends_at: created.value.end || null,
-          created_by: await currentPersonId(),
-        })
-        .select("id")
-        .single();
-      if (linkErr || !link) {
-        // The event exists in Google; only our link to it failed. Say so —
-        // the visit is real and on the calendar.
-        return { ok: false, error: t("calendarLinkFailed", { detail: linkErr?.message ?? "" }) };
+      if (!r.ok) {
+        const key = {
+          not_configured: "calendarNotConfigured",
+          bad_date: "visitNeedsDate",
+          bad_time: "visitBadTime",
+          bad_duration: "visitBadDuration",
+          provider: "calendarCouldNotCreate",
+          link: "calendarLinkFailed",
+        }[r.code];
+        return { ok: false, error: t(key, { detail: r.detail ?? "" }) };
       }
       return {
         ok: true,
         entityTable: "calendar_events",
-        entityId: link.id,
-        payload: { date, time, durationMinutes: Math.round(minutes), eventId: created.value.id },
+        entityId: r.linkId,
+        payload: { kind: action.kind, date, time, eventId: r.event.id },
       };
     }
 

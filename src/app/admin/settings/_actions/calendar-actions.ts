@@ -67,6 +67,6 @@ export async function saveCalendarSettings(formData: FormData): Promise<Calendar
   if (error) return { ok: false, error: t("adminSettingsCouldNotSave", { detail: error.message }) };
 
   revalidatePath("/admin/settings");
-  revalidatePath("/visits");
+  revalidatePath("/calendar");
   return { ok: true };
 }

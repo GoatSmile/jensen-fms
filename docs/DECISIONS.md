@@ -3527,3 +3527,32 @@ maybe even just to read."*
   until something needs to query visits.
 - **Links respect call access:** a visit's "From call" link shows only to
   someone who may open that call (a technician: their own line).
+
+## 2026-10-01 — Visits becomes Calendar, with kinds; one floating button to speak
+
+Owner: *"rename … to just calendar … it's going to have … other events,
+reminders and such … make the architecture such that we can add to it"*, and a
+command spoken from anywhere, floating on desktop as on the phone.
+
+- **Calendar, not Visits** (`/calendar`; `/visits` redirects). **Kinds: visit
+  and reminder only, to start** (owner) — paint runs, deliveries and meetings
+  were offered and declined for now. A kind is one entry in
+  `src/lib/calendar/kinds.ts` plus a line in the DB check (migration 118); the
+  kind is stored on the Google event itself, so Finn's own Google entries show
+  as *other* and the app's survive a move in Google.
+- **One writer** (`createCalendarEntry`) for every source — call suggestions
+  and dictated commands today, buttons on documents later. The suggestion
+  `draft_visit` became `draft_event` with a kind; an old `draft_visit` reads as
+  a visit. A reminder with no time is an ALL-DAY entry; a visit keeps 09:00 /
+  60 min (owner, 2026-09-30).
+- **Step 2, decided, not built:** ONE floating button on the phone — not a
+  Scan | Speak split (owner, shown the split and refused it: *"all one
+  button"*) — opening a compact panel with the microphone, a text box, the
+  result cards and **Scan inside it**. The header sparkle and the sidebar
+  *Dictate a command* pill go, so there is one way in; desktop gets the same
+  button bottom-right plus ⌘K. **Rejected:** a split capsule; two buttons.
+- **Step 3, decided, not built:** **everyone may speak a command; each
+  suggestion checks the right for what it creates** (a ticket or calendar entry
+  needs `work` or `maintenance`, an offer `so`), and **a spoken entry is added
+  with ONE tap on its card**, never automatically (a misheard date must not
+  land in Finn's calendar unseen).

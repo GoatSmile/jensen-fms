@@ -379,7 +379,7 @@
     "allCustomers": "All customers",
     "customerMap": "Map",
     "calls": "Calls",
-    "visits": "Visits"
+    "calendar": "Calendar"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -4547,7 +4547,8 @@
     "visitBadDuration": "The visit must last between 15 minutes and 10 hours.",
     "calendarCouldNotCreate": "The visit could not be added to the calendar: {detail}",
     "calendarLinkFailed": "The visit is in the calendar, but the link back to this call could not be saved: {detail}",
-    "visitEventLink": "The call in Jensen FMS"
+    "visitEventLink": "The call in Jensen FMS",
+    "calendarEventLinkCommand": "The command in Jensen FMS"
   },
   "inbox": {
     "title": "Inbox",
@@ -4714,13 +4715,15 @@
     "drafting": "Drafting…",
     "draftActions": "Draft actions",
     "dictate": "Dictate",
-    "type_draft_visit": "Visit",
     "visitDate": "Date",
     "visitTime": "Time",
     "visitDuration": "Length",
-    "visitMinutes": "{m, plural, =30 {30 min} =60 {1 hour} =90 {1½ hours} =120 {2 hours} =180 {3 hours} =240 {4 hours} other {# min}}",
+    "visitMinutes": "{m, plural, =15 {15 min} =30 {30 min} =60 {1 hour} =90 {1½ hours} =120 {2 hours} =180 {3 hours} =240 {4 hours} other {# min}}",
     "visitPickDate": "Pick a date first — the caller did not name one.",
-    "chip_place": "place"
+    "chip_place": "place",
+    "type_draft_event_visit": "Visit",
+    "type_draft_event_reminder": "Reminder",
+    "allDay": "all day"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",
@@ -5170,24 +5173,30 @@
     "commandsEmptyTitle": "No commands yet",
     "commandsEmptyDesc": "Use Dictate a command in the menu to draft an order, a customer or a purchase."
   },
-  "visits": {
-    "title": "Visits",
-    "subtitle": "The service calendar, read from Google. Move or change a visit in Google; this list follows.",
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "The service calendar, read from Google. Move or change an entry in Google; this list follows.",
     "openGoogle": "Open Google Calendar",
-    "notSetUpTitle": "No service calendar yet",
-    "notSetUpDesc": "Once an admin connects the calendar, visits appear here.",
+    "notSetUpTitle": "No calendar yet",
+    "notSetUpDesc": "Once an admin connects the calendar, its entries appear here.",
     "notSetUpAction": "Set up the calendar",
-    "tabsAria": "Upcoming or past visits",
+    "tabsAria": "Upcoming or past",
     "upcoming": "Upcoming",
     "past": "Past",
     "readFailed": "The calendar could not be read: {detail}",
-    "emptyUpcoming": "No visits coming up",
-    "emptyPast": "No past visits",
+    "emptyUpcoming": "Nothing coming up",
+    "emptyPast": "Nothing in the past window",
     "emptyDesc": "Nothing in the calendar within {days} days.",
     "allDay": "All day",
     "untitled": "(no title)",
     "openInGoogle": "Open in Google",
     "fromCall": "From call",
-    "ticket": "Ticket"
+    "ticket": "Ticket",
+    "kindsAria": "Filter by kind",
+    "kindAll": "All",
+    "kind_visit": "Visit",
+    "kind_reminder": "Reminder",
+    "kind_other": "Other",
+    "fromCommand": "From command"
   }
 }

@@ -901,6 +901,7 @@ export type Database = {
           ends_at: string | null
           external_event_id: string
           id: string
+          kind: string
           message_id: string | null
           organization_id: string | null
           provider: string
@@ -915,6 +916,7 @@ export type Database = {
           ends_at?: string | null
           external_event_id: string
           id?: string
+          kind?: string
           message_id?: string | null
           organization_id?: string | null
           provider: string
@@ -929,6 +931,7 @@ export type Database = {
           ends_at?: string | null
           external_event_id?: string
           id?: string
+          kind?: string
           message_id?: string | null
           organization_id?: string | null
           provider?: string

@@ -12,6 +12,10 @@ import "server-only";
 import crypto from "node:crypto";
 
 import type { CalendarAdapter, CalendarEvent, CalendarResult } from "./client";
+import { CALENDAR_KIND_SPECS, isCalendarKind } from "./kinds";
+
+/** Where the app's own kind rides on a Google event — private to our app's calls. */
+const KIND_PROPERTY = "fms_kind";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API = "https://www.googleapis.com/calendar/v3";
@@ -103,12 +107,15 @@ type GoogleEvent = {
   status?: string;
   start?: { date?: string; dateTime?: string };
   end?: { date?: string; dateTime?: string };
+  extendedProperties?: { private?: Record<string, string> };
 };
 
 function toEvent(e: GoogleEvent): CalendarEvent {
   const allDay = Boolean(e.start?.date && !e.start?.dateTime);
+  const kind = e.extendedProperties?.private?.[KIND_PROPERTY];
   return {
     id: e.id,
+    kind: isCalendarKind(kind) ? kind : null,
     title: e.summary ?? "",
     location: e.location ?? null,
     htmlLink: e.htmlLink ?? null,
@@ -116,6 +123,12 @@ function toEvent(e: GoogleEvent): CalendarEvent {
     start: e.start?.dateTime ?? e.start?.date ?? "",
     end: e.end?.dateTime ?? e.end?.date ?? "",
   };
+}
+
+/** "2026-10-02" → "2026-10-03" — Google's all-day end is the day AFTER. */
+function nextDay(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
 }
 
 /** Wall-clock arithmetic: "2026-10-02" + "09:00" + 60 → "2026-10-02T10:00:00". */
@@ -162,14 +175,21 @@ export const googleCalendar: CalendarAdapter = {
   },
 
   async createEvent(calendarId, input) {
+    const when = input.time
+      ? {
+          start: { dateTime: `${input.date}T${input.time}:00`, timeZone: input.timeZone },
+          end: { dateTime: addMinutes(input.date, input.time, input.durationMinutes), timeZone: input.timeZone },
+        }
+      : { start: { date: input.date }, end: { date: nextDay(input.date) } };
     const r = await call<GoogleEvent>(`/calendars/${encodeURIComponent(calendarId)}/events`, {
       method: "POST",
       body: JSON.stringify({
         summary: input.title,
         description: input.description,
         location: input.location ?? undefined,
-        start: { dateTime: `${input.date}T${input.time}:00`, timeZone: input.timeZone },
-        end: { dateTime: addMinutes(input.date, input.time, input.durationMinutes), timeZone: input.timeZone },
+        colorId: CALENDAR_KIND_SPECS[input.kind].googleColorId,
+        extendedProperties: { private: { [KIND_PROPERTY]: input.kind } },
+        ...when,
       }),
     });
     if (!r.ok) return r;

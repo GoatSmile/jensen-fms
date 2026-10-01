@@ -379,7 +379,7 @@
     "allCustomers": "Alle kunder",
     "customerMap": "Kort",
     "calls": "Opkald",
-    "visits": "Servicebesøg"
+    "calendar": "Kalender"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -4547,7 +4547,8 @@
     "visitBadDuration": "Besøget skal vare mellem 15 minutter og 10 timer.",
     "calendarCouldNotCreate": "Besøget kunne ikke lægges i kalenderen: {detail}",
     "calendarLinkFailed": "Besøget ligger i kalenderen, men linket tilbage til opkaldet kunne ikke gemmes: {detail}",
-    "visitEventLink": "Opkaldet i Jensen FMS"
+    "visitEventLink": "Opkaldet i Jensen FMS",
+    "calendarEventLinkCommand": "Kommandoen i Jensen FMS"
   },
   "inbox": {
     "title": "Indbakke",
@@ -4714,13 +4715,15 @@
     "drafting": "Laver kladde…",
     "draftActions": "Lav kladde",
     "dictate": "Diktér",
-    "type_draft_visit": "Besøg",
     "visitDate": "Dato",
     "visitTime": "Tidspunkt",
     "visitDuration": "Varighed",
-    "visitMinutes": "{m, plural, =30 {30 min} =60 {1 time} =90 {1½ time} =120 {2 timer} =180 {3 timer} =240 {4 timer} other {# min}}",
+    "visitMinutes": "{m, plural, =15 {15 min} =30 {30 min} =60 {1 time} =90 {1½ time} =120 {2 timer} =180 {3 timer} =240 {4 timer} other {# min}}",
     "visitPickDate": "Vælg en dato først — den, der ringede, nævnte ingen.",
-    "chip_place": "sted"
+    "chip_place": "sted",
+    "type_draft_event_visit": "Besøg",
+    "type_draft_event_reminder": "Påmindelse",
+    "allDay": "hele dagen"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",
@@ -5170,24 +5173,30 @@
     "commandsEmptyTitle": "Ingen kommandoer endnu",
     "commandsEmptyDesc": "Brug Dikter en kommando i menuen til at lave udkast til en ordre, en kunde eller et indkøb."
   },
-  "visits": {
-    "title": "Servicebesøg",
-    "subtitle": "Servicekalenderen, læst fra Google. Flyt eller ret et besøg i Google; listen følger med.",
+  "calendar": {
+    "title": "Kalender",
+    "subtitle": "Servicekalenderen, læst fra Google. Flyt eller ret en aftale i Google; listen følger med.",
     "openGoogle": "Åbn Google Kalender",
-    "notSetUpTitle": "Ingen servicekalender endnu",
-    "notSetUpDesc": "Når en administrator har forbundet kalenderen, vises besøgene her.",
+    "notSetUpTitle": "Ingen kalender endnu",
+    "notSetUpDesc": "Når en administrator har forbundet kalenderen, vises aftalerne her.",
     "notSetUpAction": "Sæt kalenderen op",
-    "tabsAria": "Kommende eller tidligere besøg",
+    "tabsAria": "Kommende eller tidligere",
     "upcoming": "Kommende",
     "past": "Tidligere",
     "readFailed": "Kalenderen kunne ikke læses: {detail}",
-    "emptyUpcoming": "Ingen kommende besøg",
-    "emptyPast": "Ingen tidligere besøg",
+    "emptyUpcoming": "Intet planlagt",
+    "emptyPast": "Intet i perioden",
     "emptyDesc": "Intet i kalenderen inden for {days} dage.",
     "allDay": "Hele dagen",
     "untitled": "(ingen titel)",
     "openInGoogle": "Åbn i Google",
     "fromCall": "Fra opkald",
-    "ticket": "Sag"
+    "ticket": "Sag",
+    "kindsAria": "Filtrér efter type",
+    "kindAll": "Alle",
+    "kind_visit": "Besøg",
+    "kind_reminder": "Påmindelse",
+    "kind_other": "Andet",
+    "fromCommand": "Fra kommando"
   }
 }

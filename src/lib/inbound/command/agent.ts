@@ -61,7 +61,7 @@ const PROPOSE_PLAN_TOOL = {
                 "draft_offer",
                 "draft_sales_order",
                 "draft_ticket",
-                "draft_visit",
+                "draft_event",
                 "draft_purchase_order",
               ],
             },
@@ -100,15 +100,20 @@ const PROPOSE_PLAN_TOOL = {
               description: "draft_ticket: what is wrong with the customer's EXISTING bike, short, in the caller's language.",
             },
             urgency: { type: ["string", "null"], enum: ["low", "normal", "high", null] },
-            // draft_visit (also uses organizationId / organizationLabel)
+            // draft_event (also uses organizationId / organizationLabel)
+            eventKind: {
+              type: ["string", "null"],
+              enum: ["visit", "reminder", null],
+              description: "draft_event: 'visit' = going to a customer; 'reminder' = something to remember to do.",
+            },
             title: {
               type: ["string", "null"],
-              description: "draft_visit: customer + errand, e.g. 'Frederiksberg Kommune — look at red bike'. NEVER a phone number or a person's name.",
+              description: "draft_event: visit = customer + errand ('Frederiksberg Kommune — look at red bike'); reminder = the thing to do ('Collect frames from the painter'). NEVER a phone number or a person's name.",
             },
-            visitDate: { type: ["string", "null"], description: "draft_visit: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
-            visitTime: { type: ["string", "null"], description: "draft_visit: 'HH:MM' 24h, only if a time was said; else null." },
-            durationMinutes: { type: ["number", "null"], description: "draft_visit: only if said; else null." },
-            location: { type: ["string", "null"], description: "draft_visit: the address or place, only if said." },
+            date: { type: ["string", "null"], description: "draft_event: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
+            time: { type: ["string", "null"], description: "draft_event: 'HH:MM' 24h, only if a time was said; else null." },
+            durationMinutes: { type: ["number", "null"], description: "draft_event: only if said; else null." },
+            location: { type: ["string", "null"], description: "draft_event: the address or place, only if said." },
             // draft_purchase_order
             items: {
               type: ["array", "null"],
@@ -138,12 +143,15 @@ const PROPOSE_PLAN_TOOL = {
 
 const SYSTEM_PROMPT = `You are the command agent for a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). A staff member has dictated or typed a business task. Your job is to turn it into a PLAN of proposed DRAFT actions for a human to review and apply — you never execute anything yourself.
 
-You can propose five kinds of draft action:
+You can propose six kinds of draft action:
 - draft_customer — a new customer organization (+ segment: Hotel, Municipality, Hospital, Facility Management, B2B, B2C).
 - draft_offer — a QUOTE for bikes a customer asked about: a customer, a quantity, one bike model (template), optional colour, and a note with the specification and timing they mentioned. Use this, not a sales order, when someone is asking to buy.
 - draft_sales_order — a confirmed order for bikes: a customer, a quantity, one bike model (template), optional colour, delivery date, and a production note for build instructions. Only when the staff member says the order is placed.
 - draft_ticket — a repair of a bike the customer ALREADY HAS: a short description of the fault and an urgency. Do not look up the bike; it is attached from the call.
-- draft_visit — a visit the customer asked for, put in the service calendar: a title (customer + errand, NEVER a phone number or a person's name), the date resolved against today, and a time or length only if one was said.
+- draft_event — an entry in the service calendar, of one of two kinds:
+  · eventKind "visit": going to a customer — title = customer + errand; resolve the customer with search_customer.
+  · eventKind "reminder": something to remember to do on a day ("remind me to collect the frames on Thursday") — title = the thing to do.
+  The date is resolved against today; a time or length only if one was said. NEVER put a phone number or a person's name in the title.
 - draft_purchase_order — parts to buy. The supplier is chosen automatically from the parts' offerings, so you only resolve the PARTS.
 
 Rules you must follow:

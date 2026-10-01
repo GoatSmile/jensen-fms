@@ -19,12 +19,14 @@
  * plan, dropping malformed actions, never throwing.
  */
 
+import { isCalendarKind, type CalendarKind } from "@/lib/calendar/kinds";
+
 export type CommandActionType =
   | "draft_customer"
   | "draft_offer"
   | "draft_sales_order"
   | "draft_ticket"
-  | "draft_visit"
+  | "draft_event"
   | "draft_purchase_order";
 
 export type DraftCustomerAction = {
@@ -100,30 +102,30 @@ export type DraftTicketAction = {
 };
 
 /**
- * A visit the caller asked for — an event in the service calendar (migration
- * 117). Date and time are the model's reading and the person's to correct
- * before applying; no time said → 09:00 for an hour (owner, 2026-09-30). The
- * title carries the customer and the errand ONLY: phone numbers and contact
- * names stay in the system, never in Google (docs/plan-service-calendar.md).
+ * Something for the calendar (migrations 117–118): a VISIT the caller asked
+ * for, or a REMINDER someone dictated. Date and time are the model's reading
+ * and the person's to correct before applying; a missing time takes the
+ * kind's default (`src/lib/calendar/kinds.ts` — a visit 09:00 for an hour, a
+ * reminder all day). The title carries the customer and the errand ONLY:
+ * phone numbers and contact names stay in the system, never in Google
+ * (docs/plan-service-calendar.md).
  */
-export type DraftVisitAction = {
+export type DraftEventAction = {
   id: string;
-  type: "draft_visit";
+  type: "draft_event";
+  kind: CalendarKind;
   title: string;
-  /** ISO date, or null when the caller named none — the person picks one. */
+  /** ISO date, or null when none was named — the person picks one. */
   date: string | null;
-  /** "HH:MM"; null → 09:00. */
+  /** "HH:MM"; null → the kind's default. */
   time: string | null;
-  /** Null → 60. */
+  /** Null → the kind's default. */
   durationMinutes: number | null;
   organizationId: string | null;
   organizationLabel: string | null;
-  /** Where the visit is, when the caller said. */
+  /** Where it is, when it was said. */
   location: string | null;
 };
-
-export const VISIT_DEFAULT_TIME = "09:00";
-export const VISIT_DEFAULT_MINUTES = 60;
 
 export type DraftPurchaseOrderItem = {
   partId: string;
@@ -143,7 +145,7 @@ export type CommandAction =
   | DraftOfferAction
   | DraftSalesOrderAction
   | DraftTicketAction
-  | DraftVisitAction
+  | DraftEventAction
   | DraftPurchaseOrderAction;
 
 export type CommandPlan = {
@@ -253,15 +255,20 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
         urgency: u === "high" ? "high" : u === "low" ? "low" : "normal",
       };
     }
-    case "draft_visit": {
+    // `draft_visit` is what the planner wrote before kinds existed (1 Oct) —
+    // read it as a visit so a plan drafted then still applies.
+    case "draft_visit":
+    case "draft_event": {
       const title = str(o.title) ?? str(o.description);
       if (!title) return null;
-      const date = str(o.visitDate) ?? str(o.date);
-      const time = str(o.visitTime) ?? str(o.time);
+      const kind = o.type === "draft_visit" ? "visit" : str(o.eventKind) ?? str(o.kind);
+      const date = str(o.date) ?? str(o.visitDate);
+      const time = str(o.time) ?? str(o.visitTime);
       const minutes = num(o.durationMinutes);
       return {
         id,
-        type: "draft_visit",
+        type: "draft_event",
+        kind: isCalendarKind(kind) ? kind : "visit",
         title,
         date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
         time: time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : null,
