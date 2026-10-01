@@ -1461,6 +1461,7 @@ export type Database = {
       }
       inbound_messages: {
         Row: {
+          assistant_answer: Json | null
           body_text: string | null
           call_outcome: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
@@ -1496,6 +1497,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assistant_answer?: Json | null
           body_text?: string | null
           call_outcome?: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
@@ -1531,6 +1533,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assistant_answer?: Json | null
           body_text?: string | null
           call_outcome?: string | null
           channel?: Database["public"]["Enums"]["inbound_channel"]

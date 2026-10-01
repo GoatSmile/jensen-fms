@@ -227,13 +227,9 @@ export function MobileNav({
       <Link href="/" aria-label={t("logoAria")} className="flex items-center">
         <LogoMark heightClass="h-7" />
       </Link>
-      {/* Right side: Dictate a command for those who may run one; otherwise a
-          spacer the hamburger's size so the logo still sits centred. */}
-      {allowedCaps === null || allowedCaps.includes("inbox") ? (
-        <CommandSheet variant="mobile" />
-      ) : (
-        <div className="size-8" aria-hidden />
-      )}
+      {/* Right side: ask the assistant — everyone signed in; what it may do
+          follows the person's role. */}
+      <CommandSheet variant="mobile" />
     </header>
   );
 }

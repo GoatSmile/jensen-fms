@@ -48,12 +48,13 @@ export const INBOUND_STATUS_VARIANT: Record<
  * message key instead. Keeps the badge VARIANT (colour) from
  * INBOUND_STATUS_VARIANT; only the words change.
  */
-export function commandStatusKey(status: InboundStatus): string {
+export function commandStatusKey(status: InboundStatus, hasActions = true): string {
   switch (status) {
     case "actioned":
       return "statusApplied";
     case "matched":
-      return "statusReady";
+      // A question the assistant answered has nothing to apply.
+      return hasActions ? "statusReady" : "statusAnswered";
     case "failed":
       return "statusFailed";
     default:

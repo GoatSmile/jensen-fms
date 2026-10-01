@@ -37,6 +37,20 @@ export function scopeAllowsRow(
 }
 
 /** For actions: may the viewer act on this row? Reads the row fresh. */
+/**
+ * A request to the assistant (kind='command') is its ASKER's, and the
+ * office's: `inbox` sees every one, anyone else only their own. Calls keep
+ * `scopeAllowsRow`.
+ */
+export function mayReadCommand(
+  scope: CallsScope | null,
+  personId: string | null,
+  row: { commanded_by: string | null },
+): boolean {
+  if (scope?.all) return true;
+  return personId !== null && row.commanded_by === personId;
+}
+
 export async function canActOnInbound(messageId: string): Promise<boolean> {
   const scope = await readCallsScope();
   if (!scope) return false;

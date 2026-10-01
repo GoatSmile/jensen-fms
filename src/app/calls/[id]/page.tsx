@@ -24,7 +24,9 @@ import {
 import { isSpamFolded } from "@/lib/inbound/triage";
 import { parseCommandPlan } from "@/lib/inbound/command/plan";
 
-import { readCallsScope, scopeAllowsRow } from "@/lib/calls/access";
+import { mayReadCommand, readCallsScope, scopeAllowsRow } from "@/lib/calls/access";
+import { readPersonId } from "@/lib/auth/read-session";
+import { parseAssistantAnswer, targetHref } from "@/lib/assistant/answer";
 import { CommandPlanPanel } from "./_components/command-plan-panel";
 import { MatchPanel } from "./_components/match-panel";
 import { TranscriptPanel } from "./_components/transcript-panel";
@@ -64,9 +66,15 @@ export default async function InboundDetailPage({
     throw new Error(`Failed to load inbound message: ${error.message}`);
   }
   if (!msg) notFound();
-  // The service client bypasses RLS, so the Calls access rule is applied
-  // here: someone else's call (or a command, without `inbox`) is not found.
-  if (!scopeAllowsRow(await readCallsScope(), msg)) notFound();
+  // The service client bypasses RLS, so the access rule is applied here:
+  // someone else's call — or someone else's request, without `inbox` — is
+  // not found.
+  const scope = await readCallsScope();
+  const allowed =
+    msg.kind === "command"
+      ? mayReadCommand(scope, await readPersonId(), msg)
+      : scopeAllowsRow(scope, msg);
+  if (!allowed) notFound();
   const tCalls = await getTranslations("calls");
 
   // Command messages (VC-1) take a different review surface: the agent's plan
@@ -75,6 +83,7 @@ export default async function InboundDetailPage({
   if (msg.kind === "command") {
     const tc = await getTranslations("inboxCommand");
     const plan = parseCommandPlan(msg.command_plan);
+    const answer = parseAssistantAnswer(msg.assistant_answer);
     const ctx = await loadPlanContext(supabase, id);
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -104,7 +113,7 @@ export default async function InboundDetailPage({
             {tChannel.has(msg.channel) ? tChannel(msg.channel) : msg.channel}
           </Badge>
           <Badge variant={INBOUND_STATUS_VARIANT[msg.status]}>
-            {tc(commandStatusKey(msg.status))}
+            {tc(commandStatusKey(msg.status, plan.actions.length > 0))}
           </Badge>
         </header>
 
@@ -114,11 +123,36 @@ export default async function InboundDetailPage({
           </Panel>
         ) : null}
 
+        {answer && (answer.text || answer.open || answer.choices.length > 0) ? (
+          <Panel title={tc("answerTitle")} contentClassName="flex flex-col gap-3">
+            {answer.text ? <p className="text-sm whitespace-pre-wrap">{answer.text}</p> : null}
+            {answer.open ? (
+              <Link
+                href={targetHref(answer.open)}
+                className="bg-brand-wash text-brand-ink inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium"
+              >
+                {tc("openTarget", { label: answer.open.label })}
+              </Link>
+            ) : null}
+            {answer.choices.length > 0 ? (
+              <ul className="flex flex-col gap-1">
+                {answer.choices.map((c) => (
+                  <li key={`${c.kind}:${c.id}`}>
+                    <Link href={targetHref(c)} className="text-brand-ink text-sm underline underline-offset-2">
+                      {c.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Panel>
+        ) : null}
+
         {msg.status === "failed" ? (
           <p className="text-destructive text-sm" role="alert">
             {msg.error}
           </p>
-        ) : (
+        ) : plan.actions.length === 0 && answer ? null : (
           <CommandPlanPanel
             messageId={msg.id}
             plan={plan}

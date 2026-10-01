@@ -102,13 +102,12 @@ export function AppSidebar({
         </Link>
       </div>
       <TooltipProvider>
-        {/* Dictate a command — a tool, reachable from every page (it left the
-            inbox, which is a work queue). Command actions need `inbox`. */}
-        {allowedCaps === null || allowedCaps.includes("inbox") ? (
-          <div className="px-2 pb-1">
-            <CommandSheet variant={collapsed ? "rail" : "sidebar"} />
-          </div>
-        ) : null}
+        {/* Ask the assistant — a tool, reachable from every page, for everyone
+            signed in: what it may read and draft follows the person's role
+            (src/lib/assistant/, 2026-10-01). */}
+        <div className="px-2 pb-1">
+          <CommandSheet variant={collapsed ? "rail" : "sidebar"} />
+        </div>
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-2">
           {groups.map((group) => {
             const Icon = group.icon;

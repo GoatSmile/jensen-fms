@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Panel } from "@/components/ui/panel";
 import { EmptyState } from "@/components/empty-state";
-import { readHasCapability } from "@/lib/auth/read-session";
+import { readHasCapability, readPersonId } from "@/lib/auth/read-session";
 import { INBOUND_STATUS_VARIANT, commandStatusKey } from "@/lib/inbound/types";
+import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import { formatDateTime } from "@/lib/parts/format";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -26,18 +27,23 @@ import { createServiceClient } from "@/lib/supabase/service";
  * not a call to work through.
  */
 export default async function CommandsPage() {
-  if (!(await readHasCapability("inbox"))) redirect("/");
+  // The office sees every request; anyone else their own (mayReadCommand).
+  const seesAll = await readHasCapability("inbox");
+  const personId = seesAll ? null : await readPersonId();
+  if (!seesAll && !personId) redirect("/");
   const [t, tc, tCommon] = await Promise.all([
     getTranslations("calls"),
     getTranslations("inboxCommand"),
     getTranslations("common"),
   ]);
-  const { data, error } = await createServiceClient()
+  let query = createServiceClient()
     .from("inbound_messages")
-    .select("id, status, body_text, received_at")
+    .select("id, status, body_text, received_at, command_plan")
     .eq("kind", "command")
     .order("received_at", { ascending: false })
     .limit(200);
+  if (!seesAll && personId) query = query.eq("commanded_by", personId);
+  const { data, error } = await query;
   if (error) throw new Error(`Failed to load commands: ${error.message}`);
   const rows = data ?? [];
 
@@ -72,7 +78,7 @@ export default async function CommandsPage() {
                     {formatDateTime(r.received_at)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm">{r.body_text ?? "—"}</span>
-                  <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>{tc(commandStatusKey(r.status))}</Badge>
+                  <Badge variant={INBOUND_STATUS_VARIANT[r.status]}>{tc(commandStatusKey(r.status, parseCommandPlan(r.command_plan).actions.length > 0))}</Badge>
                 </Link>
               </li>
             ))}

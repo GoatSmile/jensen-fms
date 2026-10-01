@@ -4709,11 +4709,11 @@
     "chip_urgency": "urgency",
     "urgencyHigh": "urgent",
     "modelPending": "model to choose",
-    "newTitle": "Dictate a command",
-    "newHint": "Dictate or type a task — a new order, a customer, parts to buy. The assistant drafts it for you to review; nothing is created until you apply it.",
-    "newPlaceholder": "e.g. Order for 15 Norma S from Hotel D'Angleterre, red, delivery March 15, front basket, white logo",
-    "drafting": "Drafting…",
-    "draftActions": "Draft actions",
+    "newTitle": "Ask or dictate",
+    "newHint": "Ask a question, open something, or say what to create — \"what is my next appointment?\", \"show me bike 55\", \"remind me to collect the frames on Thursday\". Nothing is created until you apply it.",
+    "newPlaceholder": "What is my next appointment?",
+    "drafting": "Working…",
+    "draftActions": "Send",
     "dictate": "Dictate",
     "visitDate": "Date",
     "visitTime": "Time",
@@ -4723,7 +4723,10 @@
     "chip_place": "place",
     "type_draft_event_visit": "Visit",
     "type_draft_event_reminder": "Reminder",
-    "allDay": "all day"
+    "allDay": "all day",
+    "answerTitle": "Answer",
+    "openTarget": "Open {label}",
+    "statusAnswered": "Answered"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",

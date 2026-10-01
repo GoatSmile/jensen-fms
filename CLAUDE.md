@@ -671,9 +671,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   and visits go in the plan's notes. A person applies each one; unapplied
   suggestions keep the call in *to do*. **Applying claims its
   `command_actions` row BEFORE writing the draft**, so a second press can
-  never make a second draft. Dictated commands left the
-  queue: a *Dictate a command* sheet in the app chrome, history at
-  `/commands`. Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
+  never make a second draft. Staff requests left the
+  queue: *Ask or dictate* in the app chrome, history at `/commands`.
+  Runs in prod in SHADOW MODE (`inbound_shadow_mode`);
   graduation criteria + next arc in `docs/plan-inbound-triage.md`. GDPR:
   recording announcement, media retention days in app_settings, EU
   residency — **except that transcription runs on ElevenLabs Scribe v2's
@@ -705,6 +705,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   command / ticket / customer. `/calendar` (`/visits` redirects) is a READ-ONLY
   list read live from Google, for `maintenance` or `work`. **Minimal personal data in events**: customer +
   errand + a link back — never a phone number or a contact's name.
+- **The ASSISTANT answers, opens and drafts — and follows the PERSON**
+  (`src/lib/assistant/`, DECISIONS 2026-10-01; Munr's Secretary is the model).
+  One agent, no intent classifier: it is OFFERED only the read tools the asking
+  person's role allows (`toolsFor`; each tool names its capabilities), money is
+  left out of every result without `costs`, and it may open, offer as a choice
+  or act on ONLY a record its own lookups returned in that run (`seen`) and
+  whose page the person may open (`routeAllows`). `open` + `go` are separate:
+  `go` (straight to the page) is for "show me X", never for a question about X.
+  It never writes — drafts are a `CommandPlan` applied with one tap, and
+  **each action carries its own right** (`ACTION_CAPABILITIES` / `mayApply`,
+  re-checked in `applyCommandAction`). A request is a kind='command' row
+  (answer in `assistant_answer`, migration 119), seen by its ASKER and by
+  `inbox` (`mayReadCommand`); anyone signed in may ask. A new read tool joins
+  `tools.ts` with its capabilities; a new target kind joins `answer.ts`.
 - **Every Anthropic call goes through ONE door, and sends only what every
   current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
   2026-09-30). The model is an admin setting that changes without a deploy,
@@ -1064,7 +1078,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike
   templates · Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
-  orders · Calendar · Workshop floor · Calls) · *Orders* (Offers · Sales · Paint orders ·
+  orders · Workshop floor · Calls · Calendar) · *Orders* (Offers · Sales · Paint orders ·
   Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
   - ***Orders* is ordered by the LIFE OF A JOB, not alphabetically or by

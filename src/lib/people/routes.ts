@@ -19,7 +19,8 @@ const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, Capability]> = [
   ["/maintenance", "maintenance"],
   // /inbox redirects to /calls (DECISIONS 2026-09-29); gated like it.
   ["/inbox", "inbox"],
-  ["/commands", "inbox"],
+  // /commands is NOT gated here: everyone may ask the assistant, and the
+  // pages show the office every request and anyone else their own.
   ["/work", "work"],
   ["/scan", "scan"],
   // QR sticker pages are bike surfaces (print sheets, single stickers).

@@ -31,6 +31,96 @@ export type CommandAgentResult =
   | { ok: true; plan: CommandPlan }
   | { ok: false; reason: "no_body" | "no_key" | "api_error" | "no_plan"; detail?: string };
 
+/**
+ * One drafted action, as the model writes it — shared by the call planner
+ * (propose_plan) and the assistant (respond), so a suggestion means the same
+ * thing whoever drafts it. parseCommandPlan is the contract enforcer.
+ */
+export const PLAN_ACTION_ITEM_SCHEMA = {
+    type: "object",
+    properties: {
+      type: {
+        type: "string",
+        enum: [
+          "draft_customer",
+          "draft_offer",
+          "draft_sales_order",
+          "draft_ticket",
+          "draft_event",
+          "draft_purchase_order",
+        ],
+      },
+      // draft_customer
+      legalName: { type: ["string", "null"], description: "Customer legal/display name." },
+      segmentId: { type: ["string", "null"], description: "Resolved customer_segments id, else null." },
+      segmentLabel: { type: ["string", "null"] },
+      preferredLanguage: { type: ["string", "null"], enum: ["da", "en", null] },
+      // draft_sales_order
+      organizationId: { type: ["string", "null"], description: "Resolved existing organization id." },
+      organizationLabel: { type: ["string", "null"] },
+      organizationFromNewCustomer: {
+        type: ["boolean", "null"],
+        description: "True → use the customer this plan's draft_customer action creates.",
+      },
+      language: { type: ["string", "null"], enum: ["da", "en", null] },
+      currency: { type: ["string", "null"], description: "3-letter, default DKK." },
+      orderDate: { type: ["string", "null"], description: "ISO date, else null (today)." },
+      deliveryDate: { type: ["string", "null"], description: "ISO date." },
+      deliveryPrecision: { type: ["string", "null"], enum: ["exact", "week", null] },
+      productionNote: {
+        type: ["string", "null"],
+        description: "Free-text build instructions (basket, logo colour, …) — flows to the build floor.",
+      },
+      quantity: { type: ["number", "null"], description: "Number of bikes on the single template line." },
+      templateId: { type: ["string", "null"], description: "Resolved bike_templates id, else null." },
+      templateLabel: { type: ["string", "null"] },
+      colorId: { type: ["string", "null"], description: "Resolved colors id, else null." },
+      colorLabel: { type: ["string", "null"] },
+      unitPrice: { type: ["number", "null"], description: "Per-bike price, else null (template default)." },
+      // draft_offer uses the sales-order fields above (no dates, no
+      // productionNote) plus `note` for specification + timing.
+      // draft_ticket
+      description: {
+        type: ["string", "null"],
+        description: "draft_ticket: what is wrong with the customer's EXISTING bike, short, in the caller's language.",
+      },
+      urgency: { type: ["string", "null"], enum: ["low", "normal", "high", null] },
+      // draft_event (also uses organizationId / organizationLabel)
+      eventKind: {
+        type: ["string", "null"],
+        enum: ["visit", "reminder", null],
+        description: "draft_event: 'visit' = going to a customer; 'reminder' = something to remember to do.",
+      },
+      title: {
+        type: ["string", "null"],
+        description: "draft_event: visit = customer + errand ('Frederiksberg Kommune — look at red bike'); reminder = the thing to do ('Collect frames from the painter'). NEVER a phone number or a person's name.",
+      },
+      date: { type: ["string", "null"], description: "draft_event: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
+      time: { type: ["string", "null"], description: "draft_event: 'HH:MM' 24h, only if a time was said; else null." },
+      durationMinutes: { type: ["number", "null"], description: "draft_event: only if said; else null." },
+      location: { type: ["string", "null"], description: "draft_event: the address or place, only if said." },
+      // draft_purchase_order
+      items: {
+        type: ["array", "null"],
+        description: "Resolved parts to order; supplier is auto-picked from offerings.",
+        items: {
+          type: "object",
+          properties: {
+            partId: { type: "string" },
+            partLabel: { type: "string" },
+            quantity: { type: "number" },
+          },
+          required: ["partId", "partLabel", "quantity"],
+        },
+      },
+      note: {
+        type: ["string", "null"],
+        description: "draft_offer: what they said about specification (electric, basket, logo) and timing. draft_purchase_order: a note.",
+      },
+    },
+  required: ["type"],
+} as const;
+
 const PROPOSE_PLAN_TOOL = {
   name: "propose_plan",
   description:
@@ -51,90 +141,7 @@ const PROPOSE_PLAN_TOOL = {
       actions: {
         type: "array",
         description: "The proposed draft actions, in apply order (a customer before the sales order that uses it).",
-        items: {
-          type: "object",
-          properties: {
-            type: {
-              type: "string",
-              enum: [
-                "draft_customer",
-                "draft_offer",
-                "draft_sales_order",
-                "draft_ticket",
-                "draft_event",
-                "draft_purchase_order",
-              ],
-            },
-            // draft_customer
-            legalName: { type: ["string", "null"], description: "Customer legal/display name." },
-            segmentId: { type: ["string", "null"], description: "Resolved customer_segments id, else null." },
-            segmentLabel: { type: ["string", "null"] },
-            preferredLanguage: { type: ["string", "null"], enum: ["da", "en", null] },
-            // draft_sales_order
-            organizationId: { type: ["string", "null"], description: "Resolved existing organization id." },
-            organizationLabel: { type: ["string", "null"] },
-            organizationFromNewCustomer: {
-              type: ["boolean", "null"],
-              description: "True → use the customer this plan's draft_customer action creates.",
-            },
-            language: { type: ["string", "null"], enum: ["da", "en", null] },
-            currency: { type: ["string", "null"], description: "3-letter, default DKK." },
-            orderDate: { type: ["string", "null"], description: "ISO date, else null (today)." },
-            deliveryDate: { type: ["string", "null"], description: "ISO date." },
-            deliveryPrecision: { type: ["string", "null"], enum: ["exact", "week", null] },
-            productionNote: {
-              type: ["string", "null"],
-              description: "Free-text build instructions (basket, logo colour, …) — flows to the build floor.",
-            },
-            quantity: { type: ["number", "null"], description: "Number of bikes on the single template line." },
-            templateId: { type: ["string", "null"], description: "Resolved bike_templates id, else null." },
-            templateLabel: { type: ["string", "null"] },
-            colorId: { type: ["string", "null"], description: "Resolved colors id, else null." },
-            colorLabel: { type: ["string", "null"] },
-            unitPrice: { type: ["number", "null"], description: "Per-bike price, else null (template default)." },
-            // draft_offer uses the sales-order fields above (no dates, no
-            // productionNote) plus `note` for specification + timing.
-            // draft_ticket
-            description: {
-              type: ["string", "null"],
-              description: "draft_ticket: what is wrong with the customer's EXISTING bike, short, in the caller's language.",
-            },
-            urgency: { type: ["string", "null"], enum: ["low", "normal", "high", null] },
-            // draft_event (also uses organizationId / organizationLabel)
-            eventKind: {
-              type: ["string", "null"],
-              enum: ["visit", "reminder", null],
-              description: "draft_event: 'visit' = going to a customer; 'reminder' = something to remember to do.",
-            },
-            title: {
-              type: ["string", "null"],
-              description: "draft_event: visit = customer + errand ('Frederiksberg Kommune — look at red bike'); reminder = the thing to do ('Collect frames from the painter'). NEVER a phone number or a person's name.",
-            },
-            date: { type: ["string", "null"], description: "draft_event: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
-            time: { type: ["string", "null"], description: "draft_event: 'HH:MM' 24h, only if a time was said; else null." },
-            durationMinutes: { type: ["number", "null"], description: "draft_event: only if said; else null." },
-            location: { type: ["string", "null"], description: "draft_event: the address or place, only if said." },
-            // draft_purchase_order
-            items: {
-              type: ["array", "null"],
-              description: "Resolved parts to order; supplier is auto-picked from offerings.",
-              items: {
-                type: "object",
-                properties: {
-                  partId: { type: "string" },
-                  partLabel: { type: "string" },
-                  quantity: { type: "number" },
-                },
-                required: ["partId", "partLabel", "quantity"],
-              },
-            },
-            note: {
-              type: ["string", "null"],
-              description: "draft_offer: what they said about specification (electric, basket, logo) and timing. draft_purchase_order: a note.",
-            },
-          },
-          required: ["type"],
-        },
+        items: PLAN_ACTION_ITEM_SCHEMA,
       },
     },
     required: ["summary", "actions", "notes"],

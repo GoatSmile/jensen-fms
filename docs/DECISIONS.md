@@ -3556,3 +3556,31 @@ command spoken from anywhere, floating on desktop as on the phone.
   needs `work` or `maintenance`, an offer `so`), and **a spoken entry is added
   with ONE tap on its card**, never automatically (a misheard date must not
   land in Finn's calendar unseen).
+
+## 2026-10-01 — The assistant: a secretary that answers, opens and drafts
+
+Owner: *"I want the microphone to function as a secretary as well … 'What is
+my next appointment?' or 'Show me bike number 55.' … This is something we have
+already developed in Munr."*
+
+- **Follows Munr's Secretary** (`munr/src/lib/agent/recall.ts`): one agent with
+  tools, no intent classifier; tools offered by the person's role; it may only
+  touch ids its own lookups returned in the run; several matches → it asks.
+  **Added for Jensen:** an OPEN target with a separate `go` flag (Munr has no
+  navigation), and a page filter — a record is only opened if the person's
+  role may open its page.
+- **Writes: one-tap confirm, not Munr's act-then-Undo** (owner) — the
+  2026-10-01 rule for spoken calendar entries holds for everything.
+- **"Show me bike 55" goes straight there when exactly one matches** (owner);
+  several → a short list. A QUESTION about a record shows the answer with an
+  Open button — found testing: auto-opening on a question skipped the answer.
+- **Dictation fills the box; the person presses Send** (owner, Munr's way), so
+  a misheard word can be fixed first.
+- **Everyone may ask; each action carries its own right** (supersedes "command
+  actions need `inbox`"): a calendar entry or ticket needs `work` or
+  `maintenance`, an offer `so`. A technician's assistant never returns a price;
+  asked for one, it says prices are not shown to them. Requests are visible to
+  their asker and to `inbox`.
+- **Rejected:** a separate intent classifier (two models to keep in step);
+  porting Munr's code verbatim (different domain — conversations vs bikes —
+  so the patterns came over, not the files).

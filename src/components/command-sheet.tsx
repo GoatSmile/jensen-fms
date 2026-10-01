@@ -21,12 +21,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 
 /**
- * Dictate a command, from anywhere (DECISIONS 2026-09-29): it used to be a
- * box on the inbox page, which put a TOOL inside a work queue. Now a button
- * in the app chrome — under the logo in the sidebar, on the right of the
- * phone header — opens this sheet; submitting drafts the actions and lands on
- * the command's review page under /commands. Shown only to holders of
- * `inbox`, which command actions require anyway.
+ * Ask the assistant, from anywhere (DECISIONS 2026-09-29, 2026-10-01): a
+ * button in the app chrome — under the logo in the sidebar, on the right of
+ * the phone header — opens this sheet. Submitting asks the assistant, which
+ * answers, opens a record or drafts actions (src/lib/assistant/): one record
+ * and nothing else goes straight to it; anything else lands on the request's
+ * page under /commands. Shown to everyone signed in — what the assistant may
+ * do follows the person's role. Part B replaces this sheet with the floating
+ * button.
  */
 export function CommandSheet({ variant }: { variant: "sidebar" | "rail" | "mobile" }) {
   const t = useTranslations("inboxCommand");
@@ -58,7 +60,8 @@ export function CommandSheet({ variant }: { variant: "sidebar" | "rail" | "mobil
       if (!r.ok) return setError(r.error);
       setText("");
       setOpen(false);
-      router.push(`/commands/${r.id}`);
+      // One record and nothing to confirm → straight there; else the answer.
+      router.push(r.openHref ?? `/commands/${r.id}`);
     });
   }
 

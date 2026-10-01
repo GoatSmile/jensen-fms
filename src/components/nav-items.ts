@@ -123,20 +123,21 @@ export const NAV_GROUPS: NavGroup[] = [
         labelKey: "workOrders",
         capability: "maintenance",
       },
-      // The service calendar as a list (migrations 117–118) — office and
-      // floor. Named Calendar, not Visits: it holds reminders too.
-      {
-        href: "/calendar",
-        labelKey: "calendar",
-        capability: "maintenance",
-        orCapabilities: ["work"],
-      },
       { href: "/work", labelKey: "workshopFloor", capability: "work" },
       {
         href: "/calls",
         labelKey: "calls",
         capability: "inbox",
         orCapabilities: ["calls_own"],
+      },
+      // The service calendar as a list (migrations 117–118) — office and
+      // floor. Named Calendar, not Visits: it holds reminders too. Below
+      // Calls (owner, 2026-10-01).
+      {
+        href: "/calendar",
+        labelKey: "calendar",
+        capability: "maintenance",
+        orCapabilities: ["work"],
       },
     ],
   },

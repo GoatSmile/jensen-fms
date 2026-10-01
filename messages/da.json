@@ -4709,11 +4709,11 @@
     "chip_urgency": "hast",
     "urgencyHigh": "haster",
     "modelPending": "model mangler",
-    "newTitle": "Diktér en kommando",
-    "newHint": "Diktér eller skriv en opgave — en ny ordre, en kunde, dele der skal købes. Assistenten laver en kladde, du kan gennemgå; intet oprettes, før du godkender.",
-    "newPlaceholder": "f.eks. Ordre på 15 Norma S til Hotel D'Angleterre, rød, levering 15. marts, forkurv, hvidt logo",
-    "drafting": "Laver kladde…",
-    "draftActions": "Lav kladde",
+    "newTitle": "Spørg eller diktér",
+    "newHint": "Stil et spørgsmål, åbn noget, eller sig hvad der skal oprettes — \"hvornår er min næste aftale?\", \"vis cykel 55\", \"mind mig om at hente rammerne torsdag\". Intet oprettes, før du anvender det.",
+    "newPlaceholder": "Hvornår er min næste aftale?",
+    "drafting": "Arbejder…",
+    "draftActions": "Send",
     "dictate": "Diktér",
     "visitDate": "Dato",
     "visitTime": "Tidspunkt",
@@ -4723,7 +4723,10 @@
     "chip_place": "sted",
     "type_draft_event_visit": "Besøg",
     "type_draft_event_reminder": "Påmindelse",
-    "allDay": "hele dagen"
+    "allDay": "hele dagen",
+    "answerTitle": "Svar",
+    "openTarget": "Åbn {label}",
+    "statusAnswered": "Besvaret"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",

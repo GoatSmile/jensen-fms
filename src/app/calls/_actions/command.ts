@@ -4,9 +4,13 @@ import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/lib/types/database";
-import { readHasCapability, readPersonId } from "@/lib/auth/read-session";
-import { loadInboundSettings } from "@/lib/inbound/settings";
-import { runCommandAgent } from "@/lib/inbound/command/agent";
+import { getLocale } from "next-intl/server";
+
+import { readAllowedCaps, readCanSeeCosts, readHasCapability, readPersonId } from "@/lib/auth/read-session";
+import { ALL_CAPABILITIES } from "@/lib/people/capabilities";
+import { mayApply } from "@/lib/assistant/agent";
+import { answerRequest } from "@/lib/assistant/ask";
+import { targetHref } from "@/lib/assistant/answer";
 import { planCall, type PlanCallResult } from "@/lib/inbound/command/plan-calls";
 import {
   parseCommandPlan,
@@ -25,7 +29,9 @@ import { appOrigin } from "@/lib/qr";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
 import { revalidateInbound } from "@/lib/calls/revalidate";
 
-export type CommandResult = { ok: true; id: string } | { ok: false; error: string };
+export type CommandResult =
+  | { ok: true; id: string; /** Go straight here — the answer was one record and nothing else. */ openHref?: string | null }
+  | { ok: false; error: string };
 export type ApplyResult =
   | { ok: true; entityTable: string | null; entityId: string | null }
   | { ok: false; error: string };
@@ -34,42 +40,28 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/**
- * The inbox is where commands are made and applied, so every action here needs
- * `inbox` — middleware only gates the PAGE, and a server action is callable
- * from anywhere that imports it. Applying a draft also needs the capability of
- * what it writes (DRAFT_CAPABILITY), since a draft customer, SO or PO is a real
- * row in that area.
- */
-async function refuseWithoutInbox(
-  t: Awaited<ReturnType<typeof getTranslations>>,
-): Promise<{ ok: false; error: string } | null> {
-  return (await readHasCapability("inbox"))
-    ? null
-    : { ok: false, error: t("commandNeedsInbox") };
+/** The person's rights; the gate off means every right (dev without a login). */
+async function currentCaps(): Promise<readonly string[]> {
+  return (await readAllowedCaps()) ?? ALL_CAPABILITIES;
 }
 
-const DRAFT_CAPABILITY: Record<string, string> = {
-  draft_customer: "customers",
-  draft_offer: "so",
-  draft_sales_order: "so",
-  draft_purchase_order: "po",
-  // draft_ticket / draft_event: none beyond acting on the call — the same
-  // rule as the call page's "Create ticket", which a technician may press on
-  // their own calls; the calendar is the technician's own diary.
-};
-
 /**
- * Who may plan or apply on a message: a dictated COMMAND is the office's
- * (`inbox`); a CALL is whoever may act on that call (`canActOnInbound` — every
- * line with `inbox`, one's own with `calls_own`).
+ * Who may plan or apply on a message: a REQUEST to the assistant is its
+ * asker's, and the office's (`inbox`); a CALL is whoever may act on that call
+ * (`canActOnInbound` — every line with `inbox`, one's own with `calls_own`).
+ * What a person may then APPLY is checked per action (`mayApply`).
  */
 async function refuseUnlessMayAct(
   messageId: string,
   kind: string | null,
   t: Awaited<ReturnType<typeof getTranslations>>,
+  commandedBy: string | null = null,
 ): Promise<{ ok: false; error: string } | null> {
-  if (kind === "command") return refuseWithoutInbox(t);
+  if (kind === "command") {
+    if (await readHasCapability("inbox")) return null;
+    const me = await readPersonId();
+    return me && me === commandedBy ? null : { ok: false, error: t("commandNeedsInbox") };
+  }
   return (await canActOnInbound(messageId)) ? null : { ok: false, error: t("callNoAccess") };
 }
 
@@ -94,21 +86,22 @@ async function currentPersonId(): Promise<string | null> {
 }
 
 /**
- * In-app command ingress (VC-1, Option A — text-first). Create a kind='command'
- * inbound row from dictated/typed text, then run the command agent and store
- * its plan. The command path SKIPS extract → match → triage (a staff command
- * from an unknown number would score as spam); the agent is its own stage.
+ * Ask the assistant (owner, 2026-10-01: "a secretary"). Anyone signed in may
+ * ask: what the assistant may read, open and draft follows their role
+ * (src/lib/assistant/). The request is kept as a kind='command' row — it SKIPS
+ * extract → match → triage, the assistant is its own stage — with its answer
+ * and drafts, so /commands is the history of what was asked and answered.
+ * `priorId` threads ONE earlier request of theirs for a follow-up.
  */
-export async function createCommandFromText(text: string): Promise<CommandResult> {
+export async function createCommandFromText(text: string, priorId?: string | null): Promise<CommandResult> {
   const t = await getTranslations("errors");
-  const refused = await refuseWithoutInbox(t);
-  if (refused) return refused;
   const body = text.trim();
   if (!body) return { ok: false, error: t("commandNoBody") };
+  const personId = await currentPersonId();
+  const caps = await currentCaps();
+  if (personId === null && (await readAllowedCaps()) !== null) return { ok: false, error: t("commandNeedsInbox") };
 
   const supabase = createServiceClient();
-  const personId = await currentPersonId();
-
   const { data: inserted, error: insErr } = await supabase
     .from("inbound_messages")
     .insert({
@@ -128,9 +121,20 @@ export async function createCommandFromText(text: string): Promise<CommandResult
     };
   }
 
-  await runAndStorePlan(supabase, inserted.id, body);
+  const r = await answerRequest(supabase, inserted.id, {
+    request: body,
+    caps,
+    canSeeCosts: await readCanSeeCosts(),
+    language: (await getLocale()) === "da" ? "da" : "en",
+    personId,
+    priorId,
+  });
   revalidateInbound(inserted.id);
-  return { ok: true, id: inserted.id };
+  // Asked to SEE one record, nothing to confirm → straight there (owner,
+  // 2026-10-01). A question about it shows the answer, with an Open button.
+  const openHref =
+    r.ok && r.answer.go && r.answer.open && r.actionCount === 0 ? targetHref(r.answer.open) : null;
+  return { ok: true, id: inserted.id, openHref };
 }
 
 /** Re-run the agent on an existing command row's body_text (e.g. after edit). */
@@ -139,13 +143,13 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
   const supabase = createServiceClient();
   const { data: msg } = await supabase
     .from("inbound_messages")
-    .select("id, body_text, kind")
+    .select("id, body_text, kind, commanded_by")
     .eq("id", messageId)
     .maybeSingle();
   if (!msg) return { ok: false, error: t("missingId") };
   // A call's suggestions are re-drafted from the call, not from body_text as a command.
   if (msg.kind !== "command") return planFromInquiry(messageId);
-  const refused = await refuseWithoutInbox(t);
+  const refused = await refuseUnlessMayAct(messageId, "command", t, msg.commanded_by);
   if (refused) return refused;
 
   // Refuse to re-plan once anything has been applied. plan_action_ids are
@@ -161,8 +165,15 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
     return { ok: false, error: t("commandRerunLocked") };
   }
 
-  await runAndStorePlan(supabase, messageId, msg.body_text ?? "");
+  const r = await answerRequest(supabase, messageId, {
+    request: msg.body_text ?? "",
+    caps: await currentCaps(),
+    canSeeCosts: await readCanSeeCosts(),
+    language: (await getLocale()) === "da" ? "da" : "en",
+    personId: await currentPersonId(),
+  });
   revalidateInbound(messageId);
+  if (!r.ok) return { ok: false, error: t("inboundModelApiError", { detail: r.detail ?? r.reason }) };
   return { ok: true, id: messageId };
 }
 
@@ -191,39 +202,6 @@ export async function planFromInquiry(messageId: string): Promise<CommandResult>
   return { ok: true, id: messageId };
 }
 
-/** Run the agent and stamp the plan (or the failure) onto the row. */
-async function runAndStorePlan(
-  supabase: ReturnType<typeof createServiceClient>,
-  messageId: string,
-  body: string,
-): Promise<void> {
-  const settings = await loadInboundSettings(supabase);
-  const result = await runCommandAgent(supabase, body, {
-    model: settings.extractionModel,
-    today: today(),
-  });
-  if (!result.ok) {
-    await supabase
-      .from("inbound_messages")
-      .update({
-        status: "failed",
-        command_plan: null,
-        error: `command.${result.reason}${result.detail ? `: ${result.detail}` : ""}`,
-      })
-      .eq("id", messageId);
-    return;
-  }
-  await supabase
-    .from("inbound_messages")
-    .update({
-      command_plan: result.plan,
-      status: "matched",
-      processed_at: new Date().toISOString(),
-      error: null,
-    })
-    .eq("id", messageId);
-}
-
 /**
  * Apply ONE proposed action → the real draft, logging a command_actions row
  * (provenance) and blocking double-apply via the unique (message, action)
@@ -241,18 +219,19 @@ export async function applyCommandAction(
 
   const { data: msg } = await supabase
     .from("inbound_messages")
-    .select("id, kind, command_plan")
+    .select("id, kind, command_plan, commanded_by")
     .eq("id", messageId)
     .maybeSingle();
   if (!msg) return { ok: false, error: t("missingId") };
-  const refused = await refuseUnlessMayAct(messageId, msg.kind, t);
+  const refused = await refuseUnlessMayAct(messageId, msg.kind, t, msg.commanded_by);
   if (refused) return refused;
 
   const plan = parseCommandPlan(msg.command_plan);
   const action = plan.actions.find((a) => a.id === actionId);
   if (!action) return { ok: false, error: t("commandActionNotFound") };
-  const needed = DRAFT_CAPABILITY[action.type];
-  if (needed && !(await readHasCapability(needed))) {
+  // Each action carries its own right — the assistant offers only what its
+  // asker may apply, and this is where that is enforced.
+  if (!mayApply(action.type, await currentCaps())) {
     return { ok: false, error: t("commandNeedsCapability") };
   }
 
