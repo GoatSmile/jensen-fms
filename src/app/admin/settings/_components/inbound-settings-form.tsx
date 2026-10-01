@@ -11,7 +11,7 @@ import { appendField } from "@/lib/forms";
 import { cn } from "@/lib/utils";
 
 import { saveInboundSettings } from "../_actions/save-settings";
-import { fetchModelOptions, testExtractionModel } from "../_actions/model-actions";
+import { fetchModelOptions, testAssistantModelAction, testExtractionModel } from "../_actions/model-actions";
 import type { ModelOption } from "@/lib/inbound/models";
 
 type SecretStatus = { envVar: string; present: boolean };
@@ -21,6 +21,8 @@ type Props = {
   initialTranscriptionRegion: string;
   initialExtractionProvider: string;
   initialExtractionModel: string;
+  /** The assistant's own model (migration 120). */
+  initialAssistantModel: string;
   initialTelephonyProvider: string;
   initialPhoneNumber: string;
   initialPhoneNumberTest: string;
@@ -60,6 +62,7 @@ export function InboundSettingsForm(props: Props) {
   const [extractionProvider, setExtractionProvider] = useState(
     props.initialExtractionProvider,
   );
+  const [assistantModel, setAssistantModel] = useState(props.initialAssistantModel);
   const [extractionModel, setExtractionModel] = useState(
     props.initialExtractionModel,
   );
@@ -112,6 +115,7 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_transcription_region", transcriptionRegion.trim());
     fd.set("inbound_extraction_provider", extractionProvider);
     appendField(fd, "inbound_extraction_model", extractionModel.trim());
+    appendField(fd, "inbound_assistant_model", assistantModel.trim());
     fd.set("inbound_telephony_provider", telephonyProvider);
     appendField(fd, "inbound_phone_number", phoneNumber.trim());
     appendField(fd, "inbound_phone_number_test", phoneNumberTest.trim());
@@ -210,6 +214,18 @@ export function InboundSettingsForm(props: Props) {
             provider={extractionProvider}
             value={extractionModel}
             onChange={setExtractionModel}
+          />
+          {/* The assistant answers people waiting, so it has its own — faster —
+              model; same provider and key, and its own Test (migration 120). */}
+          <ModelField
+            provider={extractionProvider}
+            value={assistantModel}
+            onChange={setAssistantModel}
+            fieldId="inbound_assistant_model"
+            labelKey="inboundAssistantModelLabel"
+            hintKey="inboundAssistantModelHint"
+            okKey="inboundAssistantModelOk"
+            onTest={testAssistantModelAction}
           />
         </ProviderBlock>
 
@@ -390,10 +406,23 @@ function ModelField({
   provider,
   value,
   onChange,
+  fieldId = "inbound_extraction_model",
+  labelKey = "inboundModelLabel",
+  hintKey = "inboundModelHint",
+  okKey = "inboundModelOk",
+  onTest = testExtractionModel,
 }: {
   provider: string;
   value: string;
   onChange: (v: string) => void;
+  /** Which setting this field edits — the call reader's model, or the assistant's. */
+  fieldId?: string;
+  labelKey?: string;
+  hintKey?: string;
+  /** What a passing Test says — it names the jobs that Test actually ran. */
+  okKey?: string;
+  /** Its Test runs the request shape of the job this model drives. */
+  onTest?: typeof testExtractionModel;
 }) {
   const t = useTranslations("adminSettings");
   // One state object stamped with the provider it describes, so "loading" is
@@ -437,8 +466,8 @@ function ModelField({
   function runTest() {
     setTestResult(null);
     startTest(async () => {
-      const r = await testExtractionModel(provider, value);
-      setTestResult(r.ok ? { ok: true, text: t("inboundModelOk") } : { ok: false, text: r.error });
+      const r = await onTest(provider, value);
+      setTestResult(r.ok ? { ok: true, text: t(okKey) } : { ok: false, text: r.error });
     });
   }
 
@@ -449,17 +478,17 @@ function ModelField({
 
   return (
     <div className="flex flex-col gap-1.5 sm:col-span-2">
-      <Label htmlFor="inbound_extraction_model" className="flex-col items-start gap-0.5">
-        {t("inboundModelLabel")}
+      <Label htmlFor={fieldId} className="flex-col items-start gap-0.5">
+        {t(labelKey)}
         <span className="text-ink-2 text-xs font-normal">
-          {t("inboundModelHint")}
+          {t(hintKey)}
         </span>
       </Label>
 
       <div className="flex flex-wrap items-center gap-2">
         {manual ? (
           <Input
-            id="inbound_extraction_model"
+            id={fieldId}
             value={value}
             onChange={(e) => update(e.target.value)}
             placeholder="claude-sonnet-5"
@@ -467,7 +496,7 @@ function ModelField({
           />
         ) : (
           <select
-            id="inbound_extraction_model"
+            id={fieldId}
             value={value}
             onChange={(e) => update(e.target.value)}
             disabled={loading}

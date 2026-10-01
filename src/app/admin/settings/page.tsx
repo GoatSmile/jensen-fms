@@ -267,6 +267,7 @@ export default async function AdminSettingsPage({
                 }
                 initialExtractionProvider={inboundSettings.extractionProvider}
                 initialExtractionModel={inboundSettings.extractionModel}
+                initialAssistantModel={inboundSettings.assistantModel}
                 initialTelephonyProvider={inboundSettings.telephonyProvider}
                 initialPhoneNumber={inboundSettings.phoneNumber ?? ""}
                 initialPhoneNumberTest={inboundSettings.phoneNumberTest ?? ""}

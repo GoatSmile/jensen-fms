@@ -2,7 +2,7 @@
 
 import { getTranslations } from "next-intl/server";
 
-import { listModels, testModel, type ModelOption } from "@/lib/inbound/models";
+import { listModels, testAssistantModel, testModel, type ModelOption } from "@/lib/inbound/models";
 
 export type ModelListResult =
   | { ok: true; models: ModelOption[] }
@@ -42,6 +42,13 @@ export async function testExtractionModel(
   model: string,
 ): Promise<ModelTestResult> {
   const r = await testModel(provider, model);
+  if (r.ok) return { ok: true, model: r.model };
+  return { ok: false, error: await reasonToMessage(r.reason, r.detail) };
+}
+
+/** The assistant's model, through the assistant's own request shape. */
+export async function testAssistantModelAction(provider: string, model: string): Promise<ModelTestResult> {
+  const r = await testAssistantModel(provider, model);
   if (r.ok) return { ok: true, model: r.model };
   return { ok: false, error: await reasonToMessage(r.reason, r.detail) };
 }

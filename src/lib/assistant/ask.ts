@@ -55,7 +55,8 @@ export async function answerRequest(
 
   const settings = await loadInboundSettings(supabase);
   const r = await runAssistant(supabase, opts.request, {
-    model: settings.extractionModel,
+    // The assistant's own model (migration 120), not the call reader's.
+    model: settings.assistantModel,
     caps: opts.caps,
     canSeeCosts: opts.canSeeCosts,
     language: opts.language,

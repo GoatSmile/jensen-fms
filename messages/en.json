@@ -3494,7 +3494,7 @@
     "providerLabel": "Provider",
     "inboundRegionLabel": "Region",
     "inboundModelLabel": "Model",
-    "inboundModelHint": "Drives both call extraction and the command agent. Prefer a rolling alias over a dated snapshot — snapshots eventually retire.",
+    "inboundModelHint": "Drives call extraction, the agreement reader and the suggested actions on calls. Prefer a rolling alias over a dated snapshot — snapshots eventually retire.",
     "inboundModelLoading": "Loading models…",
     "inboundModelUnlisted": "(saved)",
     "inboundModelUnlistedHint": "This model id is not in the provider's current list — it may be retired or misspelt. Test it before saving.",
@@ -3582,7 +3582,10 @@
     "calendarOpenGoogle": "Open Google Calendar",
     "calendarOpenGoogleHint": "— opens only for people the calendar is shared with.",
     "calendarSave": "Save calendar",
-    "calendarSaved": "Saved."
+    "calendarSaved": "Saved.",
+    "inboundAssistantModelLabel": "Assistant model",
+    "inboundAssistantModelHint": "The model behind the Ask button. A fast one keeps answers quick (Claude Haiku 4.5 by default); the call reader above keeps its own. Saving a change runs its Test first.",
+    "inboundAssistantModelOk": "Works — the assistant's lookups, answer and drafts ran on this model."
   },
   "adminPeople": {
     "crumb": "People & roles",

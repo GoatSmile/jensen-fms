@@ -1,12 +1,13 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-10-01 (Thursday, 00:45).** **Calls now come with
-suggested actions, and visits reach Google Calendar** (migrations 115–117):
-triage decides by what was said (never by whose number), every incoming call
-leaves a row even when Relatel did not record it, each read call with a request
-gets a drafted offer / repair ticket / visit for a person to apply, and
-`/visits` lists the *Servicebesøg* calendar read-only. All live in production;
-the calendar is connected and saved there (verified 1 Oct).
+**Last updated: 2026-10-01 (Thursday, 14:10).** **The assistant is live,
+behind ONE floating button** (migrations 119–120): bottom right on phone and
+desktop (⌘K), its panel answers questions, opens records, drafts visits /
+reminders / tickets / offers for one-tap confirm, and holds Scan — scoped to
+the asker's role (no prices or customer pages for Workshop), on its own model
+(Claude Haiku 4.5, configurable with its own Test). The calendar became
+*Calendar* with kinds (visit, reminder; migration 118). All in production;
+nobody has used the assistant there yet.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -23,9 +24,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 119 is the latest; production AND local verified at it**
-  (`check:prod` / `check:local`, 1 Oct). 119 = `assistant_answer`; 118 =
-  calendar kinds. 117 = calendar settings +
+- **Migration 120 is the latest; production AND local verified at it**
+  (`check:prod` / `check:local`, 1 Oct). 120 = `inbound_assistant_model`;
+  119 = `assistant_answer`; 118 = calendar kinds. 117 = calendar settings +
   `calendar_events` + `draft_visit`; 116 = `plan_attempted_at` + the new
   suggestion kinds in the ledger check; 115 = `inbox` for Sales, not the
   Accountant. 113 = `inbound_elevenlabs_region`, 114 = its default `global`.
@@ -75,11 +76,12 @@ is Danish (person language).
   bike 36" → straight there; "bike 3" → a list), drafts (reminders, visits,
   tickets, offers) with one-tap cards, and holds Scan. Scoped by role. Verified
   locally as Nazar and as Finn at 360 px and desktop (no prices, no customer
-  pages, reminders allowed, Danish). **Not yet seen in production.** Speed,
-  MEASURED 1 Oct (local dev server): 3.5 s Send → answer for "next
-  appointment"; server-side 3–6 s typical, ~10–12 s when it needs several
-  lookups (an ambiguous bike, stock + price). Scan is only in the panel now —
-  the Workshop floor header lost its own button too.
+  pages, reminders allowed, Danish). **Not yet seen in production.** Model:
+  **Claude Haiku 4.5** (`inbound_assistant_model`, prod verified 1 Oct; the
+  call reader stays on Sonnet 5.5). Measured on Haiku, local dev server: 2–6 s
+  Send → answer; relative dates verified (Fri/tomorrow → 2 Oct, next Tue → 6
+  Oct, "mandag den 12." → 12 Oct). Scan is only in the panel — the Workshop
+  floor header lost its own button.
 - **Calendar (was Visits), with kinds** (migrations 117–118, DECISIONS
   2026-10-01): `/calendar` lists visits and reminders read live from Google,
   filter by kind; calls and dictated commands suggest entries, applied with one
@@ -165,9 +167,12 @@ is Danish (person language).
   Supabase is older than production's storage schema (`lifecycle_configuration`)
   — **redo that swap after every re-dump**, or the seed fails. Keep disk free:
   `.next` had grown to 18 GB; `supabase stop` before updating Docker.
-  **Everything is STOPPED as of 1 Oct 00:50** (stack via `supabase stop`, data
-  kept; Docker Desktop via `docker desktop stop`; `.next` deleted). To resume:
-  `open -a Docker`, then `supabase start`, then the dev server.
+  **Everything is STOPPED at session end, 1 Oct 14:10** (stack via `supabase
+  stop`, data kept; Docker Desktop via `docker desktop stop`; `.next`
+  deleted — it had regrown to 10 GB in ONE day). To resume: `open -a Docker`,
+  then `supabase start`, then the dev server. Local TEST rows from today's
+  assistant tests are command requests only (nothing was applied to Google
+  after the two 30 Sep TEST entries).
 - **With the browser pane hidden**, streamed sections never reveal and real
   clicks fail: `window.$RV(window.$RB)`, synthetic `pointerdown` for Radix
   menus, `requestSubmit()` for forms.

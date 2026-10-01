@@ -197,3 +197,34 @@ export async function testModel(provider: string, model: string): Promise<TestMo
   if (failed.length > 0) return { ok: false, reason: "api_error", detail: failed.join(" · ") };
   return { ok: true, model: id };
 }
+
+/**
+ * The ASSISTANT's own Test (migration 120): its exact request shape — every
+ * read tool, the drafting lookups and the `respond` tool with the shared
+ * action schema — and the model must actually answer through `respond`.
+ * Saving a changed assistant model is refused until this passes, the same
+ * guard as `testModel` for the call reader.
+ */
+export async function testAssistantModel(provider: string, model: string): Promise<TestModelResult> {
+  if (provider !== "anthropic") return { ok: false, reason: "unsupported_provider" };
+  if (!process.env.ANTHROPIC_API_KEY) return { ok: false, reason: "no_key" };
+  const id = model.trim();
+  if (!id) return { ok: false, reason: "api_error", detail: "empty model id" };
+
+  const { RESPOND_TOOL } = await import("@/lib/assistant/agent");
+  const { ASSISTANT_TOOLS } = await import("@/lib/assistant/tools");
+  const { RESOLVER_TOOLS } = await import("@/lib/inbound/command/resolvers");
+  const r = await postMessages({
+    model: id,
+    max_tokens: 4000,
+    system: "You are a test. Do not call any lookup tool. Call respond once with text 'ok', go false, and empty choices and actions.",
+    tools: [...ASSISTANT_TOOLS.map((t) => t.def), ...RESOLVER_TOOLS, RESPOND_TOOL],
+    messages: [{ role: "user", content: "Say ok." }],
+  });
+  if (!r.ok) return { ok: false, reason: r.reason === "no_key" ? "no_key" : "api_error", detail: r.detail ?? r.reason };
+  const content = ((r.json as { content?: { type: string; name?: string }[] }).content ?? []);
+  if (!content.some((b) => b.type === "tool_use" && b.name === "respond")) {
+    return { ok: false, reason: "api_error", detail: "the model did not answer through the assistant's respond tool" };
+  }
+  return { ok: true, model: id };
+}

@@ -3494,7 +3494,7 @@
     "providerLabel": "Udbyder",
     "inboundRegionLabel": "Region",
     "inboundModelLabel": "Model",
-    "inboundModelHint": "Bruges til både opkaldsudtræk og kommandoagenten. Vælg et rullende alias frem for et dateret øjebliksbillede — øjebliksbilleder udgår med tiden.",
+    "inboundModelHint": "Bruges til opkaldsudtræk, aftalelæseren og de foreslåede handlinger på opkald. Vælg hellere et rullende alias end en dateret version — versioner udfases med tiden.",
     "inboundModelLoading": "Henter modeller…",
     "inboundModelUnlisted": "(gemt)",
     "inboundModelUnlistedHint": "Dette model-id findes ikke på udbyderens aktuelle liste — det kan være udgået eller stavet forkert. Test det, før du gemmer.",
@@ -3582,7 +3582,10 @@
     "calendarOpenGoogle": "Åbn Google Kalender",
     "calendarOpenGoogleHint": "— åbner kun for dem, kalenderen er delt med.",
     "calendarSave": "Gem kalender",
-    "calendarSaved": "Gemt."
+    "calendarSaved": "Gemt.",
+    "inboundAssistantModelLabel": "Model til assistenten",
+    "inboundAssistantModelHint": "Modellen bag Spørg-knappen. En hurtig model giver hurtige svar (Claude Haiku 4.5 som standard); opkaldslæseren ovenfor har sin egen. Når du gemmer en ændring, køres dens test først.",
+    "inboundAssistantModelOk": "Virker — assistentens opslag, svar og udkast kørte på denne model."
   },
   "adminPeople": {
     "crumb": "Personer og roller",

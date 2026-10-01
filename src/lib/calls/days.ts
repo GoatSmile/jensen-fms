@@ -101,3 +101,22 @@ export function dayHeading(key: string, locale: string): string {
     month: "short",
   }).format(new Date(`${key}T12:00:00Z`));
 }
+
+/**
+ * The coming days written out — "Thu 2026-10-01 (today), Fri 2026-10-02, …" —
+ * for a model to LOOK UP "this Friday" instead of computing it. Weekday
+ * arithmetic is where a small model goes wrong (Haiku 4.5 put "Friday" on
+ * Saturday 3 Oct, found 2026-10-01); a list it reads cannot be off by one.
+ */
+export function danishDaysAhead(count = 14, from: Date = new Date()): string {
+  const start = danishDayKey(from);
+  const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" });
+  const days: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const key = shiftDayKey(start, i);
+    const weekday = fmt.format(new Date(`${key}T12:00:00Z`));
+    days.push(`${weekday} ${key}${i === 0 ? " (today)" : ""}`);
+  }
+  return days.join(", ");
+}
+

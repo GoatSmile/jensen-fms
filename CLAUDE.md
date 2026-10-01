@@ -719,6 +719,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (answer in `assistant_answer`, migration 119), seen by its ASKER and by
   `inbox` (`mayReadCommand`); anyone signed in may ask. A new read tool joins
   `tools.ts` with its capabilities; a new target kind joins `answer.ts`.
+  **It has its OWN model** (`inbound_assistant_model`, migration 120 — Claude
+  Haiku 4.5 by default, for speed; the call reader keeps
+  `inbound_extraction_model`) with its OWN Test (`testAssistantModel`, its real
+  tool set), and saving a changed one is refused until that passes.
+  **Relative dates are LOOKED UP, never computed**: both planners get the
+  coming fortnight spelled out (`danishDaysAhead`) — Haiku put "Friday" on a
+  Saturday until they did. Part names are Danish, so `find_part` matches each
+  word, in any order.
   **ONE way in: the floating button** (`AssistantButton`, bottom right on
   phone and desktop, ⌘K / Ctrl+K) opening `AssistantPanel`, which also holds
   **Scan** — there is no separate Scan button, sidebar entry or header icon

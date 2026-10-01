@@ -26,6 +26,7 @@ import { PLAN_ACTION_ITEM_SCHEMA } from "@/lib/inbound/command/agent";
 import { parseCommandPlan, type CommandAction, type CommandPlan } from "@/lib/inbound/command/plan";
 import { RESOLVER_NAMES, RESOLVER_TOOLS, executeResolver } from "@/lib/inbound/command/resolvers";
 
+import { danishDaysAhead } from "@/lib/calls/days";
 import { routeAllows } from "@/lib/people/routes";
 
 import { TARGET_KINDS, parseAssistantAnswer, targetHref, type AssistantAnswer, type TargetKind } from "./answer";
@@ -52,7 +53,8 @@ export type AssistantResult =
   | { ok: true; answer: AssistantAnswer; plan: CommandPlan }
   | { ok: false; reason: "no_body" | "no_key" | "api_error" | "no_answer"; detail?: string };
 
-const RESPOND_TOOL = {
+/** Exported for the model Test, which runs this exact shape (models.ts). */
+export const RESPOND_TOOL = {
   name: "respond",
   description:
     "Give your answer. Call exactly once, after looking up what you need. `open` and `choices` may only use ids your lookups returned in this conversation.",
@@ -109,6 +111,7 @@ function systemPrompt(opts: { language: "da" | "en"; drafts: string[]; openable:
   return `You are the assistant inside Jensen FMS, the system of a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). A staff member speaks or types to you — like to a secretary. You can ANSWER questions, OPEN a record for them, and DRAFT actions for them to confirm. You never change anything yourself.
 
 Now: ${opts.now} (Copenhagen).
+The next two weeks: ${danishDaysAhead()}. For "Friday", "next Tuesday", "tomorrow" — LOOK THE DATE UP in this list; never work it out.
 
 How to work:
 1. LOOK BEFORE YOU ANSWER. Use the tools to find what was asked about. Never answer from memory, never invent a bike, customer, number, date or amount.

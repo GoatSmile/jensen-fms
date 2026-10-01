@@ -3584,3 +3584,21 @@ already developed in Munr."*
 - **Rejected:** a separate intent classifier (two models to keep in step);
   porting Munr's code verbatim (different domain — conversations vs bikes —
   so the patterns came over, not the files).
+
+## 2026-10-01 — The assistant runs on its own model: Haiku 4.5, configurable
+
+Owner: *"use Haiku 4.5 for the assistant (make this configurable)."*
+
+- **A separate setting** (`inbound_assistant_model`, migration 120), beside
+  the call reader's — same provider and key, a different speed/quality pick.
+  **Its own Test** runs the assistant's real tool set and requires an answer
+  through `respond`; a changed value is saved only after it passes.
+- **Measured honestly:** simple questions were already ~3.5 s on Sonnet 5.5
+  (the time is round trips, not thinking); Haiku is similar there, and faster
+  where lookups pile up (stock question 4.5 s vs 12 s).
+- **Two weaknesses Haiku exposed, fixed in the tools, not by model choice:**
+  it searched Danish part names in English and gave up (now `find_part`
+  matches each word and the tool says names are Danish), and it computed
+  "Friday" as Saturday 3 Oct (now both planners get the coming days written
+  out to look up). **Rejected:** going back to Sonnet for the assistant — the
+  faults were the tools', and they would have bitten any model eventually.

@@ -129,23 +129,29 @@ const findPart: AssistantTool = {
   caps: ["parts"],
   def: {
     name: "find_part",
-    description: "Find catalog parts by name or SKU, with how many are in stock. Up to 8.",
+    description:
+      "Find catalog parts by name or SKU, with how many are in stock. Up to 8. Part names are mostly DANISH (batteri, lader, stel, forgaffel, kurv, dæk, slange, bremse) — search with the Danish word or a short stem ('batter', '36v'). Every word must appear, in any order. If nothing matches, try again with fewer or shorter words before saying it isn't there.",
     input_schema: {
       type: "object",
-      properties: { query: { type: "string", description: "Part name or SKU." } },
+      properties: { query: { type: "string", description: "Words from the part's name or its SKU." } },
       required: ["query"],
     },
   },
   async run(ctx, input) {
     const q = str(input.query);
     if (!q) return { error: "empty query" };
-    const like = `%${ilikeEscape(q)}%`;
-    const { data: parts, error } = await ctx.supabase
+    // Each word must appear somewhere (name or SKU), in any order — "36v
+    // batter" finds "Batteri 36v 14 Ah". Chained .or() filters are ANDed.
+    const words = q.split(/\s+/).filter(Boolean).slice(0, 5);
+    let req = ctx.supabase
       .from("parts")
       .select("id, internal_sku, name_en, name_da")
-      .is("deleted_at", null)
-      .or(`name_en.ilike.${like},name_da.ilike.${like},internal_sku.ilike.${like}`)
-      .limit(LIMIT);
+      .is("deleted_at", null);
+    for (const w of words) {
+      const like = `%${ilikeEscape(w)}%`;
+      req = req.or(`name_en.ilike.${like},name_da.ilike.${like},internal_sku.ilike.${like}`);
+    }
+    const { data: parts, error } = await req.limit(LIMIT);
     if (error) return { error: error.message };
     const ids = (parts ?? []).map((p) => p.id);
     if (ids.length === 0) return { parts: [] };

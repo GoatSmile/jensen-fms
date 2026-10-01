@@ -11,11 +11,12 @@ import {
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
   ELEVENLABS_REGIONS,
+  DEFAULT_ASSISTANT_MODEL,
   DEFAULT_EXTRACTION_MODEL,
   findProvider,
   loadInboundSettings,
 } from "@/lib/inbound/settings";
-import { testModel } from "@/lib/inbound/models";
+import { testAssistantModel, testModel } from "@/lib/inbound/models";
 
 export type SettingsResult = { ok: true } | { ok: false; error: string };
 
@@ -458,6 +459,26 @@ export async function saveInboundSettings(
     }
   }
 
+  // The assistant's own model (migration 120) gets the same guard, through
+  // the assistant's own request shape.
+  const newAssistantModel =
+    nullable(formData.get("inbound_assistant_model")) ?? DEFAULT_ASSISTANT_MODEL;
+  if (
+    newAssistantModel !== current.assistantModel ||
+    extraction.value !== current.extractionProvider
+  ) {
+    const probe = await testAssistantModel(extraction.value, newAssistantModel);
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: t("inboundModelFailsTest", {
+          model: newAssistantModel,
+          detail: probe.detail ?? probe.reason,
+        }),
+      };
+    }
+  }
+
   // The ElevenLabs host is the residency choice; only the three it runs.
   const elevenlabsRegion = (nullable(formData.get("inbound_elevenlabs_region")) ?? "global").trim();
   if (!(ELEVENLABS_REGIONS as readonly string[]).includes(elevenlabsRegion)) {
@@ -476,6 +497,7 @@ export async function saveInboundSettings(
       ),
       inbound_extraction_provider: extraction.value,
       inbound_extraction_model: newModel,
+      inbound_assistant_model: newAssistantModel,
       inbound_telephony_provider: telephony.value,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
       inbound_phone_number_test: nullable(

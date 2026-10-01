@@ -31,6 +31,7 @@ export type Database = {
           email_domain: string | null
           hide_location_info: boolean
           id: number
+          inbound_assistant_model: string
           inbound_bridge_number: string | null
           inbound_bridge_timeout_seconds: number
           inbound_call_import_endpoints: string[]
@@ -75,6 +76,7 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_assistant_model?: string
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
           inbound_call_import_endpoints?: string[]
@@ -119,6 +121,7 @@ export type Database = {
           email_domain?: string | null
           hide_location_info?: boolean
           id?: number
+          inbound_assistant_model?: string
           inbound_bridge_number?: string | null
           inbound_bridge_timeout_seconds?: number
           inbound_call_import_endpoints?: string[]

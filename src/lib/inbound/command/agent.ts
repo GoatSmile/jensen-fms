@@ -21,6 +21,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseCommandPlan, type CommandPlan } from "./plan";
 import { RESOLVER_TOOLS, RESOLVER_NAMES, executeResolver } from "./resolvers";
 import { postMessages } from "@/lib/anthropic/messages";
+import { danishDaysAhead } from "@/lib/calls/days";
 
 // Room for adaptive thinking, which the newest models run when the request
 // says nothing about it and which counts against max_tokens.
@@ -189,7 +190,7 @@ export async function runCommandAgent(
   const messages: { role: "user" | "assistant"; content: unknown }[] = [
     {
       role: "user",
-      content: `Today is ${opts.today} (${weekday(opts.today)}).\n\nStaff task:\n${body}`,
+      content: `Today is ${opts.today} (${weekday(opts.today)}).\nThe next two weeks: ${danishDaysAhead()}. For a weekday or "tomorrow", look the date up in this list — never work it out.\n\nStaff task:\n${body}`,
     },
   ];
 

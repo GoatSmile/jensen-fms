@@ -77,6 +77,8 @@ export const EXTRACTION_PROVIDERS: ProviderEntry[] = [
  * eventually retires. Discovery + the "Test" probe live in ./models.ts.
  */
 export const DEFAULT_EXTRACTION_MODEL = "claude-sonnet-5";
+/** The assistant's own model (migration 120): fast, because it answers people waiting. */
+export const DEFAULT_ASSISTANT_MODEL = "claude-haiku-4-5-20251001";
 
 /** Registered telephony adapters (phone number + recording webhook). */
 export const TELEPHONY_PROVIDERS: ProviderEntry[] = [
@@ -118,6 +120,8 @@ export type InboundSettings = {
   callTranscriptionProviderRaw: string | null;
   extractionProvider: string;
   extractionModel: string;
+  /** The assistant's model — same provider and key, its own speed/quality pick. */
+  assistantModel: string;
   telephonyProvider: string;
   /** 'voicemail' (record a message) | 'bridge' (ring a phone, record the call). */
   callMode: InboundCallMode;
@@ -140,7 +144,7 @@ export type InboundSettings = {
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_assistant_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -167,6 +171,7 @@ export async function loadInboundSettings(
     // Drives BOTH the extraction call and the VC-1 command agent. A rolling
     // alias, never a dated snapshot — snapshots pin us and eventually retire.
     extractionModel: data?.inbound_extraction_model ?? DEFAULT_EXTRACTION_MODEL,
+    assistantModel: data?.inbound_assistant_model ?? DEFAULT_ASSISTANT_MODEL,
     telephonyProvider: data?.inbound_telephony_provider ?? "twilio",
     phoneNumber: data?.inbound_phone_number ?? null,
     phoneNumberTest: data?.inbound_phone_number_test ?? null,

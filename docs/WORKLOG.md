@@ -105,12 +105,12 @@ treat the early totals as floors, not truth.
 | Tue 2026-09-29 | ~2 | **Service agreements per bike, and signed papers read from the phone** (migration 110): lines + coverage switch, upload → read → confirm; Dennis's 0-kr/K answers in the handling doc; the production click-through checklist. |
 | Tue 2026-09-29 (cont.) | ~5 | **Finn's calls in from Relatel, and the inbox became Calls** (migrations 111–112): the Relatel test passed, import + MP3 repair, phone lines per person, triage by day; all times now Danish. |
 | Wed 2026-09-30 | ~9 | **Calls decide by what was said, and every call leaves a trace**: 360 px fix, ElevenLabs, one Anthropic door; unrecorded + missed calls imported, suggested offers/tickets per call (migrations 113–116), Google Calendar guide. |
-| Thu 2026-10-01 | ~1 | **Visits into Google Calendar, and a read-only Visits list** (migration 117); Docker lost its disk image to a full disk, local copy rebuilt from production. |
+| Thu 2026-10-01 | ~5 | **Calendar and the assistant** (migrations 117–120): visits and reminders in Google, then one floating button whose panel answers, opens and drafts per role, on Haiku 4.5; Docker lost its disk image to a full disk. |
 
 **September: ~77 h** (11 working days)
 
-**October so far: ~1 h** (1 working day)
+**October so far: ~5 h** (1 working day)
 
 ---
 
-**Project total: ~332 h across 53 working days (2026-05-07 → 2026-10-01)**
+**Project total: ~336 h across 53 working days (2026-05-07 → 2026-10-01)**
