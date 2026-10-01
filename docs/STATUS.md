@@ -171,7 +171,7 @@ is Danish (person language).
   Supabase is older than production's storage schema (`lifecycle_configuration`)
   — **redo that swap after every re-dump**, or the seed fails. Keep disk free:
   `.next` had grown to 18 GB; `supabase stop` before updating Docker.
-  **Everything is STOPPED at session end, 1 Oct 14:10** (stack via `supabase
+  **Everything is STOPPED at session end, 1 Oct 14:50** (stack via `supabase
   stop`, data kept; Docker Desktop via `docker desktop stop`; `.next`
   deleted — it had regrown to 10 GB in ONE day). To resume: `open -a Docker`,
   then `supabase start`, then the dev server. Local TEST rows from today's
