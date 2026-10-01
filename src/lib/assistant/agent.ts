@@ -201,9 +201,11 @@ export async function runAssistant(
         result = await read.run(ctx, input);
       } else if (drafts.length && RESOLVER_NAMES.has(call.name ?? "")) {
         result = await executeResolver(supabase, call.name ?? "", input);
-        // Customers found while drafting may also be opened or offered.
+        // Customers found while drafting may also be opened or offered — a
+        // close spelling only as a CHOICE the person taps, which `respond` allows.
         if (call.name === "search_customer") {
-          for (const m of ((result as { matches?: { id: string }[] }).matches ?? [])) ctx.seen.set(m.id, "customer");
+          const r = result as { matches?: { id: string }[]; close?: { id: string }[] };
+          for (const m of [...(r.matches ?? []), ...(r.close ?? [])]) ctx.seen.set(m.id, "customer");
         }
       } else {
         result = { error: `not available to this person: ${call.name}` };

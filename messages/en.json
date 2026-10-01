@@ -4551,7 +4551,8 @@
     "calendarCouldNotCreate": "The visit could not be added to the calendar: {detail}",
     "calendarLinkFailed": "The visit is in the calendar, but the link back to this call could not be saved: {detail}",
     "visitEventLink": "The call in Jensen FMS",
-    "calendarEventLinkCommand": "The command in Jensen FMS"
+    "calendarEventLinkCommand": "The command in Jensen FMS",
+    "callNoNewCustomer": "A call never creates a customer — names get misheard. Pick the customer on the order or offer instead."
   },
   "inbox": {
     "title": "Inbox",
@@ -4646,7 +4647,7 @@
     "handledTag": "handled",
     "reopen": "Reopen",
     "leadHint": "Order inquiry — a sales lead. Review the proposed drafts below, then log it as handled once you've followed up.",
-    "leadDraftHint": "Order inquiry — a sales lead. Draft the customer and the order from what was said on the call; nothing is written until you apply each step.",
+    "leadDraftHint": "Order inquiry — a sales lead. Suggest the offer from what was said on the call; you pick the customer, and nothing is written until you apply each step.",
     "leadDraft": "Suggest actions from this call",
     "planBelowHint": "Suggested actions are drafted below — apply the ones you want, then log the call as handled.",
     "leadDrafting": "Reading the call…",
@@ -4729,7 +4730,10 @@
     "allDay": "all day",
     "answerTitle": "Answer",
     "openTarget": "Open {label}",
-    "statusAnswered": "Answered"
+    "statusAnswered": "Answered",
+    "slot_customer": "Which customer?",
+    "customerSuggested": "Close to what was said",
+    "customerAll": "All customers"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",

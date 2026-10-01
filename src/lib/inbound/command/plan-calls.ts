@@ -22,6 +22,7 @@ import { parseExtraction } from "../extraction";
 import { loadInboundSettings } from "../settings";
 import { runCommandAgent } from "./agent";
 import { buildInquiryTask } from "./inquiry";
+import type { CommandPlan } from "./plan";
 
 export type PlanCallResult =
   | { ok: true }
@@ -74,10 +75,11 @@ export async function planCall(
     today: today(),
   });
   if (!result.ok) return { ok: false, reason: "agent", detail: result.detail ?? result.reason };
+  const plan = withoutNewCustomers(result.plan);
 
   const { error } = await supabase
     .from("inbound_messages")
-    .update({ command_plan: result.plan, plan_attempted_at: new Date().toISOString() })
+    .update({ command_plan: plan, plan_attempted_at: new Date().toISOString() })
     .eq("id", messageId);
   if (error) return { ok: false, reason: "save", detail: error.message };
   return { ok: true };
@@ -143,4 +145,24 @@ export async function draftSuggestions(
     }
   });
   return { planned, failed };
+}
+
+/**
+ * A CALL never creates a customer (owner, 2026-10-01): the transcript garbles
+ * names, and "Fredericksburg Community" became a proposed new customer while
+ * Frederiksberg Kommune was right there. Whatever the agent proposes, the
+ * stored plan carries no draft_customer, and nothing waits on one — the
+ * customer is picked on the card instead. Ids stay positional (a0, a1…).
+ */
+export function withoutNewCustomers(plan: CommandPlan): CommandPlan {
+  return {
+    ...plan,
+    actions: plan.actions
+      .filter((a) => a.type !== "draft_customer")
+      .map((a) =>
+        (a.type === "draft_offer" || a.type === "draft_sales_order") && a.organizationFromNewCustomer
+          ? { ...a, organizationFromNewCustomer: false }
+          : a,
+      ),
+  };
 }

@@ -4551,7 +4551,8 @@
     "calendarCouldNotCreate": "Besøget kunne ikke lægges i kalenderen: {detail}",
     "calendarLinkFailed": "Besøget ligger i kalenderen, men linket tilbage til opkaldet kunne ikke gemmes: {detail}",
     "visitEventLink": "Opkaldet i Jensen FMS",
-    "calendarEventLinkCommand": "Kommandoen i Jensen FMS"
+    "calendarEventLinkCommand": "Kommandoen i Jensen FMS",
+    "callNoNewCustomer": "Et opkald opretter aldrig en kunde — navne bliver hørt forkert. Vælg kunden på ordren eller tilbuddet i stedet."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4646,7 +4647,7 @@
     "handledTag": "håndteret",
     "reopen": "Genåbn",
     "leadHint": "Ordreforespørgsel — et salgs-lead. Gennemgå de foreslåede kladder nedenfor, og markér som håndteret, når du har fulgt op.",
-    "leadDraftHint": "Ordreforespørgsel — et salgs-lead. Opret kladder til kunden og ordren ud fra det, der blev sagt på opkaldet; intet gemmes, før du anvender hvert trin.",
+    "leadDraftHint": "Ordreforespørgsel — et salgs-lead. Foreslå tilbuddet ud fra det, der blev sagt på opkaldet; du vælger kunden, og intet gemmes, før du anvender hvert trin.",
     "leadDraft": "Foreslå handlinger ud fra opkaldet",
     "planBelowHint": "Foreslåede handlinger er klar nedenfor — anvend dem, du vil have, og markér derefter opkaldet som håndteret.",
     "leadDrafting": "Læser opkaldet…",
@@ -4729,7 +4730,10 @@
     "allDay": "hele dagen",
     "answerTitle": "Svar",
     "openTarget": "Åbn {label}",
-    "statusAnswered": "Besvaret"
+    "statusAnswered": "Besvaret",
+    "slot_customer": "Hvilken kunde?",
+    "customerSuggested": "Tæt på det, der blev sagt",
+    "customerAll": "Alle kunder"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",

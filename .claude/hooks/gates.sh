@@ -4,10 +4,12 @@
 # green before every commit"), which meant it depended on the assistant
 # remembering. This makes it deterministic.
 #
-# Adapts to the project: runs `npm test` only when a test script exists, and
-# NEVER runs `npm run build` while a dev server is listening — that clobbers
-# the dev chunks and makes every page 500 with a misleading module-not-found
-# (documented in docs/STATUS.md; it also served a stale PWA shell mid-session).
+# Adapts to the project: runs `npm test` only when a test script exists. The
+# build is `npm run build:check`, which writes its own `.next-check` folder
+# (2026-10-01) — so it runs even while a dev server is listening. Building into
+# the shared `.next` used to clobber the dev chunks (every page 500 with a
+# misleading module-not-found), which is why this gate once SKIPPED the build
+# whenever a server was up.
 #
 # Skips everything for docs-only commits; a .md file cannot break tsc.
 set -uo pipefail
@@ -88,13 +90,8 @@ $(printf '%s' "$out" | tail -25)"
   fi
 fi
 
-port=$(jq -r '.configurations[0].port // 3000' .claude/launch.json 2>/dev/null || echo 3000)
-if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
-  note "Gates: tsc + lint + tests passed. Build SKIPPED — a dev server is listening on :$port and building would clobber its chunks. Stop it and run \`npm run build\` before you trust this commit."
-fi
-
-if ! out=$(npm run build 2>&1); then
-  deny "Gate failed — \`npm run build\` (tsc and tests passed). This is the class tsc misses: RSC boundary violations and other runtime-only failures.
+if ! out=$(npm run build:check 2>&1); then
+  deny "Gate failed — \`npm run build:check\` (tsc and tests passed). This is the class tsc misses: RSC boundary violations and other runtime-only failures.
 $(printf '%s' "$out" | tail -25)"
 fi
 

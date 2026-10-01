@@ -83,21 +83,6 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   agent does say so in the line note, so nothing is silently wrong. Fix:
   promote `quantity` to a slot the CommandPlanPanel can edit before Apply —
   worth doing the first time a real multi-quantity enquiry arrives.
-- **A garbled customer name becomes a proposed NEW customer** (found
-  2026-09-30, owner: park it, come back later). The transcription heard
-  "Frederiksberg Kommune" as "Fredericksburg Community"; `search_customer` found
-  no match, so the call's suggestions were *New customer "Fredericksburg
-  Community"* + an offer tied to it (`organizationFromNewCustomer`). The panel
-  cannot re-point the offer at the EXISTING customer, so the only way to apply
-  the offer is to create a wrong customer first. **Owner's rule until fixed: do
-  not apply a *new customer* suggestion from a call** — make the offer by hand
-  from Offers. Production check 2026-10-01: no such customer was created. Fix:
-  (1) a customer open slot (picker) on offer / sales-order / visit
-  suggestions, pre-filled with the near-miss candidates the matcher already
-  finds (`match_candidates`), and a *skip* on *New customer*; (2) feed the
-  customer list to the transcriber's keyterms and the agent's search with a
-  fuzzy/phonetic match, so "Fredericksburg" ≈ "Frederiksberg"; (3) consider
-  never proposing `draft_customer` from a CALL, only from a staff command.
 - SQL-side pagination + stock-status filtering for the parts list at scale
   (currently in-memory in `src/app/parts/page.tsx`).
 - Offline write-queue for the workshop-floor PWA.

@@ -668,7 +668,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   runs the command agent ONCE per read call carrying a request
   (`plan_attempted_at`, migration 116) — bikes they want become a *draft
   OFFER*, never a sales order; a repair becomes a *draft ticket*; call-backs
-  and visits go in the plan's notes. A person applies each one; unapplied
+  go in the plan's notes. **A call NEVER creates a customer** (owner,
+  2026-10-01 — a transcript garbles names): `withoutNewCustomers` strips any
+  `draft_customer` from a call's plan, stored or shown, and applying one from
+  a call is refused. An unconfirmed customer on an offer, order or visit is a
+  **"Which customer?" slot**, its close spellings listed first
+  (`search_organizations_fuzzy`, trigram, migration 121); `search_customer`
+  returns them as `close`, and the model never fills an id from one. A person applies each one; unapplied
   suggestions keep the call in *to do*. **Applying claims its
   `command_actions` row BEFORE writing the draft**, so a second press can
   never make a second draft. Staff requests left the
@@ -984,6 +990,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   runtime-only failures (lessons: commit fa1dbed, and the shell bug below).
   `.github/workflows/ci.yml` runs tsc + lint on every push (Next 16 does NOT
   run ESLint during `next build`); the runtime half is Tier 2 in BACKLOG.md.
+  **Check builds use `npm run build:check`** — it writes `.next-check`
+  (`NEXT_DIST_DIR`) and deletes it, so it runs safely beside a live dev server
+  (sharing `.next` used to corrupt it); the commit gate uses it too. Plain
+  `npm run build` is Vercel's.
   **Manually smoke-test new routes in the browser before declaring a phase
   done** — that is still the only check that catches this class.
 - **Two repeatable checks exist — use them instead of hand-rolling one.**

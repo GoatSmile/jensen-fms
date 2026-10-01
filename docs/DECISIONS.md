@@ -3602,3 +3602,25 @@ Owner: *"use Haiku 4.5 for the assistant (make this configurable)."*
   "Friday" as Saturday 3 Oct (now both planners get the coming days written
   out to look up). **Rejected:** going back to Sonnet for the assistant — the
   faults were the tools', and they would have bitten any model eventually.
+
+## 2026-10-01 — A garbled customer name is picked, never created; check builds get their own folder
+
+Owner: *"fix the garbled customer name issue"* (the 30 Sep voicemail:
+"Frederiksberg Kommune" heard as "Fredericksburg Community" → a proposed NEW
+customer, with the offer tied to it), and earlier: *"let's not create any new
+communities or customers"* from it.
+
+- **A call never creates a customer** — in the planner's instructions, in the
+  stored plan (`withoutNewCustomers`), in what a call page shows (old plans
+  included) and at apply (refused). Dictated commands may still propose one:
+  that is a person deciding, not a transcript.
+- **The person picks the customer** on the card: a "Which customer?" slot on
+  an offer or order with no confirmed customer (required), on a visit
+  (optional), and as the alternative to a proposed new customer — close
+  spellings first. Trigram similarity ranks the real one first (0.34 vs
+  0.25), verified in production. **Rejected:** auto-filling the best close
+  match (a wrong customer on an offer is worse than one tap), phonetic
+  matching (trigram already separates this case; add it if a real miss shows).
+- **Check builds use their own folder** (owner: *"we cannot have 2?"*):
+  `npm run build:check` → `.next-check`, deleted after; the commit gate now
+  always builds instead of skipping whenever a dev server was up.

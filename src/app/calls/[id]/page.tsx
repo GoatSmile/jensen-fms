@@ -24,6 +24,7 @@ import {
 import { isSpamFolded } from "@/lib/inbound/triage";
 import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import { loadPlanContext } from "@/lib/inbound/command/plan-context";
+import { withoutNewCustomers } from "@/lib/inbound/command/plan-calls";
 
 import { mayReadCommand, readCallsScope, scopeAllowsRow } from "@/lib/calls/access";
 import { readPersonId } from "@/lib/auth/read-session";
@@ -161,6 +162,8 @@ export default async function InboundDetailPage({
             templates={ctx.templates}
             segments={ctx.segments}
             colors={ctx.colors}
+            customers={ctx.customers}
+            suggestedCustomers={ctx.suggestedCustomers}
           />
         )}
       </div>
@@ -230,7 +233,9 @@ export default async function InboundDetailPage({
   // P2: a sales enquiry can carry a plan of proposed DRAFT actions, reviewed
   // in the same panel the VC-1 command surface uses. Only fetch the open-slot
   // vocabulary when there is actually a plan to render.
-  const leadPlan = msg.command_plan ? parseCommandPlan(msg.command_plan) : null;
+  // A call's plan never offers a new customer — not even one stored before
+  // that rule (withoutNewCustomers, 2026-10-01).
+  const leadPlan = msg.command_plan ? withoutNewCustomers(parseCommandPlan(msg.command_plan)) : null;
   const leadCtx = leadPlan ? await loadPlanContext(supabase, id) : null;
 
   // Shadow-mode flag + the linked ticket's number (if one was created).
@@ -400,6 +405,8 @@ export default async function InboundDetailPage({
               templates={leadCtx.templates}
               segments={leadCtx.segments}
               colors={leadCtx.colors}
+              customers={leadCtx.customers}
+              suggestedCustomers={leadCtx.suggestedCustomers}
             />
           ) : null}
 

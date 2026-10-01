@@ -25,6 +25,9 @@ type Props = {
   templates: VocabItem[];
   segments: VocabItem[];
   colors: VocabItem[];
+  /** For the "Which customer?" slot: everyone, and the close spellings first. */
+  customers?: VocabItem[];
+  suggestedCustomers?: VocabItem[];
   /** Called after an apply or a re-run succeeds — for a surface that holds
    *  the plan in its own state (the floating panel) rather than re-rendering
    *  from the server. */
@@ -55,6 +58,8 @@ export function CommandPlanPanel({
   templates,
   segments,
   colors,
+  customers = [],
+  suggestedCustomers = [],
   onChanged,
 }: Props) {
   const t = useTranslations("inboxCommand");
@@ -131,6 +136,8 @@ export function CommandPlanPanel({
               templates={templates}
               segments={segments}
               colors={colors}
+              customers={customers}
+              suggestedCustomers={suggestedCustomers}
               messageId={messageId}
               onError={setError}
               onApplied={onChanged}
@@ -164,6 +171,8 @@ function ActionCard({
   templates,
   segments,
   colors,
+  customers,
+  suggestedCustomers,
   messageId,
   onError,
   onApplied,
@@ -176,6 +185,8 @@ function ActionCard({
   templates: VocabItem[];
   segments: VocabItem[];
   colors: VocabItem[];
+  customers: VocabItem[];
+  suggestedCustomers: VocabItem[];
   messageId: string;
   onError: (e: string | null) => void;
   onApplied?: () => void;
@@ -190,7 +201,9 @@ function ActionCard({
     (action.type === "draft_sales_order" || action.type === "draft_offer") &&
     !action.organizationId &&
     action.organizationFromNewCustomer &&
-    !customerApplied;
+    !customerApplied &&
+    // Picking an existing customer instead is the other way past it.
+    !picks.customer;
 
   const isApplied = Boolean(applied?.entityId) || Boolean(applied);
   // A calendar entry needs a date — the one said, or one picked on the card.
@@ -276,11 +289,34 @@ function ActionCard({
                 className="border-rule bg-surface h-9 rounded-md border px-2 text-sm"
               >
                 <option value="">{t("pickPlaceholder")}</option>
-                {vocabFor(slot.kind).map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label}
-                  </option>
-                ))}
+                {slot.kind === "customer" ? (
+                  <>
+                    {/* Close spellings of what was said first — a transcript
+                        garbles names; the person decides (2026-10-01). */}
+                    {suggestedCustomers.length > 0 ? (
+                      <optgroup label={t("customerSuggested")}>
+                        {suggestedCustomers.map((v) => (
+                          <option key={`s-${v.id}`} value={v.id}>
+                            {v.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    <optgroup label={t("customerAll")}>
+                      {customers.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </>
+                ) : (
+                  vocabFor(slot.kind).map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label}
+                    </option>
+                  ))
+                )}
               </select>
             </label>
           ))}
@@ -406,7 +442,9 @@ function chipsFor(
     if (action.segmentLabel) chips.push({ label: t("chip_segment"), value: action.segmentLabel });
   }
   if (action.type === "draft_offer") {
-    if (action.organizationLabel) {
+    // A chip only for a CONFIRMED customer; an unconfirmed name is the
+    // "Which customer?" slot's job, not a chip that looks settled.
+    if (action.organizationId && action.organizationLabel) {
       chips.push({ label: t("chip_customer"), value: action.organizationLabel });
     } else if (action.organizationFromNewCustomer) {
       chips.push({ label: t("chip_customer"), value: t("newCustomerMarker") });
@@ -416,14 +454,14 @@ function chipsFor(
     if (action.note) chips.push({ label: t("chip_note"), value: action.note });
   }
   if (action.type === "draft_event") {
-    if (action.organizationLabel) chips.push({ label: t("chip_customer"), value: action.organizationLabel });
+    if (action.organizationId && action.organizationLabel) chips.push({ label: t("chip_customer"), value: action.organizationLabel });
     if (action.location) chips.push({ label: t("chip_place"), value: action.location });
   }
   if (action.type === "draft_ticket" && action.urgency === "high") {
     chips.push({ label: t("chip_urgency"), value: t("urgencyHigh") });
   }
   if (action.type === "draft_sales_order") {
-    if (action.organizationLabel) {
+    if (action.organizationId && action.organizationLabel) {
       chips.push({ label: t("chip_customer"), value: action.organizationLabel });
     } else if (action.organizationFromNewCustomer) {
       chips.push({ label: t("chip_customer"), value: t("newCustomerMarker") });

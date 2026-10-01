@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
+    "build:check": "NEXT_DIST_DIR=.next-check next build --webpack && rm -rf .next-check",
     "start": "next start",
     "lint": "eslint",
     "smoke": "node scripts/smoke-routes.mjs",

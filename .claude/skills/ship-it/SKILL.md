@@ -16,7 +16,7 @@ say which you skipped.
 ## 1. Gates
 
 ```bash
-npx tsc --noEmit && npm run build
+npx tsc --noEmit && npm run build:check
 ```
 
 `.claude/hooks/gates.sh` enforces this at commit time, but run it yourself first so
@@ -24,8 +24,11 @@ a failure surfaces while you still have context. There are no unit tests — the
 Vitest/CI item sits parked in `docs/BACKLOG.md` — but `npm run smoke` sweeps every
 route (dev server running); run it. Both facts are why step 2 is not optional.
 
-**Never run `npm run build` while the dev server is live** — it corrupts `.next` and
-produces phantom hydration stalls. Stop the server first.
+**Use `npm run build:check`, not `npm run build`, while the dev server is live.**
+It builds into its own `.next-check` folder (`NEXT_DIST_DIR`, 2026-10-01) and
+deletes it afterwards, so it never touches the `.next` a running dev server
+reads — sharing that folder is what used to corrupt it and cause phantom
+hydration stalls. Plain `npm run build` (Vercel's) still writes `.next`.
 
 ## 2. Browser-verify — this is the real gate
 

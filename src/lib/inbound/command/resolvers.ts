@@ -25,7 +25,7 @@ export const RESOLVER_TOOLS = [
   {
     name: "search_customer",
     description:
-      "Find existing customer organizations by name. Returns up to 8 matches with id + label. Empty → the customer isn't in the system yet (you may propose creating it).",
+      "Find existing customer organizations by name. Returns up to 8 `matches` with id + label. When nothing matches exactly it returns `close` — similar spellings (a transcript often garbles names: 'Fredericksburg Community' for 'Frederiksberg Kommune'). NEVER fill an id from `close`: leave organizationId null and mention the closest one; the person picks. Only when both are empty is the customer new.",
     input_schema: {
       type: "object",
       properties: {
@@ -133,10 +133,20 @@ export async function executeResolver(
         )
         .limit(LIMIT);
       if (error) return { error: error.message };
+      const matches = (data ?? []).map((o) => ({
+        id: o.id,
+        label: o.display_name_da || o.display_name_en || o.legal_name,
+      }));
+      if (matches.length > 0) return { matches };
+      // Nothing by substring — offer close spellings (migration 121), for the
+      // person to choose from, never for the model to fill in.
+      const { data: close } = await supabase.rpc("search_organizations_fuzzy", { q: query, lim: 5 });
       return {
-        matches: (data ?? []).map((o) => ({
-          id: o.id,
-          label: o.display_name_da || o.display_name_en || o.legal_name,
+        matches: [],
+        close: (close ?? []).map((c: { id: string; label: string; score: number }) => ({
+          id: c.id,
+          label: c.label,
+          similarity: Math.round(c.score * 100) / 100,
         })),
       };
     }

@@ -23,6 +23,11 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  // A CHECK build goes to its own folder (`npm run build:check`), so it can
+  // run while the dev server keeps `.next` — they used to share it, and a
+  // build rewriting the folder under a running server gave phantom stalls.
+  // Unset everywhere else, so Vercel builds to the default `.next`.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // Empty turbopack config silences Next.js 16's "you have a webpack
   // config but no turbopack config" warning — Serwist injects a webpack
   // config that we only need for production builds; dev runs Turbopack.

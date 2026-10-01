@@ -156,8 +156,8 @@ export type CommandPlan = {
 
 /** An unresolved reference the reviewer must fill before an action can apply. */
 export type OpenSlot = {
-  key: "template" | "segment" | "color";
-  kind: "template" | "segment" | "color";
+  key: "template" | "segment" | "color" | "customer";
+  kind: "template" | "segment" | "color" | "customer";
   /** Optional — a colour slot doesn't block Apply; the others do. */
   optional: boolean;
 };
@@ -328,6 +328,18 @@ export function openSlotsFor(action: CommandAction): OpenSlot[] {
   const slots: OpenSlot[] = [];
   if (action.type === "draft_customer" && !action.segmentId) {
     slots.push({ key: "segment", kind: "segment", optional: false });
+  }
+  // A customer not confirmed by a lookup is the person's to pick — required
+  // for an order or offer, optional (an alternative) when the plan proposes
+  // a NEW customer, optional for a visit. This is what stops a garbled name
+  // from becoming a new customer (2026-10-01).
+  if (action.type === "draft_sales_order" || action.type === "draft_offer") {
+    if (!action.organizationId) {
+      slots.push({ key: "customer", kind: "customer", optional: action.organizationFromNewCustomer });
+    }
+  }
+  if (action.type === "draft_event" && action.kind === "visit" && !action.organizationId) {
+    slots.push({ key: "customer", kind: "customer", optional: true });
   }
   if (action.type === "draft_sales_order" || action.type === "draft_offer") {
     if (!action.templateId) {

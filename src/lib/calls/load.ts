@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { parseCommandPlan } from "@/lib/inbound/command/plan";
+import { withoutNewCustomers } from "@/lib/inbound/command/plan-calls";
 import { parseExtraction } from "@/lib/inbound/extraction";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
@@ -164,7 +165,7 @@ export async function loadCallsPage(
   // Suggested actions still to apply: the plan's actions minus the ones in
   // the command_actions ledger.
   const planned = rawRows
-    .map((r) => ({ id: r.id, n: parseCommandPlan(r.command_plan).actions.length }))
+    .map((r) => ({ id: r.id, n: withoutNewCustomers(parseCommandPlan(r.command_plan)).actions.length }))
     .filter((p) => p.n > 0);
   const appliedCount = new Map<string, number>();
   for (let i = 0; i < planned.length; i += 200) {

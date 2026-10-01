@@ -229,6 +229,12 @@ export async function applyCommandAction(
   const plan = parseCommandPlan(msg.command_plan);
   const action = plan.actions.find((a) => a.id === actionId);
   if (!action) return { ok: false, error: t("commandActionNotFound") };
+  // A CALL never creates a customer (owner, 2026-10-01): a transcript garbles
+  // names, so a proposed new customer from a call is usually an existing one
+  // misheard. Pick the customer on the order or offer instead.
+  if (action.type === "draft_customer" && msg.kind !== "command") {
+    return { ok: false, error: t("callNoNewCustomer") };
+  }
   // Each action carries its own right — the assistant offers only what its
   // asker may apply, and this is where that is enforced.
   if (!mayApply(action.type, await currentCaps())) {
@@ -344,7 +350,7 @@ async function performAction(
     }
 
     case "draft_sales_order": {
-      const customer = await resolveCustomer(supabase, messageId, allActions, action);
+      const customer = await resolveCustomer(supabase, messageId, allActions, action, filled);
       if (!customer.ok) return { ok: false, error: t(customer.error) };
       const organizationId = customer.id;
 
@@ -377,7 +383,7 @@ async function performAction(
     }
 
     case "draft_offer": {
-      const organizationId = await resolveCustomer(supabase, messageId, allActions, action);
+      const organizationId = await resolveCustomer(supabase, messageId, allActions, action, filled);
       if (!organizationId.ok) return { ok: false, error: t(organizationId.error) };
       const templateId = action.templateId ?? filled.template;
       if (!templateId) return { ok: false, error: t("commandSlotsUnfilled") };
@@ -438,7 +444,7 @@ async function performAction(
         durationMinutes: minutes,
         messageId,
         ticketId: msg?.ticket_id ?? null,
-        organizationId: action.organizationId ?? msg?.matched_organization_id ?? null,
+        organizationId: filled.customer ?? action.organizationId ?? msg?.matched_organization_id ?? null,
         createdBy: await currentPersonId(),
       });
       if (!r.ok) {
@@ -495,7 +501,11 @@ async function resolveCustomer(
   messageId: string,
   allActions: CommandAction[],
   action: { organizationId: string | null; organizationFromNewCustomer: boolean },
+  filled: Record<string, string>,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  // The person's pick wins — it is how a close spelling, or an existing
+  // customer instead of a proposed new one, gets chosen (2026-10-01).
+  if (filled.customer) return { ok: true, id: filled.customer };
   if (action.organizationId) return { ok: true, id: action.organizationId };
   if (!action.organizationFromNewCustomer) return { ok: false, error: "commandNeedsCustomer" };
   const custAction = allActions.find((a) => a.type === "draft_customer");

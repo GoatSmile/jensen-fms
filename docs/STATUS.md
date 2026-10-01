@@ -1,13 +1,15 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-10-01 (Thursday, 14:10).** **The assistant is live,
+**Last updated: 2026-10-01 (Thursday, 14:45).** **The assistant is live,
 behind ONE floating button** (migrations 119–120): bottom right on phone and
 desktop (⌘K), its panel answers questions, opens records, drafts visits /
 reminders / tickets / offers for one-tap confirm, and holds Scan — scoped to
 the asker's role (no prices or customer pages for Workshop), on its own model
 (Claude Haiku 4.5, configurable with its own Test). The calendar became
 *Calendar* with kinds (visit, reminder; migration 118). All in production;
-nobody has used the assistant there yet.
+nobody has used the assistant there yet. Last: a garbled customer name
+is now picked from close spellings, never created (migration 121), and check
+builds run beside the dev server (`npm run build:check`).
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -24,8 +26,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 120 is the latest; production AND local verified at it**
-  (`check:prod` / `check:local`, 1 Oct). 120 = `inbound_assistant_model`;
+- **Migration 121 is the latest; production AND local verified at it**
+  (`check:prod` / `check:local`, 1 Oct). 121 = `search_organizations_fuzzy`;
+  120 = `inbound_assistant_model`;
   119 = `assistant_answer`; 118 = calendar kinds. 117 = calendar settings +
   `calendar_events` + `draft_visit`; 116 = `plan_attempted_at` + the new
   suggestion kinds in the ledger check; 115 = `inbox` for Sales, not the
@@ -66,10 +69,11 @@ is Danish (person language).
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn
-  voicemail (ticket) and the 15:48 test voicemail. **Do NOT apply that call's
-  *New customer "Fredericksburg Community"* suggestion** — a garbled
-  "Frederiksberg Kommune"; owner: create no customers from it, fix later
-  (BACKLOG, *A garbled customer name…*). Checked 1 Oct: none was created.
+  voicemail (ticket) and the 15:48 test voicemail. **Garbled customer names
+  fixed** (migration 121): a call never creates a customer; its offer now asks
+  "Which customer?" with Frederiksberg Kommune first. Verified locally end to
+  end and the fuzzy search in production; the 15:48 voicemail's card in
+  production is not yet SEEN (no production session from this machine).
 - **The assistant — live, behind ONE floating button** (migration 119,
   DECISIONS 2026-10-01): bottom right on phone and desktop (⌘K), its panel
   answers ("what's in the calendar on 30 Sep?" + follow-ups), opens ("show me
@@ -195,8 +199,7 @@ is Danish (person language).
    passwords for Finn
    and Glenn; Finn walks one repair with his guide; the e-conomic
    grant; `PNT-2026-0012`. **Calls follow-ups:** the customer picker on
-   suggestions (BACKLOG, garbled names); whether to buy Relatel main-number
-   recording.
+   whether to buy Relatel main-number recording.
 2. **Agreements next (§2A):** renewal invoicing per line — plan in
    `docs/plan-renewal-invoicing.md` (phase A buildable on go-ahead); the
    register import waits on the fleet answers. **After Dennis's fleet

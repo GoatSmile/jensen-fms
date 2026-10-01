@@ -5533,6 +5533,10 @@ export type Database = {
       }
       mo_copy_template_parts: { Args: { p_mo_id: string }; Returns: number }
       next_document_number: { Args: { p_doc_type: string }; Returns: string }
+      search_organizations_fuzzy: {
+        Args: { lim?: number; q: string }
+        Returns: { id: string; label: string; score: number }[]
+      }
       publish_service_price_list: {
         Args: { p_list_id: string }
         Returns: undefined

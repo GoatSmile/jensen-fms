@@ -58,7 +58,10 @@ export function buildInquiryTask(opts: {
       "things — propose one action for each.",
     "",
     "Rules for this task, on top of your normal ones:",
-    "- Propose a draft_customer ONLY if search_customer finds no existing match.",
+    "- NEVER propose a draft_customer from a call: names get misheard. If " +
+      "search_customer finds no exact match, leave organizationId null and " +
+      "name the closest `close` spelling in `notes` — the person picks the " +
+      "customer on the card.",
     "- Bikes they want to BUY → a draft_offer (a quote), never a sales order: " +
       "nothing has been sold yet. Put the quantity in `quantity`, and the " +
       "delivery timing and anything about specification (step-through, " +
