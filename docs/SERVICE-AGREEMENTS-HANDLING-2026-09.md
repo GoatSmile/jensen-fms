@@ -207,7 +207,9 @@ and photos directly it cost little, so it was built.
       month's anniversaries, matching Dennis's month sheets: one draft per
       customer × department EAN, one line per bike, the period on the line;
     - the price is the line's frozen yearly price (no steps);
-    - 30 days to pay, as the real invoices say, **not** the app's net 14;
+    - the customer's own payment terms (public customers 30 days minimum,
+      some 8 — Dennis, 2 Oct), **not** the app's net 14, and issued that many
+      days before the anniversary so the money arrives on it;
     - lines with no price or no EAN are listed for Dennis, never guessed;
     - Dennis reviews and issues. **How it then reaches a municipality by EAN is
       open**: the FMS sends issued invoices to e-conomic as journal vouchers,
@@ -219,7 +221,8 @@ and photos directly it cost little, so it was built.
 - **Cancelling** takes effect at the next payment date after a month's notice.
   The current year stays paid.
 - **Repairs:** coverage is "the bike has an active line". What is covered is the
-  contract's list (§2); everything else, and the drive charge, is invoiced.
+  contract's list (§2); everything else is invoiced. There is no drive charge
+  (Dennis, 2 Oct).
 
 ## 7 · To find out
 
@@ -245,31 +248,57 @@ and photos directly it cost little, so it was built.
 (invoice 7114); invoices go per department EAN (the same invoice); what is and
 is not covered, cancelling, and a bike leaving (both templates, §2).
 
+**Answered by Dennis, 2 October** (meeting with Nazar):
+
+8. **Untyped existing agreements are one-year contracts**: renewed a year at a
+   time, cancellable at any anniversary. In effect K1.
+9. **A K-type binds the AGREEMENT, not each bike.** K10 = the customer commits
+   for 10 years; a bike added in year 4 pays until the agreement's 10 years end.
+   Cancelling early still owes every bike on it for the full term. A stolen
+   bike must be replaced, and if it is not, its service is still paid although
+   the bike is gone.
+10. **No drive charge.** The customer pays a fee per bike that includes visits,
+    parts and labour; damage is the exception. The template's *xxx kr per
+    visit* is from an old agreement and was never charged. Visits are for a
+    bike that is out of order, not routine service on request.
+11. **Prices should rise every year**: Dennis wants a yearly increase of 2–3 %
+    on the per-bike price, written into the contract. Today customers sign with
+    no increase. (The fee is quoted per month — 1 704 kr a year is 142 kr a
+    month — and invoiced yearly.)
+12. **GPS-only subscriptions are still invoiced, and the system should invoice
+    them**: customers who had a service agreement and kept the GPS in the
+    battery, paying for GPS alone like a phone subscription.
+13. **The spreadsheet: Dennis cleans it up first**, so every customer's sheet
+    has the same shape (and the same EAN on every row of a department — he
+    often entered it once and left the rows under it blank). The import then
+    runs **once, as one batch, and is the last thing done in the spreadsheet**:
+    after it, nothing more goes into the old system.
+14. **Invoice timing follows the payment terms**: public customers
+    (municipalities, hospitals) pay at 30 days minimum, so Dennis invoices 30
+    days before the due date and the money arrives on time. Some customers have
+    8 days.
+15. **A customer with an EAN is always invoiced by EAN.** Customers without one
+    are invoiced by email, and that address belongs in the system; there are
+    few of them.
+16. **Renewal invoice text: reuse invoice 7114's.**
+
 **Still open — to Dennis:**
 
-- **Existing, untyped agreements:** they renew one year at a time and can be
-  cancelled at any anniversary with a month's notice — so a bike leaving one
-  settles nothing? (In effect K1.)
-- **Where the commitment counts from:** when a K10 municipality adds a bike in
-  year 4, is *that bike* bound for 10 years from its own delivery, or only
-  until the agreement's 10 years are up?
-- **Does the K-type change the price** of a new agreement? 1 704 kr (2 184 kr
-  with GPS) for all four, or cheaper for a longer commitment? The register's
-  other prices (2 284, 2 160, 1 200, 480 …) are imported as they stand.
-- **The three review lists** from §4 step 5 (28 *ja* at 0 kr, 11 frames twice,
-  13 without a price).
-- **The drive charge** (*xxx kr* per visit in the template): the real figure,
-  and is it per customer?
-- **GPS without an agreement:** the register has a sheet for GPS subscriptions
-  with no service agreement. Is that still invoiced, and should the system
-  invoice it too?
-- **The switch-over month:** from which month does the system draft the
-  renewals instead of the spreadsheet? Both running for the same month is a
-  double invoice to a municipality.
-- Is the register or John's Trello export the source (question C1)?
-- **Bikes with no EAN** (141 register rows): invoice them to the customer's own
-  EAN?
-- **The renewal invoice text:** copy invoice 7114 word for word?
+- **A bike that leaves a committed agreement unreplaced:** keep invoicing it
+  every year until the term ends, or invoice the remaining years at once (the
+  municipal template's *up front*)?
+- **The yearly increase:** 2 % or 3 %; new agreements only, or also the
+  existing ones at their next anniversary? And does the K-type ALSO change the
+  starting price (he said it should, with no figures)?
+- **GPS-only:** the price and the binding. Are the register's 480 kr rows these
+  (2 184 − 1 704 = 480)?
+- **The 8-day customers:** which ones — set per customer, or by kind of
+  customer?
+- **When is the cleanup done?** That date sets the import and the switch-over.
+- **The three review lists** (28 *ja* at 0 kr, 11 frames twice, 13 without a
+  price): send them to him so the cleanup covers them.
+- **Register or John's Trello export (C1)?** Implied the register — he is
+  cleaning it as the source — but not said.
 
 **Still open — to the owner (planning chat):**
 

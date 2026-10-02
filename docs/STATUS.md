@@ -151,9 +151,20 @@ is Danish (person language).
   - **Move the Google key file out of the project folder**
     (`jensen-fms-38357d206d22.json` — gitignored now, never committed; the
     key already lives in `.env.local` and Vercel) → password manager or delete.
-- **Dennis:** the agreement questions left in the handling document §7; the
-  fleet answers; the recording notice; the seven
-  unclassified bikes; the label printer model.
+- **Dennis:** cleaning up the agreement spreadsheet (same shape on every
+  sheet, the EAN on every row) — the register import waits on it, runs once,
+  and closes the spreadsheet; the follow-ups left in handling doc §7 (answered
+  2 Oct: §7 items 8–16); his part sales prices (some missing, some wrong); the
+  fleet answers; the recording notice; the seven unclassified bikes; the label
+  printer model.
+- **Owner (planning chat), from Dennis's 2 Oct answers:** a yearly 2–3 %
+  increase breaks "one frozen yearly price per line" (DECISIONS 2026-09-29);
+  GPS-only subscriptions need a billable line with no service agreement.
+- **Paint order basket picker (2 Oct):** Dennis could pick only some baskets.
+  Not a bug — the picker lists parts *Paintable as* Basket, and only
+  `JP-B (W)` is marked; the one he wanted is `JP-BA26H` "Alloy basket hotel
+  model". Mark it on its part page. Worth a hint in the picker saying why a
+  part is missing.
 
 ## Landmines
 - **Finn drives paint runs from `/work/paint-runs`**, not the paint-order pages
