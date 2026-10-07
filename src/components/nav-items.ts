@@ -131,7 +131,7 @@ export const NAV_GROUPS: NavGroup[] = [
         orCapabilities: ["calls_own"],
       },
       // The service calendar as a list (migrations 117–118) — office and
-      // floor. Named Calendar, not Visits: it holds reminders too. Below
+      // floor. Named Calendar, not Visits: it holds deliveries too. Below
       // Calls (owner, 2026-10-01).
       {
         href: "/calendar",

@@ -906,8 +906,10 @@ export type Database = {
           id: string
           kind: string
           message_id: string | null
+          offer_id: string | null
           organization_id: string | null
           provider: string
+          sales_order_id: string | null
           starts_at: string | null
           ticket_id: string | null
           title: string | null
@@ -921,8 +923,10 @@ export type Database = {
           id?: string
           kind?: string
           message_id?: string | null
+          offer_id?: string | null
           organization_id?: string | null
           provider: string
+          sales_order_id?: string | null
           starts_at?: string | null
           ticket_id?: string | null
           title?: string | null
@@ -936,8 +940,10 @@ export type Database = {
           id?: string
           kind?: string
           message_id?: string | null
+          offer_id?: string | null
           organization_id?: string | null
           provider?: string
+          sales_order_id?: string | null
           starts_at?: string | null
           ticket_id?: string | null
           title?: string | null
@@ -958,10 +964,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "calendar_events_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "calendar_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
           {

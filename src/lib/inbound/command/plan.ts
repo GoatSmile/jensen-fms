@@ -102,11 +102,10 @@ export type DraftTicketAction = {
 };
 
 /**
- * Something for the calendar (migrations 117–118): a VISIT the caller asked
- * for, or a REMINDER someone dictated. Date and time are the model's reading
- * and the person's to correct before applying; a missing time takes the
- * kind's default (`src/lib/calendar/kinds.ts` — a visit 09:00 for an hour, a
- * reminder all day). The title carries the customer and the errand ONLY:
+ * Something for the calendar (migrations 117–122): a VISIT to a customer, or
+ * a DELIVERY promised to one. Date and time are the model's reading and the
+ * person's to correct before applying; a missing time takes the kind's
+ * default (`src/lib/calendar/kinds.ts` — 09:00 for an hour). The title carries the customer and the errand ONLY:
  * phone numbers and contact names stay in the system, never in Google
  * (docs/plan-service-calendar.md).
  */
@@ -268,6 +267,7 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
       return {
         id,
         type: "draft_event",
+        // A parked kind (a reminder planned before 7 Oct) reads as a visit.
         kind: isCalendarKind(kind) ? kind : "visit",
         title,
         date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
@@ -338,7 +338,7 @@ export function openSlotsFor(action: CommandAction): OpenSlot[] {
       slots.push({ key: "customer", kind: "customer", optional: action.organizationFromNewCustomer });
     }
   }
-  if (action.type === "draft_event" && action.kind === "visit" && !action.organizationId) {
+  if (action.type === "draft_event" && !action.organizationId) {
     slots.push({ key: "customer", kind: "customer", optional: true });
   }
   if (action.type === "draft_sales_order" || action.type === "draft_offer") {

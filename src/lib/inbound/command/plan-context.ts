@@ -8,8 +8,16 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/** One applied suggestion: what it made, and the ledger's note of it (the
+ *  document number, the calendar date) — what the card shows as its result. */
+export type AppliedAction = {
+  entityTable: string | null;
+  entityId: string | null;
+  payload: unknown;
+};
+
 export type PlanContext = {
-  applied: Record<string, { entityTable: string | null; entityId: string | null }>;
+  applied: Record<string, AppliedAction>;
   templates: { id: string; label: string }[];
   segments: { id: string; label: string }[];
   colors: { id: string; label: string }[];
@@ -33,7 +41,7 @@ export async function loadPlanContext(
     await Promise.all([
       supabase
         .from("command_actions")
-        .select("plan_action_id, entity_table, entity_id")
+        .select("plan_action_id, entity_table, entity_id, payload")
         .eq("message_id", messageId),
       supabase
         .from("bike_templates")
@@ -86,7 +94,7 @@ export async function loadPlanContext(
   }
   const applied: PlanContext["applied"] = {};
   for (const a of actions ?? []) {
-    applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id };
+    applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id, payload: a.payload };
   }
   return {
     applied,

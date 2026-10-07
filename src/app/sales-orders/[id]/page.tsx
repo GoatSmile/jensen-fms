@@ -29,6 +29,8 @@ import {
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
 import { DeliverySection } from "./_components/delivery-section";
+import { deliveryEntryFor } from "@/lib/calendar/deliveries";
+import { createServiceClient } from "@/lib/supabase/service";
 import { LinesSection, type SOLineRow } from "./_components/lines-section";
 import {
   COMMERCIAL_LINE_SELECT,
@@ -83,6 +85,13 @@ export default async function SODetailPage({
   if (!so) notFound();
 
   const status = so.status as SOStatus;
+  // The calendar link table is written by the service client and read here
+  // the same way — the page itself is gated by `so`.
+  const calendarEntry = await deliveryEntryFor(
+    createServiceClient(),
+    so.id,
+    (so.offer as { id: string } | null)?.id ?? null,
+  );
   const editableLines = canEditSOLines(status);
   const canSpawn =
     status === "draft" ||
@@ -395,6 +404,8 @@ export default async function SODetailPage({
         }
         signedBy={so.delivery_signed_by}
         signedAt={so.delivery_signed_at}
+        calendarEntry={calendarEntry}
+        requestedDate={so.requested_delivery_date}
       />
 
       <ProductionNoteCard

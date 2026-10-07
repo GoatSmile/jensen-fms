@@ -32,6 +32,9 @@ export type NewCalendarEntry = {
   messageId?: string | null;
   ticketId?: string | null;
   organizationId?: string | null;
+  /** A delivery's order — the offer while it is only quoted, else the SO. */
+  salesOrderId?: string | null;
+  offerId?: string | null;
   createdBy?: string | null;
 };
 
@@ -79,6 +82,8 @@ export async function createCalendarEntry(
       message_id: entry.messageId ?? null,
       ticket_id: entry.ticketId ?? null,
       organization_id: entry.organizationId ?? null,
+      sales_order_id: entry.salesOrderId ?? null,
+      offer_id: entry.offerId ?? null,
       title: entry.title,
       // An all-day entry's bounds are bare dates; keep only real moments.
       starts_at: created.value.allDay ? null : created.value.start || null,

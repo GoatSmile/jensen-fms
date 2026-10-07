@@ -24,6 +24,7 @@ import {
 } from "@/lib/commercial/draft-writers";
 import { canActOnInbound } from "@/lib/calls/access";
 import { createTicketForCall } from "@/lib/calls/ticket";
+import { CALENDAR_KIND_SPECS } from "@/lib/calendar/kinds";
 import { createCalendarEntry } from "@/lib/calendar/entries";
 import { appOrigin } from "@/lib/qr";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
@@ -374,6 +375,7 @@ async function performAction(
         },
       });
       if (!r.ok) return { ok: false, error: t("soCouldNotCreate", { detail: r.error }) };
+      await linkDeliveriesTo(supabase, messageId, { sales_order_id: r.id });
       return {
         ok: true,
         entityTable: "sales_orders",
@@ -397,6 +399,7 @@ async function performAction(
         line: { quantity: action.quantity, templateId, colorId, unitPrice: action.unitPrice },
       });
       if (!r.ok) return { ok: false, error: t("offerCouldNotCreate", { detail: r.error }) };
+      await linkDeliveriesTo(supabase, messageId, { offer_id: r.id });
       return {
         ok: true,
         entityTable: "offers",
@@ -433,6 +436,10 @@ async function performAction(
         .eq("id", messageId)
         .maybeSingle();
       const isCommand = msg?.kind === "command";
+      // A delivery belongs to the order this plan drafted, if one is applied
+      // already — the order page then shows it and offers no second entry.
+      // (Applied the other way round, the offer stamps it: see draft_offer.)
+      const order = action.kind === "delivery" ? await appliedOrderOf(supabase, messageId) : null;
       const r = await createCalendarEntry(supabase, {
         kind: action.kind,
         title: action.title,
@@ -445,6 +452,8 @@ async function performAction(
         messageId,
         ticketId: msg?.ticket_id ?? null,
         organizationId: filled.customer ?? action.organizationId ?? msg?.matched_organization_id ?? null,
+        offerId: order?.offerId ?? null,
+        salesOrderId: order?.salesOrderId ?? null,
         createdBy: await currentPersonId(),
       });
       if (!r.ok) {
@@ -462,7 +471,8 @@ async function performAction(
         ok: true,
         entityTable: "calendar_events",
         entityId: r.linkId,
-        payload: { kind: action.kind, date, time, eventId: r.event.id },
+        // The time it was PUT IN at — a missing one took the kind's default.
+        payload: { kind: action.kind, date, time: time ?? CALENDAR_KIND_SPECS[action.kind].defaultTime, eventId: r.event.id },
       };
     }
 
@@ -490,6 +500,37 @@ async function performAction(
       };
     }
   }
+}
+
+/** The offer or sales order this message's plan has already drafted, if any. */
+async function appliedOrderOf(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+): Promise<{ offerId: string | null; salesOrderId: string | null }> {
+  const { data } = await supabase
+    .from("command_actions")
+    .select("entity_table, entity_id")
+    .eq("message_id", messageId)
+    .in("entity_table", ["offers", "sales_orders"]);
+  const of = (table: string) => data?.find((r) => r.entity_table === table)?.entity_id ?? null;
+  return { offerId: of("offers"), salesOrderId: of("sales_orders") };
+}
+
+/** Deliveries this message put in the calendar before its order existed now point at it. */
+async function linkDeliveriesTo(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+  order: { offer_id: string } | { sales_order_id: string },
+): Promise<void> {
+  const { error } = await supabase
+    .from("calendar_events")
+    .update(order)
+    .eq("message_id", messageId)
+    .eq("kind", "delivery")
+    .is("offer_id", null)
+    .is("sales_order_id", null);
+  // The order exists either way; only the calendar's link to it is missing.
+  if (error) console.error("[command] linking deliveries to the order failed", error.message);
 }
 
 /**

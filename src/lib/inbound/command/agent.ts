@@ -89,12 +89,12 @@ export const PLAN_ACTION_ITEM_SCHEMA = {
       // draft_event (also uses organizationId / organizationLabel)
       eventKind: {
         type: ["string", "null"],
-        enum: ["visit", "reminder", null],
-        description: "draft_event: 'visit' = going to a customer; 'reminder' = something to remember to do.",
+        enum: ["visit", "delivery", null],
+        description: "draft_event: 'visit' = going to a customer; 'delivery' = bikes or parts handed over to a customer on a day.",
       },
       title: {
         type: ["string", "null"],
-        description: "draft_event: visit = customer + errand ('Frederiksberg Kommune — look at red bike'); reminder = the thing to do ('Collect frames from the painter'). NEVER a phone number or a person's name.",
+        description: "draft_event: customer + errand — visit: 'Frederiksberg Kommune — look at red bike'; delivery: 'Frederiksberg Kommune — delivery of 3 red bikes'. NEVER a phone number or a person's name.",
       },
       date: { type: ["string", "null"], description: "draft_event: ISO date (YYYY-MM-DD), resolved from 'this Friday' etc. against today." },
       time: { type: ["string", "null"], description: "draft_event: 'HH:MM' 24h, only if a time was said; else null." },
@@ -158,7 +158,8 @@ You can propose six kinds of draft action:
 - draft_ticket — a repair of a bike the customer ALREADY HAS: a short description of the fault and an urgency. Do not look up the bike; it is attached from the call.
 - draft_event — an entry in the service calendar, of one of two kinds:
   · eventKind "visit": going to a customer — title = customer + errand; resolve the customer with search_customer.
-  · eventKind "reminder": something to remember to do on a day ("remind me to collect the frames on Thursday") — title = the thing to do.
+  · eventKind "delivery": handing bikes or parts over to a customer on a day ("we deliver the three bikes on Monday") — title = customer + what is delivered; resolve the customer with search_customer.
+  There are no reminders: a dated errand that is neither a visit nor a delivery goes in the plan's notes.
   The date is resolved against today; a time or length only if one was said. NEVER put a phone number or a person's name in the title.
 - draft_purchase_order — parts to buy. The supplier is chosen automatically from the parts' offerings, so you only resolve the PARTS.
 

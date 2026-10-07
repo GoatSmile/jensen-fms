@@ -187,7 +187,7 @@ const calendarEntries: AssistantTool = {
   def: {
     name: "calendar_entries",
     description:
-      "Read the service calendar (visits, reminders, and anything added in Google) between two dates. Defaults: from now, 30 days ahead. For 'my next appointment' use the defaults and take the first.",
+      "Read the service calendar (visits, deliveries, and anything added in Google) between two dates. Defaults: from now, 30 days ahead. For 'my next appointment' use the defaults and take the first.",
     input_schema: {
       type: "object",
       properties: {

@@ -11,6 +11,7 @@ import { Panel } from "@/components/ui/panel";
 import { Textarea } from "@/components/ui/textarea";
 
 import { saveSODelivery } from "../../_actions/save-delivery";
+import { DeliveryCalendar } from "./delivery-calendar";
 
 /**
  * The order's delivery: recipient, phone, address — and, once it is ready or
@@ -23,6 +24,8 @@ export function DeliverySection({
   defaultAddress,
   signedBy,
   signedAt,
+  calendarEntry,
+  requestedDate,
 }: {
   soId: string;
   status: string;
@@ -31,6 +34,9 @@ export function DeliverySection({
   defaultAddress: string | null;
   signedBy: string | null;
   signedAt: string | null;
+  /** The delivery's calendar entry, on this order or the offer it came from. */
+  calendarEntry: { eventId: string; startsAt: string | null } | null;
+  requestedDate: string | null;
 }) {
   const t = useTranslations("soDelivery");
   const [values, setValues] = useState(initial);
@@ -118,6 +124,7 @@ export function DeliverySection({
             })}
           </p>
         ) : null}
+        <DeliveryCalendar soId={soId} status={status} entry={calendarEntry} defaultDate={requestedDate} />
         {!locked ? (
           <div className="flex items-center justify-end gap-3">
             <span className="text-muted-foreground text-xs">

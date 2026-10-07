@@ -700,16 +700,26 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `app_settings`, set at `/admin/settings → Calendar`, whose save runs the Test
   and refuses a calendar the account cannot write. Provider-blind code goes
   through `CalendarAdapter` (`src/lib/calendar/`). **Every entry has a KIND**
-  — one list, `src/lib/calendar/kinds.ts` (visit, reminder), mirrored by a DB
-  check; the kind rides on the Google event as a private property plus a Google
+  — one list, `src/lib/calendar/kinds.ts` (visit, delivery), mirrored by a DB
+  check (migration 122). **There are no reminders** (parked by the owner
+  2026-10-07: "just calendar events everywhere") — a dated promise is a visit
+  or a delivery, anything else goes in a plan's notes. The kind rides on the Google event as a private property plus a Google
   colour, and an event made in Google reads as *other*. **Everything that puts
   something in the calendar goes through `createCalendarEntry`**
   (`src/lib/calendar/entries.ts`) — a new source supplies the details, never its
-  own writer. An entry reaches Google only when a person applies a
+  own writer. An entry reaches Google only when a PERSON presses for it: a
   `draft_event` suggestion (from a call or a dictated command; a missing time
-  takes the kind's default — a visit 09:00 for an hour, a reminder all day);
-  `calendar_events` is only a link from what the SYSTEM created to its call /
-  command / ticket / customer. `/calendar` (`/visits` redirects) is a READ-ONLY
+  takes the kind's default, 09:00 for an hour), or *Add delivery to calendar*
+  on a confirmed sales order. **A delivery is ONE per order**: a call drafts it
+  against the OFFER (nothing is sold yet), the order's button against the SO,
+  and the order page counts an entry on the offer it was converted from as its
+  own (`deliveryEntryFor`, `src/lib/calendar/deliveries.ts`). `calendar_events`
+  is only a link from what the SYSTEM created to its call / command / ticket /
+  customer / offer / order. **An applied suggestion SAYS what it made and links
+  there** — "Offer OFF-… created as a draft → Open", "Added to the calendar:
+  Delivery, Mon 12 Oct, 09:00 → Open in calendar" (owner, 2026-10-07); the text
+  comes from the `command_actions.payload` every writer fills, so a new action
+  type fills it too. `/calendar` (`/visits` redirects) is a READ-ONLY
   list read live from Google, for `maintenance` or `work`. **Minimal personal data in events**: customer +
   errand + a link back — never a phone number or a contact's name.
 - **The ASSISTANT answers, opens and drafts — and follows the PERSON**

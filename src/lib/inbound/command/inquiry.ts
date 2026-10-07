@@ -72,6 +72,14 @@ export function buildInquiryTask(opts: {
       "place) → a draft_event with eventKind \"visit\": title = customer + " +
       "errand, the date resolved against today, a time only if one was said. " +
       "Never put a phone number or a person's name in the title.",
+    "- A DATE WE PROMISED for handing bikes or parts over (a delivery, a " +
+      "drop-off, a pick-up by the customer) → a draft_event with eventKind " +
+      "\"delivery\", ALONGSIDE the offer or ticket: title = customer + what " +
+      "is handed over, the agreed date (not the first one asked for, if we " +
+      "moved it), a time only if one was said. Only a date both sides agreed; " +
+      "\"maybe Monday\" with no answer is a note, not an event.",
+    "- Any other dated errand (we will email, we will call on Thursday) → " +
+      "say so in `notes`. There are no reminders.",
     "- A call back they asked for → say so in `notes`, with the number if " +
       "given. It is not an action.",
     "- If they mentioned a service agreement, a recurring price, or anything " +

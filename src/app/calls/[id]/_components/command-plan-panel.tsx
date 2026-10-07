@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
-import { Check, Play, Sparkles } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { ArrowRight, Check, Play, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
+import type { AppliedAction } from "@/lib/inbound/command/plan-context";
 import { openSlotsFor } from "@/lib/inbound/command/plan";
 import { CALENDAR_KIND_SPECS } from "@/lib/calendar/kinds";
 
 import { applyCommandAction, rerunCommandAgent } from "../../_actions/command";
 
 type VocabItem = { id: string; label: string };
-type AppliedRow = { entityTable: string | null; entityId: string | null };
+type AppliedRow = AppliedAction;
 
 type Props = {
   messageId: string;
@@ -39,8 +40,6 @@ const ENTITY_PATH: Record<string, string> = {
   offers: "/offers",
   sales_orders: "/sales-orders",
   maintenance_tickets: "/maintenance/tickets",
-  // An entry lives in Google; the app's own view of it is the calendar list.
-  calendar_events: "/calendar",
   purchase_orders: "/purchase-orders",
 };
 
@@ -227,13 +226,6 @@ function ActionCard({
   const vocabFor = (kind: string): VocabItem[] =>
     kind === "template" ? templates : kind === "segment" ? segments : colors;
 
-  const appliedPath =
-    applied?.entityTable === "calendar_events"
-      ? ENTITY_PATH.calendar_events
-      : applied?.entityTable && applied.entityId
-        ? `${ENTITY_PATH[applied.entityTable] ?? ""}/${applied.entityId}`
-        : null;
-
   return (
     <li
       className={cn(
@@ -245,21 +237,13 @@ function ActionCard({
         <span className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
           {isEvent ? t(`type_draft_event_${action.kind}`) : t(`type_${action.type}`)}
         </span>
-        {isApplied ? (
-          <span className="inline-flex items-center gap-1 text-xs text-good">
-            <Check className="size-3.5" aria-hidden />
-            {appliedPath ? (
-              <Link href={appliedPath} className="font-medium underline">
-                {t("applied")}
-              </Link>
-            ) : (
-              t("applied")
-            )}
-          </span>
-        ) : null}
       </div>
 
       <ActionSummary action={action} />
+
+      {/* What applying MADE, with the way to it (owner, 2026-10-07: "the
+          result is absolutely visible, and there's a link"). */}
+      {isApplied ? <AppliedResult applied={applied} /> : null}
 
       {/* Resolved-entity chips */}
       <div className="flex flex-wrap gap-1.5">
@@ -384,6 +368,72 @@ function ActionCard({
         </div>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * The result of an applied suggestion, in words, linking to what was made:
+ * the draft order, the ticket, the customer — or, for a calendar entry, the
+ * calendar scrolled to it. Reads the ledger row's payload, which every writer
+ * fills with the number or date a person recognises.
+ */
+function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
+  const t = useTranslations("inboxCommand");
+  const locale = useLocale();
+  const p = (applied?.payload ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" && v ? v : null);
+  const table = applied?.entityTable ?? null;
+  const id = applied?.entityId ?? null;
+
+  let text: string;
+  let href: string | null = null;
+  if (table === "calendar_events") {
+    const date = str(p.date);
+    const time = str(p.time);
+    const eventId = str(p.eventId);
+    const kind = str(p.kind) === "delivery" ? "delivery" : "visit";
+    const day = date
+      ? new Intl.DateTimeFormat(locale === "da" ? "da-DK" : "en-GB", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          timeZone: "UTC",
+        }).format(new Date(`${date}T12:00:00Z`))
+      : "";
+    text = t("resultCalendar", { kind: t(`type_draft_event_${kind}`), when: time ? `${day}, ${time}` : day });
+    // Past entries live on the calendar's other tab.
+    const past = date !== null && date < new Date().toISOString().slice(0, 10);
+    if (eventId) {
+      const q = new URLSearchParams({ event: eventId });
+      if (past) q.set("when", "past");
+      href = `/calendar?${q.toString()}#ev-${eventId}`;
+    } else {
+      href = "/calendar";
+    }
+  } else if (table === "purchase_orders") {
+    const pos = Array.isArray(p.pos) ? (p.pos as { number?: string }[]) : [];
+    text = t("resultPurchaseOrders", { numbers: pos.map((po) => po.number).filter(Boolean).join(", ") || "—" });
+    href = id ? `${ENTITY_PATH.purchase_orders}/${id}` : null;
+  } else if (table && table in ENTITY_PATH) {
+    const label = str(p.number) ?? str(p.legalName) ?? "";
+    text = t(`result_${table}`, { label });
+    href = id ? `${ENTITY_PATH[table]}/${id}` : null;
+  } else {
+    // A second press that lost the race, or a row written before its link.
+    text = t("applied");
+  }
+
+  return (
+    <p className="text-good flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <Check className="size-4 shrink-0" aria-hidden />
+      <span className="font-medium">{text}</span>
+      {href ? (
+        <Link href={href} className="text-brand-ink inline-flex items-center gap-1 underline underline-offset-2">
+          {t(table === "calendar_events" ? "resultOpenCalendar" : "resultOpen")}
+          <ArrowRight className="size-3.5" aria-hidden />
+        </Link>
+      ) : null}
+    </p>
   );
 }
 

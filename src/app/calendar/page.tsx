@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 /** Kind colours, from the six-hue vocabulary (the kind's `hue`). */
 const KIND_PILL = {
   brand: "bg-brand-wash text-brand-ink",
-  money: "bg-money-wash text-money",
+  good: "bg-good-wash text-good",
 } as const;
 
 /** How far each view reaches. A list, not a calendar — Google is the calendar. */
@@ -39,11 +39,14 @@ type Link_ = {
   kind: string | null;
   /** Its source was a dictated command, not a call — a different page. */
   fromCommand: boolean;
+  /** A delivery's order: the SO, or the offer it was quoted on. */
+  sales_order_id: string | null;
+  offer_id: string | null;
 };
 
 /**
  * Calendar — the service calendar as a READ-ONLY list (owner, 2026-09-30:
- * "just to read"; renamed from Visits 2026-10-01, because it holds reminders
+ * "just to read"; renamed from Visits 2026-10-01, because it holds deliveries
  * and other entries too). Each entry the system made carries its KIND
  * (`src/lib/calendar/kinds.ts`); one added in Google reads as "other". Read live from the provider through the service account, so
  * it shows what is in Google now — including visits Finn added or moved there —
@@ -55,9 +58,11 @@ type Link_ = {
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ when?: string; kind?: string }>;
+  searchParams: Promise<{ when?: string; kind?: string; event?: string }>;
 }) {
-  const { when: rawWhen, kind: rawKind } = await searchParams;
+  // ?event= is the entry a suggestion just made — highlighted, and scrolled to
+  // by the link's #ev- anchor.
+  const { when: rawWhen, kind: rawKind, event: focusId } = await searchParams;
   const when = rawWhen === "past" ? "past" : "upcoming";
   // ?kind= narrows the list: a kind, or "other" for entries made in Google.
   const kindFilter = isCalendarKind(rawKind) || rawKind === "other" ? rawKind : null;
@@ -69,9 +74,10 @@ export default async function CalendarPage({
   const supabase = createServiceClient();
   const settings = await loadCalendarSettings(supabase);
   const adapter = calendarAdapter(settings.provider);
-  const [isAdmin, canOpenTickets, callsScope] = await Promise.all([
+  const [isAdmin, canOpenTickets, canOpenOrders, callsScope] = await Promise.all([
     readHasCapability("admin"),
     readHasCapability("maintenance"),
+    readHasCapability("so"),
     readCallsScope(),
   ]);
 
@@ -92,7 +98,9 @@ export default async function CalendarPage({
       if (events.length > 0) {
         const { data } = await supabase
           .from("calendar_events")
-          .select("external_event_id, message_id, ticket_id, kind, inbound_messages(kind, handled_by_person_id)")
+          .select(
+            "external_event_id, message_id, ticket_id, kind, sales_order_id, offer_id, inbound_messages(kind, handled_by_person_id)",
+          )
           .eq("calendar_id", settings.calendarId)
           .in(
             "external_event_id",
@@ -110,6 +118,8 @@ export default async function CalendarPage({
             callOpenable: Boolean(call && scopeAllowsRow(callsScope, call)),
             kind: row.kind,
             fromCommand: call?.kind === "command",
+            sales_order_id: row.sales_order_id,
+            offer_id: row.offer_id,
           });
         }
       }
@@ -262,7 +272,14 @@ export default async function CalendarPage({
                   {day.events.map((e) => {
                     const link = links.get(e.id);
                     return (
-                      <li key={e.id} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 px-4 py-3">
+                      <li
+                        key={e.id}
+                        id={`ev-${e.id}`}
+                        className={cn(
+                          "grid scroll-mt-24 grid-cols-[6.5rem_minmax(0,1fr)] gap-3 px-4 py-3",
+                          e.id === focusId && "bg-good-wash",
+                        )}
+                      >
                         <span className="text-ink-2 pt-0.5 text-sm whitespace-nowrap tabular-nums">
                           {e.allDay ? t("allDay") : `${danishTime(e.start)}–${danishTime(e.end)}`}
                         </span>
@@ -297,6 +314,21 @@ export default async function CalendarPage({
                                 className="text-brand-ink underline underline-offset-2"
                               >
                                 {link.fromCommand ? t("fromCommand") : t("fromCall")}
+                              </Link>
+                            ) : null}
+                            {link?.sales_order_id && canOpenOrders ? (
+                              <Link
+                                href={`/sales-orders/${link.sales_order_id}`}
+                                className="text-brand-ink underline underline-offset-2"
+                              >
+                                {t("salesOrder")}
+                              </Link>
+                            ) : link?.offer_id && canOpenOrders ? (
+                              <Link
+                                href={`/offers/${link.offer_id}`}
+                                className="text-brand-ink underline underline-offset-2"
+                              >
+                                {t("offer")}
                               </Link>
                             ) : null}
                             {link?.ticket_id && canOpenTickets ? (

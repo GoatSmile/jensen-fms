@@ -3644,3 +3644,34 @@ Nazar; the 6 Oct 11:50 call Hovednummer #1 → 2 → Finn did too.
 - Why 30 Sep saw `recording: null` on a call to Finn is not established
   (most likely his mobile recording was not yet effective); not chased.
 
+## 2026-10-07 — Deliveries go in the calendar; reminders are parked
+
+Owner, on a call where Thursday was moved to "Monday next week": the date was
+resolved correctly (Mon 12 Oct) but landed only in the offer's note. Asked
+whether a delivery should be a new kind or a reminder: *"new kind; no
+reminders for now, just calendar events everywhere"*, and yes to the sales
+order putting its own delivery in (option a).
+
+- **`delivery` is a calendar kind** (09:00 for an hour, Google colour Basil,
+  hue `good`); **`reminder` is removed** from the kinds, the planners and the
+  DB check (migration 122; production held none). Any other dated errand
+  ("we'll email", "call back Thursday") goes in the plan's notes.
+- **A call drafts a delivery for a date BOTH sides agreed**, alongside the
+  offer or ticket. It hangs on the offer the same plan drafts, in either apply
+  order.
+- **A confirmed SO has *Add delivery to calendar*** (date prefilled from the
+  requested delivery date, 09:00) — a person presses it; nothing is put in by
+  itself. One per order: an entry on the SO or on the offer it was converted
+  from shows instead of the button.
+- **Every applied suggestion shows its result with a link** (owner: "the
+  result of it is absolutely visible, and there's a link to whatever we
+  created"): the document number → its page; a calendar entry → `/calendar`
+  scrolled to and highlighting that entry.
+- **Rejected:** a delivery as a reminder (it would look like any other one);
+  putting deliveries in from the SO automatically on confirm (a date on a
+  confirmed order still moves; a person decides when it is real); a call's
+  delivery waiting until the order exists (the owner wants it in the calendar
+  from the call).
+- Testing may write to the real *Servicebesøg* calendar, with TEST in the
+  title (owner, 2026-10-07).
+

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 /**
- * Visits became Calendar (2026-10-01) — it holds reminders and other entries
+ * Visits became Calendar (2026-10-01) — it holds deliveries and other entries
  * too. The old address keeps working, filters and all.
  */
 export default async function VisitsRedirect({

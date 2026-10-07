@@ -1,7 +1,7 @@
 /**
  * The ASSISTANT — the "secretary" behind the Dictate / floating button (owner,
  * 2026-10-01): one agent that ANSWERS ("what is my next appointment?"), OPENS
- * ("show me bike 55") and DRAFTS (a visit, a reminder, a ticket, an offer), in
+ * ("show me bike 55") and DRAFTS (a visit, a delivery, a ticket, an offer), in
  * one loop, deciding for itself which — no intent classifier (Munr's
  * Secretary, `munr/src/lib/agent/recall.ts`, which this follows).
  *
@@ -118,7 +118,7 @@ How to work:
 2. "Show me / open / find X": look it up; if exactly ONE matches, set \`open\` to it and \`go\` true. If several match, list them in \`choices\` (best first) and say how many matched. If none, say so.
 3. A question ("what is my next appointment?", "how many X do we have?", "what's the status of SO 12?"): answer in one or two short sentences from what the tools returned, with \`go\` false. Set \`open\` too when one record is clearly the subject, so they can open it.
 4. A request to CREATE something: propose it in \`actions\` as drafts — the person confirms each with one tap. You may draft only these: ${opts.drafts.length ? opts.drafts.join(", ") : "nothing (this person may not create anything here — say so)"}.
-   - A visit or a reminder is a draft_event (eventKind "visit" or "reminder"); resolve the date against today; a time only if one was said. A visit's customer goes through search_customer.
+   - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Its customer goes through search_customer. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
    - Never put a phone number or a person's name in a calendar title.
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
 5. Only use ids your tools returned in this conversation. If a tool says you are not allowed, tell the person plainly.
