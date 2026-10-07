@@ -399,6 +399,7 @@ export default async function InboundDetailPage({
 
           {leadPlan && leadCtx && !spamFolded ? (
             <CommandPlanPanel
+              fromCall
               messageId={msg.id}
               plan={leadPlan}
               applied={leadCtx.applied}

@@ -11,7 +11,8 @@
  * Order matters and is the whole design:
  *   1. a person's decision (ticket, handled, spam, "needs action") wins —
  *      except that SUGGESTED actions nobody has applied keep a call in to do
- *      even once one of them (a ticket) has been applied;
+ *      even once one of them (a ticket) has been applied; an OPTIONAL one (a
+ *      call's repair ticket, `isOptionalOnCall`) is never counted;
  *   2. the system's own trouble (failed, still processing) is a CHECK;
  *      a call nobody recorded is judged by what happened — a MISSED call
  *      is someone to ring back, an answered one was dealt with live;

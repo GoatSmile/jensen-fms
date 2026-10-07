@@ -26,6 +26,7 @@ import {
   type ContactRow,
 } from "./_components/contacts-section";
 import { UnitsSection, type UnitRow } from "./_components/units-section";
+import { resolvePaymentTermsDays } from "@/lib/invoicing/status";
 
 function dlRow(label: string, value: React.ReactNode) {
   return (
@@ -69,7 +70,7 @@ export default async function OrganizationDetailPage({
           billing_currency, payment_terms_days, default_vat_code,
           preferred_language, notes,
           deleted_at, is_active, created_at,
-          segment:customer_segments(id, name_en, name_da)
+          segment:customer_segments(id, slug, name_en, name_da)
         `,
       )
       .eq("id", id)
@@ -300,7 +301,13 @@ export default async function OrganizationDetailPage({
               {dlRow(
                 t("fldPaymentTerms"),
                 o.payment_terms_days == null
-                  ? null
+                  ? t("netDaysStandard", {
+                      count: resolvePaymentTermsDays({
+                        paymentTermsDays: null,
+                        eanNumber: o.ean_number,
+                        segmentSlug: (Array.isArray(o.segment) ? o.segment[0] : o.segment)?.slug,
+                      }),
+                    })
                   : t("netDays", { count: o.payment_terms_days }),
               )}
               {dlRow(t("fldDefaultVat"), o.default_vat_code)}

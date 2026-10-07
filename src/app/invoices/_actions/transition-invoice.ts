@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { readPersonId } from "@/lib/auth/read-session";
 import { createClient } from "@/lib/supabase/server";
 import {
-  DEFAULT_PAYMENT_TERMS_DAYS,
+  resolvePaymentTermsDays,
   validNextInvoiceStatuses,
   type InvoiceStatus,
 } from "@/lib/invoicing/status";
@@ -18,7 +18,7 @@ export type InvoiceTransitionResult =
  * Issue a draft invoice: allocate the sequential INV number (drafts carry a
  * DRAFT-xxxx placeholder so abandoned drafts never burn a number), stamp
  * issued_date + issued_locked_at, set the due date from the customer's
- * payment terms (net DEFAULT_PAYMENT_TERMS_DAYS when the org has none),
+ * payment terms (`resolvePaymentTermsDays`: its own, else 30 public / 8),
  * and snapshot the org's EAN number into ean_number_used — public-sector
  * customers bill via EAN and the number used must survive later org edits.
  * Issuing is the lock — after this the invoice is immutable bookkeeping
@@ -35,7 +35,8 @@ export async function issueInvoice(
     .from("invoices")
     .select(
       `id, status, due_date, credited_invoice_id,
-       organization:organizations!organization_id(ean_number, payment_terms_days)`,
+       organization:organizations!organization_id(ean_number, payment_terms_days,
+         segment:customer_segments(slug))`,
     )
     .eq("id", invoiceId)
     .maybeSingle();
@@ -81,8 +82,12 @@ export async function issueInvoice(
 
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
-  const termsDays =
-    Number(org?.payment_terms_days) || DEFAULT_PAYMENT_TERMS_DAYS;
+  const segment = Array.isArray(org?.segment) ? org?.segment[0] : org?.segment;
+  const termsDays = resolvePaymentTermsDays({
+    paymentTermsDays: org?.payment_terms_days,
+    eanNumber: org?.ean_number,
+    segmentSlug: segment?.slug,
+  });
   const due = new Date();
   due.setDate(due.getDate() + termsDays);
 

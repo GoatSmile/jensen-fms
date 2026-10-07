@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { parseCommandPlan } from "@/lib/inbound/command/plan";
+import { countOpenSuggestions, parseCommandPlan } from "@/lib/inbound/command/plan";
 import { withoutNewCustomers } from "@/lib/inbound/command/plan-calls";
 import { parseExtraction } from "@/lib/inbound/extraction";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -162,23 +162,26 @@ export async function loadCallsPage(
     }
   }
 
-  // Suggested actions still to apply: the plan's actions minus the ones in
-  // the command_actions ledger.
+  // Suggested actions still to apply: the plan's REQUIRED actions not yet in
+  // the command_actions ledger — an optional one (a call's repair ticket)
+  // never holds a call in to do.
   const planned = rawRows
-    .map((r) => ({ id: r.id, n: withoutNewCustomers(parseCommandPlan(r.command_plan)).actions.length }))
-    .filter((p) => p.n > 0);
-  const appliedCount = new Map<string, number>();
+    .map((r) => ({ id: r.id, plan: withoutNewCustomers(parseCommandPlan(r.command_plan)) }))
+    .filter((p) => p.plan.actions.length > 0);
+  const appliedIds = new Map<string, Set<string>>();
   for (let i = 0; i < planned.length; i += 200) {
     const { data } = await supabase
       .from("command_actions")
-      .select("message_id")
+      .select("message_id, plan_action_id")
       .in("message_id", planned.slice(i, i + 200).map((p) => p.id));
     for (const a of data ?? []) {
-      appliedCount.set(a.message_id, (appliedCount.get(a.message_id) ?? 0) + 1);
+      const set = appliedIds.get(a.message_id) ?? new Set<string>();
+      set.add(a.plan_action_id);
+      appliedIds.set(a.message_id, set);
     }
   }
   const openSuggestions = new Map(
-    planned.map((p) => [p.id, Math.max(0, p.n - (appliedCount.get(p.id) ?? 0))]),
+    planned.map((p) => [p.id, countOpenSuggestions(p.plan, appliedIds.get(p.id) ?? new Set())]),
   );
 
   const mapped: (CallListRow & { tabKeys: string[] })[] = rawRows.map((r) => {

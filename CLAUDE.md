@@ -668,15 +668,17 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   planner pass (`draftSuggestions`, `src/lib/inbound/command/plan-calls.ts`)
   runs the command agent ONCE per read call carrying a request
   (`plan_attempted_at`, migration 116) — bikes they want become a *draft
-  OFFER*, never a sales order; a repair becomes a *draft ticket*; call-backs
-  go in the plan's notes. **A call NEVER creates a customer** (owner,
+  OFFER*, never a sales order; a repair becomes a *draft ticket* that is
+  **OPTIONAL on a call** (owner, 2026-10-07 — the calendar visit organises
+  Finn's day and comes first; `isOptionalOnCall` sorts it last and never
+  counts it as open); call-backs go in the plan's notes. **A call NEVER creates a customer** (owner,
   2026-10-01 — a transcript garbles names): `withoutNewCustomers` strips any
   `draft_customer` from a call's plan, stored or shown, and applying one from
   a call is refused. An unconfirmed customer on an offer, order or visit is a
   **"Which customer?" slot**, its close spellings listed first
   (`search_organizations_fuzzy`, trigram, migration 121); `search_customer`
   returns them as `close`, and the model never fills an id from one. A person applies each one; unapplied
-  suggestions keep the call in *to do*. **Applying claims its
+  REQUIRED suggestions keep the call in *to do* (`countOpenSuggestions`). **Applying claims its
   `command_actions` row BEFORE writing the draft**, so a second press can
   never make a second draft. Staff requests left the
   queue: the assistant's floating button, history at `/commands`.
@@ -690,7 +692,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   gate, not a nice-to-have. The ElevenLabs adapter is SYNCHRONOUS and always
   sends the audio BYTES (it counts channels itself: stereo → per channel,
   mono two-way → diarized, inferred); every transcription gets the names
-  list from `loadTranscriptionKeyterms` (people, customers, bike models).
+  list from `loadTranscriptionKeyterms` — the shop's own spoken names
+  ("Jensen Cykler" was heard as "Aho Cykler" without them), people,
+  customers and their recognition prefixes, bike models, then recognition
+  codes last.
   Gladia stays registered as the fallback.
 - **The calendar lives in GOOGLE, not in our database** (migrations 117–118,
   `docs/plan-service-calendar.md`). The app reaches the *Servicebesøg*
@@ -952,10 +957,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `DRAFT-xxxx`); issued invoices are immutable — corrections are credit
   notes (full reversals, own `CRE-` series). Deposits (`invoices.kind`)
   and the prepayment model: see DECISIONS.md 2026-06-21.
-  **Payment terms are net 14** — the schema default (migration 01), what
-  virtually every real customer holds, and `DEFAULT_PAYMENT_TERMS_DAYS` in
-  `src/lib/invoicing/status.ts`. Never hardcode a different number in a form
-  or a placeholder; read that constant.
+  **Payment terms follow a RULE** (Dennis, DECISIONS 2026-10-07; migration
+  123): a figure on the customer wins, and NULL — the normal case — means 30
+  days for a PUBLIC customer (an EAN, or segment municipality / hospital) and
+  8 for everyone else. One resolver, `resolvePaymentTermsDays` in
+  `src/lib/invoicing/status.ts`; never hardcode a number in a form, a
+  placeholder or a writer. The column has no default on purpose: the old 14
+  sat on every row and nobody had chosen it.
 
 ## Internationalisation (whole-app Danish; both locales currently `en`)
 - next-intl **without URL routing**. Locale comes from the LOGGED-IN PERSON

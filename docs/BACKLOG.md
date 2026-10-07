@@ -202,6 +202,14 @@ OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
 path to a personal inbox, so it would have to be a Jensen-owned sender.
 
 ## Parked product ideas
+- **How a renewal (or any FMS invoice) reaches a municipality by EAN.** FMS
+  invoices go to e-conomic as journal vouchers (DECISIONS 2026-07-09), which
+  e-conomic cannot send by NemHandel. Parked by the owner 7 Oct — invoicing
+  waits for clean data anyway. Lean when it comes back: **e-conomic draft
+  INVOICES for EAN customers** (option a in `plan-renewal-invoicing`) — it
+  reuses what Dennis already sends today; the cost is a second number series
+  for that invoice kind, which is why it is not obvious. Until then: the FMS
+  drafts, Dennis re-keys (option c).
 - **Edit a suggestion's title (and location) on the card before applying.**
   Today only date, time, length and open slots are editable; a wrong title
   must be fixed in Google afterwards (marking a test entry TEST took a DB

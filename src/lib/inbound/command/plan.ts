@@ -321,6 +321,22 @@ export function parseCommandPlan(raw: unknown): CommandPlan {
 }
 
 /**
+ * On a CALL, a repair ticket is OPTIONAL (owner, 2026-10-07): the calendar
+ * visit is what organises Finn's day, and the ticket stays on offer for when
+ * someone wants one. An unapplied optional card does not keep the call in
+ * *to do* (`countOpenSuggestions`), and it is shown after the others. A ticket
+ * drafted by the ASSISTANT was asked for, so it is never optional there.
+ */
+export function isOptionalOnCall(action: CommandAction): boolean {
+  return action.type === "draft_ticket";
+}
+
+/** Suggestions on a call still waiting for a person: required, not yet applied. */
+export function countOpenSuggestions(plan: CommandPlan, appliedActionIds: ReadonlySet<string>): number {
+  return plan.actions.filter((a) => !isOptionalOnCall(a) && !appliedActionIds.has(a.id)).length;
+}
+
+/**
  * The unfilled references that block (or optionally accompany) applying an
  * action. Derived from the typed fields — never read off the model's output.
  */

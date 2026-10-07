@@ -23,7 +23,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { appendField } from "@/lib/forms";
 import { DEFAULT_COUNTRY_CODE, groupedCountries } from "@/lib/countries";
-import { DEFAULT_PAYMENT_TERMS_DAYS } from "@/lib/invoicing/status";
 
 import {
   createOrganization,
@@ -95,7 +94,8 @@ const EMPTY_ORGANIZATION_SHELL: OrganizationFormValues = {
   billing_currency: "DKK",
   // Net 14 is the schema default (migration 01) and what invoicing falls back
   // to, so the create form must not offer a different number.
-  payment_terms_days: String(DEFAULT_PAYMENT_TERMS_DAYS),
+  // Blank = follow the rule (30 days public, else 8 — resolvePaymentTermsDays).
+  payment_terms_days: "",
   default_vat_code: "",
   notes: "",
 };
@@ -159,9 +159,7 @@ export function OrganizationForm({
   const hasBilling = Boolean(
     seed.default_vat_code ||
       seed.billing_currency !== EMPTY_ORGANIZATION_SHELL.billing_currency ||
-      (seed.payment_terms_days !== "" &&
-        seed.payment_terms_days !==
-          EMPTY_ORGANIZATION_SHELL.payment_terms_days),
+      seed.payment_terms_days !== EMPTY_ORGANIZATION_SHELL.payment_terms_days,
   );
   const [error, setError] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);

@@ -30,7 +30,7 @@ export type OfferStatus = (typeof OFFER_STATUSES)[number];
 
 /** How long an offer stands unless someone picks a date. Deliberately a
  *  constant rather than an `app_settings` knob until the shop wants to argue
- *  about the number — same call as `DEFAULT_PAYMENT_TERMS_DAYS`. */
+ *  about the number. */
 export const DEFAULT_OFFER_VALIDITY_DAYS = 30;
 
 /** Lines and header are editable only in draft — everything else is a document

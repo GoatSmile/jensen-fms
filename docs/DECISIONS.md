@@ -3675,3 +3675,41 @@ order putting its own delivery in (option a).
 - Testing may write to the real *Servicebesøg* calendar, with TEST in the
   title (owner, 2026-10-07).
 
+
+## 2026-10-07 — Payment terms follow a rule: 30 days public, 8 standard
+
+Dennis, in the 7 Oct meeting: every municipality pays at 30 days; companies
+get 14 or 8, decided on the spot; *"as a standard, 8 days for those which are
+not on EAN"*. Owner: change the rule.
+
+- **A figure on the customer wins; NULL means the rule** — 30 days for a
+  public customer (an EAN, or segment municipality or hospital), else 8.
+  `resolvePaymentTermsDays` (`src/lib/invoicing/status.ts`) is the only place
+  the numbers live; issuing an invoice and the customer page both call it.
+- **Migration 123 dropped the column default and cleared the 530 rows at 14.**
+  The customer import never set terms, so 14 was the default on every row,
+  not anyone's choice; the one customer at 8 kept it.
+- **Segment as well as EAN**, because no customer or department has an EAN
+  in the database yet — the register import brings them — and a municipality
+  is public either way.
+- **Rejected:** keeping 14 as the default and asking Dennis to fix customers
+  one by one (he would be correcting ~500 rows nobody chose); 8 for everyone
+  with a manual 30 on each municipality (the import would have to remember).
+- Supersedes the CLAUDE.md "net 14" invoicing rule (edited in this commit).
+
+## 2026-10-07 — On a call, the repair ticket is an optional suggestion
+
+Dennis, 7 Oct: a call should organise Finn's calendar; the repair ticket the
+planner drafted beside the visit was not needed. Owner: keep the 30 Sep
+decision (a repair call drafts a ticket), but as an option — the calendar
+gets settled first.
+
+- **The ticket card stays**, sorted after the others and marked *Optional*;
+  applying it works as before.
+- **An unapplied optional card never keeps a call in *to do*** —
+  `countOpenSuggestions` counts required, unapplied actions by their ledger id
+  (it used to subtract a row count from the plan's length).
+- **Calls only.** A ticket the ASSISTANT drafts was asked for, so it counts.
+- **Rejected:** dropping ticket drafting from calls (the owner wants the
+  option); a settings switch (nothing to configure yet — one rule, in
+  `isOptionalOnCall`).

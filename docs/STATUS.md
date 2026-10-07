@@ -24,8 +24,10 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 122 is the latest; production AND local verified at it**
-  (`check:prod` 7 Oct; local applied by psql). 122 = calendar kinds
+- **Migration 123 is the latest; production AND local verified at it**
+  (queried 7 Oct 21:40: no default, no 14s left; `check:local`). 123 =
+  payment terms follow the rule (default dropped, the unchosen 14s → NULL).
+  122 = calendar kinds
   visit + delivery, `calendar_events.sales_order_id` + `offer_id`;
   121 = `search_organizations_fuzzy`;
   120 = `inbound_assistant_model`;
@@ -169,29 +171,27 @@ is Danish (person language).
   notes on template lines (e.g. the chain-guard holder drilled for the 410
   mid-motor) — check they reach the pick list; mark test data TEST; the fleet
   answers; the seven unclassified bikes; the label printer model.
-- **Basket picker:** explained to Dennis 7 Oct, but `JP-BA26H` "Alloy basket
-  hotel model" is STILL not *Paintable as* Basket in production (checked 7 Oct
-  20:30). The cover `JP-CO40` should be `paint_exempt`.
-- **Owner decisions pending:** how a renewal reaches a municipality by EAN; a
-  GPS-only line; the 3 % yearly increase on NEW agreements (existing lines keep
-  their frozen price, so it can wait for Dennis's new agreement text); payment
-  terms default — Dennis: 30 days for municipalities, **8 for customers with no
-  EAN**, vs CLAUDE.md's net 14.
-- **Calls, from the 7 Oct meeting** (Relatel plan upgraded — main-number calls
-  are now recorded): import the *Oprettelse* line (option 1 — decided) and
-  Dennis's BUSINESS line (option 3 → "Dennis Jensen"; confirm it is that one,
-  not his private "Dennis"); both are `import_enabled = false`. A call should
-  **organise Finn's calendar, not make a ticket** — reconsider the repair-ticket
-  suggestion; a bike named by its code ⇒ the call attaches to that bike;
-  otherwise it waits in the review pool. A number SPOKEN in the call should be
-  captured and matched. A person from a call becomes a CONTACT on the
-  department that owns the bike, never a customer. Keyterms lack the
-  company's own name ("Jensen Cykler" was heard as "Aho Cykler") and the
-  bikes' codes. **Finn's on-site dictation** (bike code + parts + time) lands
-  in one list reviewed at the 7–8 morning meeting; nothing applied
-  automatically, no QR yet. A dictated "put X in the calendar" was not found
-  afterwards — check `/commands`. Dennis to decide what his sales calls should
-  trigger. Next visit: sign in as Finn together.
+- **Owner decisions pending:** the **GPS-only line** (recommendation given
+  7 Oct, not yet chosen — blocks only municipalities with 480 kr rows); the
+  3 % yearly increase on NEW agreements (can wait for Dennis's new agreement
+  text); **the one dictation button** — how Ask and "just log it" share it and
+  where the log lives (options laid out 7 Oct); contacts from calls on a
+  DEPARTMENT (contacts have no unit column today). Parked: renewals by EAN
+  (BACKLOG). **Decided 7 Oct:** payment terms 30 public / 8 standard
+  (migration 123); a call's repair ticket is optional.
+- **Calls, from the 7 Oct meeting:** import **Dennis's business line**
+  ("Dennis Jensen", 42 49 15 51 — owner confirmed) — needs Dennis's OWN
+  Relatel token (`RELATEL_TOKEN` is Finn's), made logged in as him →
+  `RELATEL_TOKEN_DENNIS` in Vercel, then the line on at *Settings → Phone &
+  inbox*. *Oprettelse* (option 1) is wanted too, but rings an unrecorded
+  phone: whether that phone can record decides it. Spoken numbers and
+  recognition codes are ALREADY extracted and matched (`callbackNumber`,
+  `fleetNumber` in `match.ts`) — what is missing is data (contacts, codes)
+  and `organization_units.phone` as a probe. The names list now has the
+  shop's own names and recognition prefixes/codes (7 Oct). A dictated "put X
+  in the calendar" was not found afterwards — check `/commands`. Dennis to
+  decide what his sales calls should trigger. Next visit: sign in as Finn
+  together. Dennis fixes the basket's *Paintable as* himself.
 
 ## Landmines
 - **Finn drives paint runs from `/work/paint-runs`**, not the paint-order pages

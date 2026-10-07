@@ -10,7 +10,7 @@ import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
 import type { AppliedAction } from "@/lib/inbound/command/plan-context";
-import { openSlotsFor } from "@/lib/inbound/command/plan";
+import { isOptionalOnCall, openSlotsFor } from "@/lib/inbound/command/plan";
 import { CALENDAR_KIND_SPECS } from "@/lib/calendar/kinds";
 
 import { applyCommandAction, rerunCommandAgent } from "../../_actions/command";
@@ -29,6 +29,8 @@ type Props = {
   /** For the "Which customer?" slot: everyone, and the close spellings first. */
   customers?: VocabItem[];
   suggestedCustomers?: VocabItem[];
+  /** A CALL's plan: its optional cards (the repair ticket) sort last and say so. */
+  fromCall?: boolean;
   /** Called after an apply or a re-run succeeds — for a surface that holds
    *  the plan in its own state (the floating panel) rather than re-rendering
    *  from the server. */
@@ -59,6 +61,7 @@ export function CommandPlanPanel({
   colors,
   customers = [],
   suggestedCustomers = [],
+  fromCall = false,
   onChanged,
 }: Props) {
   const t = useTranslations("inboxCommand");
@@ -90,6 +93,11 @@ export function CommandPlanPanel({
   // Once anything is applied, re-planning would remint positional ids and
   // desync the ledger — the server action refuses it, so lock the button too.
   const anyApplied = Object.keys(applied).length > 0;
+  // On a call the optional cards come last; ids stay positional, so this only
+  // reorders the view.
+  const orderedActions = fromCall
+    ? [...plan.actions.filter((a) => !isOptionalOnCall(a)), ...plan.actions.filter(isOptionalOnCall)]
+    : plan.actions;
 
   return (
     <Panel
@@ -124,10 +132,11 @@ export function CommandPlanPanel({
         <p className="text-muted-foreground text-sm italic">{t("noActions")}</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {plan.actions.map((action) => (
+          {orderedActions.map((action) => (
             <ActionCard
               key={action.id}
               action={action}
+              optional={fromCall && isOptionalOnCall(action)}
               applied={applied[action.id]}
               customerApplied={customerApplied}
               picks={picks[action.id] ?? {}}
@@ -163,6 +172,7 @@ export function CommandPlanPanel({
 
 function ActionCard({
   action,
+  optional,
   applied,
   customerApplied,
   picks,
@@ -177,6 +187,7 @@ function ActionCard({
   onApplied,
 }: {
   action: CommandAction;
+  optional: boolean;
   applied: AppliedRow | undefined;
   customerApplied: boolean;
   picks: Record<string, string>;
@@ -246,6 +257,9 @@ function ActionCard({
         <span className="text-xs font-medium tracking-wide uppercase text-muted-foreground">
           {isEvent ? t(`type_draft_event_${action.kind}`) : t(`type_${action.type}`)}
         </span>
+        {optional && !isApplied ? (
+          <span className="text-muted-foreground text-xs">{t("optionalCard")}</span>
+        ) : null}
       </div>
 
       <ActionSummary action={action} modelLabel={modelLabel} />
