@@ -223,6 +223,15 @@ function ActionCard({
     });
   }
 
+  // The model the card names: the planner's, else the one picked on the card
+  // — after applying, the ledger's, since the picks do not survive a reload.
+  const appliedTemplateId = (applied?.payload as { templateId?: unknown } | null)?.templateId;
+  const pickedTemplateId = typeof appliedTemplateId === "string" ? appliedTemplateId : picks.template;
+  const modelLabel =
+    ("templateLabel" in action ? action.templateLabel : null) ??
+    templates.find((tpl) => tpl.id === pickedTemplateId)?.label ??
+    null;
+
   const vocabFor = (kind: string): VocabItem[] =>
     kind === "template" ? templates : kind === "segment" ? segments : colors;
 
@@ -239,7 +248,7 @@ function ActionCard({
         </span>
       </div>
 
-      <ActionSummary action={action} />
+      <ActionSummary action={action} modelLabel={modelLabel} />
 
       {/* What applying MADE, with the way to it (owner, 2026-10-07: "the
           result is absolutely visible, and there's a link"). */}
@@ -438,7 +447,7 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
 }
 
 /** One-line human summary of what the action will draft. */
-function ActionSummary({ action }: { action: CommandAction }) {
+function ActionSummary({ action, modelLabel }: { action: CommandAction; modelLabel: string | null }) {
   const t = useTranslations("inboxCommand");
   if (action.type === "draft_customer") {
     return <p className="text-sm font-medium">{action.legalName}</p>;
@@ -448,7 +457,7 @@ function ActionSummary({ action }: { action: CommandAction }) {
       <p className="text-sm">
         {t("offerSummary", {
           qty: action.quantity,
-          model: action.templateLabel ?? t("modelPending"),
+          model: modelLabel ?? t("modelPending"),
         })}
       </p>
     );
@@ -464,7 +473,7 @@ function ActionSummary({ action }: { action: CommandAction }) {
       <p className="text-sm">
         {t("soSummary", {
           qty: action.quantity,
-          model: action.templateLabel ?? t("modelPending"),
+          model: modelLabel ?? t("modelPending"),
         })}
         {action.deliveryDate ? ` · ${action.deliveryDate}` : ""}
       </p>
