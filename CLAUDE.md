@@ -626,8 +626,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   each recorded call and voicemail into the same row shape — **and every
   incoming call with NOTHING recorded as a call event** (`call_outcome`
   `answered_unrecorded` or `no-answer`, no audio, no pipeline, the caller's
-  number still matched; a missed call is *to do*), because Relatel records
-  main-number calls only on its Contact Center plans and a skipped call is a
+  number still matched; a missed call is *to do*), because a main-number call
+  is recorded only when it lands on a mobile with recording on (the MOBILE
+  records, not the switchboard — DECISIONS 2026-10-07) and a skipped call is a
   lost one
   (`src/lib/inbound/call-import/`, migration 111), idempotent on the unique
   `channel_meta.external_id`. **A call belongs to a PHONE LINE and its

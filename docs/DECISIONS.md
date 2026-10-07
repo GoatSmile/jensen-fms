@@ -3624,3 +3624,23 @@ communities or customers"* from it.
 - **Check builds use their own folder** (owner: *"we cannot have 2?"*):
   `npm run build:check` → `.next-check`, deleted after; the commit gate now
   always builds instead of skipping whenever a dev server was up.
+
+## 2026-10-07 — A main-number call is recorded by the mobile it lands on
+
+Supersedes the 30 Sep line "A main-number call is not recorded", and the
+belief that main-number recording needs Relatel's Contact Center plan.
+Owner's test call today: 50 36 71 11 → Hovednummer #1 → 5 → Mathilde / Nazar
+at 10:28 arrived in production with audio and a transcript, filed under
+Nazar; the 6 Oct 11:50 call Hovednummer #1 → 2 → Finn did too.
+
+- **The recording is made on the mobile, not on the switchboard.** A call that
+  ends on a mobile with *Record incoming calls* on (the mobile's own setting) carries that recording on
+  the main-number call, and the import picks it up unchanged.
+- **Contact Center is not needed for this.** Its switchboard recording
+  (*Hovednummer → Rediger → Optagelse*, Contact Center/Unlimited only per
+  relatel.dk/supportblog/optag-opkald) would matter only for a destination
+  that is not a recording mobile — today option 1 → Oprettelse.
+  **Rejected:** upgrading the plan to get main-number recording.
+- Why 30 Sep saw `recording: null` on a call to Finn is not established
+  (most likely his mobile recording was not yet effective); not chased.
+

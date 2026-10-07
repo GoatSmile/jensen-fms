@@ -208,8 +208,8 @@ Lifecycle (conflicts with "emailing IS the send" — decide before building):
 
 ## 3 · November — Finn by voice, calls and calendar
 - [x] **Relatel adapter** — built 29 Sep (migration 111, job `import-calls`, set up in
-      `/admin/settings → Phone & inbox`). Open: prove a main-number call forwarded with option 2
-      arrives recorded; watch the first production transcripts for diarization quality.
+      `/admin/settings → Phone & inbox`). A main-number call forwarded to a recording mobile
+      arrives recorded (proven 7 Oct). Open: watch the first production transcripts for diarization quality.
 - [ ] Calls that quote a **recognition code** ("LGKUL11") match the bike (02:32:57); the label on
       the bike carries the code + the service number.
 - [ ] **Repair flow on the phone**: common-jobs list (tyre, tube, chain, service, big service,

@@ -60,12 +60,12 @@ is Danish (person language).
   repaired (mixed-format MP3) and transcribed. **Not yet seen by a human in
   production:** `/calls` as Dennis and as Finn, and a call on Nazar's line
   (voicemails arrive; triage now reads content first — DECISIONS 2026-09-30).
-  **A main-number call forwarded with option 2 is NOT recorded** by Relatel
-  (`recording: null`, verified 30 Sep): main-number recording exists only on
-  Relatel's Contact Center / Unlimited plans (the Optagelse section is absent
-  on our plan) — a purchase for the owner. Meanwhile such calls import as
-  *Answered · not recorded* events (8 found in the first run), and missed calls
-  as *to do*.
+  **A main-number call IS recorded when it lands on a mobile with recording
+  on** (verified 7 Oct: Main #1 → 5 → Nazar at 10:28 and Main #1 → 2 → Finn on
+  6 Oct both arrived with audio and a transcript; DECISIONS 2026-10-07). The
+  mobile records, not the switchboard, so no plan upgrade is needed. The gap is
+  wherever a call lands on a number without recording — option 1 → Oprettelse
+  — which still imports as *Answered · not recorded*; missed calls as *to do*.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn
@@ -210,7 +210,7 @@ is Danish (person language).
    passwords for Finn
    and Glenn; Finn walks one repair with his guide; the e-conomic
    grant; `PNT-2026-0012`. **Calls follow-ups:** the customer picker on
-   whether to buy Relatel main-number recording.
+   whether Oprettelse (option 1) gets mobile recording switched on.
 2. **Agreements next (§2A):** renewal invoicing per line — plan in
    `docs/plan-renewal-invoicing.md` (phase A buildable on go-ahead); the
    register import waits on the fleet answers. **After Dennis's fleet

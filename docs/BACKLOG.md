@@ -139,8 +139,9 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
   - Their API can **originate** a call (`POST /calls`) and send SMS.
   - Caller ID from municipal callers is **often hidden or cut to 5 digits**
     (Dennis, 24 Sep) — phone matching will miss them; see the notice line below.
-  - Main-number calls forwarded to Finn (option 2) arrived UNRECORDED on
-    29 Sep; unproven either way until a deliberate test call.
+  - Main-number calls are recorded by the MOBILE they land on (proven 7 Oct),
+    so switchboard recording (Contact Center) only matters for a destination
+    that is not a recording mobile.
 - **Call summaries are written in English** even for a Danish call and a
   Danish UI (Finn's page reads "The transcript is too fragmented…"). The
   extraction prompt could write `callSummary`/`problem` in the call's language,
