@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { AudioLines, Play, Save, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Panel } from "@/components/ui/panel";
+import { CollapsibleSection } from "@/components/collapsible-section";
 
 import {
   runExtraction,
@@ -74,9 +74,13 @@ export function TranscriptPanel({
   }
 
   return (
-    <Panel
+    // Folded once there is a transcript: the plan and the summary above it
+    // are what a person reads; this is the editing harness underneath.
+    <CollapsibleSection
       title={t("stageTranscript")}
       description={t("transcriptHarnessHint")}
+      storageKey="collapse:call-transcript"
+      defaultOpen={!hasSavedBody}
       contentClassName="flex flex-col gap-2"
     >
       {/* The real path: transcribe the recording / run everything at once. */}
@@ -157,6 +161,6 @@ export function TranscriptPanel({
           {error}
         </p>
       ) : null}
-    </Panel>
+    </CollapsibleSection>
   );
 }

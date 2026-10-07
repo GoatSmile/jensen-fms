@@ -23,6 +23,7 @@ export function CollapsibleSection({
   description,
   storageKey,
   defaultOpen = false,
+  contentClassName,
   children,
 }: {
   title: string;
@@ -30,6 +31,7 @@ export function CollapsibleSection({
   /** localStorage key, e.g. "collapse:parts-details". */
   storageKey: string;
   defaultOpen?: boolean;
+  contentClassName?: string;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -72,6 +74,7 @@ export function CollapsibleSection({
       }
       description={description}
       className={open ? undefined : "pb-2"}
+      contentClassName={contentClassName}
     >
       {open ? children : null}
     </Panel>

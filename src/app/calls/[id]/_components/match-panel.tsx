@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Check, Play, Save, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CollapsibleSection } from "@/components/collapsible-section";
 import { Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
 import type { MatchCandidates } from "@/lib/inbound/match";
@@ -80,10 +81,12 @@ export function MatchPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Extraction editor — harness ingress until Slice C writes this. */}
-      <Panel
+      {/* Extraction editor — harness ingress, folded once extraction ran. */}
+      <CollapsibleSection
         title={t("extractionTitle")}
         description={t("extractionHarnessHint")}
+        storageKey="collapse:call-extraction"
+        defaultOpen={!hasExtraction}
         contentClassName="flex flex-col gap-2"
       >
         <textarea
@@ -105,7 +108,7 @@ export function MatchPanel({
             {savePending ? t("saving") : t("saveExtraction")}
           </Button>
         </div>
-      </Panel>
+      </CollapsibleSection>
 
       {/* Match */}
       <Panel
