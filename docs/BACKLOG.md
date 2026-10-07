@@ -6,6 +6,24 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
+- **The app cannot move or delete a calendar entry** (`CalendarAdapter` has
+  create + list only). Bites when an SO's delivery date changes — its entry
+  stays on the old day, and the order page still shows it as *in the calendar*
+  — and when TEST entries need removing (today: in Google by hand; the
+  service account's `calendar.events` scope does allow DELETE/PATCH). Fix
+  shape: `updateEvent`/`deleteEvent` on the adapter, then *Move* / *Remove*
+  beside "In the calendar: delivery …" on the SO, re-reading Google's time
+  rather than `calendar_events.starts_at` (a copy at creation).
+- **A delivery's calendar title is written in the PRESSER's language**
+  (`addSODeliveryToCalendar` uses the session locale: "delivery SO-…" as an
+  English user, "levering SO-…" as Dennis). The calendar is shared and
+  Danish-read; switch to `app_language` (or the order's language) if a mixed
+  calendar annoys anyone.
+- **"Open in calendar" for an entry EARLIER TODAY lands on an empty spot** —
+  *Upcoming* starts at now and *Past* is chosen only for dates before today,
+  so a 09:00 entry opened at 14:00 is in neither view's highlight. Also: cards
+  applied before 7 Oct have no time in their ledger payload, so their result
+  line shows the day only.
 - **Delete the pre-v4 session upgrades after 2026-10-28** — the blocks at the
   end of `verifySessionToken` in `src/lib/auth/session.ts` (`costs` for v1,
   `templates_edit` for pre-v3, `jobs` for pre-v4) and the old-version
@@ -184,6 +202,10 @@ OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
 path to a personal inbox, so it would have to be a Jensen-owned sender.
 
 ## Parked product ideas
+- **Edit a suggestion's title (and location) on the card before applying.**
+  Today only date, time, length and open slots are editable; a wrong title
+  must be fixed in Google afterwards (marking a test entry TEST took a DB
+  edit on 7 Oct).
 - **A live AI agent that answers calls and books visits** — Dennis asked
   (24 Sep) to *"test immediately"* an agent that takes calls, logs them to a
   calendar and takes notes for Finn. That is a talking agent — Munin's product

@@ -1,15 +1,13 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-10-01 (Thursday, 14:45).** **The assistant is live,
-behind ONE floating button** (migrations 119–120): bottom right on phone and
-desktop (⌘K), its panel answers questions, opens records, drafts visits /
-reminders / tickets / offers for one-tap confirm, and holds Scan — scoped to
-the asker's role (no prices or customer pages for Workshop), on its own model
-(Claude Haiku 4.5, configurable with its own Test). The calendar became
-*Calendar* with kinds (visit, reminder; migration 118). All in production;
-nobody has used the assistant there yet. Last: a garbled customer name
-is now picked from close spellings, never created (migration 121), and check
-builds run beside the dev server (`npm run build:check`).
+**Last updated: 2026-10-07 (Wednesday, evening).** **Deliveries go in the
+calendar** (migration 122, DECISIONS 2026-10-07): a call drafts a *delivery*
+for a date both sides agreed, next to its offer; a confirmed sales order has
+*Add delivery to calendar*, one per order (an entry on the offer it came from
+counts). **Reminders are parked** — only visits and deliveries. Every applied
+suggestion now says what it made and links there; the calendar opens on the
+entry. On the call page, Transcript and Extraction fold away once filled. All
+in production; verified locally only.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -26,8 +24,10 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 121 is the latest; production AND local verified at it**
-  (`check:prod` / `check:local`, 1 Oct). 121 = `search_organizations_fuzzy`;
+- **Migration 122 is the latest; production AND local verified at it**
+  (`check:prod` 7 Oct; local applied by psql). 122 = calendar kinds
+  visit + delivery, `calendar_events.sales_order_id` + `offer_id`;
+  121 = `search_organizations_fuzzy`;
   120 = `inbound_assistant_model`;
   119 = `assistant_answer`; 118 = calendar kinds. 117 = calendar settings +
   `calendar_events` + `draft_visit`; 116 = `plan_attempted_at` + the new
@@ -77,28 +77,32 @@ is Danish (person language).
 - **The assistant — live, behind ONE floating button** (migration 119,
   DECISIONS 2026-10-01): bottom right on phone and desktop (⌘K), its panel
   answers ("what's in the calendar on 30 Sep?" + follow-ups), opens ("show me
-  bike 36" → straight there; "bike 3" → a list), drafts (reminders, visits,
+  bike 36" → straight there; "bike 3" → a list), drafts (deliveries, visits,
   tickets, offers) with one-tap cards, and holds Scan. Scoped by role. Verified
   locally as Nazar and as Finn at 360 px and desktop (no prices, no customer
-  pages, reminders allowed, Danish). **Not yet seen in production.** Model:
+  pages, Danish). **Not yet seen in production.** Model:
   **Claude Haiku 4.5** (`inbound_assistant_model`, prod verified 1 Oct; the
   call reader stays on Sonnet 5.5). Measured on Haiku, local dev server: 2–6 s
   Send → answer; relative dates verified (Fri/tomorrow → 2 Oct, next Tue → 6
   Oct, "mandag den 12." → 12 Oct). Scan is only in the panel — the Workshop
   floor header lost its own button.
-- **Calendar (was Visits), with kinds** (migrations 117–118, DECISIONS
-  2026-10-01): `/calendar` lists visits and reminders read live from Google,
-  filter by kind; calls and dictated commands suggest entries, applied with one
-  press. Verified locally end to end: a typed "remind me…" → an ALL-DAY reminder
-  in Google with its kind and colour, linked back to the command.
-  **A TEST reminder on Wed 30 Sep (all day) joins the TEST visit in
-  *Servicebesøg*** — owner deletes both in Google. **Live:** the owner saved Admin → Settings → Calendar
-  in production (provider google + the *Servicebesøg* id, verified 1 Oct — the
-  save only succeeds after its Test writes-checks the calendar, so the Vercel key
-  works). Verified locally end to end against the real calendar; **a TEST event
-  on Wed 30 Sep 10:00 is still in *Servicebesøg*** — owner deletes it in Google.
-  Not built: plan slices 2–4 (sync-back webhook, approval queue, reschedule
-  intent) — `docs/plan-service-calendar.md`.
+- **Calendar — visits and deliveries** (migrations 117–118, 122; DECISIONS
+  2026-10-01 + 10-07): `/calendar` lists entries read live from Google,
+  filter by kind; calls and dictated commands suggest visits and deliveries,
+  applied with one press; a confirmed SO adds its own delivery. Verified
+  locally end to end against the real *Servicebesøg* calendar (a call copy →
+  offer + delivery, the SO button, the converted-order guard). **Testing may
+  write to *Servicebesøg* with TEST in the title** (owner, 7 Oct). TEST
+  entries there now: a visit Wed 30 Sep 10:00, an all-day entry Wed 30 Sep,
+  "TEST Nazar Taras — delivery of 3 red bikes" Mon 12 Oct 09:00, "TEST
+  Leveringskunde ApS — delivery SO-TEST-0001" Tue 13 Oct 09:00 — the app
+  cannot delete; Finn or the owner removes them in Google. **The 7 Oct
+  production call `2d99e1ca…` was planned before deliveries existed** — press
+  *Re-run* on its suggestions to get the delivery card. Live settings:
+  provider google + the *Servicebesøg* id (saved 1 Oct). Not built: plan
+  slices 2–4 (sync-back webhook, approval queue, reschedule intent) —
+  `docs/plan-service-calendar.md`; moving/deleting an entry from the app
+  (BACKLOG).
 - **Extraction model: pick any current Claude model safely** (DECISIONS
   2026-09-30): the Test runs the real jobs and saving refuses a model that
   fails them. Production is on `claude-sonnet-5`; Sonnet 5.5 passed locally and
@@ -205,12 +209,12 @@ is Danish (person language).
   Supabase is older than production's storage schema (`lifecycle_configuration`)
   — **redo that swap after every re-dump**, or the seed fails. Keep disk free:
   `.next` had grown to 18 GB; `supabase stop` before updating Docker.
-  **Everything is STOPPED at session end, 1 Oct 14:50** (stack via `supabase
-  stop`, data kept; Docker Desktop via `docker desktop stop`; `.next`
-  deleted — it had regrown to 10 GB in ONE day). To resume: `open -a Docker`,
-  then `supabase start`, then the dev server. Local TEST rows from today's
-  assistant tests are command requests only (nothing was applied to Google
-  after the two 30 Sep TEST entries).
+  **Everything is STOPPED at session end, 7 Oct** (`supabase stop`, data
+  kept; `docker desktop stop`). To resume: `open -a Docker`, then `supabase
+  start`, then the dev server. Local TEST rows from 7 Oct: call copy
+  `b7221007…` (offer OFF-2026-0004, delivery applied), customer *TEST
+  Leveringskunde ApS*, `SO-TEST-0001` and `SO-TEST-0002` (the latter
+  converted from that offer).
 - **With the browser pane hidden**, streamed sections never reveal and real
   clicks fail: `window.$RV(window.$RB)`, synthetic `pointerdown` for Radix
   menus, `requestSubmit()` for forms.
@@ -243,9 +247,9 @@ is Danish (person language).
    labels once the printer is known, the builder's iPad view (§2D).
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-10-01, fresh copy): 95 pass · 21 redirect · 12 skip ·
-  0 fail.** The skips are detail pages with no matching rows in the rebuilt
-  copy (invoices, tickets, offers, WOs, deliveries, agreement documents).
+- **Smoke, local (2026-10-07): 98 pass · 22 redirect · 9 skip · 0 fail.**
+  The skips are detail pages with no matching rows in the local copy
+  (invoices, tickets, WOs, deliveries, agreement documents).
 - **Lint: 0 errors, 14 warnings** (all pre-existing; re-counted 1 Oct — the
   "2" recorded the day before was the *fixable* line, not the total).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`,

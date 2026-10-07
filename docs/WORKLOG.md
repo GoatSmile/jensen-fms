@@ -107,12 +107,12 @@ treat the early totals as floors, not truth.
 | Wed 2026-09-30 | ~9 | **Calls decide by what was said, and every call leaves a trace**: 360 px fix, ElevenLabs, one Anthropic door; unrecorded + missed calls imported, suggested offers/tickets per call (migrations 113–116), Google Calendar guide. |
 | Thu 2026-10-01 | ~5.5 | **Calendar and the assistant** (migrations 117–121): visits and reminders in Google, one floating button whose panel answers, opens and drafts per role on Haiku 4.5; garbled customer names picked, never created. |
 | Wed 2026-10-07 | ~1 | **Main-number calls are recorded by the mobile they land on**, then the call page: transcript and extraction fold away under the plan. |
-| Wed 2026-10-07 (cont.) | ~1.5 | **Deliveries go in the calendar** (migration 122): a call drafts one for an agreed date, a confirmed SO has *Add delivery to calendar*, reminders parked; every applied suggestion says what it made and links there. |
+| Wed 2026-10-07 (cont.) | ~2 | **Deliveries go in the calendar** (migration 122): a call drafts one for an agreed date, a confirmed SO has *Add delivery to calendar*, reminders parked; every applied suggestion says what it made and links there. |
 
 **September: ~77 h** (11 working days)
 
-**October so far: ~8 h** (2 working days)
+**October so far: ~8.5 h** (2 working days)
 
 ---
 
-**Project total: ~339 h across 54 working days (2026-05-07 → 2026-10-07)**
+**Project total: ~339.5 h across 54 working days (2026-05-07 → 2026-10-07)**
