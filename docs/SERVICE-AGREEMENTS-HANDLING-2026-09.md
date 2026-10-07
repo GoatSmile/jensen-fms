@@ -215,9 +215,10 @@ and photos directly it cost little, so it was built.
       open**: the FMS sends issued invoices to e-conomic as journal vouchers,
       which e-conomic cannot send electronically (see §7).
 - **A bike leaves** (stolen, retired, cancelled): the line ends with a reason
-  and date. The contract's rule applies: move it to a replacement bike, or
-  settle the remaining term (municipal: remaining years up front). Nothing is
-  credited automatically.
+  and date. The contract's rule applies: move it to a replacement bike, or —
+  on a committed (K-typed) agreement — keep invoicing it one year at a time
+  until the term ends (Dennis, 7 Oct; not up front). Nothing is credited
+  automatically.
 - **Cancelling** takes effect at the next payment date after a month's notice.
   The current year stays paid.
 - **Repairs:** coverage is "the bike has an active line". What is covered is the
@@ -282,23 +283,38 @@ is not covered, cancelling, and a bike leaving (both templates, §2).
     few of them.
 16. **Renewal invoice text: reuse invoice 7114's.**
 
-**Still open — to Dennis:**
+**Answered by Dennis, 7 October** (meeting with Nazar):
 
-- **A bike that leaves a committed agreement unreplaced:** keep invoicing it
-  every year until the term ends, or invoice the remaining years at once (the
-  municipal template's *up front*)?
-- **The yearly increase:** 2 % or 3 %; new agreements only, or also the
-  existing ones at their next anniversary? And does the K-type ALSO change the
-  starting price (he said it should, with no figures)?
-- **GPS-only:** the price and the binding. Are the register's 480 kr rows these
-  (2 184 − 1 704 = 480)?
-- **The 8-day customers:** which ones — set per customer, or by kind of
-  customer?
-- **When is the cleanup done?** That date sets the import and the switch-over.
-- **The three review lists** (28 *ja* at 0 kr, 11 frames twice, 13 without a
-  price): send them to him so the cleanup covers them.
-- **Register or John's Trello export (C1)?** Implied the register — he is
-  cleaning it as the source — but not said.
+17. **A bike that leaves a committed agreement unreplaced is invoiced one year
+    at a time until the term ends** — never the remaining years at once. The
+    customer usually replaces it within the year, and the new bike then takes
+    the line. This supersedes the municipal template's *up front* (§2, §6).
+18. **The yearly increase is 3 %, on NEW agreements only.** Existing agreements
+    keep their price; Dennis is rewriting the agreement documents for new
+    customers himself (as signable PDFs), separately from this import.
+19. **GPS alone is 480 kr a year**; a service agreement with GPS is 2 184 kr.
+    The register's 480 kr rows are GPS-only subscriptions.
+20. **Payment terms: every municipality 30 days.** Companies get 14 or 8 days,
+    decided case by case; **the standard for a customer without an EAN should
+    be 8 days.** (The app's default is net 14 — see CLAUDE.md, Invoicing rules.)
+21. **The cleanup finishes this week** (by Friday 9 October; Dennis is using
+    Copilot on the spreadsheet). **The first import is ONE municipality** —
+    Nazar names it, Dennis cleans its rows first — watched end to end before
+    the rest. Goal: every bike and agreement imported by the end of the week
+    of 12 October, and Dennis off the spreadsheet.
+22. **Invoicing waits for clean data.** Nothing is invoiced from imported
+    agreements until the import has been checked.
+23. **A municipality has no EAN of its own — every DEPARTMENT has one.** The
+    departments are in the spreadsheet (no addresses); later purchases for a
+    department often left the EAN blank, to be found on the rows above.
+
+**Still open — to Dennis** (none blocks the pilot import):
+
+- **Does the K-type change the starting price?** Asked, not answered. It
+  matters only for the new agreements he is rewriting.
+- **GPS-only binding:** still the template's 3-year minimum?
+- **Register or John's Trello export (C1)?** Not asked again; everyone is
+  working from the register, so it is the source unless he says otherwise.
 
 **Still open — to the owner (planning chat):**
 

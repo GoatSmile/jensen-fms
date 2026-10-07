@@ -151,20 +151,43 @@ is Danish (person language).
   - **Move the Google key file out of the project folder**
     (`jensen-fms-38357d206d22.json` — gitignored now, never committed; the
     key already lives in `.env.local` and Vercel) → password manager or delete.
-- **Dennis:** cleaning up the agreement spreadsheet (same shape on every
-  sheet, the EAN on every row) — the register import waits on it, runs once,
-  and closes the spreadsheet; the follow-ups left in handling doc §7 (answered
-  2 Oct: §7 items 8–16); his part sales prices (some missing, some wrong); the
-  fleet answers; the recording notice; the seven unclassified bikes; the label
-  printer model.
-- **Owner (planning chat), from Dennis's 2 Oct answers:** a yearly 2–3 %
-  increase breaks "one frozen yearly price per line" (DECISIONS 2026-09-29);
-  GPS-only subscriptions need a billable line with no service agreement.
-- **Paint order basket picker (2 Oct):** Dennis could pick only some baskets.
-  Not a bug — the picker lists parts *Paintable as* Basket, and only
-  `JP-B (W)` is marked; the one he wanted is `JP-BA26H` "Alloy basket hotel
-  model". Mark it on its part page. Worth a hint in the picker saying why a
-  part is missing.
+- **Agreements — the pilot (7 Oct meeting; handling doc §7 items 17–23):**
+  Dennis finishes the spreadsheet cleanup by Fri 9 Oct; **Nazar names the ONE
+  municipality** imported first (Dennis cleans its rows first); goal: all bikes
+  and agreements in by the end of the week of 12 Oct, Dennis off the
+  spreadsheet. **Invoicing is on hold** until the imported data is checked.
+  Before the pilot: decide where the register's **GPS-only (480 kr) rows** go —
+  today every line hangs on a service agreement.
+- **Dennis, after the cleanup:** customers + departments (a municipality has no
+  EAN, each department does; many municipalities are empty shells in
+  `/organizations`); one contact list gathered from Finn's phone and the
+  spreadsheet (any mess — it gets imported); part sales prices; add assembly
+  notes on template lines (e.g. the chain-guard holder drilled for the 410
+  mid-motor) — check they reach the pick list; mark test data TEST; the fleet
+  answers; the seven unclassified bikes; the label printer model.
+- **Basket picker:** explained to Dennis 7 Oct, but `JP-BA26H` "Alloy basket
+  hotel model" is STILL not *Paintable as* Basket in production (checked 7 Oct
+  20:30). The cover `JP-CO40` should be `paint_exempt`.
+- **Owner decisions pending:** how a renewal reaches a municipality by EAN; a
+  GPS-only line; the 3 % yearly increase on NEW agreements (existing lines keep
+  their frozen price, so it can wait for Dennis's new agreement text); payment
+  terms default — Dennis: 30 days for municipalities, **8 for customers with no
+  EAN**, vs CLAUDE.md's net 14.
+- **Calls, from the 7 Oct meeting** (Relatel plan upgraded — main-number calls
+  are now recorded): import the *Oprettelse* line (option 1 — decided) and
+  Dennis's BUSINESS line (option 3 → "Dennis Jensen"; confirm it is that one,
+  not his private "Dennis"); both are `import_enabled = false`. A call should
+  **organise Finn's calendar, not make a ticket** — reconsider the repair-ticket
+  suggestion; a bike named by its code ⇒ the call attaches to that bike;
+  otherwise it waits in the review pool. A number SPOKEN in the call should be
+  captured and matched. A person from a call becomes a CONTACT on the
+  department that owns the bike, never a customer. Keyterms lack the
+  company's own name ("Jensen Cykler" was heard as "Aho Cykler") and the
+  bikes' codes. **Finn's on-site dictation** (bike code + parts + time) lands
+  in one list reviewed at the 7–8 morning meeting; nothing applied
+  automatically, no QR yet. A dictated "put X in the calendar" was not found
+  afterwards — check `/commands`. Dennis to decide what his sales calls should
+  trigger. Next visit: sign in as Finn together.
 
 ## Landmines
 - **Finn drives paint runs from `/work/paint-runs`**, not the paint-order pages
