@@ -25,6 +25,8 @@ type Props = {
   canScan: boolean;
   /** What a press of the floating button does — chosen here, by the person. */
   mode: AssistantMode;
+  /** Applies a pick to the button at once; the save follows. */
+  onModeChange: (mode: AssistantMode) => void;
 };
 
 /**
@@ -39,7 +41,7 @@ type Props = {
  * word is fixed first. A follow-up within the panel threads the previous
  * request (the assistant remembers one exchange, ≤10 min).
  */
-export function AssistantPanel({ onClose, canScan, mode }: Props) {
+export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) {
   const t = useTranslations("assistant");
   const locale = useLocale();
   const router = useRouter();
@@ -115,9 +117,15 @@ export function AssistantPanel({ onClose, canScan, mode }: Props) {
   }
 
   function chooseMode(next: string) {
+    const previous = mode;
+    onModeChange(next as AssistantMode);
     startMode(async () => {
       const r = await setAssistantMode(next);
-      if (!r.ok) setError(r.error);
+      if (!r.ok) {
+        // Not saved: put the button back the way it was, and say so.
+        onModeChange(previous);
+        setError(r.error);
+      }
     });
   }
 

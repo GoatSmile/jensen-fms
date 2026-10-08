@@ -41,12 +41,16 @@ type Toast =
  */
 export function AssistantButton({
   allowedCaps,
-  mode,
+  mode: savedMode,
 }: {
   /** Role capability scope; null = everything (gate off). */
   allowedCaps: string[] | null;
+  /** The person's stored choice; a change in the panel applies at once. */
   mode: AssistantMode;
 }) {
+  // Held here so picking a mode in the panel changes the button NOW — the
+  // layout that passed the stored value does not re-render on a pick.
+  const [mode, setMode] = useState<AssistantMode>(savedMode);
   const t = useTranslations("assistant");
   const locale = useLocale();
   const pathname = usePathname();
@@ -157,7 +161,9 @@ export function AssistantButton({
 
   return (
     <>
-      {open ? <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} /> : null}
+      {open ? (
+        <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} onModeChange={setMode} />
+      ) : null}
 
       {/* What the button is doing, said in words above it: recording, saved,
           or the one failure that must not lose anything. */}

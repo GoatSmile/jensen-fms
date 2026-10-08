@@ -1,7 +1,6 @@
 "use server";
 
 import { after } from "next/server";
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { readGate, readPersonId } from "@/lib/auth/read-session";
@@ -84,8 +83,8 @@ export async function setAssistantMode(mode: string): Promise<{ ok: true } | { o
     .update({ assistant_mode: mode as AssistantMode, last_actor_id: personId })
     .eq("id", personId);
   if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
-  // The layout reads the mode for every page.
-  revalidatePath("/", "layout");
+  // The button already shows the pick (it holds the mode itself); nothing on
+  // the page changes, so there is nothing to revalidate.
   return { ok: true };
 }
 
