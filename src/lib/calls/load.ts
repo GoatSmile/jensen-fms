@@ -108,7 +108,8 @@ export async function loadCallsPage(
       let q = supabase
         .from("inbound_messages")
         .select(ROW_COLUMNS)
-        .neq("kind", "command")
+        // Calls only: notes have their own board (src/lib/inbox/notes.ts).
+        .eq("kind", "customer")
         .gte("received_at", danishMidnight(fromKey).toISOString())
         .lt("received_at", danishMidnight(untilKey).toISOString())
         .order("received_at", { ascending: false })
@@ -125,7 +126,8 @@ export async function loadCallsPage(
       let q = supabase
         .from("inbound_messages")
         .select(ROW_COLUMNS)
-        .neq("kind", "command")
+        // Calls only: notes have their own board (src/lib/inbox/notes.ts).
+        .eq("kind", "customer")
         .lt("received_at", danishMidnight(fromKey).toISOString())
         .is("ticket_id", null)
         .not("disposition", "in", "(handled,spam)")

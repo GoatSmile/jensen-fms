@@ -378,7 +378,8 @@
     "allCustomers": "Alle kunder",
     "customerMap": "Kort",
     "calls": "Opkald",
-    "calendar": "Kalender"
+    "calendar": "Kalender",
+    "inbox": "Indbakke"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3676,7 +3677,7 @@
     "eventSoReady": "Salgsordre klar til levering",
     "eventPaintReceivedIncomplete": "Lakordre hentet med linjer, der skal rettes",
     "capJobs": "Se planlagte job",
-    "capCallsOwn": "Egne opkald (kun egen telefonlinje)"
+    "capCallsOwn": "Egen indbakke (egne opkald og notater)"
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -4558,7 +4559,9 @@
     "notesNeedPerson": "Et notat kræver en logget-ind person.",
     "notesBadPath": "Den optagelse kan ikke bruges.",
     "notesEmpty": "Skriv noget først.",
-    "notesBadMode": "Ukendt indstilling for knappen."
+    "notesBadMode": "Ukendt indstilling for knappen.",
+    "notesNothingSelected": "Intet notat valgt.",
+    "notesNotAllowed": "Du kan ikke lukke det notat."
   },
   "inbox": {
     "title": "Indbakke",
@@ -5277,5 +5280,42 @@
     "mode_ask": "Åbner dette panel",
     "mode_note_toggle": "Optager et notat, tryk igen for at gemme",
     "mode_note_vad": "Optager et notat, gemmer ved en pause"
+  },
+  "inboxPage": {
+    "title": "Indbakke",
+    "subtitle": "Det folk har fortalt appen, og alle opkald.",
+    "notesTitle": "Notater",
+    "peopleAria": "Hvis notater",
+    "you": "Dig",
+    "columnYou": "{name} (dig)",
+    "emptyChip": "{name} · 0",
+    "emptyOwn": "Intet åbent. Tryk på knappen og tal for at gemme et notat.",
+    "emptyEveryone": "Ingen har et åbent notat.",
+    "markAllDone": "Markér alle færdige",
+    "markAllTitle": "Markér alle færdige?",
+    "markAllBody": "{n, plural, one {# notat} other {# notater}} for {name}. {left, plural, =0 {} one {# har stadig et forslag, der ikke er anvendt — det droppes og noteres på notatet.} other {# har stadig forslag, der ikke er anvendt — de droppes og noteres på hvert notat.}}",
+    "markAllButton": "Markér {n} færdige",
+    "markAllLabel": "{n, plural, one {# notat} other {# notater}}",
+    "cancel": "Annullér",
+    "done": "Færdig",
+    "doneAria": "Markér færdig: {text}",
+    "reopen": "Genåbn",
+    "undo": "Fortryd",
+    "doneToast": "Færdig · {label}",
+    "olderFold": "+{n} ældre",
+    "olderFoldOpen": "Fold ældre sammen",
+    "oldestDays": "ældste {n, plural, one {# dag} other {# dage}}",
+    "ageDays": "{n} dage",
+    "yesterdayAt": "i går {time}",
+    "doneFold": "Færdige notater · {n}",
+    "closedBy": "færdig af {name}",
+    "noText": "(ingen tekst)",
+    "noteTitle": "Notat",
+    "transcribing": "Transskriberer…",
+    "transcribeFailed": "Kunne ikke transskriberes — åbn det for at prøve igen.",
+    "fromPerson": "fra {name}",
+    "toPerson": "til {name}",
+    "saidOn": "Sagt på",
+    "openFull": "Åbn hele siden"
   }
 }

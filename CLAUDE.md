@@ -652,8 +652,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   longest one-format run as `media_path` and the original at
   `channel_meta.original_media_path`, which the retention job deletes too. Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
-  the tech. **The review queue is `/calls`** (*Calls*, in the *Work* group;
-  `/inbox` redirects), by Danish day, tabs per person for the office. Each
+  the tech. **The review queue is `/inbox`** (*Inbox*, in the *Work* group;
+  `/calls` redirects, filters kept; a call's own page stays `/calls/<id>`):
+  spoken NOTES on top, a column per person of their open notes
+  (`loadNotesBoard`, `src/lib/inbox/notes.ts` — a note's column is who it is
+  FOR, addressee else speaker; old open notes FOLD into a counted line, never
+  out of sight; **Done is for notes only**, with *Mark all done* per column and
+  Undo, and records `closed_by` + the suggestions it dropped), then CALLS by
+  Danish day, tabs per person for the office. Each
   call's group — to do / check / no action / done — is DERIVED by
   `triageCall` (`src/lib/calls/triage.ts`) and never stored, **from what was
   said, never from whose number it came** (a colleague's number only explains
@@ -1134,7 +1140,7 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-07-26; the 2026-06-20 rail was one flat list of links under hairline
   headings): *Today* (Dashboard) · *Bikes* (All bikes · Imported bikes · Bike
   templates · Families) · *Parts* (All parts · Stock value · Paint shelf · Kits) · *Work* (Tickets · Work
-  orders · Workshop floor · Calls · Calendar) · *Orders* (Offers · Sales · Paint orders ·
+  orders · Workshop floor · Inbox · Calendar) · *Orders* (Offers · Sales · Paint orders ·
   Manufacturing · Invoices · Purchase) · *Customers* (All customers · Service
   agreements · Map) · *Admin*.
   - ***Orders* is ordered by the LIFE OF A JOB, not alphabetically or by

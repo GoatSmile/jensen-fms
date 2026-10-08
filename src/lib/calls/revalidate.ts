@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
  * found four that revalidated a list or a retired route instead.
  */
 export function revalidateInbound(id?: string): void {
+  revalidatePath("/inbox");
   revalidatePath("/calls");
   revalidatePath("/commands");
   if (id) {

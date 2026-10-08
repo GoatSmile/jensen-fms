@@ -17,8 +17,6 @@ const ROUTE_CAPABILITIES: ReadonlyArray<readonly [string, Capability]> = [
   ["/bike-templates", "templates"],
   ["/parts", "parts"],
   ["/maintenance", "maintenance"],
-  // /inbox redirects to /calls (DECISIONS 2026-09-29); gated like it.
-  ["/inbox", "inbox"],
   // /commands is NOT gated here: everyone may ask the assistant, and the
   // pages show the office every request and anyone else their own.
   ["/work", "work"],
@@ -85,6 +83,8 @@ export function routeCapabilities(
   }
   // Calls: every line with `inbox`, a technician's own with `calls_own`; the
   // page and every action narrow further by row (src/lib/calls/access.ts).
+  // The Inbox (notes + calls, DECISIONS 2026-10-08) and the call detail pages.
+  if (pathname === "/inbox" || pathname.startsWith("/inbox/")) return ["inbox", "calls_own"];
   if (pathname === "/calls" || pathname.startsWith("/calls/")) return ["inbox", "calls_own"];
   // The calendar (read-only; /visits redirects there): the office AND the
   // floor — the technician is the one driving to the visits (migration 117).

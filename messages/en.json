@@ -378,7 +378,8 @@
     "allCustomers": "All customers",
     "customerMap": "Map",
     "calls": "Calls",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "inbox": "Inbox"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -3676,7 +3677,7 @@
     "eventSoReady": "Sales order ready for delivery",
     "eventPaintReceivedIncomplete": "Paint order collected with lines to fix",
     "capJobs": "See scheduled jobs",
-    "capCallsOwn": "Own calls (their phone line only)"
+    "capCallsOwn": "Own inbox (own calls and notes)"
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -4558,7 +4559,9 @@
     "notesNeedPerson": "A note needs a signed-in person.",
     "notesBadPath": "That recording can't be used.",
     "notesEmpty": "Write something first.",
-    "notesBadMode": "Unknown button setting."
+    "notesBadMode": "Unknown button setting.",
+    "notesNothingSelected": "No note was chosen.",
+    "notesNotAllowed": "You can't close that note."
   },
   "inbox": {
     "title": "Inbox",
@@ -5277,5 +5280,42 @@
     "mode_ask": "Opens this panel",
     "mode_note_toggle": "Records a note, press again to save",
     "mode_note_vad": "Records a note, saves on a pause"
+  },
+  "inboxPage": {
+    "title": "Inbox",
+    "subtitle": "What people told the app, and every call.",
+    "notesTitle": "Notes",
+    "peopleAria": "Whose notes",
+    "you": "You",
+    "columnYou": "{name} (you)",
+    "emptyChip": "{name} · 0",
+    "emptyOwn": "Nothing open. Press the button and talk to keep a note.",
+    "emptyEveryone": "Nobody has an open note.",
+    "markAllDone": "Mark all done",
+    "markAllTitle": "Mark all done?",
+    "markAllBody": "{n, plural, one {# note} other {# notes}} for {name}. {left, plural, =0 {} one {# still has a suggestion not applied — it will be dropped and noted on the note.} other {# still have suggestions not applied — they will be dropped and noted on each note.}}",
+    "markAllButton": "Mark {n} done",
+    "markAllLabel": "{n, plural, one {# note} other {# notes}}",
+    "cancel": "Cancel",
+    "done": "Done",
+    "doneAria": "Mark done: {text}",
+    "reopen": "Reopen",
+    "undo": "Undo",
+    "doneToast": "Done · {label}",
+    "olderFold": "{n, plural, one {+# older} other {+# older}}",
+    "olderFoldOpen": "Fold older",
+    "oldestDays": "oldest {n, plural, one {# day} other {# days}}",
+    "ageDays": "{n} days",
+    "yesterdayAt": "yesterday {time}",
+    "doneFold": "Done notes · {n}",
+    "closedBy": "done by {name}",
+    "noText": "(no text)",
+    "noteTitle": "Note",
+    "transcribing": "Transcribing…",
+    "transcribeFailed": "Couldn't transcribe — open it to retry.",
+    "fromPerson": "from {name}",
+    "toPerson": "for {name}",
+    "saidOn": "Said on",
+    "openFull": "Open full page"
   }
 }

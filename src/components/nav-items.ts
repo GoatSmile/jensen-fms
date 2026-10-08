@@ -125,8 +125,8 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/work", labelKey: "workshopFloor", capability: "work" },
       {
-        href: "/calls",
-        labelKey: "calls",
+        href: "/inbox",
+        labelKey: "inbox",
         capability: "inbox",
         orCapabilities: ["calls_own"],
       },

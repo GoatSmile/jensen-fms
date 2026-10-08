@@ -10,7 +10,8 @@ import { createServiceClient } from "@/lib/supabase/service";
  * RLS; so the check has to live here, not in the route alone).
  *
  *   `inbox`      every line, the main number, and dictated commands (office).
- *   `calls_own`  the calls stamped with the viewer's own person (a technician).
+ *   `calls_own`  the calls stamped with the viewer's own person (a technician),
+ *                and the notes they said or that are addressed to them.
  *
  * A UX wall like the rest of the capability model, not a security boundary —
  * but a consistent one: a URL guess or a crafted action call gets the same
@@ -29,11 +30,12 @@ export async function readCallsScope(): Promise<CallsScope | null> {
 
 export function scopeAllowsRow(
   scope: CallsScope | null,
-  row: { kind: string | null; handled_by_person_id: string | null },
+  row: { kind: string | null; handled_by_person_id: string | null; addressed_to_person_id?: string | null },
 ): boolean {
   if (!scope) return false;
   if (scope.all) return true;
-  return row.kind !== "command" && row.handled_by_person_id === scope.personId;
+  if (row.kind === "command") return false;
+  return row.handled_by_person_id === scope.personId || row.addressed_to_person_id === scope.personId;
 }
 
 /** For actions: may the viewer act on this row? Reads the row fresh. */
@@ -57,7 +59,7 @@ export async function canActOnInbound(messageId: string): Promise<boolean> {
   if (scope.all) return true;
   const { data } = await createServiceClient()
     .from("inbound_messages")
-    .select("kind, handled_by_person_id")
+    .select("kind, handled_by_person_id, addressed_to_person_id")
     .eq("id", messageId)
     .maybeSingle();
   return !!data && scopeAllowsRow(scope, data);

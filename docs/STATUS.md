@@ -80,7 +80,19 @@ is Danish (person language).
   transcription end to end (a `say`-generated Danish WAV, 96 % clarity).
   **NOT verified: a real recording** — the browser pane blocks the mic, so
   silence detection, the beeps and the upload need a real phone (Finn's
-  Android). Next: slice 2, the Inbox layout.
+  Android). **A real recording WAS verified in production on 8 Oct** (Nazar,
+  desktop Chrome: saved, English detected with no toggle, 98 % clarity).
+- **The Inbox — slice 2 built 8 Oct**: `/inbox` (nav *Inbox*; `/calls`
+  redirects, a call's page stays `/calls/<id>`) — notes in a column per person
+  (yours first, empty people as chips, older open notes folded with their age),
+  side panel / full-screen sheet on a phone, Done + Mark all done + Undo +
+  Reopen, calls below (notes no longer mixed into them). Verified locally as
+  Nazar (desktop + 360 px) and as Finn (360 px): fold, Done → DB closed by
+  Nazar, Undo → reopened, Mark all done → 4 closed, Reopen, side panel, the
+  `/calls?tab=` redirect. Smoke 98 · 22 · 9 · 0 (baseline). **Not built yet:**
+  auto-close (needs slice 3's suggestions on notes). Next: slice 3 —
+  attach-note / edit-contact actions, the note planner, bike + customer
+  history.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn
