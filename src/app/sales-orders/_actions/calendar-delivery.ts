@@ -5,8 +5,9 @@ import { getTranslations } from "next-intl/server";
 
 import { readHasCapability, readPersonId } from "@/lib/auth/read-session";
 import { deliveryEntryFor } from "@/lib/calendar/deliveries";
-import { createCalendarEntry } from "@/lib/calendar/entries";
+import { createCalendarEntry, deleteCalendarEntry, moveCalendarEntry } from "@/lib/calendar/entries";
 import { appOrigin } from "@/lib/qr";
+import { inheritTestTitle } from "@/lib/test-marker";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export type CalendarDeliveryResult =
@@ -36,7 +37,7 @@ export async function addSODeliveryToCalendar(
   const { data: so } = await supabase
     .from("sales_orders")
     .select(
-      `id, sales_order_number, status, delivery_address, converted_from_offer_id, organization_id,
+      `id, sales_order_number, status, delivery_address, converted_from_offer_id, organization_id, notes,
        organization:organizations!organization_id(legal_name, display_name_da, display_name_en, address_line1, zip_code, city),
        organization_unit:organization_units!organization_unit_id(name, address)`,
     )
@@ -67,7 +68,8 @@ export async function addSODeliveryToCalendar(
   const errand = bikes > 0
     ? tSo("calendarTitleBikes", { number: so.sales_order_number, count: bikes })
     : tSo("calendarTitle", { number: so.sales_order_number });
-  const title = [customer, errand].filter(Boolean).join(" — ");
+  // A TEST order's entry wears the marker too (inheritTestTitle).
+  const title = inheritTestTitle(so.notes, [customer, errand].filter(Boolean).join(" — "));
   const location =
     so.delivery_address ??
     unit?.address ??
@@ -99,4 +101,85 @@ export async function addSODeliveryToCalendar(
   revalidatePath(`/sales-orders/${so.id}`);
   revalidatePath("/calendar");
   return { ok: true, eventId: r.event.id, date: input.date, time: input.time.trim() || null };
+}
+
+export type ChangeDeliveryResult = { ok: true } | { ok: false; error: string };
+
+/** The calendar change's failure, in the person's words. */
+function changeError(
+  t: Awaited<ReturnType<typeof getTranslations>>,
+  code: string,
+  detail: string | undefined,
+): string {
+  const key =
+    (
+      {
+        not_configured: "calendarNotConfigured",
+        bad_date: "visitNeedsDate",
+        bad_time: "visitBadTime",
+        not_found: "calendarEntryNotFound",
+      } as Record<string, string>
+    )[code] ?? "calendarCouldNotChange";
+  return t(key, { detail: detail ?? "" });
+}
+
+/** The order (for its offer link) and its delivery entry — or why not. */
+async function orderEntry(soId: string) {
+  const supabase = createServiceClient();
+  const { data: so } = await supabase
+    .from("sales_orders")
+    .select("id, status, converted_from_offer_id")
+    .eq("id", soId)
+    .maybeSingle();
+  if (!so) return { supabase, so: null, entry: null };
+  return { supabase, so, entry: await deliveryEntryFor(supabase, so.id, so.converted_from_offer_id) };
+}
+
+/**
+ * MOVE the order's delivery in the calendar — a changed delivery date no
+ * longer leaves its entry on the old day (BACKLOG, closed 2026-10-08). Same
+ * door as a note's move (`moveCalendarEntry`): the entry keeps its title and
+ * length; an emptied time makes it all-day.
+ */
+export async function moveSODelivery(
+  soId: string,
+  input: { date: string; time: string },
+): Promise<ChangeDeliveryResult> {
+  const t = await getTranslations("errors");
+  if (!(await readHasCapability("so"))) return { ok: false, error: t("deliveryNeedsSo") };
+  const { supabase, so, entry } = await orderEntry(soId);
+  if (!so) return { ok: false, error: t("notFound") };
+  if (!CALENDAR_STATUSES.includes(so.status)) return { ok: false, error: t("deliveryCalendarStatus") };
+  if (!entry) return { ok: false, error: t("calendarEntryNotFound", { detail: "" }) };
+  const r = await moveCalendarEntry(supabase, {
+    eventId: entry.eventId,
+    date: input.date,
+    time: input.time.trim() || null,
+    durationMinutes: null,
+  });
+  if (!r.ok) return { ok: false, error: changeError(t, r.code, r.detail) };
+  revalidatePath(`/sales-orders/${so.id}`);
+  revalidatePath("/calendar");
+  return { ok: true };
+}
+
+/**
+ * REMOVE the order's delivery from the calendar (the page asks first). Also
+ * open to a CANCELLED order, whose delivery will not happen. The order then
+ * offers *Add delivery to calendar* again.
+ */
+export async function removeSODelivery(soId: string): Promise<ChangeDeliveryResult> {
+  const t = await getTranslations("errors");
+  if (!(await readHasCapability("so"))) return { ok: false, error: t("deliveryNeedsSo") };
+  const { supabase, so, entry } = await orderEntry(soId);
+  if (!so) return { ok: false, error: t("notFound") };
+  if (!CALENDAR_STATUSES.includes(so.status) && so.status !== "cancelled") {
+    return { ok: false, error: t("deliveryCalendarStatus") };
+  }
+  if (!entry) return { ok: false, error: t("calendarEntryNotFound", { detail: "" }) };
+  const r = await deleteCalendarEntry(supabase, entry.eventId);
+  if (!r.ok) return { ok: false, error: changeError(t, r.code, r.detail) };
+  revalidatePath(`/sales-orders/${so.id}`);
+  revalidatePath("/calendar");
+  return { ok: true };
 }

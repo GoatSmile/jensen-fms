@@ -112,6 +112,14 @@ is Danish (person language).
   TEST from its title. The real Gladsaxe entry Fri 9 Oct 13:03 (from the 7 Oct
   meeting) is untouched. **The plan-inbox-notes slices are all built**; the car
   test on Finn's Android is the one still open.
+- **Sales order delivery: *Move* / *Remove* (8 Oct)** beside "In the calendar",
+  the time read live from Google; calendar titles from TEST sources now start
+  with TEST. Verified locally on the real calendar: SO-TEST-0001 moved Tue 13
+  → Wed 14 Oct 11:00 (length and title kept, link row followed) and back;
+  SO-TEST-0002 removed (gone from Google and the link table, *Add* returned)
+  and re-added as "TEST Nazar Taras — delivery SO-TEST-0002". TEST entries now
+  in *Servicebesøg*: Mon 12 Oct 09:00 (SO-TEST-0002) and Tue 13 Oct 09:00
+  (SO-TEST-0001) — removable from their orders' pages.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn

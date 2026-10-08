@@ -26,6 +26,8 @@ export type CalendarEvent = {
   /** ISO date-time with offset, or a bare ISO date for an all-day event. */
   start: string;
   end: string;
+  /** Deleted in the provider — Google keeps a deleted event for a while, marked cancelled. */
+  cancelled?: boolean;
 };
 
 export type NewEntry = {

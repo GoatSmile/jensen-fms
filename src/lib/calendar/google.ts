@@ -122,6 +122,7 @@ function toEvent(e: GoogleEvent): CalendarEvent {
     allDay,
     start: e.start?.dateTime ?? e.start?.date ?? "",
     end: e.end?.dateTime ?? e.end?.date ?? "",
+    cancelled: e.status === "cancelled",
   };
 }
 

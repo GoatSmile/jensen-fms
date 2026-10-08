@@ -4945,7 +4945,14 @@
     "unsaved": "Ugemte ændringer",
     "savedAt": "Gemt · {time}",
     "save": "Gem",
-    "saving": "Gemmer…"
+    "saving": "Gemmer…",
+    "calendarMove": "Flyt",
+    "calendarMoveSave": "Flyt levering",
+    "calendarMoving": "Flytter…",
+    "calendarRemove": "Fjern",
+    "calendarRemoving": "Fjerner…",
+    "calendarRemoveConfirm": "Fjern denne levering fra kalenderen?",
+    "calendarCancel": "Annullér"
   },
   "paintRuns": {
     "back": "Værkstedet",

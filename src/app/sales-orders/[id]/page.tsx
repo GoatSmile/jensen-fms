@@ -29,7 +29,7 @@ import {
 import { loadAtSupplierBikeIds } from "@/lib/services/at-supplier";
 import { ProductionNoteCard } from "./_components/production-note-card";
 import { DeliverySection } from "./_components/delivery-section";
-import { deliveryEntryFor } from "@/lib/calendar/deliveries";
+import { liveDeliveryEntryFor } from "@/lib/calendar/deliveries";
 import { createServiceClient } from "@/lib/supabase/service";
 import { LinesSection, type SOLineRow } from "./_components/lines-section";
 import {
@@ -86,8 +86,9 @@ export default async function SODetailPage({
 
   const status = so.status as SOStatus;
   // The calendar link table is written by the service client and read here
-  // the same way — the page itself is gated by `so`.
-  const calendarEntry = await deliveryEntryFor(
+  // the same way — the page itself is gated by `so`. Its time is read LIVE
+  // from the calendar: someone may have moved or deleted it in Google.
+  const calendarEntry = await liveDeliveryEntryFor(
     createServiceClient(),
     so.id,
     (so.offer as { id: string } | null)?.id ?? null,

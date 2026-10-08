@@ -35,7 +35,7 @@ export function DeliverySection({
   signedBy: string | null;
   signedAt: string | null;
   /** The delivery's calendar entry, on this order or the offer it came from. */
-  calendarEntry: { eventId: string; startsAt: string | null } | null;
+  calendarEntry: { eventId: string; start: string | null; allDay: boolean } | null;
   requestedDate: string | null;
 }) {
   const t = useTranslations("soDelivery");

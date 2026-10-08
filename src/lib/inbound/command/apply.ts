@@ -25,6 +25,7 @@ import {
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
 import { loadPersonAccess } from "@/lib/people/queries";
 import { appOrigin } from "@/lib/qr";
+import { inheritTestTitle } from "@/lib/test-marker";
 import type { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/lib/types/database";
 
@@ -285,7 +286,7 @@ async function performAction(
 
       const { data: msg } = await supabase
         .from("inbound_messages")
-        .select("kind, ticket_id, matched_organization_id")
+        .select("kind, ticket_id, matched_organization_id, body_text")
         .eq("id", messageId)
         .maybeSingle();
       const isCommand = msg?.kind === "command";
@@ -295,7 +296,8 @@ async function performAction(
       const order = action.kind === "delivery" ? await appliedOrderOf(supabase, messageId) : null;
       const r = await createCalendarEntry(supabase, {
         kind: action.kind,
-        title: action.title,
+        // A TEST note's or call's entry is marked too — the model drops it.
+        title: inheritTestTitle(msg?.body_text, action.title),
         // Minimal personal data in the provider: the title and a way back.
         description: `${t(isCommand ? "calendarEventLinkCommand" : "visitEventLink")}: ${appOrigin()}/${isCommand ? "commands" : "calls"}/${messageId}`,
         location: action.location,

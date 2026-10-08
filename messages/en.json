@@ -4945,7 +4945,14 @@
     "unsaved": "Unsaved changes",
     "savedAt": "Saved · {time}",
     "save": "Save",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "calendarMove": "Move",
+    "calendarMoveSave": "Move delivery",
+    "calendarMoving": "Moving…",
+    "calendarRemove": "Remove",
+    "calendarRemoving": "Removing…",
+    "calendarRemoveConfirm": "Remove this delivery from the calendar?",
+    "calendarCancel": "Cancel"
   },
   "paintRuns": {
     "back": "Workshop floor",

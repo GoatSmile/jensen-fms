@@ -16,6 +16,15 @@ export function isTestMarked(text: string | null | undefined): boolean {
 }
 
 /**
+ * A generated TITLE (a calendar entry) from a TEST parent starts with "TEST",
+ * so test entries in a shared calendar are found the same way (owner,
+ * 2026-10-07: testing may write to *Servicebesøg* with TEST in the title).
+ */
+export function inheritTestTitle(parentText: string | null | undefined, title: string): string {
+  return isTestMarked(parentText) && !isTestMarked(title) ? `TEST ${title}` : title;
+}
+
+/**
  * The child's notes: its own, prefixed with "TEST" when the parent is marked
  * and the child is not already. A child of an unmarked parent is untouched.
  */

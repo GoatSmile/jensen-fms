@@ -723,7 +723,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   row in step, and a move keeps the entry's length). An entry reaches Google only when a PERSON presses for it: a
   `draft_event` suggestion (from a call or a dictated command; a missing time
   takes the kind's default, 09:00 for an hour), or *Add delivery to calendar*
-  on a confirmed sales order. **A delivery is ONE per order**: a call drafts it
+  on a confirmed sales order — which also has *Move* (prefilled with the
+  entry's current time) and *Remove* (asked once; also on a cancelled order),
+  and shows the entry's time read LIVE from Google (`liveDeliveryEntryFor`: an
+  entry deleted in Google — not-found or cancelled, never an auth error —
+  drops its link and *Add* returns). **A generated calendar TITLE inherits the
+  TEST marker** from its source (`inheritTestTitle`: a TEST order, a TEST
+  note or call) — the model drops it, and the calendar is shared. **A delivery is ONE per order**: a call drafts it
   against the OFFER (nothing is sold yet), the order's button against the SO,
   and the order page counts an entry on the offer it was converted from as its
   own (`deliveryEntryFor`, `src/lib/calendar/deliveries.ts`). `calendar_events`
