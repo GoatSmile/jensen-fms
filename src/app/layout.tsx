@@ -39,6 +39,8 @@ export const metadata: Metadata = {
   title: "Jensen FMS",
   description: "Fleet management for Jensen Production / Logocykler.",
   applicationName: "Jensen FMS",
+  // Google's own opt-out, alongside translate="no" on <html> (see below).
+  other: { google: "notranslate" },
   manifest: "/manifest.webmanifest",
   // iOS-specific: enable standalone-mode launch from "Add to Home Screen"
   // and tell iOS what to show on the splash + status bar.
@@ -124,8 +126,14 @@ export default async function RootLayout({
   );
 
   return (
+    // translate="no": the browser's own page translation (Chrome Translate)
+    // rewrites text nodes behind React's back, and the next re-render crashes
+    // with "removeChild … not a child of this node" — it killed a spoken note
+    // mid-save on 8 Oct. The app has a language per PERSON instead
+    // (people.preferred_language), so nobody needs the browser's.
     <html
       lang={locale}
+      translate="no"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="bg-background text-foreground min-h-full">

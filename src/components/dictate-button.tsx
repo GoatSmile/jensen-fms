@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, RotateCcw, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,11 @@ import { cn } from "@/lib/utils";
 export type DictateLanguage = "da-DK" | "en-US";
 
 type Props = {
-  /** Initial language. Defaults to da-DK; user can toggle per-session. */
+  /**
+   * The language to fall back to when detection misses — a document's own
+   * language (an offer, a PO). Defaults to the person's. Not a pin and not a
+   * toggle (owner, 2026-10-08): the speech is detected first.
+   */
   defaultLanguage?: DictateLanguage;
   /** Called when the user accepts a transcript. Append it to your state. */
   onAppend: (text: string) => void;
@@ -60,15 +64,16 @@ type Stage = "idle" | "transcribing" | "confirm";
  * just said is the one failure this component must not have.
  */
 export function DictateButton({
-  defaultLanguage = "da-DK",
+  defaultLanguage,
   onAppend,
   label,
   ready = true,
   className,
 }: Props) {
   const t = useTranslations("dictate");
+  const locale = useLocale();
   const [supported, setSupported] = useState(true);
-  const [language, setLanguage] = useState<DictateLanguage>(defaultLanguage);
+  const language: DictateLanguage = defaultLanguage ?? (locale === "en" ? "en-US" : "da-DK");
   const [stage, setStage] = useState<Stage>("idle");
   const [transcript, setTranscript] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -204,22 +209,6 @@ export function DictateButton({
             {label ?? t("dictate")}
           </Button>
         )}
-
-        {/* Language toggle. Pins the transcription language rather than letting
-            detection guess — it is weakest on exactly the short phrases a tech
-            dictates. Defaults to the surface's own language. */}
-        <button
-          type="button"
-          onClick={() => setLanguage((l) => (l === "da-DK" ? "en-US" : "da-DK"))}
-          disabled={recording || stage !== "idle"}
-          className={cn(
-            "border-input hover:bg-muted shrink-0 rounded-md border px-2.5 py-1.5 font-mono text-xs tabular-nums transition-colors",
-            (recording || stage !== "idle") && "cursor-not-allowed opacity-50",
-          )}
-          aria-label={t("languageAria", { language })}
-        >
-          {language === "da-DK" ? "DA" : "EN"}
-        </button>
       </div>
 
       {!supported ? (

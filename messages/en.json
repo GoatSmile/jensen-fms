@@ -131,7 +131,6 @@
     "dictateMessage": "Dictate the message",
     "listening": "Recording",
     "transcribing": "Transcribing…",
-    "languageAria": "Dictation language: {language}. Tap to switch.",
     "unsupported": "This browser can't record audio. Tap the mic key on your keyboard instead.",
     "notConfigured": "Dictation isn't set up — no transcription provider is configured.",
     "append": "Append to notes",

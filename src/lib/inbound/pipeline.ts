@@ -19,6 +19,7 @@ import { parseExtraction } from "./extraction";
 import { extractInbound } from "./extract";
 import { matchInbound } from "./match";
 import { transcribeVoicemail } from "./channels/voicemail";
+import { isWorkshopLanguage } from "./transcribe";
 import { ensureTranscribableAudio } from "./audio/normalize";
 import { loadTranscriptionKeyterms } from "./keyterms";
 import { applyTriage } from "./triage";
@@ -51,6 +52,8 @@ export async function transcribeStage(
   supabase: SupabaseClient,
   messageId: string,
   settings: InboundSettings,
+  /** Pin the language — a note's re-run when detection missed. */
+  languages?: string[],
 ): Promise<StageResult> {
   const { data: msg, error } = await supabase
     .from("inbound_messages")
@@ -75,6 +78,7 @@ export async function transcribeStage(
     twoWay,
     channelRoles: source === "twilio" ? "caller_first" : "unknown",
     keyterms: await loadTranscriptionKeyterms(supabase),
+    languages,
   });
   if (!result.ok) {
     return { ok: false, code: `transcribe.${result.reason}`, detail: result.detail };
@@ -268,8 +272,23 @@ export async function transcribeNote(
   supabase: SupabaseClient,
   messageId: string,
 ): Promise<StageResult> {
-  const tr = await transcribeStage(supabase, messageId, await loadInboundSettings(supabase));
-  return tr.ok ? tr : fail(supabase, messageId, tr);
+  const settings = await loadInboundSettings(supabase);
+  const tr = await transcribeStage(supabase, messageId, settings);
+  if (!tr.ok) return fail(supabase, messageId, tr);
+  // Detected unpinned; a language the workshop does not speak means detection
+  // missed (a short Danish note heard as Norwegian) — once more, pinned to the
+  // speaker's own language, which travelled with the note.
+  const { data } = await supabase
+    .from("inbound_messages")
+    .select("language, note_context")
+    .eq("id", messageId)
+    .maybeSingle();
+  const fallback = (data?.note_context as { lang?: unknown } | null)?.lang;
+  if (data && !isWorkshopLanguage(data.language) && (fallback === "da" || fallback === "en")) {
+    const again = await transcribeStage(supabase, messageId, settings, [fallback]);
+    if (!again.ok) return fail(supabase, messageId, again);
+  }
+  return { ok: true };
 }
 
 /** Stamp a pipeline failure onto the message so the reviewer sees why. */

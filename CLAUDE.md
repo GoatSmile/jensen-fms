@@ -1328,6 +1328,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   Give mobile grids `grid-cols-[minmax(0,1fr)]` (Tailwind's `grid-cols-N` is
   already `minmax(0,1fr)`), and check `document.documentElement.scrollWidth`
   at 360 px, not just at the 375 px mobile preset.
+- **The app opts OUT of browser translation** (`translate="no"` on `<html>`
+  plus `<meta name="google" content="notranslate">`, root layout). Chrome
+  Translate wraps text nodes in `<font>` behind React's back, and the next
+  re-render crashes with "removeChild … not a child of this node" — it killed
+  a spoken note mid-save on 2026-10-08, looking exactly like a recording bug.
+  Language is per PERSON (`people.preferred_language`); don't remove the
+  opt-out to "let people translate".
 - **A hand-rolled surface does not always have a rounded corner.** When sweeping
   for card soup, grep `bg-muted` and bare `border-t` / `border-b` as well as
   `rounded-*` — the build workbench's footer was `border-t bg-muted/20 px-4 py-3`

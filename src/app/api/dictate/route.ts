@@ -7,7 +7,7 @@ import {
 } from "@/lib/dictation/storage";
 import { transcriptionSecretsPresent } from "@/lib/dictation/ready";
 import { loadInboundSettings } from "@/lib/inbound/settings";
-import { transcribeAudio } from "@/lib/inbound/transcribe";
+import { isWorkshopLanguage, transcribeAudio } from "@/lib/inbound/transcribe";
 import { loadTranscriptionKeyterms } from "@/lib/inbound/keyterms";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -52,9 +52,10 @@ export async function POST(request: Request) {
   if (!isDictationPath(path)) {
     return NextResponse.json({ ok: false, reason: "bad_path" }, { status: 400 });
   }
-  // One ISO 639-1 code, from the tech's DA/EN chip. Anything else is ignored
-  // rather than forwarded — an unknown code would silently return no transcript.
-  const language =
+  // The person's own language (or the document's): NOT a pin. Detection runs
+  // first (owner, 2026-10-08: no language toggle); this is the retry's pin when
+  // detection lands outside the workshop's languages. Anything else is ignored.
+  const fallback =
     body?.language === "da" || body?.language === "en" ? body.language : null;
 
   const supabase = createServiceClient();
@@ -71,14 +72,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "api_error" }, { status: 500 });
     }
 
-    const result = await transcribeAudio(signed.signedUrl, {
-      provider: settings.transcriptionProvider,
-      region: settings.transcriptionRegion,
-      languages: language ? [language] : undefined,
-      timeoutMs: POLL_BUDGET_MS,
-      elevenlabsRegion: settings.elevenlabsRegion,
-      keyterms: await loadTranscriptionKeyterms(supabase),
-    });
+    const keyterms = await loadTranscriptionKeyterms(supabase);
+    const run = (languages?: string[]) =>
+      transcribeAudio(signed.signedUrl, {
+        provider: settings.transcriptionProvider,
+        region: settings.transcriptionRegion,
+        languages,
+        timeoutMs: POLL_BUDGET_MS,
+        elevenlabsRegion: settings.elevenlabsRegion,
+        keyterms,
+      });
+    let result = await run();
+    if (result.ok && fallback && !isWorkshopLanguage(result.language)) {
+      result = await run([fallback]);
+    }
 
     if (!result.ok) {
       // The reason is the UI's message key; `detail` is for the server log only

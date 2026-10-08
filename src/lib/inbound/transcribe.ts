@@ -95,10 +95,10 @@ export type TranscribeOptions = {
   keyterms?: string[];
   /**
    * ISO 639-1 codes to transcribe as, narrowing the shipped default of "the
-   * workshop's two languages, detected per file". Pinning ONE measurably helps
-   * where detection is weakest — a short dictated phrase — so the dictation
-   * button passes the tech's chosen language and the voicemail path passes
-   * nothing. Shape borrowed from Munin's copy of this module so the two stay
+   * workshop's two languages, detected per file". Pinning ONE helps where
+   * detection is weakest — a short dictated phrase — but the owner wants no
+   * language toggle (2026-10-08), so dictation and notes run UNPINNED first and
+   * pin only on a re-run, when `isWorkshopLanguage` says detection missed. Shape borrowed from Munin's copy of this module so the two stay
    * diffable. Adapters map to their own vocabulary (Azure wants locales).
    */
   languages?: string[];
@@ -273,6 +273,16 @@ const GLADIA_POLL_TIMEOUT_MS = 90_000;
 
 /** The workshop's two languages — the default when a caller pins none. */
 const DEFAULT_LANGUAGES = ["da", "en"] as const;
+
+/**
+ * Was the detected language one the workshop speaks? Detection runs unpinned
+ * (owner, 2026-10-08: no language toggle — "the system should be smart enough"),
+ * and its known miss is a short Danish phrase heard as Norwegian or Swedish.
+ * A caller that gets `false` re-runs pinned to the person's own language.
+ */
+export function isWorkshopLanguage(code: string | null | undefined): boolean {
+  return code != null && (DEFAULT_LANGUAGES as readonly string[]).includes(code);
+}
 
 async function transcribeViaGladia(
   audioUrl: string,

@@ -3740,3 +3740,21 @@ Owner, 7–8 Oct, designing how Finn talks to the app from the car
   a separate notes table (would duplicate transcription, matching, planning
   and scope); notes in `/commands` (that is the history of questions asked);
   checkboxes for bulk Done (crowded — *Mark all done* per column instead).
+
+## 2026-10-08 — No language toggle on dictation: detected, with the person's language as the fallback
+
+Owner: "we don't need a language selection here — the system should be smart
+enough to identify the language; by default it corresponds to the person's
+language." The DA/EN chip is gone from every Dictate button.
+
+- **Speech is transcribed UNPINNED first**; if the detected language is not
+  one the workshop speaks (`isWorkshopLanguage`: da, en), it runs once more
+  pinned to the fallback — the person's language, or the document's on an
+  offer, PO or paint order. Spoken notes do the same with the language that
+  travelled in their context.
+- **Why the re-run and not a hint:** ElevenLabs takes one `language_code` or
+  none; pinning blind would garble the English a Danish person sometimes
+  speaks, and detecting blind misreads a short Danish phrase as Norwegian —
+  the case the chip existed for.
+- **Rejected:** keeping the chip (the owner); pinning to the person's
+  language always (breaks the other language).

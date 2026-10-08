@@ -10,13 +10,16 @@ export type NoteContext = {
   organizationId?: string;
   /** The device's clock at the press, ISO. */
   at: string;
+  /** The speaker's own language (the page's) — transcription's fallback pin. */
+  lang?: "da" | "en";
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The record a page is about, from its URL. */
-export function contextFromPath(path: string, at: Date = new Date()): NoteContext {
+export function contextFromPath(path: string, locale?: string, at: Date = new Date()): NoteContext {
   const ctx: NoteContext = { path, at: at.toISOString() };
+  if (locale === "da" || locale === "en") ctx.lang = locale;
   const bike = path.match(/\/bikes\/([^/?#]+)/)?.[1];
   if (bike && UUID.test(bike)) ctx.bikeId = bike;
   const org = path.match(/^\/organizations\/([^/?#]+)/)?.[1];
@@ -34,5 +37,6 @@ export function sanitizeNoteContext(raw: unknown): NoteContext | null {
   const ctx: NoteContext = { path, at };
   if (typeof r.bikeId === "string" && UUID.test(r.bikeId)) ctx.bikeId = r.bikeId;
   if (typeof r.organizationId === "string" && UUID.test(r.organizationId)) ctx.organizationId = r.organizationId;
+  if (r.lang === "da" || r.lang === "en") ctx.lang = r.lang;
   return ctx;
 }

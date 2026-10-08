@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
 import { mintNoteUpload, saveSpokenNote } from "@/app/_actions/notes";
@@ -48,6 +48,7 @@ export function AssistantButton({
   mode: AssistantMode;
 }) {
   const t = useTranslations("assistant");
+  const locale = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [shortcut, setShortcut] = useState("Ctrl K");
@@ -78,16 +79,18 @@ export function AssistantButton({
           body: blob,
         });
         if (!put.ok) throw new Error(`upload ${put.status}`);
-        const r = await saveSpokenNote(minted.path, contextFromPath(window.location.pathname));
+        const r = await saveSpokenNote(minted.path, contextFromPath(window.location.pathname, locale));
         if (!r.ok) throw new Error(r.error);
         cue("saved");
         setToast({ kind: "saved", id: r.id });
-      } catch {
-        // The recording is still here — Retry, never "say it again".
+      } catch (e) {
+        // The recording is still here — Retry, never "say it again". The
+        // reason goes to the console: a failure nobody can read is unfixable.
+        console.error("[note] save failed:", e);
         setToast({ kind: "failed", blob });
       }
     },
-    [],
+    [locale],
   );
 
   const recorder = useRecorder({

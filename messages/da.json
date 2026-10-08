@@ -131,7 +131,6 @@
     "dictateMessage": "Dikter beskeden",
     "listening": "Optager",
     "transcribing": "Omsætter til tekst…",
-    "languageAria": "Indtalingssprog: {language}. Tryk for at skifte.",
     "unsupported": "Denne browser kan ikke optage lyd. Brug mikrofontasten på tastaturet i stedet.",
     "notConfigured": "Indtaling er ikke sat op — der er ikke valgt nogen taletjeneste.",
     "append": "Føj til noter",

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { History, ScanLine, Sparkles, StickyNote, X } from "lucide-react";
 
 import { readDictationReady } from "@/app/_actions/dictation-ready";
@@ -41,6 +41,7 @@ type Props = {
  */
 export function AssistantPanel({ onClose, canScan, mode }: Props) {
   const t = useTranslations("assistant");
+  const locale = useLocale();
   const router = useRouter();
   const [text, setText] = useState("");
   const [asked, setAsked] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export function AssistantPanel({ onClose, canScan, mode }: Props) {
     if (!body || pending) return;
     setError(null);
     start(async () => {
-      const r = await saveTypedNote(body, contextFromPath(window.location.pathname));
+      const r = await saveTypedNote(body, contextFromPath(window.location.pathname, locale));
       if (!r.ok) return setError(r.error);
       setText("");
       setNoteSaved(r.id);

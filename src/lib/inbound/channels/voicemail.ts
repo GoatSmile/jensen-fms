@@ -30,6 +30,8 @@ export async function transcribeVoicemail(
     channelRoles?: "caller_first" | "unknown";
     /** Names the engine should expect (src/lib/inbound/keyterms.ts). */
     keyterms?: string[];
+    /** Pin the language (a re-run after detection missed). */
+    languages?: string[];
   } = {},
 ): Promise<TranscribeResult> {
   const { data: signed, error } = await supabase.storage
@@ -51,5 +53,6 @@ export async function transcribeVoicemail(
     channelRoles: opts.channelRoles,
     elevenlabsRegion: settings.elevenlabsRegion,
     keyterms: opts.keyterms,
+    languages: opts.languages,
   });
 }
