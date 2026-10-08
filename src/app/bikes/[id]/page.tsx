@@ -51,6 +51,8 @@ import {
   type InstalledPartRow,
 } from "./_components/parts-installed-section";
 import type { PhotoRow } from "./_components/photo-thumb";
+import { RecordHistory } from "@/components/record-history";
+
 import { PhotosSection } from "./_components/photos-section";
 import { Section } from "./_components/section";
 import {
@@ -646,6 +648,8 @@ export default async function BikeDetailPage({
       </div>
 
       <PartsInstalledSection rows={partRows} />
+
+      <RecordHistory bikeId={b.id} />
 
       <StateLogSection rows={stateRows} />
     </div>

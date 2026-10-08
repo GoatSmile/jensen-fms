@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { createServiceClient } from "@/lib/supabase/service";
@@ -12,9 +13,12 @@ import { mayApply } from "@/lib/assistant/agent";
 import { answerRequest } from "@/lib/assistant/ask";
 import { targetHref } from "@/lib/assistant/answer";
 import { planCall, type PlanCallResult } from "@/lib/inbound/command/plan-calls";
+import { planNote } from "@/lib/inbound/command/plan-notes";
 import {
+  countOpenSuggestions,
   parseCommandPlan,
   type CommandAction,
+  type CommandPlan,
   unfilledRequiredSlots,
 } from "@/lib/inbound/command/plan";
 import {
@@ -148,7 +152,16 @@ export async function rerunCommandAgent(messageId: string): Promise<CommandResul
     .eq("id", messageId)
     .maybeSingle();
   if (!msg) return { ok: false, error: t("missingId") };
-  // A call's suggestions are re-drafted from the call, not from body_text as a command.
+  // A note is re-read by the note planner; a call's suggestions are re-drafted
+  // from the call, not from body_text as a command.
+  if (msg.kind === "note") {
+    const refusedNote = await refuseUnlessMayAct(messageId, "note", t);
+    if (refusedNote) return refusedNote;
+    const r = await planNote(supabase, messageId);
+    revalidateInbound(messageId);
+    if (!r.ok) return { ok: false, error: planError(r, t) };
+    return { ok: true, id: messageId };
+  }
   if (msg.kind !== "command") return planFromInquiry(messageId);
   const refused = await refuseUnlessMayAct(messageId, "command", t, msg.commanded_by);
   if (refused) return refused;
@@ -312,6 +325,9 @@ export async function applyCommandAction(
       .update({ status: "actioned" })
       .eq("id", messageId);
   }
+  // A NOTE closes itself once nothing required is left (plan-inbox-notes.md,
+  // decision 10): its suggestions were the work it carried.
+  if (msg.kind === "note") await closeNoteIfSettled(supabase, messageId, plan, personId);
 
   revalidateInbound(messageId);
   return { ok: true, entityTable: write.entityTable, entityId: write.entityId };
@@ -476,6 +492,98 @@ async function performAction(
       };
     }
 
+    case "attach_note": {
+      // Link the NOTE to its record — no copy; the record's history reads it.
+      const patch: {
+        matched_bike_id?: string;
+        matched_organization_id?: string;
+        matched_contact_id?: string;
+      } = {};
+      if (action.bikeId) patch.matched_bike_id = action.bikeId;
+      if (action.organizationId) patch.matched_organization_id = action.organizationId;
+      if (action.contactId) patch.matched_contact_id = action.contactId;
+      // A bike says whose it is: the customer comes with it when not named.
+      if (action.bikeId && !action.organizationId) {
+        const { data: bike } = await supabase
+          .from("bikes")
+          .select("owner_organization_id")
+          .eq("id", action.bikeId)
+          .maybeSingle();
+        if (bike?.owner_organization_id) patch.matched_organization_id = bike.owner_organization_id;
+      }
+      const { error } = await supabase.from("inbound_messages").update(patch).eq("id", messageId);
+      if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+      if (action.bikeId) revalidatePath(`/bikes/${action.bikeId}`);
+      if (patch.matched_organization_id) revalidatePath(`/organizations/${patch.matched_organization_id}`);
+      return {
+        ok: true,
+        entityTable: action.bikeId ? "bikes" : action.organizationId ? "organizations" : "contacts",
+        entityId: action.bikeId ?? action.organizationId ?? action.contactId,
+        payload: {
+          number: action.bikeLabel ?? action.organizationLabel ?? action.contactLabel ?? null,
+          bikeId: action.bikeId,
+          organizationId: patch.matched_organization_id ?? null,
+          contactId: action.contactId,
+        },
+      };
+    }
+
+    case "save_contact": {
+      const fields: { phone?: string; email?: string } = {};
+      if (action.phone) fields.phone = action.phone;
+      if (action.email) fields.email = action.email;
+      let contactId = action.contactId;
+      let orgId: string | null = null;
+      let before: { phone: string | null; email: string | null } | null = null;
+      if (contactId) {
+        const { data: old } = await supabase
+          .from("contacts")
+          .select("phone, email, organization_id")
+          .eq("id", contactId)
+          .maybeSingle();
+        if (!old) return { ok: false, error: t("contactNotFound") };
+        before = { phone: old.phone, email: old.email };
+        orgId = old.organization_id;
+        const { error } = await supabase.from("contacts").update(fields).eq("id", contactId);
+        if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+      } else {
+        orgId = filled.customer ?? action.organizationId;
+        if (!orgId) return { ok: false, error: t("commandSlotsUnfilled") };
+        const [first, ...rest] = (action.name ?? "").trim().split(/\s+/);
+        const { data: created, error } = await supabase
+          .from("contacts")
+          .insert({
+            organization_id: orgId,
+            ...fields,
+            first_name: first || null,
+            last_name: rest.join(" ") || null,
+            is_primary: false,
+          })
+          .select("id")
+          .single();
+        if (error || !created) return { ok: false, error: t("couldNotSave", { detail: error?.message ?? "" }) };
+        contactId = created.id;
+      }
+      // The note now names the person it was about.
+      await supabase
+        .from("inbound_messages")
+        .update({ matched_contact_id: contactId, ...(orgId ? { matched_organization_id: orgId } : {}) })
+        .eq("id", messageId);
+      if (orgId) revalidatePath(`/organizations/${orgId}`);
+      return {
+        ok: true,
+        entityTable: "contacts",
+        entityId: contactId,
+        payload: {
+          number: action.contactLabel ?? action.name ?? null,
+          organizationId: orgId,
+          before,
+          after: fields,
+          created: !action.contactId,
+        },
+      };
+    }
+
     case "draft_purchase_order": {
       const demands = action.items.map((it) => ({
         partId: it.partId,
@@ -500,6 +608,26 @@ async function performAction(
       };
     }
   }
+}
+
+/** Close a note whose every required suggestion is applied. */
+async function closeNoteIfSettled(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+  plan: CommandPlan,
+  personId: string | null,
+): Promise<void> {
+  const { data: ledger } = await supabase
+    .from("command_actions")
+    .select("plan_action_id")
+    .eq("message_id", messageId);
+  const applied = new Set((ledger ?? []).map((r) => r.plan_action_id as string));
+  if (countOpenSuggestions(plan, applied) > 0) return;
+  await supabase
+    .from("inbound_messages")
+    .update({ disposition: "handled", closed_at: new Date().toISOString(), closed_by: personId })
+    .eq("id", messageId)
+    .neq("disposition", "handled");
 }
 
 /** The offer or sales order this message's plan has already drafted, if any. */

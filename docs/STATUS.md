@@ -24,7 +24,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 124 is the latest; production AND local verified at it**
+- **Migration 125 is the latest; production AND local verified at it**
+  (125 = `command_actions` accepts attach_note / save_contact, queried 8 Oct).
+  Before it: **124**
   (queried 8 Oct: the `note` channel, the six note columns, the two people
   columns, ledger 124). 124 = spoken notes (channel, kind, addressee, context,
   due day, Done columns, `command_actions.auto_applied`,
@@ -89,10 +91,17 @@ is Danish (person language).
   Reopen, calls below (notes no longer mixed into them). Verified locally as
   Nazar (desktop + 360 px) and as Finn (360 px): fold, Done → DB closed by
   Nazar, Undo → reopened, Mark all done → 4 closed, Reopen, side panel, the
-  `/calls?tab=` redirect. Smoke 98 · 22 · 9 · 0 (baseline). **Not built yet:**
-  auto-close (needs slice 3's suggestions on notes). Next: slice 3 —
-  attach-note / edit-contact actions, the note planner, bike + customer
-  history.
+  `/calls?tab=` redirect. Smoke 98 · 22 · 9 · 0 (baseline).
+- **Notes are read — slice 3 built 8 Oct** (migration 125 = the ledger's
+  action list): the note planner suggests *Put on record* / *Save contact* /
+  a visit / an offer, sets who a note is for and its day; suggestions apply
+  from the Inbox side panel; a note closes itself when they are applied;
+  *Calls and notes* on bike and customer pages. Verified locally against the
+  real model (4 TEST notes): "G K O K nul et" → bike GKOK01 + its customer;
+  "enogtyve nitten syvoghalvfjerds ti" → 21 19 77 10 on the existing contact
+  (old → new shown, applied, contact updated, note closed); "we need to
+  invoice" → Dennis; "remind me Monday" → Finn, 12 Oct. Next: slice 4 —
+  calendar move/delete and *act right away*.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn

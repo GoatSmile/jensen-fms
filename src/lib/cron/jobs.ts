@@ -4,6 +4,7 @@ import { refreshLatestRates } from "@/app/admin/fx-rates/_actions/manage-fx";
 import { DICTATION_PREFIX } from "@/lib/dictation/storage";
 import { runCallImport } from "@/lib/inbound/call-import/import";
 import { draftSuggestions } from "@/lib/inbound/command/plan-calls";
+import { draftNotePlans } from "@/lib/inbound/command/plan-notes";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import {
   overdueInvoicesEmail,
@@ -201,11 +202,16 @@ export const JOBS: Record<string, (supabase: Service) => Promise<JobOutcome>> = 
     // this run and any an earlier run left (DECISIONS 2026-09-30). A planner
     // failure is reported, never fails the import.
     const s = await draftSuggestions(supabase);
+    // And notes nobody planned yet (the note's own save normally does it).
+    const n = await draftNotePlans(supabase);
     const planned =
-      s.planned || s.failed.length
+      (s.planned || s.failed.length
         ? ` Suggestions drafted for ${s.planned} call(s)` +
           `${s.failed.length ? `; ${s.failed.length} could not be planned: ${s.failed.join("; ")}` : ""}.`
-        : "";
+        : "") +
+      (n.planned || n.failed.length
+        ? ` Notes read: ${n.planned}` + `${n.failed.length ? `; ${n.failed.length} failed: ${n.failed.join("; ")}` : ""}.`
+        : "");
     return {
       ok: r.ok,
       summary: r.summary + planned,

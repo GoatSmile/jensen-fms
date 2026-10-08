@@ -173,6 +173,63 @@ Rules you must follow:
 
 When you have resolved everything you can, call propose_plan exactly once. Keep the summary short and grounded: state what you drafted and what still needs the reviewer.`;
 
+/**
+ * NOTES (plan-inbox-notes.md, slice 3): what a colleague SAID to the app —
+ * a fact about a job, a changed phone number, a visit to book, a to-do for
+ * themselves or someone else. Its own action kinds and instructions; the
+ * assistant and the call planner never see them.
+ */
+const NOTE_ACTION_ITEM_SCHEMA = {
+  type: "object",
+  properties: {
+    ...PLAN_ACTION_ITEM_SCHEMA.properties,
+    type: { type: "string", enum: ["attach_note", "save_contact", "draft_event", "draft_offer"] },
+    bikeId: { type: ["string", "null"], description: "attach_note: the bike from find_bike (exactly one match), else null." },
+    bikeLabel: { type: ["string", "null"], description: "attach_note: the bike's label as find_bike returned it." },
+    contactId: { type: ["string", "null"], description: "attach_note / save_contact: the person from search_contact (exactly one match), else null." },
+    contactLabel: { type: ["string", "null"], description: "The contact's name as search_contact returned it." },
+    name: { type: ["string", "null"], description: "save_contact: the person's name as said, for a NEW contact." },
+    phone: {
+      type: ["string", "null"],
+      description: "save_contact: the number in DIGITS, grouped in pairs ('21 19 77 10') — a transcript writes numbers as words ('enogtyve nitten syvoghalvfjerds ti'); convert them.",
+    },
+    email: { type: ["string", "null"], description: "save_contact: an email address, if one was said." },
+  },
+  required: ["type"],
+} as const;
+
+const NOTE_PLAN_TOOL = {
+  name: "propose_plan",
+  description:
+    "Emit the plan for this NOTE. Call exactly once, after resolving what you can. Fill an id only when a resolver returned exactly one match.",
+  input_schema: {
+    type: "object",
+    properties: {
+      summary: { type: "string", description: "One short sentence: what the note is and what you suggest. Same language as the note." },
+      notes: { type: "array", items: { type: "string" }, description: "Anything you could not resolve, for the reviewer." },
+      forPersonId: {
+        type: ["string", "null"],
+        description: "Who the note is FOR, from the colleagues list — only when it asks SOMEONE ELSE to do something ('we need to invoice them' → the person who invoices). Null when it is the speaker's own.",
+      },
+      dueDate: { type: ["string", "null"], description: "A reminder's day (YYYY-MM-DD), only if one was said ('remind me Monday')." },
+      actions: { type: "array", items: NOTE_ACTION_ITEM_SCHEMA },
+    },
+    required: ["summary", "actions", "notes"],
+  },
+} as const;
+
+const NOTE_SYSTEM_PROMPT = `You read NOTES that colleagues at a Danish bike workshop (Jensen Production / Logocykler) say to their app — often while driving or standing at a bike. A note is KEPT whatever you do; your job is to suggest what should happen with it, for a person to approve. You never execute anything.
+
+Suggest only these, and only when the note supports them:
+- attach_note — the note is ABOUT a specific bike, customer or contact (a repair done, time spent, a complaint). Put it on that record. Resolve a bike with find_bike (recognition codes look like GKOK01; a transcript spells them out: "G K O K nul et"), a customer with search_customer, a person with search_contact. Also use the CONTEXT given below the note: the page the speaker was on, a call they just had, a visit in the calendar now — "this bike" / "this customer" means that one when the context names exactly one.
+- save_contact — a person's NEW or CHANGED phone number or email ("Christina gave me her new number…"). Look the person up with search_contact (within the customer when known). If exactly one matches, set contactId; otherwise give their name and the customer. Write the number in digits.
+- draft_event — a VISIT to book ("visit them again next Monday"): eventKind "visit", title = customer + errand, never a person's name or a phone number.
+- draft_offer — only if the note says a customer wants to buy bikes.
+
+Everything else is a TO-DO and needs no action: "remind me to…", "we need to invoice…", "call X back". For those, set forPersonId when it is for SOMEONE ELSE (from the colleagues list), and dueDate when a day was said. A pure fact with no record to put it on also needs no action.
+
+Rules: resolve before proposing; never invent an id — leave it null when a lookup did not return exactly one; a note can carry several actions; keep the summary to one sentence in the note's language. Then call propose_plan exactly once.`;
+
 type AnthropicBlock =
   | { type: "text"; text: string }
   | { type: "tool_use"; id: string; name: string; input: unknown }
@@ -182,16 +239,17 @@ type AnthropicBlock =
 export async function runCommandAgent(
   supabase: SupabaseClient,
   bodyText: string | null,
-  opts: { model: string; today: string },
+  opts: { model: string; today: string; mode?: "task" | "note" },
 ): Promise<CommandAgentResult> {
   const body = (bodyText ?? "").trim();
   if (!body) return { ok: false, reason: "no_body" };
 
-  const tools = [...RESOLVER_TOOLS, PROPOSE_PLAN_TOOL];
+  const note = opts.mode === "note";
+  const tools = [...RESOLVER_TOOLS, note ? NOTE_PLAN_TOOL : PROPOSE_PLAN_TOOL];
   const messages: { role: "user" | "assistant"; content: unknown }[] = [
     {
       role: "user",
-      content: `Today is ${opts.today} (${weekday(opts.today)}).\nThe next two weeks: ${danishDaysAhead()}. For a weekday or "tomorrow", look the date up in this list — never work it out.\n\nStaff task:\n${body}`,
+      content: `Today is ${opts.today} (${weekday(opts.today)}).\nThe next two weeks: ${danishDaysAhead()}. For a weekday or "tomorrow", look the date up in this list — never work it out.\n\n${note ? "" : "Staff task:\n"}${body}`,
     },
   ];
 
@@ -202,7 +260,7 @@ export async function runCommandAgent(
     const posted = await postMessages({
       model: opts.model,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      system: note ? NOTE_SYSTEM_PROMPT : SYSTEM_PROMPT,
       tools,
       messages,
     });

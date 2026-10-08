@@ -4349,7 +4349,7 @@
     "orgCustomerNotFound": "Kunden blev ikke fundet.",
     "contactAddNameOrEmail": "Tilføj mindst et navn eller en e-mail.",
     "orgMissingContactId": "Manglende kontakt-id.",
-    "contactNotFound": "Kontakten blev ikke fundet.",
+    "contactNotFound": "Den kontakt findes ikke længere.",
     "orgMissingUnitId": "Manglende underenheds-id.",
     "unitNotFound": "Underenheden blev ikke fundet.",
     "unitCouldNotCheckBikes": "Kunne ikke kontrollere tildelte cykler: {detail}",
@@ -4751,7 +4751,16 @@
     "statusAnswered": "Besvaret",
     "slot_customer": "Hvilken kunde?",
     "customerSuggested": "Tæt på det, der blev sagt",
-    "customerAll": "Alle kunder"
+    "customerAll": "Alle kunder",
+    "type_attach_note": "Læg på",
+    "type_save_contact": "Gem kontakt",
+    "chip_contact": "Kontakt",
+    "contactPhone": "Telefon",
+    "contactEmail": "E-mail",
+    "contactNew": "ny kontakt",
+    "resultContactCreated": "Kontakt {label} oprettet",
+    "resultContactUpdated": "Kontakt {label} opdateret",
+    "resultAttached": "Lagt på {label}"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",
@@ -5316,6 +5325,15 @@
     "fromPerson": "fra {name}",
     "toPerson": "til {name}",
     "saidOn": "Sagt på",
-    "openFull": "Åbn hele siden"
+    "openFull": "Åbn hele siden",
+    "reading": "Læser notatet…",
+    "dueOn": "{date}",
+    "suggestions": "{n, plural, one {# forslag} other {# forslag}}"
+  },
+  "recordHistory": {
+    "title": "Opkald og notater",
+    "desc": "Opkald koblet hertil, og notater lagt herpå.",
+    "noteBy": "notat af {name}",
+    "noText": "(ingen tekst)"
   }
 }

@@ -26,6 +26,9 @@ export type PlanContext = {
   /** Close spellings of the name that was said (migration 121), best first —
    *  shown above the full list, never chosen for the person. */
   suggestedCustomers: { id: string; label: string }[];
+  /** Contacts a suggestion names — a *save contact* card shows their CURRENT
+   *  phone and email beside the new one (old → new). */
+  contacts: Record<string, { name: string; phone: string | null; email: string | null }>;
 };
 
 /**
@@ -92,6 +95,27 @@ export async function loadPlanContext(
   for (const r of fuzzy) {
     for (const c of (r.data ?? []) as { id: string; label: string }[]) if (!suggested.has(c.id)) suggested.set(c.id, c.label);
   }
+  const contactIds = [
+    ...new Set(
+      ((msg?.command_plan as { actions?: { type?: string; contactId?: string | null }[] } | null)?.actions ?? [])
+        .filter((a) => (a.type === "save_contact" || a.type === "attach_note") && a.contactId)
+        .map((a) => a.contactId as string),
+    ),
+  ];
+  const contacts: PlanContext["contacts"] = {};
+  if (contactIds.length) {
+    const { data } = await supabase
+      .from("contacts")
+      .select("id, first_name, last_name, phone, email")
+      .in("id", contactIds);
+    for (const c of data ?? []) {
+      contacts[c.id] = {
+        name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "—",
+        phone: c.phone,
+        email: c.email,
+      };
+    }
+  }
   const applied: PlanContext["applied"] = {};
   for (const a of actions ?? []) {
     applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id, payload: a.payload };
@@ -109,5 +133,6 @@ export async function loadPlanContext(
       label: o.display_name_da || o.display_name_en || o.legal_name,
     })),
     suggestedCustomers: [...suggested].slice(0, 6).map(([id, label]) => ({ id, label })),
+    contacts,
   };
 }

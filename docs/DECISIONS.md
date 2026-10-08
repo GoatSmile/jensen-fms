@@ -3758,3 +3758,30 @@ language." The DA/EN chip is gone from every Dictate button.
   the case the chip existed for.
 - **Rejected:** keeping the chip (the owner); pinning to the person's
   language always (breaks the other language).
+
+## 2026-10-08 — Notes are read for suggestions; who a note is for comes from what people HANDLE
+
+Slice 3 of `docs/plan-inbox-notes.md`.
+
+- **The command agent reads a note in its own NOTE mode** — its own prompt and
+  action kinds; the assistant and the call planner are unchanged. Kinds:
+  `attach_note`, `save_contact`, a visit, an offer. A to-do ("remind me…",
+  "we need to invoice…") is no action: the note itself is the to-do, with
+  its addressee and day set by the planner.
+- **"This" is resolved from context handed to the model** — the page the note
+  was said on, a call of the speaker's that ended ≤ 15 min before, a visit in
+  the calendar now — never guessed; an id is filled only from a lookup that
+  returned exactly one.
+- **Who a note is FOR comes from capabilities, not role names.** With only
+  "Owner" / "Workshop" the model rightly refused to guess who invoices; given
+  "Dennis — handles invoicing, sales, purchasing…" it addressed the invoicing
+  note to him. The capability list is the source, so it follows any change
+  to roles.
+- **`attach_note` links, it does not copy**: it sets the note's matched bike /
+  customer / contact, and the record's *Calls and notes* reads it.
+- **`save_contact` is never automatic and needs `customers`** — a technician
+  hears the new number; the office applies it, seeing old → new.
+- **A note closes itself** once its required suggestions are applied.
+- **Rejected:** a notes table per record (a second copy that can drift);
+  addressing by role name; letting the note planner propose tickets (the
+  owner: calls and notes organise the calendar, the work is captured on site).

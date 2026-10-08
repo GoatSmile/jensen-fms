@@ -5,7 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { readPersonId } from "@/lib/auth/read-session";
 import { readCallsScope, scopeAllowsRow } from "@/lib/calls/access";
 import { revalidateInbound } from "@/lib/calls/revalidate";
-import { parseCommandPlan } from "@/lib/inbound/command/plan";
+import { parseCommandPlan, type CommandPlan } from "@/lib/inbound/command/plan";
+import { loadPlanContext, type PlanContext } from "@/lib/inbound/command/plan-context";
 import { createServiceClient } from "@/lib/supabase/service";
 
 type Result = { ok: true; ids: string[] } | { ok: false; error: string };
@@ -82,4 +83,31 @@ async function setDone(rawIds: string[], done: boolean): Promise<Result> {
 
   revalidateInbound();
   return { ok: true, ids: allowed.map((r) => r.id) };
+}
+
+export type NoteSuggestions =
+  | { ok: true; plan: CommandPlan; ctx: PlanContext; planned: boolean }
+  | { ok: false };
+
+/**
+ * A note's suggestions for the Inbox side panel: the plan and what its cards
+ * need — under the same read rule as the board (the service client reads
+ * past RLS, so the check lives here).
+ */
+export async function loadNoteSuggestions(id: string): Promise<NoteSuggestions> {
+  const scope = await readCallsScope();
+  if (!scope) return { ok: false };
+  const supabase = createServiceClient();
+  const { data: msg } = await supabase
+    .from("inbound_messages")
+    .select("id, kind, handled_by_person_id, addressed_to_person_id, command_plan, plan_attempted_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (!msg || msg.kind !== "note" || !scopeAllowsRow(scope, msg)) return { ok: false };
+  return {
+    ok: true,
+    plan: parseCommandPlan(msg.command_plan),
+    ctx: await loadPlanContext(supabase, id),
+    planned: Boolean(msg.plan_attempted_at),
+  };
 }

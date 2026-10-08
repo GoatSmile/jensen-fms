@@ -26,6 +26,7 @@ import {
   type ContactRow,
 } from "./_components/contacts-section";
 import { UnitsSection, type UnitRow } from "./_components/units-section";
+import { RecordHistory } from "@/components/record-history";
 import { resolvePaymentTermsDays } from "@/lib/invoicing/status";
 
 function dlRow(label: string, value: React.ReactNode) {
@@ -326,6 +327,7 @@ export default async function OrganizationDetailPage({
 
       <UnitsSection organizationId={o.id} rows={unitRows} />
       <ContactsSection organizationId={o.id} rows={contactRows} />
+      <RecordHistory organizationId={o.id} />
       <AssignedBikesSection
         organizationId={o.id}
         recognitionPrefix={o.recognition_prefix ?? null}

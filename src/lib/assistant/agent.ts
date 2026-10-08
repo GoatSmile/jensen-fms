@@ -43,6 +43,10 @@ export const ACTION_CAPABILITIES: Record<CommandAction["type"], readonly string[
   draft_purchase_order: ["po"],
   draft_ticket: ["maintenance", "work"],
   draft_event: ["maintenance", "work"],
+  // Notes (plan-inbox-notes.md): linking a note to a record is part of reading
+  // one's inbox; changing a customer's contact details is customer data.
+  attach_note: ["inbox", "calls_own"],
+  save_contact: ["customers"],
 };
 
 export function mayApply(type: CommandAction["type"], caps: readonly string[]): boolean {

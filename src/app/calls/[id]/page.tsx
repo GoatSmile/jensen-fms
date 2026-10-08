@@ -164,6 +164,7 @@ export default async function InboundDetailPage({
             colors={ctx.colors}
             customers={ctx.customers}
             suggestedCustomers={ctx.suggestedCustomers}
+              contacts={ctx.contacts}
           />
         )}
       </div>
@@ -408,6 +409,7 @@ export default async function InboundDetailPage({
               colors={leadCtx.colors}
               customers={leadCtx.customers}
               suggestedCustomers={leadCtx.suggestedCustomers}
+              contacts={leadCtx.contacts}
             />
           ) : null}
 

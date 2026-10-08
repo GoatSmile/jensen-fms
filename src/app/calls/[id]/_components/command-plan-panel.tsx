@@ -29,6 +29,8 @@ type Props = {
   /** For the "Which customer?" slot: everyone, and the close spellings first. */
   customers?: VocabItem[];
   suggestedCustomers?: VocabItem[];
+  /** Current details of the contacts a suggestion names (old → new). */
+  contacts?: Record<string, { name: string; phone: string | null; email: string | null }>;
   /** A CALL's plan: its optional cards (the repair ticket) sort last and say so. */
   fromCall?: boolean;
   /** Called after an apply or a re-run succeeds — for a surface that holds
@@ -38,6 +40,7 @@ type Props = {
 };
 
 const ENTITY_PATH: Record<string, string> = {
+  bikes: "/bikes",
   organizations: "/organizations",
   offers: "/offers",
   sales_orders: "/sales-orders",
@@ -61,6 +64,7 @@ export function CommandPlanPanel({
   colors,
   customers = [],
   suggestedCustomers = [],
+  contacts = {},
   fromCall = false,
   onChanged,
 }: Props) {
@@ -137,6 +141,7 @@ export function CommandPlanPanel({
               key={action.id}
               action={action}
               optional={fromCall && isOptionalOnCall(action)}
+              contacts={contacts}
               applied={applied[action.id]}
               customerApplied={customerApplied}
               picks={picks[action.id] ?? {}}
@@ -173,6 +178,7 @@ export function CommandPlanPanel({
 function ActionCard({
   action,
   optional,
+  contacts,
   applied,
   customerApplied,
   picks,
@@ -188,6 +194,7 @@ function ActionCard({
 }: {
   action: CommandAction;
   optional: boolean;
+  contacts: Record<string, { name: string; phone: string | null; email: string | null }>;
   applied: AppliedRow | undefined;
   customerApplied: boolean;
   picks: Record<string, string>;
@@ -262,7 +269,7 @@ function ActionCard({
         ) : null}
       </div>
 
-      <ActionSummary action={action} modelLabel={modelLabel} />
+      <ActionSummary action={action} modelLabel={modelLabel} contacts={contacts} />
 
       {/* What applying MADE, with the way to it (owner, 2026-10-07: "the
           result is absolutely visible, and there's a link"). */}
@@ -433,6 +440,14 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
     } else {
       href = "/calendar";
     }
+  } else if (table === "contacts") {
+    // A saved contact: shown on its customer's page.
+    text = t(p.created ? "resultContactCreated" : "resultContactUpdated", { label: str(p.number) ?? "" });
+    href = str(p.organizationId) ? `/organizations/${str(p.organizationId)}` : null;
+  } else if (applied?.entityTable && p.bikeId !== undefined) {
+    // An attached note: it now sits in that record's history.
+    text = t("resultAttached", { label: str(p.number) ?? "" });
+    href = str(p.bikeId) ? `/bikes/${str(p.bikeId)}` : str(p.organizationId) ? `/organizations/${str(p.organizationId)}` : null;
   } else if (table === "purchase_orders") {
     const pos = Array.isArray(p.pos) ? (p.pos as { number?: string }[]) : [];
     text = t("resultPurchaseOrders", { numbers: pos.map((po) => po.number).filter(Boolean).join(", ") || "—" });
@@ -461,8 +476,49 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
 }
 
 /** One-line human summary of what the action will draft. */
-function ActionSummary({ action, modelLabel }: { action: CommandAction; modelLabel: string | null }) {
+function ActionSummary({
+  action,
+  modelLabel,
+  contacts = {},
+}: {
+  action: CommandAction;
+  modelLabel: string | null;
+  contacts?: Record<string, { name: string; phone: string | null; email: string | null }>;
+}) {
   const t = useTranslations("inboxCommand");
+  if (action.type === "attach_note") {
+    return (
+      <p className="text-sm font-medium">
+        {action.bikeLabel ?? action.organizationLabel ?? action.contactLabel ?? "—"}
+      </p>
+    );
+  }
+  if (action.type === "save_contact") {
+    // Old → new: an existing contact's current details beside what was said.
+    const now = action.contactId ? contacts[action.contactId] : undefined;
+    const rows: [string, string | null | undefined, string | null][] = [
+      [t("contactPhone"), now?.phone, action.phone],
+      [t("contactEmail"), now?.email, action.email],
+    ];
+    return (
+      <div className="flex flex-col gap-1 text-sm">
+        <p className="font-medium">
+          {now?.name ?? action.contactLabel ?? action.name ?? "—"}
+          {!action.contactId ? <span className="text-ink-2 font-normal"> · {t("contactNew")}</span> : null}
+        </p>
+        {rows
+          .filter(([, , next]) => next)
+          .map(([label, before, next]) => (
+            <p key={label}>
+              <span className="text-ink-2">{label}: </span>
+              {before && before !== next ? <span className="text-ink-3 line-through">{before}</span> : null}
+              {before && before !== next ? " → " : null}
+              <span className="font-medium">{next}</span>
+            </p>
+          ))}
+      </div>
+    );
+  }
   if (action.type === "draft_customer") {
     return <p className="text-sm font-medium">{action.legalName}</p>;
   }
@@ -532,6 +588,13 @@ function chipsFor(
   }
   if (action.type === "draft_ticket" && action.urgency === "high") {
     chips.push({ label: t("chip_urgency"), value: t("urgencyHigh") });
+  }
+  if (action.type === "attach_note") {
+    if (action.bikeId && action.organizationLabel) chips.push({ label: t("chip_customer"), value: action.organizationLabel });
+    if (action.contactLabel && (action.bikeId || action.organizationId)) chips.push({ label: t("chip_contact"), value: action.contactLabel });
+  }
+  if (action.type === "save_contact" && action.organizationId && action.organizationLabel) {
+    chips.push({ label: t("chip_customer"), value: action.organizationLabel });
   }
   if (action.type === "draft_sales_order") {
     if (action.organizationId && action.organizationLabel) {

@@ -772,8 +772,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (`saveSpokenNote` → `after()` → `transcribeNote`), its audio KEPT under
   `notes/` (inbound retention; a failed transcription is retried, never
   re-said), and a typed note is *Save as note* in the panel. Until it is
-  closed it is its speaker's to-do. Design and later slices:
-  `docs/plan-inbox-notes.md`.
+  closed it is its speaker's to-do. **A note is READ like a call** — right
+  after it is saved, and by the five-minute job as a backstop — by the command
+  agent in NOTE mode (`planNote`, `src/lib/inbound/command/plan-notes.ts`),
+  given what resolves "this": the page it was said on, a call of the
+  speaker's that ended ≤ 15 min before, a visit in the calendar now, and each
+  colleague with what they HANDLE (their capabilities in words — "invoicing"
+  is how "we need to invoice" reaches Dennis). It sets the note's addressee
+  and reminder day, and suggests only note kinds: `attach_note` (LINKS the note
+  to a bike / customer / contact — no copy — so it shows in that record's
+  *Calls and notes*, `RecordHistory`), `save_contact` (old → new; needs
+  `customers` to apply), a visit, an offer. **A note closes itself** when its
+  required suggestions are applied. A new action kind also needs the
+  `command_actions_action_type_check` list (migration 125 — found the hard
+  way). Design and later slices: `docs/plan-inbox-notes.md`.
 - **Every Anthropic call goes through ONE door, and sends only what every
   current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
   2026-09-30). The model is an admin setting that changes without a deploy,

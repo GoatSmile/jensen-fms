@@ -17,6 +17,10 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ilikeEscape } from "@/lib/supabase/ilike";
+import { recognitionCodeVariants } from "../match";
+
+/** The recognition-code identifier type (migration 65/102), as in match.ts. */
+const FLEET_TYPE = "f1ee7000-0000-4000-8000-000000000001";
 
 const LIMIT = 8;
 
@@ -97,6 +101,31 @@ export const RESOLVER_TOOLS = [
       required: ["template", "keyword"],
     },
   },
+  {
+    name: "find_bike",
+    description:
+      "Find a bike by its recognition code (the label on the bike, e.g. 'GKOK01' — spoken 'G K O K nul et') or its frame number. Returns up to 8 `matches` with id, label and the customer that owns it. Fill a bikeId ONLY when exactly one bike matched.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The code or frame number as said; letters and digits." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "search_contact",
+    description:
+      "Find a contact PERSON by name ('Christina'), optionally within one customer. Returns up to 8 `matches` with id, name, customer and current phone/email. Fill a contactId ONLY when exactly one person matched.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The person's name as said." },
+        organizationId: { type: "string", description: "Optional: only contacts of this customer." },
+      },
+      required: ["query"],
+    },
+  },
 ] as const;
 
 export const RESOLVER_NAMES = new Set<string>(RESOLVER_TOOLS.map((t) => t.name));
@@ -147,6 +176,88 @@ export async function executeResolver(
           id: c.id,
           label: c.label,
           similarity: Math.round(c.score * 100) / 100,
+        })),
+      };
+    }
+
+    case "find_bike": {
+      if (!query) return { error: "empty query" };
+      const codes = recognitionCodeVariants(query);
+      const [byCode, byFrame] = await Promise.all([
+        supabase
+          .from("bike_identifiers")
+          .select("identifier_value, bike:bikes!inner(id, frame_number, deleted_at, owner_organization_id)")
+          .eq("identifier_type_id", FLEET_TYPE)
+          .eq("is_active", true)
+          .in("identifier_value", codes)
+          .limit(LIMIT),
+        supabase
+          .from("bikes")
+          .select("id, frame_number, deleted_at, owner_organization_id")
+          .is("deleted_at", null)
+          .ilike("frame_number", `%${ilikeEscape(query.replace(/\s+/g, ""))}%`)
+          .limit(LIMIT),
+      ]);
+      type B = { id: string; frame_number: string; deleted_at: string | null; owner_organization_id: string | null };
+      const found = new Map<string, { bike: B; code: string | null }>();
+      for (const r of byCode.data ?? []) {
+        const bike = (Array.isArray(r.bike) ? r.bike[0] : r.bike) as B | null;
+        if (bike && !bike.deleted_at) found.set(bike.id, { bike, code: r.identifier_value });
+      }
+      for (const b of (byFrame.data ?? []) as B[]) if (!found.has(b.id)) found.set(b.id, { bike: b, code: null });
+      const orgIds = [...new Set([...found.values()].map((f) => f.bike.owner_organization_id).filter(Boolean))] as string[];
+      const orgs = new Map<string, string>();
+      if (orgIds.length) {
+        const { data } = await supabase
+          .from("organizations")
+          .select("id, legal_name, display_name_da, display_name_en")
+          .in("id", orgIds);
+        for (const o of data ?? []) orgs.set(o.id, o.display_name_da || o.display_name_en || o.legal_name);
+      }
+      return {
+        matches: [...found.values()].slice(0, LIMIT).map(({ bike, code }) => ({
+          id: bike.id,
+          label: code ? `${code} (${bike.frame_number})` : bike.frame_number,
+          organizationId: bike.owner_organization_id,
+          organizationLabel: bike.owner_organization_id ? (orgs.get(bike.owner_organization_id) ?? null) : null,
+        })),
+      };
+    }
+
+    case "search_contact": {
+      if (!query) return { error: "empty query" };
+      const words = query.split(/\s+/).filter(Boolean).slice(0, 3);
+      let q = supabase
+        .from("contacts")
+        .select("id, first_name, last_name, phone, email, organization_id")
+        .is("deleted_at", null)
+        .limit(LIMIT);
+      for (const w of words) {
+        const like = `%${ilikeEscape(w)}%`;
+        q = q.or(`first_name.ilike.${like},last_name.ilike.${like}`);
+      }
+      if (typeof input.organizationId === "string" && input.organizationId) {
+        q = q.eq("organization_id", input.organizationId);
+      }
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+      const orgIds = [...new Set((data ?? []).map((c) => c.organization_id).filter(Boolean))] as string[];
+      const orgs = new Map<string, string>();
+      if (orgIds.length) {
+        const { data: o } = await supabase
+          .from("organizations")
+          .select("id, legal_name, display_name_da, display_name_en")
+          .in("id", orgIds);
+        for (const x of o ?? []) orgs.set(x.id, x.display_name_da || x.display_name_en || x.legal_name);
+      }
+      return {
+        matches: (data ?? []).map((c) => ({
+          id: c.id,
+          name: [c.first_name, c.last_name].filter(Boolean).join(" "),
+          organizationId: c.organization_id,
+          organizationLabel: c.organization_id ? (orgs.get(c.organization_id) ?? null) : null,
+          phone: c.phone,
+          email: c.email,
         })),
       };
     }

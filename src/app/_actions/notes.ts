@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { readGate, readPersonId } from "@/lib/auth/read-session";
 import { revalidateInbound } from "@/lib/calls/revalidate";
 import { INBOUND_BUCKET, isNotePath, noteObjectPath } from "@/lib/dictation/storage";
+import { planNote } from "@/lib/inbound/command/plan-notes";
 import { transcribeNote } from "@/lib/inbound/pipeline";
 import { sanitizeNoteContext } from "@/lib/notes/context";
 import { ASSISTANT_MODES, type AssistantMode } from "@/lib/notes/mode";
@@ -51,8 +52,12 @@ export async function saveSpokenNote(path: string, context: unknown): Promise<Re
   });
   if (!id.ok) return { ok: false, error: t("couldNotSave", { detail: id.error }) };
 
+  // Then read it for suggestions (slice 3); a failure is left for the
+  // five-minute pass, which plans any note it finds unplanned.
   after(async () => {
-    await transcribeNote(createServiceClient(), id.id);
+    const supabase = createServiceClient();
+    const tr = await transcribeNote(supabase, id.id);
+    if (tr.ok) await planNote(supabase, id.id);
   });
   revalidateInbound(id.id);
   return { ok: true, id: id.id };
@@ -68,6 +73,9 @@ export async function saveTypedNote(text: string, context: unknown): Promise<Res
 
   const id = await insertNote({ personId, context, body_text: body.slice(0, 5000), status: "understood" });
   if (!id.ok) return { ok: false, error: t("couldNotSave", { detail: id.error }) };
+  after(async () => {
+    await planNote(createServiceClient(), id.id);
+  });
   revalidateInbound(id.id);
   return { ok: true, id: id.id };
 }

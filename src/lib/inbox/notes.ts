@@ -42,6 +42,8 @@ export type NoteItem = {
   closedByName: string | null;
   /** Whole days since it was said. */
   ageDays: number;
+  /** A reminder's day, formatted ("Monday 12 Oct"), when the note named one. */
+  dueDate: string | null;
   /** Danish day key, time and day heading — formatted here, not in the browser. */
   dayKey: string;
   time: string;
@@ -80,10 +82,11 @@ type Row = {
   disposition: string | null;
   closed_at: string | null;
   closed_by: string | null;
+  due_date: string | null;
 };
 
 const COLUMNS =
-  "id, received_at, body_text, status, media_path, handled_by_person_id, addressed_to_person_id, note_context, command_plan, disposition, closed_at, closed_by";
+  "id, received_at, body_text, status, media_path, handled_by_person_id, addressed_to_person_id, note_context, command_plan, disposition, closed_at, closed_by, due_date";
 
 export async function loadNotesBoard(
   supabase: SupabaseClient,
@@ -151,6 +154,7 @@ export async function loadNotesBoard(
       closedAt: r.closed_at,
       closedByName: r.closed_by ? (name.get(r.closed_by) ?? null) : null,
       ageDays: Math.floor((Date.now() - new Date(r.received_at).getTime()) / 86_400_000),
+      dueDate: r.due_date ? dayHeading(r.due_date, opts.locale) : null,
       dayKey: danishDayKey(r.received_at),
       time: danishTime(r.received_at),
       dayLabel: dayHeading(danishDayKey(r.received_at), opts.locale),

@@ -231,6 +231,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
               colors={view.ctx.colors}
               customers={view.ctx.customers}
               suggestedCustomers={view.ctx.suggestedCustomers}
+              contacts={view.ctx.contacts}
               onChanged={() => refresh(requestId)}
             />
           ) : null}

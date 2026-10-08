@@ -19,7 +19,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import type { NoteColumn, NoteItem, NotesBoard as Board } from "@/lib/inbox/notes";
 import { cn } from "@/lib/utils";
 
-import { markNotesDone, reopenNotes } from "../_actions/notes";
+import { CommandPlanPanel } from "@/app/calls/[id]/_components/command-plan-panel";
+
+import { loadNoteSuggestions, markNotesDone, reopenNotes, type NoteSuggestions } from "../_actions/notes";
 
 /** Past this age an open note wears its age in the caution hue (mirrors NOTE_STALE_DAYS). */
 const STALE_DAYS = 7;
@@ -43,6 +45,20 @@ export function NotesBoard({ board, everyone }: { board: Board; everyone: boolea
   const [undo, setUndo] = useState<{ ids: string[]; label: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [suggestions, setSuggestions] = useState<NoteSuggestions | null>(null);
+
+  // A note's suggestions load when its panel opens — the board itself stays light.
+  useEffect(() => {
+    if (!openNote) return;
+    let cancelled = false;
+    loadNoteSuggestions(openNote.id).then((s) => {
+      if (!cancelled) setSuggestions(s);
+    });
+    return () => {
+      cancelled = true;
+      setSuggestions(null);
+    };
+  }, [openNote]);
 
   // Fresh rows from the server replace what was hidden optimistically.
   useEffect(() => {
@@ -276,6 +292,25 @@ export function NotesBoard({ board, everyone }: { board: Board; everyone: boolea
                 ) : null}
                 {openNote.body ? <p className="text-base whitespace-pre-wrap">{openNote.body}</p> : null}
                 {openNote.hasAudio ? <CallAudio messageId={openNote.id} /> : null}
+                {suggestions?.ok && suggestions.plan.actions.length > 0 ? (
+                  <CommandPlanPanel
+                    messageId={openNote.id}
+                    plan={suggestions.plan}
+                    applied={suggestions.ctx.applied}
+                    templates={suggestions.ctx.templates}
+                    segments={suggestions.ctx.segments}
+                    colors={suggestions.ctx.colors}
+                    customers={suggestions.ctx.customers}
+                    suggestedCustomers={suggestions.ctx.suggestedCustomers}
+                    contacts={suggestions.ctx.contacts}
+                    onChanged={() => loadNoteSuggestions(openNote.id).then(setSuggestions)}
+                  />
+                ) : suggestions?.ok && !suggestions.planned && openNote.status !== "failed" ? (
+                  <p className="text-ink-2 inline-flex items-center gap-2 text-sm">
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                    {t("reading")}
+                  </p>
+                ) : null}
                 {openNote.contextPath ? (
                   <p className="text-ink-2 text-sm">
                     {t("saidOn")}{" "}
@@ -387,6 +422,16 @@ function NoteCard({
           <span className="tabular-nums">{when}</span>
           {fromOther ? <span>· {t("fromPerson", { name: fromOther })}</span> : null}
           {toOther ? <span>· {t("toPerson", { name: toOther })}</span> : null}
+          {note.dueDate ? (
+            <span className="bg-brand-wash text-brand-ink rounded-full px-1.5 font-medium">
+              {t("dueOn", { date: note.dueDate })}
+            </span>
+          ) : null}
+          {note.openSuggestions > 0 ? (
+            <span className="bg-money-wash text-money rounded-full px-1.5 font-medium">
+              {t("suggestions", { n: note.openSuggestions })}
+            </span>
+          ) : null}
           {note.ageDays > STALE_DAYS ? (
             <span className="bg-money-wash text-money rounded-full px-1.5 font-medium">
               {t("ageDays", { n: note.ageDays })}

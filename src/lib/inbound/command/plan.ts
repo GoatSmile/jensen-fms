@@ -27,7 +27,9 @@ export type CommandActionType =
   | "draft_sales_order"
   | "draft_ticket"
   | "draft_event"
-  | "draft_purchase_order";
+  | "draft_purchase_order"
+  | "attach_note"
+  | "save_contact";
 
 export type DraftCustomerAction = {
   id: string;
@@ -139,7 +141,48 @@ export type DraftPurchaseOrderAction = {
   note: string | null;
 };
 
+/**
+ * A spoken NOTE belongs on a record (plan-inbox-notes.md, slice 3): "GKOK01
+ * took two hours, the client was unhappy" goes on that bike — and so into the
+ * bike's (and its customer's) *Calls and notes* history. Applying links the
+ * note itself (`matched_bike_id` / `_organization_id` / `_contact_id`); there
+ * is no copy. Only ids a resolver returned, never a guess.
+ */
+export type AttachNoteAction = {
+  id: string;
+  type: "attach_note";
+  bikeId: string | null;
+  bikeLabel: string | null;
+  organizationId: string | null;
+  organizationLabel: string | null;
+  contactId: string | null;
+  contactLabel: string | null;
+};
+
+/**
+ * A person's new or corrected phone number or email, said in a note
+ * ("Christina's new number is 21 19 77 10"). An existing contact is UPDATED
+ * (the card shows old → new); otherwise a new contact is created under the
+ * customer — which is then a "Which customer?" slot until known. Always a
+ * suggestion: contact details are never changed without a person (owner).
+ */
+export type SaveContactAction = {
+  id: string;
+  type: "save_contact";
+  contactId: string | null;
+  contactLabel: string | null;
+  organizationId: string | null;
+  organizationLabel: string | null;
+  /** The person's name as said — used when creating. */
+  name: string | null;
+  /** Digits as written, e.g. "21 19 77 10". */
+  phone: string | null;
+  email: string | null;
+};
+
 export type CommandAction =
+  | AttachNoteAction
+  | SaveContactAction
   | DraftCustomerAction
   | DraftOfferAction
   | DraftSalesOrderAction
@@ -151,6 +194,10 @@ export type CommandPlan = {
   summary: string;
   actions: CommandAction[];
   notes: string[];
+  /** Notes only: who the note is FOR (a people.id from the list given), else null = the speaker. */
+  forPersonId?: string | null;
+  /** Notes only: a reminder's day, ISO, when one was said. */
+  dueDate?: string | null;
 };
 
 /** An unresolved reference the reviewer must fill before an action can apply. */
@@ -298,6 +345,41 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
       if (items.length === 0) return null; // never invent parts
       return { id, type: "draft_purchase_order", items, note: str(o.note) };
     }
+    case "attach_note": {
+      const bikeId = str(o.bikeId);
+      const organizationId = str(o.organizationId);
+      const contactId = str(o.contactId);
+      if (!bikeId && !organizationId && !contactId) return null; // nothing to attach to
+      return {
+        id,
+        type: "attach_note",
+        bikeId,
+        bikeLabel: str(o.bikeLabel),
+        organizationId,
+        organizationLabel: str(o.organizationLabel),
+        contactId,
+        contactLabel: str(o.contactLabel),
+      };
+    }
+    case "save_contact": {
+      const phone = str(o.phone);
+      const email = str(o.email);
+      if (!phone && !email) return null; // nothing to save
+      const contactId = str(o.contactId);
+      const name = str(o.name) ?? str(o.contactLabel);
+      if (!contactId && !name) return null; // a new contact needs a name
+      return {
+        id,
+        type: "save_contact",
+        contactId,
+        contactLabel: str(o.contactLabel),
+        organizationId: str(o.organizationId),
+        organizationLabel: str(o.organizationLabel),
+        name,
+        phone,
+        email: email && email.includes("@") ? email : null,
+      };
+    }
     default:
       return null;
   }
@@ -317,7 +399,14 @@ export function parseCommandPlan(raw: unknown): CommandPlan {
   const notes = Array.isArray(o.notes)
     ? o.notes.map(str).filter((n): n is string => n !== null)
     : [];
-  return { summary: str(o.summary) ?? "", actions, notes };
+  const due = str(o.dueDate);
+  return {
+    summary: str(o.summary) ?? "",
+    actions,
+    notes,
+    forPersonId: str(o.forPersonId),
+    dueDate: due && /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : null,
+  };
 }
 
 /**
@@ -356,6 +445,10 @@ export function openSlotsFor(action: CommandAction): OpenSlot[] {
   }
   if (action.type === "draft_event" && !action.organizationId) {
     slots.push({ key: "customer", kind: "customer", optional: true });
+  }
+  // A NEW contact needs the customer it belongs to; an existing one has it.
+  if (action.type === "save_contact" && !action.contactId && !action.organizationId) {
+    slots.push({ key: "customer", kind: "customer", optional: false });
   }
   if (action.type === "draft_sales_order" || action.type === "draft_offer") {
     if (!action.templateId) {

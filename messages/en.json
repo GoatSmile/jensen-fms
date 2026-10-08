@@ -4349,7 +4349,7 @@
     "orgCustomerNotFound": "Customer not found.",
     "contactAddNameOrEmail": "Add at least a name or email.",
     "orgMissingContactId": "Missing contact id.",
-    "contactNotFound": "Contact not found.",
+    "contactNotFound": "That contact no longer exists.",
     "orgMissingUnitId": "Missing sub-unit id.",
     "unitNotFound": "Sub-unit not found.",
     "unitCouldNotCheckBikes": "Could not check assigned bikes: {detail}",
@@ -4751,7 +4751,16 @@
     "statusAnswered": "Answered",
     "slot_customer": "Which customer?",
     "customerSuggested": "Close to what was said",
-    "customerAll": "All customers"
+    "customerAll": "All customers",
+    "type_attach_note": "Put on record",
+    "type_save_contact": "Save contact",
+    "chip_contact": "Contact",
+    "contactPhone": "Phone",
+    "contactEmail": "Email",
+    "contactNew": "new contact",
+    "resultContactCreated": "Contact {label} created",
+    "resultContactUpdated": "Contact {label} updated",
+    "resultAttached": "Put on {label}"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",
@@ -5316,6 +5325,15 @@
     "fromPerson": "from {name}",
     "toPerson": "for {name}",
     "saidOn": "Said on",
-    "openFull": "Open full page"
+    "openFull": "Open full page",
+    "reading": "Reading the note…",
+    "dueOn": "due {date}",
+    "suggestions": "{n, plural, one {# suggestion} other {# suggestions}}"
+  },
+  "recordHistory": {
+    "title": "Calls and notes",
+    "desc": "Calls matched to this, and notes put on it.",
+    "noteBy": "note by {name}",
+    "noText": "(no text)"
   }
 }
