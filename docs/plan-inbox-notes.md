@@ -1,7 +1,10 @@
 # Plan — spoken notes and the Inbox
 
-**Status:** agreed with the owner 2026-10-07/08 in conversation; waiting for
-go-ahead to build. Nothing here is built yet.
+**Status:** slices 1–4 BUILT and in production (8 Oct; commits `53a6ec4` …
+`033c5aa`, migrations 124–126). Differences from the text below: deleting a
+calendar entry is never automatic (DECISIONS 2026-10-08). **Still open:** slice
+5 — the test on Finn's Android in the car, then a *Notes* section in his guide.
+Move this file to `docs/archive/` when that is done.
 
 ## What it is for
 

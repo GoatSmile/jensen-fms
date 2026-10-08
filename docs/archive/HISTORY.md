@@ -1083,3 +1083,41 @@ only; production untouched by hand, no migration).
   brief for the planning chat (per bike, not per customer; renewals a year
   ahead per customer × EAN × month) and section C of Dennis's question sheet
   rewritten as the twelve agreement questions.
+
+## 2026-10-07/08 — Dennis's agreement answers, and spoken notes end to end
+
+- **Dennis's agreement answers recorded** (`d6fdb23`, `12591d3`): K-types bind
+  the agreement; no drive charge; GPS-only is 480 kr a year and still billed;
+  a missing bike on a committed agreement is invoiced yearly to term; 3 %
+  yearly increase on NEW agreements only; the spreadsheet is cleaned, then
+  imported once (one municipality first). Handling doc §7 items 8–23.
+- **Payment terms became a rule** (`13d3fab`, migration 123): a customer's own
+  figure, else 30 days public (EAN / municipality / hospital), else 8 — the
+  530 unchosen defaults of 14 cleared. Same commit: a call's repair ticket is
+  optional; the shop's own names and recognition codes joined the names list.
+- **Spoken notes, slice 1** (`53a6ec4`, migration 124): the floating button's
+  mode per person (ask / note on second press / note on a pause), notes saved
+  then transcribed, *Save as note*. A real recording verified in production.
+  Plans written: `plan-inbox-notes`, `plan-register-import`.
+- **Two traps found testing in Chrome** (`28c8186`, `75e0ad6`): Chrome
+  Translate rewrote the Danish page and crashed React mid-save — the app now
+  opts out of browser translation; the button only took a new mode after a
+  reload. Dictation lost its DA/EN toggle: detected, with the person's
+  language as the re-run pin.
+- **The Inbox, slice 2** (`0284e68`): `/inbox` replaces `/calls`; notes in a
+  column per person above the calls; Done / Mark all done / Undo / Reopen;
+  folding with age; a side panel, full screen on a phone.
+- **Notes are read, slice 3** (`ad90dc1`, migration 125): the note planner
+  (context: page, last call, visit now, colleagues by what they handle) —
+  *Put on record*, *Save contact* (old → new), visits, offers; addressee and
+  reminder day; auto-close; *Calls and notes* on bike and customer pages.
+  Tested on the real model: "G K O K nul et" → GKOK01, number words → digits,
+  "we need to invoice" → Dennis.
+- **Act right away, slice 4** (`033c5aa`, migration 126): a switch per person;
+  safe kinds apply as the speaker; notes move and delete calendar entries.
+  Testing on the real calendar showed a cancel resolving to a real entry in
+  the wrong week — deleting was made press-only. The apply core moved to a
+  server-only library (`applyPlanAction`).
+- **SO delivery *Move* / *Remove*** (`4988917`): the entry's time read live
+  from Google; calendar titles from TEST sources start with TEST
+  (`inheritTestTitle`).
