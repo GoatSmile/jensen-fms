@@ -4,21 +4,27 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { History, ScanLine, Sparkles, X } from "lucide-react";
+import { History, ScanLine, Sparkles, StickyNote, X } from "lucide-react";
 
 import { readDictationReady } from "@/app/_actions/dictation-ready";
 import { loadAssistantView, type AssistantView } from "@/app/_actions/assistant";
 import { createCommandFromText } from "@/app/calls/_actions/command";
+import { saveTypedNote, setAssistantMode } from "@/app/_actions/notes";
 import { CommandPlanPanel } from "@/app/calls/[id]/_components/command-plan-panel";
 import { DictateButton } from "@/components/dictate-button";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { targetHref } from "@/lib/assistant/answer";
+import { contextFromPath } from "@/lib/notes/context";
+import { ASSISTANT_MODES, type AssistantMode } from "@/lib/notes/mode";
 import { cn } from "@/lib/utils";
 
 type Props = {
   onClose: () => void;
   /** Scan lives inside the panel (owner, 2026-10-01: one button, not two). */
   canScan: boolean;
+  /** What a press of the floating button does — chosen here, by the person. */
+  mode: AssistantMode;
 };
 
 /**
@@ -33,7 +39,7 @@ type Props = {
  * word is fixed first. A follow-up within the panel threads the previous
  * request (the assistant remembers one exchange, ≤10 min).
  */
-export function AssistantPanel({ onClose, canScan }: Props) {
+export function AssistantPanel({ onClose, canScan, mode }: Props) {
   const t = useTranslations("assistant");
   const router = useRouter();
   const [text, setText] = useState("");
@@ -44,6 +50,8 @@ export function AssistantPanel({ onClose, canScan }: Props) {
   const [ready, setReady] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [pending, start] = useTransition();
+  const [noteSaved, setNoteSaved] = useState<string | null>(null);
+  const [modePending, startMode] = useTransition();
   const box = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -92,6 +100,26 @@ export function AssistantPanel({ onClose, canScan }: Props) {
     });
   }
 
+  /** Keep what is in the box as a note — no answer, it waits in the person's list. */
+  function saveAsNote() {
+    const body = text.trim();
+    if (!body || pending) return;
+    setError(null);
+    start(async () => {
+      const r = await saveTypedNote(body, contextFromPath(window.location.pathname));
+      if (!r.ok) return setError(r.error);
+      setText("");
+      setNoteSaved(r.id);
+    });
+  }
+
+  function chooseMode(next: string) {
+    startMode(async () => {
+      const r = await setAssistantMode(next);
+      if (!r.ok) setError(r.error);
+    });
+  }
+
   function newQuestion() {
     setAsked(null);
     setRequestId(null);
@@ -130,6 +158,15 @@ export function AssistantPanel({ onClose, canScan }: Props) {
           <X className="size-4" aria-hidden />
         </button>
       </div>
+
+      {noteSaved && !asked && !pending ? (
+        <p className="text-ink-2 flex items-center gap-2 px-4 pb-2 text-sm" role="status">
+          {t("noteSaved")}
+          <Link href={`/calls/${noteSaved}`} onClick={onClose} className="text-brand-ink underline underline-offset-2">
+            {t("noteOpen")}
+          </Link>
+        </p>
+      ) : null}
 
       {asked || pending || error ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-3">
@@ -213,6 +250,10 @@ export function AssistantPanel({ onClose, canScan }: Props) {
           <Button type="button" size="sm" onClick={send} disabled={pending || !text.trim()}>
             {pending ? t("sending") : t("send")}
           </Button>
+          <Button type="button" size="sm" variant="outline" onClick={saveAsNote} disabled={pending || !text.trim()}>
+            <StickyNote aria-hidden />
+            {t("saveAsNote")}
+          </Button>
           <DictateButton
             onAppend={(txt) => setText((prev) => (prev.trim() ? `${prev} ${txt}` : txt))}
             label={t("dictate")}
@@ -232,6 +273,23 @@ export function AssistantPanel({ onClose, canScan }: Props) {
             </Button>
           ) : null}
         </div>
+        {/* The person's own choice of what a press of the button does. Holding
+            the button (or ⌘K) always opens this panel, so it can be changed back. */}
+        <label className="text-ink-2 flex flex-col items-start gap-1 text-xs sm:flex-row sm:items-center sm:gap-2">
+          <span className="shrink-0">{t("modeLabel")}</span>
+          <Select value={mode} onValueChange={chooseMode} disabled={modePending}>
+            <SelectTrigger size="sm" className="h-8 w-full min-w-0 text-xs sm:flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ASSISTANT_MODES.map((m) => (
+                <SelectItem key={m} value={m} className="text-xs">
+                  {t(`mode_${m}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </label>
       </div>
     </div>
   );

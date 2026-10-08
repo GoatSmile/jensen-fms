@@ -230,7 +230,8 @@ export async function loadCallsPage(
         : (line?.label ?? line?.endpoint_name ?? null),
       orgName: r.matched_organization_id ? (orgName.get(r.matched_organization_id) ?? null) : null,
       callerName: x?.callerName ?? null,
-      summary: x?.callSummary ?? x?.problem ?? null,
+      // A note has no extraction yet (slice 1): what was said IS the summary.
+      summary: x?.callSummary ?? x?.problem ?? (r.channel === "note" ? r.body_text : null),
       promises: x?.commitments ?? [],
       internal,
       hasAudio: Boolean(r.media_path),

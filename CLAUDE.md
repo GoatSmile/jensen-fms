@@ -754,7 +754,20 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   **Scan** — there is no separate Scan button, sidebar entry or header icon
   (owner: "all one button"). It hides where the bottom edge or the screen is
   taken (`/scan`, the map, a work-order workspace, login, public pages).
-  Dictation FILLS the box; the person presses Send.
+  Dictation FILLS the box; the person presses Send. **What a PRESS does is
+  the person's choice** (`people.assistant_mode`, migration 124, chosen in the
+  panel): `ask` opens the panel; `note_toggle` / `note_vad` record a spoken
+  NOTE — saved by a second press, or by itself on a ~3 s pause (silence
+  detection in `use-recorder.ts`), with a beep and a buzz, because Finn uses it
+  driving. Holding the button or ⌘K always opens the panel, so a note-mode
+  person can change it back. **A note is an inbound message on the `note`
+  channel** (`kind = 'note'`, owned via `handled_by_person_id` like a call, so
+  the Calls page's scope rules already apply), SAVED BEFORE it is transcribed
+  (`saveSpokenNote` → `after()` → `transcribeNote`), its audio KEPT under
+  `notes/` (inbound retention; a failed transcription is retried, never
+  re-said), and a typed note is *Save as note* in the panel. Until it is
+  closed it is its speaker's to-do. Design and later slices:
+  `docs/plan-inbox-notes.md`.
 - **Every Anthropic call goes through ONE door, and sends only what every
   current model accepts** (`src/lib/anthropic/messages.ts`, DECISIONS
   2026-09-30). The model is an admin setting that changes without a deploy,

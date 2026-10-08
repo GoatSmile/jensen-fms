@@ -44,6 +44,7 @@ export type CallReason =
   | "callback"
   | "missed"
   | "request"
+  | "note"
   // check
   | "failed"
   | "processing"
@@ -122,6 +123,15 @@ export function triageCall(row: TriageInput): CallTriage {
   if (row.open_suggestions > 0) return todo("suggested");
   if (row.ticket_id) return { lane: "done", reason: "ticketed", urgent: false };
   if (row.disposition === "needs_action") return todo("marked_needs_action");
+
+  // 1b · A spoken NOTE is its speaker's to-do until someone closes it
+  // (plan-inbox-notes.md) — only the system's own trouble reading it differs.
+  if (row.channel === "note") {
+    if (row.status === "failed" && (row.error ?? "").startsWith("transcribe.empty")) return quiet("no_speech");
+    if (row.status === "failed") return check("failed");
+    if (row.status === "received") return check(row.ageMinutes > STUCK_MINUTES ? "failed" : "processing");
+    return todo("note");
+  }
 
   // 2 · The system could not finish reading it.
   // A recording with no speech in it (a hang-up after the beep) is not a

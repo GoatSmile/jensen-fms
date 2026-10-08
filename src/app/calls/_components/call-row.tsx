@@ -5,6 +5,7 @@ import {
   ChevronRight,
   PhoneIncoming,
   PhoneMissed,
+  Mic,
   PhoneOff,
   PhoneOutgoing,
   Sparkles,
@@ -58,20 +59,26 @@ export async function CallRow({
             ? PhoneMissed
             : reason === "no_speech"
               ? PhoneOff
-              : row.channel === "voicemail"
+              : row.channel === "note"
+                ? Mic
+                : row.channel === "voicemail"
                 ? Voicemail
                 : row.direction === "outgoing"
                   ? PhoneOutgoing
                   : PhoneIncoming;
 
   const number = formatPhone(row.from_identity);
-  const who = row.orgName ?? row.callerName ?? number ?? t("unknownCaller");
+  // A note is said BY a colleague: its speaker is who it is from.
+  const isNote = row.channel === "note";
+  const who = isNote
+    ? (row.lineName ?? t("unknownCaller"))
+    : (row.orgName ?? row.callerName ?? number ?? t("unknownCaller"));
   const sub = [
     row.orgName && row.callerName ? row.callerName : null,
     row.orgName || row.callerName ? number : null,
-    row.channel === "voicemail" ? t("voicemail") : row.direction === "outgoing" ? t("outgoing") : null,
+    isNote ? t("note") : row.channel === "voicemail" ? t("voicemail") : row.direction === "outgoing" ? t("outgoing") : null,
     row.duration_seconds != null ? t("seconds", { s: row.duration_seconds }) : null,
-    showLine ? row.lineName : null,
+    showLine && !isNote ? row.lineName : null,
   ].filter(Boolean);
 
   const edge =

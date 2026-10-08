@@ -4555,7 +4555,11 @@
     "calendarLinkFailed": "The visit is in the calendar, but the link back to this call could not be saved: {detail}",
     "visitEventLink": "The call in Jensen FMS",
     "calendarEventLinkCommand": "The command in Jensen FMS",
-    "callNoNewCustomer": "A call never creates a customer — names get misheard. Pick the customer on the order or offer instead."
+    "callNoNewCustomer": "A call never creates a customer — names get misheard. Pick the customer on the order or offer instead.",
+    "notesNeedPerson": "A note needs a signed-in person.",
+    "notesBadPath": "That recording can't be used.",
+    "notesEmpty": "Write something first.",
+    "notesBadMode": "Unknown button setting."
   },
   "inbox": {
     "title": "Inbox",
@@ -4750,7 +4754,8 @@
   "inboundChannel": {
     "voicemail": "Voicemail",
     "in_app": "In-app command",
-    "phone_call": "Call"
+    "phone_call": "Call",
+    "note": "Note"
   },
   "inboundOutcome": {
     "answered": "Answered — conversation recorded",
@@ -5199,12 +5204,14 @@
       "internal": "Internal call",
       "not_recorded": "Answered · not recorded",
       "no_speech": "Nothing said",
-      "no_request": "No request"
+      "no_request": "No request",
+      "note": "Note"
     },
     "commandsTitle": "Commands",
     "commandsSubtitle": "What you asked the assistant, and what it answered or drafted. Ask something new with the button in the corner (⌘K).",
     "commandsEmptyTitle": "No commands yet",
-    "commandsEmptyDesc": "Ask with the button in the corner — a question, something to open, or something to create."
+    "commandsEmptyDesc": "Ask with the button in the corner — a question, something to open, or something to create.",
+    "note": "note"
   },
   "calendar": {
     "title": "Calendar",
@@ -5250,6 +5257,26 @@
     "scan": "Scan",
     "history": "History",
     "close": "Close",
-    "failed": "That didn't work. Try again, or rephrase it."
+    "failed": "That didn't work. Try again, or rephrase it.",
+    "noteButtonLabel": "Note",
+    "noteStop": "Save note",
+    "noteRecording": "Recording — press again to save",
+    "noteListening": "Listening — saves when you pause",
+    "noteCancel": "Cancel",
+    "noteSaving": "Saving…",
+    "noteSaved": "Note saved",
+    "noteOpen": "Open",
+    "noteFailed": "The note wasn't saved — the recording is kept.",
+    "noteRetry": "Retry",
+    "noteDiscard": "Discard",
+    "noteNoSpeech": "Nothing heard — no note saved.",
+    "noteError_unsupported": "This browser can't record.",
+    "noteError_permission": "The microphone isn't allowed — check the browser's permission.",
+    "noteError_empty": "Nothing was recorded.",
+    "saveAsNote": "Save as note",
+    "modeLabel": "Pressing the button:",
+    "mode_ask": "Opens this panel",
+    "mode_note_toggle": "Records a note, press again to save",
+    "mode_note_vad": "Records a note, saves on a pause"
   }
 }

@@ -258,6 +258,20 @@ export async function runInboundPipeline(
   return { ok: true };
 }
 
+/**
+ * A spoken NOTE (plan-inbox-notes.md, slice 1): transcription only. Reading,
+ * matching and suggestions for notes come with their own prompt in a later
+ * slice — the call extraction asks call questions ("who rang?") a note cannot
+ * answer. A failure stamps the row like any other, and the audio is kept.
+ */
+export async function transcribeNote(
+  supabase: SupabaseClient,
+  messageId: string,
+): Promise<StageResult> {
+  const tr = await transcribeStage(supabase, messageId, await loadInboundSettings(supabase));
+  return tr.ok ? tr : fail(supabase, messageId, tr);
+}
+
 /** Stamp a pipeline failure onto the message so the reviewer sees why. */
 async function fail(
   supabase: SupabaseClient,

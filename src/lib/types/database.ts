@@ -1073,6 +1073,7 @@ export type Database = {
           action_type: string
           applied_at: string
           applied_by: string | null
+          auto_applied: boolean
           entity_id: string | null
           entity_table: string | null
           id: string
@@ -1084,6 +1085,7 @@ export type Database = {
           action_type: string
           applied_at?: string
           applied_by?: string | null
+          auto_applied?: boolean
           entity_id?: string | null
           entity_table?: string | null
           id?: string
@@ -1095,6 +1097,7 @@ export type Database = {
           action_type?: string
           applied_at?: string
           applied_by?: string | null
+          auto_applied?: boolean
           entity_id?: string | null
           entity_table?: string | null
           id?: string
@@ -1484,15 +1487,20 @@ export type Database = {
       }
       inbound_messages: {
         Row: {
+          addressed_to_person_id: string | null
           assistant_answer: Json | null
           body_text: string | null
           call_outcome: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta: Json
+          closed_at: string | null
+          closed_by: string | null
           command_plan: Json | null
           commanded_by: string | null
           created_at: string
           disposition: string
+          dropped_actions: string[] | null
+          due_date: string | null
           duration_seconds: number | null
           error: string | null
           extraction: Json | null
@@ -1507,6 +1515,7 @@ export type Database = {
           matched_organization_id: string | null
           media_mime_type: string | null
           media_path: string | null
+          note_context: Json | null
           phone_line_id: string | null
           plan_attempted_at: string | null
           processed_at: string | null
@@ -1520,15 +1529,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          addressed_to_person_id?: string | null
           assistant_answer?: Json | null
           body_text?: string | null
           call_outcome?: string | null
           channel: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
+          closed_at?: string | null
+          closed_by?: string | null
           command_plan?: Json | null
           commanded_by?: string | null
           created_at?: string
           disposition?: string
+          dropped_actions?: string[] | null
+          due_date?: string | null
           duration_seconds?: number | null
           error?: string | null
           extraction?: Json | null
@@ -1543,6 +1557,7 @@ export type Database = {
           matched_organization_id?: string | null
           media_mime_type?: string | null
           media_path?: string | null
+          note_context?: Json | null
           phone_line_id?: string | null
           plan_attempted_at?: string | null
           processed_at?: string | null
@@ -1556,15 +1571,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          addressed_to_person_id?: string | null
           assistant_answer?: Json | null
           body_text?: string | null
           call_outcome?: string | null
           channel?: Database["public"]["Enums"]["inbound_channel"]
           channel_meta?: Json
+          closed_at?: string | null
+          closed_by?: string | null
           command_plan?: Json | null
           commanded_by?: string | null
           created_at?: string
           disposition?: string
+          dropped_actions?: string[] | null
+          due_date?: string | null
           duration_seconds?: number | null
           error?: string | null
           extraction?: Json | null
@@ -1579,6 +1599,7 @@ export type Database = {
           matched_organization_id?: string | null
           media_mime_type?: string | null
           media_path?: string | null
+          note_context?: Json | null
           phone_line_id?: string | null
           plan_attempted_at?: string | null
           processed_at?: string | null
@@ -1592,6 +1613,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inbound_messages_addressed_to_person_id_fkey"
+            columns: ["addressed_to_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_messages_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inbound_messages_commanded_by_fkey"
             columns: ["commanded_by"]
@@ -3356,6 +3391,8 @@ export type Database = {
       }
       people: {
         Row: {
+          assistant_auto_apply: boolean
+          assistant_mode: string
           created_at: string
           email: string | null
           engaged_from: string | null
@@ -3376,6 +3413,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          assistant_auto_apply?: boolean
+          assistant_mode?: string
           created_at?: string
           email?: string | null
           engaged_from?: string | null
@@ -3396,6 +3435,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          assistant_auto_apply?: boolean
+          assistant_mode?: string
           created_at?: string
           email?: string | null
           engaged_from?: string | null
@@ -5553,10 +5594,6 @@ export type Database = {
       }
       mo_copy_template_parts: { Args: { p_mo_id: string }; Returns: number }
       next_document_number: { Args: { p_doc_type: string }; Returns: string }
-      search_organizations_fuzzy: {
-        Args: { lim?: number; q: string }
-        Returns: { id: string; label: string; score: number }[]
-      }
       publish_service_price_list: {
         Args: { p_list_id: string }
         Returns: undefined
@@ -5564,6 +5601,14 @@ export type Database = {
       replace_service_order_items: {
         Args: { p_items: Json; p_order_id: string }
         Returns: number
+      }
+      search_organizations_fuzzy: {
+        Args: { lim?: number; q: string }
+        Returns: {
+          id: string
+          label: string
+          score: number
+        }[]
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
@@ -5578,7 +5623,7 @@ export type Database = {
         | "in_maintenance"
         | "retired"
         | "lost_or_stolen"
-      inbound_channel: "voicemail" | "in_app" | "phone_call"
+      inbound_channel: "voicemail" | "in_app" | "phone_call" | "note"
       inbound_status:
         | "received"
         | "understood"
@@ -5801,7 +5846,7 @@ export const Constants = {
         "retired",
         "lost_or_stolen",
       ],
-      inbound_channel: ["voicemail", "in_app", "phone_call"],
+      inbound_channel: ["voicemail", "in_app", "phone_call", "note"],
       inbound_status: [
         "received",
         "understood",

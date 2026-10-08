@@ -24,8 +24,11 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 123 is the latest; production AND local verified at it**
-  (queried 7 Oct 21:40: no default, no 14s left; `check:local`). 123 =
+- **Migration 124 is the latest; production AND local verified at it**
+  (queried 8 Oct: the `note` channel, the six note columns, the two people
+  columns, ledger 124). 124 = spoken notes (channel, kind, addressee, context,
+  due day, Done columns, `command_actions.auto_applied`,
+  `people.assistant_mode` + `assistant_auto_apply`). 123 =
   payment terms follow the rule (default dropped, the unchosen 14s → NULL).
   122 = calendar kinds
   visit + delivery, `calendar_events.sales_order_id` + `offer_id`;
@@ -68,6 +71,16 @@ is Danish (person language).
   mobile records, not the switchboard, so no plan upgrade is needed. The gap is
   wherever a call lands on a number without recording — option 1 → Oprettelse
   — which still imports as *Answered · not recorded*; missed calls as *to do*.
+- **Spoken notes — slice 1 built 8 Oct** (`docs/plan-inbox-notes.md`,
+  DECISIONS 2026-10-08): the button's mode per person (ask / note on second
+  press / note on a pause), *Save as note* in the panel, notes saved then
+  transcribed and shown on the Calls page as their speaker's to-do.
+  Verified locally: a typed note as Finn, the mode switch (button becomes
+  *Notat*), the blocked-mic message, phone width 360 px, and a spoken note's
+  transcription end to end (a `say`-generated Danish WAV, 96 % clarity).
+  **NOT verified: a real recording** — the browser pane blocks the mic, so
+  silence detection, the beeps and the upload need a real phone (Finn's
+  Android). Next: slice 2, the Inbox layout.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn
@@ -157,6 +170,14 @@ is Danish (person language).
   - **Move the Google key file out of the project folder**
     (`jensen-fms-38357d206d22.json` — gitignored now, never committed; the
     key already lives in `.env.local` and Vercel) → password manager or delete.
+- **The register import is PLANNED** (`docs/plan-register-import.md`, 8 Oct):
+  bikes + agreement lines together per batch, pilot municipality first
+  (Allerød recommended — cleanest, but no 0-kr rows), main batch by Fri 16
+  Oct. Blocked on: the cleaned spreadsheet (B1), the pilot choice (B2); later
+  batches also on GPS-only (D1), departments that exist as their own customer
+  (D2), and fleet-letter answers A/C2/C12. **Production's only agreement,
+  "Test agreement" on Nazar Taras, lacks the TEST marker** — the fee button
+  would bill it; rename or cancel.
 - **Agreements — the pilot (7 Oct meeting; handling doc §7 items 17–23):**
   Dennis finishes the spreadsheet cleanup by Fri 9 Oct; **Nazar names the ONE
   municipality** imported first (Dennis cleans its rows first); goal: all bikes

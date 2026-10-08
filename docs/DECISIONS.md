@@ -3713,3 +3713,30 @@ gets settled first.
 - **Rejected:** dropping ticket drafting from calls (the owner wants the
   option); a settings switch (nothing to configure yet — one rule, in
   `isOptionalOnCall`).
+
+## 2026-10-08 — Spoken notes: one button, a per-person mode, a note is an inbound message
+
+Owner, 7–8 Oct, designing how Finn talks to the app from the car
+(`docs/plan-inbox-notes.md` holds the whole design and the later slices).
+
+- **One button; each person picks what a press does**: ask (the panel), a
+  note saved by a second press, or a note saved by itself on a pause. All
+  three now. *Act right away* comes later, per person, and only for safe kinds
+  (a note on a bike identified with certainty; calendar schedule / move /
+  delete when the entry and time are certain).
+- **A note is a NOTE first and maybe an action second** — the same road as a
+  call, so it is an inbound message (`channel = 'note'`, `kind = 'note'`), not
+  a table of its own. Its speaker owns it (`handled_by_person_id`), so the
+  existing own-line scope shows Finn his notes and the office everyone's.
+- **Saved before it is transcribed**, so "saved" is immediate and the text
+  follows; the audio is KEPT (unlike a dictation's) so a failed transcription
+  is retried, not said again.
+- **An open note is the to-do**; a reminder is a to-do, never a calendar
+  entry; anything with nowhere to go stays open as unsorted. *Done* is for
+  notes only — calls keep their own handling (owner: "we are not acting").
+- **The page becomes *Inbox***, notes in a column per person above the calls;
+  old open items fold into a counted line, never out of sight.
+- **Rejected:** the browser's speech API (DECISIONS 2026-09-13 still holds);
+  a separate notes table (would duplicate transcription, matching, planning
+  and scope); notes in `/commands` (that is the history of questions asked);
+  checkboxes for bulk Done (crowded — *Mark all done* per column instead).

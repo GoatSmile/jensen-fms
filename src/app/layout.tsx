@@ -13,6 +13,7 @@ import {
 } from "@/components/nav-items";
 import { RegisterSW } from "@/components/register-sw";
 import { AssistantButton } from "@/components/assistant-button";
+import { parseAssistantMode, type AssistantMode } from "@/lib/notes/mode";
 import { DbTargetBanner } from "@/components/db-target-banner";
 import { readGate } from "@/lib/auth/read-session";
 import {
@@ -88,15 +89,17 @@ export default async function RootLayout({
   const showPersonChip = gate.kind === "session";
   let personName: string | null = null;
   let preferences = EMPTY_PREFERENCES;
+  let assistantMode: AssistantMode = "ask";
   if (gate.kind === "session") {
     const supabase = await createClient();
     const { data } = await supabase
       .from("people")
-      .select("full_name, ui_preferences")
+      .select("full_name, ui_preferences, assistant_mode")
       .eq("id", gate.session.person)
       .maybeSingle();
     personName = data?.full_name ?? null;
     preferences = parsePreferences(data?.ui_preferences);
+    assistantMode = parseAssistantMode(data?.assistant_mode);
   }
 
   // Sidebar group state, resolved HERE rather than on the client: the rail is
@@ -151,7 +154,7 @@ export default async function RootLayout({
               </main>
             </div>
           </div>
-          <AssistantButton allowedCaps={allowedCaps} />
+          <AssistantButton allowedCaps={allowedCaps} mode={assistantMode} />
           <DbTargetBanner />
           <RegisterSW />
         </NextIntlClientProvider>

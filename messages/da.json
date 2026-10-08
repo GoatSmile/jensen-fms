@@ -4555,7 +4555,11 @@
     "calendarLinkFailed": "Besøget ligger i kalenderen, men linket tilbage til opkaldet kunne ikke gemmes: {detail}",
     "visitEventLink": "Opkaldet i Jensen FMS",
     "calendarEventLinkCommand": "Kommandoen i Jensen FMS",
-    "callNoNewCustomer": "Et opkald opretter aldrig en kunde — navne bliver hørt forkert. Vælg kunden på ordren eller tilbuddet i stedet."
+    "callNoNewCustomer": "Et opkald opretter aldrig en kunde — navne bliver hørt forkert. Vælg kunden på ordren eller tilbuddet i stedet.",
+    "notesNeedPerson": "Et notat kræver en logget-ind person.",
+    "notesBadPath": "Den optagelse kan ikke bruges.",
+    "notesEmpty": "Skriv noget først.",
+    "notesBadMode": "Ukendt indstilling for knappen."
   },
   "inbox": {
     "title": "Indbakke",
@@ -4750,7 +4754,8 @@
   "inboundChannel": {
     "voicemail": "Telefonbesked",
     "in_app": "Kommando i appen",
-    "phone_call": "Samtale"
+    "phone_call": "Samtale",
+    "note": "Notat"
   },
   "inboundOutcome": {
     "answered": "Besvaret — samtale optaget",
@@ -5199,12 +5204,14 @@
       "internal": "Internt opkald",
       "not_recorded": "Besvaret · ikke optaget",
       "no_speech": "Intet sagt",
-      "no_request": "Ingen opgave"
+      "no_request": "Ingen opgave",
+      "note": "Notat"
     },
     "commandsTitle": "Kommandoer",
     "commandsSubtitle": "Det, du har spurgt assistenten om, og hvad den svarede eller lavede udkast til. Spørg om noget nyt med knappen i hjørnet (⌘K).",
     "commandsEmptyTitle": "Ingen kommandoer endnu",
-    "commandsEmptyDesc": "Spørg med knappen i hjørnet — et spørgsmål, noget der skal åbnes, eller noget der skal oprettes."
+    "commandsEmptyDesc": "Spørg med knappen i hjørnet — et spørgsmål, noget der skal åbnes, eller noget der skal oprettes.",
+    "note": "notat"
   },
   "calendar": {
     "title": "Kalender",
@@ -5250,6 +5257,26 @@
     "scan": "Scan",
     "history": "Historik",
     "close": "Luk",
-    "failed": "Det lykkedes ikke. Prøv igen, eller formulér det anderledes."
+    "failed": "Det lykkedes ikke. Prøv igen, eller formulér det anderledes.",
+    "noteButtonLabel": "Notat",
+    "noteStop": "Gem notat",
+    "noteRecording": "Optager — tryk igen for at gemme",
+    "noteListening": "Lytter — gemmer når du holder pause",
+    "noteCancel": "Annullér",
+    "noteSaving": "Gemmer…",
+    "noteSaved": "Notat gemt",
+    "noteOpen": "Åbn",
+    "noteFailed": "Notatet blev ikke gemt — optagelsen er beholdt.",
+    "noteRetry": "Prøv igen",
+    "noteDiscard": "Kassér",
+    "noteNoSpeech": "Intet hørt — intet notat gemt.",
+    "noteError_unsupported": "Denne browser kan ikke optage.",
+    "noteError_permission": "Mikrofonen er ikke tilladt — tjek browserens tilladelse.",
+    "noteError_empty": "Der blev ikke optaget noget.",
+    "saveAsNote": "Gem som notat",
+    "modeLabel": "Et tryk på knappen:",
+    "mode_ask": "Åbner dette panel",
+    "mode_note_toggle": "Optager et notat, tryk igen for at gemme",
+    "mode_note_vad": "Optager et notat, gemmer ved en pause"
   }
 }

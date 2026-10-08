@@ -1,36 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Sparkles } from "lucide-react";
+import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
+import { mintNoteUpload, saveSpokenNote } from "@/app/_actions/notes";
+import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
+import { contextFromPath } from "@/lib/notes/context";
+import { isNoteMode, type AssistantMode } from "@/lib/notes/mode";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
 
+/** Holding the button this long opens the panel, whatever the mode. */
+const LONG_PRESS_MS = 500;
+/** How long "Saved" stays up. */
+const TOAST_MS = 4000;
+
+type Toast =
+  | { kind: "saving" }
+  | { kind: "saved"; id: string }
+  | { kind: "failed"; blob: Blob }
+  | { kind: "no_speech" };
+
 /**
  * The ONE floating button (owner, 2026-10-01: "all one button, and if
  * somebody wants to use the camera, they can do it") — bottom right on every
- * screen, phone and desktop alike, opening the assistant's panel, which also
- * holds Scan. ⌘K / Ctrl+K opens and closes it from the keyboard. It replaced
- * the Scan button, the sidebar's *Dictate a command* and the phone header's
- * sparkle, so there is one way in.
+ * screen, phone and desktop alike. ⌘K / Ctrl+K opens the panel from the
+ * keyboard, and so does holding the button, in every mode.
  *
- * Its icon is a sparkle, not a microphone: the panel has its own Dictate
- * microphone, and two mic icons on one screen read as two different things
- * (Munr's lesson).
+ * What a PRESS does is the person's choice (`people.assistant_mode`,
+ * plan-inbox-notes.md): open the panel (`ask`), or record a spoken NOTE —
+ * pressed again to save (`note_toggle`) or saved by itself on a pause
+ * (`note_vad`). A note is saved before it is transcribed, with a beep and a
+ * buzz at start and save, so it works without looking at the screen: in the
+ * car that is the whole point. In note modes the icon is a microphone — the
+ * panel's own Dictate mic is not on screen while it records.
  */
 export function AssistantButton({
   allowedCaps,
+  mode,
 }: {
   /** Role capability scope; null = everything (gate off). */
   allowedCaps: string[] | null;
+  mode: AssistantMode;
 }) {
   const t = useTranslations("assistant");
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [shortcut, setShortcut] = useState("Ctrl K");
+  const [toast, setToast] = useState<Toast | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+  const noteMode = isNoteMode(mode);
 
   const hidden =
     pathname === "/login" ||
@@ -41,6 +65,43 @@ export function AssistantButton({
     /^\/work\/(?!paint-runs|deliveries)[^/]+/.test(pathname) ||
     // The customer map is full-bleed Leaflet; the button would sit on its controls.
     pathname === "/organizations/map";
+
+  const save = useCallback(
+    async (blob: Blob) => {
+      setToast({ kind: "saving" });
+      try {
+        const minted = await mintNoteUpload();
+        if (!minted.ok) throw new Error(minted.error);
+        const put = await fetch(minted.signedUrl, {
+          method: "PUT",
+          headers: { "content-type": "audio/wav" },
+          body: blob,
+        });
+        if (!put.ok) throw new Error(`upload ${put.status}`);
+        const r = await saveSpokenNote(minted.path, contextFromPath(window.location.pathname));
+        if (!r.ok) throw new Error(r.error);
+        cue("saved");
+        setToast({ kind: "saved", id: r.id });
+      } catch {
+        // The recording is still here — Retry, never "say it again".
+        setToast({ kind: "failed", blob });
+      }
+    },
+    [],
+  );
+
+  const recorder = useRecorder({
+    onCaptured: (blob) => void save(blob),
+    silenceStop: mode === "note_vad" ? NOTE_SILENCE_STOP : undefined,
+    onNoSpeech: () => setToast({ kind: "no_speech" }),
+  });
+  const recording = recorder.phase === "recording";
+
+  useEffect(() => {
+    if (toast?.kind !== "saved" && toast?.kind !== "no_speech") return;
+    const timer = setTimeout(() => setToast(null), TOAST_MS);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     // After hydration only, so server and client render the same label first.
@@ -62,28 +123,157 @@ export function AssistantButton({
     setOpen(false);
   }, [pathname]);
 
+  async function press() {
+    if (longPressed.current) return;
+    if (!noteMode) return setOpen((o) => !o);
+    if (recording) return recorder.stop();
+    if (toast?.kind === "saving") return;
+    setToast(null);
+    cue("start");
+    await recorder.start();
+  }
+
+  function pointerDown() {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      if (recording) recorder.cancel();
+      setOpen(true);
+    }, LONG_PRESS_MS);
+  }
+
+  function pointerUp() {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  }
+
   if (hidden) return null;
   const canScan = allowedCaps === null || allowedCaps.includes("scan");
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const Icon = recording ? Square : noteMode ? Mic : Sparkles;
 
   return (
     <>
-      {open ? <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} /> : null}
+      {open ? <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} /> : null}
+
+      {/* What the button is doing, said in words above it: recording, saved,
+          or the one failure that must not lose anything. */}
+      {recording || toast || recorder.error ? (
+        <div
+          role="status"
+          className="bg-popover text-popover-foreground shadow-popover fixed right-4 bottom-20 z-40 flex w-[min(320px,calc(100vw-2rem))] flex-col gap-2 rounded-2xl p-3 text-sm md:bottom-[4.5rem]"
+        >
+          {recording ? (
+            <>
+              <span>
+                {mode === "note_vad" ? t("noteListening") : t("noteRecording")} · {mmss(recorder.seconds)}
+              </span>
+              <span className="bg-ground h-1.5 w-full overflow-hidden rounded-full" role="presentation">
+                <span
+                  className="bg-destructive block h-full rounded-full transition-[width] duration-100"
+                  style={{ width: `${Math.round(recorder.level * 100)}%` }}
+                />
+              </span>
+              <button
+                type="button"
+                onClick={() => recorder.cancel()}
+                className="text-ink-2 hover:text-ink self-start text-xs underline"
+              >
+                {t("noteCancel")}
+              </button>
+            </>
+          ) : toast?.kind === "saving" ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              {t("noteSaving")}
+            </span>
+          ) : toast?.kind === "saved" ? (
+            <span className="flex items-center gap-2">
+              {t("noteSaved")}
+              <Link href={`/calls/${toast.id}`} className="text-brand-ink ml-auto underline underline-offset-2">
+                {t("noteOpen")}
+              </Link>
+            </span>
+          ) : toast?.kind === "failed" ? (
+            <>
+              <span className="text-destructive" role="alert">
+                {t("noteFailed")}
+              </span>
+              <span className="flex gap-3 text-xs">
+                <button type="button" onClick={() => void save(toast.blob)} className="text-brand-ink underline">
+                  {t("noteRetry")}
+                </button>
+                <button type="button" onClick={() => setToast(null)} className="text-ink-2 underline">
+                  {t("noteDiscard")}
+                </button>
+              </span>
+            </>
+          ) : toast?.kind === "no_speech" ? (
+            <span>{t("noteNoSpeech")}</span>
+          ) : recorder.error ? (
+            <span className="text-destructive" role="alert">
+              {t(`noteError_${recorder.error}`)}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-label={t("buttonLabel")}
+        onClick={() => void press()}
+        onPointerDown={pointerDown}
+        onPointerUp={pointerUp}
+        onPointerLeave={pointerUp}
+        onContextMenu={(e) => e.preventDefault()}
+        aria-expanded={noteMode ? undefined : open}
+        aria-pressed={noteMode ? recording : undefined}
+        aria-label={noteMode ? (recording ? t("noteStop") : t("noteButtonLabel")) : t("buttonLabel")}
         className={cn(
-          "bg-brand text-on-brand shadow-popover fixed right-4 bottom-4 z-40 flex items-center justify-center rounded-full transition-transform active:scale-95",
+          "shadow-popover fixed right-4 bottom-4 z-40 flex items-center justify-center rounded-full transition-transform select-none active:scale-95",
+          // A live mic pulses rather than turning red: red stays for genuine alarm.
+          "bg-brand text-on-brand",
+          recording && "ring-brand/40 animate-pulse ring-4",
           // Phone: a round button where Scan used to sit. Desktop: a pill that says what it is.
           "size-14 md:h-11 md:w-auto md:gap-2 md:px-4",
           open && "max-md:hidden",
         )}
       >
-        <Sparkles className="size-5 md:size-4" aria-hidden />
-        <span className="hidden text-sm font-medium md:inline">{t("buttonLabel")}</span>
-        <kbd className="text-on-brand hidden font-sans text-xs font-normal md:inline">{shortcut}</kbd>
+        <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />
+        <span className="hidden text-sm font-medium md:inline">
+          {noteMode ? (recording ? t("noteStop") : t("noteButtonLabel")) : t("buttonLabel")}
+        </span>
+        <kbd className="hidden font-sans text-xs font-normal md:inline">{shortcut}</kbd>
       </button>
     </>
   );
+}
+
+/**
+ * A short tone and a buzz — the only feedback a driver gets. Start rises,
+ * saved falls; best-effort (some browsers refuse audio or vibration).
+ */
+function cue(kind: "start" | "saved") {
+  try {
+    navigator.vibrate?.(kind === "start" ? 60 : [40, 60, 40]);
+  } catch {
+    /* not supported */
+  }
+  try {
+    const Ctor =
+      window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.setValueAtTime(kind === "start" ? 660 : 880, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(kind === "start" ? 880 : 520, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+    osc.onended = () => void ctx.close();
+  } catch {
+    /* no audio */
+  }
 }

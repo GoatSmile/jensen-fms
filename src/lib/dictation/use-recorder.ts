@@ -30,6 +30,20 @@ const TARGET_SAMPLE_RATE = 16_000;
 
 export type RecorderPhase = "idle" | "recording" | "captured";
 
+/**
+ * Stop by itself after a PAUSE (the one-press note, plan-inbox-notes.md):
+ * once speech has been heard, `afterMs` of quiet ends the recording; if no
+ * speech is heard within `noSpeechMs`, the recording is dropped, not saved.
+ * Speech = a buffer's RMS clearly above the room's noise floor (tracked as
+ * the quietest recent buffer), so a running engine does not count as talking.
+ * Tuned by ear; a car may need it moved — the press-to-stop mode is the fallback.
+ */
+export type SilenceStop = { afterMs: number; noSpeechMs: number };
+export const NOTE_SILENCE_STOP: SilenceStop = { afterMs: 2800, noSpeechMs: 8000 };
+/** Absolute floor for "speech" (raw RMS), and how far above the noise it must rise. */
+const SPEECH_MIN_RMS = 0.02;
+const SPEECH_OVER_FLOOR = 3;
+
 export type RecorderErrorCode = "unsupported" | "permission" | "empty";
 
 type AudioContextCtor = typeof AudioContext;
@@ -96,6 +110,8 @@ export type Recorder = {
   error: RecorderErrorCode | null;
   start: () => Promise<void>;
   stop: () => void;
+  /** Stop WITHOUT capturing — nothing is encoded or handed on. */
+  cancel: () => void;
   /** Throw the capture away and return to idle. */
   reset: () => void;
 };
@@ -110,11 +126,17 @@ export type RecorderOptions = {
    */
   onCaptured?: (blob: Blob) => void;
   maxSeconds?: number;
+  /** End on a pause instead of waiting for Stop. */
+  silenceStop?: SilenceStop;
+  /** Called when a silence-stop recording heard no speech and was dropped. */
+  onNoSpeech?: () => void;
 };
 
 export function useRecorder({
   onCaptured,
   maxSeconds = MAX_RECORD_SECONDS,
+  silenceStop,
+  onNoSpeech,
 }: RecorderOptions = {}): Recorder {
   const [phase, setPhase] = useState<RecorderPhase>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -132,9 +154,12 @@ export function useRecorder({
   // Same for the caller's callback: keeping it in a ref means a caller that
   // passes an inline arrow doesn't rebuild stop() on every render.
   const onCapturedRef = useRef(onCaptured);
+  const onNoSpeechRef = useRef(onNoSpeech);
   useEffect(() => {
     onCapturedRef.current = onCaptured;
-  }, [onCaptured]);
+    onNoSpeechRef.current = onNoSpeech;
+  }, [onCaptured, onNoSpeech]);
+  const cancelRef = useRef<() => void>(() => {});
 
   const teardown = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -164,11 +189,18 @@ export function useRecorder({
     onCapturedRef.current?.(wav);
   }, [teardown]);
 
-  // The auto-stop interval closes over this; keep the ref pointing at the
-  // current closure without touching it during render.
+  const cancel = useCallback(() => {
+    teardown();
+    chunksRef.current = [];
+    setPhase("idle");
+  }, [teardown]);
+
+  // The auto-stop interval closes over these; keep the refs pointing at the
+  // current closures without touching them during render.
   useEffect(() => {
     stopRef.current = stop;
-  }, [stop]);
+    cancelRef.current = cancel;
+  }, [stop, cancel]);
 
   const start = useCallback(async () => {
     setError(null);
@@ -197,14 +229,37 @@ export function useRecorder({
     const source = ctx.createMediaStreamSource(stream);
     const processor = ctx.createScriptProcessor(4096, 1, 1);
     chunksRef.current = [];
+    const begun = Date.now();
+    let floor = Infinity;
+    let heardSpeech = false;
+    let lastSpeech = begun;
+    let ended = false;
     processor.onaudioprocess = (e) => {
+      if (ended) return;
       const input = e.inputBuffer.getChannelData(0);
       chunksRef.current.push(new Float32Array(input));
       // RMS off the buffer we already have — a level meter for free, and the
       // only feedback that the mic is live now that there is no interim text.
       let sum = 0;
       for (let i = 0; i < input.length; i++) sum += (input[i] ?? 0) ** 2;
-      setLevel(Math.min(1, Math.sqrt(sum / input.length) * 4));
+      const rms = Math.sqrt(sum / input.length);
+      setLevel(Math.min(1, rms * 4));
+      if (!silenceStop) return;
+      // The noise floor creeps up slowly, so a quiet stretch re-learns the room.
+      floor = Math.min(floor * 1.002, rms);
+      const now = Date.now();
+      if (rms > Math.max(SPEECH_MIN_RMS, floor * SPEECH_OVER_FLOOR)) {
+        heardSpeech = true;
+        lastSpeech = now;
+      }
+      if (heardSpeech && now - lastSpeech > silenceStop.afterMs) {
+        ended = true;
+        stopRef.current();
+      } else if (!heardSpeech && now - begun > silenceStop.noSpeechMs) {
+        ended = true;
+        cancelRef.current();
+        onNoSpeechRef.current?.();
+      }
     };
     source.connect(processor);
     // Chrome only fires onaudioprocess on a connected node. Nothing is ever
@@ -224,7 +279,7 @@ export function useRecorder({
       setSeconds(elapsed);
       if (elapsed >= maxSeconds) stopRef.current();
     }, 250);
-  }, [maxSeconds]);
+  }, [maxSeconds, silenceStop]);
 
   const reset = useCallback(() => {
     setBlob(null);
@@ -242,5 +297,5 @@ export function useRecorder({
     };
   }, []);
 
-  return { phase, seconds, level, blob, error, start, stop, reset };
+  return { phase, seconds, level, blob, error, start, stop, cancel, reset };
 }

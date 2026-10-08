@@ -27,3 +27,19 @@ export function isDictationPath(path: string): boolean {
     path.endsWith(".wav")
   );
 }
+
+/**
+ * A spoken NOTE's audio is the opposite case: it is KEPT, under the inbound
+ * retention like a voicemail (`inbound_messages.media_path`), because a note
+ * whose transcription failed must be retried, not said again. Its own prefix,
+ * so the stray-dictation sweep above never touches it.
+ */
+export const NOTE_PREFIX = "notes";
+
+export function noteObjectPath(): string {
+  return `${NOTE_PREFIX}/${crypto.randomUUID()}.wav`;
+}
+
+export function isNotePath(path: string): boolean {
+  return path.startsWith(`${NOTE_PREFIX}/`) && !path.includes("..") && path.endsWith(".wav");
+}
