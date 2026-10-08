@@ -3785,3 +3785,30 @@ Slice 3 of `docs/plan-inbox-notes.md`.
 - **Rejected:** a notes table per record (a second copy that can drift);
   addressing by role name; letting the note planner propose tickets (the
   owner: calls and notes organise the calendar, the work is captured on site).
+
+## 2026-10-08 — Act right away: safe kinds only, and deleting waits for a person
+
+Slice 4 of `docs/plan-inbox-notes.md`. The owner listed as safe: a note on a
+bike identified with certainty, and calendar changes — schedule, move,
+delete.
+
+- **A switch per person, on their person page, off by default**
+  (`people.assistant_auto_apply`) — set by whoever administers people, because
+  it acts in that person's name. Safe suggestions then apply as the speaker,
+  with the speaker's own rights, marked `auto_applied` and shown so on the card.
+- **Notes can move and delete calendar entries** — found with a resolver
+  (exactly one match, or no suggestion), through the calendar's own doors.
+- **Deleting is NOT automatic, although it was on the owner's list.** Tested
+  end to end on the real calendar: "cancel the TEST visit on Friday", said
+  after the visit had been moved to next Friday, resolved Friday to THIS week,
+  found exactly one entry there — a real one — and proposed deleting it. It
+  was stopped only because the local copy lacked that entry's link. A wrong
+  move is visible and can be moved back; a wrong deletion is gone. So delete
+  is a suggestion with a *Delete* button that names the entry; booking and
+  moving stay automatic. The owner can reopen this.
+- **The apply logic moved to a server-only library** (`applyPlanAction`), so
+  "who is acting" can be an argument without being a server action anyone
+  could call with a forged actor.
+- **Rejected:** auto-delete only for entries the app made (the found entry WAS
+  app-made in production); asking the model how sure it is (it said "check
+  this" in its notes and would still have been applied).

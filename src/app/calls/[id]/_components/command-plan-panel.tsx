@@ -385,7 +385,13 @@ function ActionCard({
       {!isApplied ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" size="sm" onClick={apply} disabled={!canApply || pending}>
-            {pending ? t("applying") : t("apply")}
+            {pending
+              ? t("applying")
+              : action.type === "delete_event"
+                ? t("applyDelete")
+                : action.type === "move_event"
+                  ? t("applyMove")
+                  : t("apply")}
           </Button>
           {waitsForCustomer ? (
             <span className="text-muted-foreground text-xs">
@@ -417,7 +423,9 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
 
   let text: string;
   let href: string | null = null;
-  if (table === "calendar_events") {
+  if (table === "calendar_events" && p.deleted) {
+    text = t("resultCalendarDeleted", { title: str(p.title) ?? "" });
+  } else if (table === "calendar_events") {
     const date = str(p.date);
     const time = str(p.time);
     const eventId = str(p.eventId);
@@ -430,7 +438,9 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
           timeZone: "UTC",
         }).format(new Date(`${date}T12:00:00Z`))
       : "";
-    text = t("resultCalendar", { kind: t(`type_draft_event_${kind}`), when: time ? `${day}, ${time}` : day });
+    text = p.moved
+      ? t("resultCalendarMoved", { when: time ? `${day}, ${time}` : day })
+      : t("resultCalendar", { kind: t(`type_draft_event_${kind}`), when: time ? `${day}, ${time}` : day });
     // Past entries live on the calendar's other tab.
     const past = date !== null && date < new Date().toISOString().slice(0, 10);
     if (eventId) {
@@ -465,6 +475,7 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
     <p className="text-good flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
       <Check className="size-4 shrink-0" aria-hidden />
       <span className="font-medium">{text}</span>
+      {applied?.autoApplied ? <span className="text-ink-2 text-xs">· {t("appliedAutomatically")}</span> : null}
       {href ? (
         <Link href={href} className="text-brand-ink inline-flex items-center gap-1 underline underline-offset-2">
           {t(table === "calendar_events" ? "resultOpenCalendar" : "resultOpen")}
@@ -486,6 +497,19 @@ function ActionSummary({
   contacts?: Record<string, { name: string; phone: string | null; email: string | null }>;
 }) {
   const t = useTranslations("inboxCommand");
+  if (action.type === "move_event") {
+    return (
+      <p className="text-sm">
+        <span className="font-medium">{action.eventLabel ?? "—"}</span>
+        {" → "}
+        {action.date}
+        {action.time ? ` ${action.time}` : ""}
+      </p>
+    );
+  }
+  if (action.type === "delete_event") {
+    return <p className="text-sm font-medium">{action.eventLabel ?? "—"}</p>;
+  }
   if (action.type === "attach_note") {
     return (
       <p className="text-sm font-medium">

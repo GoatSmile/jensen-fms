@@ -14,6 +14,8 @@ export type AppliedAction = {
   entityTable: string | null;
   entityId: string | null;
   payload: unknown;
+  /** Applied with no press — *act right away* (slice 4). */
+  autoApplied?: boolean;
 };
 
 export type PlanContext = {
@@ -44,7 +46,7 @@ export async function loadPlanContext(
     await Promise.all([
       supabase
         .from("command_actions")
-        .select("plan_action_id, entity_table, entity_id, payload")
+        .select("plan_action_id, entity_table, entity_id, payload, auto_applied")
         .eq("message_id", messageId),
       supabase
         .from("bike_templates")
@@ -118,7 +120,12 @@ export async function loadPlanContext(
   }
   const applied: PlanContext["applied"] = {};
   for (const a of actions ?? []) {
-    applied[a.plan_action_id] = { entityTable: a.entity_table, entityId: a.entity_id, payload: a.payload };
+    applied[a.plan_action_id] = {
+      entityTable: a.entity_table,
+      entityId: a.entity_id,
+      payload: a.payload,
+      autoApplied: a.auto_applied === true,
+    };
   }
   return {
     applied,

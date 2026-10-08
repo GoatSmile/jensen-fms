@@ -3677,7 +3677,11 @@
     "eventSoReady": "Sales order ready for delivery",
     "eventPaintReceivedIncomplete": "Paint order collected with lines to fix",
     "capJobs": "See scheduled jobs",
-    "capCallsOwn": "Own inbox (own calls and notes)"
+    "capCallsOwn": "Own inbox (own calls and notes)",
+    "autoApplyTitle": "Act right away",
+    "autoApplyDesc": "For this person's spoken notes.",
+    "autoApplyLabel": "Run safe suggestions without a press",
+    "autoApplyHint": "Putting a note on a bike that was identified with certainty, and booking or moving a calendar visit. Deleting an appointment, contact details, offers and anything with money always wait for a person. Each one shows on the note as applied automatically."
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -4561,7 +4565,9 @@
     "notesEmpty": "Write something first.",
     "notesBadMode": "Unknown button setting.",
     "notesNothingSelected": "No note was chosen.",
-    "notesNotAllowed": "You can't close that note."
+    "notesNotAllowed": "You can't close that note.",
+    "calendarEntryNotFound": "That calendar entry no longer exists. {detail}",
+    "calendarCouldNotChange": "The calendar entry could not be changed. {detail}"
   },
   "inbox": {
     "title": "Inbox",
@@ -4760,7 +4766,14 @@
     "contactNew": "new contact",
     "resultContactCreated": "Contact {label} created",
     "resultContactUpdated": "Contact {label} updated",
-    "resultAttached": "Put on {label}"
+    "resultAttached": "Put on {label}",
+    "type_move_event": "Move appointment",
+    "type_delete_event": "Delete appointment",
+    "resultCalendarMoved": "Moved to {when}",
+    "resultCalendarDeleted": "Deleted from the calendar: {title}",
+    "appliedAutomatically": "automatically",
+    "applyDelete": "Delete",
+    "applyMove": "Move"
   },
   "inboundChannel": {
     "voicemail": "Voicemail",

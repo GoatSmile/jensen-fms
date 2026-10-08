@@ -96,3 +96,90 @@ export async function createCalendarEntry(
   if (error || !link) return { ok: false, code: "link", detail: error?.message };
   return { ok: true, linkId: link.id, event: created.value };
 }
+
+export type CalendarChangeResult =
+  | { ok: true; event: CalendarEvent | null; before: CalendarEvent }
+  | { ok: false; code: "not_configured" | "bad_date" | "bad_time" | "not_found" | "provider"; detail?: string };
+
+/**
+ * MOVE an entry to a new day and time (plan-inbox-notes.md, slice 4) — the
+ * second door, beside `createCalendarEntry`. Its length is kept unless a new
+ * one was said; an all-day entry given a time takes its kind's default
+ * length. The link row (if the system made it) follows.
+ */
+export async function moveCalendarEntry(
+  supabase: SupabaseClient,
+  change: { eventId: string; date: string; time: string | null; durationMinutes: number | null },
+): Promise<CalendarChangeResult> {
+  const settings = await loadCalendarSettings(supabase);
+  const adapter = calendarAdapter(settings.provider);
+  if (!calendarReady(settings) || !adapter) return { ok: false, code: "not_configured" };
+  const date = change.date.trim();
+  const time = change.time?.trim() || null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, code: "bad_date" };
+  if (time && !/^\d{2}:\d{2}$/.test(time)) return { ok: false, code: "bad_time" };
+
+  const before = await adapter.getEvent(settings.calendarId, change.eventId);
+  if (!before.ok) return { ok: false, code: "not_found", detail: before.error };
+  const kindSpec = CALENDAR_KIND_SPECS[before.value.kind ?? "visit"];
+  const keptMinutes =
+    !before.value.allDay && before.value.start && before.value.end
+      ? Math.round((Date.parse(before.value.end) - Date.parse(before.value.start)) / 60_000)
+      : kindSpec.defaultMinutes;
+  const minutes = change.durationMinutes ?? keptMinutes;
+
+  const moved = await adapter.moveEvent(settings.calendarId, change.eventId, {
+    date,
+    time,
+    durationMinutes: minutes,
+    timeZone: CALENDAR_TIME_ZONE,
+  });
+  if (!moved.ok) return { ok: false, code: "provider", detail: moved.error };
+  await supabase
+    .from("calendar_events")
+    .update({
+      starts_at: moved.value.allDay ? null : moved.value.start || null,
+      ends_at: moved.value.allDay ? null : moved.value.end || null,
+    })
+    .eq("external_event_id", change.eventId);
+  return { ok: true, event: moved.value, before: before.value };
+}
+
+/**
+ * DELETE an entry. Returns what it was, so the result can say which entry
+ * went. The link row goes too — it would only point at nothing.
+ */
+export async function deleteCalendarEntry(
+  supabase: SupabaseClient,
+  eventId: string,
+): Promise<CalendarChangeResult> {
+  const settings = await loadCalendarSettings(supabase);
+  const adapter = calendarAdapter(settings.provider);
+  if (!calendarReady(settings) || !adapter) return { ok: false, code: "not_configured" };
+  const before = await adapter.getEvent(settings.calendarId, eventId);
+  if (!before.ok) return { ok: false, code: "not_found", detail: before.error };
+  const gone = await adapter.deleteEvent(settings.calendarId, eventId);
+  if (!gone.ok) return { ok: false, code: "provider", detail: gone.error };
+  await supabase.from("calendar_events").delete().eq("external_event_id", eventId);
+  return { ok: true, event: null, before: before.value };
+}
+
+/**
+ * Entries in a window whose title has any of the words — the planner's way to
+ * find "Thursday's visit to Gladsaxe". Read live from the provider.
+ */
+export async function findCalendarEntries(
+  supabase: SupabaseClient,
+  q: { words: string[]; from: Date; to: Date },
+): Promise<{ ok: true; events: CalendarEvent[] } | { ok: false; detail: string }> {
+  const settings = await loadCalendarSettings(supabase);
+  const adapter = calendarAdapter(settings.provider);
+  if (!calendarReady(settings) || !adapter) return { ok: false, detail: "calendar not configured" };
+  const r = await adapter.listEvents(settings.calendarId, { from: q.from, to: q.to });
+  if (!r.ok) return { ok: false, detail: r.error };
+  const words = q.words.map((w) => w.toLocaleLowerCase("da-DK")).filter((w) => w.length >= 3);
+  const events = words.length
+    ? r.value.filter((e) => words.some((w) => e.title.toLocaleLowerCase("da-DK").includes(w)))
+    : r.value;
+  return { ok: true, events };
+}

@@ -217,3 +217,24 @@ export async function setPersonPassword(
   revalidate(`/admin/people/${id}`);
   return { ok: true };
 }
+
+/**
+ * *Act right away* for this person's spoken notes (plan-inbox-notes.md,
+ * slice 4): their SAFE suggestions — a note on a bike identified with
+ * certainty, calendar visits, moves and deletions — run with no press.
+ * Off by default; set here, by whoever administers people, not by the
+ * person (it acts in their name). Contact details and money never run alone.
+ */
+export async function setPersonAutoApply(id: string, on: boolean): Promise<PersonResult> {
+  const t = await getTranslations("errors");
+  if (!id) return { ok: false, error: t("missingId") };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("people")
+    .update({ assistant_auto_apply: on, last_actor_id: await readPersonId() })
+    .eq("id", id)
+    .eq("is_system", false);
+  if (error) return { ok: false, error: t("couldNotSave", { detail: error.message }) };
+  revalidate(`/admin/people/${id}`);
+  return { ok: true };
+}

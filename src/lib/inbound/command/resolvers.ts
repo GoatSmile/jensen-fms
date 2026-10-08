@@ -18,6 +18,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ilikeEscape } from "@/lib/supabase/ilike";
 import { recognitionCodeVariants } from "../match";
+import { findCalendarEntries } from "@/lib/calendar/entries";
+import { danishMidnight, shiftDayKey } from "@/lib/calls/days";
 
 /** The recognition-code identifier type (migration 65/102), as in match.ts. */
 const FLEET_TYPE = "f1ee7000-0000-4000-8000-000000000001";
@@ -122,6 +124,19 @@ export const RESOLVER_TOOLS = [
       properties: {
         query: { type: "string", description: "The person's name as said." },
         organizationId: { type: "string", description: "Optional: only contacts of this customer." },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "find_calendar_entry",
+    description:
+      "Find an entry already in the service calendar — to MOVE or DELETE it. Give words from its title (customer, errand) and, if said, its day. Returns up to 8 `matches` with eventId, title and start. Fill an eventId ONLY when exactly one entry matched.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Words from the entry's title, e.g. the customer: 'Gladsaxe'." },
+        date: { type: "string", description: "Optional: the entry's CURRENT day, YYYY-MM-DD." },
       },
       required: ["query"],
     },
@@ -258,6 +273,24 @@ export async function executeResolver(
           organizationLabel: c.organization_id ? (orgs.get(c.organization_id) ?? null) : null,
           phone: c.phone,
           email: c.email,
+        })),
+      };
+    }
+
+    case "find_calendar_entry": {
+      const date = typeof input.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input.date) ? input.date : null;
+      // A named day: that day. Otherwise from yesterday to a month ahead.
+      const from = date ? danishMidnight(date) : new Date(Date.now() - 86_400_000);
+      const to = date ? danishMidnight(shiftDayKey(date, 1)) : new Date(Date.now() + 31 * 86_400_000);
+      const r = await findCalendarEntries(supabase, { words: query.split(/\s+/), from, to });
+      if (!r.ok) return { error: r.detail };
+      return {
+        matches: r.events.slice(0, LIMIT).map((e) => ({
+          eventId: e.id,
+          title: e.title,
+          start: e.start,
+          allDay: e.allDay,
+          madeByTheApp: e.kind !== null,
         })),
       };
     }

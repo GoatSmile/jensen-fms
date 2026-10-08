@@ -139,6 +139,16 @@ function addMinutes(date: string, time: string, minutes: number): string {
   return t.toISOString().slice(0, 19);
 }
 
+/** Google's start/end for a day and time, or a whole day. */
+function whenOf(input: { date: string; time: string | null; durationMinutes: number; timeZone: string }) {
+  return input.time
+    ? {
+        start: { dateTime: `${input.date}T${input.time}:00`, timeZone: input.timeZone },
+        end: { dateTime: addMinutes(input.date, input.time, input.durationMinutes), timeZone: input.timeZone },
+      }
+    : { start: { date: input.date }, end: { date: nextDay(input.date) } };
+}
+
 export const googleCalendar: CalendarAdapter = {
   async describe(calendarId) {
     const cal = await call<{ summary?: string; timeZone?: string }>(`/calendars/${encodeURIComponent(calendarId)}`);
@@ -175,12 +185,7 @@ export const googleCalendar: CalendarAdapter = {
   },
 
   async createEvent(calendarId, input) {
-    const when = input.time
-      ? {
-          start: { dateTime: `${input.date}T${input.time}:00`, timeZone: input.timeZone },
-          end: { dateTime: addMinutes(input.date, input.time, input.durationMinutes), timeZone: input.timeZone },
-        }
-      : { start: { date: input.date }, end: { date: nextDay(input.date) } };
+    const when = whenOf(input);
     const r = await call<GoogleEvent>(`/calendars/${encodeURIComponent(calendarId)}/events`, {
       method: "POST",
       body: JSON.stringify({
@@ -194,5 +199,32 @@ export const googleCalendar: CalendarAdapter = {
     });
     if (!r.ok) return r;
     return { ok: true, value: toEvent(r.value) };
+  },
+
+  async getEvent(calendarId, eventId) {
+    const r = await call<GoogleEvent>(
+      `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    );
+    if (!r.ok) return r;
+    return { ok: true, value: toEvent(r.value) };
+  },
+
+  async moveEvent(calendarId, eventId, when) {
+    // PATCH touches only the times: title, kind, colour and description stay.
+    const r = await call<GoogleEvent>(
+      `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      { method: "PATCH", body: JSON.stringify(whenOf(when)) },
+    );
+    if (!r.ok) return r;
+    return { ok: true, value: toEvent(r.value) };
+  },
+
+  async deleteEvent(calendarId, eventId) {
+    const r = await call<Record<string, never>>(
+      `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      { method: "DELETE" },
+    );
+    if (!r.ok) return r;
+    return { ok: true, value: null };
   },
 };

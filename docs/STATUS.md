@@ -24,8 +24,9 @@ is Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 125 is the latest; production AND local verified at it**
-  (125 = `command_actions` accepts attach_note / save_contact, queried 8 Oct).
+- **Migration 126 is the latest; production AND local verified at it**
+  (126 = ledger accepts move_event / delete_event; 125 = attach_note /
+  save_contact; both queried 8 Oct).
   Before it: **124**
   (queried 8 Oct: the `note` channel, the six note columns, the two people
   columns, ledger 124). 124 = spoken notes (channel, kind, addressee, context,
@@ -100,8 +101,17 @@ is Danish (person language).
   real model (4 TEST notes): "G K O K nul et" → bike GKOK01 + its customer;
   "enogtyve nitten syvoghalvfjerds ti" → 21 19 77 10 on the existing contact
   (old → new shown, applied, contact updated, note closed); "we need to
-  invoice" → Dennis; "remind me Monday" → Finn, 12 Oct. Next: slice 4 —
-  calendar move/delete and *act right away*.
+  invoice" → Dennis; "remind me Monday" → Finn, 12 Oct.
+- **Act right away + calendar move/delete — slice 4 built 8 Oct** (migration
+  126 = ledger accepts move_event / delete_event): a switch on the person
+  page; safe kinds apply as the speaker, marked *automatically*. Tested on the
+  REAL *Servicebesøg* calendar with Finn's switch on: book (Thu 15 Oct 10:00)
+  ✓ auto, move (→ Fri 16 Oct 13:00, same entry) ✓ auto, cancel ✗ — found a
+  real entry in the wrong week → **deleting made press-only** (DECISIONS
+  2026-10-08). The test visit was deleted afterwards; the planner had dropped
+  TEST from its title. The real Gladsaxe entry Fri 9 Oct 13:03 (from the 7 Oct
+  meeting) is untouched. **The plan-inbox-notes slices are all built**; the car
+  test on Finn's Android is the one still open.
 - **Calls come with suggested actions** (migration 116, DECISIONS 2026-09-30):
   the import job drafts an offer / repair ticket / visit per read call with a
   request. In production since 30 Sep: the first run planned the 28 Sep Finn

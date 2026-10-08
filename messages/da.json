@@ -3677,7 +3677,11 @@
     "eventSoReady": "Salgsordre klar til levering",
     "eventPaintReceivedIncomplete": "Lakordre hentet med linjer, der skal rettes",
     "capJobs": "Se planlagte job",
-    "capCallsOwn": "Egen indbakke (egne opkald og notater)"
+    "capCallsOwn": "Egen indbakke (egne opkald og notater)",
+    "autoApplyTitle": "Handl med det samme",
+    "autoApplyDesc": "For denne persons indtalte notater.",
+    "autoApplyLabel": "Udfør sikre forslag uden et tryk",
+    "autoApplyHint": "At lægge et notat på en cykel, der er identificeret med sikkerhed, og at oprette eller flytte et besøg i kalenderen. Sletning af en aftale, kontaktoplysninger, tilbud og alt med penge venter altid på en person. Hver enkelt vises på notatet som udført automatisk."
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -4561,7 +4565,9 @@
     "notesEmpty": "Skriv noget først.",
     "notesBadMode": "Ukendt indstilling for knappen.",
     "notesNothingSelected": "Intet notat valgt.",
-    "notesNotAllowed": "Du kan ikke lukke det notat."
+    "notesNotAllowed": "Du kan ikke lukke det notat.",
+    "calendarEntryNotFound": "Den aftale findes ikke længere i kalenderen. {detail}",
+    "calendarCouldNotChange": "Aftalen i kalenderen kunne ikke ændres. {detail}"
   },
   "inbox": {
     "title": "Indbakke",
@@ -4760,7 +4766,14 @@
     "contactNew": "ny kontakt",
     "resultContactCreated": "Kontakt {label} oprettet",
     "resultContactUpdated": "Kontakt {label} opdateret",
-    "resultAttached": "Lagt på {label}"
+    "resultAttached": "Lagt på {label}",
+    "type_move_event": "Flyt aftale",
+    "type_delete_event": "Slet aftale",
+    "resultCalendarMoved": "Flyttet til {when}",
+    "resultCalendarDeleted": "Slettet fra kalenderen: {title}",
+    "appliedAutomatically": "automatisk",
+    "applyDelete": "Slet",
+    "applyMove": "Flyt"
   },
   "inboundChannel": {
     "voicemail": "Telefonbesked",

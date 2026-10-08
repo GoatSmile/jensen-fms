@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { PersonForm } from "../_components/person-form";
 import { PersonPasswordCard } from "../_components/person-password-card";
+import { PersonAutoApplyCard } from "../_components/person-auto-apply-card";
 
 export default async function EditPersonPage({
   params,
@@ -32,7 +33,7 @@ export default async function EditPersonPage({
     supabase
       .from("people")
       .select(
-        "id, full_name, email, phone, preferred_language, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active, is_system, password_hash",
+        "id, full_name, email, phone, preferred_language, engaged_from, engaged_until, notify_email, notify_sms, notes, is_active, is_system, password_hash, assistant_auto_apply",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -99,6 +100,10 @@ export default async function EditPersonPage({
         isSystem={person.is_system}
         hasRole={heldRoleIds.size > 0}
       />
+
+      {person.is_system ? null : (
+        <PersonAutoApplyCard personId={person.id} initial={person.assistant_auto_apply} />
+      )}
 
       <PersonForm
         mode={{ kind: "edit", id: person.id }}

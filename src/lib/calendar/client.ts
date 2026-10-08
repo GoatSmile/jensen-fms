@@ -42,6 +42,7 @@ export type NewEntry = {
   timeZone: string;
 };
 
+/** An adapter answers these — and, since slice 4 of plan-inbox-notes, moves and deletes. */
 export type CalendarAdapter = {
   describe(calendarId: string): Promise<CalendarResult<{ name: string; timeZone: string; canWrite: boolean }>>;
   listEvents(
@@ -49,7 +50,14 @@ export type CalendarAdapter = {
     range: { from: Date; to: Date; newestFirst?: boolean },
   ): Promise<CalendarResult<CalendarEvent[]>>;
   createEvent(calendarId: string, entry: NewEntry): Promise<CalendarResult<CalendarEvent>>;
+  getEvent(calendarId: string, eventId: string): Promise<CalendarResult<CalendarEvent>>;
+  /** Move an entry: a new day and time (null = all day), keeping its kind and text. */
+  moveEvent(calendarId: string, eventId: string, when: EntryWhen): Promise<CalendarResult<CalendarEvent>>;
+  deleteEvent(calendarId: string, eventId: string): Promise<CalendarResult<null>>;
 };
+
+/** When an entry is: Danish wall-clock day and time, or a whole day. */
+export type EntryWhen = { date: string; time: string | null; durationMinutes: number; timeZone: string };
 
 /** Built adapters by registry key — one without the other is a bug, not config. */
 const ADAPTERS: Record<string, CalendarAdapter> = {

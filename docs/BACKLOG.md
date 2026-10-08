@@ -6,14 +6,10 @@ the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
 ## Hardening (do as it bites)
-- **The app cannot move or delete a calendar entry** (`CalendarAdapter` has
-  create + list only). Bites when an SO's delivery date changes — its entry
-  stays on the old day, and the order page still shows it as *in the calendar*
-  — and when TEST entries need removing (today: in Google by hand; the
-  service account's `calendar.events` scope does allow DELETE/PATCH). Fix
-  shape: `updateEvent`/`deleteEvent` on the adapter, then *Move* / *Remove*
-  beside "In the calendar: delivery …" on the SO, re-reading Google's time
-  rather than `calendar_events.starts_at` (a copy at creation).
+- **A sales order's delivery entry has no *Move* / *Remove*.** The doors exist
+  since 8 Oct (`moveCalendarEntry` / `deleteCalendarEntry`, used by notes); the
+  SO page still lacks the buttons beside "In the calendar: delivery …", so a
+  changed delivery date leaves its entry on the old day.
 - **A delivery's calendar title is written in the PRESSER's language**
   (`addSODeliveryToCalendar` uses the session locale: "delivery SO-…" as an
   English user, "levering SO-…" as Dennis). The calendar is shared and

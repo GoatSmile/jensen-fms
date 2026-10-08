@@ -17,7 +17,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { danishTime } from "@/lib/calls/days";
 import { parseExtraction } from "../extraction";
 import { loadInboundSettings } from "../settings";
+import { createTranslator } from "next-intl";
+
+import messagesDa from "../../../../messages/da.json";
 import { runCommandAgent } from "./agent";
+import { autoApplyNote } from "./apply";
 
 export type PlanNoteResult =
   | { ok: true }
@@ -91,6 +95,17 @@ export async function planNote(supabase: SupabaseClient, messageId: string): Pro
     })
     .eq("id", messageId);
   if (error) return { ok: false, reason: "save", detail: error.message };
+
+  // *Act right away*, if the speaker has it (slice 4): the safe suggestions
+  // run now, as the speaker. Background work, so its error texts come from a
+  // translator of their own rather than the request (there may be none).
+  await autoApplyNote(
+    supabase as Parameters<typeof autoApplyNote>[0],
+    messageId,
+    createTranslator({ locale: "da", messages: messagesDa, namespace: "errors" }) as unknown as Parameters<
+      typeof autoApplyNote
+    >[2],
+  );
   return { ok: true };
 }
 

@@ -183,7 +183,18 @@ const NOTE_ACTION_ITEM_SCHEMA = {
   type: "object",
   properties: {
     ...PLAN_ACTION_ITEM_SCHEMA.properties,
-    type: { type: "string", enum: ["attach_note", "save_contact", "draft_event", "draft_offer"] },
+    type: {
+      type: "string",
+      enum: ["attach_note", "save_contact", "draft_event", "move_event", "delete_event", "draft_offer"],
+    },
+    eventId: {
+      type: ["string", "null"],
+      description: "move_event / delete_event: the entry from find_calendar_entry (exactly one match), else do not propose it.",
+    },
+    eventLabel: {
+      type: ["string", "null"],
+      description: "move_event / delete_event: the entry as found — title and its current day and time.",
+    },
     bikeId: { type: ["string", "null"], description: "attach_note: the bike from find_bike (exactly one match), else null." },
     bikeLabel: { type: ["string", "null"], description: "attach_note: the bike's label as find_bike returned it." },
     contactId: { type: ["string", "null"], description: "attach_note / save_contact: the person from search_contact (exactly one match), else null." },
@@ -224,6 +235,9 @@ Suggest only these, and only when the note supports them:
 - attach_note — the note is ABOUT a specific bike, customer or contact (a repair done, time spent, a complaint). Put it on that record. Resolve a bike with find_bike (recognition codes look like GKOK01; a transcript spells them out: "G K O K nul et"), a customer with search_customer, a person with search_contact. Also use the CONTEXT given below the note: the page the speaker was on, a call they just had, a visit in the calendar now — "this bike" / "this customer" means that one when the context names exactly one.
 - save_contact — a person's NEW or CHANGED phone number or email ("Christina gave me her new number…"). Look the person up with search_contact (within the customer when known). If exactly one matches, set contactId; otherwise give their name and the customer. Write the number in digits.
 - draft_event — a VISIT to book ("visit them again next Monday"): eventKind "visit", title = customer + errand, never a person's name or a phone number.
+- move_event — an appointment ALREADY in the calendar moves ("move Thursday's visit to Gladsaxe to Monday at 10"): find it with find_calendar_entry (words from its title, and its current day if said); date/time = the NEW ones (a time only if said).
+- delete_event — an appointment already in the calendar is cancelled ("cancel the Herlev visit on Friday"): find it with find_calendar_entry.
+  Propose move_event / delete_event ONLY when find_calendar_entry returned exactly one entry; otherwise say in notes which entries were possible.
 - draft_offer — only if the note says a customer wants to buy bikes.
 
 Everything else is a TO-DO and needs no action: "remind me to…", "we need to invoice…", "call X back". For those, set forPersonId when it is for SOMEONE ELSE (from the colleagues list), and dueDate when a day was said. A pure fact with no record to put it on also needs no action.

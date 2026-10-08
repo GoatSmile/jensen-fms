@@ -47,10 +47,40 @@ export const ACTION_CAPABILITIES: Record<CommandAction["type"], readonly string[
   // one's inbox; changing a customer's contact details is customer data.
   attach_note: ["inbox", "calls_own"],
   save_contact: ["customers"],
+  // Moving or deleting an appointment is calendar work, like making one.
+  move_event: ["maintenance", "work"],
+  delete_event: ["maintenance", "work"],
 };
 
 export function mayApply(type: CommandAction["type"], caps: readonly string[]): boolean {
   return ACTION_CAPABILITIES[type].some((c) => caps.includes(c));
+}
+
+/**
+ * *Act right away* (plan-inbox-notes.md, slice 4): which suggestions on a NOTE
+ * may run with no press, for a person who has it switched on — and only when
+ * nothing is uncertain. The owner's list (2026-10-08): putting a note on a
+ * bike identified with certainty, and calendar changes. A resolver filled the
+ * id only on exactly one match, so an id here IS the certainty. Contact
+ * details, money and anything else always wait for a person. Re-checked at
+ * apply time; a kind not listed here is never automatic.
+ */
+export function autoApplySafe(action: CommandAction): boolean {
+  switch (action.type) {
+    case "attach_note":
+      return Boolean(action.bikeId);
+    case "draft_event":
+      return action.kind === "visit" && Boolean(action.organizationId) && Boolean(action.date);
+    case "move_event":
+      return Boolean(action.eventId) && Boolean(action.date);
+    // NOT delete_event, although the owner listed it as safe: on 8 Oct the
+    // test note "cancel the TEST visit on Friday" resolved Friday to the
+    // wrong week and found exactly one entry there — a real one. A wrong move
+    // can be moved back; a wrong deletion is gone. Deleting waits for a
+    // person, who sees which entry on the card.
+    default:
+      return false;
+  }
 }
 
 export type AssistantResult =

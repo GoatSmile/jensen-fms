@@ -718,7 +718,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   colour, and an event made in Google reads as *other*. **Everything that puts
   something in the calendar goes through `createCalendarEntry`**
   (`src/lib/calendar/entries.ts`) — a new source supplies the details, never its
-  own writer. An entry reaches Google only when a PERSON presses for it: a
+  own writer — and an entry is MOVED or DELETED only through
+  `moveCalendarEntry` / `deleteCalendarEntry` (same file; they keep the link
+  row in step, and a move keeps the entry's length). An entry reaches Google only when a PERSON presses for it: a
   `draft_event` suggestion (from a call or a dictated command; a missing time
   takes the kind's default, 09:00 for an hour), or *Add delivery to calendar*
   on a confirmed sales order. **A delivery is ONE per order**: a call drafts it
@@ -783,7 +785,18 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   to a bike / customer / contact — no copy — so it shows in that record's
   *Calls and notes*, `RecordHistory`), `save_contact` (old → new; needs
   `customers` to apply), a visit, an offer. **A note closes itself** when its
-  required suggestions are applied. A new action kind also needs the
+  required suggestions are applied. Notes can also MOVE or DELETE an entry
+  already in the calendar (`find_calendar_entry` resolver; `move_event` /
+  `delete_event`). **Applying is ONE core, `applyPlanAction`
+  (`src/lib/inbound/command/apply.ts`, server-only, NOT a server action — it
+  takes who is acting as an argument)**; the press is `applyCommandAction`,
+  which checks the session first. **Act right away** (`people.
+  assistant_auto_apply`, a switch on the person page, off by default) applies
+  a note's safe kinds as its speaker, with the speaker's rights, marked
+  `auto_applied`: `autoApplySafe` in `src/lib/assistant/agent.ts` — a note on
+  a bike identified with certainty, booking a visit with customer and date,
+  moving an entry. **Deleting is never automatic** (a test resolved "Friday"
+  to the wrong week and found a real entry). A new action kind also needs the
   `command_actions_action_type_check` list (migration 125 — found the hard
   way). Design and later slices: `docs/plan-inbox-notes.md`.
 - **Every Anthropic call goes through ONE door, and sends only what every

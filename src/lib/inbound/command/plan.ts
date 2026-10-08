@@ -29,7 +29,9 @@ export type CommandActionType =
   | "draft_event"
   | "draft_purchase_order"
   | "attach_note"
-  | "save_contact";
+  | "save_contact"
+  | "move_event"
+  | "delete_event";
 
 export type DraftCustomerAction = {
   id: string;
@@ -180,7 +182,33 @@ export type SaveContactAction = {
   email: string | null;
 };
 
+/**
+ * MOVE an entry already in the calendar (slice 4) — found with
+ * find_calendar_entry, never guessed. Only its time changes; its title, kind
+ * and link stay. A missing time keeps the entry's own; length likewise.
+ */
+export type MoveEventAction = {
+  id: string;
+  type: "move_event";
+  eventId: string;
+  /** The entry as found: "Gladsaxe Hjemmepleje — eftersyn, tor 9 okt 10:00". */
+  eventLabel: string | null;
+  date: string;
+  time: string | null;
+  durationMinutes: number | null;
+};
+
+/** DELETE an entry already in the calendar (slice 4). */
+export type DeleteEventAction = {
+  id: string;
+  type: "delete_event";
+  eventId: string;
+  eventLabel: string | null;
+};
+
 export type CommandAction =
+  | MoveEventAction
+  | DeleteEventAction
   | AttachNoteAction
   | SaveContactAction
   | DraftCustomerAction
@@ -344,6 +372,27 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
       }
       if (items.length === 0) return null; // never invent parts
       return { id, type: "draft_purchase_order", items, note: str(o.note) };
+    }
+    case "move_event": {
+      const eventId = str(o.eventId);
+      const date = str(o.date);
+      if (!eventId || !date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null; // which entry, and to when
+      const time = str(o.time);
+      const minutes = num(o.durationMinutes);
+      return {
+        id,
+        type: "move_event",
+        eventId,
+        eventLabel: str(o.eventLabel) ?? str(o.title),
+        date,
+        time: time && /^\d{1,2}:\d{2}$/.test(time) ? time.padStart(5, "0") : null,
+        durationMinutes: minutes && minutes >= 15 && minutes <= 600 ? Math.round(minutes) : null,
+      };
+    }
+    case "delete_event": {
+      const eventId = str(o.eventId);
+      if (!eventId) return null;
+      return { id, type: "delete_event", eventId, eventLabel: str(o.eventLabel) ?? str(o.title) };
     }
     case "attach_note": {
       const bikeId = str(o.bikeId);
