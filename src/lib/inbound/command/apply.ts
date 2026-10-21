@@ -11,6 +11,7 @@
 import "server-only";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type { getTranslations } from "next-intl/server";
 
 import { autoApplySafe, mayApply } from "@/lib/assistant/agent";
@@ -23,6 +24,7 @@ import {
   insertDraftSalesOrder,
 } from "@/lib/commercial/draft-writers";
 import { createDraftPOsForDemand } from "@/lib/purchasing/draft-pos";
+import { insertNote } from "@/lib/notes/save";
 import { loadPersonAccess } from "@/lib/people/queries";
 import { appOrigin } from "@/lib/qr";
 import { inheritTestTitle } from "@/lib/test-marker";
@@ -187,6 +189,25 @@ async function performAction(
   actor: Actor,
 ): Promise<PerformResult> {
   switch (action.type) {
+    case "save_note": {
+      // The asker's own note, said to the secretary; read for suggestions
+      // right after, like a spoken one (the five-minute pass is the backstop).
+      if (!actor.personId) return { ok: false, error: t("notesNeedPerson") };
+      const r = await insertNote(supabase, {
+        personId: actor.personId,
+        context: null,
+        body_text: action.text,
+        status: "understood",
+        source: "assistant",
+      });
+      if (!r.ok) return { ok: false, error: t("couldNotSave", { detail: r.error }) };
+      after(async () => {
+        const { planNote } = await import("./plan-notes");
+        await planNote(supabase, r.id);
+      });
+      safeRevalidate("/inbox");
+      return { ok: true, entityTable: "inbound_messages", entityId: r.id, payload: { note: true } };
+    }
     case "draft_customer": {
       const segmentId = action.segmentId ?? filled.segment;
       if (!segmentId) return { ok: false, error: t("commandSlotsUnfilled") };
@@ -507,36 +528,62 @@ export async function autoApplyNote(
   messageId: string,
   t: Translator,
 ): Promise<{ applied: number }> {
-  const { data: note } = await supabase
+  const r = await autoApplyMessage(supabase, messageId, t);
+  return { applied: r.filter((x) => x.ok).length };
+}
+
+/**
+ * The same for a request to the SECRETARY (kind='command', owner 2026-10-21:
+ * "when Finn says move such-and-such, you execute and tell him what you
+ * did") — as its ASKER, with the asker's rights, under the same switch and the
+ * same safe list. Returns each attempt, so a failure can be said out loud.
+ */
+export async function autoApplyMessage(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+  t: Translator,
+): Promise<{ type: CommandAction["type"]; ok: boolean; error?: string }[]> {
+  const { data: msg } = await supabase
     .from("inbound_messages")
-    .select("kind, command_plan, handled_by_person_id")
+    .select("kind, command_plan, handled_by_person_id, commanded_by")
     .eq("id", messageId)
     .maybeSingle();
-  if (!note || note.kind !== "note" || !note.handled_by_person_id) return { applied: 0 };
-  const { data: speaker } = await supabase
-    .from("people")
-    .select("assistant_auto_apply, is_active")
-    .eq("id", note.handled_by_person_id)
-    .maybeSingle();
-  if (!speaker?.assistant_auto_apply || !speaker.is_active) return { applied: 0 };
-  const access = await loadPersonAccess(supabase, note.handled_by_person_id);
-  if (!access) return { applied: 0 };
+  const personId =
+    msg?.kind === "note" ? msg.handled_by_person_id : msg?.kind === "command" ? msg.commanded_by : null;
+  if (!msg || !personId) return [];
+  if (!(await autoApplyOn(supabase, personId))) return [];
+  const access = await loadPersonAccess(supabase, personId);
+  if (!access) return [];
 
-  let applied = 0;
-  for (const action of parseCommandPlan(note.command_plan).actions) {
+  const results: { type: CommandAction["type"]; ok: boolean; error?: string }[] = [];
+  for (const action of parseCommandPlan(msg.command_plan).actions) {
     if (!autoApplySafe(action)) continue;
     try {
       const r = await applyPlanAction(supabase, messageId, action.id, {}, {
-        personId: note.handled_by_person_id,
+        personId,
         caps: access.caps,
         auto: true,
       }, t);
-      if (r.ok) applied += 1;
+      results.push(r.ok ? { type: action.type, ok: true } : { type: action.type, ok: false, error: r.error });
     } catch (e) {
       console.error(`[auto-apply] ${messageId} ${action.id}:`, e);
+      results.push({ type: action.type, ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { applied };
+  return results;
+}
+
+/** Has this person *act right away* switched on (and are they still active)? */
+export async function autoApplyOn(
+  supabase: ReturnType<typeof createServiceClient>,
+  personId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("people")
+    .select("assistant_auto_apply, is_active")
+    .eq("id", personId)
+    .maybeSingle();
+  return Boolean(data?.assistant_auto_apply && data.is_active);
 }
 
 /** Close a note whose every required suggestion is applied. */

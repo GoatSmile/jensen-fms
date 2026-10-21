@@ -8,8 +8,8 @@ import { revalidateInbound } from "@/lib/calls/revalidate";
 import { INBOUND_BUCKET, isNotePath, noteObjectPath } from "@/lib/dictation/storage";
 import { planNote } from "@/lib/inbound/command/plan-notes";
 import { transcribeNote } from "@/lib/inbound/pipeline";
-import { sanitizeNoteContext } from "@/lib/notes/context";
 import { ASSISTANT_MODES, type AssistantMode } from "@/lib/notes/mode";
+import { insertNote } from "@/lib/notes/save";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/lib/types/database";
 
@@ -44,7 +44,7 @@ export async function saveSpokenNote(path: string, context: unknown): Promise<Re
   if (!personId) return { ok: false, error: t("notesNeedPerson") };
   if (!isNotePath(path)) return { ok: false, error: t("notesBadPath") };
 
-  const id = await insertNote({
+  const id = await insertNote(createServiceClient(), {
     personId,
     context,
     media_path: path,
@@ -72,7 +72,7 @@ export async function saveTypedNote(text: string, context: unknown): Promise<Res
   const body = text.trim();
   if (!body) return { ok: false, error: t("notesEmpty") };
 
-  const id = await insertNote({ personId, context, body_text: body.slice(0, 5000), status: "understood" });
+  const id = await insertNote(createServiceClient(), { personId, context, body_text: body.slice(0, 5000), status: "understood" });
   if (!id.ok) return { ok: false, error: t("couldNotSave", { detail: id.error }) };
   after(async () => {
     await planNote(createServiceClient(), id.id);
@@ -144,33 +144,4 @@ export async function setAssistantMode(mode: string): Promise<{ ok: true } | { o
   // The button already shows the pick (it holds the mode itself); nothing on
   // the page changes, so there is nothing to revalidate.
   return { ok: true };
-}
-
-async function insertNote(fields: {
-  personId: string;
-  context: unknown;
-  media_path?: string;
-  media_mime_type?: string;
-  body_text?: string;
-  status: "received" | "understood";
-}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const { data, error } = await createServiceClient()
-    .from("inbound_messages")
-    .insert({
-      channel: "note",
-      kind: "note",
-      status: fields.status,
-      received_at: new Date().toISOString(),
-      media_path: fields.media_path ?? null,
-      media_mime_type: fields.media_mime_type ?? null,
-      body_text: fields.body_text ?? null,
-      handled_by_person_id: fields.personId,
-      commanded_by: fields.personId,
-      note_context: sanitizeNoteContext(fields.context),
-      channel_meta: { source: "in_app_note" },
-    })
-    .select("id")
-    .single();
-  if (error || !data) return { ok: false, error: error?.message ?? "no row" };
-  return { ok: true, id: data.id };
 }

@@ -31,7 +31,8 @@ export type CommandActionType =
   | "attach_note"
   | "save_contact"
   | "move_event"
-  | "delete_event";
+  | "delete_event"
+  | "save_note";
 
 export type DraftCustomerAction = {
   id: string;
@@ -206,7 +207,19 @@ export type DeleteEventAction = {
   eventLabel: string | null;
 };
 
+/**
+ * SAVE A NOTE (owner, 2026-10-21): the button is the secretary, and a note is
+ * one thing it does when asked ("make a note: …"). The words become a note in
+ * the asker's Inbox — read by the note planner like a spoken one.
+ */
+export type SaveNoteAction = {
+  id: string;
+  type: "save_note";
+  text: string;
+};
+
 export type CommandAction =
+  | SaveNoteAction
   | MoveEventAction
   | DeleteEventAction
   | AttachNoteAction
@@ -393,6 +406,11 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
       const eventId = str(o.eventId);
       if (!eventId) return null;
       return { id, type: "delete_event", eventId, eventLabel: str(o.eventLabel) ?? str(o.title) };
+    }
+    case "save_note": {
+      const text = str(o.noteText) ?? str(o.text) ?? str(o.note);
+      if (!text) return null; // nothing to keep
+      return { id, type: "save_note", text: text.slice(0, 5000) };
     }
     case "attach_note": {
       const bikeId = str(o.bikeId);

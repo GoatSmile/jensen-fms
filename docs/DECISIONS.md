@@ -3862,3 +3862,32 @@ Owner and IT admin now, and per-area lookups for everyone else."
   app.** Verified as Finn on the local copy against the real Servicebesøg
   calendar with a TEST entry: book → move → "when is my next appointment?" →
   cancel, each change one tap.
+
+## 2026-10-21 — The button is the secretary: it hears, does, and speaks
+
+Owner: "an option where I dictate and hear back answers … when Finn says
+'move such-and-such calendar event', you execute and tell him what you did";
+"spoken in Danish and English depending on the user's language"; "the note
+button is no longer a note-taking functionality — it's an engage-the-secretary
+powerful functionality. If we want a note, I will tell it"; then "keep [the
+note modes] as an option, and we can remove it later."
+
+- **`ask_voice` is the default and everyone on a note mode moved to it**
+  (migration 130); the note modes stay selectable.
+- **It does, then says.** For a person with *act right away* on, the safe kinds
+  (book a visit with a known customer and date, move an entry found exactly,
+  save a note) are applied as the asker with the asker's rights; the model is
+  told which, so it words them as done; a failure is appended and spoken.
+  Deleting still waits for a tap (the 2026-10-08 reason stands).
+- **A note is an action**, `save_note`, written by the one note writer
+  (`src/lib/notes/save.ts`) and read by the note planner like a spoken one.
+- **Spoken in the person's language** through ElevenLabs (the transcription
+  key, given the text-to-speech permission today), falling back to the
+  browser's voice so it is never mute. The answer TEXT goes to ElevenLabs'
+  global host — the same test-period exception as transcription.
+- **The assistant moves to Sonnet 5.5.** Haiku 4.5 said "er slettet" for a
+  deletion that was only proposed; Sonnet worded it as a proposal. Per the
+  standing rule, a misbehaving Haiku is switched, not worked around.
+- **Found on the way:** the pause detector seeds its noise floor from the first
+  buffer, so speech that starts at the beep was learned as noise and dropped
+  as "nothing heard" (peak 0.19). Loud sound now counts as speech regardless.

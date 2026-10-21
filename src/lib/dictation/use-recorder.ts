@@ -48,6 +48,14 @@ export const NOTE_SILENCE_STOP: SilenceStop = { afterMs: 2800, noSpeechMs: 8000 
  */
 const SPEECH_MIN_RMS = 0.01;
 const SPEECH_OVER_FLOOR = 3;
+/**
+ * Loud enough to be a voice whatever the floor says. The floor is seeded by
+ * the FIRST buffer, so someone who starts talking right after the beep teaches
+ * it their own voice as "the room" — and steady speech never rises 3× above
+ * itself. Found 2026-10-21: two drops reported "nothing heard" with a peak of
+ * 0.19 against a floor that had learned the speech.
+ */
+const SPEECH_LOUD_RMS = 0.06;
 
 /** What the detector measured on a recording it dropped as "nothing heard". */
 export type NoSpeechLevels = { peakRms: number; floorRms: number; minRms: number; sampleRate: number };
@@ -258,7 +266,7 @@ export function useRecorder({
       // The noise floor creeps up slowly, so a quiet stretch re-learns the room.
       floor = Math.min(floor * 1.002, rms);
       const now = Date.now();
-      if (rms > Math.max(SPEECH_MIN_RMS, floor * SPEECH_OVER_FLOOR)) {
+      if (rms > SPEECH_LOUD_RMS || rms > Math.max(SPEECH_MIN_RMS, floor * SPEECH_OVER_FLOOR)) {
         heardSpeech = true;
         lastSpeech = now;
       }

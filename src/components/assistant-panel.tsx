@@ -29,6 +29,10 @@ type Props = {
   onModeChange: (mode: AssistantMode) => void;
   /** A spoken question (ask_voice) to ask as soon as it arrives; a new key is a new question. */
   question?: { text: string; key: number } | null;
+  /** Hears the reply to a SPOKEN question, to say it aloud. */
+  onSpokenAnswer?: (text: string) => void;
+  /** The secretary's button stays on screen below the panel (phone). */
+  aboveButton?: boolean;
 };
 
 /**
@@ -43,7 +47,7 @@ type Props = {
  * word is fixed first. A follow-up within the panel threads the previous
  * request (the assistant remembers one exchange, ≤10 min).
  */
-export function AssistantPanel({ onClose, canScan, mode, onModeChange, question }: Props) {
+export function AssistantPanel({ onClose, canScan, mode, onModeChange, question, onSpokenAnswer, aboveButton }: Props) {
   const t = useTranslations("assistant");
   const locale = useLocale();
   const router = useRouter();
@@ -81,17 +85,23 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question 
     };
   }, [pending]);
 
-  async function refresh(id: string) {
-    setView(await loadAssistantView(id));
+  async function refresh(id: string): Promise<AssistantView> {
+    const v = await loadAssistantView(id);
+    setView(v);
+    return v;
   }
 
   function send(spoken?: string) {
     const body = (spoken ?? text).trim();
     if (!body || pending) return;
     setError(null);
+    const speak = spoken !== undefined ? onSpokenAnswer : undefined;
     start(async () => {
       const r = await createCommandFromText(body, requestId);
-      if (!r.ok) return setError(r.error);
+      if (!r.ok) {
+        speak?.(r.error);
+        return setError(r.error);
+      }
       setText("");
       // Asked to SEE one record → straight there.
       if (r.openHref) {
@@ -101,7 +111,9 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question 
       }
       setAsked(body);
       setRequestId(r.id);
-      await refresh(r.id);
+      const v = await refresh(r.id);
+      // Spoken in, spoken out: the reply (with what was done) is read aloud.
+      if (speak) speak(v.ok && v.status !== "failed" && v.answer?.text ? v.answer.text : t("failed"));
     });
   }
 
@@ -158,7 +170,8 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question 
       className={cn(
         "bg-popover text-popover-foreground shadow-popover fixed z-50 flex flex-col rounded-2xl",
         // Phone: across the width, above the corner. Desktop: a column over the button.
-        "inset-x-2 bottom-2 max-h-[85dvh] md:inset-x-auto md:right-4 md:bottom-20 md:w-[420px] md:max-h-[min(680px,80vh)]",
+        "inset-x-2 max-h-[85dvh] md:inset-x-auto md:right-4 md:bottom-20 md:w-[420px] md:max-h-[min(680px,80vh)]",
+        aboveButton ? "bottom-20 max-h-[75dvh]" : "bottom-2",
       )}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();

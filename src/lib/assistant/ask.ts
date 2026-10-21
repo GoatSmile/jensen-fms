@@ -37,6 +37,8 @@ export async function answerRequest(
     personId: string | null;
     /** The person's previous request, for "and the one after?". */
     priorId?: string | null;
+    /** Safe drafts will be carried out at once — the reply words them as done. */
+    autoApply?: boolean;
   },
 ): Promise<AskOutcome> {
   let prior: { request: string; answer: string } | null = null;
@@ -61,6 +63,7 @@ export async function answerRequest(
     canSeeCosts: opts.canSeeCosts,
     language: opts.language,
     personId: opts.personId,
+    autoApply: opts.autoApply,
     prior,
   });
   if (!r.ok) {

@@ -13,7 +13,9 @@ import { planCall, type PlanCallResult } from "@/lib/inbound/command/plan-calls"
 import { planNote } from "@/lib/inbound/command/plan-notes";
 import { canActOnInbound } from "@/lib/calls/access";
 import { revalidateInbound } from "@/lib/calls/revalidate";
-import { applyPlanAction } from "@/lib/inbound/command/apply";
+import { applyPlanAction, autoApplyMessage, autoApplyOn } from "@/lib/inbound/command/apply";
+import { parseAssistantAnswer } from "@/lib/assistant/answer";
+import type { Json } from "@/lib/types/database";
 
 export type CommandResult =
   | { ok: true; id: string; /** Go straight here — the answer was one record and nothing else. */ openHref?: string | null }
@@ -104,6 +106,7 @@ export async function createCommandFromText(text: string, priorId?: string | nul
     };
   }
 
+  const autoApply = personId !== null && (await autoApplyOn(supabase, personId));
   const r = await answerRequest(supabase, inserted.id, {
     request: body,
     caps,
@@ -111,7 +114,30 @@ export async function createCommandFromText(text: string, priorId?: string | nul
     language: (await getLocale()) === "da" ? "da" : "en",
     personId,
     priorId,
+    autoApply,
   });
+  // The secretary carries out what is safe at once (owner, 2026-10-21) and the
+  // reply was worded as done — so a failure must be said, not left unsaid.
+  if (r.ok && autoApply && r.actionCount > 0) {
+    const results = await autoApplyMessage(supabase, inserted.id, t);
+    const failed = results.filter((x) => !x.ok);
+    const done = results.filter((x) => x.ok);
+    const answer = parseAssistantAnswer(r.answer);
+    // Something was done but the model said nothing: say what was done.
+    const silent = answer !== null && !answer.text && done.length > 0;
+    if (answer && (failed.length > 0 || silent)) {
+      const tA = await getTranslations("assistant");
+      const tC = await getTranslations("inboxCommand");
+      const lines = [
+        answer.text || tA("autoDone", { what: done.map((d) => tC(d.type === "draft_event" ? "type_draft_event_visit" : `type_${d.type}`)).join(", ") }),
+        ...failed.map((f) => tA("autoFailed", { detail: f.error ?? "" })),
+      ];
+      await supabase
+        .from("inbound_messages")
+        .update({ assistant_answer: { ...answer, text: lines.join("\n").trim() } as unknown as Json })
+        .eq("id", inserted.id);
+    }
+  }
   revalidateInbound(inserted.id);
   // Asked to SEE one record, nothing to confirm → straight there (owner,
   // 2026-10-01). A question about it shows the answer, with an Open button.

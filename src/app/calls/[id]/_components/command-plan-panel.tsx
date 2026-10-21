@@ -450,6 +450,10 @@ function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
     } else {
       href = "/calendar";
     }
+  } else if (table === "inbound_messages" && p.note) {
+    // A note the secretary saved: it waits in the Inbox, opens on its own page.
+    text = t("resultNote");
+    href = id ? `/calls/${id}` : "/inbox";
   } else if (table === "contacts") {
     // A saved contact: shown on its customer's page.
     text = t(p.created ? "resultContactCreated" : "resultContactUpdated", { label: str(p.number) ?? "" });
@@ -509,6 +513,9 @@ function ActionSummary({
   }
   if (action.type === "delete_event") {
     return <p className="text-sm font-medium">{action.eventLabel ?? "—"}</p>;
+  }
+  if (action.type === "save_note") {
+    return <p className="text-sm whitespace-pre-wrap">{action.text}</p>;
   }
   if (action.type === "attach_note") {
     return (

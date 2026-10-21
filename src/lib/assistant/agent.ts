@@ -51,6 +51,8 @@ export const ACTION_CAPABILITIES: Record<CommandAction["type"], readonly string[
   // Moving or deleting an appointment is calendar work, like making one.
   move_event: ["maintenance", "work"],
   delete_event: ["maintenance", "work"],
+  // A note said to the secretary lands in the asker's own Inbox.
+  save_note: ["inbox", "calls_own"],
 };
 
 export function mayApply(type: CommandAction["type"], caps: readonly string[]): boolean {
@@ -74,6 +76,9 @@ export function autoApplySafe(action: CommandAction): boolean {
       return action.kind === "visit" && Boolean(action.organizationId) && Boolean(action.date);
     case "move_event":
       return Boolean(action.eventId) && Boolean(action.date);
+    // The asker's own note, which they asked for in words.
+    case "save_note":
+      return true;
     // NOT delete_event, although the owner listed it as safe: on 8 Oct the
     // test note "cancel the TEST visit on Friday" resolved Friday to the
     // wrong week and found exactly one entry there — a real one. A wrong move
@@ -83,6 +88,13 @@ export function autoApplySafe(action: CommandAction): boolean {
       return false;
   }
 }
+
+/** How the prompt names each kind `autoApplySafe` carries out, for a person with it on. */
+const AUTO_APPLY_WORDS: { type: CommandAction["type"]; words: string }[] = [
+  { type: "draft_event", words: "booking a visit with a known customer and a date" },
+  { type: "move_event", words: "moving an appointment found exactly" },
+  { type: "save_note", words: "saving a note" },
+];
 
 export type AssistantResult =
   | { ok: true; answer: AssistantAnswer; plan: CommandPlan }
@@ -97,7 +109,14 @@ const ASSISTANT_ACTION_ITEM_SCHEMA = {
   ...PLAN_ACTION_ITEM_SCHEMA,
   properties: {
     ...PLAN_ACTION_ITEM_SCHEMA.properties,
-    type: { type: "string", enum: [...PLAN_ACTION_ITEM_SCHEMA.properties.type.enum, "move_event", "delete_event"] },
+    type: {
+      type: "string",
+      enum: [...PLAN_ACTION_ITEM_SCHEMA.properties.type.enum, "move_event", "delete_event", "save_note"],
+    },
+    noteText: {
+      type: ["string", "null"],
+      description: "save_note: what to keep, in the person's own words, cleaned of 'make a note' itself.",
+    },
     eventId: {
       type: ["string", "null"],
       description: "move_event / delete_event: the entry from find_calendar_entry (exactly one match), else do not propose it.",
@@ -178,7 +197,13 @@ function openableKinds(caps: readonly string[]): TargetKind[] {
   return TARGET_KINDS.filter((k) => routeAllows(targetHref({ kind: k, id: "x" }), caps));
 }
 
-function systemPrompt(opts: { language: "da" | "en"; drafts: string[]; openable: TargetKind[]; now: string }): string {
+function systemPrompt(opts: {
+  language: "da" | "en";
+  drafts: string[];
+  openable: TargetKind[];
+  now: string;
+  autoApply: string[];
+}): string {
   return `You are the assistant inside Jensen FMS, the system of a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). A staff member speaks or types to you — like to a secretary. You can ANSWER questions, OPEN a record for them, and DRAFT actions for them to confirm. You never change anything yourself.
 
 Now: ${opts.now} (Copenhagen).
@@ -195,7 +220,8 @@ How to work:
    - Never put a phone number or a person's name in a calendar title.
    - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
    - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
-   - Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").
+   - A NOTE only when they ask for one ("make a note", "note that", "remember that", "noter", "skriv ned"): save_note with the words to keep. A question or an instruction is never a note.
+   - ${opts.autoApply.length ? `For THIS person these are carried out AT ONCE when you propose them, with no tap: ${opts.autoApply.join("; ")}. Word those as DONE, in past tense ("Moved the Gladsaxe visit to Monday 13:00"). Everything else waits for a tap — word it as a proposal ("Tap Delete to cancel it").` : `Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").`}
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
 5. Only use ids your tools returned in this conversation. If a tool says you are not allowed, tell the person plainly.
    This person can open pages for: ${opts.openable.join(", ")}. For any other kind, do not set \`open\` — say plainly that you can't open it for them (you may still say what you found).
@@ -226,6 +252,8 @@ export async function runAssistant(
     language: "da" | "en";
     /** Who is asking — scopes the inbox. */
     personId: string | null;
+    /** The asker has *act right away* on: safe drafts will be carried out at once. */
+    autoApply?: boolean;
     /** One earlier exchange (≤10 min), so "and the one after?" makes sense. */
     prior?: { request: string; answer: string } | null;
   },
@@ -254,7 +282,13 @@ export async function runAssistant(
   messages.push({ role: "user", content: body });
 
   const openable = openableKinds(opts.caps);
-  const system = systemPrompt({ language: opts.language, drafts, openable, now: danishNow() });
+  const system = systemPrompt({
+    language: opts.language,
+    drafts,
+    openable,
+    now: danishNow(),
+    autoApply: opts.autoApply ? AUTO_APPLY_WORDS.filter((w) => drafts.includes(w.type)).map((w) => w.words) : [],
+  });
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const posted = await postMessages({ model: opts.model, max_tokens: MAX_TOKENS, system, tools, messages });
@@ -313,11 +347,11 @@ function finish(raw: unknown, ctx: ToolContext, caps: readonly string[], openabl
     go: open !== null && parsed.go,
     choices: parsed.choices.filter(known),
   };
-  const plan = parseCommandPlan({
-    summary: "",
-    notes: [],
-    actions: ((raw as { actions?: unknown[] })?.actions ?? []),
-  });
+  // A model that puts ONE action's fields at the top of `respond` (Haiku did,
+  // for a note, 2026-10-21) still means that action.
+  const r = (raw ?? {}) as { actions?: unknown[]; type?: unknown };
+  const actions = Array.isArray(r.actions) && r.actions.length ? r.actions : typeof r.type === "string" ? [r] : [];
+  const plan = parseCommandPlan({ summary: "", notes: [], actions });
   plan.actions = plan.actions.filter((a) => mayApply(a.type, caps));
   return { ok: true, answer, plan };
 }

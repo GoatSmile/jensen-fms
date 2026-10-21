@@ -7,46 +7,47 @@ import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
 import { mintNoteUpload, reportNoteFailure, saveSpokenNote, type NoteFailureStage } from "@/app/_actions/notes";
+import { transcribeRecording } from "@/lib/dictation/transcribe";
 import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
 import { contextFromPath } from "@/lib/notes/context";
-import { transcribeRecording } from "@/lib/dictation/transcribe";
 import { isNoteMode, isVoiceMode, type AssistantMode } from "@/lib/notes/mode";
+import { useSpeaker } from "@/lib/speech/use-speaker";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
 
 /** Holding the button this long opens the panel, whatever the mode. */
 const LONG_PRESS_MS = 500;
-/** How long "Saved" stays up. */
+/** How long "saved" / "nothing heard" stays up. */
 const TOAST_MS = 4000;
 
 type Toast =
+  // What was said to the secretary, on its way to text — or failed on the way.
+  | { kind: "hearing" }
+  | { kind: "unheard"; blob: Blob }
+  | { kind: "no_speech" }
+  // A spoken NOTE (note modes): saving, saved, or failed with the audio kept.
   | { kind: "saving" }
   | { kind: "saved"; id: string }
-  | { kind: "failed"; blob: Blob }
-  | { kind: "no_speech" }
-  // A spoken QUESTION (ask_voice) on its way to text, or failed on the way.
-  | { kind: "hearing" }
-  | { kind: "unheard"; blob: Blob };
+  | { kind: "failed"; blob: Blob };
 
 /**
- * The ONE floating button (owner, 2026-10-01: "all one button, and if
- * somebody wants to use the camera, they can do it") — bottom right on every
- * screen, phone and desktop alike. ⌘K / Ctrl+K opens the panel from the
- * keyboard, and so does holding the button, in every mode.
+ * The ONE floating button (owner, 2026-10-01: "all one button") — bottom
+ * right on every screen, phone and desktop alike. ⌘K / Ctrl+K opens the panel
+ * from the keyboard, and so does holding the button, in every mode.
  *
- * What a PRESS does is the person's choice (`people.assistant_mode`,
- * plan-inbox-notes.md): open the panel (`ask`), or record a spoken NOTE —
- * pressed again to save (`note_toggle`) or saved by itself on a pause
- * (`note_vad`). A note is saved before it is transcribed, with a beep and a
- * buzz at start and save, so it works without looking at the screen: in the
- * car that is the whole point. In note modes the icon is a microphone — the
- * panel's own Dictate mic is not on screen while it records.
- *
- * `ask_voice` (owner, 2026-10-21: "like a secretary") records a QUESTION the
- * same way, transcribes it, and opens the panel already asking it — what was
- * heard stands above the answer, so a misheard word is seen, and anything the
- * assistant drafts still waits for a tap.
+ * It is THE SECRETARY (owner, 2026-10-21: "no longer a note-taking
+ * functionality — an engage-the-secretary powerful functionality"). In
+ * `ask_voice` a press records a question or an instruction; a pause (or a
+ * second press) ends it; it is transcribed and asked at once, the panel opens
+ * on the answer with what was heard above it, and the answer is SPOKEN in the
+ * person's language. Safe things it was asked to do are carried out for a
+ * person with *act right away* on (server side), and the reply says what was
+ * done. A note is one of those things — when asked for. While the panel is
+ * open the button stays pressable, so a follow-up is one more press.
+ * `ask` keeps the press for opening the panel to type; the note modes
+ * (`note_toggle`, `note_vad`) record a spoken NOTE instead, saved before it is
+ * transcribed — options for now, no longer the default.
  */
 export function AssistantButton({
   allowedCaps,
@@ -68,10 +69,12 @@ export function AssistantButton({
   const [toast, setToast] = useState<Toast | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
-  const noteMode = isNoteMode(mode);
   const voiceMode = isVoiceMode(mode);
+  const noteMode = isNoteMode(mode);
   /** A spoken question for the panel to ask; the key makes a repeat a new one. */
   const [question, setQuestion] = useState<{ text: string; key: number } | null>(null);
+  const speaker = useSpeaker();
+  const language: "da" | "en" = locale === "en" ? "en" : "da";
 
   const hidden =
     pathname === "/login" ||
@@ -82,6 +85,23 @@ export function AssistantButton({
     /^\/work\/(?!paint-runs|deliveries)[^/]+/.test(pathname) ||
     // The customer map is full-bleed Leaflet; the button would sit on its controls.
     pathname === "/organizations/map";
+
+  const ask = useCallback(
+    async (blob: Blob) => {
+      setToast({ kind: "hearing" });
+      const r = await transcribeRecording(blob, language);
+      if (!r.ok) {
+        report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
+        return setToast({ kind: "unheard", blob });
+      }
+      const text = r.text.trim();
+      if (!text) return setToast({ kind: "no_speech" });
+      setToast(null);
+      setQuestion({ text, key: Date.now() });
+      setOpen(true);
+    },
+    [language],
+  );
 
   const save = useCallback(
     async (blob: Blob) => {
@@ -100,12 +120,9 @@ export function AssistantButton({
         stage = "save";
         const r = await saveSpokenNote(minted.path, contextFromPath(window.location.pathname, locale));
         if (!r.ok) throw new Error(r.error);
-        cue("saved");
         setToast({ kind: "saved", id: r.id });
       } catch (e) {
-        // The recording is still here — Retry, never "say it again". The
-        // reason goes to the console AND the server: a failure nobody can
-        // read is unfixable, and the console is gone once the tab is.
+        // The recording is still here — Retry, never "say it again".
         console.error("[note] save failed:", e);
         report(stage, e instanceof Error ? e.message : String(e), { bytes: blob.size });
         setToast({ kind: "failed", blob });
@@ -114,26 +131,10 @@ export function AssistantButton({
     [locale],
   );
 
-  const ask = useCallback(
-    async (blob: Blob) => {
-      setToast({ kind: "hearing" });
-      const r = await transcribeRecording(blob, locale === "en" ? "en" : "da");
-      if (!r.ok) {
-        report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
-        return setToast({ kind: "unheard", blob });
-      }
-      const text = r.text.trim();
-      if (!text) return setToast({ kind: "no_speech" });
-      setToast(null);
-      setQuestion({ text, key: Date.now() });
-      setOpen(true);
-    },
-    [locale],
-  );
-
   const recorder = useRecorder({
-    onCaptured: (blob) => void (mode === "ask_voice" ? ask(blob) : save(blob)),
-    silenceStop: mode === "note_vad" || mode === "ask_voice" ? NOTE_SILENCE_STOP : undefined,
+    onCaptured: (blob) => void (noteMode ? save(blob) : ask(blob)),
+    // Press-again-to-save records until the second press; the rest end on a pause.
+    silenceStop: mode === "note_toggle" ? undefined : NOTE_SILENCE_STOP,
     onNoSpeech: (heard) => {
       report("no_speech", null, heard);
       setToast({ kind: "no_speech" });
@@ -141,14 +142,13 @@ export function AssistantButton({
   });
   const recording = recorder.phase === "recording";
 
-  // The recorder's own refusals (no mic permission, nothing captured) are
-  // failures to save a note too.
+  // The recorder's own refusals (no mic permission, nothing captured).
   useEffect(() => {
     if (recorder.error) report(recorder.error, null, {});
   }, [recorder.error]);
 
   useEffect(() => {
-    if (toast?.kind !== "saved" && toast?.kind !== "no_speech") return;
+    if (toast?.kind !== "no_speech" && toast?.kind !== "saved") return;
     const timer = setTimeout(() => setToast(null), TOAST_MS);
     return () => clearTimeout(timer);
   }, [toast]);
@@ -177,7 +177,12 @@ export function AssistantButton({
     if (longPressed.current) return;
     if (!voiceMode) return setOpen((o) => !o);
     if (recording) return recorder.stop();
-    if (toast?.kind === "saving" || toast?.kind === "hearing") return;
+    if (toast?.kind === "hearing" || toast?.kind === "saving") return;
+    // Talking over the secretary stops her — and keeps her voice out of the mic.
+    speaker.stop();
+    // Inside the press: the answer arrives seconds later, and a phone only
+    // lets it be heard if sound started here (use-speaker.ts).
+    speaker.prime();
     setToast(null);
     cue("start");
     await recorder.start();
@@ -201,7 +206,8 @@ export function AssistantButton({
   const canScan = allowedCaps === null || allowedCaps.includes("scan");
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   const Icon = recording ? Square : voiceMode ? Mic : Sparkles;
-  const idleLabel = noteMode ? t("noteButtonLabel") : mode === "ask_voice" ? t("askVoiceLabel") : t("buttonLabel");
+  const idleLabel = noteMode ? t("noteButtonLabel") : voiceMode ? t("askVoiceLabel") : t("buttonLabel");
+  const stopLabel = noteMode ? t("noteStop") : t("askStop");
 
   return (
     <>
@@ -210,25 +216,28 @@ export function AssistantButton({
           onClose={() => {
             setOpen(false);
             setQuestion(null);
+            speaker.stop();
           }}
           canScan={canScan}
           mode={mode}
           onModeChange={setMode}
           question={question}
+          // The answer to a SPOKEN question is spoken back.
+          onSpokenAnswer={(text) => void speaker.say(text, language)}
+          aboveButton={mode === "ask_voice"}
         />
       ) : null}
 
-      {/* What the button is doing, said in words above it: recording, saved,
-          or the one failure that must not lose anything. */}
+      {/* What the button is doing, said in words above it. */}
       {recording || toast || recorder.error ? (
         <div
           role="status"
-          className="bg-popover text-popover-foreground shadow-popover fixed right-4 bottom-20 z-40 flex w-[min(320px,calc(100vw-2rem))] flex-col gap-2 rounded-2xl p-3 text-sm md:bottom-[4.5rem]"
+          className="bg-popover text-popover-foreground shadow-popover fixed right-4 bottom-20 z-[60] flex w-[min(320px,calc(100vw-2rem))] flex-col gap-2 rounded-2xl p-3 text-sm md:bottom-[4.5rem]"
         >
           {recording ? (
             <>
               <span>
-                {mode === "ask_voice" ? t("askListening") : mode === "note_vad" ? t("noteListening") : t("noteRecording")} ·{" "}
+                {mode === "note_toggle" ? t("noteRecording") : mode === "note_vad" ? t("noteListening") : t("askListening")} ·{" "}
                 {mmss(recorder.seconds)}
               </span>
               <span className="bg-ground h-1.5 w-full overflow-hidden rounded-full" role="presentation">
@@ -291,7 +300,7 @@ export function AssistantButton({
               </span>
             </>
           ) : toast?.kind === "no_speech" ? (
-            <span>{t("noteNoSpeech")}</span>
+            <span>{noteMode ? t("noteNoSpeech") : t("askNothingHeard")}</span>
           ) : recorder.error ? (
             <span className="text-destructive" role="alert">
               {t(`noteError_${recorder.error}`)}
@@ -309,28 +318,27 @@ export function AssistantButton({
         onContextMenu={(e) => e.preventDefault()}
         aria-expanded={voiceMode ? undefined : open}
         aria-pressed={voiceMode ? recording : undefined}
-        aria-label={recording ? t(mode === "ask_voice" ? "askStop" : "noteStop") : idleLabel}
+        aria-label={recording ? stopLabel : idleLabel}
         className={cn(
-          "shadow-popover fixed right-4 bottom-4 z-40 flex items-center justify-center rounded-full transition-transform select-none active:scale-95",
+          // Above the panel (z-50) in secretary mode: a follow-up is one more press.
+          "shadow-popover fixed right-4 bottom-4 z-[60] flex items-center justify-center rounded-full transition-transform select-none active:scale-95",
           // A live mic pulses rather than turning red: red stays for genuine alarm.
           "bg-brand text-on-brand",
           recording && "ring-brand/40 animate-pulse ring-4",
-          // Phone: a round button where Scan used to sit. Desktop: a pill that says what it is.
+          // Phone: a round button. Desktop: a pill that says what it is.
           "size-14 md:h-11 md:w-auto md:gap-2 md:px-4",
-          open && "max-md:hidden",
+          open && mode !== "ask_voice" && "max-md:hidden",
         )}
       >
         <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />
-        <span className="hidden text-sm font-medium md:inline">
-          {recording ? t(mode === "ask_voice" ? "askStop" : "noteStop") : idleLabel}
-        </span>
+        <span className="hidden text-sm font-medium md:inline">{recording ? stopLabel : idleLabel}</span>
         <kbd className="hidden font-sans text-xs font-normal md:inline">{shortcut}</kbd>
       </button>
     </>
   );
 }
 
-/** Tell the server why a note did not become a row (migration 127); never throws. */
+/** Tell the server why a spoken request went nowhere (migration 127); never throws. */
 function report(stage: NoteFailureStage, detail: string | null, extra: Record<string, unknown>) {
   void reportNoteFailure(stage, detail, {
     ...extra,
@@ -341,12 +349,12 @@ function report(stage: NoteFailureStage, detail: string | null, extra: Record<st
 }
 
 /**
- * A short tone and a buzz — the only feedback a driver gets. Start rises,
- * saved falls; best-effort (some browsers refuse audio or vibration).
+ * A short tone and a buzz — the only feedback a driver gets that the mic is
+ * live. Best-effort (some browsers refuse audio or vibration).
  */
-function cue(kind: "start" | "saved") {
+function cue(kind: "start") {
   try {
-    navigator.vibrate?.(kind === "start" ? 60 : [40, 60, 40]);
+    navigator.vibrate?.(60);
   } catch {
     /* not supported */
   }
@@ -358,7 +366,7 @@ function cue(kind: "start" | "saved") {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.frequency.setValueAtTime(kind === "start" ? 660 : 880, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(kind === "start" ? 880 : 520, ctx.currentTime + 0.15);
+    osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.15);
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
     osc.connect(gain).connect(ctx.destination);

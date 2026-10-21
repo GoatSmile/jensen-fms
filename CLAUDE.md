@@ -785,16 +785,23 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   **Scan** — there is no separate Scan button, sidebar entry or header icon
   (owner: "all one button"). It hides where the bottom edge or the screen is
   taken (`/scan`, the map, a work-order workspace, login, public pages).
-  Dictation FILLS the box; the person presses Send — except a press in
-  `ask_voice`, which records a QUESTION, stops on a pause and asks it at once
-  ("You asked" shows what was heard; drafts still wait for a tap; migration
-  128). **What a PRESS does is
-  the person's choice** (`people.assistant_mode`, migration 124, chosen in the
-  panel): `ask` opens the panel; `note_toggle` / `note_vad` record a spoken
-  NOTE — saved by a second press, or by itself on a ~3 s pause (silence
-  detection in `use-recorder.ts`), with a beep and a buzz, because Finn uses it
-  driving. Holding the button or ⌘K always opens the panel, so a note-mode
-  person can change it back. **A note is an inbound message on the `note`
+  Dictation in the panel FILLS the box; the person presses Send.
+  **The button is THE SECRETARY** (owner, 2026-10-21; migrations 128, 130):
+  `ask_voice`, the default, records a request on a press, ends it on a ~3 s
+  pause (`use-recorder.ts`), asks it at once ("You asked" shows what was
+  heard) and SPEAKS the reply in the person's language (`useSpeaker`:
+  ElevenLabs, `synthesizeElevenLabs`, else the browser's own voice — prime it
+  INSIDE the press or a phone stays silent). For a person with *act right
+  away* on, the request's safe actions (`autoApplySafe`: book a visit, move an
+  entry, save a note) are carried out at once by `autoApplyMessage` and the
+  reply says what was done; anything else, deleting included, waits for a
+  tap. A NOTE is something it does when asked (`save_note`). **What a PRESS
+  does is the person's choice** (`people.assistant_mode`, chosen in the
+  panel): `ask` opens the panel; `note_toggle` / `note_vad` still record a
+  spoken NOTE — options kept "for now, remove later". Holding the button or
+  ⌘K always opens the panel. **The assistant model must follow wording
+  rules**: Haiku 4.5 said "deleted" for a delete that waited for a tap,
+  Sonnet 5.5 did not (2026-10-21) — so the secretary runs on Sonnet. **A note is an inbound message on the `note`
   channel** (`kind = 'note'`, owned via `handled_by_person_id` like a call, so
   the Calls page's scope rules already apply), SAVED BEFORE it is transcribed
   (`saveSpokenNote` → `after()` → `transcribeNote`), its audio KEPT under
