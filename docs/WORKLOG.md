@@ -110,11 +110,12 @@ treat the early totals as floors, not truth.
 | Wed 2026-10-07 (cont.) | ~2 | **Deliveries go in the calendar** (migration 122): a call drafts one for an agreed date, a confirmed SO has *Add delivery to calendar*, reminders parked; every applied suggestion says what it made and links there. |
 | Thu 2026-10-08 | ~7 | **Spoken notes and the Inbox, all four slices** (migrations 124–126): one button with a per-person mode, notes read for suggestions, Inbox columns with Done, act right away; SO delivery move/remove; dictation detects its language. |
 | Wed 2026-10-21 | ~2.5 | **The button became the secretary** (migrations 127–132): it hears, carries out safe things, speaks back in Danish or English and holds the conversation hands-free; plus a fix for every question failing since 8 Oct. |
+| Wed 2026-10-21 (cont.) | ~0.5 | **The secretary answers in the language it hears**, starting from the person's setting, and everyone is on it (migration 133); action items pulled from the Munr recording of the meeting with Dennis. |
 
 **September: ~77 h** (11 working days)
 
-**October so far: ~18 h** (4 working days)
+**October so far: ~18.5 h** (4 working days)
 
 ---
 
-**Project total: ~349 h across 56 working days (2026-05-07 → 2026-10-21)**
+**Project total: ~349.5 h across 56 working days (2026-05-07 → 2026-10-21)**

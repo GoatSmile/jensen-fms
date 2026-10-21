@@ -5,6 +5,15 @@ app). Add entries with enough context to act on cold; delete an entry when
 the work ships or the idea is rejected. Active/sequenced work lives in
 `docs/STATUS.md`; designed work has its own `docs/plan-*.md`.
 
+## From the 21 Oct meeting with Dennis (his own ideas or ours, not promised)
+- **Entering parts from supplier invoices is slow** — after saving one, it is
+  All parts → category → the next part every time. Offered there: remember the
+  last category; a supplier's default currency (Eastek = USD) prefilled on its
+  purchase price. Dennis said the bigger cost is the round trip, not the
+  fields — look at "save and next" before either.
+- **Dennis records his own meetings** (e.g. China next year): the minimum is a
+  Munr account that mails a summary after each recording, no login needed.
+
 ## Hardening (do as it bites)
 - **A delivery's calendar title is written in the PRESSER's language**
   (`addSODeliveryToCalendar` uses the session locale: "delivery SO-…" as an

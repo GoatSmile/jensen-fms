@@ -10,7 +10,10 @@ save a note), asks for a spoken yes before cancelling, says what it did, and
 remembers the conversation so "move it" means the entry it just read out.
 The round button is its End (a dark X). Also: every question to the assistant
 had failed since 8 Oct (a duplicate tool name) — fixed; a note that fails to
-save now reports why (`client_failures`). All in production.
+save now reports why (`client_failures`). **Evening:** the secretary answers
+in the language it HEARS (a conversation starts in the person's setting), and
+everyone is on it (migration 133) — both from the meeting with Dennis in his
+office that day. All in production.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -108,6 +111,14 @@ Danish (person language).
   Finn's phone + the spreadsheet); part sales prices; assembly notes on
   template lines; the basket's *Paintable as*; what his sales calls should
   trigger; the seven unclassified bikes; the label printer model.
+- **Nazar, from the 21 Oct meeting with Dennis** (recorded in Munr, action
+  items sent to Dennis by mail): call Dennis back about the secretary (it now
+  answers and speaks); **change Finn's password** — it was said aloud while
+  installing the app and is in the Munr transcript; check whether a part's
+  internal note / the supplier's drawing or item number can reach the PO
+  Dennis sends John; why a call's suggestion said *pickup* for the
+  Lyngby-Taarbæk delivery; decide with Dennis what Finn's app shows (start
+  page, access, language).
 - **Nazar:** e-conomic admin approval → the production grant token; move the
   Google key file out of the project folder (`jensen-fms-38357d206d22.json`,
   gitignored); click the 27–28 Sep work in production; sign in as Finn with
@@ -125,9 +136,12 @@ Danish (person language).
 - **`assistant_reader` reads every public table by default** — a new
   secret-shaped column must be revoked from it (migration 129).
 - **Testing voice in the browser pane:** replace `navigator.mediaDevices.getUserMedia`
-  with a stream built from a `say -v Sara … --data-format=LEI16@16000` WAV
-  served from `public/__test_*.wav` (delete after); click the round button by
-  screenshot coordinates, not ref.
+  with a stream built from a `say -v Sara … --data-format=LEI16@16000` WAV —
+  serve the WAVs from a throwaway CORS server on another port in the
+  scratchpad (nothing in `public/`), queue one clip per `getUserMedia` call so
+  hands-free turns run by themselves; click the round button by screenshot
+  coordinates. `preview_logs` shows each `speakAnswer(text, lang)` — that is
+  how the voice's language is checked.
 - **A spoken note's audio is KEPT** under `notes/` in the inbound bucket
   (retention applies); a dictation's is deleted. Don't sweep `notes/` as
   stray dictation audio.
@@ -144,11 +158,11 @@ Danish (person language).
 - **Counting identifiers by category needs clean categories** (Batteries,
   Charger hold only those).
 - **The local copy:** production's data (anonymised) from 1 Oct + migrations
-  through 132. **Redo the `storage.*` swap in `data.sql` after every re-dump**.
+  through 133. **Redo the `storage.*` swap in `data.sql` after every re-dump**.
   Keep disk free. **Stopped at session end, 21 Oct** (dev server, `supabase
   stop`). To resume: `open -a Docker`, `supabase start`, the dev server.
-  Local differs from prod: Finn's *Act right away* on, Finn on `ask_voice`,
-  assistant model Sonnet 5.5. TEST data from 8 Oct as before; today's TEST
+  Local differs from prod: Finn's *Act right away* on, assistant model
+  Sonnet 5.5 (everyone on `ask_voice` in both since 133). TEST data from 8 Oct as before; today's TEST
   calendar entries were all deleted.
 - **Charger "numbers" on newer bikes are model codes** — never import as unique.
 - **Pre-v3 sessions are upgraded** in `src/lib/auth/session.ts`. Delete after
@@ -169,8 +183,8 @@ Danish (person language).
    labels once the printer is known, the builder's iPad view.
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-10-08): 98 pass · 22 redirect · 9 skip · 0 fail** —
-  not re-run 21 Oct. Run it AFTER `build:check`, not alongside.
+- **Smoke, local (2026-10-21): 98 pass · 22 redirect · 9 skip · 0 fail.**
+  Run it AFTER `build:check`, not alongside.
 - **Lint: 0 errors, 14 warnings** (all pre-existing, 21 Oct).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`)
   and check 18 (legacy `unit_cost_basis = 'none'`).
