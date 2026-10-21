@@ -2760,6 +2760,7 @@ export type Database = {
           organization_id: string
           phone: string | null
           zip_code: string | null
+          import_batch_id: string | null
         }
         Insert: {
           address?: string | null
@@ -2781,6 +2782,7 @@ export type Database = {
           organization_id: string
           phone?: string | null
           zip_code?: string | null
+          import_batch_id?: string | null
         }
         Update: {
           address?: string | null
@@ -2802,6 +2804,7 @@ export type Database = {
           organization_id?: string
           phone?: string | null
           zip_code?: string | null
+          import_batch_id?: string | null
         }
         Relationships: [
           {
@@ -2850,6 +2853,7 @@ export type Database = {
           vat_number: string | null
           website: string | null
           zip_code: string | null
+          import_batch_id: string | null
         }
         Insert: {
           address_line1?: string | null
@@ -2887,6 +2891,7 @@ export type Database = {
           vat_number?: string | null
           website?: string | null
           zip_code?: string | null
+          import_batch_id?: string | null
         }
         Update: {
           address_line1?: string | null
@@ -2924,6 +2929,7 @@ export type Database = {
           vat_number?: string | null
           website?: string | null
           zip_code?: string | null
+          import_batch_id?: string | null
         }
         Relationships: [
           {
@@ -4351,6 +4357,8 @@ export type Database = {
           start_date: string
           status: Database["public"]["Enums"]["service_agreement_status"]
           updated_at: string
+          import_batch_id: string | null
+          import_row: Json | null
         }
         Insert: {
           contract_type?: string | null
@@ -4375,6 +4383,8 @@ export type Database = {
           start_date: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
         }
         Update: {
           contract_type?: string | null
@@ -4399,6 +4409,8 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["service_agreement_status"]
           updated_at?: string
+          import_batch_id?: string | null
+          import_row?: Json | null
         }
         Relationships: [
           {
