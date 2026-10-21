@@ -542,7 +542,7 @@ export async function autoApplyMessage(
   supabase: ReturnType<typeof createServiceClient>,
   messageId: string,
   t: Translator,
-): Promise<{ type: CommandAction["type"]; ok: boolean; error?: string }[]> {
+): Promise<{ id: string; type: CommandAction["type"]; ok: boolean; error?: string; duplicate?: boolean }[]> {
   const { data: msg } = await supabase
     .from("inbound_messages")
     .select("kind, command_plan, handled_by_person_id, commanded_by")
@@ -555,22 +555,47 @@ export async function autoApplyMessage(
   const access = await loadPersonAccess(supabase, personId);
   if (!access) return [];
 
-  const results: { type: CommandAction["type"]; ok: boolean; error?: string }[] = [];
+  const results: { id: string; type: CommandAction["type"]; ok: boolean; error?: string; duplicate?: boolean }[] = [];
   for (const action of parseCommandPlan(msg.command_plan).actions) {
     if (!autoApplySafe(action)) continue;
+    // Never book the same thing twice with no press: on 2026-10-21 a
+    // follow-up question re-booked a delivery made one turn earlier.
+    if (action.type === "draft_event" && (await sameEntryJustMade(supabase, action))) {
+      results.push({ id: action.id, type: action.type, ok: false, duplicate: true });
+      continue;
+    }
     try {
       const r = await applyPlanAction(supabase, messageId, action.id, {}, {
         personId,
         caps: access.caps,
         auto: true,
       }, t);
-      results.push(r.ok ? { type: action.type, ok: true } : { type: action.type, ok: false, error: r.error });
+      results.push(
+        r.ok ? { id: action.id, type: action.type, ok: true } : { id: action.id, type: action.type, ok: false, error: r.error },
+      );
     } catch (e) {
       console.error(`[auto-apply] ${messageId} ${action.id}:`, e);
-      results.push({ type: action.type, ok: false, error: e instanceof Error ? e.message : String(e) });
+      results.push({ id: action.id, type: action.type, ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   }
   return results;
+}
+
+/** An entry of this kind, for this customer, on this day, made by the app in the last few hours. */
+async function sameEntryJustMade(
+  supabase: ReturnType<typeof createServiceClient>,
+  action: Extract<CommandAction, { type: "draft_event" }>,
+): Promise<boolean> {
+  if (!action.date) return false;
+  const since = new Date(Date.now() - 6 * 3_600_000).toISOString();
+  // The customer when it is known, else the title as said.
+  let q = supabase.from("calendar_events").select("starts_at").eq("kind", action.kind).gte("created_at", since);
+  if (action.organizationId) q = q.eq("organization_id", action.organizationId);
+  else if (action.title) q = q.ilike("title", `%${action.title.replace(/[%_]/g, "")}%`);
+  else return false;
+  const { data } = await q;
+  const day = (iso: string) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Copenhagen" }).format(new Date(iso));
+  return (data ?? []).some((e) => e.starts_at && day(e.starts_at) === action.date);
 }
 
 /** Has this person *act right away* switched on (and are they still active)? */

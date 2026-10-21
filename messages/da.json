@@ -3682,7 +3682,7 @@
     "autoApplyTitle": "Handl med det samme",
     "autoApplyDesc": "For det, personen siger til sekretæren, og deres indtalte notater.",
     "autoApplyLabel": "Udfør sikre forslag uden et tryk",
-    "autoApplyHint": "At oprette et besøg i kalenderen med kendt kunde og dato, at flytte en aftale, at gemme et notat, de har bedt om, og at lægge et notat på en cykel, der er identificeret med sikkerhed. Sletning af en aftale, kontaktoplysninger, tilbud og alt med penge venter altid på en person. Hver enkelt vises som udført automatisk."
+    "autoApplyHint": "At oprette et besøg eller en levering i kalenderen på en dato (med kunden, når systemet kender den), at flytte en aftale, at gemme et notat, de har bedt om, og at lægge et notat på en cykel, der er identificeret med sikkerhed. Sletning af en aftale, kontaktoplysninger, tilbud og alt med penge venter altid på en person. Hver enkelt vises som udført automatisk."
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",
@@ -5304,6 +5304,9 @@
     "noteRetry": "Prøv igen",
     "autoFailed": "Men det lykkedes ikke: {detail}",
     "autoDone": "Gjort: {what}.",
+    "alreadyInCalendar": "Den stod allerede i kalenderen, så jeg bookede den ikke igen.",
+    "notYetSayYes": "Ikke gjort endnu — sig ja til: {what}",
+    "notYetTap": "Ikke gjort endnu — tryk for at bekræfte: {what}",
     "leftAsIs": "OK, jeg lader det være.",
     "secretaryTitle": "Sekretær",
     "secretaryThinking": "Arbejder på det…",

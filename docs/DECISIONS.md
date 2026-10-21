@@ -3912,3 +3912,28 @@ be nothing to click."
 - **Rejected:** keeping a single *Confirm* button in the conversation (the owner
   said nothing to click); letting the model decide what counts as a yes (a
   misheard word must not delete an appointment).
+
+## 2026-10-21 — Finn's failed booking: the model said "done", the code now says what is true
+
+Finn, by voice: a delivery of 13 bikes "with Aalborg community" tomorrow. No
+customer of that name; the secretary offered "say yes and I'll book" WITHOUT
+drafting anything, so his "Yes" went to the model, which drafted a DELIVERY —
+and only visits ran by themselves — yet replied "Done. I booked …". Nothing
+reached the calendar. Asked "what calendar did you use?", it admitted it.
+Reproducing it locally then showed a second fault: a follow-up question booked
+the same delivery AGAIN, because the next turn saw the previous reply's words
+but not what had been done.
+
+- **Deliveries run by themselves like visits**, and **a calendar entry needs no
+  customer in the system** (owner: "try to identify it, but if not able, just
+  add whatever has been dictated"): search, link on exactly one match, else book
+  with the name as said.
+- **An offer to act must be drafted at once**, so a yes has something to confirm.
+- **What an automatic kind left undone is stated by code**, appended to the reply.
+- **The next turn is told what the previous one carried out** (from the ledger),
+  "never do it again" — and **`sameEntryJustMade`** refuses an identical
+  automatic booking (same kind, same customer or title, same day, within 6 h).
+- **The secretary is told there is ONE calendar**: the Servicebesøg service
+  calendar the app is connected to, which Finn and the office share.
+- **Known gap:** a spoken "TEST" arrives lowercase, so an entry from a spoken
+  test request does not inherit the TEST marker.

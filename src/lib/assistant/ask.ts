@@ -12,6 +12,9 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getTranslations } from "next-intl/server";
+
+import { appliedSummary } from "@/lib/inbound/command/applied-summary";
 import { loadInboundSettings } from "@/lib/inbound/settings";
 import { routeAllows } from "@/lib/people/routes";
 import type { Json } from "@/lib/types/database";
@@ -43,7 +46,7 @@ export async function answerRequest(
     spoken?: boolean;
   },
 ): Promise<AskOutcome> {
-  let prior: { request: string; answer: string } | null = null;
+  let prior: { request: string; answer: string; done: string[] } | null = null;
   if (opts.priorId) {
     const { data } = await supabase
       .from("inbound_messages")
@@ -53,7 +56,17 @@ export async function answerRequest(
     const recent = data && Date.now() - new Date(data.received_at).getTime() < FOLLOW_UP_MINUTES * 60_000;
     // Only the same person's own request — never someone else's conversation.
     if (data && recent && data.kind === "command" && data.commanded_by === opts.personId) {
-      prior = { request: data.body_text ?? "", answer: parseAssistantAnswer(data.assistant_answer)?.text ?? "" };
+      // What that turn actually CARRIED OUT, from the ledger — its words alone
+      // let the model conclude it had not booked, and book again (2026-10-21).
+      const { data: ledger } = await supabase
+        .from("command_actions")
+        .select("entity_table, entity_id, payload")
+        .eq("message_id", opts.priorId);
+      const tC = await getTranslations({ locale: opts.language, namespace: "inboxCommand" });
+      const done = (ledger ?? []).map(
+        (l) => appliedSummary({ entityTable: l.entity_table, entityId: l.entity_id, payload: l.payload }, tC, opts.language).text,
+      );
+      prior = { request: data.body_text ?? "", answer: parseAssistantAnswer(data.assistant_answer)?.text ?? "", done };
     }
   }
 

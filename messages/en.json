@@ -3682,7 +3682,7 @@
     "autoApplyTitle": "Act right away",
     "autoApplyDesc": "For what this person says to the secretary, and their spoken notes.",
     "autoApplyLabel": "Run safe suggestions without a press",
-    "autoApplyHint": "Booking a calendar visit with a known customer and date, moving an appointment, saving a note they asked for, and putting a note on a bike identified with certainty. Deleting an appointment, contact details, offers and anything with money always wait for a person. Each one shows as applied automatically."
+    "autoApplyHint": "Booking a calendar visit or delivery on a date (with the customer when the app knows it), moving an appointment, saving a note they asked for, and putting a note on a bike identified with certainty. Deleting an appointment, contact details, offers and anything with money always wait for a person. Each one shows as applied automatically."
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
@@ -5304,6 +5304,9 @@
     "noteRetry": "Retry",
     "autoFailed": "But that didn't work: {detail}",
     "autoDone": "Done: {what}.",
+    "alreadyInCalendar": "It was already in the calendar, so I didn't book it again.",
+    "notYetSayYes": "Not done yet — say yes to: {what}",
+    "notYetTap": "Not done yet — tap to confirm: {what}",
     "leftAsIs": "OK, I've left it as it was.",
     "secretaryTitle": "Secretary",
     "secretaryThinking": "Working on it…",

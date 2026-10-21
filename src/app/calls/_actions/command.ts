@@ -15,7 +15,8 @@ import { canActOnInbound } from "@/lib/calls/access";
 import { revalidateInbound } from "@/lib/calls/revalidate";
 import { applyPlanAction, autoApplyMessage, autoApplyOn } from "@/lib/inbound/command/apply";
 import { parseAssistantAnswer } from "@/lib/assistant/answer";
-import { appliedSummary } from "@/lib/inbound/command/applied-summary";
+import { AUTO_APPLY_KINDS } from "@/lib/assistant/agent";
+import { appliedSummary, pendingSummary } from "@/lib/inbound/command/applied-summary";
 import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import type { Json } from "@/lib/types/database";
 
@@ -135,17 +136,31 @@ export async function createCommandFromText(
   // reply was worded as done — so a failure must be said, not left unsaid.
   if (r.ok && autoApply && r.actionCount > 0) {
     const results = await autoApplyMessage(supabase, inserted.id, t);
-    const failed = results.filter((x) => !x.ok);
+    const failed = results.filter((x) => !x.ok && !x.duplicate);
+    const already = results.filter((x) => x.duplicate);
     const done = results.filter((x) => x.ok);
     const answer = parseAssistantAnswer(r.answer);
+    // What was NOT carried out is said by the CODE, never left to the model:
+    // on 2026-10-21 it told Finn "Done. I booked …" for a delivery that was
+    // waiting for him (nothing reached the calendar).
+    const { data: row } = await supabase.from("inbound_messages").select("command_plan").eq("id", inserted.id).maybeSingle();
+    const { data: ledger } = await supabase.from("command_actions").select("plan_action_id").eq("message_id", inserted.id);
+    const appliedIds = new Set((ledger ?? []).map((l) => l.plan_action_id as string));
+    // Only kinds the model was told happen at once can be wrongly called done;
+    // a delete it was told waits, and it asks for the yes itself.
+    const waiting = parseCommandPlan(row?.command_plan).actions.filter(
+      (a) => !appliedIds.has(a.id) && AUTO_APPLY_KINDS.has(a.type) && !already.some((x) => x.id === a.id),
+    );
     // Something was done but the model said nothing: say what was done.
     const silent = answer !== null && !answer.text && done.length > 0;
-    if (answer && (failed.length > 0 || silent)) {
+    if (answer && (failed.length > 0 || silent || waiting.length > 0 || already.length > 0)) {
       const tA = await getTranslations("assistant");
       const tC = await getTranslations("inboxCommand");
       const lines = [
         answer.text || tA("autoDone", { what: done.map((d) => tC(d.type === "draft_event" ? "type_draft_event_visit" : `type_${d.type}`)).join(", ") }),
         ...failed.map((f) => tA("autoFailed", { detail: f.error ?? "" })),
+        ...(already.length ? [tA("alreadyInCalendar")] : []),
+        ...waiting.map((w) => tA(opts?.spoken ? "notYetSayYes" : "notYetTap", { what: pendingSummary(w, tC) })),
       ];
       await supabase
         .from("inbound_messages")

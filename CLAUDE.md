@@ -792,7 +792,8 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   heard) and SPEAKS the reply in the person's language (`useSpeaker`:
   ElevenLabs, `synthesizeElevenLabs`, else the browser's own voice — prime it
   INSIDE the press or a phone stays silent). For a person with *act right
-  away* on, the request's safe actions (`autoApplySafe`: book a visit, move an
+  away* on, the request's safe actions (`autoApplySafe`: book a visit or delivery — a customer in the system is
+  NOT required, the name as said goes in the title (owner) — move an
   entry, save a note) are carried out at once by `autoApplyMessage` and the
   reply says what was done; anything else, deleting included, waits for a
   tap. **A spoken request opens a CONVERSATION, not the panel**
@@ -803,7 +804,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   replies in this mode ASK for a yes instead of a tap. A tap outside closes
   it; holding the button or ⌘K opens the full panel with every control. One
   sentence per applied action, `appliedSummary` — card, conversation and
-  spoken confirmation alike. A NOTE is something it does when asked (`save_note`). **What a PRESS
+  spoken confirmation alike. **Truth is the code's, not the model's**: what an
+  automatic kind left undone is appended by `createCommandFromText`, the
+  previous turn's EXECUTED actions ride into the next turn (`prior.done`), and
+  `sameEntryJustMade` refuses an identical automatic booking within 6 h — a
+  follow-up question re-booked a delivery before these (2026-10-21). The
+  calendar is ONE: the Servicebesøg service calendar. A NOTE is something it does when asked (`save_note`). **What a PRESS
   does is the person's choice** (`people.assistant_mode`, chosen in the
   panel): `ask` opens the panel; `note_toggle` / `note_vad` still record a
   spoken NOTE — options kept "for now, remove later". Holding the button or

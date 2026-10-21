@@ -72,8 +72,13 @@ export function autoApplySafe(action: CommandAction): boolean {
   switch (action.type) {
     case "attach_note":
       return Boolean(action.bikeId);
+    // A visit or a delivery with a day — the owner's "schedule" (2026-10-08).
+    // Deliveries joined 2026-10-21 (Finn was told "done" for one that waited),
+    // and so did entries for a customer the app does not know: "the calendar
+    // event does not need to correspond to an existing customer … if not
+    // able, then just add whatever has been dictated" (owner, same day).
     case "draft_event":
-      return action.kind === "visit" && Boolean(action.organizationId) && Boolean(action.date);
+      return Boolean(action.date) && Boolean(action.title);
     case "move_event":
       return Boolean(action.eventId) && Boolean(action.date);
     // The asker's own note, which they asked for in words.
@@ -91,10 +96,13 @@ export function autoApplySafe(action: CommandAction): boolean {
 
 /** How the prompt names each kind `autoApplySafe` carries out, for a person with it on. */
 const AUTO_APPLY_WORDS: { type: CommandAction["type"]; words: string }[] = [
-  { type: "draft_event", words: "booking a visit with a known customer and a date" },
+  { type: "draft_event", words: "booking a visit or a delivery on a date" },
   { type: "move_event", words: "moving an appointment found exactly" },
   { type: "save_note", words: "saving a note" },
 ];
+
+/** The kinds that can run with no press — anything else always waits. */
+export const AUTO_APPLY_KINDS: ReadonlySet<CommandAction["type"]> = new Set(AUTO_APPLY_WORDS.map((w) => w.type));
 
 export type AssistantResult =
   | { ok: true; answer: AssistantAnswer; plan: CommandPlan }
@@ -217,10 +225,12 @@ How to work:
 2. "Show me / open / find X": look it up; if exactly ONE matches, set \`open\` to it and \`go\` true. If several match, list them in \`choices\` (best first) and say how many matched. If none, say so.
 3. A question ("what is my next appointment?", "how many X do we have?", "what's the status of SO 12?"): answer in one or two short sentences from what the tools returned, with \`go\` false. Set \`open\` too when one record is clearly the subject, so they can open it.
 4. A request to CREATE something: propose it in \`actions\` as drafts — the person confirms each with one tap. You may draft only these: ${opts.drafts.length ? opts.drafts.join(", ") : "nothing (this person may not create anything here — say so)"}.
-   - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Its customer goes through search_customer. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
+   - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Look the customer up with search_customer and link it when exactly one matches; when nothing (or nothing certain) matches, STILL book it — organizationId null, the name exactly as said in the title. A calendar entry never needs a customer in the system; do not ask which customer first. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
    - Never put a phone number or a person's name in a calendar title.
    - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
+   - THE calendar is the shop's SERVICE CALENDAR (Servicebesøg) — the one Google calendar the app is connected to, which Finn and the office share. Every entry you read, book, move or cancel is there; there is no other calendar, personal or otherwise. "My calendar" means this one.
    - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
+   - An offer to act ("say yes and I'll book it") MUST come with the draft in \`actions\` now — a yes can only confirm what you drafted. If the customer is uncertain, draft it with the customer you found and ask.
    - A NOTE only when they ask for one ("make a note", "note that", "remember that", "noter", "skriv ned"): save_note with the words to keep. A question or an instruction is never a note.
    - ${opts.autoApply.length ? `For THIS person these are carried out AT ONCE when you propose them, with no tap: ${opts.autoApply.join("; ")}. Word those as DONE, in past tense ("Moved the Gladsaxe visit to Monday 13:00"). Everything else waits for the person — ${opts.spoken ? `ask for a spoken yes ("Shall I cancel the Gladsaxe visit on Monday 13:00? Say yes.")` : `word it as a proposal ("Tap Delete to cancel it")`}.` : opts.spoken ? `Nothing happens until the person says yes. So ASK ("Shall I move it to Monday 13:00? Say yes."), never say it is done.` : `Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").`}
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
@@ -258,7 +268,7 @@ export async function runAssistant(
     /** Asked by voice — nothing to tap; a waiting action asks for a spoken yes. */
     spoken?: boolean;
     /** One earlier exchange (≤10 min), so "and the one after?" makes sense. */
-    prior?: { request: string; answer: string } | null;
+    prior?: { request: string; answer: string; done?: string[] } | null;
   },
 ): Promise<AssistantResult> {
   const body = request.trim();
@@ -280,7 +290,10 @@ export async function runAssistant(
   const messages: { role: "user" | "assistant"; content: unknown }[] = [];
   if (opts.prior) {
     messages.push({ role: "user", content: opts.prior.request });
-    messages.push({ role: "assistant", content: opts.prior.answer || "(no answer)" });
+    const done = opts.prior.done?.length
+      ? `\n\n[Carried out in the system by that reply — already DONE, never do it again: ${opts.prior.done.join("; ")}]`
+      : "";
+    messages.push({ role: "assistant", content: `${opts.prior.answer || "(no answer)"}${done}` });
   }
   messages.push({ role: "user", content: body });
 
