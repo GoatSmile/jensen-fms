@@ -57,6 +57,12 @@ export async function extractInbound(
      * model the workshop is the side that answers the phone.
      */
     outgoing?: boolean;
+    /**
+     * The READER's language (owner, 2026-10-21): problem, callSummary and
+     * commitments are written in it whatever was spoken. The reader is the
+     * person the message belongs to; omitted, the model picks.
+     */
+    summaryLanguage?: "da" | "en";
   },
 ): Promise<ExtractResult> {
   const body = (bodyText ?? "").trim();
@@ -66,9 +72,17 @@ export async function extractInbound(
       dialogue: opts.dialogue === true,
       speakersInferred: opts.speakersInferred === true,
       outgoing: opts.outgoing === true,
+      summaryLanguage: opts.summaryLanguage,
     });
   }
   return { ok: false, reason: "unknown_provider", detail: opts.provider };
+}
+
+/** The prompt line that fixes the language of the free-text fields. */
+function summaryLanguageRule(lang: "da" | "en" | undefined): string {
+  if (!lang) return "";
+  const name = lang === "da" ? "DANISH" : "ENGLISH";
+  return `\n\nWrite problem, callSummary and every commitment in ${name}, whatever language the message itself is in. Names, codes, numbers and quoted product names stay exactly as said. The language field still records the language that was spoken.`;
 }
 
 const SYSTEM_PROMPT = `You extract structured facts from a message left for a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). The customers are hotels, municipalities, hospitals, facility-management firms and similar organizations; they get in touch about repairs, orders, and questions.
@@ -217,11 +231,17 @@ const EXTRACTION_TOOL = {
 async function extractViaAnthropic(
   body: string,
   model: string,
-  shape: { dialogue: boolean; speakersInferred: boolean; outgoing: boolean },
+  shape: {
+    dialogue: boolean;
+    speakersInferred: boolean;
+    outgoing: boolean;
+    summaryLanguage?: "da" | "en";
+  },
 ): Promise<ExtractResult> {
-  const system = shape.dialogue
-    ? dialogueSystemPrompt(shape.speakersInferred, shape.outgoing)
-    : SYSTEM_PROMPT;
+  const system =
+    (shape.dialogue
+      ? dialogueSystemPrompt(shape.speakersInferred, shape.outgoing)
+      : SYSTEM_PROMPT) + summaryLanguageRule(shape.summaryLanguage);
 
   // Structured outputs, not a forced tool: forced `tool_choice` is a 400 on
   // Sonnet 5.5 / Opus 5.5 / Fable 5.1 (src/lib/anthropic/messages.ts).

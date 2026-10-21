@@ -650,7 +650,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `ensureTranscribableAudio` (`src/lib/inbound/audio/`) runs inside the
   transcribe stage, so every source and every retry is covered: it keeps the
   longest one-format run as `media_path` and the original at
-  `channel_meta.original_media_path`, which the retention job deletes too. Matching is deterministic code, not the model — attach a bike
+  `channel_meta.original_media_path`, which the retention job deletes too.
+  **A call's summary, problem and promises are written in its READER's
+  language** — the call's person, else `app_language` (`readerLanguage`,
+  DECISIONS 2026-10-21) — never the spoken one, which `language` records.
+  Matching is deterministic code, not the model — attach a bike
   only if exactly one candidate survives; otherwise store candidates for
   the tech. **The review queue is `/inbox`** (*Inbox*, in the *Work* group;
   `/calls` redirects, filters kept; a call's own page stays `/calls/<id>`):

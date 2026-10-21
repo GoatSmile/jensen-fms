@@ -134,7 +134,7 @@ export async function extractStage(
 ): Promise<StageResult> {
   const { data: msg, error } = await supabase
     .from("inbound_messages")
-    .select("id, body_text, channel, channel_meta")
+    .select("id, body_text, channel, channel_meta, handled_by_person_id")
     .eq("id", messageId)
     .maybeSingle();
   if (error) return { ok: false, code: "save", detail: error.message };
@@ -152,6 +152,7 @@ export async function extractStage(
     dialogue: isTwoWayCall(msg),
     speakersInferred: meta.speakers_inferred === true,
     outgoing: meta.call_direction === "outgoing",
+    summaryLanguage: await readerLanguage(supabase, msg.handled_by_person_id),
   });
   if (!result.ok) {
     return { ok: false, code: `extract.${result.reason}`, detail: result.detail };
@@ -289,6 +290,34 @@ export async function transcribeNote(
     if (!again.ok) return fail(supabase, messageId, again);
   }
   return { ok: true };
+}
+
+/**
+ * The language a message's summary is written in: its READER's (owner,
+ * 2026-10-21) — the person it belongs to, stamped at import — else the app
+ * default. Written once at extraction, so an office colleague reading Finn's
+ * calls reads them in Finn's language.
+ */
+async function readerLanguage(
+  supabase: SupabaseClient,
+  personId: string | null,
+): Promise<"da" | "en"> {
+  const pick = (v: unknown) => (v === "da" || v === "en" ? v : null);
+  if (personId) {
+    const { data } = await supabase
+      .from("people")
+      .select("preferred_language")
+      .eq("id", personId)
+      .maybeSingle();
+    const own = pick(data?.preferred_language?.trim());
+    if (own) return own;
+  }
+  const { data } = await supabase
+    .from("app_settings")
+    .select("app_language")
+    .eq("id", 1)
+    .maybeSingle();
+  return pick(data?.app_language?.trim()) ?? "da";
 }
 
 /** Stamp a pipeline failure onto the message so the reviewer sees why. */

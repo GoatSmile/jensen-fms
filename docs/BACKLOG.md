@@ -161,10 +161,6 @@ capabilities*); borrow it rather than re-running it, but note that Munin's live
   - Main-number calls are recorded by the MOBILE they land on (proven 7 Oct),
     so switchboard recording (Contact Center) only matters for a destination
     that is not a recording mobile.
-- **Call summaries are written in English** even for a Danish call and a
-  Danish UI (Finn's page reads "The transcript is too fragmented…"). The
-  extraction prompt could write `callSummary`/`problem` in the call's language,
-  or in the reader's. Decide which before touching the prompt.
 - **The Accountant role holds `inbox`, so it can listen to every call.** It came
   with the old office inbox; now that `inbox` means every phone line's
   recordings, ask Dennis whether the accountant should keep it.

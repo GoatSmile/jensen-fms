@@ -4040,3 +4040,22 @@ with the lang choice as set up in the app setting", and "default everyone to
 - Rejected: following the UI locale (what it did — Dennis heard English
   answers to Danish), and switching per WORD or per sentence inside one
   request.
+
+## 2026-10-21 — A call's summary is written in its reader's language
+
+Owner, 21 Oct: "for now in reader's" — Finn's Danish screen showed English
+summaries of Danish calls, because the extraction prompt never named a
+language and the model answered in the prompt's.
+
+- The READER is the person the call belongs to (`handled_by_person_id`,
+  stamped at import): their `preferred_language`, else `app_language`.
+  `readerLanguage` in `src/lib/inbound/pipeline.ts` resolves it and
+  `extractInbound` takes it as `summaryLanguage`.
+- It covers the three free-text fields a person reads — `problem`,
+  `callSummary`, `commitments`. `language` still records what was SPOKEN.
+- Written once, at extraction: an office colleague reading Finn's calls
+  reads Finn's language. Calls already read keep their English summaries —
+  re-extracting clears a call's matches.
+- Rejected for now: the CALL's language (a Danish summary for Dennis, who
+  reads English), and translating per viewer on every page view (a model
+  call per read).
