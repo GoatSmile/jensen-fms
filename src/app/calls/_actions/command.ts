@@ -84,7 +84,7 @@ async function currentPersonId(): Promise<string | null> {
 export async function createCommandFromText(
   text: string,
   priorId?: string | null,
-  opts?: { spoken?: boolean },
+  opts?: { spoken?: boolean; history?: string[] },
 ): Promise<CommandResult> {
   const t = await getTranslations("errors");
   const body = text.trim();
@@ -131,6 +131,8 @@ export async function createCommandFromText(
     priorId,
     autoApply,
     spoken: opts?.spoken === true,
+    // Only ids; answerRequest keeps the asker's own, recent turns.
+    history: Array.isArray(opts?.history) ? opts.history.filter((x) => typeof x === "string").slice(-8) : undefined,
   });
   // The secretary carries out what is safe at once (owner, 2026-10-21) and the
   // reply was worded as done — so a failure must be said, not left unsaid.

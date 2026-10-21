@@ -63,6 +63,8 @@ export function SecretaryConversation({
   const router = useRouter();
   const [turns, setTurns] = useState<Turn[]>([]);
   const lastId = useRef<string | null>(null);
+  /** Every request of this conversation, oldest first — sent with the next, so "it" resolves. */
+  const ids = useRef<string[]>([]);
   const handled = useRef<number | null>(null);
   const end = useRef<HTMLDivElement>(null);
 
@@ -76,12 +78,13 @@ export function SecretaryConversation({
     setTurns((all) => [...all, { key, asked: body, answer: null, done: [], waiting: [], failed: false }]);
 
     void (async () => {
-      const r = await createCommandFromText(body, lastId.current, { spoken: true });
+      const r = await createCommandFromText(body, lastId.current, { spoken: true, history: [...ids.current] });
       if (!r.ok) {
         update({ answer: r.error, failed: true });
         return onSpeak(r.error);
       }
       lastId.current = r.id;
+      ids.current = [...ids.current, r.id];
       // Asked to SEE one record → straight there (the conversation closes with the route).
       if (r.openHref) return router.push(r.openHref);
       const v = await loadAssistantView(r.id);

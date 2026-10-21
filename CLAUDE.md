@@ -809,7 +809,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   previous turn's EXECUTED actions ride into the next turn (`prior.done`), and
   `sameEntryJustMade` refuses an identical automatic booking within 6 h — a
   follow-up question re-booked a delivery before these (2026-10-21). The
-  calendar is ONE: the Servicebesøg service calendar. **It is HANDS-FREE after the first
+  calendar is ONE: the Servicebesøg service calendar. **It holds the CONVERSATION**: each answer
+  stores its lookups (`assistant_answer.lookups`, with ids — calendar entries
+  carry `eventId`), and every request carries the conversation's earlier turns
+  (`history`, the asker's own, ≤ 8, ≤ 30 min) with what each did and looked
+  up — so "move it" acts on the entry just read out. **It is HANDS-FREE after the first
   press**: `speaker.say` resolves when the reply has finished, and only then
   the conversation listens again (so it never hears itself), showing *Lytter —
   tal nu* in the window, and it KEEPS waiting (a fresh recording every ~8 s of

@@ -19,11 +19,12 @@ import { loadInboundSettings } from "@/lib/inbound/settings";
 import { routeAllows } from "@/lib/people/routes";
 import type { Json } from "@/lib/types/database";
 
-import { runAssistant } from "./agent";
+import { runAssistant, type ConversationTurn } from "./agent";
 import { parseAssistantAnswer, targetHref, type AssistantAnswer } from "./answer";
 
-/** A follow-up remembers ONE earlier exchange, if it is this recent. */
-const FOLLOW_UP_MINUTES = 10;
+/** A conversation's turns count while they are this recent, and at most this many. */
+const CONVERSATION_MINUTES = 30;
+const CONVERSATION_TURNS = 8;
 
 export type AskOutcome =
   | { ok: true; answer: AssistantAnswer; actionCount: number }
@@ -40,35 +41,19 @@ export async function answerRequest(
     personId: string | null;
     /** The person's previous request, for "and the one after?". */
     priorId?: string | null;
+    /** The whole conversation so far, oldest first (the secretary's turns) — wins over priorId. */
+    history?: string[];
     /** Safe drafts will be carried out at once — the reply words them as done. */
     autoApply?: boolean;
     /** Asked by voice: there is nothing to tap, so a waiting action asks for a spoken yes. */
     spoken?: boolean;
   },
 ): Promise<AskOutcome> {
-  let prior: { request: string; answer: string; done: string[] } | null = null;
-  if (opts.priorId) {
-    const { data } = await supabase
-      .from("inbound_messages")
-      .select("body_text, assistant_answer, commanded_by, received_at, kind")
-      .eq("id", opts.priorId)
-      .maybeSingle();
-    const recent = data && Date.now() - new Date(data.received_at).getTime() < FOLLOW_UP_MINUTES * 60_000;
-    // Only the same person's own request — never someone else's conversation.
-    if (data && recent && data.kind === "command" && data.commanded_by === opts.personId) {
-      // What that turn actually CARRIED OUT, from the ledger — its words alone
-      // let the model conclude it had not booked, and book again (2026-10-21).
-      const { data: ledger } = await supabase
-        .from("command_actions")
-        .select("entity_table, entity_id, payload")
-        .eq("message_id", opts.priorId);
-      const tC = await getTranslations({ locale: opts.language, namespace: "inboxCommand" });
-      const done = (ledger ?? []).map(
-        (l) => appliedSummary({ entityTable: l.entity_table, entityId: l.entity_id, payload: l.payload }, tC, opts.language).text,
-      );
-      prior = { request: data.body_text ?? "", answer: parseAssistantAnswer(data.assistant_answer)?.text ?? "", done };
-    }
-  }
+  const history = await loadConversation(supabase, {
+    ids: opts.history?.length ? opts.history : opts.priorId ? [opts.priorId] : [],
+    personId: opts.personId,
+    language: opts.language,
+  });
 
   const settings = await loadInboundSettings(supabase);
   const r = await runAssistant(supabase, opts.request, {
@@ -80,7 +65,7 @@ export async function answerRequest(
     personId: opts.personId,
     autoApply: opts.autoApply,
     spoken: opts.spoken,
-    prior,
+    history,
   });
   if (!r.ok) {
     await supabase
@@ -103,7 +88,9 @@ export async function answerRequest(
   const { error } = await supabase
     .from("inbound_messages")
     .update({
-      assistant_answer: answer as unknown as Json,
+      // What this turn looked up rides with it, so the next turn knows what
+      // "it" was (owner, 2026-10-21: "move it to another day").
+      assistant_answer: { ...answer, lookups: r.lookups } as unknown as Json,
       command_plan: r.plan as unknown as Json,
       status: "matched",
       processed_at: new Date().toISOString(),
@@ -112,4 +99,40 @@ export async function answerRequest(
     .eq("id", messageId);
   if (error) return { ok: false, reason: "save", detail: error.message };
   return { ok: true, answer, actionCount: r.plan.actions.length };
+}
+
+/**
+ * The person's own earlier turns of THIS conversation, oldest first: what was
+ * asked, what was answered, what was carried out (the ledger) and what was
+ * looked up (with the ids). Never someone else's, never stale.
+ */
+async function loadConversation(
+  supabase: SupabaseClient,
+  opts: { ids: string[]; personId: string | null; language: "da" | "en" },
+): Promise<ConversationTurn[]> {
+  const ids = [...new Set(opts.ids)].slice(-CONVERSATION_TURNS);
+  if (ids.length === 0 || !opts.personId) return [];
+  const since = Date.now() - CONVERSATION_MINUTES * 60_000;
+  const [{ data: rows }, { data: ledger }] = await Promise.all([
+    supabase
+      .from("inbound_messages")
+      .select("id, body_text, assistant_answer, commanded_by, received_at, kind")
+      .in("id", ids),
+    supabase.from("command_actions").select("message_id, entity_table, entity_id, payload").in("message_id", ids),
+  ]);
+  const tC = await getTranslations({ locale: opts.language, namespace: "inboxCommand" });
+  return (rows ?? [])
+    .filter((r) => r.kind === "command" && r.commanded_by === opts.personId && new Date(r.received_at).getTime() >= since)
+    .sort((a, b) => a.received_at.localeCompare(b.received_at))
+    .map((r) => {
+      const raw = (r.assistant_answer ?? {}) as { lookups?: unknown };
+      return {
+        request: r.body_text ?? "",
+        answer: parseAssistantAnswer(r.assistant_answer)?.text ?? "",
+        done: (ledger ?? [])
+          .filter((l) => l.message_id === r.id)
+          .map((l) => appliedSummary({ entityTable: l.entity_table, entityId: l.entity_id, payload: l.payload }, tC, opts.language).text),
+        lookups: Array.isArray(raw.lookups) ? raw.lookups.filter((x): x is string => typeof x === "string") : [],
+      };
+    });
 }

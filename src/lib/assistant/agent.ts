@@ -104,8 +104,11 @@ const AUTO_APPLY_WORDS: { type: CommandAction["type"]; words: string }[] = [
 /** The kinds that can run with no press — anything else always waits. */
 export const AUTO_APPLY_KINDS: ReadonlySet<CommandAction["type"]> = new Set(AUTO_APPLY_WORDS.map((w) => w.type));
 
+/** One earlier turn of the conversation, as the next request carries it. */
+export type ConversationTurn = { request: string; answer: string; done: string[]; lookups: string[] };
+
 export type AssistantResult =
-  | { ok: true; answer: AssistantAnswer; plan: CommandPlan }
+  | { ok: true; answer: AssistantAnswer; plan: CommandPlan; lookups: string[] }
   | { ok: false; reason: "no_body" | "no_key" | "api_error" | "no_answer"; detail?: string };
 
 /**
@@ -228,6 +231,7 @@ How to work:
    - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Look the customer up with search_customer and link it when exactly one matches; bikes it is about (a code, a frame number) go in \`bikes\` from find_bike when exactly one matches each — both are linked in the entry; when nothing (or nothing certain) matches, STILL book it — organizationId null, the name exactly as said in the title. A calendar entry never needs a customer in the system; do not ask which customer first. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
    - Never put a phone number or a person's name in a calendar title.
    - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
+   - THIS IS A CONVERSATION. "It", "that", "the appointment", "the second one", "move it" mean what the conversation so far was about — take the record (an entry's eventId, a bike, a customer) from the earlier turns and their lookups, and act on it; look up again only when it is truly unclear. An entry from calendar_entries earlier in the conversation may be moved or cancelled by its eventId directly.
    - THE calendar is the shop's SERVICE CALENDAR (Servicebesøg) — the one Google calendar the app is connected to, which Finn and the office share. Every entry you read, book, move or cancel is there; there is no other calendar, personal or otherwise. "My calendar" means this one.
    - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
    - An offer to act ("say yes and I'll book it") MUST come with the draft in \`actions\` now — a yes can only confirm what you drafted. If the customer is uncertain, draft it with the customer you found and ask.
@@ -268,7 +272,8 @@ export async function runAssistant(
     /** Asked by voice — nothing to tap; a waiting action asks for a spoken yes. */
     spoken?: boolean;
     /** One earlier exchange (≤10 min), so "and the one after?" makes sense. */
-    prior?: { request: string; answer: string; done?: string[] } | null;
+    /** The conversation so far, oldest first — so "it" and "that one" resolve. */
+    history?: ConversationTurn[];
   },
 ): Promise<AssistantResult> {
   const body = request.trim();
@@ -288,12 +293,17 @@ export async function runAssistant(
   const readByName = new Map(readTools.map((t) => [t.def.name, t]));
 
   const messages: { role: "user" | "assistant"; content: unknown }[] = [];
-  if (opts.prior) {
-    messages.push({ role: "user", content: opts.prior.request });
-    const done = opts.prior.done?.length
-      ? `\n\n[Carried out in the system by that reply — already DONE, never do it again: ${opts.prior.done.join("; ")}]`
+  /** This turn's lookups, kept with the answer for the next turn (ask.ts). */
+  const lookups: string[] = [];
+  for (const turn of opts.history ?? []) {
+    messages.push({ role: "user", content: turn.request || "(nothing said)" });
+    const done = turn.done.length
+      ? `\n\n[Carried out in the system by that reply — already DONE, never do it again: ${turn.done.join("; ")}]`
       : "";
-    messages.push({ role: "assistant", content: `${opts.prior.answer || "(no answer)"}${done}` });
+    const looked = turn.lookups.length
+      ? `\n\n[What I looked up for that reply — the ids are valid now: ${turn.lookups.join(" | ")}]`
+      : "";
+    messages.push({ role: "assistant", content: `${turn.answer || "(no answer)"}${done}${looked}` });
   }
   messages.push({ role: "user", content: body });
 
@@ -317,7 +327,9 @@ export async function runAssistant(
     const uses = content.filter((b) => b.type === "tool_use");
 
     const done = uses.find((b) => b.name === "respond");
-    if (done) return finish(done.input, ctx, opts.caps, openable);
+    if (done) {
+      return { ...finish(done.input, ctx, opts.caps, openable), lookups: lookups.slice(-8) };
+    }
 
     if (uses.length === 0) {
       if (i === MAX_ITERATIONS - 1) return { ok: false, reason: "no_answer" };
@@ -346,6 +358,9 @@ export async function runAssistant(
         result = { error: `not available to this person: ${call.name}` };
       }
       results.push({ type: "tool_result", tool_use_id: call.id, content: JSON.stringify(result) });
+      if (read || RESOLVER_NAMES.has(call.name ?? "")) {
+        lookups.push(`${call.name}(${JSON.stringify(input).slice(0, 160)}) → ${JSON.stringify(result).slice(0, 1200)}`);
+      }
     }
     messages.push({ role: "user", content: results });
   }
@@ -353,7 +368,12 @@ export async function runAssistant(
 }
 
 /** The model's `respond` → an answer the app can trust: seen ids only, allowed drafts only. */
-function finish(raw: unknown, ctx: ToolContext, caps: readonly string[], openable: TargetKind[]): AssistantResult {
+function finish(
+  raw: unknown,
+  ctx: ToolContext,
+  caps: readonly string[],
+  openable: TargetKind[],
+): { ok: true; answer: AssistantAnswer; plan: CommandPlan } {
   const parsed = parseAssistantAnswer(raw) ?? { text: "", open: null, go: false, choices: [] };
   // Seen in this run AND a page this person may open.
   const known = (t: { kind: TargetKind; id: string }) => ctx.seen.get(t.id) === t.kind && openable.includes(t.kind);

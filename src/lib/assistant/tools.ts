@@ -309,6 +309,8 @@ const calendarEntries: AssistantTool = {
     ctx.seen.set("calendar", "calendar");
     return {
       entries: r.value.slice(0, 15).map((e) => ({
+        // The id is what lets "move it" act on the entry just read out.
+        eventId: e.id,
         title: e.title,
         kind: e.kind ?? "other",
         date: e.allDay ? e.start : e.start.slice(0, 10),

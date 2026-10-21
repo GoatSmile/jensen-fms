@@ -3996,3 +3996,22 @@ by ear from three samples (Flash v2.5, Multilingual v2, v3).
 - The picker lists the ACCOUNT's voices (needs `voices_read`); without it the
   field takes a voice id. A library voice must be added to *My Voices* first.
 - Saving a changed model or voice speaks a test word in each set voice first.
+
+## 2026-10-21 — The secretary holds the conversation
+
+Owner: "If it quotes a calendar appointment to me and I say 'move it to another
+day', it needs to know in my second request what I am talking about. This is
+how Munin works."
+
+- Every answer keeps what it LOOKED UP, ids included (`assistant_answer.lookups`;
+  `calendar_entries` now returns each entry's `eventId`).
+- Every request carries the conversation so far — the asker's own turns, at
+  most 8, from the last 30 minutes — with each turn's answer, what it carried
+  out (from the ledger) and its lookups. It used to carry ONE previous turn's
+  words, which is why "it" had to be searched for again.
+- The model is told that "it / that / the second one" mean the record the
+  conversation is about, and that an entry it read out may be moved or
+  cancelled by its eventId directly.
+- Verified by voice as Finn: book a TEST visit → "when is it?" → "flyt den til
+  mandag klokken 13" (moved the right entry) → "aflys den" (asked, then
+  deleted on "ja").
