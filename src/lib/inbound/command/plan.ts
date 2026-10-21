@@ -129,6 +129,8 @@ export type DraftEventAction = {
   organizationLabel: string | null;
   /** Where it is, when it was said. */
   location: string | null;
+  /** The bikes it is about, each from find_bike (exactly one match) — linked in the entry. */
+  bikes: { id: string; label: string | null }[];
 };
 
 export type DraftPurchaseOrderItem = {
@@ -364,6 +366,11 @@ function normalizeAction(raw: unknown, id: string): CommandAction | null {
         organizationId: str(o.organizationId),
         organizationLabel: str(o.organizationLabel),
         location: str(o.location),
+        bikes: (Array.isArray(o.bikes) ? o.bikes : [])
+          .map((b) => (typeof b === "object" && b !== null ? (b as Record<string, unknown>) : {}))
+          .map((b) => ({ id: str(b.bikeId) ?? str(b.id), label: str(b.bikeLabel) ?? str(b.label) }))
+          .filter((b): b is { id: string; label: string | null } => Boolean(b.id))
+          .slice(0, 30),
       };
     }
     case "draft_purchase_order": {

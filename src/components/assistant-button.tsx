@@ -149,9 +149,12 @@ export function AssistantButton({
     // Press-again-to-save records until the second press; the rest end on a pause.
     silenceStop: mode === "note_toggle" ? undefined : NOTE_SILENCE_STOP,
     onNoSpeech: (heard) => {
-      // Listening on its own and nobody spoke: just stop — the conversation stays.
-      if (autoListen.current) {
-        autoListen.current = false;
+      // In the conversation nobody spoke yet: keep waiting for the next
+      // instruction (owner: "the system waits for my next instruction") —
+      // a fresh recording each window, so nothing piles up.
+      if (inConversation.current) {
+        autoListen.current = true;
+        void restartListening.current();
         return;
       }
       report("no_speech", null, heard);
@@ -159,6 +162,11 @@ export function AssistantButton({
     },
   });
   const recording = recorder.phase === "recording";
+  // onNoSpeech fires from inside the recorder, which cannot name itself.
+  const restartListening = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    restartListening.current = () => recorder.start();
+  }, [recorder]);
 
   // The recorder's own refusals (no mic permission, nothing captured).
   useEffect(() => {
@@ -391,6 +399,8 @@ export function AssistantButton({
           // Phone: a round button. Desktop: a pill that says what it is.
           "size-14 md:h-11 md:w-auto md:gap-2 md:px-4",
           open && view === "full" && "max-md:hidden",
+          // In the conversation the only control is its own End (owner).
+          open && view === "conversation" && "hidden",
         )}
       >
         <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />

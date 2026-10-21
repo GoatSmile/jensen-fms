@@ -812,8 +812,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   calendar is ONE: the Servicebesøg service calendar. **It is HANDS-FREE after the first
   press**: `speaker.say` resolves when the reply has finished, and only then
   the conversation listens again (so it never hears itself), showing *Lytter —
-  tal nu* in the window; ~8 s of silence ends that quietly. Starting the mic
-  with no tap is the part a phone may refuse — prove it on both. A NOTE is something it does when asked (`save_note`). **What a PRESS
+  tal nu* in the window, and it KEEPS waiting (a fresh recording every ~8 s of
+  silence) until *Afslut samtale* — the window's one control; the round button
+  hides meanwhile. Starting the mic with no tap is the part a phone may refuse
+  — prove it on both. **The voice is a provider** (`SPEECH_PROVIDERS`,
+  `app_settings.speech_provider`, migration 131): ElevenLabs, or Google Cloud
+  TTS as in Munin (`da-DK-Wavenet-F`, `en-US-Chirp3-HD-Aoede`) on the shared
+  service-account signer `src/lib/google/service-account.ts` — the API must be
+  enabled on that project; a changed provider must speak before it saves. **A
+  calendar entry's description links the customer and the bikes** it is about
+  (`eventDescription`, draft_event `bikes` from find_bike). A NOTE is something it does when asked (`save_note`). **What a PRESS
   does is the person's choice** (`people.assistant_mode`, chosen in the
   panel): `ask` opens the panel; `note_toggle` / `note_vad` still record a
   spoken NOTE — options kept "for now, remove later". Holding the button or

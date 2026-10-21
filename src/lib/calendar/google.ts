@@ -3,13 +3,12 @@
  * (docs/plan-service-calendar.md) — not OAuth as a person: an unpublished
  * consent screen expires its tokens every 7 days.
  *
- * No SDK. The service account signs a JWT with its key (Node's crypto), trades
- * it for an hour's access token, and calls the REST API. The key is read from
- * env on each token request and never leaves the server.
+ * No SDK. The token comes from the shared service-account signer
+ * (src/lib/google/service-account.ts); this calls the REST API.
  */
 import "server-only";
 
-import crypto from "node:crypto";
+import { googleAccessToken } from "@/lib/google/service-account";
 
 import type { CalendarAdapter, CalendarEvent, CalendarResult } from "./client";
 import { CALENDAR_KIND_SPECS, isCalendarKind } from "./kinds";
@@ -17,64 +16,12 @@ import { CALENDAR_KIND_SPECS, isCalendarKind } from "./kinds";
 /** Where the app's own kind rides on a Google event — private to our app's calls. */
 const KIND_PROPERTY = "fms_kind";
 
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API = "https://www.googleapis.com/calendar/v3";
 const SCOPE =
   "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly";
 
-type ServiceAccountKey = { client_email: string; private_key: string };
-
-let cached: { token: string; expiresAt: number } | null = null;
-
-function readKey(): ServiceAccountKey | null {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!raw) return null;
-  try {
-    const k = JSON.parse(raw) as Partial<ServiceAccountKey>;
-    return k.client_email && k.private_key
-      ? { client_email: k.client_email, private_key: k.private_key }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-async function accessToken(): Promise<CalendarResult<string>> {
-  if (cached && cached.expiresAt > Date.now() + 60_000) return { ok: true, value: cached.token };
-  const key = readKey();
-  if (!key) return { ok: false, error: "GOOGLE_SERVICE_ACCOUNT_KEY is missing or not a service-account key" };
-
-  const b64 = (v: string) => Buffer.from(v).toString("base64url");
-  const now = Math.floor(Date.now() / 1000);
-  const unsigned =
-    `${b64(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.` +
-    b64(JSON.stringify({ iss: key.client_email, scope: SCOPE, aud: TOKEN_URL, iat: now, exp: now + 3600 }));
-  let signature: string;
-  try {
-    signature = crypto.sign("RSA-SHA256", Buffer.from(unsigned), key.private_key).toString("base64url");
-  } catch (e) {
-    return { ok: false, error: `the key could not sign: ${(e as Error).message}` };
-  }
-
-  try {
-    const res = await fetch(TOKEN_URL, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion: `${unsigned}.${signature}`,
-      }),
-      cache: "no-store",
-    });
-    const json = (await res.json()) as { access_token?: string; expires_in?: number; error_description?: string; error?: string };
-    if (!res.ok || !json.access_token) {
-      return { ok: false, error: `Google refused the key: ${json.error_description ?? json.error ?? res.status}` };
-    }
-    cached = { token: json.access_token, expiresAt: Date.now() + (json.expires_in ?? 3600) * 1000 };
-    return { ok: true, value: json.access_token };
-  } catch (e) {
-    return { ok: false, error: `Google could not be reached: ${(e as Error).message}` };
-  }
+function accessToken(): Promise<CalendarResult<string>> {
+  return googleAccessToken(SCOPE);
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<CalendarResult<T>> {

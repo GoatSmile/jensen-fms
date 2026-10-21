@@ -100,6 +100,15 @@ export const PLAN_ACTION_ITEM_SCHEMA = {
       time: { type: ["string", "null"], description: "draft_event: 'HH:MM' 24h, only if a time was said; else null." },
       durationMinutes: { type: ["number", "null"], description: "draft_event: only if said; else null." },
       location: { type: ["string", "null"], description: "draft_event: the address or place, only if said." },
+      bikes: {
+        type: ["array", "null"],
+        description: "draft_event: the bikes it is about, each from find_bike with exactly one match — they are linked in the calendar entry.",
+        items: {
+          type: "object",
+          properties: { bikeId: { type: "string" }, bikeLabel: { type: "string" } },
+          required: ["bikeId"],
+        },
+      },
       // draft_purchase_order
       items: {
         type: ["array", "null"],

@@ -3402,6 +3402,9 @@
     "defaultHasNoListBody": "{type}: {supplier} er standardleverandør, men har ingen aktuel prisliste, så skabelonernes prisoverslag er tomme, og nye ordrer kan ikke prissættes. Tilføj deres prisliste, eller vælg en anden leverandør som standard nedenfor."
   },
   "adminSettings": {
+    "inboundSpeechTitle": "Tale (sekretærens stemme)",
+    "inboundSpeechHint": "Læser sekretærens svar højt på hver persons sprog. Google er det, Munin bruger; dets Text-to-Speech API skal være slået til i servicekontoens Google Cloud-projekt. Når et skift gemmes, siges der først ét ord for at bevise, at det virker. Hvor den valgte tjeneste ikke kan tale, læser telefonens egen stemme i stedet.",
+    "provider_google": "Google Cloud Text-to-Speech",
     "accountingDescription": "Udstedte fakturaer skubbes til e-conomic som kladdebilag — bogholderen gennemgår og bogfører dem der. API-tokens ligger i miljøvariabler; dette kort indeholder aftalenumrene. Bekræft journalen og omsætningskontoen med revisoren før det første rigtige push.",
     "accountingHeading": "Regnskab (e-conomic)",
     "addRecord": "Tilføj post",
@@ -3819,6 +3822,7 @@
     "cap": "Viser de {count} nyeste."
   },
   "errors": {
+    "speechProviderFailsTest": "{provider} blev ikke gemt — den kunne ikke tale: {detail}",
     "deliveryCalendarStatus": "Kun en bekræftet ordre, der ikke er leveret endnu, kan lægges i kalenderen.",
     "deliveryAlreadyInCalendar": "Ordrens levering ligger allerede i kalenderen.",
     "adminColorRalUnknown": "“{code}” er ikke en RAL Classic-kode. Lad feltet stå tomt, eller brug den firecifrede kode fra lakererens farvevifte (fx 5013).",
@@ -4560,6 +4564,8 @@
     "calendarLinkFailed": "Besøget ligger i kalenderen, men linket tilbage til opkaldet kunne ikke gemmes: {detail}",
     "visitEventLink": "Opkaldet i Jensen FMS",
     "calendarEventLinkCommand": "Kommandoen i Jensen FMS",
+    "calendarEventCustomer": "Kunde",
+    "calendarEventBike": "Cykel",
     "callNoNewCustomer": "Et opkald opretter aldrig en kunde — navne bliver hørt forkert. Vælg kunden på ordren eller tilbuddet i stedet.",
     "notesNeedPerson": "Et notat kræver en logget-ind person.",
     "notesBadPath": "Den optagelse kan ikke bruges.",
@@ -5311,9 +5317,10 @@
     "secretaryTitle": "Sekretær",
     "secretaryThinking": "Arbejder på det…",
     "secretaryWaiting": "Venter på dit ja: {what}",
+    "secretaryEnd": "Afslut samtale",
     "secretaryListening": "Lytter — tal nu",
     "secretarySpeaking": "Taler…",
-    "secretaryReady": "Tryk på knappen for at tale",
+    "secretaryReady": "Klar",
     "noteDiscard": "Kassér",
     "noteNoSpeech": "Intet hørt — intet notat gemt.",
     "noteError_unsupported": "Denne browser kan ikke optage.",

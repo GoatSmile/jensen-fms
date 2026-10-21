@@ -3952,3 +3952,23 @@ that the secretary is listening in the window, so that I know it's ready."
   conversation stays. Closing it, holding the button or pressing it stops the mic.
 - **Unproven on phones:** opening the microphone without a tap is exactly what
   iPhone Safari may refuse; verified in the desktop browser only.
+
+## 2026-10-21 — The conversation runs until ended; Google's voice as an option; entries link their records
+
+Owner: "I should not have to click the button again … the system waits for my
+next instruction. The only button … is to end the conversation"; "check what
+speaking service we use in Munin. Add it as an option"; "in the event
+description … add a link to the customer … and to the bicycle or bicycles."
+
+- **The conversation keeps listening** after every reply, through any silence,
+  until *Afslut samtale*; the round button hides while it runs and nothing
+  else is clickable. (The 8 s quiet stop of the earlier slice is gone.)
+- **Speech is a registered provider** (migration 131, set at /admin/settings →
+  Phone & inbox): ElevenLabs (default, verified) or Google Cloud Text-to-Speech
+  with Munin's voices. Google answers 403 until the Text-to-Speech API is
+  enabled on the service account's project; saving a changed provider runs a
+  one-word test and refuses with Google's reason. The service-account signer
+  is now shared by the calendar and the voice.
+- **Calendar entries made by the assistant or a note** carry links to the
+  customer and to each bike identified (exactly one match each), then the link
+  to what was said.

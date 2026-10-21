@@ -319,8 +319,15 @@ async function performAction(
         kind: action.kind,
         // A TEST note's or call's entry is marked too — the model drops it.
         title: inheritTestTitle(msg?.body_text, action.title),
-        // Minimal personal data in the provider: the title and a way back.
-        description: `${t(isCommand ? "calendarEventLinkCommand" : "visitEventLink")}: ${appOrigin()}/${isCommand ? "commands" : "calls"}/${messageId}`,
+        // Minimal personal data in the provider: the title and ways back — to
+        // what was said, and to the customer and bikes it is about when the
+        // app identified them (owner, 2026-10-21).
+        description: await eventDescription(supabase, {
+          source: `${t(isCommand ? "calendarEventLinkCommand" : "visitEventLink")}: ${appOrigin()}/${isCommand ? "commands" : "calls"}/${messageId}`,
+          organizationId: filled.customer ?? action.organizationId ?? msg?.matched_organization_id ?? null,
+          bikeIds: action.bikes.map((b) => b.id),
+          t,
+        }),
         location: action.location,
         date,
         time,
@@ -579,6 +586,45 @@ export async function autoApplyMessage(
     }
   }
   return results;
+}
+
+/**
+ * A calendar entry's description: a link to the customer and to each bike,
+ * when the app knows them, then the link to what was said. Only ids that
+ * exist are linked; names come from the records, never from the model.
+ */
+async function eventDescription(
+  supabase: ReturnType<typeof createServiceClient>,
+  opts: { source: string; organizationId: string | null; bikeIds: string[]; t: Translator },
+): Promise<string> {
+  const lines: string[] = [];
+  if (opts.organizationId) {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id, legal_name, display_name_da")
+      .eq("id", opts.organizationId)
+      .maybeSingle();
+    if (org) {
+      lines.push(`${opts.t("calendarEventCustomer")}: ${org.display_name_da ?? org.legal_name} — ${appOrigin()}/organizations/${org.id}`);
+    }
+  }
+  if (opts.bikeIds.length) {
+    const [{ data: bikes }, { data: codes }] = await Promise.all([
+      supabase.from("bikes").select("id, frame_number").in("id", opts.bikeIds).is("deleted_at", null),
+      supabase
+        .from("bike_identifiers")
+        .select("bike_id, identifier_value, type:bike_identifier_types!inner(slug)")
+        .eq("is_active", true)
+        .eq("type.slug", "fleet_number")
+        .in("bike_id", opts.bikeIds),
+    ]);
+    const code = new Map((codes ?? []).map((c) => [c.bike_id as string, c.identifier_value as string]));
+    for (const b of bikes ?? []) {
+      lines.push(`${opts.t("calendarEventBike")}: ${code.get(b.id) ?? b.frame_number} — ${appOrigin()}/bikes/${b.id}`);
+    }
+  }
+  lines.push(opts.source);
+  return lines.join("\n");
 }
 
 /** An entry of this kind, for this customer, on this day, made by the app in the last few hours. */

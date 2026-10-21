@@ -36,10 +36,14 @@ type Props = {
   transcriptionProviders: string[];
   extractionProviders: string[];
   telephonyProviders: string[];
+  /** Who speaks the secretary's answers (migration 131). */
+  initialSpeechProvider: string;
+  speechProviders: string[];
   secrets: {
     transcription: SecretStatus[];
     extraction: SecretStatus[];
     telephony: SecretStatus[];
+    speech: SecretStatus[];
   };
 };
 
@@ -69,6 +73,7 @@ export function InboundSettingsForm(props: Props) {
   const [telephonyProvider, setTelephonyProvider] = useState(
     props.initialTelephonyProvider,
   );
+  const [speechProvider, setSpeechProvider] = useState(props.initialSpeechProvider);
   const [phoneNumber, setPhoneNumber] = useState(props.initialPhoneNumber);
   const [phoneNumberTest, setPhoneNumberTest] = useState(
     props.initialPhoneNumberTest,
@@ -117,6 +122,7 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_extraction_model", extractionModel.trim());
     appendField(fd, "inbound_assistant_model", assistantModel.trim());
     fd.set("inbound_telephony_provider", telephonyProvider);
+    fd.set("speech_provider", speechProvider);
     appendField(fd, "inbound_phone_number", phoneNumber.trim());
     appendField(fd, "inbound_phone_number_test", phoneNumberTest.trim());
     appendField(fd, "inbound_media_retention_days", retentionDays.trim());
@@ -227,6 +233,18 @@ export function InboundSettingsForm(props: Props) {
             okKey="inboundAssistantModelOk"
             onTest={testAssistantModelAction}
           />
+        </ProviderBlock>
+
+        <ProviderBlock
+          title={t("inboundSpeechTitle")}
+          providerId="speech_provider"
+          provider={speechProvider}
+          onProvider={setSpeechProvider}
+          options={props.speechProviders}
+          providerLabel={providerLabel}
+          secrets={props.secrets.speech}
+        >
+          <p className="text-muted-foreground text-xs">{t("inboundSpeechHint")}</p>
         </ProviderBlock>
 
         <ProviderBlock

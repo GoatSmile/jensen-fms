@@ -55,6 +55,17 @@ export const TRANSCRIPTION_PROVIDERS: ProviderEntry[] = [
   { key: "elevenlabs", envSecrets: ["ELEVENLABS_API_KEY"], supportsChannels: true },
 ];
 
+/**
+ * Registered SPEECH adapters (text → voice): the secretary's answers read
+ * aloud (migration 131). ElevenLabs shares the transcription key; Google is
+ * what Munin speaks with, on the calendar's service account — its Text-to-
+ * Speech API must be enabled on that account's project.
+ */
+export const SPEECH_PROVIDERS: ProviderEntry[] = [
+  { key: "elevenlabs", envSecrets: ["ELEVENLABS_API_KEY"] },
+  { key: "google", envSecrets: ["GOOGLE_SERVICE_ACCOUNT_KEY"] },
+];
+
 /** ElevenLabs hosts — the residency choice. Endpoints stay in code (doctrine). */
 export const ELEVENLABS_REGIONS = ["eu", "global", "us"] as const;
 export type ElevenLabsRegion = (typeof ELEVENLABS_REGIONS)[number];
@@ -141,10 +152,12 @@ export type InboundSettings = {
   callImportProvider: string | null;
   callImportVoicemails: boolean;
   callImportLookbackHours: number;
+  /** Who speaks the secretary's answers (migration 131). */
+  speechProvider: string;
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_assistant_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_assistant_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours, speech_provider";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -185,6 +198,7 @@ export async function loadInboundSettings(
     callImportProvider: data?.inbound_call_import_provider ?? null,
     callImportVoicemails: data?.inbound_call_import_voicemails ?? true,
     callImportLookbackHours: Number(data?.inbound_call_import_lookback_hours ?? 48),
+    speechProvider: data?.speech_provider ?? "elevenlabs",
   };
 }
 
@@ -208,6 +222,7 @@ export function inboundSecretStatus(settings: InboundSettings): {
   transcription: SecretStatus[];
   extraction: SecretStatus[];
   telephony: SecretStatus[];
+  speech: SecretStatus[];
 } {
   const check = (registry: ProviderEntry[], key: string): SecretStatus[] => {
     const entry = findProvider(registry, key);
@@ -224,6 +239,7 @@ export function inboundSecretStatus(settings: InboundSettings): {
     ),
     extraction: check(EXTRACTION_PROVIDERS, settings.extractionProvider),
     telephony: check(TELEPHONY_PROVIDERS, settings.telephonyProvider),
+    speech: check(SPEECH_PROVIDERS, settings.speechProvider),
     // Call import reports per phone line instead (src/lib/calls/lines.ts),
     // because each line has its own token.
   };

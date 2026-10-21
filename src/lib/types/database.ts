@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          speech_provider: string
           app_language: string
           calendar_id: string | null
           calendar_provider: string | null
@@ -61,6 +62,7 @@ export type Database = {
           workshop_phone: string | null
         }
         Insert: {
+          speech_provider?: string
           app_language?: string
           calendar_id?: string | null
           calendar_provider?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           workshop_phone?: string | null
         }
         Update: {
+          speech_provider?: string
           app_language?: string
           calendar_id?: string | null
           calendar_provider?: string | null

@@ -3402,6 +3402,9 @@
     "defaultHasNoListBody": "{type}: {supplier} is the default supplier but has no current price list, so template cost estimates stay blank and new orders cannot be priced. Add their price list, or make another supplier the default below."
   },
   "adminSettings": {
+    "inboundSpeechTitle": "Speech (the secretary's voice)",
+    "inboundSpeechHint": "Reads the secretary's answers aloud, in each person's language. Google is what Munin uses; its Text-to-Speech API must be enabled on the service account's Google Cloud project. Saving a change says one word first, to prove it works. Where the chosen service cannot speak, the phone's own voice reads instead.",
+    "provider_google": "Google Cloud Text-to-Speech",
     "accountingDescription": "Issued invoices push to e-conomic as draft journal vouchers — the bookkeeper reviews and books them there. API tokens live in env vars; this card holds the agreement numbers. Confirm the journal and revenue account with the revisor before the first real push.",
     "accountingHeading": "Accounting (e-conomic)",
     "addRecord": "Add record",
@@ -3819,6 +3822,7 @@
     "cap": "Showing the {count} most recent."
   },
   "errors": {
+    "speechProviderFailsTest": "{provider} was not saved — it could not speak: {detail}",
     "deliveryCalendarStatus": "Only a confirmed order that is not yet delivered can go in the calendar.",
     "deliveryAlreadyInCalendar": "This order's delivery is already in the calendar.",
     "adminColorRalUnknown": "“{code}” is not a RAL Classic code. Leave it blank, or use the four-digit code from the painter’s fan deck (e.g. 5013).",
@@ -4560,6 +4564,8 @@
     "calendarLinkFailed": "The visit is in the calendar, but the link back to this call could not be saved: {detail}",
     "visitEventLink": "The call in Jensen FMS",
     "calendarEventLinkCommand": "The command in Jensen FMS",
+    "calendarEventCustomer": "Customer",
+    "calendarEventBike": "Bike",
     "callNoNewCustomer": "A call never creates a customer — names get misheard. Pick the customer on the order or offer instead.",
     "notesNeedPerson": "A note needs a signed-in person.",
     "notesBadPath": "That recording can't be used.",
@@ -5311,9 +5317,10 @@
     "secretaryTitle": "Secretary",
     "secretaryThinking": "Working on it…",
     "secretaryWaiting": "Waiting for your yes: {what}",
+    "secretaryEnd": "End conversation",
     "secretaryListening": "Listening — speak now",
     "secretarySpeaking": "Speaking…",
-    "secretaryReady": "Press the button to speak",
+    "secretaryReady": "Ready",
     "noteDiscard": "Discard",
     "noteNoSpeech": "Nothing heard — no note saved.",
     "noteError_unsupported": "This browser can't record.",

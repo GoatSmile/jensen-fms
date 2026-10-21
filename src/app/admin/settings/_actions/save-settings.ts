@@ -10,6 +10,7 @@ import {
   TRANSCRIPTION_PROVIDERS,
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
+  SPEECH_PROVIDERS,
   ELEVENLABS_REGIONS,
   DEFAULT_ASSISTANT_MODEL,
   DEFAULT_EXTRACTION_MODEL,
@@ -17,6 +18,8 @@ import {
   loadInboundSettings,
 } from "@/lib/inbound/settings";
 import { testAssistantModel, testModel } from "@/lib/inbound/models";
+import { synthesizeElevenLabs } from "@/lib/speech/elevenlabs";
+import { synthesizeGoogle } from "@/lib/speech/google";
 
 export type SettingsResult = { ok: true } | { ok: false; error: string };
 
@@ -390,6 +393,8 @@ export async function saveInboundSettings(
     "twilio",
   );
   if ("error" in telephony) return { ok: false, error: telephony.error };
+  const speech = pick("speech_provider", SPEECH_PROVIDERS, "elevenlabs");
+  if ("error" in speech) return { ok: false, error: speech.error };
 
   const retentionRaw = (
     nullable(formData.get("inbound_media_retention_days")) ?? "90"
@@ -479,6 +484,19 @@ export async function saveInboundSettings(
     }
   }
 
+  // A CHANGED voice must speak before it is stored — Google's Text-to-Speech
+  // in particular has to be enabled on the service account's project first.
+  if (speech.value !== current.speechProvider) {
+    const say = speech.value === "google" ? synthesizeGoogle : synthesizeElevenLabs;
+    const probe = await say("Test.", "da");
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: t("speechProviderFailsTest", { provider: speech.value, detail: probe.detail ?? probe.reason }),
+      };
+    }
+  }
+
   // The ElevenLabs host is the residency choice; only the three it runs.
   const elevenlabsRegion = (nullable(formData.get("inbound_elevenlabs_region")) ?? "global").trim();
   if (!(ELEVENLABS_REGIONS as readonly string[]).includes(elevenlabsRegion)) {
@@ -499,6 +517,7 @@ export async function saveInboundSettings(
       inbound_extraction_model: newModel,
       inbound_assistant_model: newAssistantModel,
       inbound_telephony_provider: telephony.value,
+      speech_provider: speech.value,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
       inbound_phone_number_test: nullable(
         formData.get("inbound_phone_number_test"),

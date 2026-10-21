@@ -8,6 +8,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { loadAssistantView } from "@/app/_actions/assistant";
 import { createCommandFromText } from "@/app/calls/_actions/command";
 import { appliedSummary, pendingSummary } from "@/lib/inbound/command/applied-summary";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Turn = {
@@ -27,9 +28,10 @@ type Turn = {
  * question and answers, the results of the actions the system executes, and
  * nothing else … literally a conversation with the secretary. There should be
  * nothing to click"). Each spoken request is a turn: what was heard, the
- * reply (also spoken aloud), what was done, and what waits for a yes. Nothing
- * here is a control — the round button speaks the next turn, a yes or no
- * settles what waits, a tap outside closes it, and holding the button (or
+ * reply (also spoken aloud), what was done, and what waits for a yes. It
+ * LISTENS by itself after every reply and keeps waiting for the next
+ * instruction until it is ended — *End conversation* is the one control
+ * (owner, same day). A yes or no settles what waits; holding the button (or
  * ⌘K) opens the full panel with every control. Turns thread: each request
  * carries the previous one, so "and the one after?" and "yes" make sense.
  */
@@ -108,8 +110,6 @@ export function SecretaryConversation({
 
   return (
     <>
-      {/* A tap anywhere outside closes the conversation — there is no button for it. */}
-      <div className="fixed inset-0 z-40" aria-hidden onClick={onClose} />
       <div
         role="log"
         aria-live="polite"
@@ -119,14 +119,20 @@ export function SecretaryConversation({
         }}
         className={cn(
           "bg-popover text-popover-foreground shadow-popover fixed z-50 flex flex-col gap-4 overflow-y-auto rounded-2xl p-4",
-          // Phone: across the width, above the round button (still pressable). Desktop: a column over it.
-          "inset-x-2 bottom-20 max-h-[75dvh] md:inset-x-auto md:right-4 md:w-[420px] md:max-h-[min(680px,80vh)]",
+          // Phone: across the width at the bottom. Desktop: a column in the corner.
+          "inset-x-2 bottom-2 max-h-[80dvh] md:inset-x-auto md:right-4 md:bottom-4 md:w-[420px] md:max-h-[min(680px,80vh)]",
         )}
       >
-        <p className="text-ink-2 flex items-center gap-2 text-xs">
-          <Sparkles className="text-brand-ink size-3.5" aria-hidden />
-          {t("secretaryTitle")}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-ink-2 flex items-center gap-2 text-xs">
+            <Sparkles className="text-brand-ink size-3.5" aria-hidden />
+            {t("secretaryTitle")}
+          </p>
+          {/* The ONE control (owner): the conversation runs until it is ended. */}
+          <Button type="button" size="sm" variant="outline" onClick={onClose} className="ml-auto">
+            {t("secretaryEnd")}
+          </Button>
+        </div>
         {turns.map((turn) => (
           <div key={turn.key} className="flex flex-col gap-2">
             <p className="bg-ground self-end rounded-2xl px-3 py-2 text-sm">{turn.asked}</p>

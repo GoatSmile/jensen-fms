@@ -28,6 +28,7 @@ import {
   loadInboundSettings,
   inboundSecretStatus,
   TRANSCRIPTION_PROVIDERS,
+  SPEECH_PROVIDERS,
   EXTRACTION_PROVIDERS,
   TELEPHONY_PROVIDERS,
   CALL_IMPORT_PROVIDERS,
@@ -289,6 +290,8 @@ export default async function AdminSettingsPage({
                 )}
                 extractionProviders={EXTRACTION_PROVIDERS.map((p) => p.key)}
                 telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
+                initialSpeechProvider={inboundSettings.speechProvider}
+                speechProviders={SPEECH_PROVIDERS.map((p) => p.key)}
                 secrets={inboundSecrets}
               />
             </Panel>
