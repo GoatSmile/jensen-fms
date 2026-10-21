@@ -3680,9 +3680,9 @@
     "capDataQuery": "Spørg assistenten om alt i databasen",
     "capCallsOwn": "Egen indbakke (egne opkald og notater)",
     "autoApplyTitle": "Handl med det samme",
-    "autoApplyDesc": "For denne persons indtalte notater.",
+    "autoApplyDesc": "For det, personen siger til sekretæren, og deres indtalte notater.",
     "autoApplyLabel": "Udfør sikre forslag uden et tryk",
-    "autoApplyHint": "At lægge et notat på en cykel, der er identificeret med sikkerhed, og at oprette eller flytte et besøg i kalenderen. Sletning af en aftale, kontaktoplysninger, tilbud og alt med penge venter altid på en person. Hver enkelt vises på notatet som udført automatisk."
+    "autoApplyHint": "At oprette et besøg i kalenderen med kendt kunde og dato, at flytte en aftale, at gemme et notat, de har bedt om, og at lægge et notat på en cykel, der er identificeret med sikkerhed. Sletning af en aftale, kontaktoplysninger, tilbud og alt med penge venter altid på en person. Hver enkelt vises som udført automatisk."
   },
   "adminSuppliers": {
     "activeLabel": "Aktiv (synlig i leverandørvælgere)",

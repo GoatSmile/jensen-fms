@@ -3680,9 +3680,9 @@
     "capDataQuery": "Ask the assistant about anything in the database",
     "capCallsOwn": "Own inbox (own calls and notes)",
     "autoApplyTitle": "Act right away",
-    "autoApplyDesc": "For this person's spoken notes.",
+    "autoApplyDesc": "For what this person says to the secretary, and their spoken notes.",
     "autoApplyLabel": "Run safe suggestions without a press",
-    "autoApplyHint": "Putting a note on a bike that was identified with certainty, and booking or moving a calendar visit. Deleting an appointment, contact details, offers and anything with money always wait for a person. Each one shows on the note as applied automatically."
+    "autoApplyHint": "Booking a calendar visit with a known customer and date, moving an appointment, saving a note they asked for, and putting a note on a bike identified with certainty. Deleting an appointment, contact details, offers and anything with money always wait for a person. Each one shows as applied automatically."
   },
   "adminSuppliers": {
     "activeLabel": "Active (visible in supplier pickers)",
