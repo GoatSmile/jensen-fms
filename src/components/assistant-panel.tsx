@@ -27,12 +27,6 @@ type Props = {
   mode: AssistantMode;
   /** Applies a pick to the button at once; the save follows. */
   onModeChange: (mode: AssistantMode) => void;
-  /** A spoken question (ask_voice) to ask as soon as it arrives; a new key is a new question. */
-  question?: { text: string; key: number } | null;
-  /** Hears the reply to a SPOKEN question, to say it aloud. */
-  onSpokenAnswer?: (text: string) => void;
-  /** The secretary's button stays on screen below the panel (phone). */
-  aboveButton?: boolean;
 };
 
 /**
@@ -47,7 +41,7 @@ type Props = {
  * word is fixed first. A follow-up within the panel threads the previous
  * request (the assistant remembers one exchange, ≤10 min).
  */
-export function AssistantPanel({ onClose, canScan, mode, onModeChange, question, onSpokenAnswer, aboveButton }: Props) {
+export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) {
   const t = useTranslations("assistant");
   const locale = useLocale();
   const router = useRouter();
@@ -85,23 +79,17 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question,
     };
   }, [pending]);
 
-  async function refresh(id: string): Promise<AssistantView> {
-    const v = await loadAssistantView(id);
-    setView(v);
-    return v;
+  async function refresh(id: string) {
+    setView(await loadAssistantView(id));
   }
 
-  function send(spoken?: string) {
-    const body = (spoken ?? text).trim();
+  function send() {
+    const body = text.trim();
     if (!body || pending) return;
     setError(null);
-    const speak = spoken !== undefined ? onSpokenAnswer : undefined;
     start(async () => {
       const r = await createCommandFromText(body, requestId);
-      if (!r.ok) {
-        speak?.(r.error);
-        return setError(r.error);
-      }
+      if (!r.ok) return setError(r.error);
       setText("");
       // Asked to SEE one record → straight there.
       if (r.openHref) {
@@ -111,21 +99,9 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question,
       }
       setAsked(body);
       setRequestId(r.id);
-      const v = await refresh(r.id);
-      // Spoken in, spoken out: the reply (with what was done) is read aloud.
-      if (speak) speak(v.ok && v.status !== "failed" && v.answer?.text ? v.answer.text : t("failed"));
+      await refresh(r.id);
     });
   }
-
-  // A spoken question is asked at once — the button already heard it, and
-  // "You asked" above the answer shows what it heard.
-  const askedKey = useRef<number | null>(null);
-  useEffect(() => {
-    if (!question || askedKey.current === question.key) return;
-    askedKey.current = question.key;
-    send(question.text);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken question
-  }, [question?.key]);
 
   /** Keep what is in the box as a note — no answer, it waits in the person's list. */
   function saveAsNote() {
@@ -170,8 +146,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question,
       className={cn(
         "bg-popover text-popover-foreground shadow-popover fixed z-50 flex flex-col rounded-2xl",
         // Phone: across the width, above the corner. Desktop: a column over the button.
-        "inset-x-2 max-h-[85dvh] md:inset-x-auto md:right-4 md:bottom-20 md:w-[420px] md:max-h-[min(680px,80vh)]",
-        aboveButton ? "bottom-20 max-h-[75dvh]" : "bottom-2",
+        "inset-x-2 bottom-2 max-h-[85dvh] md:inset-x-auto md:right-4 md:bottom-20 md:w-[420px] md:max-h-[min(680px,80vh)]",
       )}
       onKeyDown={(e) => {
         if (e.key === "Escape") onClose();
@@ -282,7 +257,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange, question,
           className="border-rule bg-ground w-full resize-none rounded-lg border p-2.5 text-sm"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" onClick={() => send()} disabled={pending || !text.trim()}>
+          <Button type="button" size="sm" onClick={send} disabled={pending || !text.trim()}>
             {pending ? t("sending") : t("send")}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={saveAsNote} disabled={pending || !text.trim()}>

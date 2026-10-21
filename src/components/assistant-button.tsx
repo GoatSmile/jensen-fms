@@ -15,6 +15,7 @@ import { useSpeaker } from "@/lib/speech/use-speaker";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
+import { SecretaryConversation } from "./secretary-conversation";
 
 /** Holding the button this long opens the panel, whatever the mode. */
 const LONG_PRESS_MS = 500;
@@ -65,6 +66,8 @@ export function AssistantButton({
   const locale = useLocale();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  /** A spoken request opens the conversation; holding the button or ⌘K, the full panel. */
+  const [view, setView] = useState<"conversation" | "full">("full");
   const [shortcut, setShortcut] = useState("Ctrl K");
   const [toast, setToast] = useState<Toast | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,6 +101,7 @@ export function AssistantButton({
       if (!text) return setToast({ kind: "no_speech" });
       setToast(null);
       setQuestion({ text, key: Date.now() });
+      setView("conversation");
       setOpen(true);
     },
     [language],
@@ -160,6 +164,7 @@ export function AssistantButton({
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        setView("full");
         setOpen((o) => !o);
       }
     };
@@ -175,7 +180,10 @@ export function AssistantButton({
 
   async function press() {
     if (longPressed.current) return;
-    if (!voiceMode) return setOpen((o) => !o);
+    if (!voiceMode) {
+      setView("full");
+      return setOpen((o) => !o);
+    }
     if (recording) return recorder.stop();
     if (toast?.kind === "hearing" || toast?.kind === "saving") return;
     // Talking over the secretary stops her — and keeps her voice out of the mic.
@@ -193,6 +201,7 @@ export function AssistantButton({
     pressTimer.current = setTimeout(() => {
       longPressed.current = true;
       if (recording) recorder.cancel();
+      setView("full");
       setOpen(true);
     }, LONG_PRESS_MS);
   }
@@ -211,21 +220,19 @@ export function AssistantButton({
 
   return (
     <>
-      {open ? (
-        <AssistantPanel
+      {open && view === "conversation" ? (
+        <SecretaryConversation
+          question={question}
+          // Spoken in, spoken out.
+          onSpeak={(text) => void speaker.say(text, language)}
           onClose={() => {
             setOpen(false);
             setQuestion(null);
             speaker.stop();
           }}
-          canScan={canScan}
-          mode={mode}
-          onModeChange={setMode}
-          question={question}
-          // The answer to a SPOKEN question is spoken back.
-          onSpokenAnswer={(text) => void speaker.say(text, language)}
-          aboveButton={mode === "ask_voice"}
         />
+      ) : open ? (
+        <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} onModeChange={setMode} />
       ) : null}
 
       {/* What the button is doing, said in words above it. */}
@@ -327,7 +334,7 @@ export function AssistantButton({
           recording && "ring-brand/40 animate-pulse ring-4",
           // Phone: a round button. Desktop: a pill that says what it is.
           "size-14 md:h-11 md:w-auto md:gap-2 md:px-4",
-          open && mode !== "ask_voice" && "max-md:hidden",
+          open && view === "full" && "max-md:hidden",
         )}
       >
         <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />

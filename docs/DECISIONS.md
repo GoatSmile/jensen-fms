@@ -3891,3 +3891,24 @@ note modes] as an option, and we can remove it later."
 - **Found on the way:** the pause detector seeds its noise floor from the first
   buffer, so speech that starts at the beep was learned as noise and dropped
   as "nothing heard" (peak 0.19). Loud sound now counts as speech regardless.
+
+## 2026-10-21 — The secretary is a conversation with nothing to click
+
+Owner, with a screenshot of the panel: "this pop-up should have only the text,
+question and answers, the results of the actions the system executes, and
+nothing else. It is literally a conversation with the secretary. There should
+be nothing to click."
+
+- **A spoken request opens `SecretaryConversation`**: turns of heard → reply →
+  done (✓) → waiting, text only. No input box, buttons, links or mode menu.
+  The round button speaks the next turn; a tap outside closes; holding the
+  button or ⌘K opens the full panel, which keeps every control (typing,
+  dictation, scan, the mode menu, the suggestion cards).
+- **What waits is confirmed by VOICE.** Deleting still never runs by itself
+  (2026-10-08); in this mode the reply asks "Shall I …? Say yes." and a plain
+  yes/no to the previous turn settles it — matched by a short regex, not the
+  model, applied as the person with their rights through the same core as a
+  tap. Anything that is not a plain yes/no goes to the model as usual.
+- **Rejected:** keeping a single *Confirm* button in the conversation (the owner
+  said nothing to click); letting the model decide what counts as a yes (a
+  misheard word must not delete an appointment).

@@ -203,6 +203,7 @@ function systemPrompt(opts: {
   openable: TargetKind[];
   now: string;
   autoApply: string[];
+  spoken: boolean;
 }): string {
   return `You are the assistant inside Jensen FMS, the system of a Danish workshop that builds and repairs custom-branded bikes (Jensen Production / Logocykler). A staff member speaks or types to you — like to a secretary. You can ANSWER questions, OPEN a record for them, and DRAFT actions for them to confirm. You never change anything yourself.
 
@@ -221,7 +222,7 @@ How to work:
    - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
    - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
    - A NOTE only when they ask for one ("make a note", "note that", "remember that", "noter", "skriv ned"): save_note with the words to keep. A question or an instruction is never a note.
-   - ${opts.autoApply.length ? `For THIS person these are carried out AT ONCE when you propose them, with no tap: ${opts.autoApply.join("; ")}. Word those as DONE, in past tense ("Moved the Gladsaxe visit to Monday 13:00"). Everything else waits for a tap — word it as a proposal ("Tap Delete to cancel it").` : `Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").`}
+   - ${opts.autoApply.length ? `For THIS person these are carried out AT ONCE when you propose them, with no tap: ${opts.autoApply.join("; ")}. Word those as DONE, in past tense ("Moved the Gladsaxe visit to Monday 13:00"). Everything else waits for the person — ${opts.spoken ? `ask for a spoken yes ("Shall I cancel the Gladsaxe visit on Monday 13:00? Say yes.")` : `word it as a proposal ("Tap Delete to cancel it")`}.` : opts.spoken ? `Nothing happens until the person says yes. So ASK ("Shall I move it to Monday 13:00? Say yes."), never say it is done.` : `Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").`}
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
 5. Only use ids your tools returned in this conversation. If a tool says you are not allowed, tell the person plainly.
    This person can open pages for: ${opts.openable.join(", ")}. For any other kind, do not set \`open\` — say plainly that you can't open it for them (you may still say what you found).
@@ -254,6 +255,8 @@ export async function runAssistant(
     personId: string | null;
     /** The asker has *act right away* on: safe drafts will be carried out at once. */
     autoApply?: boolean;
+    /** Asked by voice — nothing to tap; a waiting action asks for a spoken yes. */
+    spoken?: boolean;
     /** One earlier exchange (≤10 min), so "and the one after?" makes sense. */
     prior?: { request: string; answer: string } | null;
   },
@@ -287,6 +290,7 @@ export async function runAssistant(
     drafts,
     openable,
     now: danishNow(),
+    spoken: opts.spoken === true,
     autoApply: opts.autoApply ? AUTO_APPLY_WORDS.filter((w) => drafts.includes(w.type)).map((w) => w.words) : [],
   });
 

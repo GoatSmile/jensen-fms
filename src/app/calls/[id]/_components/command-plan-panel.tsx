@@ -12,6 +12,7 @@ import type { CommandAction, CommandPlan } from "@/lib/inbound/command/plan";
 import type { AppliedAction } from "@/lib/inbound/command/plan-context";
 import { isOptionalOnCall, openSlotsFor } from "@/lib/inbound/command/plan";
 import { CALENDAR_KIND_SPECS } from "@/lib/calendar/kinds";
+import { appliedSummary } from "@/lib/inbound/command/applied-summary";
 
 import { applyCommandAction, rerunCommandAgent } from "../../_actions/command";
 
@@ -39,14 +40,6 @@ type Props = {
   onChanged?: () => void;
 };
 
-const ENTITY_PATH: Record<string, string> = {
-  bikes: "/bikes",
-  organizations: "/organizations",
-  offers: "/offers",
-  sales_orders: "/sales-orders",
-  maintenance_tickets: "/maintenance/tickets",
-  purchase_orders: "/purchase-orders",
-};
 
 /**
  * Review surface for a kind='command' message (VC-1). Renders the agent's
@@ -416,64 +409,8 @@ function ActionCard({
 function AppliedResult({ applied }: { applied: AppliedRow | undefined }) {
   const t = useTranslations("inboxCommand");
   const locale = useLocale();
-  const p = (applied?.payload ?? {}) as Record<string, unknown>;
-  const str = (v: unknown) => (typeof v === "string" && v ? v : null);
   const table = applied?.entityTable ?? null;
-  const id = applied?.entityId ?? null;
-
-  let text: string;
-  let href: string | null = null;
-  if (table === "calendar_events" && p.deleted) {
-    text = t("resultCalendarDeleted", { title: str(p.title) ?? "" });
-  } else if (table === "calendar_events") {
-    const date = str(p.date);
-    const time = str(p.time);
-    const eventId = str(p.eventId);
-    const kind = str(p.kind) === "delivery" ? "delivery" : "visit";
-    const day = date
-      ? new Intl.DateTimeFormat(locale === "da" ? "da-DK" : "en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          timeZone: "UTC",
-        }).format(new Date(`${date}T12:00:00Z`))
-      : "";
-    text = p.moved
-      ? t("resultCalendarMoved", { when: time ? `${day}, ${time}` : day })
-      : t("resultCalendar", { kind: t(`type_draft_event_${kind}`), when: time ? `${day}, ${time}` : day });
-    // Past entries live on the calendar's other tab.
-    const past = date !== null && date < new Date().toISOString().slice(0, 10);
-    if (eventId) {
-      const q = new URLSearchParams({ event: eventId });
-      if (past) q.set("when", "past");
-      href = `/calendar?${q.toString()}#ev-${eventId}`;
-    } else {
-      href = "/calendar";
-    }
-  } else if (table === "inbound_messages" && p.note) {
-    // A note the secretary saved: it waits in the Inbox, opens on its own page.
-    text = t("resultNote");
-    href = id ? `/calls/${id}` : "/inbox";
-  } else if (table === "contacts") {
-    // A saved contact: shown on its customer's page.
-    text = t(p.created ? "resultContactCreated" : "resultContactUpdated", { label: str(p.number) ?? "" });
-    href = str(p.organizationId) ? `/organizations/${str(p.organizationId)}` : null;
-  } else if (applied?.entityTable && p.bikeId !== undefined) {
-    // An attached note: it now sits in that record's history.
-    text = t("resultAttached", { label: str(p.number) ?? "" });
-    href = str(p.bikeId) ? `/bikes/${str(p.bikeId)}` : str(p.organizationId) ? `/organizations/${str(p.organizationId)}` : null;
-  } else if (table === "purchase_orders") {
-    const pos = Array.isArray(p.pos) ? (p.pos as { number?: string }[]) : [];
-    text = t("resultPurchaseOrders", { numbers: pos.map((po) => po.number).filter(Boolean).join(", ") || "—" });
-    href = id ? `${ENTITY_PATH.purchase_orders}/${id}` : null;
-  } else if (table && table in ENTITY_PATH) {
-    const label = str(p.number) ?? str(p.legalName) ?? "";
-    text = t(`result_${table}`, { label });
-    href = id ? `${ENTITY_PATH[table]}/${id}` : null;
-  } else {
-    // A second press that lost the race, or a row written before its link.
-    text = t("applied");
-  }
+  const { text, href } = appliedSummary(applied, t, locale);
 
   return (
     <p className="text-good flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">

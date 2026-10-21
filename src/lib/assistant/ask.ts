@@ -39,6 +39,8 @@ export async function answerRequest(
     priorId?: string | null;
     /** Safe drafts will be carried out at once — the reply words them as done. */
     autoApply?: boolean;
+    /** Asked by voice: there is nothing to tap, so a waiting action asks for a spoken yes. */
+    spoken?: boolean;
   },
 ): Promise<AskOutcome> {
   let prior: { request: string; answer: string } | null = null;
@@ -64,6 +66,7 @@ export async function answerRequest(
     language: opts.language,
     personId: opts.personId,
     autoApply: opts.autoApply,
+    spoken: opts.spoken,
     prior,
   });
   if (!r.ok) {

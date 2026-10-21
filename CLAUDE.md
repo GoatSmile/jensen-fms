@@ -795,7 +795,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   away* on, the request's safe actions (`autoApplySafe`: book a visit, move an
   entry, save a note) are carried out at once by `autoApplyMessage` and the
   reply says what was done; anything else, deleting included, waits for a
-  tap. A NOTE is something it does when asked (`save_note`). **What a PRESS
+  tap. **A spoken request opens a CONVERSATION, not the panel**
+  (`SecretaryConversation`): each turn is what was heard, the reply, what was
+  done and what waits — text only, NOTHING to click (owner). So what waits is
+  settled by voice: a plain "ja"/"yes" or "nej"/"no" to the previous turn
+  (`settleWaiting`, regex, no model) applies or leaves it, as the person;
+  replies in this mode ASK for a yes instead of a tap. A tap outside closes
+  it; holding the button or ⌘K opens the full panel with every control. One
+  sentence per applied action, `appliedSummary` — card, conversation and
+  spoken confirmation alike. A NOTE is something it does when asked (`save_note`). **What a PRESS
   does is the person's choice** (`people.assistant_mode`, chosen in the
   panel): `ask` opens the panel; `note_toggle` / `note_vad` still record a
   spoken NOTE — options kept "for now, remove later". Holding the button or

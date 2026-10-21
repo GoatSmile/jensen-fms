@@ -15,6 +15,8 @@ import { canActOnInbound } from "@/lib/calls/access";
 import { revalidateInbound } from "@/lib/calls/revalidate";
 import { applyPlanAction, autoApplyMessage, autoApplyOn } from "@/lib/inbound/command/apply";
 import { parseAssistantAnswer } from "@/lib/assistant/answer";
+import { appliedSummary } from "@/lib/inbound/command/applied-summary";
+import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import type { Json } from "@/lib/types/database";
 
 export type CommandResult =
@@ -78,7 +80,11 @@ async function currentPersonId(): Promise<string | null> {
  * and drafts, so /commands is the history of what was asked and answered.
  * `priorId` threads ONE earlier request of theirs for a follow-up.
  */
-export async function createCommandFromText(text: string, priorId?: string | null): Promise<CommandResult> {
+export async function createCommandFromText(
+  text: string,
+  priorId?: string | null,
+  opts?: { spoken?: boolean },
+): Promise<CommandResult> {
   const t = await getTranslations("errors");
   const body = text.trim();
   if (!body) return { ok: false, error: t("commandNoBody") };
@@ -106,6 +112,14 @@ export async function createCommandFromText(text: string, priorId?: string | nul
     };
   }
 
+  // A plain YES or NO to what the last reply left waiting (the secretary has
+  // nothing to tap — owner, 2026-10-21) is settled here, without the model.
+  const settled = await settleWaiting(supabase, inserted.id, body, priorId ?? null, personId, caps, t);
+  if (settled) {
+    revalidateInbound(inserted.id);
+    return { ok: true, id: inserted.id, openHref: null };
+  }
+
   const autoApply = personId !== null && (await autoApplyOn(supabase, personId));
   const r = await answerRequest(supabase, inserted.id, {
     request: body,
@@ -115,6 +129,7 @@ export async function createCommandFromText(text: string, priorId?: string | nul
     personId,
     priorId,
     autoApply,
+    spoken: opts?.spoken === true,
   });
   // The secretary carries out what is safe at once (owner, 2026-10-21) and the
   // reply was worded as done — so a failure must be said, not left unsaid.
@@ -144,6 +159,80 @@ export async function createCommandFromText(text: string, priorId?: string | nul
   const openHref =
     r.ok && r.answer.go && r.answer.open && r.actionCount === 0 ? targetHref(r.answer.open) : null;
   return { ok: true, id: inserted.id, openHref };
+}
+
+const YES = /^(ja|jo|jep|yes|yeah|yep|ok|okay|ja tak|ja gerne|ja gør det|ja det må du gerne|gør det|bare gør det|bekræft|bekræftet|det er fint|fint|confirm|confirmed|do it|go ahead|yes please|please do)$/;
+const NO = /^(nej|nej tak|nope|no|no thanks|lad være|lad være med det|glem det|annuller|stop|cancel|forget it|don't)$/;
+
+/**
+ * The person's YES or NO to the suggestions the previous reply left waiting
+ * (deleting an appointment always waits). Only their own request from the
+ * last ten minutes counts, each waiting action is applied as THEM with their
+ * rights — the same core as a tap — and the reply says what was done.
+ * Returns false when this is not such an answer, so the model takes it.
+ */
+async function settleWaiting(
+  supabase: ReturnType<typeof createServiceClient>,
+  messageId: string,
+  body: string,
+  priorId: string | null,
+  personId: string | null,
+  caps: readonly string[],
+  t: Awaited<ReturnType<typeof getTranslations>>,
+): Promise<boolean> {
+  const said = body.toLowerCase().replace(/[.!?,]+/g, " ").replace(/\s+/g, " ").trim();
+  const yes = YES.test(said);
+  if (!priorId || !personId || (!yes && !NO.test(said))) return false;
+  const { data: prior } = await supabase
+    .from("inbound_messages")
+    .select("kind, commanded_by, received_at, command_plan")
+    .eq("id", priorId)
+    .maybeSingle();
+  const recent = prior && Date.now() - new Date(prior.received_at).getTime() < 10 * 60_000;
+  if (!prior || !recent || prior.kind !== "command" || prior.commanded_by !== personId) return false;
+  const { data: ledger } = await supabase.from("command_actions").select("plan_action_id").eq("message_id", priorId);
+  const done = new Set((ledger ?? []).map((r) => r.plan_action_id as string));
+  const waiting = parseCommandPlan(prior.command_plan).actions.filter((a) => !done.has(a.id));
+  if (waiting.length === 0) return false;
+
+  const tA = await getTranslations("assistant");
+  const tC = await getTranslations("inboxCommand");
+  const locale = await getLocale();
+  const lines: string[] = [];
+  if (!yes) {
+    lines.push(tA("leftAsIs"));
+  } else {
+    for (const action of waiting) {
+      const r = await applyPlanAction(supabase, priorId, action.id, {}, { personId, caps, auto: false }, t);
+      if (r.ok) {
+        const { data: row } = await supabase
+          .from("command_actions")
+          .select("entity_table, entity_id, payload")
+          .eq("message_id", priorId)
+          .eq("plan_action_id", action.id)
+          .maybeSingle();
+        lines.push(
+          appliedSummary(
+            row ? { entityTable: row.entity_table, entityId: row.entity_id, payload: row.payload } : undefined,
+            tC,
+            locale,
+          ).text,
+        );
+      } else {
+        lines.push(tA("autoFailed", { detail: r.error }));
+      }
+    }
+  }
+  await supabase
+    .from("inbound_messages")
+    .update({
+      assistant_answer: { text: lines.join("\n"), open: null, go: false, choices: [] } as unknown as Json,
+      status: "matched",
+      processed_at: new Date().toISOString(),
+    })
+    .eq("id", messageId);
+  revalidateInbound(priorId);
+  return true;
 }
 
 /** Re-run the agent on an existing command row's body_text (e.g. after edit). */
