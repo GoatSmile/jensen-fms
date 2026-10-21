@@ -3402,6 +3402,17 @@
     "defaultHasNoListBody": "{type}: {supplier} is the default supplier but has no current price list, so template cost estimates stay blank and new orders cannot be priced. Add their price list, or make another supplier the default below."
   },
   "adminSettings": {
+    "speechModel": "ElevenLabs model",
+    "speechModel_eleven_flash_v2_5": "Flash v2.5 — fastest",
+    "speechModel_eleven_multilingual_v2": "Multilingual v2 — more natural, a little slower",
+    "speechModel_eleven_v3": "v3 — most expressive, slowest to start",
+    "speechVoiceDa": "Voice for Danish",
+    "speechVoiceEn": "Voice for English",
+    "speechVoiceDefault": "Default (George, English)",
+    "speechVoiceIdPlaceholder": "ElevenLabs voice id",
+    "speechListen": "Listen",
+    "speechListening": "Playing…",
+    "speechVoicesUnlisted": "Your ElevenLabs voices can't be listed: the key needs the voices_read permission. Until then, paste a voice id. A voice from the ElevenLabs library must first be added to My Voices.",
     "inboundSpeechTitle": "Speech (the secretary's voice)",
     "inboundSpeechHint": "Reads the secretary's answers aloud, in each person's language. Google is what Munin uses; its Text-to-Speech API must be enabled on the service account's Google Cloud project. Saving a change says one word first, to prove it works. Where the chosen service cannot speak, the phone's own voice reads instead.",
     "provider_google": "Google Cloud Text-to-Speech",
@@ -3822,6 +3833,7 @@
     "cap": "Showing the {count} most recent."
   },
   "errors": {
+    "speechVoiceIdInvalid": "\"{voice}\" is not an ElevenLabs voice id.",
     "speechProviderFailsTest": "{provider} was not saved — it could not speak: {detail}",
     "deliveryCalendarStatus": "Only a confirmed order that is not yet delivered can go in the calendar.",
     "deliveryAlreadyInCalendar": "This order's delivery is already in the calendar.",

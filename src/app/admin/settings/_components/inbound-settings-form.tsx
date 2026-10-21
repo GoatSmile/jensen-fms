@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 import { saveInboundSettings } from "../_actions/save-settings";
 import { fetchModelOptions, testAssistantModelAction, testExtractionModel } from "../_actions/model-actions";
+import { previewSpeech } from "../_actions/preview-speech";
 import type { ModelOption } from "@/lib/inbound/models";
 
 type SecretStatus = { envVar: string; present: boolean };
@@ -39,6 +40,13 @@ type Props = {
   /** Who speaks the secretary's answers (migration 131). */
   initialSpeechProvider: string;
   speechProviders: string[];
+  /** ElevenLabs model and a voice per language (migration 132). */
+  initialSpeechModel: string;
+  initialSpeechVoiceDa: string;
+  initialSpeechVoiceEn: string;
+  speechModels: string[];
+  /** The account's voices, or why they could not be listed. */
+  voices: { ok: true; voices: { id: string; name: string; description: string | null; languages: string[] }[] } | { ok: false; reason: string };
   secrets: {
     transcription: SecretStatus[];
     extraction: SecretStatus[];
@@ -74,6 +82,9 @@ export function InboundSettingsForm(props: Props) {
     props.initialTelephonyProvider,
   );
   const [speechProvider, setSpeechProvider] = useState(props.initialSpeechProvider);
+  const [speechModel, setSpeechModel] = useState(props.initialSpeechModel);
+  const [voiceDa, setVoiceDa] = useState(props.initialSpeechVoiceDa);
+  const [voiceEn, setVoiceEn] = useState(props.initialSpeechVoiceEn);
   const [phoneNumber, setPhoneNumber] = useState(props.initialPhoneNumber);
   const [phoneNumberTest, setPhoneNumberTest] = useState(
     props.initialPhoneNumberTest,
@@ -123,6 +134,9 @@ export function InboundSettingsForm(props: Props) {
     appendField(fd, "inbound_assistant_model", assistantModel.trim());
     fd.set("inbound_telephony_provider", telephonyProvider);
     fd.set("speech_provider", speechProvider);
+    fd.set("speech_elevenlabs_model", speechModel);
+    appendField(fd, "speech_elevenlabs_voice_da", voiceDa.trim());
+    appendField(fd, "speech_elevenlabs_voice_en", voiceEn.trim());
     appendField(fd, "inbound_phone_number", phoneNumber.trim());
     appendField(fd, "inbound_phone_number_test", phoneNumberTest.trim());
     appendField(fd, "inbound_media_retention_days", retentionDays.trim());
@@ -245,6 +259,18 @@ export function InboundSettingsForm(props: Props) {
           secrets={props.secrets.speech}
         >
           <p className="text-muted-foreground text-xs">{t("inboundSpeechHint")}</p>
+          {speechProvider === "elevenlabs" ? (
+            <ElevenLabsVoiceFields
+              model={speechModel}
+              onModel={setSpeechModel}
+              models={props.speechModels}
+              voiceDa={voiceDa}
+              onVoiceDa={setVoiceDa}
+              voiceEn={voiceEn}
+              onVoiceEn={setVoiceEn}
+              voices={props.voices}
+            />
+          ) : null}
         </ProviderBlock>
 
         <ProviderBlock
@@ -603,6 +629,110 @@ function ModelField({
  * hairlines. The expanded body sits on `bg-surface` — the panel is hued, and
  * inner content on a wash is what CLAUDE.md's tinting rule asks for.
  */
+/**
+ * The ElevenLabs model and a voice per language (migration 132), each with
+ * a Listen button — a voice is chosen by ear. The picker lists the account's
+ * voices; a library voice must be added to "My Voices" in ElevenLabs first,
+ * and listing needs the key's `voices_read` (else a voice id is typed).
+ */
+function ElevenLabsVoiceFields(props: {
+  model: string;
+  onModel: (v: string) => void;
+  models: string[];
+  voiceDa: string;
+  onVoiceDa: (v: string) => void;
+  voiceEn: string;
+  onVoiceEn: (v: string) => void;
+  voices: Props["voices"];
+}) {
+  const t = useTranslations("adminSettings");
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  async function listen(language: "da" | "en") {
+    setProblem(null);
+    setPlaying(language);
+    const voiceId = (language === "da" ? props.voiceDa : props.voiceEn).trim() || null;
+    const r = await previewSpeech({ voiceId, model: props.model, language });
+    if (!r.ok) {
+      setPlaying(null);
+      return setProblem(r.error);
+    }
+    const audio = new Audio(`data:audio/mpeg;base64,${r.audio}`);
+    audio.onended = () => setPlaying(null);
+    audio.onerror = () => setPlaying(null);
+    void audio.play().catch(() => setPlaying(null));
+  }
+
+  const voiceField = (language: "da" | "en", value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={`speech_voice_${language}`} className="text-xs">
+        {t(language === "da" ? "speechVoiceDa" : "speechVoiceEn")}
+      </Label>
+      <div className="flex items-center gap-2">
+        {props.voices.ok ? (
+          <select
+            id={`speech_voice_${language}`}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="border-input bg-background h-9 min-w-0 flex-1 rounded-md border px-2 text-sm"
+          >
+            <option value="">{t("speechVoiceDefault")}</option>
+            {/* A stored id the account no longer lists still shows, rather than vanishing. */}
+            {value && !props.voices.voices.some((v) => v.id === value) ? <option value={value}>{value}</option> : null}
+            {props.voices.voices.map((v) => (
+              <option key={v.id} value={v.id}>
+                {[v.name, v.description, v.languages.length ? v.languages.join("/") : null].filter(Boolean).join(" — ")}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <Input
+            id={`speech_voice_${language}`}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={t("speechVoiceIdPlaceholder")}
+            className="h-9 min-w-0 flex-1 font-mono text-xs"
+          />
+        )}
+        <Button type="button" size="sm" variant="outline" onClick={() => void listen(language)} disabled={playing !== null}>
+          {playing === language ? t("speechListening") : t("speechListen")}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="mt-3 flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="speech_elevenlabs_model" className="text-xs">
+          {t("speechModel")}
+        </Label>
+        <select
+          id="speech_elevenlabs_model"
+          value={props.model}
+          onChange={(e) => props.onModel(e.target.value)}
+          className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm sm:max-w-sm"
+        >
+          {props.models.map((m) => (
+            <option key={m} value={m}>
+              {t(`speechModel_${m}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      {voiceField("da", props.voiceDa, props.onVoiceDa)}
+      {voiceField("en", props.voiceEn, props.onVoiceEn)}
+      {!props.voices.ok ? <p className="text-muted-foreground text-xs">{t("speechVoicesUnlisted")}</p> : null}
+      {problem ? (
+        <p className="text-destructive text-xs" role="alert">
+          {problem}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function ProviderBlock({
   title,
   providerId,

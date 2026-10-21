@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          speech_elevenlabs_model: string
+          speech_elevenlabs_voice_da: string | null
+          speech_elevenlabs_voice_en: string | null
           speech_provider: string
           app_language: string
           calendar_id: string | null
@@ -62,6 +65,9 @@ export type Database = {
           workshop_phone: string | null
         }
         Insert: {
+          speech_elevenlabs_model?: string
+          speech_elevenlabs_voice_da?: string | null
+          speech_elevenlabs_voice_en?: string | null
           speech_provider?: string
           app_language?: string
           calendar_id?: string | null
@@ -108,6 +114,9 @@ export type Database = {
           workshop_phone?: string | null
         }
         Update: {
+          speech_elevenlabs_model?: string
+          speech_elevenlabs_voice_da?: string | null
+          speech_elevenlabs_voice_en?: string | null
           speech_provider?: string
           app_language?: string
           calendar_id?: string | null

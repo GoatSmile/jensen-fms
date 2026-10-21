@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ELEVENLABS_SPEECH_MODELS, listElevenLabsVoices } from "@/lib/speech/elevenlabs";
 import { getTranslations } from "next-intl/server";
 
 import {
@@ -292,6 +293,11 @@ export default async function AdminSettingsPage({
                 telephonyProviders={TELEPHONY_PROVIDERS.map((p) => p.key)}
                 initialSpeechProvider={inboundSettings.speechProvider}
                 speechProviders={SPEECH_PROVIDERS.map((p) => p.key)}
+                initialSpeechModel={inboundSettings.speechElevenlabsModel}
+                initialSpeechVoiceDa={inboundSettings.speechElevenlabsVoiceDa ?? ""}
+                initialSpeechVoiceEn={inboundSettings.speechElevenlabsVoiceEn ?? ""}
+                speechModels={[...ELEVENLABS_SPEECH_MODELS]}
+                voices={await listElevenLabsVoices()}
                 secrets={inboundSecrets}
               />
             </Panel>

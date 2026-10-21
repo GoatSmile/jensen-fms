@@ -3981,3 +3981,18 @@ the thumb already is and becomes its End — an X labelled *Afslut samtale*,
 dark (`bg-ink`), not red, because red is reserved for genuine alarm. One press
 ends it: the window goes, the microphone stops, the button returns to *Spørg*.
 Escape does the same on a desktop. The window itself has no control.
+
+## 2026-10-21 — The secretary's ElevenLabs voice and model are settings
+
+Owner: a native Danish voice from the ElevenLabs library, and the model picked
+by ear from three samples (Flash v2.5, Multilingual v2, v3).
+
+- **Model** (`speech_elevenlabs_model`) and **a voice per language**
+  (`speech_elevenlabs_voice_da`, `_en`; migration 132), at /admin/settings →
+  Phone & inbox → Speech, each voice with a *Listen* sample. Per language
+  because a Danish voice reading English carries an accent, as the English
+  "George" reading Danish did. Blank = George; the model stays Flash v2.5
+  until one is chosen.
+- The picker lists the ACCOUNT's voices (needs `voices_read`); without it the
+  field takes a voice id. A library voice must be added to *My Voices* first.
+- Saving a changed model or voice speaks a test word in each set voice first.

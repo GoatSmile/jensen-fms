@@ -18,7 +18,7 @@ import {
   loadInboundSettings,
 } from "@/lib/inbound/settings";
 import { testAssistantModel, testModel } from "@/lib/inbound/models";
-import { synthesizeElevenLabs } from "@/lib/speech/elevenlabs";
+import { ELEVENLABS_SPEECH_MODELS, ELEVENLABS_VOICE_ID, synthesizeElevenLabs } from "@/lib/speech/elevenlabs";
 import { synthesizeGoogle } from "@/lib/speech/google";
 
 export type SettingsResult = { ok: true } | { ok: false; error: string };
@@ -484,11 +484,32 @@ export async function saveInboundSettings(
     }
   }
 
+  // The ElevenLabs model and voices (migration 132): a known model, and voice
+  // ids in ElevenLabs' shape — blank means the default voice.
+  const speechModel = (nullable(formData.get("speech_elevenlabs_model")) ?? "eleven_flash_v2_5").trim();
+  if (!(ELEVENLABS_SPEECH_MODELS as readonly string[]).includes(speechModel)) {
+    return { ok: false, error: t("inboundUnknownProvider", { provider: speechModel }) };
+  }
+  const voiceDa = nullable(formData.get("speech_elevenlabs_voice_da"))?.trim() || null;
+  const voiceEn = nullable(formData.get("speech_elevenlabs_voice_en"))?.trim() || null;
+  for (const v of [voiceDa, voiceEn]) {
+    if (v && !ELEVENLABS_VOICE_ID.test(v)) return { ok: false, error: t("speechVoiceIdInvalid", { voice: v }) };
+  }
+
   // A CHANGED voice must speak before it is stored — Google's Text-to-Speech
   // in particular has to be enabled on the service account's project first.
-  if (speech.value !== current.speechProvider) {
-    const say = speech.value === "google" ? synthesizeGoogle : synthesizeElevenLabs;
-    const probe = await say("Test.", "da");
+  const voiceChanged =
+    speech.value === "elevenlabs" &&
+    (speechModel !== current.speechElevenlabsModel ||
+      voiceDa !== current.speechElevenlabsVoiceDa ||
+      voiceEn !== current.speechElevenlabsVoiceEn);
+  if (speech.value !== current.speechProvider || voiceChanged) {
+    const probe =
+      speech.value === "google"
+        ? await synthesizeGoogle("Test.", "da")
+        : await synthesizeElevenLabs("Test.", "da", { voiceId: voiceDa, model: speechModel }).then((r) =>
+            r.ok && voiceEn ? synthesizeElevenLabs("Test.", "en", { voiceId: voiceEn, model: speechModel }) : r,
+          );
     if (!probe.ok) {
       return {
         ok: false,
@@ -518,6 +539,9 @@ export async function saveInboundSettings(
       inbound_assistant_model: newAssistantModel,
       inbound_telephony_provider: telephony.value,
       speech_provider: speech.value,
+      speech_elevenlabs_model: speechModel,
+      speech_elevenlabs_voice_da: voiceDa,
+      speech_elevenlabs_voice_en: voiceEn,
       inbound_phone_number: nullable(formData.get("inbound_phone_number")),
       inbound_phone_number_test: nullable(
         formData.get("inbound_phone_number_test"),

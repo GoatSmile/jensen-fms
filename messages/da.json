@@ -3402,6 +3402,17 @@
     "defaultHasNoListBody": "{type}: {supplier} er standardleverandør, men har ingen aktuel prisliste, så skabelonernes prisoverslag er tomme, og nye ordrer kan ikke prissættes. Tilføj deres prisliste, eller vælg en anden leverandør som standard nedenfor."
   },
   "adminSettings": {
+    "speechModel": "ElevenLabs-model",
+    "speechModel_eleven_flash_v2_5": "Flash v2.5 — hurtigst",
+    "speechModel_eleven_multilingual_v2": "Multilingual v2 — mere naturlig, lidt langsommere",
+    "speechModel_eleven_v3": "v3 — mest udtryksfuld, langsomst til at starte",
+    "speechVoiceDa": "Stemme til dansk",
+    "speechVoiceEn": "Stemme til engelsk",
+    "speechVoiceDefault": "Standard (George, engelsk)",
+    "speechVoiceIdPlaceholder": "ElevenLabs-stemme-id",
+    "speechListen": "Lyt",
+    "speechListening": "Afspiller…",
+    "speechVoicesUnlisted": "Dine ElevenLabs-stemmer kan ikke vises: nøglen mangler tilladelsen voices_read. Indtil da kan du indsætte et stemme-id. En stemme fra ElevenLabs' bibliotek skal først føjes til My Voices.",
     "inboundSpeechTitle": "Tale (sekretærens stemme)",
     "inboundSpeechHint": "Læser sekretærens svar højt på hver persons sprog. Google er det, Munin bruger; dets Text-to-Speech API skal være slået til i servicekontoens Google Cloud-projekt. Når et skift gemmes, siges der først ét ord for at bevise, at det virker. Hvor den valgte tjeneste ikke kan tale, læser telefonens egen stemme i stedet.",
     "provider_google": "Google Cloud Text-to-Speech",
@@ -3822,6 +3833,7 @@
     "cap": "Viser de {count} nyeste."
   },
   "errors": {
+    "speechVoiceIdInvalid": "\"{voice}\" er ikke et ElevenLabs-stemme-id.",
     "speechProviderFailsTest": "{provider} blev ikke gemt — den kunne ikke tale: {detail}",
     "deliveryCalendarStatus": "Kun en bekræftet ordre, der ikke er leveret endnu, kan lægges i kalenderen.",
     "deliveryAlreadyInCalendar": "Ordrens levering ligger allerede i kalenderen.",

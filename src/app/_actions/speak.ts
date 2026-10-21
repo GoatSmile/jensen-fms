@@ -19,9 +19,15 @@ export async function speakAnswer(
   const body = typeof text === "string" ? text.trim().slice(0, MAX_CHARS) : "";
   if (!body) return { ok: false, reason: "error" };
   // The chosen voice (admin setting, migration 131).
-  const { speechProvider } = await loadInboundSettings(createServiceClient());
+  const s = await loadInboundSettings(createServiceClient());
   const lang = language === "en" ? "en" : "da";
-  const r = speechProvider === "google" ? await synthesizeGoogle(body, lang) : await synthesizeElevenLabs(body, lang);
+  const r =
+    s.speechProvider === "google"
+      ? await synthesizeGoogle(body, lang)
+      : await synthesizeElevenLabs(body, lang, {
+          model: s.speechElevenlabsModel,
+          voiceId: lang === "da" ? s.speechElevenlabsVoiceDa : s.speechElevenlabsVoiceEn,
+        });
   if (!r.ok) {
     if (r.reason === "error") console.error("[speak]", r.detail);
     return { ok: false, reason: r.reason };

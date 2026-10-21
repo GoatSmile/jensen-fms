@@ -820,7 +820,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `app_settings.speech_provider`, migration 131): ElevenLabs, or Google Cloud
   TTS as in Munin (`da-DK-Wavenet-F`, `en-US-Chirp3-HD-Aoede`) on the shared
   service-account signer `src/lib/google/service-account.ts` — the API must be
-  enabled on that project; a changed provider must speak before it saves. **A
+  enabled on that project; a changed provider must speak before it saves.
+  ElevenLabs takes a MODEL and a VOICE PER LANGUAGE (migration 132, same
+  page, each with *Listen*); blank = George. Listing the account's voices
+  needs the key's `voices_read`, and a library voice must be in *My Voices*. **A
   calendar entry's description links the customer and the bikes** it is about
   (`eventDescription`, draft_event `bikes` from find_bike). A NOTE is something it does when asked (`save_note`). **What a PRESS
   does is the person's choice** (`people.assistant_mode`, chosen in the

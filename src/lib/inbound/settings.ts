@@ -154,10 +154,14 @@ export type InboundSettings = {
   callImportLookbackHours: number;
   /** Who speaks the secretary's answers (migration 131). */
   speechProvider: string;
+  /** ElevenLabs model and a voice per language (migration 132); null voice = the default. */
+  speechElevenlabsModel: string;
+  speechElevenlabsVoiceDa: string | null;
+  speechElevenlabsVoiceEn: string | null;
 };
 
 const COLUMNS =
-  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_assistant_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours, speech_provider";
+  "inbound_transcription_provider, inbound_transcription_region, inbound_extraction_provider, inbound_extraction_model, inbound_assistant_model, inbound_telephony_provider, inbound_phone_number, inbound_phone_number_test, inbound_media_retention_days, inbound_shadow_mode, inbound_call_mode, inbound_bridge_number, inbound_bridge_timeout_seconds, inbound_call_transcription_provider, inbound_call_import_provider, inbound_elevenlabs_region, inbound_call_import_voicemails, inbound_call_import_lookback_hours, speech_provider, speech_elevenlabs_model, speech_elevenlabs_voice_da, speech_elevenlabs_voice_en";
 
 export async function loadInboundSettings(
   supabase: SupabaseClient,
@@ -199,6 +203,9 @@ export async function loadInboundSettings(
     callImportVoicemails: data?.inbound_call_import_voicemails ?? true,
     callImportLookbackHours: Number(data?.inbound_call_import_lookback_hours ?? 48),
     speechProvider: data?.speech_provider ?? "elevenlabs",
+    speechElevenlabsModel: data?.speech_elevenlabs_model ?? "eleven_flash_v2_5",
+    speechElevenlabsVoiceDa: data?.speech_elevenlabs_voice_da ?? null,
+    speechElevenlabsVoiceEn: data?.speech_elevenlabs_voice_en ?? null,
   };
 }
 
