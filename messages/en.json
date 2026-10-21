@@ -5307,6 +5307,12 @@
     "saveAsNote": "Save as note",
     "modeLabel": "Pressing the button:",
     "mode_ask": "Opens this panel",
+    "askVoiceLabel": "Ask",
+    "askStop": "Ask now",
+    "askListening": "Listening — asks when you pause",
+    "askHearing": "Hearing your question…",
+    "askUnheard": "Your question couldn't be heard — the recording is kept.",
+    "mode_ask_voice": "Asks a spoken question, answers on a pause",
     "mode_note_toggle": "Records a note, press again to save",
     "mode_note_vad": "Records a note, saves on a pause"
   },

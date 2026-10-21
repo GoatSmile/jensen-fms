@@ -755,6 +755,13 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (answer in `assistant_answer`, migration 119), seen by its ASKER and by
   `inbox` (`mayReadCommand`); anyone signed in may ask. A new read tool joins
   `tools.ts` with its capabilities; a new target kind joins `answer.ts`.
+  **The INBOX comes first** (owner, 2026-10-21): its `inbox` tool reads notes
+  and calls through the /inbox page's own loaders, so it sees what the person
+  would. It answers general questions (the date) directly, and drafts calendar
+  `move_event` / `delete_event` like a note does. **The tool list is built ONLY
+  by `assistantToolDefs`** (agent.ts), for runs and the model Test alike: the
+  API refuses a duplicate tool name, and a `find_bike` in both the read tools
+  and the resolvers broke every question from 8 to 21 Oct unnoticed.
   **It has its OWN model** (`inbound_assistant_model`, migration 120 — Claude
   Haiku 4.5 by default, for speed; the call reader keeps
   `inbound_extraction_model`) with its OWN Test (`testAssistantModel`, its real
@@ -768,7 +775,10 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   **Scan** — there is no separate Scan button, sidebar entry or header icon
   (owner: "all one button"). It hides where the bottom edge or the screen is
   taken (`/scan`, the map, a work-order workspace, login, public pages).
-  Dictation FILLS the box; the person presses Send. **What a PRESS does is
+  Dictation FILLS the box; the person presses Send — except a press in
+  `ask_voice`, which records a QUESTION, stops on a pause and asks it at once
+  ("You asked" shows what was heard; drafts still wait for a tap; migration
+  128). **What a PRESS does is
   the person's choice** (`people.assistant_mode`, migration 124, chosen in the
   panel): `ask` opens the panel; `note_toggle` / `note_vad` record a spoken
   NOTE — saved by a second press, or by itself on a ~3 s pause (silence

@@ -5307,6 +5307,12 @@
     "saveAsNote": "Gem som notat",
     "modeLabel": "Et tryk på knappen:",
     "mode_ask": "Åbner dette panel",
+    "askVoiceLabel": "Spørg",
+    "askStop": "Spørg nu",
+    "askListening": "Lytter — spørger når du holder pause",
+    "askHearing": "Hører dit spørgsmål…",
+    "askUnheard": "Spørgsmålet kunne ikke høres — optagelsen er beholdt.",
+    "mode_ask_voice": "Stiller et talt spørgsmål, svarer ved en pause",
     "mode_note_toggle": "Optager et notat, tryk igen for at gemme",
     "mode_note_vad": "Optager et notat, gemmer ved en pause"
   },

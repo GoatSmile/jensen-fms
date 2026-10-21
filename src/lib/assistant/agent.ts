@@ -87,6 +87,42 @@ export type AssistantResult =
   | { ok: true; answer: AssistantAnswer; plan: CommandPlan }
   | { ok: false; reason: "no_body" | "no_key" | "api_error" | "no_answer"; detail?: string };
 
+/**
+ * The call planner's drafts plus the calendar changes (owner, 2026-10-21: the
+ * assistant moves, changes and makes appointments) — the same move_event /
+ * delete_event shapes a note proposes, applied by the same core.
+ */
+const ASSISTANT_ACTION_ITEM_SCHEMA = {
+  ...PLAN_ACTION_ITEM_SCHEMA,
+  properties: {
+    ...PLAN_ACTION_ITEM_SCHEMA.properties,
+    type: { type: "string", enum: [...PLAN_ACTION_ITEM_SCHEMA.properties.type.enum, "move_event", "delete_event"] },
+    eventId: {
+      type: ["string", "null"],
+      description: "move_event / delete_event: the entry from find_calendar_entry (exactly one match), else do not propose it.",
+    },
+    eventLabel: {
+      type: ["string", "null"],
+      description: "move_event / delete_event: the entry as found — title and its current day and time.",
+    },
+  },
+} as const;
+
+/**
+ * The tool list one assistant request sends — the ONE place it is put
+ * together, used by every run and by the model Test. A drafting lookup whose
+ * name a read tool already has is dropped (the read tool runs; it is checked
+ * first): `find_bike` arrived in both on 2026-10-08, the API refuses duplicate
+ * names, and every question from a person allowed to draft failed until
+ * 2026-10-21 — while the Test, which listed the tools by hand, never ran.
+ */
+export function assistantToolDefs(readTools: { def: { name: string } }[], withResolvers: boolean): unknown[] {
+  const reads = readTools.map((t) => t.def);
+  const taken = new Set(reads.map((d) => d.name));
+  const resolvers = withResolvers ? RESOLVER_TOOLS.filter((t) => !taken.has(t.name)) : [];
+  return [...reads, ...resolvers, RESPOND_TOOL];
+}
+
 /** Exported for the model Test, which runs this exact shape (models.ts). */
 export const RESPOND_TOOL = {
   name: "respond",
@@ -129,7 +165,7 @@ export const RESPOND_TOOL = {
       actions: {
         type: "array",
         description: "DRAFT actions to propose, only when the person asked for something to be created. Empty for a question.",
-        items: PLAN_ACTION_ITEM_SCHEMA,
+        items: ASSISTANT_ACTION_ITEM_SCHEMA,
       },
     },
     required: ["text", "go", "choices", "actions"],
@@ -148,12 +184,16 @@ Now: ${opts.now} (Copenhagen).
 The next two weeks: ${danishDaysAhead()}. For "Friday", "next Tuesday", "tomorrow" — LOOK THE DATE UP in this list; never work it out.
 
 How to work:
+0. A GENERAL question that is not about the shop's records — today's date, the time, the weekday, the week number, a simple sum, a word's meaning — answer it directly from the line above or plain knowledge, without tools.
 1. LOOK BEFORE YOU ANSWER. Use the tools to find what was asked about. Never answer from memory, never invent a bike, customer, number, date or amount.
+   THE INBOX COMES FIRST: for anything about what is new, waiting, who called, what someone said or asked for, look in \`inbox\` before anything else — it holds the calls and the spoken notes, and most questions start there. A call or a note opens as kind "call".
 2. "Show me / open / find X": look it up; if exactly ONE matches, set \`open\` to it and \`go\` true. If several match, list them in \`choices\` (best first) and say how many matched. If none, say so.
 3. A question ("what is my next appointment?", "how many X do we have?", "what's the status of SO 12?"): answer in one or two short sentences from what the tools returned, with \`go\` false. Set \`open\` too when one record is clearly the subject, so they can open it.
 4. A request to CREATE something: propose it in \`actions\` as drafts — the person confirms each with one tap. You may draft only these: ${opts.drafts.length ? opts.drafts.join(", ") : "nothing (this person may not create anything here — say so)"}.
    - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Its customer goes through search_customer. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
    - Never put a phone number or a person's name in a calendar title.
+   - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
+   - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
 5. Only use ids your tools returned in this conversation. If a tool says you are not allowed, tell the person plainly.
    This person can open pages for: ${opts.openable.join(", ")}. For any other kind, do not set \`open\` — say plainly that you can't open it for them (you may still say what you found).
@@ -182,6 +222,8 @@ export async function runAssistant(
     caps: readonly string[];
     canSeeCosts: boolean;
     language: "da" | "en";
+    /** Who is asking — scopes the inbox. */
+    personId: string | null;
     /** One earlier exchange (≤10 min), so "and the one after?" makes sense. */
     prior?: { request: string; answer: string } | null;
   },
@@ -189,11 +231,17 @@ export async function runAssistant(
   const body = request.trim();
   if (!body) return { ok: false, reason: "no_body" };
 
-  const ctx: ToolContext = { supabase, caps: opts.caps, canSeeCosts: opts.canSeeCosts, seen: new Map() };
+  const ctx: ToolContext = {
+    supabase,
+    caps: opts.caps,
+    canSeeCosts: opts.canSeeCosts,
+    personId: opts.personId,
+    seen: new Map(),
+  };
   const readTools = toolsFor(opts.caps);
   const drafts = (Object.keys(ACTION_CAPABILITIES) as CommandAction["type"][]).filter((t) => mayApply(t, opts.caps));
   // The drafting lookups come only with a right to draft.
-  const tools = [...readTools.map((t) => t.def), ...(drafts.length ? RESOLVER_TOOLS : []), RESPOND_TOOL];
+  const tools = assistantToolDefs(readTools, drafts.length > 0);
   const readByName = new Map(readTools.map((t) => [t.def.name, t]));
 
   const messages: { role: "user" | "assistant"; content: unknown }[] = [];

@@ -9,7 +9,8 @@ import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 import { mintNoteUpload, reportNoteFailure, saveSpokenNote, type NoteFailureStage } from "@/app/_actions/notes";
 import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
 import { contextFromPath } from "@/lib/notes/context";
-import { isNoteMode, type AssistantMode } from "@/lib/notes/mode";
+import { transcribeRecording } from "@/lib/dictation/transcribe";
+import { isNoteMode, isVoiceMode, type AssistantMode } from "@/lib/notes/mode";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
@@ -23,7 +24,10 @@ type Toast =
   | { kind: "saving" }
   | { kind: "saved"; id: string }
   | { kind: "failed"; blob: Blob }
-  | { kind: "no_speech" };
+  | { kind: "no_speech" }
+  // A spoken QUESTION (ask_voice) on its way to text, or failed on the way.
+  | { kind: "hearing" }
+  | { kind: "unheard"; blob: Blob };
 
 /**
  * The ONE floating button (owner, 2026-10-01: "all one button, and if
@@ -38,6 +42,11 @@ type Toast =
  * buzz at start and save, so it works without looking at the screen: in the
  * car that is the whole point. In note modes the icon is a microphone — the
  * panel's own Dictate mic is not on screen while it records.
+ *
+ * `ask_voice` (owner, 2026-10-21: "like a secretary") records a QUESTION the
+ * same way, transcribes it, and opens the panel already asking it — what was
+ * heard stands above the answer, so a misheard word is seen, and anything the
+ * assistant drafts still waits for a tap.
  */
 export function AssistantButton({
   allowedCaps,
@@ -60,6 +69,9 @@ export function AssistantButton({
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
   const noteMode = isNoteMode(mode);
+  const voiceMode = isVoiceMode(mode);
+  /** A spoken question for the panel to ask; the key makes a repeat a new one. */
+  const [question, setQuestion] = useState<{ text: string; key: number } | null>(null);
 
   const hidden =
     pathname === "/login" ||
@@ -102,9 +114,26 @@ export function AssistantButton({
     [locale],
   );
 
+  const ask = useCallback(
+    async (blob: Blob) => {
+      setToast({ kind: "hearing" });
+      const r = await transcribeRecording(blob, locale === "en" ? "en" : "da");
+      if (!r.ok) {
+        report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
+        return setToast({ kind: "unheard", blob });
+      }
+      const text = r.text.trim();
+      if (!text) return setToast({ kind: "no_speech" });
+      setToast(null);
+      setQuestion({ text, key: Date.now() });
+      setOpen(true);
+    },
+    [locale],
+  );
+
   const recorder = useRecorder({
-    onCaptured: (blob) => void save(blob),
-    silenceStop: mode === "note_vad" ? NOTE_SILENCE_STOP : undefined,
+    onCaptured: (blob) => void (mode === "ask_voice" ? ask(blob) : save(blob)),
+    silenceStop: mode === "note_vad" || mode === "ask_voice" ? NOTE_SILENCE_STOP : undefined,
     onNoSpeech: (heard) => {
       report("no_speech", null, heard);
       setToast({ kind: "no_speech" });
@@ -146,9 +175,9 @@ export function AssistantButton({
 
   async function press() {
     if (longPressed.current) return;
-    if (!noteMode) return setOpen((o) => !o);
+    if (!voiceMode) return setOpen((o) => !o);
     if (recording) return recorder.stop();
-    if (toast?.kind === "saving") return;
+    if (toast?.kind === "saving" || toast?.kind === "hearing") return;
     setToast(null);
     cue("start");
     await recorder.start();
@@ -171,12 +200,22 @@ export function AssistantButton({
   if (hidden) return null;
   const canScan = allowedCaps === null || allowedCaps.includes("scan");
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  const Icon = recording ? Square : noteMode ? Mic : Sparkles;
+  const Icon = recording ? Square : voiceMode ? Mic : Sparkles;
+  const idleLabel = noteMode ? t("noteButtonLabel") : mode === "ask_voice" ? t("askVoiceLabel") : t("buttonLabel");
 
   return (
     <>
       {open ? (
-        <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} onModeChange={setMode} />
+        <AssistantPanel
+          onClose={() => {
+            setOpen(false);
+            setQuestion(null);
+          }}
+          canScan={canScan}
+          mode={mode}
+          onModeChange={setMode}
+          question={question}
+        />
       ) : null}
 
       {/* What the button is doing, said in words above it: recording, saved,
@@ -189,7 +228,8 @@ export function AssistantButton({
           {recording ? (
             <>
               <span>
-                {mode === "note_vad" ? t("noteListening") : t("noteRecording")} · {mmss(recorder.seconds)}
+                {mode === "ask_voice" ? t("askListening") : mode === "note_vad" ? t("noteListening") : t("noteRecording")} ·{" "}
+                {mmss(recorder.seconds)}
               </span>
               <span className="bg-ground h-1.5 w-full overflow-hidden rounded-full" role="presentation">
                 <span
@@ -231,6 +271,25 @@ export function AssistantButton({
                 </button>
               </span>
             </>
+          ) : toast?.kind === "hearing" ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              {t("askHearing")}
+            </span>
+          ) : toast?.kind === "unheard" ? (
+            <>
+              <span className="text-destructive" role="alert">
+                {t("askUnheard")}
+              </span>
+              <span className="flex gap-3 text-xs">
+                <button type="button" onClick={() => void ask(toast.blob)} className="text-brand-ink underline">
+                  {t("noteRetry")}
+                </button>
+                <button type="button" onClick={() => setToast(null)} className="text-ink-2 underline">
+                  {t("noteDiscard")}
+                </button>
+              </span>
+            </>
           ) : toast?.kind === "no_speech" ? (
             <span>{t("noteNoSpeech")}</span>
           ) : recorder.error ? (
@@ -248,9 +307,9 @@ export function AssistantButton({
         onPointerUp={pointerUp}
         onPointerLeave={pointerUp}
         onContextMenu={(e) => e.preventDefault()}
-        aria-expanded={noteMode ? undefined : open}
-        aria-pressed={noteMode ? recording : undefined}
-        aria-label={noteMode ? (recording ? t("noteStop") : t("noteButtonLabel")) : t("buttonLabel")}
+        aria-expanded={voiceMode ? undefined : open}
+        aria-pressed={voiceMode ? recording : undefined}
+        aria-label={recording ? t(mode === "ask_voice" ? "askStop" : "noteStop") : idleLabel}
         className={cn(
           "shadow-popover fixed right-4 bottom-4 z-40 flex items-center justify-center rounded-full transition-transform select-none active:scale-95",
           // A live mic pulses rather than turning red: red stays for genuine alarm.
@@ -263,7 +322,7 @@ export function AssistantButton({
       >
         <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />
         <span className="hidden text-sm font-medium md:inline">
-          {noteMode ? (recording ? t("noteStop") : t("noteButtonLabel")) : t("buttonLabel")}
+          {recording ? t(mode === "ask_voice" ? "askStop" : "noteStop") : idleLabel}
         </span>
         <kbd className="hidden font-sans text-xs font-normal md:inline">{shortcut}</kbd>
       </button>

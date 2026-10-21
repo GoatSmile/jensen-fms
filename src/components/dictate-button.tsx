@@ -5,12 +5,12 @@ import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, RotateCcw, Square, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { mintDictationUpload } from "@/app/_actions/dictation";
 import {
   MAX_RECORD_SECONDS,
   recordingSupported,
   useRecorder,
 } from "@/lib/dictation/use-recorder";
+import { transcribeRecording } from "@/lib/dictation/transcribe";
 import { cn } from "@/lib/utils";
 
 export type DictateLanguage = "da-DK" | "en-US";
@@ -98,43 +98,12 @@ export function DictateButton({
     async (blob: Blob) => {
       setStage("transcribing");
       setErrorMessage(null);
-      try {
-        const minted = await mintDictationUpload();
-        if (!minted.ok) throw new Error(minted.error);
-
-        const put = await fetch(minted.signedUrl, {
-          method: "PUT",
-          headers: { "content-type": "audio/wav" },
-          body: blob,
-        });
-        if (!put.ok) throw new Error(`upload ${put.status}`);
-
-        const res = await fetch("/api/dictate", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            path: minted.path,
-            language: language === "da-DK" ? "da" : "en",
-          }),
-        });
-        const json = (await res.json().catch(() => null)) as
-          | { ok: true; text: string }
-          | { ok: false; reason: string }
-          | null;
-
-        if (!json || !json.ok) {
-          setErrorMessage(messageFor(json?.reason ?? "api_error"));
-          setStage("confirm"); // keeps the audio, offers Retry
-          return;
-        }
-        setTranscript(json.text);
-        setStage("confirm");
-      } catch {
-        // Offline, storage refused, server unreachable — one message, and the
-        // recording is still here.
-        setErrorMessage(t("error_upload"));
-        setStage("confirm");
-      }
+      const r = await transcribeRecording(blob, language === "da-DK" ? "da" : "en");
+      if (r.ok) setTranscript(r.text);
+      // Offline, storage refused, server unreachable — one message; otherwise
+      // the API's own. Either way the audio is still here, offering Retry.
+      else setErrorMessage(r.reason === "upload" ? t("error_upload") : messageFor(r.reason));
+      setStage("confirm");
     },
     [language, messageFor, t],
   );

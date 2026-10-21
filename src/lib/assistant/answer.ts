@@ -27,6 +27,8 @@ export const TARGET_KINDS = [
   "paint_order",
   "invoice",
   "calendar",
+  // A call or a note — both open on /calls/<id>.
+  "call",
 ] as const;
 export type TargetKind = (typeof TARGET_KINDS)[number];
 
@@ -53,6 +55,7 @@ const PATHS: Record<TargetKind, string> = {
   paint_order: "/paint-orders",
   invoice: "/invoices",
   calendar: "/calendar",
+  call: "/calls",
 };
 
 /** Where a target lives. The calendar is one page, not a record. */

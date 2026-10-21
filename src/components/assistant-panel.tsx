@@ -27,6 +27,8 @@ type Props = {
   mode: AssistantMode;
   /** Applies a pick to the button at once; the save follows. */
   onModeChange: (mode: AssistantMode) => void;
+  /** A spoken question (ask_voice) to ask as soon as it arrives; a new key is a new question. */
+  question?: { text: string; key: number } | null;
 };
 
 /**
@@ -41,7 +43,7 @@ type Props = {
  * word is fixed first. A follow-up within the panel threads the previous
  * request (the assistant remembers one exchange, ≤10 min).
  */
-export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) {
+export function AssistantPanel({ onClose, canScan, mode, onModeChange, question }: Props) {
   const t = useTranslations("assistant");
   const locale = useLocale();
   const router = useRouter();
@@ -83,8 +85,8 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
     setView(await loadAssistantView(id));
   }
 
-  function send() {
-    const body = text.trim();
+  function send(spoken?: string) {
+    const body = (spoken ?? text).trim();
     if (!body || pending) return;
     setError(null);
     start(async () => {
@@ -102,6 +104,16 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
       await refresh(r.id);
     });
   }
+
+  // A spoken question is asked at once — the button already heard it, and
+  // "You asked" above the answer shows what it heard.
+  const askedKey = useRef<number | null>(null);
+  useEffect(() => {
+    if (!question || askedKey.current === question.key) return;
+    askedKey.current = question.key;
+    send(question.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken question
+  }, [question?.key]);
 
   /** Keep what is in the box as a note — no answer, it waits in the person's list. */
   function saveAsNote() {
@@ -257,7 +269,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
           className="border-rule bg-ground w-full resize-none rounded-lg border p-2.5 text-sm"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" onClick={send} disabled={pending || !text.trim()}>
+          <Button type="button" size="sm" onClick={() => send()} disabled={pending || !text.trim()}>
             {pending ? t("sending") : t("send")}
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={saveAsNote} disabled={pending || !text.trim()}>

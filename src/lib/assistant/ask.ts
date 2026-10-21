@@ -60,6 +60,7 @@ export async function answerRequest(
     caps: opts.caps,
     canSeeCosts: opts.canSeeCosts,
     language: opts.language,
+    personId: opts.personId,
     prior,
   });
   if (!r.ok) {

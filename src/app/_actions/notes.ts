@@ -81,12 +81,21 @@ export async function saveTypedNote(text: string, context: unknown): Promise<Res
   return { ok: true, id: id.id };
 }
 
-/** Where a note's journey broke, as the browser saw it. */
-export type NoteFailureStage = "mint" | "upload" | "save" | "no_speech" | "unsupported" | "permission" | "empty";
+/** Where a note's (or a spoken question's) journey broke, as the browser saw it. */
+export type NoteFailureStage =
+  | "mint"
+  | "upload"
+  | "save"
+  | "transcribe"
+  | "no_speech"
+  | "unsupported"
+  | "permission"
+  | "empty";
 const NOTE_FAILURE_STAGES: readonly NoteFailureStage[] = [
   "mint",
   "upload",
   "save",
+  "transcribe",
   "no_speech",
   "unsupported",
   "permission",

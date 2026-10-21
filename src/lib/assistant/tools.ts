@@ -20,7 +20,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { calendarAdapter } from "@/lib/calendar/client";
 import { calendarReady, loadCalendarSettings } from "@/lib/calendar/settings";
-import { danishMidnight, danishTime, shiftDayKey } from "@/lib/calls/days";
+import type { CallsScope } from "@/lib/calls/access";
+import { danishDayKey, danishMidnight, danishTime, shiftDayKey } from "@/lib/calls/days";
+import { loadCallsPage } from "@/lib/calls/load";
+import { loadNotesBoard } from "@/lib/inbox/notes";
 import { ilikeEscape } from "@/lib/supabase/ilike";
 import { searchWorkBikeIds } from "@/lib/work/search";
 
@@ -30,6 +33,8 @@ export type ToolContext = {
   supabase: SupabaseClient;
   caps: readonly string[];
   canSeeCosts: boolean;
+  /** Who is asking — the inbox is scoped to them unless they hold `inbox`. */
+  personId: string | null;
   /** id → kind, for every record a lookup returned in this run. */
   seen: Map<string, TargetKind>;
 };
@@ -80,7 +85,7 @@ const findBike: AssistantTool = {
       ctx.supabase
         .from("bikes")
         .select(
-          "id, frame_number, status, bike_template:bike_templates(family:bike_families(name), frame_size), owner:organizations!owner_organization_id(legal_name, display_name_da, display_name_en)",
+          "id, frame_number, status, color:colors(name_en, name_da, ral_code), bike_template:bike_templates(family:bike_families(name), frame_size), owner:organizations!owner_organization_id(legal_name, display_name_da, display_name_en)",
         )
         .in("id", sample)
         .is("deleted_at", null),
@@ -101,7 +106,7 @@ const findBike: AssistantTool = {
       if (c.endsWith(needle) || f.endsWith(needle)) return 1;
       return 2;
     };
-    type Row = { id: string; frame_number: string; status: string; bike_template: unknown; owner: unknown };
+    type Row = { id: string; frame_number: string; status: string; color: unknown; bike_template: unknown; owner: unknown };
     // Count only bikes that exist: an identifier can outlive its deleted bike.
     const live = (bikes ?? []) as Row[];
     const rows = [...live].sort((a, b) => rank(a) - rank(b)).slice(0, LIMIT);
@@ -116,10 +121,103 @@ const findBike: AssistantTool = {
           frameNumber: b.frame_number,
           status: b.status,
           model: tpl ? [tpl.family?.name, tpl.frame_size].filter(Boolean).join(" ") || null : null,
+          colour: colourOf(b.color as never),
           owner: orgName(b.owner as never),
         };
       }),
     };
+  },
+};
+
+function colourOf(c: { name_en?: string | null; name_da?: string | null; ral_code?: string | null } | null) {
+  if (!c) return null;
+  const name = [c.name_da, c.name_en].filter(Boolean).filter((n, i, a) => a.indexOf(n) === i).join(" / ");
+  return c.ral_code ? `${name} (RAL ${c.ral_code})` : name || null;
+}
+
+/* --------------------------------------------------------------- inbox */
+
+/**
+ * The Inbox (DECISIONS 2026-10-08) — notes and calls, read through the SAME
+ * loaders the /inbox page uses, so the assistant sees exactly what the person
+ * would see there: the same scope (`inbox` = everyone's, `calls_own` = their
+ * own), the same to-do / check / done grouping. The owner's rule
+ * (2026-10-21): the inbox is the most important place to look.
+ */
+const inbox: AssistantTool = {
+  caps: ["inbox", "calls_own"],
+  def: {
+    name: "inbox",
+    description:
+      "Read the Inbox: spoken NOTES (to-dos people said to the app, per person) and CALLS (newest first, each with its group: todo, check, done or quiet, a one-line summary, who called and which customer). The most important place to look — use it for 'what's new', 'the latest call', 'who called', 'what is waiting', 'my notes', 'what did X say'. Optional `query` filters on words (customer, caller, number, text).",
+    input_schema: {
+      type: "object",
+      properties: {
+        what: { type: "string", enum: ["everything", "calls", "notes"], description: "Default everything." },
+        query: { type: "string", description: "Optional words to filter on." },
+        openOnly: { type: "boolean", description: "Only what is still to do. Default false." },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const scope: CallsScope | null = ctx.caps.includes("inbox")
+      ? { all: true }
+      : ctx.personId
+        ? { all: false, personId: ctx.personId }
+        : null;
+    if (!scope) return { error: "not allowed for this person" };
+    const what = str(input.what) || "everything";
+    const q = str(input.query).toLowerCase();
+    const openOnly = input.openOnly === true;
+    const hit = (...parts: (string | null | undefined)[]) =>
+      !q || parts.some((p) => (p ?? "").toLowerCase().includes(q));
+    const out: Record<string, unknown> = {};
+
+    if (what !== "notes") {
+      const page = await loadCallsPage(ctx.supabase, { scope, viewerId: ctx.personId, tab: scope.all ? "all" : null, until: null });
+      const rows = page.days
+        .flatMap((d) => d.items)
+        .filter((r) => (!openOnly || r.lane === "todo" || r.lane === "check"))
+        .filter((r) => hit(r.summary, r.orgName, r.callerName, r.from_identity, r.lineName))
+        .sort((a, b) => b.received_at.localeCompare(a.received_at))
+        .slice(0, LIMIT);
+      for (const r of rows) ctx.seen.set(r.id, "call");
+      out.calls = rows.map((r) => ({
+        id: r.id,
+        when: `${danishDayKey(r.received_at)} ${danishTime(r.received_at)}`,
+        direction: r.direction,
+        group: r.lane,
+        urgent: r.triage.urgent,
+        from: r.callerName ?? r.from_identity,
+        customer: r.orgName,
+        line: r.lineName,
+        internal: r.internal,
+        summary: r.summary,
+        promises: r.promises,
+        durationSeconds: r.duration_seconds,
+      }));
+      out.callCounts = page.counts;
+    }
+
+    if (what !== "calls") {
+      const board = await loadNotesBoard(ctx.supabase, { scope, viewerId: ctx.personId, locale: "en" });
+      const open = board.columns.flatMap((c) => [...c.recent, ...c.older]);
+      const notes = (openOnly ? open : [...open, ...board.done])
+        .filter((n) => hit(n.body, n.speakerName, n.addresseeName))
+        .sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+        .slice(0, LIMIT);
+      for (const n of notes) ctx.seen.set(n.id, "call");
+      out.notes = notes.map((n) => ({
+        id: n.id,
+        when: `${n.dayKey} ${n.time}`,
+        saidBy: n.speakerName,
+        for: n.addresseeName,
+        text: (n.body ?? "").slice(0, 200) || null,
+        done: n.closedAt !== null,
+        due: n.dueDate,
+      }));
+    }
+    return out;
   },
 };
 
@@ -343,7 +441,7 @@ const findDocument: AssistantTool = {
   },
 };
 
-export const ASSISTANT_TOOLS: AssistantTool[] = [findBike, findPart, calendarEntries, openTickets, findDocument];
+export const ASSISTANT_TOOLS: AssistantTool[] = [inbox, findBike, findPart, calendarEntries, openTickets, findDocument];
 
 /** The read tools THIS person's assistant gets. */
 export function toolsFor(caps: readonly string[]): AssistantTool[] {

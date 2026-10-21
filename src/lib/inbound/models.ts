@@ -211,14 +211,13 @@ export async function testAssistantModel(provider: string, model: string): Promi
   const id = model.trim();
   if (!id) return { ok: false, reason: "api_error", detail: "empty model id" };
 
-  const { RESPOND_TOOL } = await import("@/lib/assistant/agent");
+  const { assistantToolDefs } = await import("@/lib/assistant/agent");
   const { ASSISTANT_TOOLS } = await import("@/lib/assistant/tools");
-  const { RESOLVER_TOOLS } = await import("@/lib/inbound/command/resolvers");
   const r = await postMessages({
     model: id,
     max_tokens: 4000,
     system: "You are a test. Do not call any lookup tool. Call respond once with text 'ok', go false, and empty choices and actions.",
-    tools: [...ASSISTANT_TOOLS.map((t) => t.def), ...RESOLVER_TOOLS, RESPOND_TOOL],
+    tools: assistantToolDefs(ASSISTANT_TOOLS, true),
     messages: [{ role: "user", content: "Say ok." }],
   });
   if (!r.ok) return { ok: false, reason: r.reason === "no_key" ? "no_key" : "api_error", detail: r.detail ?? r.reason };

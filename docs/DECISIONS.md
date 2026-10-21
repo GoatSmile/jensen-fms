@@ -3812,3 +3812,29 @@ delete.
 - **Rejected:** auto-delete only for entries the app made (the found entry WAS
   app-made in production); asking the model how sure it is (it said "check
   this" in its notes and would still have been applied).
+
+## 2026-10-21 — The assistant: a spoken question asks itself, the inbox first
+
+Owner: "press the button, dictate, and receive answers like a secretary";
+"look at the inbox as most important"; "move, change and create appointments";
+"what is the date today?".
+
+- **A fourth button mode, `ask_voice`** (migration 128): a press records, a
+  pause (or a second press) ends it, the words are transcribed and ASKED with
+  no Send. This departs from "dictation fills the box, the person presses
+  Send" for this mode only, because the question is read-only: what was heard
+  stands above the answer, and anything drafted still waits for a tap.
+- **An `inbox` read tool, listed first and named first in the prompt**,
+  reading notes and calls through the /inbox loaders, scoped as the page is.
+- **Calendar changes are drafts, as for notes**: `move_event` / `delete_event`
+  joined the assistant's actions. "Change" means day and time; a title or a
+  customer cannot change — the assistant says so and offers cancel + new.
+- **General questions are answered without tools** (the date is in the prompt).
+- **Found on the way:** every question from a person allowed to draft had
+  failed since 2026-10-08 — `find_bike` was both a read tool and a resolver,
+  and the API refuses duplicate names. One builder now makes the list for runs
+  and the model Test alike, dropping a duplicate.
+- **Note saves report their failures** (migration 127, `client_failures`), and
+  the pause detector's speech floor halved (RMS 0.02 → 0.01) pending data.
+- **Rejected for now:** speaking the answer aloud (Munin's Secretary does, in
+  the line's voice) — a separate piece of work.
