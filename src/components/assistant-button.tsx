@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2, Mic, Sparkles, Square } from "lucide-react";
+import { Loader2, Mic, Sparkles, Square, X } from "lucide-react";
 
 import { mintNoteUpload, reportNoteFailure, saveSpokenNote, type NoteFailureStage } from "@/app/_actions/notes";
 import { transcribeRecording } from "@/lib/dictation/transcribe";
@@ -68,6 +68,8 @@ export function AssistantButton({
   const [open, setOpen] = useState(false);
   /** A spoken request opens the conversation; holding the button or ⌘K, the full panel. */
   const [view, setView] = useState<"conversation" | "full">("full");
+  /** The secretary's conversation is on screen — the round button is its End. */
+  const conversing = open && view === "conversation";
   const [shortcut, setShortcut] = useState("Ctrl K");
   const [toast, setToast] = useState<Toast | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -194,6 +196,16 @@ export function AssistantButton({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Escape ends the conversation from the keyboard.
+  useEffect(() => {
+    if (!conversing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") endRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [conversing]);
+
   // A navigation (an Open, a choice) closes the panel.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the route
@@ -216,6 +228,11 @@ export function AssistantButton({
     await recorder.start();
   }
 
+  const endRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    endRef.current = closeConversation;
+  });
+
   function closeConversation() {
     setOpen(false);
     setQuestion(null);
@@ -227,6 +244,8 @@ export function AssistantButton({
 
   async function press() {
     if (longPressed.current) return;
+    // In the conversation the round button IS its end (owner, 2026-10-21).
+    if (conversing) return closeConversation();
     if (!voiceMode) {
       setView("full");
       return setOpen((o) => !o);
@@ -263,9 +282,10 @@ export function AssistantButton({
   if (hidden) return null;
   const canScan = allowedCaps === null || allowedCaps.includes("scan");
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  const Icon = recording ? Square : voiceMode ? Mic : Sparkles;
+  const Icon = conversing ? X : recording ? Square : voiceMode ? Mic : Sparkles;
   const idleLabel = noteMode ? t("noteButtonLabel") : voiceMode ? t("askVoiceLabel") : t("buttonLabel");
   const stopLabel = noteMode ? t("noteStop") : t("askStop");
+  const label = conversing ? t("secretaryEnd") : recording ? stopLabel : idleLabel;
 
   return (
     <>
@@ -389,23 +409,22 @@ export function AssistantButton({
         onContextMenu={(e) => e.preventDefault()}
         aria-expanded={voiceMode ? undefined : open}
         aria-pressed={voiceMode ? recording : undefined}
-        aria-label={recording ? stopLabel : idleLabel}
+        aria-label={label}
         className={cn(
           // Above the panel (z-50) in secretary mode: a follow-up is one more press.
           "shadow-popover fixed right-4 bottom-4 z-[60] flex items-center justify-center rounded-full transition-transform select-none active:scale-95",
           // A live mic pulses rather than turning red: red stays for genuine alarm.
-          "bg-brand text-on-brand",
-          recording && "ring-brand/40 animate-pulse ring-4",
+          // Ending the conversation is dark, not red, for the same reason.
+          conversing ? "bg-ink text-surface" : "bg-brand text-on-brand",
+          recording && !conversing && "ring-brand/40 animate-pulse ring-4",
           // Phone: a round button. Desktop: a pill that says what it is.
           "size-14 md:h-11 md:w-auto md:gap-2 md:px-4",
           open && view === "full" && "max-md:hidden",
-          // In the conversation the only control is its own End (owner).
-          open && view === "conversation" && "hidden",
         )}
       >
         <Icon className={cn("size-5 md:size-4", recording && "fill-current")} aria-hidden />
-        <span className="hidden text-sm font-medium md:inline">{recording ? stopLabel : idleLabel}</span>
-        <kbd className="hidden font-sans text-xs font-normal md:inline">{shortcut}</kbd>
+        <span className="hidden text-sm font-medium md:inline">{label}</span>
+        <kbd className="hidden font-sans text-xs font-normal md:inline">{conversing ? "Esc" : shortcut}</kbd>
       </button>
     </>
   );

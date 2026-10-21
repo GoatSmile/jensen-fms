@@ -813,8 +813,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   press**: `speaker.say` resolves when the reply has finished, and only then
   the conversation listens again (so it never hears itself), showing *Lytter —
   tal nu* in the window, and it KEEPS waiting (a fresh recording every ~8 s of
-  silence) until *Afslut samtale* — the window's one control; the round button
-  hides meanwhile. Starting the mic with no tap is the part a phone may refuse
+  silence) until it is ENDED — the round button turns into the End control
+  for the conversation (a dark X labelled *Afslut samtale*, never red; Escape
+  too), and the window itself has nothing to click. Starting the mic with no tap is the part a phone may refuse
   — prove it on both. **The voice is a provider** (`SPEECH_PROVIDERS`,
   `app_settings.speech_provider`, migration 131): ElevenLabs, or Google Cloud
   TTS as in Munin (`da-DK-Wavenet-F`, `en-US-Chirp3-HD-Aoede`) on the shared

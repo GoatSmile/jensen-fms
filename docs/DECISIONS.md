@@ -3972,3 +3972,12 @@ description … add a link to the customer … and to the bicycle or bicycles."
 - **Calendar entries made by the assistant or a note** carry links to the
   customer and to each bike identified (exactly one match each), then the link
   to what was said.
+
+## 2026-10-21 — The round button is the conversation's End
+
+Owner chose option A of three (a separate header button; End + a pause toggle):
+while the secretary's conversation is on screen, the round button stays where
+the thumb already is and becomes its End — an X labelled *Afslut samtale*,
+dark (`bg-ink`), not red, because red is reserved for genuine alarm. One press
+ends it: the window goes, the microphone stops, the button returns to *Spørg*.
+Escape does the same on a desktop. The window itself has no control.
