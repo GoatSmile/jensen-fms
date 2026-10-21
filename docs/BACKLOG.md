@@ -15,6 +15,10 @@ the work ships or the idea is rejected. Active/sequenced work lives in
   Munr account that mails a summary after each recording, no login needed.
 
 ## Hardening (do as it bites)
+- **A bike we did not build reads "Sales order: Stock build"** on its page
+  (seen on an imported bike, 21 Oct; a `/bikes/new` bike is the same). The
+  label assumes every bike without an SO came off a stock MO — show it only
+  when the bike has an MO, and say *Imported* when `import_batch_id` is set.
 - **A delivery's calendar title is written in the PRESSER's language**
   (`addSODeliveryToCalendar` uses the session locale: "delivery SO-…" as an
   English user, "levering SO-…" as Dennis). The calendar is shared and

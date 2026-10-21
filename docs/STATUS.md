@@ -30,8 +30,9 @@ Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 133 is the latest; production AND local at it** (`check:prod`
-  / `check:local`, 21 Oct). 133 = everyone on `ask_voice` (the secretary);
+- **Migration 134 is the latest; production AND local at it** (queried, 21 Oct
+  late). 134 = import provenance on agreements, departments and customers +
+  `service_agreements_imported_no_fee`; 133 = everyone on `ask_voice` (the secretary);
   132 = ElevenLabs model + a voice per language;
   131 = `speech_provider` (elevenlabs | google); 130 = `ask_voice` default,
   `save_note` action; 129 = `assistant_read_query` + role `assistant_reader`
@@ -78,9 +79,12 @@ Danish (person language).
   account's project (963901193248). **Extraction model:** `claude-sonnet-5`.
 - **Service agreements** — per bike, built 29 Sep (verified locally, not yet
   used in production). Dennis's answers: handling doc §7 items 1–23.
-  **Register import is PLANNED** (`docs/plan-register-import.md`); **renewal
+  **The register import is BUILT and tested locally** (`import_fleet.py plan`
+  / `sql`, plan §1 — waits for Dennis's cleaned file); **renewal
   invoicing is PLANNED** (`docs/plan-renewal-invoicing.md`) and on hold until
   imported data is checked.
+- **Call summaries are written in the READER's language** (21 Oct late, e2da198):
+  the call's person, else the app default. Calls read before keep English.
 - **Payment terms** — a customer's own figure, else 30 days public (EAN /
   municipality / hospital), else 8 (`resolvePaymentTermsDays`, migration 123).
 - **Finn Nysom and Glenn exist in production** (role *Workshop*).
@@ -174,8 +178,12 @@ Danish (person language).
 ## Next actions
 1. **The phone test** (above), then Finn uses the secretary for real; watch
    his `/commands` and `client_failures` for what goes wrong.
-2. **The register pilot** as soon as the cleaned spreadsheet and the pilot
-   choice arrive — `docs/plan-register-import.md` §9.
+2. **The register pilot (Allerød)** as soon as the cleaned spreadsheet
+   arrives: `python3 scripts/import_fleet.py plan --batch
+   register-2026-10-pilot-allerod --sheets "ALLERØD KOMMUNE" --src <file>`,
+   confirm the mapping (which EAN is *Hjemmeplejen*), review PDF to Dennis,
+   then plan §5 steps 3–6. Owner first: may the import strip a comma/dot in a
+   frame's digits cell (plan §1, "Found on the first run")?
 3. **Renewal invoicing** after the import is checked (`plan-renewal-invoicing`,
    phase A).
 4. **Next without anyone:** the spoken-TEST marker; Deepgram as a recognition

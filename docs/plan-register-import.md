@@ -43,11 +43,29 @@ anything, and must not make anything billable (§6).
     - no customer with a recognition prefix;
     - one agreement with no lines (see §6).
 
+**Built 21 Oct** (tested end to end on the local copy with Allerød: plan →
+mapping → sql → dry run → apply → verify all ok → screens as Admin and Finn →
+rollback dry run → rollback, and a rollback guard refusing):
+- Migration 134 (§3, without D1's `kind`), production and local.
+- `import_fleet.py plan` and `sql` (§5). Mapping in
+  `scripts/import-batches/<batch>/mapping.json`; review, exceptions, manifest
+  and SQL in `~/Documents/1-Projects/Jensen/Fleet/import-<batch>/`; `sql
+  --migration N` writes the data migration and copies verify + rollback into
+  the batch folder. `--start-date schedule|fleet` is the date rule Dennis is
+  writing.
+
 **Not built:**
-- `import_fleet.py sql`. The script has only `review` today; STATUS and
-  plan-go-live call the load step `sql`.
-- Provenance on agreements, units and customers (§3).
-- Any GPS-only shape (§8, D1).
+- Creating a customer (D6). Create it in the app first, then map it.
+- Converting a standalone customer into a department (D2).
+- Any GPS-only shape (§8, D1). 480 kr rows are listed, not imported.
+
+**Found on the first run (Allerød):** most frames are written with a comma or
+dot in the digits cell (`WCK ,000639 L`) — across the register that cell
+pattern occurs a few hundred times, so Dennis fixing them by hand is the wrong
+ask. The plan's rule (§4, punctuation is listed, not stripped) stands until
+the owner decides otherwise. And one renewal row's frame is a digit off the
+sheet's (WCK000472L vs WCK000471L): the exception list names the nearest
+frame.
 
 **Blocked, and what each item blocks:**
 
