@@ -3937,3 +3937,18 @@ but not what had been done.
   calendar the app is connected to, which Finn and the office share.
 - **Known gap:** a spoken "TEST" arrives lowercase, so an entry from a spoken
   test request does not inherit the TEST marker.
+
+## 2026-10-21 — The secretary listens again by itself
+
+Owner: "continue conversations without me needing to press. Have an indicator
+that the secretary is listening in the window, so that I know it's ready."
+
+- After each reply has been SPOKEN to the end, the conversation starts the mic
+  again (with the start beep) and shows *Lytter — tal nu* with a level bar;
+  the window also says *Taler…* while it speaks and *Tryk på knappen for at
+  tale* when it is idle. Waiting for the end of the reply keeps the secretary
+  out of its own microphone.
+- Silence (~8 s) ends the listening quietly — no "nothing heard" message, the
+  conversation stays. Closing it, holding the button or pressing it stops the mic.
+- **Unproven on phones:** opening the microphone without a tap is exactly what
+  iPhone Safari may refuse; verified in the desktop browser only.

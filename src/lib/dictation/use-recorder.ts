@@ -242,6 +242,9 @@ export function useRecorder({
     }
 
     const ctx = new Ctor({ sampleRate: TARGET_SAMPLE_RATE });
+    // Started without a tap (the secretary listening again by itself), a
+    // browser may create the context suspended; ask it to run.
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
     const source = ctx.createMediaStreamSource(stream);
     const processor = ctx.createScriptProcessor(4096, 1, 1);
     chunksRef.current = [];

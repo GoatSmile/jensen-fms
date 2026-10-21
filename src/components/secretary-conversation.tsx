@@ -33,11 +33,23 @@ type Turn = {
  * ⌘K) opens the full panel with every control. Turns thread: each request
  * carries the previous one, so "and the one after?" and "yes" make sense.
  */
+export type SecretaryState =
+  | { kind: "listening"; level: number }
+  | { kind: "hearing" }
+  | { kind: "speaking" }
+  | { kind: "ready" };
+
 export function SecretaryConversation({
   question,
   onSpeak,
   onClose,
+  state,
+  notice,
 }: {
+  /** What the secretary is doing NOW — shown at the foot of the window. */
+  state: SecretaryState;
+  /** A one-line problem with the last thing said (not heard, no microphone). */
+  notice: string | null;
   /** The next spoken request; a new key is a new turn. */
   question: { text: string; key: number } | null;
   /** Say a reply aloud, in the person's language. */
@@ -89,10 +101,10 @@ export function SecretaryConversation({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken request
   }, [question?.key]);
 
-  // The newest turn is the one being read.
+  // The newest turn is the one being read, and the state line under it.
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
-  }, [turns]);
+  }, [turns, state.kind]);
 
   return (
     <>
@@ -142,6 +154,35 @@ export function SecretaryConversation({
             )}
           </div>
         ))}
+        {notice ? (
+          <p className="text-destructive text-sm" role="alert">
+            {notice}
+          </p>
+        ) : null}
+        {/* Whose turn it is. Listening is the one that matters: it is the cue to speak. */}
+        <div className="flex items-center gap-2 text-sm" role="status" aria-live="polite">
+          {state.kind === "listening" ? (
+            <>
+              <span className="bg-brand size-2.5 shrink-0 animate-pulse rounded-full" aria-hidden />
+              <span className="text-brand-ink font-medium">{t("secretaryListening")}</span>
+              <span className="bg-ground h-1.5 flex-1 overflow-hidden rounded-full" aria-hidden>
+                <span
+                  className="bg-brand block h-full rounded-full transition-[width] duration-100"
+                  style={{ width: `${Math.round(state.level * 100)}%` }}
+                />
+              </span>
+            </>
+          ) : state.kind === "hearing" ? (
+            <span className="text-ink-2 inline-flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              {t("askHearing")}
+            </span>
+          ) : state.kind === "speaking" ? (
+            <span className="text-ink-2">{t("secretarySpeaking")}</span>
+          ) : turns.some((turn) => turn.answer === null) ? null : (
+            <span className="text-ink-2">{t("secretaryReady")}</span>
+          )}
+        </div>
         <div ref={end} />
       </div>
     </>

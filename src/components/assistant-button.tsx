@@ -78,6 +78,15 @@ export function AssistantButton({
   const [question, setQuestion] = useState<{ text: string; key: number } | null>(null);
   const speaker = useSpeaker();
   const language: "da" | "en" = locale === "en" ? "en" : "da";
+  /** The secretary is reading a reply aloud. */
+  const [speaking, setSpeaking] = useState(false);
+  /** This recording was started by the conversation itself, not a press. */
+  const autoListen = useRef(false);
+  /** Read inside async callbacks: is the conversation still on screen? */
+  const inConversation = useRef(false);
+  useEffect(() => {
+    inConversation.current = open && view === "conversation" && mode === "ask_voice";
+  }, [open, view, mode]);
 
   const hidden =
     pathname === "/login" ||
@@ -140,6 +149,11 @@ export function AssistantButton({
     // Press-again-to-save records until the second press; the rest end on a pause.
     silenceStop: mode === "note_toggle" ? undefined : NOTE_SILENCE_STOP,
     onNoSpeech: (heard) => {
+      // Listening on its own and nobody spoke: just stop — the conversation stays.
+      if (autoListen.current) {
+        autoListen.current = false;
+        return;
+      }
       report("no_speech", null, heard);
       setToast({ kind: "no_speech" });
     },
@@ -178,6 +192,31 @@ export function AssistantButton({
     setOpen(false);
   }, [pathname]);
 
+  /**
+   * Hands-free (owner, 2026-10-21: "continue conversations without me needing
+   * to press"): the reply is read aloud, and when it has FINISHED — so the mic
+   * does not hear the secretary — the conversation listens again by itself.
+   * Nobody speaking for a while ends it quietly (see onNoSpeech).
+   */
+  async function reply(text: string) {
+    setSpeaking(true);
+    await speaker.say(text, language);
+    setSpeaking(false);
+    if (!inConversation.current || recorder.phase === "recording") return;
+    autoListen.current = true;
+    cue("start");
+    await recorder.start();
+  }
+
+  function closeConversation() {
+    setOpen(false);
+    setQuestion(null);
+    speaker.stop();
+    setSpeaking(false);
+    if (recorder.phase === "recording") recorder.cancel();
+    autoListen.current = false;
+  }
+
   async function press() {
     if (longPressed.current) return;
     if (!voiceMode) {
@@ -186,6 +225,7 @@ export function AssistantButton({
     }
     if (recording) return recorder.stop();
     if (toast?.kind === "hearing" || toast?.kind === "saving") return;
+    autoListen.current = false;
     // Talking over the secretary stops her — and keeps her voice out of the mic.
     speaker.stop();
     // Inside the press: the answer arrives seconds later, and a phone only
@@ -201,6 +241,7 @@ export function AssistantButton({
     pressTimer.current = setTimeout(() => {
       longPressed.current = true;
       if (recording) recorder.cancel();
+      autoListen.current = false;
       setView("full");
       setOpen(true);
     }, LONG_PRESS_MS);
@@ -223,20 +264,35 @@ export function AssistantButton({
       {open && view === "conversation" ? (
         <SecretaryConversation
           question={question}
-          // Spoken in, spoken out.
-          onSpeak={(text) => void speaker.say(text, language)}
-          onClose={() => {
-            setOpen(false);
-            setQuestion(null);
-            speaker.stop();
-          }}
+          // Spoken in, spoken out — then it listens again.
+          onSpeak={(text) => void reply(text)}
+          onClose={closeConversation}
+          state={
+            recording
+              ? { kind: "listening", level: recorder.level }
+              : toast?.kind === "hearing"
+                ? { kind: "hearing" }
+                : speaking
+                  ? { kind: "speaking" }
+                  : { kind: "ready" }
+          }
+          notice={
+            toast?.kind === "unheard"
+              ? t("askUnheard")
+              : toast?.kind === "no_speech"
+                ? t("askNothingHeard")
+                : recorder.error
+                  ? t(`noteError_${recorder.error}`)
+                  : null
+          }
         />
       ) : open ? (
         <AssistantPanel onClose={() => setOpen(false)} canScan={canScan} mode={mode} onModeChange={setMode} />
       ) : null}
 
-      {/* What the button is doing, said in words above it. */}
-      {recording || toast || recorder.error ? (
+      {/* What the button is doing, said in words above it — inside the
+          conversation the window itself says it. */}
+      {(recording || toast || recorder.error) && !(open && view === "conversation") ? (
         <div
           role="status"
           className="bg-popover text-popover-foreground shadow-popover fixed right-4 bottom-20 z-[60] flex w-[min(320px,calc(100vw-2rem))] flex-col gap-2 rounded-2xl p-3 text-sm md:bottom-[4.5rem]"

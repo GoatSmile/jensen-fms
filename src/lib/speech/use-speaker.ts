@@ -47,8 +47,9 @@ export function useSpeaker() {
     }
   }, []);
 
+  /** Speak `text`; resolves when it has FINISHED (or could not start) — the cue to listen again. */
   const say = useCallback(
-    async (text: string, language: "da" | "en") => {
+    async (text: string, language: "da" | "en"): Promise<void> => {
       const body = text.trim();
       if (!body) return;
       stop();
@@ -59,7 +60,7 @@ export function useSpeaker() {
           a.src = `data:audio/mpeg;base64,${r.audio}`;
           try {
             await a.play();
-            return;
+            return await untilDone(a);
           } catch {
             /* refused — fall through to the browser's voice */
           }
@@ -67,7 +68,7 @@ export function useSpeaker() {
           serverCanSpeak = false;
         }
       }
-      browserSay(body, language);
+      return browserSay(body, language);
     },
     [stop],
   );
@@ -77,18 +78,37 @@ export function useSpeaker() {
   return { prime, say, stop };
 }
 
-function browserSay(text: string, language: "da" | "en") {
-  try {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = language === "da" ? "da-DK" : "en-GB";
-    const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(language));
-    if (voice) u.voice = voice;
-    synth.speak(u);
-  } catch {
-    /* no speech synthesis */
-  }
+/** Resolves when the element stops: the end, a pause (stopped), or an error. */
+function untilDone(a: HTMLAudioElement): Promise<void> {
+  return new Promise((resolve) => {
+    const done = () => {
+      a.removeEventListener("ended", done);
+      a.removeEventListener("pause", done);
+      a.removeEventListener("error", done);
+      resolve();
+    };
+    a.addEventListener("ended", done);
+    a.addEventListener("pause", done);
+    a.addEventListener("error", done);
+  });
+}
+
+function browserSay(text: string, language: "da" | "en"): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return resolve();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = language === "da" ? "da-DK" : "en-GB";
+      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(language));
+      if (voice) u.voice = voice;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      synth.speak(u);
+    } catch {
+      resolve(); // no speech synthesis
+    }
+  });
 }
 
 /** 0.1 s of silence, 8 kHz mono WAV — the unlock blip. */

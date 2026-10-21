@@ -809,7 +809,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   previous turn's EXECUTED actions ride into the next turn (`prior.done`), and
   `sameEntryJustMade` refuses an identical automatic booking within 6 h — a
   follow-up question re-booked a delivery before these (2026-10-21). The
-  calendar is ONE: the Servicebesøg service calendar. A NOTE is something it does when asked (`save_note`). **What a PRESS
+  calendar is ONE: the Servicebesøg service calendar. **It is HANDS-FREE after the first
+  press**: `speaker.say` resolves when the reply has finished, and only then
+  the conversation listens again (so it never hears itself), showing *Lytter —
+  tal nu* in the window; ~8 s of silence ends that quietly. Starting the mic
+  with no tap is the part a phone may refuse — prove it on both. A NOTE is something it does when asked (`save_note`). **What a PRESS
   does is the person's choice** (`people.assistant_mode`, chosen in the
   panel): `ask` opens the panel; `note_toggle` / `note_vad` still record a
   spoken NOTE — options kept "for now, remove later". Holding the button or
