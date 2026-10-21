@@ -993,6 +993,44 @@ export type Database = {
           },
         ]
       }
+      client_failures: {
+        Row: {
+          context: Json
+          created_at: string
+          detail: string | null
+          id: string
+          person_id: string | null
+          stage: string
+          surface: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          detail?: string | null
+          id?: string
+          person_id?: string | null
+          stage: string
+          surface: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          detail?: string | null
+          id?: string
+          person_id?: string | null
+          stage?: string
+          surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_failures_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coatings: {
         Row: {
           created_at: string

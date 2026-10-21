@@ -40,9 +40,17 @@ export type RecorderPhase = "idle" | "recording" | "captured";
  */
 export type SilenceStop = { afterMs: number; noSpeechMs: number };
 export const NOTE_SILENCE_STOP: SilenceStop = { afterMs: 2800, noSpeechMs: 8000 };
-/** Absolute floor for "speech" (raw RMS), and how far above the noise it must rise. */
-const SPEECH_MIN_RMS = 0.02;
+/**
+ * Absolute floor for "speech" (raw RMS), and how far above the noise it must
+ * rise. Was 0.02 until 2026-10-21, when notes were dropped as "nothing heard";
+ * each drop now reports the loudest buffer it measured (client_failures,
+ * migration 127), so the next move is read from data.
+ */
+const SPEECH_MIN_RMS = 0.01;
 const SPEECH_OVER_FLOOR = 3;
+
+/** What the detector measured on a recording it dropped as "nothing heard". */
+export type NoSpeechLevels = { peakRms: number; floorRms: number; minRms: number; sampleRate: number };
 
 export type RecorderErrorCode = "unsupported" | "permission" | "empty";
 
@@ -129,7 +137,7 @@ export type RecorderOptions = {
   /** End on a pause instead of waiting for Stop. */
   silenceStop?: SilenceStop;
   /** Called when a silence-stop recording heard no speech and was dropped. */
-  onNoSpeech?: () => void;
+  onNoSpeech?: (heard: NoSpeechLevels) => void;
 };
 
 export function useRecorder({
@@ -231,6 +239,7 @@ export function useRecorder({
     chunksRef.current = [];
     const begun = Date.now();
     let floor = Infinity;
+    let peak = 0;
     let heardSpeech = false;
     let lastSpeech = begun;
     let ended = false;
@@ -243,6 +252,7 @@ export function useRecorder({
       let sum = 0;
       for (let i = 0; i < input.length; i++) sum += (input[i] ?? 0) ** 2;
       const rms = Math.sqrt(sum / input.length);
+      peak = Math.max(peak, rms);
       setLevel(Math.min(1, rms * 4));
       if (!silenceStop) return;
       // The noise floor creeps up slowly, so a quiet stretch re-learns the room.
@@ -257,8 +267,9 @@ export function useRecorder({
         stopRef.current();
       } else if (!heardSpeech && now - begun > silenceStop.noSpeechMs) {
         ended = true;
+        const levels = { peakRms: peak, floorRms: floor, minRms: SPEECH_MIN_RMS, sampleRate: ctx.sampleRate };
         cancelRef.current();
-        onNoSpeechRef.current?.();
+        onNoSpeechRef.current?.(levels);
       }
     };
     source.connect(processor);

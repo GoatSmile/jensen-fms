@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
-import { mintNoteUpload, saveSpokenNote } from "@/app/_actions/notes";
+import { mintNoteUpload, reportNoteFailure, saveSpokenNote, type NoteFailureStage } from "@/app/_actions/notes";
 import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
 import { contextFromPath } from "@/lib/notes/context";
 import { isNoteMode, type AssistantMode } from "@/lib/notes/mode";
@@ -74,23 +74,28 @@ export function AssistantButton({
   const save = useCallback(
     async (blob: Blob) => {
       setToast({ kind: "saving" });
+      let stage: NoteFailureStage = "mint";
       try {
         const minted = await mintNoteUpload();
         if (!minted.ok) throw new Error(minted.error);
+        stage = "upload";
         const put = await fetch(minted.signedUrl, {
           method: "PUT",
           headers: { "content-type": "audio/wav" },
           body: blob,
         });
-        if (!put.ok) throw new Error(`upload ${put.status}`);
+        if (!put.ok) throw new Error(`upload ${put.status}: ${(await put.text().catch(() => "")).slice(0, 300)}`);
+        stage = "save";
         const r = await saveSpokenNote(minted.path, contextFromPath(window.location.pathname, locale));
         if (!r.ok) throw new Error(r.error);
         cue("saved");
         setToast({ kind: "saved", id: r.id });
       } catch (e) {
         // The recording is still here — Retry, never "say it again". The
-        // reason goes to the console: a failure nobody can read is unfixable.
+        // reason goes to the console AND the server: a failure nobody can
+        // read is unfixable, and the console is gone once the tab is.
         console.error("[note] save failed:", e);
+        report(stage, e instanceof Error ? e.message : String(e), { bytes: blob.size });
         setToast({ kind: "failed", blob });
       }
     },
@@ -100,9 +105,18 @@ export function AssistantButton({
   const recorder = useRecorder({
     onCaptured: (blob) => void save(blob),
     silenceStop: mode === "note_vad" ? NOTE_SILENCE_STOP : undefined,
-    onNoSpeech: () => setToast({ kind: "no_speech" }),
+    onNoSpeech: (heard) => {
+      report("no_speech", null, heard);
+      setToast({ kind: "no_speech" });
+    },
   });
   const recording = recorder.phase === "recording";
+
+  // The recorder's own refusals (no mic permission, nothing captured) are
+  // failures to save a note too.
+  useEffect(() => {
+    if (recorder.error) report(recorder.error, null, {});
+  }, [recorder.error]);
 
   useEffect(() => {
     if (toast?.kind !== "saved" && toast?.kind !== "no_speech") return;
@@ -255,6 +269,16 @@ export function AssistantButton({
       </button>
     </>
   );
+}
+
+/** Tell the server why a note did not become a row (migration 127); never throws. */
+function report(stage: NoteFailureStage, detail: string | null, extra: Record<string, unknown>) {
+  void reportNoteFailure(stage, detail, {
+    ...extra,
+    path: window.location.pathname,
+    online: navigator.onLine,
+    userAgent: navigator.userAgent,
+  }).catch(() => {});
 }
 
 /**

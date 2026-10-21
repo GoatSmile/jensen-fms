@@ -11,6 +11,7 @@ import { transcribeNote } from "@/lib/inbound/pipeline";
 import { sanitizeNoteContext } from "@/lib/notes/context";
 import { ASSISTANT_MODES, type AssistantMode } from "@/lib/notes/mode";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { Json } from "@/lib/types/database";
 
 type Result = { ok: true; id: string } | { ok: false; error: string };
 
@@ -78,6 +79,46 @@ export async function saveTypedNote(text: string, context: unknown): Promise<Res
   });
   revalidateInbound(id.id);
   return { ok: true, id: id.id };
+}
+
+/** Where a note's journey broke, as the browser saw it. */
+export type NoteFailureStage = "mint" | "upload" | "save" | "no_speech" | "unsupported" | "permission" | "empty";
+const NOTE_FAILURE_STAGES: readonly NoteFailureStage[] = [
+  "mint",
+  "upload",
+  "save",
+  "no_speech",
+  "unsupported",
+  "permission",
+  "empty",
+];
+
+/**
+ * The browser's report of a note that did not become a row (migration 127):
+ * which stage broke and why, so "it wasn't saved" can be read afterwards
+ * instead of living only in that browser's console. Best-effort — it never
+ * throws, and a report that cannot reach the server is simply lost.
+ */
+export async function reportNoteFailure(stage: string, detail: string | null, context: unknown): Promise<void> {
+  try {
+    if (!(NOTE_FAILURE_STAGES as readonly string[]).includes(stage)) return;
+    const personId = await readPersonId();
+    const ctx = context && typeof context === "object" && !Array.isArray(context) ? context : {};
+    // Bounded: the context is the browser's word, and this table has no UI to page it.
+    const json = JSON.stringify(ctx);
+    const { error } = await createServiceClient()
+      .from("client_failures")
+      .insert({
+        person_id: personId,
+        surface: "note",
+        stage,
+        detail: detail ? detail.slice(0, 1000) : null,
+        context: json.length <= 4000 ? (ctx as Json) : { truncated: json.slice(0, 4000) },
+      });
+    if (error) console.error("[note] failure report not stored:", error.message);
+  } catch (e) {
+    console.error("[note] failure report not stored:", e);
+  }
 }
 
 /** The person's own choice of what the button does. */
