@@ -772,8 +772,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   statement). `people.password_hash` is not granted; **a new secret-shaped
   column must be revoked from `assistant_reader` too**, because new tables are
   readable by default.
-  **It has its OWN model** (`inbound_assistant_model`, migration 120 — Claude
-  Haiku 4.5 by default, for speed; the call reader keeps
+  **It has its OWN model** (`inbound_assistant_model`, migration 120 — the
+  code's fallback is Haiku 4.5, but production runs Sonnet 5.5 because Haiku
+  misworded drafts, see below; the call reader keeps
   `inbound_extraction_model`) with its OWN Test (`testAssistantModel`, its real
   tool set), and saving a changed one is refused until that passes.
   **Relative dates are LOOKED UP, never computed**: both planners get the
@@ -801,12 +802,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   done and what waits — text only, NOTHING to click (owner). So what waits is
   settled by voice: a plain "ja"/"yes" or "nej"/"no" to the previous turn
   (`settleWaiting`, regex, no model) applies or leaves it, as the person;
-  replies in this mode ASK for a yes instead of a tap. A tap outside closes
-  it; holding the button or ⌘K opens the full panel with every control. One
+  replies in this mode ASK for a yes instead of a tap. Only its End closes it
+  (no tap-outside); holding the button or ⌘K opens the full panel with every
+  control. One
   sentence per applied action, `appliedSummary` — card, conversation and
   spoken confirmation alike. **Truth is the code's, not the model's**: what an
   automatic kind left undone is appended by `createCommandFromText`, the
-  previous turn's EXECUTED actions ride into the next turn (`prior.done`), and
+  conversation's EXECUTED actions ride into every next turn (`history`, each
+  turn's `done`), and
   `sameEntryJustMade` refuses an identical automatic booking within 6 h — a
   follow-up question re-booked a delivery before these (2026-10-21). The
   calendar is ONE: the Servicebesøg service calendar. **It holds the CONVERSATION**: each answer

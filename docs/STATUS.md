@@ -1,16 +1,16 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-10-08 (Thursday, evening).** **Spoken notes and the Inbox
-are built, all four slices** (`docs/plan-inbox-notes.md`, migrations 124–126,
-DECISIONS 2026-10-08): the floating button's mode per person (ask / note saved
-on a second press / on a pause); notes transcribed and READ for suggestions
-(*Put on record*, *Save contact*, visits, calendar moves/deletes), addressed
-to whoever handles the task; `/inbox` with a column of open notes per person
-above the calls, Done / Mark all done / Undo; *Calls and notes* on bike and
-customer pages; *Act right away* per person (booking and moving only —
-deleting stays a press). Also: payment terms follow a rule (123), dictation
-detects its language, the app opts out of browser translation, a sales
-order's delivery has *Move* / *Remove*. All in production.
+**Last updated: 2026-10-21 (Wednesday).** **The floating button is THE
+SECRETARY** (migrations 127–132, DECISIONS 2026-10-21): one press, then a
+hands-free spoken conversation in the person's language — it answers from the
+Inbox, the calendar and every area the person's role may see (the whole
+database, read-only, for Owner and IT admin), carries out safe things at once
+for people with *Act right away* (book a visit or delivery, move an entry,
+save a note), asks for a spoken yes before cancelling, says what it did, and
+remembers the conversation so "move it" means the entry it just read out.
+The round button is its End (a dark X). Also: every question to the assistant
+had failed since 8 Oct (a duplicate tool name) — fixed; a note that fails to
+save now reports why (`client_failures`). All in production.
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -27,24 +27,29 @@ Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 126 is the latest; production AND local at it** (`check:prod` /
-  `check:local`, 8 Oct). 126 / 125 = the action ledger accepts move_event,
-  delete_event, attach_note, save_contact; 124 = spoken notes (channel `note`,
-  addressee, context, due day, Done columns, `command_actions.auto_applied`,
-  `people.assistant_mode` + `assistant_auto_apply`); 123 = payment terms rule
-  (default dropped, the unchosen 14s → NULL); 122 = calendar kinds visit +
-  delivery. Older: see git log `migrations/`.
+- **Migration 132 is the latest; production AND local at it** (`check:prod`
+  / `check:local`, 21 Oct). 132 = ElevenLabs model + a voice per language;
+  131 = `speech_provider` (elevenlabs | google); 130 = `ask_voice` default,
+  `save_note` action; 129 = `assistant_read_query` + role `assistant_reader`
+  + capability `data_query`; 128 = `ask_voice` mode; 127 = `client_failures`.
+  Older: see git log `migrations/`.
 - **Production with `supabase db query --linked`** (writes pre-approved);
   **the local copy with `docker exec -i supabase_db_jensen-fms psql …`**.
-- **Spoken notes + Inbox** — verified: a real recording in PRODUCTION (Nazar,
-  desktop Chrome, 8 Oct: saved, English detected, 98 % clarity); locally the
-  board (desktop + 360 px, as Nazar and as Finn), Done/Undo/Mark all/Reopen,
-  the planner on the real model ("G K O K nul et" → GKOK01; number words →
-  21 19 77 10 on the existing contact, applied; "we need to invoice" →
-  Dennis; "remind me Monday" → 12 Oct), *Act right away* on the REAL
-  calendar (book ✓ auto, move ✓ auto, cancel suggested only — it had found a
-  real entry in the wrong week). **Not verified: Finn's Android** — silence
-  detection with road noise, and whether a web app shows on a car screen.
+- **The secretary** — verified LOCALLY by voice as Finn (spoken Danish fed in
+  place of the mic, since the browser pane has none), on the real
+  *Servicebesøg* calendar with TEST entries: book → "when is it?" → "flyt den
+  til mandag" → "aflys den" → "ja"; deliveries and unknown customers book;
+  no double booking; hands-free listening; End. **NOT verified on a phone** —
+  opening the mic without a tap is exactly what iPhone Safari may refuse.
+  Production settings: assistant model **Sonnet 5.5** (Haiku said "deleted"
+  for a delete that waited); voice **ElevenLabs Multilingual v2**, voice still
+  the default English "George"; Finn and Nazar on `ask_voice`; **Finn's *Act
+  right away* is ON** (set 21 Oct on the owner's instruction). Finn's first
+  real attempts (12:11–12:13) booked nothing — the cause is fixed (DECISIONS
+  2026-10-21 "Finn's failed booking").
+- **Spoken notes + Inbox** (8 Oct) — still there; notes are now also a thing
+  the secretary does when asked (`save_note`), and the note modes stay as
+  options.
 - **Calls** — live in production at `/inbox` (`/calls` redirects; a call's
   page stays `/calls/<id>`). Lines on: *Finn Nysom* (`RELATEL_TOKEN_FINN`),
   *Mathilde / Nazar* (`RELATEL_TOKEN_NAZAR`), *Dennis Jensen* 42 49 15 51
@@ -59,10 +64,11 @@ Danish (person language).
   **TEST entries in *Servicebesøg* now:** only two past ones from 30 Sep (a
   visit 10:00 and an all-day entry). The Gladsaxe entry Fri 9 Oct 13:03 was
   made in the 7 Oct meeting test, has no TEST marker, and was left alone.
-- **The assistant** — one floating button (⌘K), Haiku 4.5, scoped by role;
-  its panel also holds *Save as note* and the person's button mode.
-  **Transcription:** ElevenLabs Scribe v2 on the global host (EU key = a
-  go-live gate). **Extraction model:** `claude-sonnet-5` in production.
+- **Voices:** transcription ElevenLabs Scribe v2 on the global host (EU key =
+  a go-live gate); the secretary's voice ElevenLabs too (the answer TEXT goes
+  to the same global host). Google Cloud TTS is built as an option but
+  Google answers 403 until the Text-to-Speech API is enabled on the service
+  account's project (963901193248). **Extraction model:** `claude-sonnet-5`.
 - **Service agreements** — per bike, built 29 Sep (verified locally, not yet
   used in production). Dennis's answers: handling doc §7 items 1–23.
   **Register import is PLANNED** (`docs/plan-register-import.md`); **renewal
@@ -73,10 +79,13 @@ Danish (person language).
 - **Finn Nysom and Glenn exist in production** (role *Workshop*).
 
 ## In flight — waiting on someone
-- **Finn's Android, the real test:** set his button to "saves on a pause",
-  record a note in the car; check the pause detection with road noise and
-  whether the app can be on the car screen. Then a *Notes* section in his
-  guide (PDF). His *Act right away* switch is OFF until he has used notes.
+- **Both phones, the real test of the secretary:** Android Chrome and iPhone
+  Safari — press once, ask, wait: it must speak, then show *Lytter — tal nu*
+  and hear the next question with no press; the X ends it. Then Finn in the
+  van. Then a *Secretary* section in his guide (PDF).
+- **A Danish voice:** the ElevenLabs key needs `voices_read`; add a native
+  Danish voice to *My Voices*; pick it at /admin/settings → Phone & inbox →
+  Speech (*Listen* to compare).
 - **Register import — the pilot:** Dennis's cleaned spreadsheet (due Fri 9
   Oct); **Nazar names the pilot municipality** (Allerød cleanest, but no 0-kr
   rows); goal: all bikes + agreements in by the end of the week of 12 Oct.
@@ -97,9 +106,22 @@ Danish (person language).
   Google key file out of the project folder (`jensen-fms-38357d206d22.json`,
   gitignored); click the 27–28 Sep work in production; sign in as Finn with
   him at the next visit. An uncommitted change to `public/icon-mark.svg` sits
-  in the working copy — not from these sessions; commit or discard.
+  in the working copy — not from these sessions; commit or discard. Optional:
+  enable Google's Text-to-Speech API if Google should be the voice.
 
 ## Landmines
+- **The secretary acts on the SHARED calendar.** In tests never say "my next
+  appointment / move it" — the next entry may be a real one (a real Helsingør
+  visit sits on Thu 22 Oct). Name a TEST customer.
+- **A spoken "TEST" arrives lowercase**, so an entry from a spoken test request
+  does NOT inherit the TEST marker — type test requests, or check the
+  calendar after.
+- **`assistant_reader` reads every public table by default** — a new
+  secret-shaped column must be revoked from it (migration 129).
+- **Testing voice in the browser pane:** replace `navigator.mediaDevices.getUserMedia`
+  with a stream built from a `say -v Sara … --data-format=LEI16@16000` WAV
+  served from `public/__test_*.wav` (delete after); click the round button by
+  screenshot coordinates, not ref.
 - **A spoken note's audio is KEPT** under `notes/` in the inbound bucket
   (retention applies); a dictation's is deleted. Don't sweep `notes/` as
   stray dictation audio.
@@ -116,14 +138,12 @@ Danish (person language).
 - **Counting identifiers by category needs clean categories** (Batteries,
   Charger hold only those).
 - **The local copy:** production's data (anonymised) from 1 Oct + migrations
-  through 126. **Redo the `storage.*` swap in `data.sql` after every re-dump**
-  (local storage schema is older). Keep disk free (`.next` grows to 10+ GB).
-  **Stopped at session end, 8 Oct** (dev server, `supabase stop`, Docker
-  Desktop). To resume: `open -a Docker`, `supabase start`, the dev server.
-  **Local TEST data from 8 Oct:** TEST notes for Finn / Nazar (some closed);
-  contact *TEST Christina Holm* (Gladsaxe Hjemmepleje, phone now 21 19 77
-  10); bike `JP-2026-E_BIKE-035` owned by Gladsaxe Hjemmepleje with code
-  GKOK01 (local only); `SO-TEST-0001` / `SO-TEST-0002` (no calendar entries).
+  through 132. **Redo the `storage.*` swap in `data.sql` after every re-dump**.
+  Keep disk free. **Stopped at session end, 21 Oct** (dev server, `supabase
+  stop`). To resume: `open -a Docker`, `supabase start`, the dev server.
+  Local differs from prod: Finn's *Act right away* on, Finn on `ask_voice`,
+  assistant model Sonnet 5.5. TEST data from 8 Oct as before; today's TEST
+  calendar entries were all deleted.
 - **Charger "numbers" on newer bikes are model codes** — never import as unique.
 - **Pre-v3 sessions are upgraded** in `src/lib/auth/session.ts`. Delete after
   2026-10-27 (BACKLOG).
@@ -132,21 +152,20 @@ Danish (person language).
   lives only in Vercel) — authenticated production pages need a human.
 
 ## Next actions
-1. **Finn's Android** (above), then the *Notes* section of his guide (PDF).
+1. **The phone test** (above), then Finn uses the secretary for real; watch
+   his `/commands` and `client_failures` for what goes wrong.
 2. **The register pilot** as soon as the cleaned spreadsheet and the pilot
-   choice arrive — `docs/plan-register-import.md` §9 (schema migration +
-   `import_fleet.py` plan/sql/verify/rollback generators can be built against
-   the old register now).
+   choice arrive — `docs/plan-register-import.md` §9.
 3. **Renewal invoicing** after the import is checked (`plan-renewal-invoicing`,
    phase A).
-4. **Next without anyone:** the loading scan (QR on the delivery note), box
+4. **Next without anyone:** the spoken-TEST marker; Deepgram as a recognition
+   option only if ElevenLabs proves weak on names; the loading scan, box
    labels once the printer is known, the builder's iPad view.
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-10-08): 98 pass · 22 redirect · 9 skip · 0 fail.** Run
-  it AFTER `build:check`, not alongside — overlapping them gave 30 transient
-  failures on 8 Oct.
-- **Lint: 0 errors, 14 warnings** (all pre-existing).
+- **Smoke, local (2026-10-08): 98 pass · 22 redirect · 9 skip · 0 fail** —
+  not re-run 21 Oct. Run it AFTER `build:check`, not alongside.
+- **Lint: 0 errors, 14 warnings** (all pre-existing, 21 Oct).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`)
   and check 18 (legacy `unit_cost_basis = 'none'`).
 
