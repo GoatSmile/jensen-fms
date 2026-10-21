@@ -182,8 +182,7 @@ Danish (person language).
    arrives: `python3 scripts/import_fleet.py plan --batch
    register-2026-10-pilot-allerod --sheets "ALLERØD KOMMUNE" --src <file>`,
    confirm the mapping (which EAN is *Hjemmeplejen*), review PDF to Dennis,
-   then plan §5 steps 3–6. Owner first: may the import strip a comma/dot in a
-   frame's digits cell (plan §1, "Found on the first run")?
+   then plan §5 steps 3–6.
 3. **Renewal invoicing** after the import is checked (`plan-renewal-invoicing`,
    phase A).
 4. **Next without anyone:** the spoken-TEST marker; Deepgram as a recognition

@@ -4059,3 +4059,24 @@ language and the model answered in the prompt's.
 - Rejected for now: the CALL's language (a Danish summary for Dennis, who
   reads English), and translating per viewer on every page view (a model
   call per read).
+
+## 2026-10-21 — The import strips a stray comma or dot before a frame's digits
+
+Owner, 21 Oct, after the first Allerød run: "strip a leading comma or dot from
+the frame's digits cell automatically, and list each one as a note in the
+review." Supersedes plan-register-import §4's "punctuation inside a frame is
+NOT stripped automatically" for this one case.
+
+- The register splits a frame over three cells, and the digits cell often
+  starts with `,` or `.` (`WCK ,000639 L`) — most of Allerød's frames and a
+  few hundred cells across the register. Asking Dennis to retype them is
+  the wrong ask; reading them as `WCK000639L` is safe because nothing else
+  about the frame changes.
+- `frame_digits` in `scripts/import_fleet.py` strips ONLY leading commas or
+  dots, on the customer sheets AND the renewal sheets (or the two stop
+  matching). Each one is a *note* in the review — what was written, what was
+  read.
+- Any other punctuation, or one elsewhere in the frame, is still listed and
+  not imported.
+- Rejected: stripping every non-alphanumeric character (would hide a real
+  typo), and leaving it all to Dennis (the old rule).

@@ -124,6 +124,15 @@ def as_date(v) -> tuple[str, bool]:
     return s, False
 
 
+def frame_digits(v) -> tuple[str, str]:
+    """A frame's digits cell, and what was stripped from it. The register often
+    carries a stray comma or dot before the digits (`WCK ,000639 L`); the owner
+    allowed stripping exactly that (DECISIONS 2026-10-21), each one listed."""
+    d = cell(v).replace(" ", "")
+    m = re.fullmatch(r"([,.]+)(\d.*)", d)
+    return (m.group(2), m.group(1)) if m else (d, "")
+
+
 def joined(parts) -> str:
     return "".join(cell(p).replace(" ", "") for p in parts if cell(p)).upper()
 
@@ -213,13 +222,13 @@ def parse_fleet(wb):
         for ri in range(hi + 1, len(rows)):
             r = rows[ri] or ()
             get = lambda j: r[j] if j < len(r) else None  # noqa: E731
-            digits = cell(get(frame_col + 1)).replace(" ", "")
+            digits, stripped = frame_digits(get(frame_col + 1))
             if not digits:
                 continue
-            rec = {"sheet": ws.title.strip(), "row": ri + 1, "issues": []}
+            rec = {"sheet": ws.title.strip(), "row": ri + 1, "issues": [], "frame_stripped": stripped}
             prefix, year = cell(get(frame_col)).upper(), cell(get(frame_col + 2)).upper()
             rec["frame"] = f"{prefix}{digits}{year}".upper().replace(" ", "")
-            rec["frame_display"] = " ".join(x for x in (prefix, digits, year) if x)
+            rec["frame_display"] = " ".join(x for x in (prefix, stripped + digits, year) if x)
             if not re.fullmatch(r"[A-Z]", year or "-"):
                 rec["issues"].append("frame year letter missing or odd" if not year else f"frame suffix '{year}'")
             invoiced = []
@@ -281,7 +290,7 @@ def parse_schedule(wb):
         for ri in range(hi + 1, len(rows)):
             r = rows[ri] or ()
             get = lambda j: r[j] if j is not None and j < len(r) else None  # noqa: E731
-            digits = cell(get(fi + 1)).replace(" ", "")
+            digits, stripped = frame_digits(get(fi + 1))
             if not digits:
                 continue
             yrs = []
@@ -295,6 +304,7 @@ def parse_schedule(wb):
                 "recognition_code": cell(get(ci)).upper(), "customer_text": cell(get(ki)),
                 "bought": as_date(get(bi))[0], "ean": cell(get(ei)),
                 "renewals": "; ".join(yrs), "yearly_price": cell(get(pi)),
+                "frame_stripped": stripped,
             })
     return out
 
@@ -716,6 +726,8 @@ def build_plan(args):
         if elsewhere:
             P.flag("skipped", "frame also on another customer's sheet", f"also on {', '.join(elsewhere)} — moved bike?", b, f)
             continue
+        if b["frame_stripped"]:
+            P.flag("note", "frame punctuation removed", f"as written: {b['frame_display']} — read as {f}", b, f)
         if f in chosen:
             keep, drop = sorted([chosen[f], b], key=lambda x: x.get("delivered", "") or "", reverse=True)
             chosen[f] = keep
@@ -795,6 +807,8 @@ def build_plan(args):
     for s in schedule:
         if s["frame"] in sel_frames:
             sched[s["frame"]].append(s)
+            if s["frame_stripped"]:
+                P.flag("note", "frame punctuation removed", f"renewal sheet: '{s['frame_stripped']}' before the digits — read as {s['frame']}", s)
         elif s["frame"] not in fleet_frames and for_these_sheets(s["customer_text"]):
             near = [f for f in sorted(sel_frames) if one_off(f, s["frame"])]
             P.flag("skipped", "renewal row with no bike", f"{s['customer_text']} · price {s['yearly_price'] or 'blank'}"

@@ -60,12 +60,9 @@ rollback dry run → rollback, and a rollback guard refusing):
 - Any GPS-only shape (§8, D1). 480 kr rows are listed, not imported.
 
 **Found on the first run (Allerød):** most frames are written with a comma or
-dot in the digits cell (`WCK ,000639 L`) — across the register that cell
-pattern occurs a few hundred times, so Dennis fixing them by hand is the wrong
-ask. The plan's rule (§4, punctuation is listed, not stripped) stands until
-the owner decides otherwise. And one renewal row's frame is a digit off the
-sheet's (WCK000472L vs WCK000471L): the exception list names the nearest
-frame.
+dot in the digits cell (`WCK ,000639 L`) — now stripped and noted (§4). And
+one renewal row's frame is a digit off the sheet's (WCK000472L vs
+WCK000471L): the exception list names the nearest frame.
 
 **Blocked, and what each item blocks:**
 
@@ -255,9 +252,10 @@ applied to production AND the local copy, then queried.
 - **Frames.**
     - Normalise to uppercase with no spaces. That is the script's existing
       `joined` rule.
-    - Punctuation inside a frame (`WCK,000458L`, `WCK.000736L` in the 26 Sep
-      review) is NOT stripped automatically. It goes on the review list, and
-      Dennis corrects it in the spreadsheet.
+    - A comma or dot at the START of the digits cell (`WCK ,000639 L`) is
+      stripped and listed as a note (owner, DECISIONS 2026-10-21). Any other
+      punctuation is NOT stripped: it goes on the review list, and Dennis
+      corrects it in the spreadsheet.
     - A frame must end in a year letter (G = 2012 … Z = 2026); otherwise it
       is listed.
 - **Frames already in the database** (any row, live or deleted, in
