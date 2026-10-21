@@ -3838,3 +3838,27 @@ Owner: "press the button, dictate, and receive answers like a secretary";
   the pause detector's speech floor halved (RMS 0.02 → 0.01) pending data.
 - **Rejected for now:** speaking the answer aloud (Munin's Secretary does, in
   the line's voice) — a separate piece of work.
+
+## 2026-10-21 — The assistant reads everything: per area for all, the whole database for two roles
+
+Owner: "ask questions about anything in the system: contracts, buy, service
+agreements — everything"; then "both: a general read-only database lookup for
+Owner and IT admin now, and per-area lookups for everyone else."
+
+- **Per-area read tools** — customers, service agreements, purchase orders,
+  invoices, low stock — each gated by its area's capability, money left out
+  without `costs`, so a technician's assistant still cannot read what his
+  screens hide.
+- **A general lookup for `data_query` (new capability: Owner, IT admin)**: the
+  model writes one SELECT; `assistant_read_query` runs it as a SELECT-only role
+  in a read-only transaction, wrapped as a subquery, with a row cap and a
+  planner-cost cap. Every write path was tried locally and refused (data-
+  modifying WITH, a second statement, flipping read-only back, other schemas,
+  the password hash).
+- **Rejected:** the general lookup for every role (it reads money and everyone's
+  records — the per-area tools exist so that rule holds); a statement timeout
+  as the runaway guard (set inside the function, it did not stop a 7 s sleep).
+- **The goal behind it (owner): Finn works his calendar by talking to the
+  app.** Verified as Finn on the local copy against the real Servicebesøg
+  calendar with a TEST entry: book → move → "when is my next appointment?" →
+  cancel, each change one tap.

@@ -441,7 +441,379 @@ const findDocument: AssistantTool = {
   },
 };
 
-export const ASSISTANT_TOOLS: AssistantTool[] = [inbox, findBike, findPart, calendarEntries, openTickets, findDocument];
+/* ----------------------------------------------------------- customers */
+
+const findCustomer: AssistantTool = {
+  caps: ["customers"],
+  def: {
+    name: "find_customer",
+    description:
+      "Find customers (organisations) by name, CVR, EAN, city or phone. Returns up to 8 with segment, address, contact details, payment terms, how many bikes they own and how many active service-agreement bikes they have.",
+    input_schema: {
+      type: "object",
+      properties: { query: { type: "string", description: "Name or number as said." } },
+      required: ["query"],
+    },
+  },
+  async run(ctx, input) {
+    const q = str(input.query);
+    if (!q) return { error: "empty query" };
+    const like = `%${ilikeEscape(q)}%`;
+    const { data, error } = await ctx.supabase
+      .from("organizations")
+      .select(
+        "id, legal_name, display_name_da, display_name_en, cvr_number, ean_number, address_line1, zip_code, city, phone, email, payment_terms_days, lifecycle_stage, recognition_prefix, segment:customer_segments(name_en, name_da)",
+      )
+      .is("deleted_at", null)
+      .or(
+        `legal_name.ilike.${like},display_name_da.ilike.${like},display_name_en.ilike.${like},cvr_number.ilike.${like},ean_number.ilike.${like},city.ilike.${like},phone.ilike.${like}`,
+      )
+      .order("legal_name")
+      .limit(LIMIT);
+    if (error) return { error: error.message };
+    const ids = (data ?? []).map((o) => o.id as string);
+    const [{ data: bikes }, { data: lines }] = await Promise.all([
+      ids.length
+        ? ctx.supabase.from("bikes").select("owner_organization_id").in("owner_organization_id", ids).is("deleted_at", null)
+        : Promise.resolve({ data: [] as { owner_organization_id: string }[] }),
+      ids.length
+        ? ctx.supabase
+            .from("service_agreement_bikes")
+            .select("status, agreement:service_agreements!inner(organization_id, status)")
+            .eq("status", "active")
+            .eq("agreement.status", "active")
+            .in("agreement.organization_id", ids)
+        : Promise.resolve({ data: [] as unknown[] }),
+    ]);
+    const count = (list: string[]) => list.reduce((m, id) => m.set(id, (m.get(id) ?? 0) + 1), new Map<string, number>());
+    const bikeCount = count((bikes ?? []).map((b) => b.owner_organization_id as string));
+    const coveredCount = count(
+      ((lines ?? []) as { agreement: { organization_id: string } | null }[]).map((l) => l.agreement?.organization_id ?? ""),
+    );
+    for (const o of data ?? []) ctx.seen.set(o.id, "customer");
+    return {
+      customers: (data ?? []).map((o) => {
+        const seg = o.segment as { name_en?: string; name_da?: string } | null;
+        return {
+          id: o.id,
+          name: orgName(o),
+          legalName: o.legal_name,
+          segment: seg ? (seg.name_da ?? seg.name_en ?? null) : null,
+          cvr: o.cvr_number,
+          ean: o.ean_number,
+          address: [o.address_line1, [o.zip_code, o.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null,
+          phone: o.phone,
+          email: o.email,
+          paymentTermsDays: o.payment_terms_days,
+          stage: o.lifecycle_stage,
+          recognitionPrefix: o.recognition_prefix,
+          bikes: bikeCount.get(o.id) ?? 0,
+          bikesUnderAgreement: coveredCount.get(o.id) ?? 0,
+        };
+      }),
+    };
+  },
+};
+
+/* ---------------------------------------------------------- agreements */
+
+const findAgreements: AssistantTool = {
+  caps: ["agreements"],
+  def: {
+    name: "service_agreements",
+    description:
+      "Service agreements (contracts): per customer, with type (K1/K3/K5/K10 = years committed), status, dates, what is covered and how many bikes are on it. Optional `query` = customer name; `expiringWithinDays` lists active agreements ending soon. A bike's own coverage: find_bike first, then ask with the customer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Customer name, optional." },
+        expiringWithinDays: { type: "number", description: "Optional: only active agreements ending within this many days." },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const q = str(input.query);
+    const within = typeof input.expiringWithinDays === "number" ? input.expiringWithinDays : null;
+    let req = ctx.supabase
+      .from("service_agreements")
+      .select(
+        "id, name_da, name_en, status, contract_type, start_date, end_date, signed_on, covers_parts, covers_labor, has_gps, monthly_fee, fee_currency, org:organizations!organization_id(legal_name, display_name_da, display_name_en), unit:organization_units(name), lines:service_agreement_bikes(status, yearly_price, currency)",
+      )
+      .order("end_date", { ascending: true, nullsFirst: false })
+      .limit(LIMIT);
+    if (q) {
+      const { data: orgs } = await ctx.supabase
+        .from("organizations")
+        .select("id")
+        .is("deleted_at", null)
+        .or(`legal_name.ilike.%${ilikeEscape(q)}%,display_name_da.ilike.%${ilikeEscape(q)}%,display_name_en.ilike.%${ilikeEscape(q)}%`)
+        .limit(20);
+      const ids = (orgs ?? []).map((o) => o.id as string);
+      if (ids.length === 0) return { agreements: [], note: "no customer matched" };
+      req = req.in("organization_id", ids);
+    }
+    if (within !== null) {
+      const until = new Date(Date.now() + within * 86_400_000).toISOString().slice(0, 10);
+      req = req.eq("status", "active").not("end_date", "is", null).lte("end_date", until);
+    }
+    const { data, error } = await req;
+    if (error) return { error: error.message };
+    return {
+      agreements: (data ?? []).map((a) => {
+        const lines = (a.lines ?? []) as { status: string; yearly_price: number | null; currency: string | null }[];
+        const active = lines.filter((l) => l.status === "active");
+        return {
+          name: a.name_da ?? a.name_en,
+          customer: orgName(a.org as never),
+          department: (a.unit as { name?: string } | null)?.name ?? null,
+          status: a.status,
+          type: a.contract_type,
+          start: a.start_date,
+          end: a.end_date,
+          signed: a.signed_on,
+          coversParts: a.covers_parts,
+          coversLabour: a.covers_labor,
+          gps: a.has_gps,
+          activeBikes: active.length,
+          endedBikes: lines.length - active.length,
+          ...(ctx.canSeeCosts
+            ? {
+                yearlyTotal: active.reduce((n, l) => n + Number(l.yearly_price ?? 0), 0),
+                currency: active[0]?.currency ?? a.fee_currency ?? "DKK",
+                monthlyFee: a.monthly_fee,
+              }
+            : {}),
+        };
+      }),
+    };
+  },
+};
+
+/* ---------------------------------------------------------- purchasing */
+
+const purchaseOrders: AssistantTool = {
+  caps: ["po"],
+  def: {
+    name: "purchase_orders",
+    description:
+      "Purchase orders to suppliers, newest first: number, supplier, status (draft, placed, partially_received, received, cancelled), order/expected/received dates, total. Optional `query` = supplier name or part words (orders containing that part); `openOnly` = not yet fully received.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Supplier name or part words, optional." },
+        openOnly: { type: "boolean" },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const q = str(input.query);
+    let req = ctx.supabase
+      .from("purchase_orders")
+      .select("id, po_number, status, order_date, expected_date, received_date, total_amount, total_currency, supplier:suppliers(name), lines:purchase_order_lines(quantity, part:parts(name))")
+      .order("created_at", { ascending: false })
+      .limit(40);
+    if (input.openOnly === true) req = req.in("status", ["draft", "placed", "partially_received"]);
+    const { data, error } = await req;
+    if (error) return { error: error.message };
+    type Line = { quantity: number; part: { name: string } | null };
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const rows = (data ?? [])
+      .filter((p) => {
+        if (!words.length) return true;
+        const hay = [(p.supplier as { name?: string } | null)?.name ?? "", ...((p.lines ?? []) as unknown as Line[]).map((l) => l.part?.name ?? "")]
+          .join(" ")
+          .toLowerCase();
+        return words.every((w) => hay.includes(w));
+      })
+      .slice(0, LIMIT);
+    for (const p of rows) ctx.seen.set(p.id, "purchase_order");
+    return {
+      purchaseOrders: rows.map((p) => ({
+        id: p.id,
+        number: p.po_number,
+        supplier: (p.supplier as { name?: string } | null)?.name ?? null,
+        status: p.status,
+        ordered: p.order_date,
+        expected: p.expected_date,
+        received: p.received_date,
+        lines: ((p.lines ?? []) as unknown as Line[]).slice(0, 6).map((l) => `${l.quantity} × ${l.part?.name ?? "?"}`),
+        ...(ctx.canSeeCosts ? { total: p.total_amount, currency: p.total_currency } : {}),
+      })),
+    };
+  },
+};
+
+/* ------------------------------------------------------------ invoices */
+
+const invoicesTool: AssistantTool = {
+  caps: ["invoices"],
+  def: {
+    name: "invoices",
+    description:
+      "Invoices, newest first: number, customer, status (draft, issued, paid, overdue, credited, cancelled), issued/due/paid dates and amounts. Optional `query` = customer name; `unpaidOnly` = issued and not paid; `overdueOnly` = unpaid and past due.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Customer name, optional." },
+        unpaidOnly: { type: "boolean" },
+        overdueOnly: { type: "boolean" },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const q = str(input.query);
+    let req = ctx.supabase
+      .from("invoices")
+      .select("id, invoice_number, status, kind, issued_date, due_date, paid_date, total_amount, currency, org:organizations!organization_id(legal_name, display_name_da, display_name_en)")
+      .order("created_at", { ascending: false })
+      .limit(LIMIT);
+    if (input.unpaidOnly === true || input.overdueOnly === true) req = req.in("status", ["issued", "overdue"]);
+    if (input.overdueOnly === true) req = req.lt("due_date", new Date().toISOString().slice(0, 10));
+    if (q) {
+      const { data: orgs } = await ctx.supabase
+        .from("organizations")
+        .select("id")
+        .is("deleted_at", null)
+        .or(`legal_name.ilike.%${ilikeEscape(q)}%,display_name_da.ilike.%${ilikeEscape(q)}%,display_name_en.ilike.%${ilikeEscape(q)}%`)
+        .limit(20);
+      const ids = (orgs ?? []).map((o) => o.id as string);
+      if (ids.length === 0) return { invoices: [], note: "no customer matched" };
+      req = req.in("organization_id", ids);
+    }
+    const { data, error } = await req;
+    if (error) return { error: error.message };
+    for (const i of data ?? []) ctx.seen.set(i.id, "invoice");
+    return {
+      invoices: (data ?? []).map((i) => ({
+        id: i.id,
+        number: i.invoice_number,
+        customer: orgName(i.org as never),
+        status: i.status,
+        kind: i.kind,
+        issued: i.issued_date,
+        due: i.due_date,
+        paid: i.paid_date,
+        total: i.total_amount,
+        currency: i.currency,
+      })),
+    };
+  },
+};
+
+/* --------------------------------------------------------------- stock */
+
+const lowStock: AssistantTool = {
+  caps: ["parts"],
+  def: {
+    name: "low_stock",
+    description:
+      "Parts that are running low or out: on hand at or below 20 % of the last purchased quantity (the app's low-stock rule), or none at all. Up to 20, emptiest first. For one part's stock use find_part.",
+    input_schema: { type: "object", properties: {} },
+  },
+  async run(ctx) {
+    const [{ data: stock }, { data: last }] = await Promise.all([
+      ctx.supabase.from("v_current_stock").select("part_id, quantity_on_hand"),
+      ctx.supabase.from("v_part_last_cost").select("part_id, last_purchase_quantity").not("last_purchase_quantity", "is", null),
+    ]);
+    const onHand = new Map<string, number>();
+    for (const r of stock ?? []) onHand.set(r.part_id, (onHand.get(r.part_id) ?? 0) + Number(r.quantity_on_hand ?? 0));
+    const low = (last ?? [])
+      .map((r) => ({ id: r.part_id as string, qty: onHand.get(r.part_id) ?? 0, last: Number(r.last_purchase_quantity) }))
+      .filter((r) => r.qty <= 0 || r.qty <= r.last * 0.2)
+      .sort((a, b) => a.qty / (a.last || 1) - b.qty / (b.last || 1))
+      .slice(0, 20);
+    if (low.length === 0) return { parts: [] };
+    const { data: parts } = await ctx.supabase
+      .from("parts")
+      .select("id, name, internal_sku")
+      .in("id", low.map((l) => l.id))
+      .is("deleted_at", null);
+    const byId = new Map((parts ?? []).map((p) => [p.id as string, p]));
+    const rows = low.filter((l) => byId.has(l.id));
+    for (const r of rows) ctx.seen.set(r.id, "part");
+    return {
+      parts: rows.map((r) => ({
+        id: r.id,
+        name: byId.get(r.id)?.name,
+        sku: byId.get(r.id)?.internal_sku,
+        onHand: r.qty,
+        lastPurchased: r.last,
+      })),
+    };
+  },
+};
+
+/* ------------------------------------------------- the whole database */
+
+/**
+ * The general lookup (migration 129): the model writes ONE SELECT and
+ * `assistant_read_query` runs it as `assistant_reader` — SELECT-only, in a
+ * read-only transaction, wrapped as a subquery, under a row and a cost cap.
+ * Owner and IT admin only (`data_query`): it reads money and everyone's
+ * records, which the per-area tools withhold from roles without the right.
+ */
+const databaseTables: AssistantTool = {
+  caps: ["data_query"],
+  def: {
+    name: "database_tables",
+    description:
+      "The database's tables. With no `tables`: every table name. With `tables`: their columns and types. Use before database_query when unsure of names. Useful: organizations (customers), bikes, bike_identifiers (fleet_number = recognition code), service_agreements + service_agreement_bikes (contracts, per bike), offers/sales_orders/invoices (+ *_lines), purchase_orders + purchase_order_lines, suppliers, parts, inventory_movements, v_current_stock, v_part_last_cost, maintenance_tickets, work_orders, service_orders (paint orders), manufacturing_orders, inbound_messages (calls and notes), people, colors, bike_templates.",
+    input_schema: {
+      type: "object",
+      properties: { tables: { type: "array", items: { type: "string" }, description: "Optional table names." } },
+    },
+  },
+  async run(ctx, input) {
+    const names = (Array.isArray(input.tables) ? input.tables : [])
+      .filter((t): t is string => typeof t === "string" && /^[a-z_][a-z0-9_]*$/.test(t))
+      .slice(0, 10);
+    const sql = names.length
+      ? `select table_name, string_agg(column_name || ' ' || data_type, ', ' order by ordinal_position) as columns from information_schema.columns where table_schema = 'public' and table_name in (${names.map((n) => `'${n}'`).join(",")}) group by table_name`
+      : `select string_agg(table_name, ', ' order by table_name) as tables from information_schema.tables where table_schema = 'public'`;
+    const { data, error } = await ctx.supabase.rpc("assistant_read_query", { q: sql, max_rows: 20 });
+    if (error) return { error: error.message };
+    return { result: data };
+  },
+};
+
+const databaseQuery: AssistantTool = {
+  caps: ["data_query"],
+  def: {
+    name: "database_query",
+    description:
+      "Run ONE read-only PostgreSQL SELECT (or WITH … SELECT) on the database, no semicolon; returns up to 100 rows as JSON. For anything the other tools do not cover: counts, sums, lists across tables. Money is (amount, currency) column pairs. Only some tables have deleted_at (organizations, bikes, parts, contacts, suppliers…) — check with database_tables before filtering on it. A service agreement's price is PER BIKE: service_agreement_bikes.yearly_price, joined on agreement_id, active lines only (status = 'active'); service_agreements.monthly_fee is the old fee model. Current stock = sum(quantity_on_hand) from v_current_stock per part. If a query fails, read the error, check names with database_tables, and try again.",
+    input_schema: {
+      type: "object",
+      properties: { sql: { type: "string", description: "One SELECT statement." } },
+      required: ["sql"],
+    },
+  },
+  async run(ctx, input) {
+    const sql = str(input.sql).replace(/;\s*$/, "");
+    if (!sql) return { error: "empty query" };
+    const { data, error } = await ctx.supabase.rpc("assistant_read_query", { q: sql, max_rows: 100 });
+    if (error) return { error: error.message };
+    const text = JSON.stringify(data);
+    // Bounded: a wide row set would swamp the model's context.
+    return text.length > 20_000 ? { truncated: true, firstRows: (data as unknown[]).slice(0, 20) } : { rows: data };
+  },
+};
+
+export const ASSISTANT_TOOLS: AssistantTool[] = [
+  inbox,
+  findBike,
+  findPart,
+  lowStock,
+  calendarEntries,
+  openTickets,
+  findDocument,
+  findCustomer,
+  findAgreements,
+  purchaseOrders,
+  invoicesTool,
+  databaseTables,
+  databaseQuery,
+];
 
 /** The read tools THIS person's assistant gets. */
 export function toolsFor(caps: readonly string[]): AssistantTool[] {

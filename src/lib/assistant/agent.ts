@@ -33,7 +33,8 @@ import { TARGET_KINDS, parseAssistantAnswer, targetHref, type AssistantAnswer, t
 import { toolsFor, type ToolContext } from "./tools";
 
 const MAX_TOKENS = 8000;
-const MAX_ITERATIONS = 8;
+// A database question may need a schema look and a retry after an error.
+const MAX_ITERATIONS = 12;
 
 /** Which right lets a person apply each kind of draft — the apply step checks it again. */
 export const ACTION_CAPABILITIES: Record<CommandAction["type"], readonly string[]> = {
@@ -194,6 +195,7 @@ How to work:
    - Never put a phone number or a person's name in a calendar title.
    - To MOVE an appointment already in the calendar, or CHANGE its day or time: find it with find_calendar_entry (words from its title, and its current day if said), then draft move_event with the NEW date (and time only if said). To CANCEL one: delete_event. Propose either only when find_calendar_entry returned exactly ONE entry; otherwise list what matched and ask which. Only the day and time can change — not the title or the customer; if asked to, say so and offer to cancel it and make a new one.
    - "What is in the calendar / my next appointment" is a question: read it with calendar_entries.
+   - Nothing happens until the person taps the draft. So word the reply as a PROPOSAL ("Tap Move to move it to Monday 13:00"), never as done ("I am moving it").
    - Fill an id only when a lookup returned exactly one match; otherwise leave it null.
 5. Only use ids your tools returned in this conversation. If a tool says you are not allowed, tell the person plainly.
    This person can open pages for: ${opts.openable.join(", ")}. For any other kind, do not set \`open\` — say plainly that you can't open it for them (you may still say what you found).

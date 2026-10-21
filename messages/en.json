@@ -3677,6 +3677,7 @@
     "eventSoReady": "Sales order ready for delivery",
     "eventPaintReceivedIncomplete": "Paint order collected with lines to fix",
     "capJobs": "See scheduled jobs",
+    "capDataQuery": "Ask the assistant about anything in the database",
     "capCallsOwn": "Own inbox (own calls and notes)",
     "autoApplyTitle": "Act right away",
     "autoApplyDesc": "For this person's spoken notes.",

@@ -3677,6 +3677,7 @@
     "eventSoReady": "Salgsordre klar til levering",
     "eventPaintReceivedIncomplete": "Lakordre hentet med linjer, der skal rettes",
     "capJobs": "Se planlagte job",
+    "capDataQuery": "Spørg assistenten om alt i databasen",
     "capCallsOwn": "Egen indbakke (egne opkald og notater)",
     "autoApplyTitle": "Handl med det samme",
     "autoApplyDesc": "For denne persons indtalte notater.",

@@ -762,6 +762,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   by `assistantToolDefs`** (agent.ts), for runs and the model Test alike: the
   API refuses a duplicate tool name, and a `find_bike` in both the read tools
   and the resolvers broke every question from 8 to 21 Oct unnoticed.
+  **Per-area read tools follow the person's rights** (customers, agreements,
+  purchase orders, invoices, low stock — each gated by its area's capability,
+  money withheld without `costs`). **`data_query` (Owner, IT admin) adds a
+  general lookup**: `database_query` runs ONE SELECT through
+  `assistant_read_query` (migration 129) as `assistant_reader` — SELECT-only,
+  read-only transaction, wrapped as a subquery, row cap, and a PLANNER-COST cap
+  (a `statement_timeout` set inside the function does not bind the running
+  statement). `people.password_hash` is not granted; **a new secret-shaped
+  column must be revoked from `assistant_reader` too**, because new tables are
+  readable by default.
   **It has its OWN model** (`inbound_assistant_model`, migration 120 — Claude
   Haiku 4.5 by default, for speed; the call reader keeps
   `inbound_extraction_model`) with its OWN Test (`testAssistantModel`, its real

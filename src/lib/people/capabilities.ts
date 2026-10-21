@@ -48,6 +48,9 @@ export const CAPABILITIES = [
   // The scheduled jobs page (/admin/jobs, migration 109) — system internals an
   // IT person watches; hidden from everyone without it.
   { key: "jobs", navLabelKey: null, adminLabelKey: "capJobs" },
+  // The assistant may read the WHOLE database (migration 129) — money and
+  // everyone's records; Owner and IT admin.
+  { key: "data_query", navLabelKey: null, adminLabelKey: "capDataQuery" },
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["key"];
