@@ -84,10 +84,14 @@ async function currentPersonId(): Promise<string | null> {
 export async function createCommandFromText(
   text: string,
   priorId?: string | null,
-  opts?: { spoken?: boolean; history?: string[] },
+  opts?: { spoken?: boolean; history?: string[]; language?: string },
 ): Promise<CommandResult> {
   const t = await getTranslations("errors");
   const body = text.trim();
+  // The reply's language: the one the request was SPOKEN in (Dennis,
+  // 2026-10-21), else the person's set language. Checked, never trusted.
+  const language: "da" | "en" =
+    opts?.language === "da" || opts?.language === "en" ? opts.language : (await getLocale()) === "da" ? "da" : "en";
   if (!body) return { ok: false, error: t("commandNoBody") };
   const personId = await currentPersonId();
   const caps = await currentCaps();
@@ -115,7 +119,7 @@ export async function createCommandFromText(
 
   // A plain YES or NO to what the last reply left waiting (the secretary has
   // nothing to tap — owner, 2026-10-21) is settled here, without the model.
-  const settled = await settleWaiting(supabase, inserted.id, body, priorId ?? null, personId, caps, t);
+  const settled = await settleWaiting(supabase, inserted.id, body, priorId ?? null, personId, caps, t, language);
   if (settled) {
     revalidateInbound(inserted.id);
     return { ok: true, id: inserted.id, openHref: null };
@@ -126,7 +130,7 @@ export async function createCommandFromText(
     request: body,
     caps,
     canSeeCosts: await readCanSeeCosts(),
-    language: (await getLocale()) === "da" ? "da" : "en",
+    language,
     personId,
     priorId,
     autoApply,
@@ -156,8 +160,8 @@ export async function createCommandFromText(
     // Something was done but the model said nothing: say what was done.
     const silent = answer !== null && !answer.text && done.length > 0;
     if (answer && (failed.length > 0 || silent || waiting.length > 0 || already.length > 0)) {
-      const tA = await getTranslations("assistant");
-      const tC = await getTranslations("inboxCommand");
+      const tA = await getTranslations({ locale: language, namespace: "assistant" });
+      const tC = await getTranslations({ locale: language, namespace: "inboxCommand" });
       const lines = [
         answer.text || tA("autoDone", { what: done.map((d) => tC(d.type === "draft_event" ? "type_draft_event_visit" : `type_${d.type}`)).join(", ") }),
         ...failed.map((f) => tA("autoFailed", { detail: f.error ?? "" })),
@@ -196,6 +200,7 @@ async function settleWaiting(
   personId: string | null,
   caps: readonly string[],
   t: Awaited<ReturnType<typeof getTranslations>>,
+  language: "da" | "en",
 ): Promise<boolean> {
   const said = body.toLowerCase().replace(/[.!?,]+/g, " ").replace(/\s+/g, " ").trim();
   const yes = YES.test(said);
@@ -212,9 +217,10 @@ async function settleWaiting(
   const waiting = parseCommandPlan(prior.command_plan).actions.filter((a) => !done.has(a.id));
   if (waiting.length === 0) return false;
 
-  const tA = await getTranslations("assistant");
-  const tC = await getTranslations("inboxCommand");
-  const locale = await getLocale();
+  // The answer is in the conversation's language, like every other reply.
+  const tA = await getTranslations({ locale: language, namespace: "assistant" });
+  const tC = await getTranslations({ locale: language, namespace: "inboxCommand" });
+  const locale = language;
   const lines: string[] = [];
   if (!yes) {
     lines.push(tA("leftAsIs"));

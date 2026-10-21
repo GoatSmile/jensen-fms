@@ -2,7 +2,9 @@
 
 import { mintDictationUpload } from "@/app/_actions/dictation";
 
-export type TranscribeResult = { ok: true; text: string } | { ok: false; reason: string; detail?: string };
+export type TranscribeResult =
+  | { ok: true; text: string; /** What was heard, when it is one of ours. */ language: "da" | "en" | null }
+  | { ok: false; reason: string; detail?: string };
 
 /**
  * A captured WAV → its text, through the same provider as every other
@@ -27,11 +29,13 @@ export async function transcribeRecording(blob: Blob, language: "da" | "en"): Pr
       body: JSON.stringify({ path: minted.path, language }),
     });
     const json = (await res.json().catch(() => null)) as
-      | { ok: true; text: string }
+      | { ok: true; text: string; language?: unknown }
       | { ok: false; reason: string }
       | null;
     if (!json) return { ok: false, reason: "api_error", detail: `dictate ${res.status}` };
-    return json.ok ? { ok: true, text: json.text } : { ok: false, reason: json.reason };
+    if (!json.ok) return { ok: false, reason: json.reason };
+    const heard = json.language === "da" || json.language === "en" ? json.language : null;
+    return { ok: true, text: json.text, language: heard };
   } catch (e) {
     // Offline, storage refused, server unreachable.
     return { ok: false, reason: "upload", detail: e instanceof Error ? e.message : String(e) };

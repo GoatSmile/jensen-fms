@@ -83,8 +83,10 @@ export async function POST(request: Request) {
         keyterms,
       });
     let result = await run();
+    let pinned = false;
     if (result.ok && fallback && !isWorkshopLanguage(result.language)) {
       result = await run([fallback]);
+      pinned = true;
     }
 
     if (!result.ok) {
@@ -95,7 +97,11 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ ok: false, reason: result.reason }, { status: 502 });
     }
-    return NextResponse.json({ ok: true, text: result.text });
+    // The language HEARD, so the secretary can answer in it (Dennis,
+    // 2026-10-21). A pinned retry heard the fallback by construction; a
+    // detection outside the workshop's languages says nothing.
+    const heard = pinned ? fallback : isWorkshopLanguage(result.language) ? result.language : null;
+    return NextResponse.json({ ok: true, text: result.text, language: heard });
   } finally {
     // Best-effort: a failed delete must never turn a good transcript into an
     // error. The cron sweep is the backstop.

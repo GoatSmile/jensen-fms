@@ -787,10 +787,15 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (owner: "all one button"). It hides where the bottom edge or the screen is
   taken (`/scan`, the map, a work-order workspace, login, public pages).
   Dictation in the panel FILLS the box; the person presses Send.
-  **The button is THE SECRETARY** (owner, 2026-10-21; migrations 128, 130):
-  `ask_voice`, the default, records a request on a press, ends it on a ~3 s
-  pause (`use-recorder.ts`), asks it at once ("You asked" shows what was
-  heard) and SPEAKS the reply in the person's language (`useSpeaker`:
+  **The button is THE SECRETARY** (owner, 2026-10-21; migrations 128, 130,
+  133): `ask_voice`, the default and everyone's mode, records a request on a
+  press, ends it on a ~3 s pause (`use-recorder.ts`), asks it at once ("You
+  asked" shows what was heard) and SPEAKS the reply. **It answers in the
+  language the request was SPOKEN in** (Dennis, 2026-10-21): `/api/dictate`
+  returns what the transcriber heard (Danish or English, else nothing), a
+  conversation STARTS in the person's set language and follows what it last
+  heard, and that language drives the reply, the lines the code adds and the
+  voice; a typed request keeps the set language (`useSpeaker`:
   ElevenLabs, `synthesizeElevenLabs`, else the browser's own voice — prime it
   INSIDE the press or a phone stays silent). For a person with *act right
   away* on, the request's safe actions (`autoApplySafe`: book a visit or delivery — a customer in the system is

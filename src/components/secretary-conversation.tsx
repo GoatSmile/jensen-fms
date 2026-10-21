@@ -51,9 +51,9 @@ export function SecretaryConversation({
   state: SecretaryState;
   /** A one-line problem with the last thing said (not heard, no microphone). */
   notice: string | null;
-  /** The next spoken request; a new key is a new turn. */
-  question: { text: string; key: number } | null;
-  /** Say a reply aloud, in the person's language. */
+  /** The next spoken request; a new key is a new turn. `language` is the one it was heard in. */
+  question: { text: string; key: number; language: "da" | "en" } | null;
+  /** Say a reply aloud, in the language of the conversation. */
   onSpeak: (text: string) => void;
   onClose: () => void;
 }) {
@@ -73,12 +73,13 @@ export function SecretaryConversation({
     handled.current = question.key;
     const key = question.key;
     const body = question.text;
+    const language = question.language;
     const update = (patch: Partial<Turn>) =>
       setTurns((all) => all.map((turn) => (turn.key === key ? { ...turn, ...patch } : turn)));
     setTurns((all) => [...all, { key, asked: body, answer: null, done: [], waiting: [], failed: false }]);
 
     void (async () => {
-      const r = await createCommandFromText(body, lastId.current, { spoken: true, history: [...ids.current] });
+      const r = await createCommandFromText(body, lastId.current, { spoken: true, history: [...ids.current], language });
       if (!r.ok) {
         update({ answer: r.error, failed: true });
         return onSpeak(r.error);

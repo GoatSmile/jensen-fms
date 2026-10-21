@@ -91,7 +91,7 @@ export default async function RootLayout({
   const showPersonChip = gate.kind === "session";
   let personName: string | null = null;
   let preferences = EMPTY_PREFERENCES;
-  let assistantMode: AssistantMode = "ask";
+  let assistantMode: AssistantMode = "ask_voice";
   if (gate.kind === "session") {
     const supabase = await createClient();
     const { data } = await supabase

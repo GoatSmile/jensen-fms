@@ -27,8 +27,9 @@ Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 132 is the latest; production AND local at it** (`check:prod`
-  / `check:local`, 21 Oct). 132 = ElevenLabs model + a voice per language;
+- **Migration 133 is the latest; production AND local at it** (`check:prod`
+  / `check:local`, 21 Oct). 133 = everyone on `ask_voice` (the secretary);
+  132 = ElevenLabs model + a voice per language;
   131 = `speech_provider` (elevenlabs | google); 130 = `ask_voice` default,
   `save_note` action; 129 = `assistant_read_query` + role `assistant_reader`
   + capability `data_query`; 128 = `ask_voice` mode; 127 = `client_failures`.
@@ -43,7 +44,10 @@ Danish (person language).
   opening the mic without a tap is exactly what iPhone Safari may refuse.
   Production settings: assistant model **Sonnet 5.5** (Haiku said "deleted"
   for a delete that waited); voice **ElevenLabs Multilingual v2**, voice still
-  the default English "George"; Finn and Nazar on `ask_voice`; **Finn's *Act
+  the default English "George"; **everyone on `ask_voice`** (migration 133);
+  **replies follow the SPOKEN language** (verified locally 21 Oct: Danish in
+  → Danish text and voice, English in → English, a new conversation starts
+  from the person's setting); **Finn's *Act
   right away* is ON** (set 21 Oct on the owner's instruction). Finn's first
   real attempts (12:11–12:13) booked nothing — the cause is fixed (DECISIONS
   2026-10-21 "Finn's failed booking").
@@ -87,8 +91,10 @@ Danish (person language).
   Danish voice to *My Voices*; pick it at /admin/settings → Phone & inbox →
   Speech (*Listen* to compare).
 - **Register import — the pilot:** Dennis's cleaned spreadsheet (due Fri 9
-  Oct); **Nazar names the pilot municipality** (Allerød cleanest, but no 0-kr
-  rows); goal: all bikes + agreements in by the end of the week of 12 Oct.
+  Oct, still being finished — Dennis was on it 21 Oct); **the pilot is
+  Allerød** (agreed with Dennis 21 Oct; he fixes the three "Special deal,
+  Thomas" bikes — in service since 1 Jan — and writes which date wins when
+  the sheet and the municipality tab disagree, before the import).
   Owner decisions before later batches: **GPS-only lines** (recommended: an
   agreement kind `service | gps`; the register's GPS sheet is keyed by battery
   number), **departments that exist as their own customer** (31; recommended:

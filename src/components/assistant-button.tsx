@@ -77,9 +77,16 @@ export function AssistantButton({
   const voiceMode = isVoiceMode(mode);
   const noteMode = isNoteMode(mode);
   /** A spoken question for the panel to ask; the key makes a repeat a new one. */
-  const [question, setQuestion] = useState<{ text: string; key: number } | null>(null);
+  const [question, setQuestion] = useState<{ text: string; key: number; language: "da" | "en" } | null>(null);
   const speaker = useSpeaker();
+  /** The language set up for this person (theirs, else the app's). */
   const language: "da" | "en" = locale === "en" ? "en" : "da";
+  /**
+   * The language the secretary answers in (Dennis, 2026-10-21: "respond in
+   * the language you speak"). A conversation STARTS in the set language
+   * (owner, same day) and follows whatever was last heard.
+   */
+  const replyLanguage = useRef<"da" | "en">(language);
   /** The secretary is reading a reply aloud. */
   const [speaking, setSpeaking] = useState(false);
   /** This recording was started by the conversation itself, not a press. */
@@ -103,7 +110,10 @@ export function AssistantButton({
   const ask = useCallback(
     async (blob: Blob) => {
       setToast({ kind: "hearing" });
-      const r = await transcribeRecording(blob, language);
+      // A new conversation starts from the set language; one under way keeps
+      // its own, which is also the fallback when detection misses (a bare "ja").
+      const current = inConversation.current ? replyLanguage.current : language;
+      const r = await transcribeRecording(blob, current);
       if (!r.ok) {
         report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
         return setToast({ kind: "unheard", blob });
@@ -111,7 +121,8 @@ export function AssistantButton({
       const text = r.text.trim();
       if (!text) return setToast({ kind: "no_speech" });
       setToast(null);
-      setQuestion({ text, key: Date.now() });
+      replyLanguage.current = r.language ?? current;
+      setQuestion({ text, key: Date.now(), language: replyLanguage.current });
       setView("conversation");
       setOpen(true);
     },
@@ -220,7 +231,7 @@ export function AssistantButton({
    */
   async function reply(text: string) {
     setSpeaking(true);
-    await speaker.say(text, language);
+    await speaker.say(text, replyLanguage.current);
     setSpeaking(false);
     if (!inConversation.current || recorder.phase === "recording") return;
     autoListen.current = true;

@@ -4015,3 +4015,28 @@ how Munin works."
 - Verified by voice as Finn: book a TEST visit → "when is it?" → "flyt den til
   mandag klokken 13" (moved the right entry) → "aflys den" (asked, then
   deleted on "ja").
+
+## 2026-10-21 — The secretary answers in the language it hears; everyone on the secretary
+
+Dennis, in the 21 Oct meeting: respond "in the language that you speak,
+instead of the one that the application" uses. Owner, same evening: "start
+with the lang choice as set up in the app setting", and "default everyone to
+*The secretary: speak, and hear the answer*".
+
+- `/api/dictate` returns the language the transcriber HEARD — Danish or
+  English; a pinned retry heard its pin; anything else is nothing, never a
+  guess.
+- A conversation STARTS in the person's set language (theirs, else the
+  app's) and then follows what it last heard; that language is also the
+  transcription fallback, so a bare "ja" after Danish stays Danish. Ending
+  the conversation resets it.
+- That one language drives the model's reply, the lines the CODE adds (not
+  done yet, say yes, left as is) and the voice. The screen stays in the UI
+  language.
+- Typed requests in the full panel keep the set language — only speech has
+  a language to detect.
+- Migration 133 moves everyone still on `ask` (Admin, Glenn) to `ask_voice`;
+  the other modes stay as choices in the panel.
+- Rejected: following the UI locale (what it did — Dennis heard English
+  answers to Danish), and switching per WORD or per sentence inside one
+  request.
