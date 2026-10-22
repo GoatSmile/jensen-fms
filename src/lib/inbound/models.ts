@@ -213,7 +213,9 @@ export async function testAssistantModel(provider: string, model: string): Promi
 
   const { assistantRequest, assistantToolDefs } = await import("@/lib/assistant/agent");
   const { ASSISTANT_TOOLS } = await import("@/lib/assistant/tools");
-  // The real shape, cache breakpoints included — a model that refuses them fails here.
+  // The real shape, cache breakpoints included — a model that refuses them fails
+  // here. STREAMED, as the spoken secretary sends it (`eager_input_streaming`
+  // on respond); the typed panel's plain request is the same body without it.
   const r = await postMessages(
     assistantRequest({
       model: id,
@@ -222,7 +224,9 @@ export async function testAssistantModel(provider: string, model: string): Promi
       requestSystem: "This request: a test.",
       tools: assistantToolDefs(ASSISTANT_TOOLS, true),
       messages: [{ role: "user", content: "Say ok." }],
+      streamed: true,
     }),
+    { onToolInput: () => {} },
   );
   if (!r.ok) return { ok: false, reason: r.reason === "no_key" ? "no_key" : "api_error", detail: r.detail ?? r.reason };
   const content = ((r.json as { content?: { type: string; name?: string }[] }).content ?? []);

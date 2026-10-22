@@ -50,6 +50,8 @@ export async function answerRequest(
     spoken?: boolean;
     /** The path of the page the person has open (page.ts checks and describes it). */
     page?: string | null;
+    /** Each finished sentence of the reply as it is written (the spoken secretary). */
+    onSentence?: (sentence: string) => void;
   },
 ): Promise<AskOutcome> {
   const [history, settings, page] = await Promise.all([
@@ -72,6 +74,7 @@ export async function answerRequest(
     spoken: opts.spoken,
     history,
     page,
+    onSentence: opts.onSentence,
   });
   if (!r.ok) {
     await supabase

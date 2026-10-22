@@ -13,7 +13,12 @@ export type TranscribeResult =
  * /api/dictate's message key, or `upload` when the bytes never got there.
  * `language` is the fallback when detection misses, not a pin.
  */
-export async function transcribeRecording(blob: Blob, language: "da" | "en"): Promise<TranscribeResult> {
+export async function transcribeRecording(
+  blob: Blob,
+  language: "da" | "en",
+  /** `hedge`: a second attempt beside the first after 8 s — the secretary's short requests (/api/dictate). */
+  opts: { hedge?: boolean } = {},
+): Promise<TranscribeResult> {
   try {
     const minted = await mintDictationUpload();
     if (!minted.ok) return { ok: false, reason: "upload", detail: minted.error };
@@ -26,7 +31,7 @@ export async function transcribeRecording(blob: Blob, language: "da" | "en"): Pr
     const res = await fetch("/api/dictate", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path: minted.path, language }),
+      body: JSON.stringify({ path: minted.path, language, ...(opts.hedge ? { hedge: true } : {}) }),
     });
     const json = (await res.json().catch(() => null)) as
       | { ok: true; text: string; language?: unknown }

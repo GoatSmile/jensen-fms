@@ -7,7 +7,7 @@ import {
 } from "@/lib/dictation/storage";
 import { transcriptionSecretsPresent } from "@/lib/dictation/ready";
 import { loadInboundSettings } from "@/lib/inbound/settings";
-import { isWorkshopLanguage, transcribeAudio } from "@/lib/inbound/transcribe";
+import { isWorkshopLanguage, transcribeAudio, type TranscribeResult } from "@/lib/inbound/transcribe";
 import { loadTranscriptionKeyterms } from "@/lib/inbound/keyterms";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -25,6 +25,44 @@ const SIGNED_URL_TTL_SECONDS = 600;
  * happened and offer Retry on audio it still holds.
  */
 const POLL_BUDGET_MS = 45_000;
+
+/**
+ * A spoken request to the secretary that has not come back in this long gets
+ * a SECOND attempt beside the first, and whichever answers first wins
+ * (2026-10-22: a benchmark caught one transcription stalling 34 s, where they
+ * normally take 1–2 s). Only for the secretary (`hedge`), whose recordings
+ * are short; a three-minute dictation can rightly take longer.
+ */
+const HEDGE_AFTER_MS = 8_000;
+
+/** `attempt` once; again beside it after `afterMs` if it is still running. A failure waits for the other. */
+function hedged(attempt: (timeoutMs: number) => Promise<TranscribeResult>, afterMs: number): Promise<TranscribeResult> {
+  return new Promise((resolve) => {
+    let running = 1;
+    let settled = false;
+    const finish = (r: TranscribeResult) => {
+      if (settled) return;
+      running--;
+      if (r.ok || running === 0) {
+        settled = true;
+        clearTimeout(timer);
+        resolve(r);
+      }
+    };
+    const start = (timeoutMs: number) => {
+      attempt(timeoutMs).then(finish, (e: unknown) =>
+        finish({ ok: false, reason: "api_error", detail: e instanceof Error ? e.message : String(e) }),
+      );
+    };
+    const timer = setTimeout(() => {
+      if (settled) return;
+      running++;
+      console.warn(`[dictate] no transcript after ${afterMs} ms — a second attempt beside the first`);
+      start(POLL_BUDGET_MS - afterMs);
+    }, afterMs);
+    start(POLL_BUDGET_MS);
+  });
+}
 
 /**
  * Stage 2 of a dictation: transcribe the uploaded audio and throw it away.
@@ -47,6 +85,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     path?: unknown;
     language?: unknown;
+    hedge?: unknown;
   } | null;
   const path = typeof body?.path === "string" ? body.path : "";
   if (!isDictationPath(path)) {
@@ -73,15 +112,17 @@ export async function POST(request: Request) {
     }
 
     const keyterms = await loadTranscriptionKeyterms(supabase);
-    const run = (languages?: string[]) =>
+    const once = (languages: string[] | undefined, timeoutMs: number) =>
       transcribeAudio(signed.signedUrl, {
         provider: settings.transcriptionProvider,
         region: settings.transcriptionRegion,
         languages,
-        timeoutMs: POLL_BUDGET_MS,
+        timeoutMs,
         elevenlabsRegion: settings.elevenlabsRegion,
         keyterms,
       });
+    const run = (languages?: string[]) =>
+      body?.hedge === true ? hedged((ms) => once(languages, ms), HEDGE_AFTER_MS) : once(languages, POLL_BUDGET_MS);
     let result = await run();
     let pinned = false;
     if (result.ok && fallback && !isWorkshopLanguage(result.language)) {

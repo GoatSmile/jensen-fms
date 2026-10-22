@@ -29,12 +29,14 @@ export type SecretaryClientTimings = {
   transcribeMs?: number;
   /** The request round trip: the answer, drafted and carried out. */
   requestMs?: number;
-  /** From the answer arriving to the first sound. */
+  /** A streamed reply: from sending the request to its first sentence arriving. */
+  firstSentenceMs?: number;
+  /** From the text being there (the answer, or a streamed reply's first sentence) to the first sound. */
   voiceMs?: number;
   /** From the recording ending to the first sound — what the person waits. */
   totalMs?: number;
-  /** How the reply was voiced: streamed, whole file, or the browser's own voice. */
-  voice?: "stream" | "file" | "browser";
+  /** How the reply was voiced: sentence by sentence as written, streamed, whole file, or the browser's own voice. */
+  voice?: "sentences" | "stream" | "file" | "browser";
 };
 
 /**
@@ -54,9 +56,10 @@ export async function recordSecretaryTimings(id: string, t: SecretaryClientTimin
     const clean = {
       transcribeMs: ms(t?.transcribeMs),
       requestMs: ms(t?.requestMs),
+      firstSentenceMs: ms(t?.firstSentenceMs),
       voiceMs: ms(t?.voiceMs),
       totalMs: ms(t?.totalMs),
-      voice: t?.voice === "stream" || t?.voice === "file" || t?.voice === "browser" ? t.voice : undefined,
+      voice: t?.voice === "sentences" || t?.voice === "stream" || t?.voice === "file" || t?.voice === "browser" ? t.voice : undefined,
       // Which phone and browser — the two families differ (Android/iPhone).
       userAgent: ((await headers()).get("user-agent") ?? "").slice(0, 200) || undefined,
     };

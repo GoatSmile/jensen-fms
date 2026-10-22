@@ -821,7 +821,14 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   reply STREAMS from `/api/speak?m=<request id>` — the text never rides the
   URL, the route reads the stored answer under `mayReadCommand` — then
   `speakAnswer` whole, else the browser's own voice; prime it INSIDE the press
-  or a phone stays silent). For a person with *act right
+  or a phone stays silent). **It speaks while it writes** (DECISIONS
+  2026-10-22): the conversation asks through `/api/secretary`, which streams
+  the reply's SENTENCES as the model writes `respond` (the only tool with
+  `eager_input_streaming`; `reply-stream.ts` cuts them) and then the result;
+  each sentence is voiced by `/api/speak` POST and queued (`speaker.queue`),
+  and what the code added after the model is said last. Never re-ask after a
+  stream has begun — that could book twice. Its transcription gets a second
+  attempt beside the first after 8 s (`hedge`). For a person with *act right
   away* on, the request's safe actions (`autoApplySafe`: book a visit or delivery — a customer in the system is
   NOT required, the name as said goes in the title (owner) — move an
   entry, save a note) are carried out at once by `autoApplyMessage` and the
@@ -905,7 +912,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   2026-09-30). The model is an admin setting that changes without a deploy,
   so no forced `tool_choice` (400 on Sonnet 5.5 / Opus 5.5 / Fable 5.1 — the
   2026-09-30 outage), no `temperature`/`top_p`/`top_k`, no `thinking` config,
-  no assistant prefill. JSON comes from `requestStructured`
+  no assistant prefill. Streaming is the same door (`onToolInput`), which
+  rebuilds the whole message — thinking blocks and their signatures must go
+  back verbatim in a tool loop. JSON comes from `requestStructured`
   (`output_config.format`; `strictSchema` adds `additionalProperties: false`
   and rewrites nullable enums as `anyOf`, which the compiler requires); tools
   stay `auto`; `postMessages` retries like the SDKs. Leave room in

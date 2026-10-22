@@ -16,11 +16,27 @@ import { speakAnswer } from "@/app/_actions/speak";
  */
 let serverCanSpeak = true;
 
+/** How the reply was voiced — kept with the turn's timings. */
+export type Voice = "stream" | "file" | "browser" | "sentences";
+
+/** A reply spoken SENTENCE BY SENTENCE while it is still being written. */
+export type SentenceQueue = {
+  /** One more finished sentence: its audio is fetched now, played in turn. */
+  add: (sentence: string) => void;
+  /** No more sentences: resolves when the last one has FINISHED playing. */
+  end: () => Promise<void>;
+  /** `performance.now()` of the first sound, once there was one. */
+  firstSoundAt: () => number | null;
+};
+
 export function useSpeaker() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const element = () => (audioRef.current ??= new Audio());
+  /** Bumped by stop(): a queue from before it stops playing. */
+  const generation = useRef(0);
 
   const stop = useCallback(() => {
+    generation.current++;
     const a = audioRef.current;
     if (a && !a.paused) a.pause();
     try {
@@ -57,7 +73,7 @@ export function useSpeaker() {
     async (
       text: string,
       language: "da" | "en",
-      opts: { messageId?: string; onStart?: (voice: "stream" | "file" | "browser") => void } = {},
+      opts: { messageId?: string; onStart?: (voice: Voice) => void } = {},
     ): Promise<void> => {
       const body = text.trim();
       if (!body) return;
@@ -88,9 +104,85 @@ export function useSpeaker() {
     [stop],
   );
 
+  /**
+   * Speak a reply as it is WRITTEN (2026-10-22): each sentence's audio is
+   * fetched the moment the sentence arrives (/api/speak POST — parallel, so
+   * the next is ready while one plays) and played in order on the primed
+   * element; a sentence the server cannot voice is read by the browser. The
+   * person hears the first sentence about a second before the answer is
+   * complete. stop() ends it.
+   */
+  const queue = useCallback((language: "da" | "en"): SentenceQueue => {
+    const mine = generation.current;
+    const pending: { text: string; audio: Promise<string | null> }[] = [];
+    let ended = false;
+    let wake: (() => void) | null = null;
+    let first: number | null = null;
+    const live = () => generation.current === mine;
+    const fetchAudio = async (text: string): Promise<string | null> => {
+      if (!serverCanSpeak) return null;
+      try {
+        const res = await fetch("/api/speak", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text, lang: language }),
+        });
+        if (res.status === 503) serverCanSpeak = false;
+        if (!res.ok) return null;
+        return URL.createObjectURL(await res.blob());
+      } catch {
+        return null;
+      }
+    };
+    const heard = () => {
+      first ??= performance.now();
+    };
+    const done = (async () => {
+      for (let i = 0; ; i++) {
+        while (i >= pending.length && !ended) await new Promise<void>((r) => (wake = r));
+        if (i >= pending.length || !live()) break;
+        const item = pending[i];
+        const url = await item.audio;
+        if (!live()) {
+          if (url) URL.revokeObjectURL(url);
+          break;
+        }
+        let played = false;
+        if (url) {
+          const a = element();
+          a.src = url;
+          try {
+            await a.play();
+            heard();
+            played = true;
+            await untilDone(a);
+          } catch {
+            /* refused — the browser's voice below */
+          }
+          URL.revokeObjectURL(url);
+        }
+        if (!played && live()) await browserSay(item.text, language, heard);
+      }
+    })();
+    return {
+      add: (sentence) => {
+        const text = sentence.trim();
+        if (!text || ended) return;
+        pending.push({ text, audio: fetchAudio(text) });
+        wake?.();
+      },
+      end: () => {
+        ended = true;
+        wake?.();
+        return done;
+      },
+      firstSoundAt: () => first,
+    };
+  }, []);
+
   useEffect(() => stop, [stop]);
 
-  return { prime, say, stop };
+  return { prime, say, stop, queue };
 }
 
 /**

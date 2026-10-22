@@ -22,6 +22,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { postMessages } from "@/lib/anthropic/messages";
+
+import { partialReplyText, sentenceSplitter } from "./reply-stream";
 import { PLAN_ACTION_ITEM_SCHEMA } from "@/lib/inbound/command/agent";
 import { parseCommandPlan, type CommandAction, type CommandPlan } from "@/lib/inbound/command/plan";
 import { RESOLVER_NAMES, RESOLVER_TOOLS, executeResolver } from "@/lib/inbound/command/resolvers";
@@ -282,7 +284,19 @@ export function assistantRequest(args: {
   tools: unknown[];
   messages: unknown[];
   maxTokens?: number;
+  /**
+   * The reply will be STREAMED (the spoken secretary): `respond` gets
+   * `eager_input_streaming`, so its text arrives as it is written instead of
+   * in one piece at the end. Only `respond` — the lookups keep the API's own
+   * check of their input. Same body otherwise, so the cache is shared.
+   */
+  streamed?: boolean;
 }): Record<string, unknown> {
+  const tools = args.streamed
+    ? args.tools.map((t) =>
+        (t as { name?: unknown }).name === RESPOND_TOOL.name ? { ...(t as object), eager_input_streaming: true } : t,
+      )
+    : args.tools;
   return {
     model: args.model,
     max_tokens: args.maxTokens ?? MAX_TOKENS,
@@ -291,7 +305,7 @@ export function assistantRequest(args: {
       { type: "text", text: args.stableSystem, cache_control: { type: "ephemeral" } },
       { type: "text", text: args.requestSystem },
     ],
-    tools: args.tools,
+    tools,
     messages: args.messages,
   };
 }
@@ -332,6 +346,12 @@ export async function runAssistant(
     history?: ConversationTurn[];
     /** The record the person has open (page.ts), so "this bike" resolves. */
     page?: PageContext | null;
+    /**
+     * Each finished SENTENCE of the reply, as the model writes it — the
+     * spoken secretary starts talking before the answer is complete. Given,
+     * the model call streams; the result is the same either way.
+     */
+    onSentence?: (sentence: string) => void;
   },
 ): Promise<AssistantResult> {
   const started = Date.now();
@@ -378,14 +398,43 @@ export async function runAssistant(
   });
   const requestSystem = requestContext({ language: opts.language, now: danishNow(), page: opts.page ?? null });
 
+  // The reply's text, sentence by sentence, from the FIRST `respond` that
+  // streams — a second one (after a broken first) would repeat what was said.
+  const onSentence = opts.onSentence;
+  const splitter = sentenceSplitter();
+  let replyStarted = false;
+  let replyDone = false;
+  const onToolInput = onSentence
+    ? (name: string, json: string) => {
+        if (name !== RESPOND_TOOL.name || replyDone) return;
+        const reply = partialReplyText(json);
+        if (!reply) return;
+        replyStarted = true;
+        const pieces = reply.closed ? splitter.finish(reply.text) : splitter.push(reply.text);
+        if (reply.closed) replyDone = true;
+        for (const piece of pieces) onSentence(piece);
+      }
+    : undefined;
+
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const callStarted = Date.now();
-    const posted = await postMessages(assistantRequest({ model: opts.model, stableSystem, requestSystem, tools, messages }));
+    const posted = await postMessages(
+      assistantRequest({ model: opts.model, stableSystem, requestSystem, tools, messages, streamed: Boolean(onSentence) }),
+      { onToolInput },
+    );
+    if (replyStarted) replyDone = true;
     if (!posted.ok) {
       if (posted.reason === "no_key") return { ok: false, reason: "no_key" };
       return { ok: false, reason: "api_error", detail: posted.detail ?? posted.reason };
     }
-    const content = ((posted.json as { content?: Block[] }).content ?? []) as Block[];
+    // `invalid_input` is the stream reader's mark (messages.ts), never sent back.
+    const raw = ((posted.json as { content?: Block[] }).content ?? []) as Block[];
+    const content = raw.map((b) => {
+      if (!("invalid_input" in b)) return b;
+      const copy = { ...b };
+      delete copy.invalid_input;
+      return copy;
+    });
     const uses = content.filter((b) => b.type === "tool_use");
     const usage = ((posted.json as { usage?: Record<string, unknown> }).usage ?? {}) as Record<string, unknown>;
     const n = (k: string) => (typeof usage[k] === "number" ? (usage[k] as number) : 0);
@@ -399,6 +448,22 @@ export async function runAssistant(
     });
 
     const done = uses.find((b) => b.name === "respond");
+    // A streamed answer whose JSON broke (no API check with eager streaming):
+    // say so and ask again, never act on a half-read answer.
+    if (done && raw.some((b) => b.id === done.id && b.invalid_input)) {
+      if (i === MAX_ITERATIONS - 1) return { ok: false, reason: "no_answer" };
+      messages.push({ role: "assistant", content });
+      messages.push({
+        role: "user",
+        content: uses.map((u) => ({
+          type: "tool_result",
+          tool_use_id: u.id,
+          is_error: true,
+          content: u.id === done.id ? "That respond input was not valid JSON. Call respond again." : "Not run.",
+        })),
+      });
+      continue;
+    }
     if (done) {
       timings.totalMs = Date.now() - started;
       return { ...finish(done.input, ctx, opts.caps, openable), lookups: lookups.slice(-8), timings };

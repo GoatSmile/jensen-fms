@@ -12,7 +12,8 @@ import { transcribeRecording } from "@/lib/dictation/transcribe";
 import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
 import { contextFromPath } from "@/lib/notes/context";
 import { isNoteMode, isVoiceMode, type AssistantMode } from "@/lib/notes/mode";
-import { useSpeaker } from "@/lib/speech/use-speaker";
+import { sentenceSplitter } from "@/lib/assistant/reply-stream";
+import { useSpeaker, type SentenceQueue } from "@/lib/speech/use-speaker";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
@@ -90,6 +91,8 @@ export function AssistantButton({
   const replyLanguage = useRef<"da" | "en">(language);
   /** The secretary is reading a reply aloud. */
   const [speaking, setSpeaking] = useState(false);
+  /** The reply being said sentence by sentence while it is still written. */
+  const liveReply = useRef<SentenceQueue | null>(null);
   /** This recording was started by the conversation itself, not a press. */
   const autoListen = useRef(false);
   /** Read inside async callbacks: is the conversation still on screen? */
@@ -116,7 +119,8 @@ export function AssistantButton({
       // A new conversation starts from the set language; one under way keeps
       // its own, which is also the fallback when detection misses (a bare "ja").
       const current = inConversation.current ? replyLanguage.current : language;
-      const r = await transcribeRecording(blob, current);
+      // A stalled transcription gets a second try at 8 s (the person is waiting).
+      const r = await transcribeRecording(blob, current, { hedge: true });
       const transcribeMs = performance.now() - capturedAt;
       if (!r.ok) {
         report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
@@ -235,21 +239,40 @@ export function AssistantButton({
    */
   async function reply(text: string, turn?: SpokenTurn) {
     setSpeaking(true);
-    await speaker.say(text, replyLanguage.current, {
-      messageId: turn?.messageId,
-      // The first sound ends the person's wait — keep where the time went.
-      onStart: (voice) => {
-        if (!turn) return;
-        const now = performance.now();
+    const live = liveReply.current;
+    liveReply.current = null;
+    if (live) {
+      // Its first sentences are playing already: add what the code added, then wait it out.
+      for (const piece of sentenceSplitter().finish(text)) live.add(piece);
+      await live.end();
+      const heard = live.firstSoundAt();
+      if (turn && heard !== null) {
         void recordSecretaryTimings(turn.messageId, {
           transcribeMs: turn.transcribeMs,
           requestMs: turn.requestMs,
-          voiceMs: now - turn.answeredAt,
-          totalMs: turn.capturedAt === undefined ? undefined : now - turn.capturedAt,
-          voice,
+          firstSentenceMs: turn.firstSentenceAt === undefined ? undefined : turn.firstSentenceAt - turn.sentAt,
+          voiceMs: turn.firstSentenceAt === undefined ? undefined : heard - turn.firstSentenceAt,
+          totalMs: turn.capturedAt === undefined ? undefined : heard - turn.capturedAt,
+          voice: "sentences",
         }).catch(() => {});
-      },
-    });
+      }
+    } else if (text.trim()) {
+      await speaker.say(text, replyLanguage.current, {
+        messageId: turn?.messageId,
+        // The first sound ends the person's wait — keep where the time went.
+        onStart: (voice) => {
+          if (!turn) return;
+          const now = performance.now();
+          void recordSecretaryTimings(turn.messageId, {
+            transcribeMs: turn.transcribeMs,
+            requestMs: turn.requestMs,
+            voiceMs: now - turn.answeredAt,
+            totalMs: turn.capturedAt === undefined ? undefined : now - turn.capturedAt,
+            voice,
+          }).catch(() => {});
+        },
+      });
+    }
     setSpeaking(false);
     if (!inConversation.current || recorder.phase === "recording") return;
     autoListen.current = true;
@@ -262,9 +285,19 @@ export function AssistantButton({
     endRef.current = closeConversation;
   });
 
+  /** A sentence of the reply, said the moment it is written (2026-10-22). */
+  function sentence(text: string) {
+    if (!liveReply.current) {
+      setSpeaking(true);
+      liveReply.current = speaker.queue(replyLanguage.current);
+    }
+    liveReply.current.add(text);
+  }
+
   function closeConversation() {
     setOpen(false);
     setQuestion(null);
+    liveReply.current = null;
     speaker.stop();
     setSpeaking(false);
     if (recorder.phase === "recording") recorder.cancel();
@@ -322,6 +355,7 @@ export function AssistantButton({
         <SecretaryConversation
           question={question}
           // Spoken in, spoken out — then it listens again.
+          onSentence={sentence}
           onSpeak={(text, turn) => void reply(text, turn)}
           onClose={closeConversation}
           state={

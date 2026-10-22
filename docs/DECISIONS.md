@@ -4132,3 +4132,40 @@ batch A and then batch B in one go".
 - Found on the way: an auto-applied turn rebuilt its stored answer from the
   parsed one and lost its lookups — so "move it" after a booking had nothing
   to resolve. It now merges over the stored answer.
+
+## 2026-10-22 — The secretary speaks its first sentence while the rest is written
+
+Owner, 22 Oct: "Start batch C: speak the first sentence while the model is
+still writing", then "Build batch C as planned", and "#13 … I like as well"
+(a second transcription attempt after 8 s).
+
+- **Measured first**: on eight real questions the first sentence of the
+  answer was complete 0.2–1.6 s before the model call ended (about 0.9 s
+  typical, more for long answers); end to end in the browser, a lookup
+  question's first sound came 5.6 s after the person stopped speaking,
+  against about 6.9 s by the whole-answer path.
+- **How**: the spoken conversation asks through `/api/secretary`, which runs
+  the same `askAssistant` as the action and streams the reply's sentences
+  (NDJSON), then the result. The model call streams through the one door
+  (`postMessages` with `onToolInput`, the whole message rebuilt from the
+  events, thinking and its signature included); only `respond` gets
+  `eager_input_streaming`, so the lookups keep the API's own input check. A
+  broken streamed answer is asked again, never acted on.
+- **Each sentence is voiced on its own** (`/api/speak` POST, text in the
+  body — the answer is not stored yet) and fetched the moment it arrives, so
+  the next is ready while one plays. What the CODE adds after the model (a
+  failed booking, a delete waiting for a yes) is said after the sentences:
+  the code still has the last word, only sooner.
+- **Fallbacks**: a stream that never starts falls back to the action; one
+  that breaks after it began is a failure, never a second request (that
+  could book twice). The typed panel is unchanged.
+- **A spoken request's transcription that has not answered in 8 s gets a
+  second attempt beside the first**, first answer wins (`hedge`, the
+  secretary only — a long dictation can rightly take longer). A benchmark had
+  caught one stall of 34 s where 1–2 s is normal.
+- Rejected: ElevenLabs' text-in websocket (one connection fed by the model's
+  deltas — fewer gaps between sentences, but a second streaming protocol for
+  a saving the sentence queue already gets); speaking before the code has
+  run being withheld for bookings (the code's correction follows at once,
+  the same order as before).
+

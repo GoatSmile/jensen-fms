@@ -45,11 +45,29 @@ const RETRYABLE_STATUS = new Set([408, 409, 429, 500, 502, 503, 504, 529]);
  */
 export async function postMessages(
   body: Record<string, unknown>,
-  opts: { timeoutMs?: number } = {},
+  opts: {
+    timeoutMs?: number;
+    /**
+     * STREAM the response and report each tool's input as it grows (the
+     * accumulated JSON so far) — the secretary speaks its first sentence while
+     * the rest is written (2026-10-22). The result is the same `json` a plain
+     * request returns, rebuilt from the events, so callers do not change.
+     */
+    onToolInput?: (name: string, partialJson: string) => void;
+  } = {},
 ): Promise<{ ok: true; json: Record<string, unknown> } | MessagesFailure> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, reason: "no_key" };
-  const payload = JSON.stringify(body);
+  const streaming = typeof opts.onToolInput === "function";
+  const payload = JSON.stringify(streaming ? { ...body, stream: true } : body);
+  /** Once the caller has seen a fragment, a retry would repeat it — so none. */
+  let reported = false;
+  const report = streaming
+    ? (name: string, json: string) => {
+        reported = true;
+        opts.onToolInput!(name, json);
+      }
+    : null;
   let last: MessagesFailure = { ok: false, reason: "api_error", detail: "no attempt made" };
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, backoffMs(attempt)));
@@ -81,11 +99,101 @@ export async function postMessages(
       }
       continue;
     }
+    if (report) {
+      const read = await readStream(res, report);
+      if (read.ok) return read;
+      last = read;
+      if (reported) return last;
+      continue; // broke before anything was passed on — like a connection error
+    }
     const json = (await res.json().catch(() => null)) as Record<string, unknown> | null;
     if (!json) return { ok: false, reason: "api_error", detail: "invalid JSON response" };
     return { ok: true, json };
   }
   return last;
+}
+
+type StreamBlock = Record<string, unknown> & { type: string; _json?: string };
+
+/**
+ * A streamed Messages response → the message a plain request returns. Every
+ * block is rebuilt whole — text, tool_use (input parsed at the end), and
+ * THINKING with its signature, which must go back verbatim on the next call
+ * of a tool loop or the API refuses it ("each thinking block must contain
+ * thinking", found 2026-10-22 by a probe that skipped them). A tool input
+ * that is not valid JSON (possible with `eager_input_streaming`, which skips
+ * the API's own check) arrives as `input: {}` with `invalid_input: true`.
+ */
+async function readStream(
+  res: Response,
+  report: (name: string, json: string) => void,
+): Promise<{ ok: true; json: Record<string, unknown> } | MessagesFailure> {
+  if (!res.body) return { ok: false, reason: "api_error", detail: "empty stream" };
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const blocks: StreamBlock[] = [];
+  let message: Record<string, unknown> = {};
+  let usage: Record<string, unknown> = {};
+  let buffer = "";
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let cut: number;
+      while ((cut = buffer.indexOf("\n\n")) >= 0) {
+        const frame = buffer.slice(0, cut);
+        buffer = buffer.slice(cut + 2);
+        const data = frame
+          .split("\n")
+          .filter((l) => l.startsWith("data:"))
+          .map((l) => l.slice(5).trimStart())
+          .join("\n");
+        if (!data) continue;
+        const ev = JSON.parse(data) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+        switch (ev.type) {
+          case "message_start":
+            message = { ...ev.message };
+            usage = { ...(ev.message?.usage ?? {}) };
+            break;
+          case "content_block_start":
+            blocks[ev.index] = { ...ev.content_block, ...(ev.content_block?.type === "tool_use" ? { _json: "" } : {}) };
+            break;
+          case "content_block_delta": {
+            const b = blocks[ev.index];
+            const d = ev.delta ?? {};
+            if (!b) break;
+            if (d.type === "text_delta") b.text = `${(b.text as string) ?? ""}${d.text}`;
+            else if (d.type === "thinking_delta") b.thinking = `${(b.thinking as string) ?? ""}${d.thinking}`;
+            else if (d.type === "signature_delta") b.signature = `${(b.signature as string) ?? ""}${d.signature}`;
+            else if (d.type === "input_json_delta") {
+              b._json = `${b._json ?? ""}${d.partial_json ?? ""}`;
+              report(String(b.name ?? ""), b._json);
+            }
+            break;
+          }
+          case "message_delta":
+            message = { ...message, ...(ev.delta ?? {}) };
+            usage = { ...usage, ...(ev.usage ?? {}) };
+            break;
+          case "error":
+            return { ok: false, reason: "api_error", detail: `stream ${JSON.stringify(ev.error ?? ev).slice(0, 500)}` };
+        }
+      }
+    }
+  } catch (e) {
+    return { ok: false, reason: "api_error", detail: e instanceof Error ? e.message : String(e) };
+  }
+  const content = blocks.filter(Boolean).map(({ _json, ...b }) => {
+    if (b.type !== "tool_use") return b;
+    if (!_json) return { ...b, input: {} };
+    try {
+      return { ...b, input: JSON.parse(_json) };
+    } catch {
+      return { ...b, input: {}, invalid_input: true };
+    }
+  });
+  return { ok: true, json: { ...message, content, usage } };
 }
 
 function backoffMs(attempt: number): number {

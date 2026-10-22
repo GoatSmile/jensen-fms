@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Sparkles } from "lucide-react";
 
 import { loadAssistantView } from "@/app/_actions/assistant";
-import { createCommandFromText } from "@/app/calls/_actions/command";
+import { createCommandFromText, type CommandResult } from "@/app/calls/_actions/command";
 import { appliedSummary, pendingSummary } from "@/lib/inbound/command/applied-summary";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +50,57 @@ export type SpokenTurn = {
   capturedAt?: number;
   transcribeMs?: number;
   requestMs: number;
+  /** `performance.now()` when the request was sent. */
+  sentAt: number;
+  /** `performance.now()` when the first sentence of a streamed reply arrived. */
+  firstSentenceAt?: number;
   /** `performance.now()` when the answer arrived. */
   answeredAt: number;
 };
+
+/**
+ * Ask through /api/secretary, which streams the reply's sentences as they are
+ * written and then the result. "unstarted" when nothing came back at all, so
+ * the caller can ask the action instead; a stream that breaks AFTER it began
+ * is a failure, never a second request (that could book twice).
+ */
+async function askStreaming(
+  body: { text: string; priorId: string | null; history: string[]; language: string; page: string },
+  onSentence: (sentence: string) => void,
+): Promise<CommandResult | "unstarted"> {
+  let began = false;
+  let result: CommandResult | null = null;
+  try {
+    const res = await fetch("/api/secretary", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok || !res.body) return "unstarted";
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      began = true;
+      buffer += decoder.decode(value, { stream: true });
+      let cut: number;
+      while ((cut = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, cut).trim();
+        buffer = buffer.slice(cut + 1);
+        if (!line) continue;
+        const msg = JSON.parse(line) as { sentence?: unknown; result?: CommandResult };
+        if (typeof msg.sentence === "string") onSentence(msg.sentence);
+        if (msg.result) result = msg.result;
+      }
+    }
+  } catch {
+    if (!began) return "unstarted";
+  }
+  // Read to the end (the server closes right after the result), so the request is not cut off.
+  return result ?? { ok: false, error: "" };
+}
 
 export type SecretaryState =
   | { kind: "listening"; level: number }
@@ -62,6 +110,7 @@ export type SecretaryState =
 
 export function SecretaryConversation({
   question,
+  onSentence,
   onSpeak,
   onClose,
   state,
@@ -73,7 +122,13 @@ export function SecretaryConversation({
   notice: string | null;
   /** The next spoken request; a new key is a new turn. `language` is the one it was heard in. */
   question: SpokenQuestion | null;
-  /** Say a reply aloud, in the language of the conversation; a stored turn streams and is timed. */
+  /** One sentence of a reply still being written — said at once (2026-10-22). */
+  onSentence: (sentence: string) => void;
+  /**
+   * Say a reply aloud, in the language of the conversation; a stored turn
+   * streams and is timed. After sentences, `text` is only what was NOT said
+   * yet (the lines the code added) — and the call ends that reply.
+   */
   onSpeak: (text: string, turn?: SpokenTurn) => void;
   onClose: () => void;
 }) {
@@ -101,22 +156,38 @@ export function SecretaryConversation({
     const { capturedAt, transcribeMs } = question;
     void (async () => {
       const sent = performance.now();
-      const r = await createCommandFromText(body, lastId.current, {
+      const opts = {
         spoken: true,
         history: [...ids.current],
         language,
         // The page the person has open, so "this bike" resolves.
         page: window.location.pathname,
+      };
+      // What has been said aloud already, sentence by sentence as it was written.
+      let said = "";
+      let firstSentenceAt: number | undefined;
+      const streamed = await askStreaming({ text: body, priorId: lastId.current, ...opts }, (sentence) => {
+        firstSentenceAt ??= performance.now();
+        said += sentence;
+        update({ answer: said });
+        onSentence(sentence);
       });
+      // The stream never started (an older server, a refused route): the action, as before.
+      const r = streamed === "unstarted" ? await createCommandFromText(body, lastId.current, opts) : streamed;
       const answeredAt = performance.now();
       if (!r.ok) {
-        update({ answer: r.error, failed: true });
-        return onSpeak(r.error);
+        const error = r.error || t("failed");
+        update({ answer: error, failed: true });
+        return onSpeak(error);
       }
       lastId.current = r.id;
       ids.current = [...ids.current, r.id];
+      const turnOf = () => ({ messageId: r.id, capturedAt, transcribeMs, requestMs: answeredAt - sent, sentAt: sent, firstSentenceAt, answeredAt });
       // Asked to SEE one record → straight there (the conversation closes with the route).
-      if (r.openHref) return router.push(r.openHref);
+      if (r.openHref) {
+        if (said) onSpeak("", turnOf());
+        return router.push(r.openHref);
+      }
       // The answer came with the request; an older server sends none.
       const v = r.view ?? (await loadAssistantView(r.id));
       if (!v.ok || v.status === "failed") {
@@ -131,7 +202,12 @@ export function SecretaryConversation({
         done: v.plan.actions.filter((a) => v.ctx.applied[a.id]).map((a) => appliedSummary(v.ctx.applied[a.id], tC, locale).text),
         waiting: v.plan.actions.filter((a) => !v.ctx.applied[a.id]).map((a) => pendingSummary(a, tC)),
       });
-      if (text) onSpeak(text, { messageId: r.id, capturedAt, transcribeMs, requestMs: answeredAt - sent, answeredAt });
+      // After sentences, only the rest: what the code added after the model.
+      // A reply that does not begin with what was said (rare: a re-written
+      // answer) is said whole — repeated rather than lost.
+      const head = said.trim();
+      const rest = !head ? text : text.startsWith(head) ? text.slice(head.length) : text;
+      if (text || said) onSpeak(rest, turnOf());
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken request
   }, [question?.key]);

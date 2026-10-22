@@ -42,7 +42,30 @@ export async function GET(request: Request) {
   if (!mayReadCommand(await readCallsScope(), await readPersonId(), msg)) return new Response(null, { status: 404 });
   const text = (parseAssistantAnswer(msg.assistant_answer)?.text ?? "").trim().slice(0, MAX_CHARS);
   if (!text) return new Response(null, { status: 404 });
+  return speech(supabase, text, lang);
+}
 
+/** The longest single sentence the streamed reply sends (a sentence, not an answer). */
+const MAX_SENTENCE_CHARS = 600;
+
+/**
+ * ONE SENTENCE of a reply still being written (/api/secretary streams them,
+ * 2026-10-22) — so the answer is not stored yet and the text comes in the
+ * BODY, never the URL. The same boundary as `speakAnswer`: anyone signed in
+ * may have text spoken; a route rather than that action because a page runs
+ * its server actions one at a time, and the next sentences are fetched while
+ * the first one plays.
+ */
+export async function POST(request: Request) {
+  const gate = await readGate();
+  if (gate.kind === "anonymous") return new Response(null, { status: 401 });
+  const body = (await request.json().catch(() => null)) as { text?: unknown; lang?: unknown } | null;
+  const text = typeof body?.text === "string" ? body.text.trim().slice(0, MAX_SENTENCE_CHARS) : "";
+  if (!text) return new Response(null, { status: 400 });
+  return speech(createServiceClient(), text, body?.lang === "en" ? "en" : "da");
+}
+
+async function speech(supabase: ReturnType<typeof createServiceClient>, text: string, lang: "da" | "en"): Promise<Response> {
   const s = await loadInboundSettings(supabase);
   const headers = { "content-type": "audio/mpeg", "cache-control": "private, no-store" };
   if (s.speechProvider === "google") {
