@@ -34,6 +34,26 @@ type Turn = {
  * ⌘K) opens the full panel with every control. Turns thread: each request
  * carries the previous one, so "and the one after?" and "yes" make sense.
  */
+/** A spoken request on its way in, with when its recording ended (for timing). */
+export type SpokenQuestion = {
+  text: string;
+  key: number;
+  language: "da" | "en";
+  /** `performance.now()` when the recording ended. */
+  capturedAt?: number;
+  transcribeMs?: number;
+};
+
+/** One answered turn, for the voice and its timing (recordSecretaryTimings). */
+export type SpokenTurn = {
+  messageId: string;
+  capturedAt?: number;
+  transcribeMs?: number;
+  requestMs: number;
+  /** `performance.now()` when the answer arrived. */
+  answeredAt: number;
+};
+
 export type SecretaryState =
   | { kind: "listening"; level: number }
   | { kind: "hearing" }
@@ -52,9 +72,9 @@ export function SecretaryConversation({
   /** A one-line problem with the last thing said (not heard, no microphone). */
   notice: string | null;
   /** The next spoken request; a new key is a new turn. `language` is the one it was heard in. */
-  question: { text: string; key: number; language: "da" | "en" } | null;
-  /** Say a reply aloud, in the language of the conversation; `messageId` lets it stream. */
-  onSpeak: (text: string, messageId?: string) => void;
+  question: SpokenQuestion | null;
+  /** Say a reply aloud, in the language of the conversation; a stored turn streams and is timed. */
+  onSpeak: (text: string, turn?: SpokenTurn) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("assistant");
@@ -78,8 +98,17 @@ export function SecretaryConversation({
       setTurns((all) => all.map((turn) => (turn.key === key ? { ...turn, ...patch } : turn)));
     setTurns((all) => [...all, { key, asked: body, answer: null, done: [], waiting: [], failed: false }]);
 
+    const { capturedAt, transcribeMs } = question;
     void (async () => {
-      const r = await createCommandFromText(body, lastId.current, { spoken: true, history: [...ids.current], language });
+      const sent = performance.now();
+      const r = await createCommandFromText(body, lastId.current, {
+        spoken: true,
+        history: [...ids.current],
+        language,
+        // The page the person has open, so "this bike" resolves.
+        page: window.location.pathname,
+      });
+      const answeredAt = performance.now();
       if (!r.ok) {
         update({ answer: r.error, failed: true });
         return onSpeak(r.error);
@@ -88,7 +117,8 @@ export function SecretaryConversation({
       ids.current = [...ids.current, r.id];
       // Asked to SEE one record → straight there (the conversation closes with the route).
       if (r.openHref) return router.push(r.openHref);
-      const v = await loadAssistantView(r.id);
+      // The answer came with the request; an older server sends none.
+      const v = r.view ?? (await loadAssistantView(r.id));
       if (!v.ok || v.status === "failed") {
         update({ answer: t("failed"), failed: true });
         return onSpeak(t("failed"));
@@ -101,7 +131,7 @@ export function SecretaryConversation({
         done: v.plan.actions.filter((a) => v.ctx.applied[a.id]).map((a) => appliedSummary(v.ctx.applied[a.id], tC, locale).text),
         waiting: v.plan.actions.filter((a) => !v.ctx.applied[a.id]).map((a) => pendingSummary(a, tC)),
       });
-      if (text) onSpeak(text, r.id);
+      if (text) onSpeak(text, { messageId: r.id, capturedAt, transcribeMs, requestMs: answeredAt - sent, answeredAt });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken request
   }, [question?.key]);

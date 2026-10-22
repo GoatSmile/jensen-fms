@@ -775,7 +775,25 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   (a `statement_timeout` set inside the function does not bind the running
   statement). `people.password_hash` is not granted; **a new secret-shaped
   column must be revoked from `assistant_reader` too**, because new tables are
-  readable by default.
+  readable by default. Its description carries the live columns of the main
+  tables (`withDatabaseSchema`, kept an hour, fixed order so the cache holds).
+  **What the tools cannot see is said, never denied**: "not found" proves
+  nothing exists only when a tool made for exactly that came back empty — the
+  paint shelf was declared nonexistent on 21 Oct with 3 parts on it. So a gap
+  in the answers is closed with a TOOL (`paint`, `recent_work`, `find_bike`'s
+  one-bike `details`, `calendar_entries`' `recent`), not prompt words. Every
+  request carries the PAGE the person has open (`describePage`,
+  `src/lib/assistant/page.ts` — route-checked, a label only), so "this bike"
+  resolves; spoken replies never read codes aloud; words not meant for it get
+  "Was that for me?".
+  **One request shape, cached** (`assistantRequest`): tools + the stable
+  system prompt behind one breakpoint, then `requestContext` (clock,
+  fortnight, language, page) — anything per-request in the stable part
+  re-sends ~8k tokens uncached on every call. The model Test sends the same
+  shape. **Every turn is timed**: `assistant_answer.timings` (each model call,
+  cache read/write, tool time) and `client_timings` from the phone
+  (`recordSecretaryTimings`: transcription, request, voice, total wait,
+  user agent) — so "how long does the secretary take" is a query.
   **It has its OWN model** (`inbound_assistant_model`, migration 120 — the
   code's fallback is Haiku 4.5, but production runs Sonnet 5.5 because Haiku
   misworded drafts, see below; the call reader keeps

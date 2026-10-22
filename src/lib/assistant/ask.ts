@@ -21,6 +21,7 @@ import type { Json } from "@/lib/types/database";
 
 import { runAssistant, type ConversationTurn } from "./agent";
 import { parseAssistantAnswer, targetHref, type AssistantAnswer } from "./answer";
+import { describePage } from "./page";
 
 /** A conversation's turns count while they are this recent, and at most this many. */
 const CONVERSATION_MINUTES = 30;
@@ -47,15 +48,19 @@ export async function answerRequest(
     autoApply?: boolean;
     /** Asked by voice: there is nothing to tap, so a waiting action asks for a spoken yes. */
     spoken?: boolean;
+    /** The path of the page the person has open (page.ts checks and describes it). */
+    page?: string | null;
   },
 ): Promise<AskOutcome> {
-  const history = await loadConversation(supabase, {
-    ids: opts.history?.length ? opts.history : opts.priorId ? [opts.priorId] : [],
-    personId: opts.personId,
-    language: opts.language,
-  });
-
-  const settings = await loadInboundSettings(supabase);
+  const [history, settings, page] = await Promise.all([
+    loadConversation(supabase, {
+      ids: opts.history?.length ? opts.history : opts.priorId ? [opts.priorId] : [],
+      personId: opts.personId,
+      language: opts.language,
+    }),
+    loadInboundSettings(supabase),
+    describePage(supabase, opts.page, opts.caps),
+  ]);
   const r = await runAssistant(supabase, opts.request, {
     // The assistant's own model (migration 120), not the call reader's.
     model: settings.assistantModel,
@@ -66,6 +71,7 @@ export async function answerRequest(
     autoApply: opts.autoApply,
     spoken: opts.spoken,
     history,
+    page,
   });
   if (!r.ok) {
     await supabase
@@ -90,7 +96,9 @@ export async function answerRequest(
     .update({
       // What this turn looked up rides with it, so the next turn knows what
       // "it" was (owner, 2026-10-21: "move it to another day").
-      assistant_answer: { ...answer, lookups: r.lookups } as unknown as Json,
+      // `timings`: where the seconds went (model calls, cache, tools) — the
+      // phone adds its own (`client_timings`, recordSecretaryTimings).
+      assistant_answer: { ...answer, lookups: r.lookups, timings: r.timings, page } as unknown as Json,
       command_plan: r.plan as unknown as Json,
       status: "matched",
       processed_at: new Date().toISOString(),

@@ -4103,3 +4103,32 @@ results are comparable, let's do this."
 - Rejected: Multilingual for English and Flash for Danish (one model setting
   today, a migration for a per-language model — not worth it before English
   matters); Eleven v3 (slower still).
+
+## 2026-10-22 — The secretary closes answer gaps with tools and context, and is timed
+
+Owner, 22 Oct, after the timing and accuracy analysis of the test turns:
+"ensure this doesn't happen much" (missing tools, lost context), then "do
+batch A and then batch B in one go".
+
+- **Gaps are closed with tools, not prompt words.** New `paint` (the paint
+  shelf and runs, through the shelf page's own loaders) and `recent_work`;
+  `find_bike` returns the whole picture for one match (template, family,
+  MO/SO, paint state, agreement, identifiers N/M, last WO/ticket/status);
+  `calendar_entries` returns the last three past entries with no dates.
+- **The prompt says "I can't see that" instead of "it doesn't exist"**,
+  answers "Was that for me?" to words not meant for it, and never reads codes
+  aloud. Rejected: listing every area it cannot see (it differs per role and
+  rots).
+- **Page context**: the open record rides with each request, route-checked
+  against the person's rights; calls only for `inbox`, because a call page
+  checks its line, which a route rule cannot.
+- **Speed**: prompt caching (measured: every call after the first reads
+  7.5–13k tokens from cache, 2–4 uncached), the answer returned with the
+  request (no second fetch), lookups of one reply run in parallel. Database
+  questions get the main tables' columns up front (the Benny question: 8
+  lookups and 12 s → 4 calls and 6 s locally).
+- **Timings are stored per turn**, server and phone, so the next analysis is
+  a query.
+- Found on the way: an auto-applied turn rebuilt its stored answer from the
+  parsed one and lost its lookups — so "move it" after a booking had nothing
+  to resolve. It now merges over the stored answer.

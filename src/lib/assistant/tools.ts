@@ -18,12 +18,17 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { loadBikeCoverage } from "@/lib/agreements/coverage";
+import { isFrameProvisional, loadBikeIdentifierContext } from "@/lib/bikes/identifier-context";
 import { calendarAdapter } from "@/lib/calendar/client";
 import { calendarReady, loadCalendarSettings } from "@/lib/calendar/settings";
 import type { CallsScope } from "@/lib/calls/access";
 import { danishDayKey, danishMidnight, danishTime, shiftDayKey } from "@/lib/calls/days";
 import { loadCallsPage } from "@/lib/calls/load";
 import { loadNotesBoard } from "@/lib/inbox/notes";
+import { loadPaintedDemand, loadPaintedStockLookup } from "@/lib/parts/painted-variants";
+import { loadPaintStates } from "@/lib/services/at-supplier";
+import { AT_SUPPLIER_STATUSES } from "@/lib/services/status";
 import { ilikeEscape } from "@/lib/supabase/ilike";
 import { searchWorkBikeIds } from "@/lib/work/search";
 
@@ -66,7 +71,7 @@ const findBike: AssistantTool = {
   def: {
     name: "find_bike",
     description:
-      "Find bikes by recognition code (the code on the label, e.g. BKTM01 — spoken forms like 'bktm 1' work), frame number, any identifier, or the owner's name. 'Bike 55' usually means a recognition code or number ending in 55. Returns up to 8 bikes and how many matched in total.",
+      "Find bikes by recognition code (the code on the label, e.g. BKTM01 — spoken forms like 'bktm 1' work), frame number, any identifier, or the owner's name. 'Bike 55' usually means a recognition code or number ending in 55. Returns up to 8 bikes and how many matched in total. When exactly ONE bike matches, `details` adds its template and family, manufacturing and sales order numbers, paint state, service agreement, identifiers registered, last work order, ticket and status change.",
     input_schema: {
       type: "object",
       properties: { query: { type: "string", description: "What the person called the bike." } },
@@ -113,6 +118,8 @@ const findBike: AssistantTool = {
     for (const b of rows) ctx.seen.set(b.id, "bike");
     return {
       total: all.length > sample.length ? `${live.length}+` : live.length,
+      // ONE bike: the whole picture, so "which MO is it on?" needs no second tool.
+      ...(rows.length === 1 ? { details: await bikeDetails(ctx, rows[0].id) } : {}),
       bikes: rows.map((b) => {
         const tpl = b.bike_template as { family?: { name?: string } | null; frame_size?: string | null } | null;
         return {
@@ -128,6 +135,87 @@ const findBike: AssistantTool = {
     };
   },
 };
+
+/**
+ * Everything the bike page would say about ONE bike, without money: its
+ * template and family, the MO and SO it is built under, whether it is at the
+ * painter or painted, the agreement covering it, its identifiers (the
+ * page's own N / M rule), the last work order, ticket and status change.
+ * Work orders and tickets follow the screens: `work`/`maintenance` see work
+ * orders, only `maintenance` sees tickets.
+ */
+async function bikeDetails(ctx: ToolContext, bikeId: string) {
+  const s = ctx.supabase;
+  const { data: b } = await s
+    .from("bikes")
+    .select(
+      `id, status, bike_type_id, manufacturing_order_id, frame_number_confirmed, built_at,
+       template:bike_templates!template_id(name_en, name_da, family:bike_families(name)),
+       mo:manufacturing_orders!manufacturing_order_id(id, mo_number, status,
+         sales_order:sales_orders!sales_order_id(id, sales_order_number, status))`,
+    )
+    .eq("id", bikeId)
+    .maybeSingle();
+  if (!b) return null;
+  const seesWork = ctx.caps.includes("work") || ctx.caps.includes("maintenance");
+  const seesTickets = ctx.caps.includes("maintenance");
+  const [paint, coverage, ids, wo, ticket, change] = await Promise.all([
+    loadPaintStates(s as never),
+    loadBikeCoverage(s as never, [bikeId]).catch(() => new Map()),
+    b.bike_type_id
+      ? loadBikeIdentifierContext(
+          s as never,
+          bikeId,
+          b.bike_type_id,
+          isFrameProvisional(b.status, b.frame_number_confirmed),
+          b.manufacturing_order_id,
+        )
+      : null,
+    seesWork
+      ? s.from("work_orders").select("id, wo_number, status, created_at, completed_at, work_performed").eq("bike_id", bikeId).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      : null,
+    seesTickets
+      ? s.from("maintenance_tickets").select("id, ticket_number, status, description, created_at").eq("bike_id", bikeId).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      : null,
+    s.from("bike_state_log").select("from_status, to_status, occurred_at").eq("bike_id", bikeId).order("occurred_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const tpl = one(b.template) as { name_en?: string; name_da?: string | null; family?: unknown } | null;
+  const mo = one(b.mo) as { id: string; mo_number: string; status: string; sales_order?: unknown } | null;
+  const so = one(mo?.sales_order) as { id: string; sales_order_number: string; status: string } | null;
+  if (mo) ctx.seen.set(mo.id, "manufacturing_order");
+  if (so) ctx.seen.set(so.id, "sales_order");
+  const agreement = coverage.get(bikeId);
+  const lastWo = wo?.data ?? null;
+  const lastTicket = ticket?.data ?? null;
+  if (lastWo) ctx.seen.set(lastWo.id, "work_order");
+  if (lastTicket) ctx.seen.set(lastTicket.id, "ticket");
+  return {
+    template: tpl ? (tpl.name_da ?? tpl.name_en ?? null) : null,
+    family: (one(tpl?.family) as { name?: string } | null)?.name ?? null,
+    builtAt: b.built_at,
+    manufacturingOrder: mo ? { id: mo.id, number: mo.mo_number, status: mo.status } : null,
+    salesOrder: so ? { id: so.id, number: so.sales_order_number, status: so.status } : null,
+    paint: paint.atPainter.has(bikeId) ? "at the painter" : paint.painted.has(bikeId) ? "painted, back from the painter" : null,
+    serviceAgreement: agreement
+      ? { name: agreement.name_da ?? agreement.name_en, since: agreement.line_start_date, ends: agreement.end_date }
+      : null,
+    identifiers: ids
+      ? {
+          registered: `${ids.requiredRegisteredCount} of ${ids.requiredCount} required`,
+          values: ids.rows.map((r) => `${r.typeName}: ${r.value}`),
+        }
+      : null,
+    lastWorkOrder: lastWo
+      ? { id: lastWo.id, number: lastWo.wo_number, status: lastWo.status, opened: lastWo.created_at, completed: lastWo.completed_at, work: (lastWo.work_performed ?? "").slice(0, 300) || null }
+      : null,
+    lastTicket: lastTicket
+      ? { id: lastTicket.id, number: lastTicket.ticket_number, status: lastTicket.status, opened: lastTicket.created_at, problem: (lastTicket.description ?? "").slice(0, 300) || null }
+      : null,
+    lastStatusChange: change.data ? { from: change.data.from_status, to: change.data.to_status, at: change.data.occurred_at } : null,
+  };
+}
+
+const one = <T,>(v: T | T[] | null | undefined): T | null => (v == null ? null : Array.isArray(v) ? (v[0] ?? null) : v);
 
 function colourOf(c: { name_en?: string | null; name_da?: string | null; ral_code?: string | null } | null) {
   if (!c) return null;
@@ -285,7 +373,7 @@ const calendarEntries: AssistantTool = {
   def: {
     name: "calendar_entries",
     description:
-      "Read the service calendar (visits, deliveries, and anything added in Google) between two dates. Defaults: from now, 30 days ahead. For 'my next appointment' use the defaults and take the first.",
+      "Read the service calendar (visits, deliveries, and anything added in Google) between two dates. With no dates: `entries` = from now, 30 days ahead (for 'my next appointment' take the first), and `recent` = the last 3 entries of the past 30 days (for 'my last / latest / most recent appointment' take the last).",
     input_schema: {
       type: "object",
       properties: {
@@ -304,19 +392,31 @@ const calendarEntries: AssistantTool = {
     const isDay = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d);
     const from = isDay(fromIso) ? danishMidnight(fromIso) : new Date();
     const to = isDay(toIso) ? danishMidnight(shiftDayKey(toIso, 1)) : new Date(from.getTime() + 30 * 86_400_000);
-    const r = await adapter.listEvents(settings.calendarId, { from, to });
+    // With no dates the past is read too: "my latest appointment" was answered
+    // with "nothing in the next 30 days" (2 Oct) before it was.
+    const withRecent = !isDay(fromIso) && !isDay(toIso);
+    const now = new Date();
+    const [r, past] = await Promise.all([
+      adapter.listEvents(settings.calendarId, { from, to }),
+      withRecent ? adapter.listEvents(settings.calendarId, { from: new Date(now.getTime() - 30 * 86_400_000), to: now }) : null,
+    ]);
     if (!r.ok) return { error: r.error };
     ctx.seen.set("calendar", "calendar");
+    const entry = (e: (typeof r.value)[number]) => ({
+      // The id is what lets "move it" act on the entry just read out.
+      eventId: e.id,
+      title: e.title,
+      kind: e.kind ?? "other",
+      date: e.allDay ? e.start : e.start.slice(0, 10),
+      time: e.allDay ? "all day" : `${danishTime(e.start)}–${danishTime(e.end)}`,
+      location: e.location,
+    });
+    const upcoming = new Set(r.value.map((e) => e.id));
     return {
-      entries: r.value.slice(0, 15).map((e) => ({
-        // The id is what lets "move it" act on the entry just read out.
-        eventId: e.id,
-        title: e.title,
-        kind: e.kind ?? "other",
-        date: e.allDay ? e.start : e.start.slice(0, 10),
-        time: e.allDay ? "all day" : `${danishTime(e.start)}–${danishTime(e.end)}`,
-        location: e.location,
-      })),
+      entries: r.value.slice(0, 15).map(entry),
+      ...(past?.ok
+        ? { recent: past.value.filter((e) => !upcoming.has(e.id)).sort((a, b) => a.start.localeCompare(b.start)).slice(-3).map(entry) }
+        : {}),
     };
   },
 };
@@ -801,10 +901,217 @@ const databaseQuery: AssistantTool = {
   },
 };
 
+/* --------------------------------------------------------------- paint */
+
+/**
+ * The PAINT SHELF and the paint runs — what /parts/painted and *Lakture* show,
+ * through the same loaders, so "what's on the paint shelf?" is never "there is
+ * no paint shelf" again (21 Oct, with 3 painted parts on it). No prices.
+ */
+/** Paint orders still in play after `planned`: sent, at the painter, ready to collect. */
+const OPEN_PAINT_STATUSES = ["confirmed", ...AT_SUPPLIER_STATUSES];
+
+const paintShelf: AssistantTool = {
+  caps: ["parts", "work", "paint", "mo"],
+  def: {
+    name: "paint",
+    description:
+      "The paint shelf and the painter: painted parts on the shelf by colour (on hand, already promised to bikes being built, more on its way back), raw paintable parts not yet painted, the paint orders that are planned, sent, at the painter or ready to collect (drop-off and pickup dates), and how many bikes are at the painter or back painted. Optional filters: a colour (name or RAL) and words from a part's name.",
+    input_schema: {
+      type: "object",
+      properties: {
+        colour: { type: "string", description: "Optional colour name or RAL code." },
+        part: { type: "string", description: "Optional words from the part's name or SKU." },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const s = ctx.supabase;
+    const [lookup, partsRes, coloursRes, runsRes, states] = await Promise.all([
+      loadPaintedStockLookup(s as never),
+      s.from("parts").select("id, internal_sku, name_en, base_part_id, color_id").not("service_part_type_id", "is", null).is("deleted_at", null),
+      s.from("colors").select("id, name_en, name_da, ral_code"),
+      s
+        .from("service_orders")
+        .select("id, order_number, status, planned_send_date, pickup_date, supplier:suppliers!supplier_id(name), bikes:service_order_bikes(bike_id), items:service_order_items(quantity)")
+        .in("status", ["planned", ...OPEN_PAINT_STATUSES])
+        .order("planned_send_date", { ascending: true, nullsFirst: false })
+        .limit(15),
+      loadPaintStates(s as never),
+    ]);
+    const demand = await loadPaintedDemand(s as never, lookup);
+    const parts = new Map((partsRes.data ?? []).map((p) => [p.id, p]));
+    const colours = new Map((coloursRes.data ?? []).map((c) => [c.id, c]));
+    const colourWord = str(input.colour).toLowerCase();
+    const partWords = str(input.part).toLowerCase().split(/\s+/).filter(Boolean);
+    const colourOk = (id: string | null) => {
+      if (!colourWord) return true;
+      const c = id ? colours.get(id) : null;
+      return Boolean(c && [c.name_en, c.name_da, c.ral_code].some((v) => (v ?? "").toLowerCase().includes(colourWord.replace(/^ral\s*/, ""))));
+    };
+    const partOk = (p: { internal_sku: string | null; name_en: string | null }) =>
+      partWords.every((w) => `${p.internal_sku ?? ""} ${p.name_en ?? ""}`.toLowerCase().includes(w));
+
+    const shelf = [];
+    for (const p of parts.values()) {
+      if (!p.base_part_id || !p.color_id) continue;
+      const base = parts.get(p.base_part_id);
+      const key = `${p.base_part_id}:${p.color_id}`;
+      const onHand = lookup.onHand.get(p.id) ?? 0;
+      const promised = demand.promised.get(key) ?? 0;
+      const coming = demand.atPainter.get(key) ?? 0;
+      if (onHand === 0 && coming === 0) continue;
+      if (!colourOk(p.color_id) || !partOk(base ?? p)) continue;
+      ctx.seen.set(p.id, "part");
+      shelf.push({ id: p.id, part: base?.name_en ?? p.name_en, colour: colourOf(colours.get(p.color_id) as never), onHand, promised, onItsWayBack: coming });
+    }
+    const raw = [...parts.values()]
+      .filter((p) => !p.base_part_id && (lookup.onHand.get(p.id) ?? 0) > 0 && partOk(p))
+      .map((p) => ({ part: p.name_en, sku: p.internal_sku, onHand: lookup.onHand.get(p.id) ?? 0 }))
+      .sort((a, b) => b.onHand - a.onHand)
+      .slice(0, 10);
+    const runs = (runsRes.data ?? []).map((o) => {
+      ctx.seen.set(o.id, "paint_order");
+      return {
+        id: o.id,
+        number: o.order_number,
+        status: o.status,
+        dropOff: o.planned_send_date,
+        pickup: o.pickup_date,
+        painter: (one(o.supplier) as { name?: string } | null)?.name ?? null,
+        bikes: (o.bikes ?? []).length,
+        units: (o.items ?? []).reduce((n: number, i: { quantity: number | null }) => n + Number(i.quantity ?? 0), 0),
+      };
+    });
+    return {
+      paintedShelf: shelf.slice(0, 20),
+      rawNotYetPainted: raw,
+      paintOrders: runs,
+      bikes: { atPainter: states.atPainter.size, backPainted: states.painted.size },
+    };
+  },
+};
+
+/* --------------------------------------------------------- recent work */
+
+/**
+ * "The last bike we worked on" — the bikes touched most recently: a status
+ * change, a work order, a build. `mine` keeps only what the asker did.
+ */
+const recentWork: AssistantTool = {
+  caps: ["bikes", "work", "maintenance", "mo"],
+  def: {
+    name: "recent_work",
+    description:
+      "The bikes worked on most recently, newest first: a build finished, a work order opened or completed, a status change — with who did it when known. `mine` true keeps only what the asking person did. Default: the last 14 days, up to 8 bikes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        mine: { type: "boolean", description: "Only the asker's own work. Default false." },
+        days: { type: "number", description: "How far back, in days. Default 14." },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const s = ctx.supabase;
+    const days = Math.min(90, Math.max(1, Number(input.days) || 14));
+    const since = new Date(Date.now() - days * 86_400_000).toISOString();
+    const me = input.mine === true ? ctx.personId : null;
+    if (input.mine === true && !me) return { error: "who is asking is not known" };
+    let changes = s.from("bike_state_log").select("bike_id, from_status, to_status, occurred_at, actor_id").gte("occurred_at", since).order("occurred_at", { ascending: false }).limit(60);
+    let wos = s.from("work_orders").select("bike_id, wo_number, status, updated_at, assigned_to, completed_by").gte("updated_at", since).order("updated_at", { ascending: false }).limit(60);
+    let builds = s.from("bikes").select("id, built_at, built_by").gte("built_at", since).is("deleted_at", null).order("built_at", { ascending: false }).limit(60);
+    if (me) {
+      changes = changes.eq("actor_id", me);
+      wos = wos.or(`assigned_to.eq.${me},completed_by.eq.${me}`);
+      builds = builds.eq("built_by", me);
+    }
+    const seesWork = ctx.caps.includes("work") || ctx.caps.includes("maintenance");
+    const [c, w, b, people] = await Promise.all([changes, seesWork ? wos : null, builds, s.from("people").select("id, full_name")]);
+    const who = new Map((people.data ?? []).map((p) => [p.id, p.full_name]));
+    const events: { bikeId: string; at: string; what: string; by: string | null }[] = [];
+    for (const r of c.data ?? []) events.push({ bikeId: r.bike_id, at: r.occurred_at, what: `status ${r.from_status ?? "—"} → ${r.to_status}`, by: r.actor_id ? (who.get(r.actor_id) ?? null) : null });
+    for (const r of w?.data ?? []) {
+      if (!r.bike_id) continue;
+      const by = r.completed_by ?? r.assigned_to;
+      events.push({ bikeId: r.bike_id, at: r.updated_at, what: `work order ${r.wo_number} (${r.status})`, by: by ? (who.get(by) ?? null) : null });
+    }
+    for (const r of b.data ?? []) if (r.built_at) events.push({ bikeId: r.id, at: r.built_at, what: "build finished", by: r.built_by ? (who.get(r.built_by) ?? null) : null });
+    events.sort((x, y) => y.at.localeCompare(x.at));
+    const latest = new Map<string, (typeof events)[number]>();
+    for (const e of events) if (!latest.has(e.bikeId)) latest.set(e.bikeId, e);
+    const ids = [...latest.keys()].slice(0, LIMIT);
+    if (ids.length === 0) return { days, bikes: [] };
+    const [{ data: bikes }, { data: codes }] = await Promise.all([
+      s.from("bikes").select("id, frame_number, status, bike_template:bike_templates(family:bike_families(name), frame_size), owner:organizations!owner_organization_id(legal_name, display_name_da, display_name_en)").in("id", ids),
+      s.from("bike_identifiers").select("bike_id, identifier_value, type:bike_identifier_types!inner(slug)").eq("is_active", true).eq("type.slug", "fleet_number").in("bike_id", ids),
+    ]);
+    const code = new Map((codes ?? []).map((x) => [x.bike_id as string, x.identifier_value as string]));
+    const byId = new Map((bikes ?? []).map((x) => [x.id, x]));
+    return {
+      days,
+      bikes: ids.flatMap((id) => {
+        const bike = byId.get(id);
+        if (!bike) return [];
+        ctx.seen.set(id, "bike");
+        const tpl = one(bike.bike_template) as { family?: unknown; frame_size?: string | null } | null;
+        const e = latest.get(id)!;
+        return [{
+          id,
+          recognitionCode: code.get(id) ?? null,
+          frameNumber: bike.frame_number,
+          status: bike.status,
+          model: tpl ? [(one(tpl.family) as { name?: string } | null)?.name, tpl.frame_size].filter(Boolean).join(" ") || null : null,
+          owner: orgName(one(bike.owner) as never),
+          last: { what: e.what, at: e.at, by: e.by },
+        }];
+      }),
+    };
+  },
+};
+
+/* ------------------------------------------------- database schema digest */
+
+/** The tables a lookup usually needs — their columns ride in `database_query`'s description. */
+const SCHEMA_TABLES = [
+  "organizations", "organization_units", "contacts", "people", "bikes", "bike_identifiers", "bike_templates",
+  "service_agreements", "service_agreement_bikes", "offers", "offer_lines", "sales_orders", "sales_order_lines",
+  "invoices", "invoice_lines", "purchase_orders", "purchase_order_lines", "suppliers", "parts",
+  "inventory_movements", "v_current_stock", "maintenance_tickets", "work_orders", "service_orders",
+  "manufacturing_orders", "inbound_messages",
+];
+let schemaDigest: { at: number; text: string } | null = null;
+
+/**
+ * `database_query` with the main tables' columns in its description, so a
+ * question does not start with a schema lookup — or a guessed column (Benny,
+ * 21 Oct: `direction does not exist`, then two more lookups). Read from the
+ * live schema through the same read-only door, kept for an hour, in a fixed
+ * order so the cached prompt stays byte-identical. Only what
+ * `assistant_reader` may read is listed.
+ */
+export async function withDatabaseSchema(supabase: SupabaseClient, defs: unknown[]): Promise<unknown[]> {
+  const i = defs.findIndex((d) => (d as { name?: string }).name === "database_query");
+  if (i < 0) return defs;
+  if (!schemaDigest || Date.now() - schemaDigest.at > 3_600_000) {
+    const sql = `select table_name, string_agg(column_name, ', ' order by ordinal_position) as columns from information_schema.columns where table_schema = 'public' and table_name in (${SCHEMA_TABLES.map((t) => `'${t}'`).join(",")}) group by table_name order by table_name`;
+    const { data, error } = await supabase.rpc("assistant_read_query", { q: sql, max_rows: 40 });
+    if (error || !Array.isArray(data)) return defs;
+    const text = (data as { table_name: string; columns: string }[]).map((r) => `${r.table_name}(${r.columns})`).join("; ");
+    schemaDigest = { at: Date.now(), text };
+  }
+  const def = defs[i] as { description: string };
+  const out = [...defs];
+  out[i] = { ...def, description: `${def.description} Columns of the main tables (use these names; database_tables for any other): ${schemaDigest.text}` };
+  return out;
+}
+
 export const ASSISTANT_TOOLS: AssistantTool[] = [
   inbox,
   findBike,
+  recentWork,
   findPart,
+  paintShelf,
   lowStock,
   calendarEntries,
   openTickets,

@@ -211,15 +211,19 @@ export async function testAssistantModel(provider: string, model: string): Promi
   const id = model.trim();
   if (!id) return { ok: false, reason: "api_error", detail: "empty model id" };
 
-  const { assistantToolDefs } = await import("@/lib/assistant/agent");
+  const { assistantRequest, assistantToolDefs } = await import("@/lib/assistant/agent");
   const { ASSISTANT_TOOLS } = await import("@/lib/assistant/tools");
-  const r = await postMessages({
-    model: id,
-    max_tokens: 4000,
-    system: "You are a test. Do not call any lookup tool. Call respond once with text 'ok', go false, and empty choices and actions.",
-    tools: assistantToolDefs(ASSISTANT_TOOLS, true),
-    messages: [{ role: "user", content: "Say ok." }],
-  });
+  // The real shape, cache breakpoints included — a model that refuses them fails here.
+  const r = await postMessages(
+    assistantRequest({
+      model: id,
+      maxTokens: 4000,
+      stableSystem: "You are a test. Do not call any lookup tool. Call respond once with text 'ok', go false, and empty choices and actions.",
+      requestSystem: "This request: a test.",
+      tools: assistantToolDefs(ASSISTANT_TOOLS, true),
+      messages: [{ role: "user", content: "Say ok." }],
+    }),
+  );
   if (!r.ok) return { ok: false, reason: r.reason === "no_key" ? "no_key" : "api_error", detail: r.detail ?? r.reason };
   const content = ((r.json as { content?: { type: string; name?: string }[] }).content ?? []);
   if (!content.some((b) => b.type === "tool_use" && b.name === "respond")) {

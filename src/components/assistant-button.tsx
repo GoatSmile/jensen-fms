@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Mic, Sparkles, Square, X } from "lucide-react";
 
+import { recordSecretaryTimings } from "@/app/_actions/assistant";
 import { mintNoteUpload, reportNoteFailure, saveSpokenNote, type NoteFailureStage } from "@/app/_actions/notes";
 import { transcribeRecording } from "@/lib/dictation/transcribe";
 import { NOTE_SILENCE_STOP, useRecorder } from "@/lib/dictation/use-recorder";
@@ -15,7 +16,7 @@ import { useSpeaker } from "@/lib/speech/use-speaker";
 import { cn } from "@/lib/utils";
 
 import { AssistantPanel } from "./assistant-panel";
-import { SecretaryConversation } from "./secretary-conversation";
+import { SecretaryConversation, type SpokenQuestion, type SpokenTurn } from "./secretary-conversation";
 
 /** Holding the button this long opens the panel, whatever the mode. */
 const LONG_PRESS_MS = 500;
@@ -77,7 +78,7 @@ export function AssistantButton({
   const voiceMode = isVoiceMode(mode);
   const noteMode = isNoteMode(mode);
   /** A spoken question for the panel to ask; the key makes a repeat a new one. */
-  const [question, setQuestion] = useState<{ text: string; key: number; language: "da" | "en" } | null>(null);
+  const [question, setQuestion] = useState<SpokenQuestion | null>(null);
   const speaker = useSpeaker();
   /** The language set up for this person (theirs, else the app's). */
   const language: "da" | "en" = locale === "en" ? "en" : "da";
@@ -110,10 +111,13 @@ export function AssistantButton({
   const ask = useCallback(
     async (blob: Blob) => {
       setToast({ kind: "hearing" });
+      // The recording has just ended: the person's wait starts now.
+      const capturedAt = performance.now();
       // A new conversation starts from the set language; one under way keeps
       // its own, which is also the fallback when detection misses (a bare "ja").
       const current = inConversation.current ? replyLanguage.current : language;
       const r = await transcribeRecording(blob, current);
+      const transcribeMs = performance.now() - capturedAt;
       if (!r.ok) {
         report(r.reason === "upload" ? "upload" : "transcribe", r.detail ?? r.reason, { bytes: blob.size, question: true });
         return setToast({ kind: "unheard", blob });
@@ -122,7 +126,7 @@ export function AssistantButton({
       if (!text) return setToast({ kind: "no_speech" });
       setToast(null);
       replyLanguage.current = r.language ?? current;
-      setQuestion({ text, key: Date.now(), language: replyLanguage.current });
+      setQuestion({ text, key: Date.now(), language: replyLanguage.current, capturedAt, transcribeMs });
       setView("conversation");
       setOpen(true);
     },
@@ -229,9 +233,23 @@ export function AssistantButton({
    * does not hear the secretary — the conversation listens again by itself.
    * Nobody speaking for a while ends it quietly (see onNoSpeech).
    */
-  async function reply(text: string, messageId?: string) {
+  async function reply(text: string, turn?: SpokenTurn) {
     setSpeaking(true);
-    await speaker.say(text, replyLanguage.current, { messageId });
+    await speaker.say(text, replyLanguage.current, {
+      messageId: turn?.messageId,
+      // The first sound ends the person's wait — keep where the time went.
+      onStart: (voice) => {
+        if (!turn) return;
+        const now = performance.now();
+        void recordSecretaryTimings(turn.messageId, {
+          transcribeMs: turn.transcribeMs,
+          requestMs: turn.requestMs,
+          voiceMs: now - turn.answeredAt,
+          totalMs: turn.capturedAt === undefined ? undefined : now - turn.capturedAt,
+          voice,
+        }).catch(() => {});
+      },
+    });
     setSpeaking(false);
     if (!inConversation.current || recorder.phase === "recording") return;
     autoListen.current = true;
@@ -304,7 +322,7 @@ export function AssistantButton({
         <SecretaryConversation
           question={question}
           // Spoken in, spoken out — then it listens again.
-          onSpeak={(text, messageId) => void reply(text, messageId)}
+          onSpeak={(text, turn) => void reply(text, turn)}
           onClose={closeConversation}
           state={
             recording

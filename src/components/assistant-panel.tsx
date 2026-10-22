@@ -88,7 +88,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
     if (!body || pending) return;
     setError(null);
     start(async () => {
-      const r = await createCommandFromText(body, requestId);
+      const r = await createCommandFromText(body, requestId, { page: window.location.pathname });
       if (!r.ok) return setError(r.error);
       setText("");
       // Asked to SEE one record → straight there.
@@ -99,7 +99,9 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
       }
       setAsked(body);
       setRequestId(r.id);
-      await refresh(r.id);
+      // The answer came with the request — no second round trip.
+      if (r.view) setView(r.view);
+      else await refresh(r.id);
     });
   }
 

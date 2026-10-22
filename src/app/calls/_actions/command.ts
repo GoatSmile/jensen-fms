@@ -19,9 +19,16 @@ import { AUTO_APPLY_KINDS } from "@/lib/assistant/agent";
 import { appliedSummary, pendingSummary } from "@/lib/inbound/command/applied-summary";
 import { parseCommandPlan } from "@/lib/inbound/command/plan";
 import type { Json } from "@/lib/types/database";
+import { buildAssistantView, COMMAND_VIEW_COLUMNS, type AssistantView, type CommandRow } from "@/lib/assistant/view";
 
 export type CommandResult =
-  | { ok: true; id: string; /** Go straight here — the answer was one record and nothing else. */ openHref?: string | null }
+  | {
+      ok: true;
+      id: string;
+      /** Go straight here — the answer was one record and nothing else. */ openHref?: string | null;
+      /** The answer as stored, so the caller speaks it without a second round trip. */
+      view?: AssistantView;
+    }
   | { ok: false; error: string };
 export type ApplyResult =
   | { ok: true; entityTable: string | null; entityId: string | null }
@@ -84,7 +91,7 @@ async function currentPersonId(): Promise<string | null> {
 export async function createCommandFromText(
   text: string,
   priorId?: string | null,
-  opts?: { spoken?: boolean; history?: string[]; language?: string },
+  opts?: { spoken?: boolean; history?: string[]; language?: string; page?: string },
 ): Promise<CommandResult> {
   const t = await getTranslations("errors");
   const body = text.trim();
@@ -122,7 +129,7 @@ export async function createCommandFromText(
   const settled = await settleWaiting(supabase, inserted.id, body, priorId ?? null, personId, caps, t, language);
   if (settled) {
     revalidateInbound(inserted.id);
-    return { ok: true, id: inserted.id, openHref: null };
+    return { ok: true, id: inserted.id, openHref: null, view: await viewOf(supabase, inserted.id) };
   }
 
   const autoApply = personId !== null && (await autoApplyOn(supabase, personId));
@@ -137,6 +144,7 @@ export async function createCommandFromText(
     spoken: opts?.spoken === true,
     // Only ids; answerRequest keeps the asker's own, recent turns.
     history: Array.isArray(opts?.history) ? opts.history.filter((x) => typeof x === "string").slice(-8) : undefined,
+    page: typeof opts?.page === "string" ? opts.page : null,
   });
   // The secretary carries out what is safe at once (owner, 2026-10-21) and the
   // reply was worded as done — so a failure must be said, not left unsaid.
@@ -149,7 +157,7 @@ export async function createCommandFromText(
     // What was NOT carried out is said by the CODE, never left to the model:
     // on 2026-10-21 it told Finn "Done. I booked …" for a delivery that was
     // waiting for him (nothing reached the calendar).
-    const { data: row } = await supabase.from("inbound_messages").select("command_plan").eq("id", inserted.id).maybeSingle();
+    const { data: row } = await supabase.from("inbound_messages").select("command_plan, assistant_answer").eq("id", inserted.id).maybeSingle();
     const { data: ledger } = await supabase.from("command_actions").select("plan_action_id").eq("message_id", inserted.id);
     const appliedIds = new Set((ledger ?? []).map((l) => l.plan_action_id as string));
     // Only kinds the model was told happen at once can be wrongly called done;
@@ -168,9 +176,13 @@ export async function createCommandFromText(
         ...(already.length ? [tA("alreadyInCalendar")] : []),
         ...waiting.map((w) => tA(opts?.spoken ? "notYetSayYes" : "notYetTap", { what: pendingSummary(w, tC) })),
       ];
+      // Over the STORED answer: rebuilding it from the parsed one dropped the
+      // turn's lookups and timings, so "move it" after a booking had nothing
+      // to resolve (found 2026-10-22).
+      const stored = (row?.assistant_answer ?? {}) as Record<string, unknown>;
       await supabase
         .from("inbound_messages")
-        .update({ assistant_answer: { ...answer, text: lines.join("\n").trim() } as unknown as Json })
+        .update({ assistant_answer: { ...stored, text: lines.join("\n").trim() } as unknown as Json })
         .eq("id", inserted.id);
     }
   }
@@ -179,7 +191,13 @@ export async function createCommandFromText(
   // 2026-10-01). A question about it shows the answer, with an Open button.
   const openHref =
     r.ok && r.answer.go && r.answer.open && r.actionCount === 0 ? targetHref(r.answer.open) : null;
-  return { ok: true, id: inserted.id, openHref };
+  return { ok: true, id: inserted.id, openHref, view: openHref ? undefined : await viewOf(supabase, inserted.id) };
+}
+
+/** The request as stored, for the caller — it is the asker's own, just made. */
+async function viewOf(supabase: ReturnType<typeof createServiceClient>, id: string): Promise<AssistantView | undefined> {
+  const { data } = await supabase.from("inbound_messages").select(COMMAND_VIEW_COLUMNS).eq("id", id).maybeSingle();
+  return data ? buildAssistantView(supabase, data as CommandRow) : undefined;
 }
 
 const YES = /^(ja|jo|jep|yes|yeah|yep|ok|okay|ja tak|ja gerne|ja gør det|ja det må du gerne|gør det|bare gør det|bekræft|bekræftet|det er fint|fint|confirm|confirmed|do it|go ahead|yes please|please do)$/;

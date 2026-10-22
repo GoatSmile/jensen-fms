@@ -54,14 +54,18 @@ export function useSpeaker() {
    * if that stream fails before it plays, the whole-file path below runs.
    */
   const say = useCallback(
-    async (text: string, language: "da" | "en", opts: { messageId?: string } = {}): Promise<void> => {
+    async (
+      text: string,
+      language: "da" | "en",
+      opts: { messageId?: string; onStart?: (voice: "stream" | "file" | "browser") => void } = {},
+    ): Promise<void> => {
       const body = text.trim();
       if (!body) return;
       stop();
       if (serverCanSpeak && opts.messageId) {
         const a = element();
         a.src = `/api/speak?m=${encodeURIComponent(opts.messageId)}&lang=${language}`;
-        if (await playStream(a)) return;
+        if (await playStream(a, () => opts.onStart?.("stream"))) return;
       }
       if (serverCanSpeak) {
         const r = await speakAnswer(body, language).catch(() => ({ ok: false as const, reason: "error" as const }));
@@ -70,6 +74,7 @@ export function useSpeaker() {
           a.src = `data:audio/mpeg;base64,${r.audio}`;
           try {
             await a.play();
+            opts.onStart?.("file");
             return await untilDone(a);
           } catch {
             /* refused — fall through to the browser's voice */
@@ -78,7 +83,7 @@ export function useSpeaker() {
           serverCanSpeak = false;
         }
       }
-      return browserSay(body, language);
+      return browserSay(body, language, () => opts.onStart?.("browser"));
     },
     [stop],
   );
@@ -93,9 +98,12 @@ export function useSpeaker() {
  * refused request, an unplayable answer) so the caller can try another way;
  * once it has played, an error mid-way just ends it, like a pause.
  */
-async function playStream(a: HTMLAudioElement): Promise<boolean> {
+async function playStream(a: HTMLAudioElement, onStart: () => void): Promise<boolean> {
   let started = false;
-  const onPlaying = () => (started = true);
+  const onPlaying = () => {
+    if (!started) onStart();
+    started = true;
+  };
   a.addEventListener("playing", onPlaying);
   try {
     await a.play();
@@ -123,7 +131,7 @@ function untilDone(a: HTMLAudioElement): Promise<void> {
   });
 }
 
-function browserSay(text: string, language: "da" | "en"): Promise<void> {
+function browserSay(text: string, language: "da" | "en", onStart: () => void): Promise<void> {
   return new Promise((resolve) => {
     try {
       const synth = window.speechSynthesis;
@@ -132,6 +140,7 @@ function browserSay(text: string, language: "da" | "en"): Promise<void> {
       u.lang = language === "da" ? "da-DK" : "en-GB";
       const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith(language));
       if (voice) u.voice = voice;
+      u.onstart = () => onStart();
       u.onend = () => resolve();
       u.onerror = () => resolve();
       synth.speak(u);
