@@ -53,8 +53,8 @@ export function SecretaryConversation({
   notice: string | null;
   /** The next spoken request; a new key is a new turn. `language` is the one it was heard in. */
   question: { text: string; key: number; language: "da" | "en" } | null;
-  /** Say a reply aloud, in the language of the conversation. */
-  onSpeak: (text: string) => void;
+  /** Say a reply aloud, in the language of the conversation; `messageId` lets it stream. */
+  onSpeak: (text: string, messageId?: string) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("assistant");
@@ -101,7 +101,7 @@ export function SecretaryConversation({
         done: v.plan.actions.filter((a) => v.ctx.applied[a.id]).map((a) => appliedSummary(v.ctx.applied[a.id], tC, locale).text),
         waiting: v.plan.actions.filter((a) => !v.ctx.applied[a.id]).map((a) => pendingSummary(a, tC)),
       });
-      if (text) onSpeak(text);
+      if (text) onSpeak(text, r.id);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per spoken request
   }, [question?.key]);

@@ -4080,3 +4080,26 @@ NOT stripped automatically" for this one case.
   not imported.
 - Rejected: stripping every non-alphanumeric character (would hide a real
   typo), and leaving it all to Dennis (the old rule).
+
+## 2026-10-22 — The secretary's voice is Flash v2.5, and the reply streams
+
+Owner, 22 Oct, after the secretary timing analysis: "do a quick test — if the
+results are comparable, let's do this."
+
+- **Model: `eleven_flash_v2_5`** (was `eleven_multilingual_v2`). Test: seven
+  real replies (five Danish, two English) made with both and transcribed back
+  with Scribe v2. Danish came out as clear on Flash (Multilingual misheard
+  "Thorsted" as "Torsdag"); both mangle frame numbers like JP-2026-E_BIKE-035.
+  Synthesis 1.2–1.6 s → 0.3–0.5 s. The one real loss: in ENGLISH replies Flash
+  anglicises Danish names ("Allerød Kommune" heard as "Alereux Commune").
+  Accepted because go-live is Danish. A setting at /admin/settings, so it
+  reverts without a deploy.
+- **Streaming:** a stored reply plays from `/api/speak?m=<request id>` as
+  ElevenLabs makes it (first sound ~0.2 s after the request locally, instead
+  of after the whole file plus a base64 round trip). The id, not the text,
+  is in the URL; the route reads the answer under `mayReadCommand`. A
+  stream that fails before any sound falls back to `speakAnswer`, then to the
+  browser's voice.
+- Rejected: Multilingual for English and Flash for Danish (one model setting
+  today, a migration for a per-language model — not worth it before English
+  matters); Eleven v3 (slower still).

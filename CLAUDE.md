@@ -799,9 +799,11 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   returns what the transcriber heard (Danish or English, else nothing), a
   conversation STARTS in the person's set language and follows what it last
   heard, and that language drives the reply, the lines the code adds and the
-  voice; a typed request keeps the set language (`useSpeaker`:
-  ElevenLabs, `synthesizeElevenLabs`, else the browser's own voice — prime it
-  INSIDE the press or a phone stays silent). For a person with *act right
+  voice; a typed request keeps the set language (`useSpeaker`: a stored
+  reply STREAMS from `/api/speak?m=<request id>` — the text never rides the
+  URL, the route reads the stored answer under `mayReadCommand` — then
+  `speakAnswer` whole, else the browser's own voice; prime it INSIDE the press
+  or a phone stays silent). For a person with *act right
   away* on, the request's safe actions (`autoApplySafe`: book a visit or delivery — a customer in the system is
   NOT required, the name as said goes in the title (owner) — move an
   entry, save a note) are carried out at once by `autoApplyMessage` and the
@@ -838,7 +840,9 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   service-account signer `src/lib/google/service-account.ts` — the API must be
   enabled on that project; a changed provider must speak before it saves.
   ElevenLabs takes a MODEL and a VOICE PER LANGUAGE (migration 132, same
-  page, each with *Listen*); blank = George. Listing the account's voices
+  page, each with *Listen*); blank = George. The model is **Flash v2.5**
+  (DECISIONS 2026-10-22: ~1 s sooner than Multilingual v2, Danish as clear;
+  it anglicises Danish names in English replies). Listing the account's voices
   needs the key's `voices_read`, and a library voice must be in *My Voices*. **A
   calendar entry's description links the customer and the bikes** it is about
   (`eventDescription`, draft_event `bikes` from find_bike). A NOTE is something it does when asked (`save_note`). **What a PRESS

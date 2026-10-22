@@ -47,12 +47,22 @@ export function useSpeaker() {
     }
   }, []);
 
-  /** Speak `text`; resolves when it has FINISHED (or could not start) — the cue to listen again. */
+  /**
+   * Speak `text`; resolves when it has FINISHED (or could not start) — the cue
+   * to listen again. With `messageId` (a stored secretary reply) it STREAMS
+   * from /api/speak, so the first words play while the rest is still made;
+   * if that stream fails before it plays, the whole-file path below runs.
+   */
   const say = useCallback(
-    async (text: string, language: "da" | "en"): Promise<void> => {
+    async (text: string, language: "da" | "en", opts: { messageId?: string } = {}): Promise<void> => {
       const body = text.trim();
       if (!body) return;
       stop();
+      if (serverCanSpeak && opts.messageId) {
+        const a = element();
+        a.src = `/api/speak?m=${encodeURIComponent(opts.messageId)}&lang=${language}`;
+        if (await playStream(a)) return;
+      }
       if (serverCanSpeak) {
         const r = await speakAnswer(body, language).catch(() => ({ ok: false as const, reason: "error" as const }));
         if (r.ok) {
@@ -76,6 +86,26 @@ export function useSpeaker() {
   useEffect(() => stop, [stop]);
 
   return { prime, say, stop };
+}
+
+/**
+ * Play a streamed source to its end. `false` = it failed BEFORE any sound (a
+ * refused request, an unplayable answer) so the caller can try another way;
+ * once it has played, an error mid-way just ends it, like a pause.
+ */
+async function playStream(a: HTMLAudioElement): Promise<boolean> {
+  let started = false;
+  const onPlaying = () => (started = true);
+  a.addEventListener("playing", onPlaying);
+  try {
+    await a.play();
+    await untilDone(a);
+    return started || !a.error;
+  } catch {
+    return false;
+  } finally {
+    a.removeEventListener("playing", onPlaying);
+  }
 }
 
 /** Resolves when the element stops: the end, a pause (stopped), or an error. */

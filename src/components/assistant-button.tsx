@@ -229,9 +229,9 @@ export function AssistantButton({
    * does not hear the secretary — the conversation listens again by itself.
    * Nobody speaking for a while ends it quietly (see onNoSpeech).
    */
-  async function reply(text: string) {
+  async function reply(text: string, messageId?: string) {
     setSpeaking(true);
-    await speaker.say(text, replyLanguage.current);
+    await speaker.say(text, replyLanguage.current, { messageId });
     setSpeaking(false);
     if (!inConversation.current || recorder.phase === "recording") return;
     autoListen.current = true;
@@ -304,7 +304,7 @@ export function AssistantButton({
         <SecretaryConversation
           question={question}
           // Spoken in, spoken out — then it listens again.
-          onSpeak={(text) => void reply(text)}
+          onSpeak={(text, messageId) => void reply(text, messageId)}
           onClose={closeConversation}
           state={
             recording
