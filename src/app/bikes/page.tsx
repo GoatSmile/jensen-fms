@@ -531,7 +531,11 @@ export default async function BikesPage({
         </div>
       </header>
 
+      {/* Keyed by the filters: a link that changes them (a chip, the
+          assistant opening a list) keeps the page mounted, and uncontrolled
+          fields would go on showing the old values. */}
       <form
+        key={JSON.stringify(sp)}
         method="get"
         className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
       >

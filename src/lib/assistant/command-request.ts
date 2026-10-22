@@ -143,7 +143,9 @@ export async function askAssistant(
   // 2026-10-01). A question about it shows the answer, with an Open button.
   const openHref =
     r.ok && r.answer.go && r.answer.open && r.actionCount === 0 ? targetHref(r.answer.open) : null;
-  return { ok: true, id: inserted.id, openHref, view: openHref ? undefined : await viewOf(supabase, inserted.id) };
+  // The answer comes along even with a page to go to: a LIST page opens under
+  // the conversation, which goes on and says what it holds (2026-10-22).
+  return { ok: true, id: inserted.id, openHref, view: await viewOf(supabase, inserted.id) };
 }
 
 /** The request as stored, for the caller — it is the asker's own, just made. */

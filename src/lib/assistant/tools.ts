@@ -29,10 +29,11 @@ import { loadNotesBoard } from "@/lib/inbox/notes";
 import { loadPaintedDemand, loadPaintedStockLookup } from "@/lib/parts/painted-variants";
 import { loadPaintStates } from "@/lib/services/at-supplier";
 import { AT_SUPPLIER_STATUSES } from "@/lib/services/status";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { ilikeEscape } from "@/lib/supabase/ilike";
 import { searchWorkBikeIds } from "@/lib/work/search";
 
-import type { TargetKind } from "./answer";
+import { bikeListId, type BikeListFilter, type TargetKind } from "./answer";
 
 export type ToolContext = {
   supabase: SupabaseClient;
@@ -998,6 +999,145 @@ const paintShelf: AssistantTool = {
  * "The last bike we worked on" — the bikes touched most recently: a status
  * change, a work order, a build. `mine` keeps only what the asker did.
  */
+/** The bike statuses, in the order a list of them is read. */
+const BIKE_STATUSES = ["in_service", "assigned", "in_stock", "building", "planning", "in_maintenance", "retired", "lost_or_stolen"] as const;
+
+/** At most this many bikes come back by name; more is counted, not listed. */
+const OVERVIEW_BIKES = 20;
+/** The largest customers, by bikes, that are named in an overview. */
+const OVERVIEW_CUSTOMERS = 10;
+
+/**
+ * "How many bikes", "list all the bikes", "which bikes does X have" — the
+ * question find_bike (a search, 8 rows) cannot answer (2026-10-22). Counts
+ * EVERY matching bike (paged past PostgREST's 1000-row cap) by status,
+ * customer and family; names them only when there are few; and returns the
+ * list pages that show them (`views`, kind bike_list), so a long answer is a
+ * page to open, not a list to read aloud.
+ */
+const bikeOverview: AssistantTool = {
+  caps: ["bikes", "work"],
+  def: {
+    name: "bike_overview",
+    description: `COUNT bikes — all of them, or narrowed by status, customer or imported (from the fleet register). For "how many bikes", "list all the bikes", "which bikes does X have", "bikes in stock". Returns the total, counts by status, by customer (largest first) and by family; the bikes themselves when ${OVERVIEW_BIKES} or fewer match; and \`views\`: the bike list pages you may OPEN (kind bike_list) for the whole set and for each status and customer group.`,
+    input_schema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: [...BIKE_STATUSES], description: "Only bikes in this status." },
+        customer: { type: "string", description: "Only bikes owned by this customer (a name)." },
+        imported: { type: "boolean", description: "true: only bikes from the fleet register import." },
+      },
+    },
+  },
+  async run(ctx, input) {
+    const status = (BIKE_STATUSES as readonly string[]).includes(str(input.status)) ? str(input.status) : undefined;
+    const imported = input.imported === true;
+    const name = str(input.customer);
+    let owner: { id: string; name: string } | undefined;
+    if (name) {
+      const like = `%${ilikeEscape(name)}%`;
+      const { data: orgs } = await ctx.supabase
+        .from("organizations")
+        .select("id, legal_name, display_name_da, display_name_en")
+        .is("deleted_at", null)
+        .or(`legal_name.ilike.${like},display_name_da.ilike.${like},display_name_en.ilike.${like}`)
+        .limit(10);
+      const found = (orgs ?? []).map((o) => ({ id: o.id as string, name: orgName(o) ?? "" }));
+      const exact = found.filter((o) => o.name.toLowerCase() === name.toLowerCase());
+      const pick = exact.length === 1 ? exact : found;
+      for (const o of found) ctx.seen.set(o.id, "customer");
+      if (pick.length === 0) return { total: 0, note: `no customer matched "${name}"` };
+      if (pick.length > 1) return { note: "several customers match — ask which one", customers: pick };
+      owner = pick[0];
+    }
+
+    type Row = { id: string; status: string; owner_organization_id: string | null; bike_template: unknown };
+    const { data, error } = await fetchAllRows<Row>((from, to) => {
+      let q = ctx.supabase
+        .from("bikes")
+        .select("id, status, owner_organization_id, bike_template:bike_templates(family:bike_families(name))")
+        .is("deleted_at", null);
+      if (status) q = q.eq("status", status);
+      if (owner) q = q.eq("owner_organization_id", owner.id);
+      if (imported) q = q.not("import_batch_id", "is", null);
+      return q.order("id").range(from, to) as unknown as PromiseLike<{ data: Row[] | null; error: { message: string } | null }>;
+    });
+    if (error) return { error };
+
+    const tally = (key: (r: Row) => string | null) => {
+      const m = new Map<string, number>();
+      for (const r of data) {
+        const k = key(r);
+        if (k) m.set(k, (m.get(k) ?? 0) + 1);
+      }
+      return [...m.entries()].sort((a, b) => b[1] - a[1]);
+    };
+    const byStatus = tally((r) => r.status);
+    const byOwner = tally((r) => r.owner_organization_id ?? "none");
+    const byFamily = tally((r) => (r.bike_template as { family?: { name?: string } | null } | null)?.family?.name ?? "no template");
+
+    const topOwners = byOwner.filter(([id]) => id !== "none").slice(0, OVERVIEW_CUSTOMERS);
+    const { data: orgs } = topOwners.length
+      ? await ctx.supabase
+          .from("organizations")
+          .select("id, legal_name, display_name_da, display_name_en")
+          .in("id", topOwners.map(([id]) => id))
+      : { data: [] };
+    const names = new Map((orgs ?? []).map((o) => [o.id as string, orgName(o) ?? "?"]));
+    for (const [id] of topOwners) ctx.seen.set(id, "customer");
+
+    // The pages that show these bikes — each one the person's list, filtered.
+    const base: BikeListFilter = { status, owner: owner?.id, imported };
+    const views: { kind: "bike_list"; id: string; label: string; count: number }[] = [];
+    const view = (f: BikeListFilter, label: string, count: number) => {
+      const id = bikeListId(f);
+      ctx.seen.set(id, "bike_list");
+      views.push({ kind: "bike_list", id, label, count });
+    };
+    view(base, "these bikes", data.length);
+    if (!status) for (const [st, n] of byStatus) view({ ...base, status: st }, `status ${st}`, n);
+    if (!owner) for (const [id, n] of topOwners) view({ ...base, owner: id }, names.get(id) ?? "customer", n);
+
+    let bikes: unknown[] | undefined;
+    if (data.length > 0 && data.length <= OVERVIEW_BIKES) {
+      const ids = data.map((r) => r.id);
+      const { data: codes } = await ctx.supabase
+        .from("bike_identifiers")
+        .select("bike_id, identifier_value, type:bike_identifier_types!inner(slug)")
+        .eq("is_active", true)
+        .eq("type.slug", "fleet_number")
+        .in("bike_id", ids);
+      const code = new Map((codes ?? []).map((c) => [c.bike_id as string, c.identifier_value as string]));
+      const { data: rows } = await ctx.supabase.from("bikes").select("id, frame_number").in("id", ids);
+      const frame = new Map((rows ?? []).map((r) => [r.id as string, r.frame_number as string]));
+      bikes = data.map((r) => {
+        ctx.seen.set(r.id, "bike");
+        return {
+          id: r.id,
+          recognitionCode: code.get(r.id) ?? null,
+          frameNumber: frame.get(r.id) ?? null,
+          status: r.status,
+          family: (r.bike_template as { family?: { name?: string } | null } | null)?.family?.name ?? null,
+          owner: r.owner_organization_id ? (names.get(r.owner_organization_id) ?? null) : null,
+        };
+      });
+    }
+
+    return {
+      filter: { status: status ?? null, customer: owner?.name ?? null, imported },
+      total: data.length,
+      byStatus: Object.fromEntries(byStatus),
+      byCustomer: [
+        ...topOwners.map(([id, n]) => ({ id, name: names.get(id) ?? "?", count: n })),
+        ...(byOwner.length > topOwners.length ? [{ name: "others / no customer", count: data.length - topOwners.reduce((a, [, n]) => a + n, 0) }] : []),
+      ],
+      byFamily: Object.fromEntries(byFamily),
+      ...(bikes ? { bikes } : { bikesListed: false, note: `${data.length} bikes — counted, not listed; open a view to show them` }),
+      views,
+    };
+  },
+};
+
 const recentWork: AssistantTool = {
   caps: ["bikes", "work", "maintenance", "mo"],
   def: {
@@ -1109,6 +1249,7 @@ export async function withDatabaseSchema(supabase: SupabaseClient, defs: unknown
 export const ASSISTANT_TOOLS: AssistantTool[] = [
   inbox,
   findBike,
+  bikeOverview,
   recentWork,
   findPart,
   paintShelf,

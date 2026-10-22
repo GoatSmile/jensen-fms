@@ -113,11 +113,12 @@ treat the early totals as floors, not truth.
 | Wed 2026-10-21 (cont.) | ~0.5 | **The secretary answers in the language it hears**, starting from the person's setting, and everyone is on it (migration 133); action items pulled from the Munr recording of the meeting with Dennis. |
 | Thu 2026-10-22 | ~1.5 | **The secretary measured and made faster**: timings per turn, Flash voice streamed, prompt caching, page context, and tools for the paint shelf, recent work and a bike's full picture. |
 | Thu 2026-10-22 (cont.) | ~2 | **The secretary speaks while it writes**: the first sentence plays before the answer is complete (~1 s sooner, 5.6 s wait measured end to end), and a stalled transcription gets a second try at 8 s. |
+| Thu 2026-10-22 (cont.) | ~0.5 | **Long answers are counted, shown and opened**: a bike overview tool, rows on screen instead of read aloud, list pages opened under the conversation; list filter forms refresh on a link. |
 
 **September: ~77 h** (11 working days)
 
-**October so far: ~22 h** (5 working days)
+**October so far: ~22.5 h** (5 working days)
 
 ---
 
-**Project total: ~353 h across 57 working days (2026-05-07 → 2026-10-22)**
+**Project total: ~353.5 h across 57 working days (2026-05-07 → 2026-10-22)**

@@ -226,8 +226,13 @@ export function AssistantButton({
   }, [conversing]);
 
   // A navigation (an Open, a choice) closes the panel.
+  /** A list page the conversation opened itself — it stays open over it. */
+  const stayFor = useRef<string | null>(null);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the route
+    if (stayFor.current === pathname) {
+      stayFor.current = null;
+      return;
+    }
     setOpen(false);
   }, [pathname]);
 
@@ -356,6 +361,9 @@ export function AssistantButton({
           question={question}
           // Spoken in, spoken out — then it listens again.
           onSentence={sentence}
+          onStay={(path) => {
+            stayFor.current = path;
+          }}
           onSpeak={(text, turn) => void reply(text, turn)}
           onClose={closeConversation}
           state={

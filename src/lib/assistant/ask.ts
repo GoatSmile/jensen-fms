@@ -92,6 +92,7 @@ export async function answerRequest(
     open,
     go: open !== null && r.answer.go,
     choices: r.answer.choices.filter(opens),
+    list: r.answer.list,
   };
 
   const { error } = await supabase
@@ -137,9 +138,11 @@ async function loadConversation(
     .sort((a, b) => a.received_at.localeCompare(b.received_at))
     .map((r) => {
       const raw = (r.assistant_answer ?? {}) as { lookups?: unknown };
+      const said = parseAssistantAnswer(r.assistant_answer);
       return {
         request: r.body_text ?? "",
-        answer: parseAssistantAnswer(r.assistant_answer)?.text ?? "",
+        answer: said?.text ?? "",
+        offered: said ? [...(said.open ? [said.open] : []), ...said.choices] : [],
         done: (ledger ?? [])
           .filter((l) => l.message_id === r.id)
           .map((l) => appliedSummary({ entityTable: l.entity_table, entityId: l.entity_id, payload: l.payload }, tC, opts.language).text),

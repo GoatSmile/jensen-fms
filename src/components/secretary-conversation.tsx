@@ -7,14 +7,19 @@ import { Loader2, Sparkles } from "lucide-react";
 
 import { loadAssistantView } from "@/app/_actions/assistant";
 import { createCommandFromText, type CommandResult } from "@/app/calls/_actions/command";
+import type { AnswerListItem } from "@/lib/assistant/answer";
 import { appliedSummary, pendingSummary } from "@/lib/inbound/command/applied-summary";
 import { cn } from "@/lib/utils";
+
+import { AnswerList } from "./answer-list";
 
 type Turn = {
   key: number;
   asked: string;
   /** The reply, once it is in. */
   answer: string | null;
+  /** Rows shown under the reply, never spoken. */
+  list: AnswerListItem[];
   /** What was carried out, in words. */
   done: string[];
   /** What waits for the person's spoken yes. */
@@ -112,6 +117,7 @@ export function SecretaryConversation({
   question,
   onSentence,
   onSpeak,
+  onStay,
   onClose,
   state,
   notice,
@@ -130,6 +136,8 @@ export function SecretaryConversation({
    * yet (the lines the code added) — and the call ends that reply.
    */
   onSpeak: (text: string, turn?: SpokenTurn) => void;
+  /** A LIST page is opening under the conversation: stay open over it (owner, 2026-10-22). */
+  onStay: (path: string) => void;
   onClose: () => void;
 }) {
   const t = useTranslations("assistant");
@@ -151,7 +159,7 @@ export function SecretaryConversation({
     const language = question.language;
     const update = (patch: Partial<Turn>) =>
       setTurns((all) => all.map((turn) => (turn.key === key ? { ...turn, ...patch } : turn)));
-    setTurns((all) => [...all, { key, asked: body, answer: null, done: [], waiting: [], failed: false }]);
+    setTurns((all) => [...all, { key, asked: body, answer: null, list: [], done: [], waiting: [], failed: false }]);
 
     const { capturedAt, transcribeMs } = question;
     void (async () => {
@@ -183,8 +191,13 @@ export function SecretaryConversation({
       lastId.current = r.id;
       ids.current = [...ids.current, r.id];
       const turnOf = () => ({ messageId: r.id, capturedAt, transcribeMs, requestMs: answeredAt - sent, sentAt: sent, firstSentenceAt, answeredAt });
-      // Asked to SEE one record → straight there (the conversation closes with the route).
-      if (r.openHref) {
+      // A list page opens UNDER the conversation, which goes on ("now only
+      // Gladsaxe"); one record opens in place of it (the route closes it).
+      const listPage = r.openHref && r.view?.ok && r.view.answer?.open?.kind === "bike_list" ? r.openHref : null;
+      if (listPage) {
+        onStay(listPage.split("?")[0]);
+        router.push(listPage);
+      } else if (r.openHref) {
         if (said) onSpeak("", turnOf());
         return router.push(r.openHref);
       }
@@ -199,6 +212,7 @@ export function SecretaryConversation({
       setTurns((all) => all.map((turn) => (turn.key === key ? turn : { ...turn, waiting: [] })));
       update({
         answer: text,
+        list: v.answer?.list ?? [],
         done: v.plan.actions.filter((a) => v.ctx.applied[a.id]).map((a) => appliedSummary(v.ctx.applied[a.id], tC, locale).text),
         waiting: v.plan.actions.filter((a) => !v.ctx.applied[a.id]).map((a) => pendingSummary(a, tC)),
       });
@@ -250,6 +264,7 @@ export function SecretaryConversation({
                 {turn.answer ? (
                   <p className={cn("text-sm whitespace-pre-wrap", turn.failed && "text-destructive")}>{turn.answer}</p>
                 ) : null}
+                {turn.list.length > 0 ? <AnswerList rows={turn.list} /> : null}
                 {turn.done.map((line, i) => (
                   <p key={`d${i}`} className="text-good text-sm">
                     ✓ {line}

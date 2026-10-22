@@ -19,6 +19,8 @@ import { contextFromPath } from "@/lib/notes/context";
 import { ASSISTANT_MODES, type AssistantMode } from "@/lib/notes/mode";
 import { cn } from "@/lib/utils";
 
+import { AnswerList } from "./answer-list";
+
 type Props = {
   onClose: () => void;
   /** Scan lives inside the panel (owner, 2026-10-01: one button, not two). */
@@ -199,6 +201,7 @@ export function AssistantPanel({ onClose, canScan, mode, onModeChange }: Props) 
             </p>
           ) : null}
           {answer?.text ? <p className="text-sm whitespace-pre-wrap">{answer.text}</p> : null}
+          {answer && answer.list.length > 0 ? <AnswerList rows={answer.list} /> : null}
           {answer?.open ? (
             <Link
               href={targetHref(answer.open)}

@@ -786,6 +786,16 @@ commercial, maintenance, cross-cutting. Original SQL files live in
   `src/lib/assistant/page.ts` — route-checked, a label only), so "this bike"
   resolves; spoken replies never read codes aloud; words not meant for it get
   "Was that for me?".
+  **A long answer is counted, shown and opened — never read out** (owner,
+  2026-10-22): the reply names at most three items or groups, the rows go in
+  `respond.list` (shown under the reply, never spoken), and a list page is a
+  target like a record — `bike_list`, whose id is the page's filter
+  (`bikeListId`), made only by `bike_overview`, which COUNTS every bike
+  (paged) where `find_bike` searches eight. A reply that returned part of a
+  set says so ("8 of 46"). What an earlier turn OFFERED to open stays
+  openable (`ConversationTurn.offered`), so "ja" opens it, and a list page
+  opens UNDER the conversation, which stays open ("now only Gladsaxe"); one
+  record still opens in place of it.
   **One request shape, cached** (`assistantRequest`): tools + the stable
   system prompt behind one breakpoint, then `requestContext` (clock,
   fortnight, language, page) — anything per-request in the stable part
@@ -1440,6 +1450,12 @@ commercial, maintenance, cross-cutting. Original SQL files live in
     none — so the content sits in a `body > div[hidden]`, un-hydrated, and a
     click on it does nothing. `window.$RV(window.$RB)` in the console reveals
     it (found 2026-09-27; it looked exactly like a broken button).
+- **A GET filter form is KEYED by its filters** (`key={JSON.stringify(sp)}`
+  on /bikes, /paint-orders, /organizations, /work). Submitting it reloads the
+  page, but a LINK that changes the filters — a chip's ×, the assistant
+  opening a list — keeps the page mounted, and uncontrolled fields go on
+  showing the old values (found 2026-10-22: "Under service" in the chip, "På
+  lager" in the dropdown). A new filtered list needs the key too.
 - **No `router.refresh()` after an action that already revalidates the page.**
   An action calling `revalidatePath` on the current route returns the fresh
   tree in its own POST response; a refresh on top fetches the whole page a

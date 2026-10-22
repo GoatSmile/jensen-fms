@@ -164,7 +164,8 @@ export default async function OrganizationsPage({
         </div>
       </header>
 
-      <form method="get" className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+      {/* Keyed by the filters, so a link that changes them refreshes the fields. */}
+      <form key={JSON.stringify(sp)} method="get" className="grid gap-3 sm:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="org-q">
             {t("searchLabel")}

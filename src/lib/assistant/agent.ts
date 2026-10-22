@@ -31,7 +31,15 @@ import { RESOLVER_NAMES, RESOLVER_TOOLS, executeResolver } from "@/lib/inbound/c
 import { danishDaysAhead } from "@/lib/calls/days";
 import { routeAllows } from "@/lib/people/routes";
 
-import { TARGET_KINDS, parseAssistantAnswer, targetHref, type AssistantAnswer, type TargetKind } from "./answer";
+import {
+  ANSWER_LIST_MAX,
+  TARGET_KINDS,
+  parseAssistantAnswer,
+  targetHref,
+  type AssistantAnswer,
+  type AssistantTarget,
+  type TargetKind,
+} from "./answer";
 import { toolsFor, withDatabaseSchema, type ToolContext } from "./tools";
 
 const MAX_TOKENS = 8000;
@@ -107,7 +115,14 @@ const AUTO_APPLY_WORDS: { type: CommandAction["type"]; words: string }[] = [
 export const AUTO_APPLY_KINDS: ReadonlySet<CommandAction["type"]> = new Set(AUTO_APPLY_WORDS.map((w) => w.type));
 
 /** One earlier turn of the conversation, as the next request carries it. */
-export type ConversationTurn = { request: string; answer: string; done: string[]; lookups: string[] };
+export type ConversationTurn = {
+  request: string;
+  answer: string;
+  done: string[];
+  lookups: string[];
+  /** What that reply offered to OPEN (its `open` and `choices`) — openable now too, so "ja" opens it. */
+  offered?: AssistantTarget[];
+};
 
 export type AssistantResult =
   | { ok: true; answer: AssistantAnswer; plan: CommandPlan; lookups: string[]; timings: AssistantTimings }
@@ -166,7 +181,19 @@ export const RESPOND_TOOL = {
     properties: {
       text: {
         type: "string",
-        description: "The reply: short, plain sentences (no markdown), in the person's language. Say what you found or did not find.",
+        description: "The reply: short, plain sentences (no markdown), in the person's language. Say what you found or did not find. At most THREE items named in it — more go in `list`.",
+      },
+      list: {
+        type: "array",
+        description: `Rows SHOWN on screen under the reply and never read aloud — for an answer of more than three items (bikes, parts, entries). Up to ${ANSWER_LIST_MAX}; when more matched, the reply says how many and offers the list page. Empty otherwise.`,
+        items: {
+          type: "object",
+          properties: {
+            label: { type: "string", description: "The item as a person names it (code, name, model)." },
+            detail: { type: "string", description: "One short fact beside it (status, owner, count) — optional." },
+          },
+          required: ["label"],
+        },
       },
       open: {
         type: ["object", "null"],
@@ -207,7 +234,7 @@ export const RESPOND_TOOL = {
 
 /** The kinds of record whose page this person's role may open — middleware's rule. */
 function openableKinds(caps: readonly string[]): TargetKind[] {
-  return TARGET_KINDS.filter((k) => routeAllows(targetHref({ kind: k, id: "x" }), caps));
+  return TARGET_KINDS.filter((k) => routeAllows(targetHref({ kind: k, id: "x" }).split("?")[0], caps));
 }
 
 /**
@@ -235,7 +262,8 @@ How to work:
    NOT FOUND IS NOT "DOES NOT EXIST". Your tools see only part of the system. When a lookup finds nothing, say where you looked ("I found no call or note mentioning Benny"). Never say that something does not exist, or that the system has no such thing, unless a tool made for exactly that came back empty. When no tool covers what they ask about, say you cannot see that yet — never guess.
    "Last", "latest" and "most recent" mean the PAST; "next" and "coming" mean the future.
    THE PAGE: when "This request" names the record the person has open, "this", "here" and "it" (with nothing earlier in the conversation to point at) mean that record.
-2. "Show me / open / find X": look it up; if exactly ONE matches, set \`open\` to it and \`go\` true. If several match, list them in \`choices\` (best first) and say how many matched. If none, say so.
+2. "Show me / open / find X": look it up; if exactly ONE matches, set \`open\` to it and \`go\` true. If several match, list them in \`choices\` (best first) and say how many matched. If none, say so. "Show me the bikes in stock / Gladsaxe's bikes / all bikes" is a LIST: open the matching bike_list view from bike_overview with \`go\` true, and say how many it holds.
+   LISTS AND COUNTS: "how many bikes", "list all the bikes", "which bikes does X have", "bikes in stock" — use bike_overview (it counts every bike), never find_bike (a search that returns at most 8). Name at most THREE items — or three groups — in the reply: the largest, then the rest in one phrase ("and 18 more in four other states"). For more items, say how many and how they divide, put the rows in \`list\` (they show on screen), and offer to open the list page (set \`open\` to its bike_list view, \`go\` false) or to narrow it ("only Gladsaxe?"). Whenever a tool returned only some of the matches, say so ("8 of 46"), never present part as the whole.
 3. A question ("what is my next appointment?", "how many X do we have?", "what's the status of SO 12?"): answer in one or two short sentences from what the tools returned, with \`go\` false. Set \`open\` too when one record is clearly the subject, so they can open it.
 4. A request to CREATE something: propose it in \`actions\` as drafts — the person confirms each with one tap. You may draft only these: ${opts.drafts.length ? opts.drafts.join(", ") : "nothing (this person may not create anything here — say so)"}.
    - A visit or a delivery is a draft_event (eventKind "visit" or "delivery"); resolve the date against today; a time only if one was said. Look the customer up with search_customer and link it when exactly one matches; bikes it is about (a code, a frame number) go in \`bikes\` from find_bike when exactly one matches each — both are linked in the entry; when nothing (or nothing certain) matches, STILL book it — organizationId null, the name exactly as said in the title. A calendar entry never needs a customer in the system; do not ask which customer first. There are no reminders — if asked for one, say the calendar takes visits and deliveries only.
@@ -365,8 +393,11 @@ export async function runAssistant(
     personId: opts.personId,
     seen: new Map(),
   };
-  // The open record may be opened or acted on like one a lookup returned.
+  // The open record may be opened or acted on like one a lookup returned —
+  // and so may what an earlier reply of this conversation offered to open
+  // (it passed this check then): "Shall I open the list?" — "ja".
   if (opts.page) ctx.seen.set(opts.page.id, opts.page.kind);
+  for (const turn of opts.history ?? []) for (const t of turn.offered ?? []) ctx.seen.set(t.id, t.kind);
   const readTools = toolsFor(opts.caps);
   const drafts = (Object.keys(ACTION_CAPABILITIES) as CommandAction["type"][]).filter((t) => mayApply(t, opts.caps));
   // The drafting lookups come only with a right to draft.
@@ -385,7 +416,10 @@ export async function runAssistant(
     const looked = turn.lookups.length
       ? `\n\n[What I looked up for that reply — the ids are valid now: ${turn.lookups.join(" | ")}]`
       : "";
-    messages.push({ role: "assistant", content: `${turn.answer || "(no answer)"}${done}${looked}` });
+    const offered = turn.offered?.length
+      ? `\n\n[Offered to open — may be opened now: ${turn.offered.map((t) => `${t.kind} ${t.id} (${t.label})`).join("; ")}]`
+      : "";
+    messages.push({ role: "assistant", content: `${turn.answer || "(no answer)"}${done}${looked}${offered}` });
   }
   messages.push({ role: "user", content: body });
 
@@ -526,7 +560,7 @@ function finish(
   caps: readonly string[],
   openable: TargetKind[],
 ): { ok: true; answer: AssistantAnswer; plan: CommandPlan } {
-  const parsed = parseAssistantAnswer(raw) ?? { text: "", open: null, go: false, choices: [] };
+  const parsed = parseAssistantAnswer(raw) ?? { text: "", open: null, go: false, choices: [], list: [] };
   // Seen in this run AND a page this person may open.
   const known = (t: { kind: TargetKind; id: string }) => ctx.seen.get(t.id) === t.kind && openable.includes(t.kind);
   const open = parsed.open && known(parsed.open) ? parsed.open : null;
@@ -535,6 +569,7 @@ function finish(
     open,
     go: open !== null && parsed.go,
     choices: parsed.choices.filter(known),
+    list: parsed.list,
   };
   // A model that puts ONE action's fields at the top of `respond` (Haiku did,
   // for a note, 2026-10-21) still means that action.

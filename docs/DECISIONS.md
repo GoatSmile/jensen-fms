@@ -4169,3 +4169,36 @@ still writing", then "Build batch C as planned", and "#13 … I like as well"
   run being withheld for bookings (the code's correction follows at once,
   the same order as before).
 
+## 2026-10-22 — Long answers are counted, shown and opened, never read out
+
+Owner, 22 Oct, on a spoken reply that read out a whole list of parts: "What
+if the request was 'List me all the bikes we have'? Give me your best
+thinking", then "Build the list handling as proposed."
+
+- **The voice says the shape, the screen shows the rows, the page holds the
+  whole list.** At most three items or groups are named aloud — the largest,
+  then the rest in one phrase; the rows go in `respond.list`, shown under the
+  reply and never spoken; for more, the reply offers the list page or a
+  narrower question.
+- **Counting is a tool, `bike_overview`**: totals by status, customer and
+  family over EVERY bike (paged past the 1000-row cap), the bikes by name
+  only when 20 or fewer match, and the list pages that show each group.
+  `find_bike` stays a search of eight; asked for "all bikes" it either had no
+  search word or presented eight as the whole.
+- **A list page is a target like a record** (`bike_list`, its id the page's
+  filter), so the existing open/go machinery and its guards apply: only a view
+  the tool returned can be opened, and only by someone whose role opens
+  /bikes. "Show me the bikes in stock" goes there; "how many" offers it.
+- **What an earlier turn offered to open stays openable**, so a spoken "ja"
+  opens it without a second lookup — it passed the check when offered.
+- **A list page opens UNDER the conversation, which stays open** (owner's
+  pick between the two in the proposal), so the next question narrows it by
+  voice; one record still opens in place of the conversation.
+- Rejected: a separate spoken summary field beside the text (two texts to
+  keep in step; the three-item rule on one text is enough); reading the
+  first N rows aloud (Finn is often not looking, and a partial list read as
+  a list sounds complete).
+- Found on the way: the list pages' filter forms kept showing the OLD values
+  after a link changed the filters (the chips had the same fault). The forms
+  are now keyed by their filters.
+

@@ -193,7 +193,8 @@ export default async function WorkQueuePage({
         </div>
       </header>
 
-      <form action="/work" method="get" role="search" className="flex gap-2">
+      {/* Keyed by the search, so a link that changes it refreshes the field. */}
+      <form key={qRaw ?? ""} action="/work" method="get" role="search" className="flex gap-2">
         <input type="hidden" name="tab" value="repair" />
         <div className="relative flex-1">
           <Search

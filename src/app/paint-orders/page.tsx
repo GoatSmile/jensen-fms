@@ -154,7 +154,8 @@ export default async function PaintOrdersPage({
         </div>
       </header>
 
-      <form method="get" className="flex flex-wrap items-end gap-3">
+      {/* Keyed by the filters, so a link that changes them refreshes the fields. */}
+      <form key={JSON.stringify(sp)} method="get" className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm" htmlFor="paint-status">
             {t("filterStatus")}
