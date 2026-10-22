@@ -1121,3 +1121,51 @@ only; production untouched by hand, no migration).
 - **SO delivery *Move* / *Remove*** (`4988917`): the entry's time read live
   from Google; calendar titles from TEST sources start with TEST
   (`inheritTestTitle`).
+
+## 2026-10-21 — The button became the secretary
+
+- **Every question had failed since 8 Oct** (`06a5e26`): a `find_bike` in both
+  the read tools and the resolvers — the API refuses a duplicate tool name.
+  Fixed with one builder for the tool list; the inbox comes first; calendar
+  move/delete; a note that fails to save reports why (`1d62d86`, migration 127).
+- **The assistant reads everything the person may see** (`690403b`, migration
+  129): per-area lookups, and a read-only database lookup for Owner and IT
+  admin through `assistant_read_query`.
+- **The secretary** (`95ca089` … `86e5b92`, migrations 130–132): a press records
+  a request, it does the safe part at once for people with *Act right away*,
+  answers aloud, and holds a hands-free conversation (text only, a spoken yes
+  confirms what waits, the round button is its End) that remembers each turn's
+  lookups. ElevenLabs model and a voice per language at /admin/settings; Google
+  TTS built as an option.
+- **Evening, after the meeting with Dennis** (`f8190d8`, `e2da198`, `c73b3bc`,
+  `f10a788`, `808d86e`): it answers in the language it HEARS and everyone is on
+  it (migration 133); call summaries in the reader's language; import
+  provenance (migration 134) and the register import's plan/sql steps, tested
+  on Allerød locally.
+
+## 2026-10-22 — The secretary measured, then made faster and more accurate
+
+- **The analysis**: test turns from the logs took ~11 s from speaking to the
+  first sound — transcription 1–2 s, the model's tool loop 4–8 s re-sending
+  ~8k tokens uncached per call, then the whole answer as one voice file. Wrong
+  answers came from missing tools (the paint shelf "does not exist"), lost
+  context ("this bike") and side talk answered as a request.
+- **Voice** (`bb1a37d`): Flash v2.5, the owner's pick after a quick comparison
+  with Multilingual v2 (~1 s sooner); a stored reply streams from `/api/speak`.
+- **Batches A + B** (`8ce5080`): timings per turn on both sides; prompt caching
+  (7.5–13k tokens read from cache per call); the answer returned with the
+  request; parallel lookups; page context; prompt rules (not found ≠ does not
+  exist, "Was that for me?", no codes read aloud); tools `paint`,
+  `recent_work`, a bike's full picture, past calendar entries, table layouts
+  for the database tool. Benny: 8 lookups / 12 s → 4 calls / 6 s locally.
+- **Batch C** (`8f64644`): the first sentence plays while the model still
+  writes — `/api/secretary` streams sentences from `respond` (eager input
+  streaming on that tool only), each voiced by `/api/speak` POST and queued.
+  Measured in the browser: 5.6 s from speaking to the first sound (~6.9 s by
+  the whole-answer path). A probe had broken the tool loop by dropping
+  thinking blocks from the stream; the reader rebuilds them with their
+  signatures. A transcription stalled past 8 s gets a second attempt.
+- **Lists** (`01b7ab5`): `bike_overview` counts every bike; rows go on screen,
+  never read aloud; list pages are `bike_list` targets opened under the
+  conversation; "ja" opens what was offered. Found on the way: list filter
+  forms kept their old values after a link changed the filters — keyed now.

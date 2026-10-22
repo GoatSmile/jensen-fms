@@ -203,6 +203,16 @@ OAuth, and the WhatsApp channel — though WhatsApp could return one day as a
 path to a personal inbox, so it would have to be a Jensen-owned sender.
 
 ## Parked product ideas
+- **Counting tools for parts, offers and invoices, like `bike_overview`**
+  (owner, 22 Oct). The secretary answers "how many / list all" for BIKES by
+  counting (`bike_overview` in `src/lib/assistant/tools.ts`: totals by group,
+  names only when few, the list pages as `bike_list` targets); for parts,
+  offers and invoices it still has only searches that return a handful, so
+  "list all open offers" or "what parts are low" can come back partial. Each
+  needs: a counting tool gated like its area (money withheld without
+  `costs`), a list-page target kind whose id is that page's filter (like
+  `bike_list` / `bikeListId` in `answer.ts`), and its GET filter form keyed by
+  the filters (CLAUDE.md, Known caveats). Do it when a real question hits one.
 - **How a renewal (or any FMS invoice) reaches a municipality by EAN.** FMS
   invoices go to e-conomic as journal vouchers (DECISIONS 2026-07-09), which
   e-conomic cannot send by NemHandel. Parked by the owner 7 Oct — invoicing

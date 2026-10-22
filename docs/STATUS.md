@@ -1,19 +1,19 @@
 # Status — Jensen FMS
 
-**Last updated: 2026-10-21 (Wednesday).** **The floating button is THE
-SECRETARY** (migrations 127–132, DECISIONS 2026-10-21): one press, then a
-hands-free spoken conversation in the person's language — it answers from the
-Inbox, the calendar and every area the person's role may see (the whole
-database, read-only, for Owner and IT admin), carries out safe things at once
-for people with *Act right away* (book a visit or delivery, move an entry,
-save a note), asks for a spoken yes before cancelling, says what it did, and
-remembers the conversation so "move it" means the entry it just read out.
-The round button is its End (a dark X). Also: every question to the assistant
-had failed since 8 Oct (a duplicate tool name) — fixed; a note that fails to
-save now reports why (`client_failures`). **Evening:** the secretary answers
-in the language it HEARS (a conversation starts in the person's setting), and
-everyone is on it (migration 133) — both from the meeting with Dennis in his
-office that day. All in production.
+**Last updated: 2026-10-22 (Thursday).** **The secretary was measured and
+made faster and more accurate** (no migrations; DECISIONS 2026-10-22, four
+entries). Every turn is now TIMED (`assistant_answer.timings` + the phone's
+`client_timings`). Prompt caching, the answer in one round trip and parallel
+lookups make a lookup take ~3–4 s on the server. Missing answers were closed
+with TOOLS (`paint`, `recent_work`, a bike's full picture, past calendar
+entries, table layouts for the database tool) and the open PAGE rides with
+every request. The voice is **Flash v2.5** and starts on the FIRST SENTENCE
+while the model still writes (`/api/secretary` streams; ~1 s sooner, a 5.6 s
+wait measured end to end in the browser). A transcription stalled past 8 s
+gets a second attempt. **Long answers are counted, shown and opened**
+(`bike_overview`, rows on screen never read aloud, list pages opened under the
+conversation). All pushed to production (last commit 01b7ab5 + this docs
+commit).
 
 This is the session-death recovery file: a fresh session (human or LLM) resumes
 from `CLAUDE.md` + this file. **Overwrite it at session end — never append.**
@@ -30,8 +30,8 @@ Danish (person language).
 
 ## Where we are
 - **v0.11.0** (tagged 2026-07-29), deployed on Vercel (push-to-`main` → prod).
-- **Migration 134 is the latest; production AND local at it** (queried, 21 Oct
-  late). 134 = import provenance on agreements, departments and customers +
+- **Migration 134 is the latest; production AND local at it** (`check:prod` /
+  `check:local`, 22 Oct; nothing new today). 134 = import provenance on agreements, departments and customers +
   `service_agreements_imported_no_fee`; 133 = everyone on `ask_voice` (the secretary);
   132 = ElevenLabs model + a voice per language;
   131 = `speech_provider` (elevenlabs | google); 130 = `ask_voice` default,
@@ -41,20 +41,21 @@ Danish (person language).
 - **Production with `supabase db query --linked`** (writes pre-approved);
   **the local copy with `docker exec -i supabase_db_jensen-fms psql …`**.
 - **The secretary** — verified LOCALLY by voice as Finn (spoken Danish fed in
-  place of the mic, since the browser pane has none), on the real
-  *Servicebesøg* calendar with TEST entries: book → "when is it?" → "flyt den
-  til mandag" → "aflys den" → "ja"; deliveries and unknown customers book;
-  no double booking; hands-free listening; End. **NOT verified on a phone** —
-  opening the mic without a tap is exactly what iPhone Safari may refuse.
-  Production settings: assistant model **Sonnet 5.5** (Haiku said "deleted"
-  for a delete that waited); voice **ElevenLabs Multilingual v2**, voice still
-  the default English "George"; **everyone on `ask_voice`** (migration 133);
-  **replies follow the SPOKEN language** (verified locally 21 Oct: Danish in
-  → Danish text and voice, English in → English, a new conversation starts
-  from the person's setting); **Finn's *Act
-  right away* is ON** (set 21 Oct on the owner's instruction). Finn's first
-  real attempts (12:11–12:13) booked nothing — the cause is fixed (DECISIONS
-  2026-10-21 "Finn's failed booking").
+  place of the mic): booking, moving, cancelling with a spoken yes, the
+  language it hears, hands-free listening, End (21 Oct); sentence-by-sentence
+  speech, the conversation staying open over a list page it opened, and a
+  follow-up "ja" opening what was offered (22 Oct). **NOT verified on a
+  phone** — opening the mic without a tap, and playing one sentence after
+  another without a tap, are exactly what iPhone Safari may refuse.
+  Production settings (queried 22 Oct): assistant model **Sonnet 5.5**;
+  voice **ElevenLabs Flash v2.5**, voice still the default "George" in both
+  languages; **everyone on `ask_voice`**; **Finn's *Act right away* is ON**.
+  **No spoken turn has been timed in production yet** — the first real ones
+  answer "how long does it take" (`select assistant_answer->'client_timings'
+  … where kind='command'`).
+  Known weak spots: Gladsaxe's bikes took 10 s once locally (not looked
+  into); spoken replies may still read a recognition code or an MO number
+  when asked for it.
 - **Spoken notes + Inbox** (8 Oct) — still there; notes are now also a thing
   the secretary does when asked (`save_note`), and the note modes stay as
   options.
@@ -91,9 +92,11 @@ Danish (person language).
 
 ## In flight — waiting on someone
 - **Both phones, the real test of the secretary:** Android Chrome and iPhone
-  Safari — press once, ask, wait: it must speak, then show *Lytter — tal nu*
-  and hear the next question with no press; the X ends it. Then Finn in the
-  van. Then a *Secretary* section in his guide (PDF).
+  Safari — press once, ask "Hvad er status på cykel 35?", wait: it must speak
+  EVERY sentence with no silence in the middle, then show *Lytter — tal nu*
+  and hear the next question with no press; "Vis mig cyklerne på lager" must
+  open the list with the conversation still on top; the X ends it. Then Finn
+  in the van. Then a *Secretary* section in his guide (PDF).
 - **A Danish voice:** the ElevenLabs key needs `voices_read`; add a native
   Danish voice to *My Voices*; pick it at /admin/settings → Phone & inbox →
   Speech (*Listen* to compare).
@@ -132,20 +135,22 @@ Danish (person language).
 
 ## Landmines
 - **The secretary acts on the SHARED calendar.** In tests never say "my next
-  appointment / move it" — the next entry may be a real one (a real Helsingør
-  visit sits on Thu 22 Oct). Name a TEST customer.
+  appointment / move it" — the next entry may be a real one. Name a TEST
+  customer, and delete what a test booked (`deleteCalendarEntry` from a
+  script with `process.loadEnvFile(".env.local")` — the key is multi-line).
 - **A spoken "TEST" arrives lowercase**, so an entry from a spoken test request
   does NOT inherit the TEST marker — type test requests, or check the
   calendar after.
 - **`assistant_reader` reads every public table by default** — a new
   secret-shaped column must be revoked from it (migration 129).
-- **Testing voice in the browser pane:** replace `navigator.mediaDevices.getUserMedia`
-  with a stream built from a `say -v Sara … --data-format=LEI16@16000` WAV —
-  serve the WAVs from a throwaway CORS server on another port in the
-  scratchpad (nothing in `public/`), queue one clip per `getUserMedia` call so
-  hands-free turns run by themselves; click the round button by screenshot
-  coordinates. `preview_logs` shows each `speakAnswer(text, lang)` — that is
-  how the voice's language is checked.
+- **Testing voice in the browser pane:** make the spoken question with the
+  app's own voice in the page (`fetch('/api/speak', {method:'POST', body:
+  {text, lang}})` → `arrayBuffer`), replace `navigator.mediaDevices.getUserMedia`
+  with a stream that plays it (`AudioContext.decodeAudioData` →
+  `createMediaStreamDestination`), one clip per call so hands-free turns run by
+  themselves; click the round button by screenshot coordinates; wrap
+  `HTMLMediaElement.prototype.play` to see what was played and when. The
+  stored `client_timings` of the turn are the proof.
 - **A spoken note's audio is KEPT** under `notes/` in the inbound bucket
   (retention applies); a dictation's is deleted. Don't sweep `notes/` as
   stray dictation audio.
@@ -162,12 +167,14 @@ Danish (person language).
 - **Counting identifiers by category needs clean categories** (Batteries,
   Charger hold only those).
 - **The local copy:** production's data (anonymised) from 1 Oct + migrations
-  through 133. **Redo the `storage.*` swap in `data.sql` after every re-dump**.
-  Keep disk free. **Stopped at session end, 21 Oct** (dev server, `supabase
+  through 134, plus **150 TEST bikes (`TEST-LIST-001…150`) and five TEST
+  customers** added 22 Oct to test lists — delete with `frame_number like
+  'TEST-LIST-%'` and `legal_name like 'TEST %'` when they are in the way. **Redo the `storage.*` swap in `data.sql` after every re-dump**.
+  Keep disk free. **Stopped at session end, 22 Oct** (dev server, `supabase
   stop`). To resume: `open -a Docker`, `supabase start`, the dev server.
   Local differs from prod: Finn's *Act right away* on, assistant model
-  Sonnet 5.5 (everyone on `ask_voice` in both since 133). TEST data from 8 Oct as before; today's TEST
-  calendar entries were all deleted.
+  Sonnet 5.5, voice Flash v2.5 in both. TEST data from 8 Oct as before; the
+  22 Oct TEST calendar entry was deleted.
 - **Charger "numbers" on newer bikes are model codes** — never import as unique.
 - **Pre-v3 sessions are upgraded** in `src/lib/auth/session.ts`. Delete after
   2026-10-27 (BACKLOG).
@@ -185,14 +192,15 @@ Danish (person language).
    then plan §5 steps 3–6.
 3. **Renewal invoicing** after the import is checked (`plan-renewal-invoicing`,
    phase A).
-4. **Next without anyone:** the spoken-TEST marker; Deepgram as a recognition
+4. **Next without anyone:** read the first production timings and act on the
+   slowest stage; the spoken-TEST marker; Deepgram as a recognition
    option only if ElevenLabs proves weak on names; the loading scan, box
    labels once the printer is known, the builder's iPad view.
 
 ## Checks — the baselines to match
-- **Smoke, local (2026-10-21): 98 pass · 22 redirect · 9 skip · 0 fail.**
+- **Smoke, local (2026-10-22): 98 pass · 22 redirect · 9 skip · 0 fail.**
   Run it AFTER `build:check`, not alongside.
-- **Lint: 0 errors, 14 warnings** (all pre-existing, 21 Oct).
+- **Lint: 0 errors, 14 warnings** (all pre-existing, 22 Oct).
 - **Invariant audit** (not re-run): two standing hits — check 17 (`JP-BasJen`)
   and check 18 (legacy `unit_cost_basis = 'none'`).
 
