@@ -4202,3 +4202,30 @@ thinking", then "Build the list handling as proposed."
   after a link changed the filters (the chips had the same fault). The forms
   are now keyed by their filters.
 
+
+## 2026-10-27 — A frame Excel turned into a number is rebuilt, and kept only if it is written as text elsewhere
+
+Owner, 27 Oct, on Dennis's Allerød test sheet, where eight frames arrived as
+`0.000639` instead of `,000639`: "build the rebuild-and-cross-check rule for
+numeric frame digits". Extends the 2026-10-21 punctuation rule; supersedes
+nothing.
+
+- **Why the cells broke (inferred, not confirmed with Dennis):** in a Danish
+  Excel the comma is the decimal separator, so `,000639` is a valid number and
+  gets converted; `.000600` is not, and stayed text — exactly the split in his
+  sheet. The number keeps no record of its zeros (`,000800` → `0.0008`).
+- **`frame_digits` rebuilds a number below 1 as at least six digits**
+  (`0.0008` → `000800`): 367 of the old register's 373 comma-prefixed frames
+  have six. Each one is marked `frame_rebuilt` on the customer sheets and the
+  renewal sheets alike.
+- **A rebuilt frame is a GUESS, so `build_plan` imports it only when the same
+  frame is written as TEXT somewhere in the workbook** (a customer sheet or a
+  renewal row) and notes where; otherwise the bike is *skipped* and listed for
+  Dennis, naming the renewal sheet's frame for the same code when it can. On
+  the old register the check caught four Ballerup bikes where six digits was
+  the wrong guess (`0.00856` → `008560`, the renewal sheet says `000856`).
+- Rejected: **padding without a check** (a wrong frame becomes a bike's
+  identity, and nothing later catches it); **asking Dennis to retype every
+  such cell** (the confirmed ones cost him work for nothing, and his cleanup
+  across the register may make more); **reading the digit count from the
+  cell's number format** (the cells are *General* — there is nothing to read).

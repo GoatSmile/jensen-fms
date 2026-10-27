@@ -256,6 +256,10 @@ applied to production AND the local copy, then queried.
       stripped and listed as a note (owner, DECISIONS 2026-10-21). Any other
       punctuation is NOT stripped: it goes on the review list, and Dennis
       corrects it in the spreadsheet.
+    - A digits cell Excel turned into a NUMBER (`0.000639`, Danish Excel reads
+      the comma as a decimal point) is rebuilt as at least six digits, and the
+      bike is imported only if the same frame is written as text elsewhere in
+      the workbook; otherwise it is listed (DECISIONS 2026-10-27).
     - A frame must end in a year letter (G = 2012 … Z = 2026); otherwise it
       is listed.
 - **Frames already in the database** (any row, live or deleted, in

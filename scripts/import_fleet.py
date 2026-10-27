@@ -124,13 +124,20 @@ def as_date(v) -> tuple[str, bool]:
     return s, False
 
 
-def frame_digits(v) -> tuple[str, str]:
-    """A frame's digits cell, and what was stripped from it. The register often
-    carries a stray comma or dot before the digits (`WCK ,000639 L`); the owner
-    allowed stripping exactly that (DECISIONS 2026-10-21), each one listed."""
+def frame_digits(v) -> tuple[str, str, bool]:
+    """A frame's digits cell, what was stripped from it, and whether it was
+    REBUILT. The register often carries a stray comma or dot before the digits
+    (`WCK ,000639 L`); the owner allowed stripping exactly that (DECISIONS
+    2026-10-21), each one listed. A Danish Excel reads `,000639` as the number
+    0.000639 and drops trailing zeros (`,000800` → 0.0008), so a number below 1
+    is rebuilt as at least six digits — a guess, which `build_plan` accepts only
+    when the same frame is also written as text (DECISIONS 2026-10-27)."""
+    if isinstance(v, float) and 0 < v < 1:
+        dec = format(Decimal(repr(v)), "f").split(".")[1]
+        return dec.ljust(6, "0"), "", True
     d = cell(v).replace(" ", "")
     m = re.fullmatch(r"([,.]+)(\d.*)", d)
-    return (m.group(2), m.group(1)) if m else (d, "")
+    return (m.group(2), m.group(1), False) if m else (d, "", False)
 
 
 def joined(parts) -> str:
@@ -222,13 +229,15 @@ def parse_fleet(wb):
         for ri in range(hi + 1, len(rows)):
             r = rows[ri] or ()
             get = lambda j: r[j] if j < len(r) else None  # noqa: E731
-            digits, stripped = frame_digits(get(frame_col + 1))
+            digits, stripped, rebuilt = frame_digits(get(frame_col + 1))
             if not digits:
                 continue
-            rec = {"sheet": ws.title.strip(), "row": ri + 1, "issues": [], "frame_stripped": stripped}
+            rec = {"sheet": ws.title.strip(), "row": ri + 1, "issues": [], "frame_stripped": stripped,
+                   "frame_rebuilt": rebuilt}
             prefix, year = cell(get(frame_col)).upper(), cell(get(frame_col + 2)).upper()
             rec["frame"] = f"{prefix}{digits}{year}".upper().replace(" ", "")
-            rec["frame_display"] = " ".join(x for x in (prefix, stripped + digits, year) if x)
+            as_written = cell(get(frame_col + 1)) if rebuilt else stripped + digits
+            rec["frame_display"] = " ".join(x for x in (prefix, as_written, year) if x)
             if not re.fullmatch(r"[A-Z]", year or "-"):
                 rec["issues"].append("frame year letter missing or odd" if not year else f"frame suffix '{year}'")
             invoiced = []
@@ -277,6 +286,8 @@ def parse_fleet(wb):
 def parse_schedule(wb):
     out = []
     for m in MONTHS:
+        if m not in wb.sheetnames:
+            continue  # a file holding customer sheets only
         ws = wb[m]
         rows = [tuple(r) for r in ws.iter_rows(values_only=True)]
         hi = next((i for i, r in enumerate(rows[:6]) if r and any(norm(c).startswith("stelnummer") for c in r if c)), None)
@@ -290,7 +301,7 @@ def parse_schedule(wb):
         for ri in range(hi + 1, len(rows)):
             r = rows[ri] or ()
             get = lambda j: r[j] if j is not None and j < len(r) else None  # noqa: E731
-            digits, stripped = frame_digits(get(fi + 1))
+            digits, stripped, rebuilt = frame_digits(get(fi + 1))
             if not digits:
                 continue
             yrs = []
@@ -304,7 +315,7 @@ def parse_schedule(wb):
                 "recognition_code": cell(get(ci)).upper(), "customer_text": cell(get(ki)),
                 "bought": as_date(get(bi))[0], "ean": cell(get(ei)),
                 "renewals": "; ".join(yrs), "yearly_price": cell(get(pi)),
-                "frame_stripped": stripped,
+                "frame_stripped": stripped, "frame_rebuilt": rebuilt,
             })
     return out
 
@@ -713,12 +724,19 @@ def build_plan(args):
     everywhere = defaultdict(list)
     for b in all_bikes:
         everywhere[b["frame"]].append(b)
+    written = text_written_frames(all_bikes, schedule)
     chosen = {}
     for b in sel:
         f = b["frame"]
         if re.search(r"[^A-Z0-9]", f) or not YEAR_LETTER.fullmatch(f[-1:]) or b["issues"] and any("frame" in i for i in b["issues"]):
             P.flag("skipped", "frame unreadable", f"as written: {b['frame_display']}", b, f)
             continue
+        if b["frame_rebuilt"]:
+            ok, detail = check_rebuilt(b, written, schedule)
+            if not ok:
+                P.flag("skipped", "frame rebuilt from an Excel number, unconfirmed", detail, b, f)
+                continue
+            P.flag("note", "frame rebuilt from an Excel number", detail, b, f)
         if f in used:
             P.flag("skipped", "frame already in the system", "not imported again", b, f)
             continue
@@ -809,9 +827,12 @@ def build_plan(args):
             sched[s["frame"]].append(s)
             if s["frame_stripped"]:
                 P.flag("note", "frame punctuation removed", f"renewal sheet: '{s['frame_stripped']}' before the digits — read as {s['frame']}", s)
+            if s["frame_rebuilt"]:
+                P.flag("note", "frame rebuilt from an Excel number", f"renewal sheet: read as {s['frame']}", s)
         elif s["frame"] not in fleet_frames and for_these_sheets(s["customer_text"]):
             near = [f for f in sorted(sel_frames) if one_off(f, s["frame"])]
             P.flag("skipped", "renewal row with no bike", f"{s['customer_text']} · price {s['yearly_price'] or 'blank'}"
+                   + (" · frame rebuilt from an Excel number" if s["frame_rebuilt"] else "")
                    + (f" — nearest frame on the sheet: {', '.join(near)} (a typo?)" if near else
                       " — add the bike to the customer's sheet, or confirm it is gone"), s)
     today = dt.date.today().isoformat()
@@ -882,6 +903,31 @@ def build_plan(args):
                             "bike": x["bike"]["id"], "start": x["start"], "price": x["price"], "gps": x["gps"],
                             "status": x["status"], "row": x["src"]})
     return P, mapping, map_path, sheets
+
+
+def text_written_frames(bikes, schedule) -> dict:
+    """Frame → where it is written as TEXT (a customer sheet or a renewal row).
+    A frame rebuilt from an Excel number counts only if it is here."""
+    out = {}
+    for b in bikes:
+        if not b["frame_rebuilt"]:
+            out.setdefault(b["frame"], f"{b['sheet']} row {b['row']}")
+    for s in schedule:
+        if not s["frame_rebuilt"]:
+            out.setdefault(s["frame"], f"renewal sheet {s['month']} row {s['row']}")
+    return out
+
+
+def check_rebuilt(b, written, schedule) -> tuple[bool, str]:
+    """(accepted, detail) for a customer-sheet bike whose frame was rebuilt."""
+    f, held = b["frame"], b["frame_display"]
+    if f in written:
+        return True, f"Excel held {held} — read as {f}, confirmed by {written[f]}"
+    code = b["recognition_code"]
+    other = sorted({s["frame"] for s in schedule if code and s["recognition_code"] == code})
+    return False, (f"Excel held {held} — read as {f}, but no row writes that frame as text"
+                   + (f"; the renewal sheet has {code} as {', '.join(other)}" if other else "")
+                   + " — Dennis types the digits as text")
 
 
 def pick_start(P, s, b, prefer, frame, today, quiet=False):
