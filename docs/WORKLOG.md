@@ -114,11 +114,12 @@ treat the early totals as floors, not truth.
 | Thu 2026-10-22 | ~1.5 | **The secretary measured and made faster**: timings per turn, Flash voice streamed, prompt caching, page context, and tools for the paint shelf, recent work and a bike's full picture. |
 | Thu 2026-10-22 (cont.) | ~2 | **The secretary speaks while it writes**: the first sentence plays before the answer is complete (~1 s sooner, 5.6 s wait measured end to end), and a stalled transcription gets a second try at 8 s. |
 | Thu 2026-10-22 (cont.) | ~0.5 | **Long answers are counted, shown and opened**: a bike overview tool, rows on screen instead of read aloud, list pages opened under the conversation; list filter forms refresh on a link. |
+| Tue 2026-10-27 | ~1 | **Dennis's Allerød test sheet checked for the fleet import**: frames Excel had turned into numbers are now rebuilt and kept only when written as text elsewhere; an email listing what we still need from him. |
 
 **September: ~77 h** (11 working days)
 
-**October so far: ~22.5 h** (5 working days)
+**October so far: ~23.5 h** (6 working days)
 
 ---
 
-**Project total: ~353.5 h across 57 working days (2026-05-07 → 2026-10-22)**
+**Project total: ~354.5 h across 58 working days (2026-05-07 → 2026-10-27)**
